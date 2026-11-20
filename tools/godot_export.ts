@@ -24,6 +24,7 @@ import { DOOR_OPENING, prisonDoorTiles } from '../src/game/prison_way';
 import { figureOf } from '../src/art/bestiary';
 import { bakeName } from '../src/render/monsters_bake_list';
 import { PATIENT, bedPlace } from '../src/game/act1_rules/patient';
+import { STOLEN_BOOK, censorGround } from '../src/game/act1_rules/censor';
 
 declare const process: { argv: string[] };
 paintWithoutCanvas();
@@ -194,7 +195,13 @@ for (const k of kinds) defs[k] = plain(MONSTERS[k as keyof typeof MONSTERS]);
 const beds = level.props
   .filter((p) => p.kind === 'piece' && p.name === PATIENT.bed.piece)
   .map((p) => ({ ...bedPlace(p), bt: p.ty * L.w + p.tx + 1 }));
-writeFileSync(`${OUT}/monsters.json`, JSON.stringify({ hero: plain(game.hero), monsters, defs, ...(beds.length ? { beds } : {}) }, null, 1));
+// (FLOOR 15, THE GREAT LIBRARY: the Censor's ground, the tiles of the Reading Room joined to where he stands (game/act1_rules/
+// censor.ts censorGround: the Hush's reach, where his ink may lie and how much of it), and the book of stolen words on its lectern,
+// which bursts as he dies; none elsewhere)
+const censor = game.monsters.find((m) => m.kind === 'censor');
+const book = level.props.find((p) => p.kind === 'piece' && p.name === STOLEN_BOOK);
+const ground = censor ? { censor: { ground: censorGround(level, censor.x, censor.y), book: book ? { x: book.x, y: book.y } : null } } : {};
+writeFileSync(`${OUT}/monsters.json`, JSON.stringify({ hero: plain(game.hero), monsters, defs, ...(beds.length ? { beds } : {}), ...ground }, null, 1));
 const tally: Record<string, number> = {};
 for (const m of monsters) tally[`${m.kind}/${m.figure}`] = (tally[`${m.kind}/${m.figure}`] ?? 0) + 1;
 console.log(`monsters: ${monsters.length}: ${Object.entries(tally).map(([k, n]) => `${n} ${k}`).join(', ')}`);

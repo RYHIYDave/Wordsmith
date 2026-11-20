@@ -102,7 +102,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 2,
@@ -161,7 +162,8 @@
     "vast",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 3,
@@ -220,7 +222,8 @@
     "vast",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 4,
@@ -279,7 +282,8 @@
     "vast",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 5,
@@ -338,7 +342,8 @@
     "vast",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 6,
@@ -397,7 +402,8 @@
     "vast",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 7,
@@ -456,7 +462,8 @@
     "vast",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 8,
@@ -515,7 +522,8 @@
     "vast",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 9,
@@ -574,7 +582,8 @@
     "vast",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 10,
@@ -633,7 +642,8 @@
     "vast",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 11,
@@ -689,7 +699,8 @@
     "power"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 12,
@@ -748,7 +759,8 @@
     "guarding",
     "power"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 13,
@@ -807,7 +819,8 @@
     "guarding",
     "power"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 14,
@@ -866,7 +879,8 @@
     "guarding",
     "power"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 15,
@@ -925,7 +939,8 @@
     "guarding",
     "power"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 16,
@@ -984,7 +999,8 @@
     "guarding",
     "power"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 17,
@@ -1043,7 +1059,8 @@
     "guarding",
     "power"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 18,
@@ -1095,7 +1112,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 19,
@@ -1147,7 +1171,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 20,
@@ -1199,7 +1230,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 21,
@@ -1251,7 +1289,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 22,
@@ -1303,7 +1348,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 23,
@@ -1355,7 +1407,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 24,
@@ -1407,7 +1466,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 25,
@@ -1459,7 +1525,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 26,
@@ -1511,7 +1584,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 27,
@@ -1563,7 +1643,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 28,
@@ -1621,7 +1708,14 @@
    "half": [],
    "carries": [
     "swift"
-   ]
+   ],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 29,
@@ -1680,7 +1774,14 @@
     "swift",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 30,
@@ -1739,7 +1840,14 @@
     "swift",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 31,
@@ -1798,7 +1906,14 @@
     "swift",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 32,
@@ -1857,7 +1972,14 @@
     "swift",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 33,
@@ -1916,7 +2038,14 @@
     "swift",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 34,
@@ -1975,7 +2104,14 @@
     "swift",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 35,
@@ -2034,7 +2170,14 @@
     "swift",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 36,
@@ -2093,7 +2236,14 @@
     "swift",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 37,
@@ -2145,7 +2295,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 38,
@@ -2197,7 +2354,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 39,
@@ -2249,7 +2413,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 40,
@@ -2301,7 +2472,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 41,
@@ -2353,7 +2531,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 42,
@@ -2405,7 +2590,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 43,
@@ -2457,7 +2649,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 44,
@@ -2509,7 +2708,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 45,
@@ -2561,7 +2767,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 46,
@@ -2613,7 +2826,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 47,
@@ -2665,7 +2885,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 48,
@@ -2717,7 +2944,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 49,
@@ -2769,7 +3003,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 50,
@@ -2821,7 +3062,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 51,
@@ -2873,7 +3121,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 52,
@@ -2925,7 +3180,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 53,
@@ -2977,7 +3239,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 54,
@@ -3029,7 +3298,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 55,
@@ -3085,7 +3361,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 56,
@@ -3144,7 +3421,8 @@
     "lasting",
     "frenzied"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 57,
@@ -3203,7 +3481,8 @@
     "lasting",
     "frenzied"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 58,
@@ -3262,7 +3541,8 @@
     "lasting",
     "frenzied"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 59,
@@ -3321,7 +3601,8 @@
     "lasting",
     "frenzied"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 60,
@@ -3374,7 +3655,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 61,
@@ -3427,7 +3709,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 62,
@@ -3480,7 +3763,8 @@
    "figure": "hushed_2",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 63,
@@ -3533,7 +3817,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 64,
@@ -3586,7 +3871,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 65,
@@ -3639,7 +3925,8 @@
    "figure": "hushed_2",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 66,
@@ -3692,7 +3979,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 67,
@@ -3745,7 +4033,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 68,
@@ -3798,7 +4087,8 @@
    "figure": "hushed_2",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 69,
@@ -3851,7 +4141,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 70,
@@ -3903,7 +4194,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 71,
@@ -3955,7 +4253,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 72,
@@ -4007,7 +4312,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 73,
@@ -4059,7 +4371,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 74,
@@ -4111,7 +4430,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 75,
@@ -4163,7 +4489,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 76,
@@ -4215,7 +4548,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 77,
@@ -4268,7 +4608,8 @@
    "figure": "hushed_2",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 78,
@@ -4321,7 +4662,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 79,
@@ -4374,7 +4716,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 80,
@@ -4427,7 +4770,8 @@
    "figure": "hushed_2",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 81,
@@ -4480,7 +4824,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 82,
@@ -4533,7 +4878,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 83,
@@ -4586,7 +4932,8 @@
    "figure": "hushed_2",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 84,
@@ -4639,7 +4986,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 85,
@@ -4692,7 +5040,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 86,
@@ -4744,7 +5093,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 87,
@@ -4796,7 +5146,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 88,
@@ -4848,7 +5199,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 89,
@@ -4900,7 +5252,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 90,
@@ -4952,7 +5305,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 91,
@@ -5004,7 +5358,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 92,
@@ -5056,7 +5411,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 93,
@@ -5112,7 +5468,8 @@
     "heavy"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 94,
@@ -5171,7 +5528,8 @@
     "binding",
     "heavy"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 95,
@@ -5230,7 +5588,8 @@
     "binding",
     "heavy"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 96,
@@ -5289,7 +5648,8 @@
     "binding",
     "heavy"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 97,
@@ -5348,7 +5708,8 @@
     "binding",
     "heavy"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 98,
@@ -5407,7 +5768,8 @@
     "binding",
     "heavy"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 99,
@@ -5466,7 +5828,8 @@
     "binding",
     "heavy"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 100,
@@ -5525,7 +5888,8 @@
     "binding",
     "heavy"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 101,
@@ -5584,7 +5948,8 @@
     "binding",
     "heavy"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 102,
@@ -5643,7 +6008,8 @@
     "binding",
     "heavy"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 103,
@@ -5702,7 +6068,8 @@
     "binding",
     "heavy"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 104,
@@ -5754,7 +6121,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 105,
@@ -5806,7 +6180,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 106,
@@ -5858,7 +6239,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 107,
@@ -5910,7 +6298,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 108,
@@ -5962,7 +6357,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 109,
@@ -6014,7 +6416,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 110,
@@ -6066,7 +6475,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 111,
@@ -6118,7 +6534,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 112,
@@ -6170,7 +6587,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 113,
@@ -6222,7 +6640,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 114,
@@ -6274,7 +6693,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 115,
@@ -6326,7 +6746,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 116,
@@ -6378,7 +6799,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 117,
@@ -6430,7 +6852,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 118,
@@ -6482,7 +6905,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 119,
@@ -6534,7 +6958,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 120,
@@ -6586,7 +7011,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 121,
@@ -6638,7 +7064,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 122,
@@ -6690,7 +7117,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 123,
@@ -6742,7 +7170,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 124,
@@ -6794,7 +7223,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 125,
@@ -6849,7 +7279,14 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 126,
@@ -6904,7 +7341,14 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 127,
@@ -6959,7 +7403,14 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 128,
@@ -7014,7 +7465,14 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 129,
@@ -7069,7 +7527,14 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 130,
@@ -7124,7 +7589,14 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 131,
@@ -7179,7 +7651,14 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 132,
@@ -7234,7 +7713,14 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 133,
@@ -7289,7 +7775,14 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 134,
@@ -7341,7 +7834,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 135,
@@ -7393,7 +7887,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 136,
@@ -7445,7 +7940,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 137,
@@ -7497,7 +7993,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 138,
@@ -7549,7 +8046,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 139,
@@ -7601,7 +8099,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 140,
@@ -7653,7 +8152,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 141,
@@ -7705,7 +8205,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 142,
@@ -7757,7 +8258,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 143,
@@ -7809,7 +8311,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 144,
@@ -7861,7 +8364,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 145,
@@ -7913,7 +8417,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 146,
@@ -7965,7 +8470,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 147,
@@ -8017,7 +8523,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 148,
@@ -8072,7 +8579,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 149,
@@ -8127,7 +8635,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 150,
@@ -8182,7 +8691,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 151,
@@ -8237,7 +8747,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 152,
@@ -8292,7 +8803,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 153,
@@ -8347,7 +8859,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 154,
@@ -8402,7 +8915,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 155,
@@ -8457,7 +8971,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 156,
@@ -8512,7 +9027,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 157,
@@ -8564,7 +9080,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 158,
@@ -8616,7 +9139,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 159,
@@ -8668,7 +9198,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 160,
@@ -8720,7 +9257,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 161,
@@ -8772,7 +9316,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 162,
@@ -8824,7 +9375,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 163,
@@ -8876,7 +9434,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 164,
@@ -8928,7 +9493,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 165,
@@ -8980,7 +9552,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 166,
@@ -9032,7 +9605,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 167,
@@ -9084,7 +9658,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 168,
@@ -9136,7 +9711,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 169,
@@ -9188,7 +9764,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 170,
@@ -9240,7 +9817,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 171,
@@ -9292,7 +9870,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 172,
@@ -9344,7 +9923,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 173,
@@ -9396,7 +9982,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 174,
@@ -9448,7 +10041,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 175,
@@ -9500,7 +10100,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 176,
@@ -9552,7 +10159,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 177,
@@ -9604,7 +10218,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 178,
@@ -9656,7 +10277,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 179,
@@ -9708,7 +10336,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 180,
@@ -9760,7 +10395,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 181,
@@ -9812,7 +10454,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 182,
@@ -9867,7 +10516,8 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 183,
@@ -9922,7 +10572,8 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 184,
@@ -9977,7 +10628,8 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 185,
@@ -10032,7 +10684,8 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 186,
@@ -10087,7 +10740,8 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 187,
@@ -10142,7 +10796,8 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 188,
@@ -10200,7 +10855,14 @@
    "half": [],
    "carries": [
     "swift"
-   ]
+   ],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 189,
@@ -10259,7 +10921,14 @@
     "swift",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 190,
@@ -10318,7 +10987,14 @@
     "swift",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 191,
@@ -10377,7 +11053,14 @@
     "swift",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 192,
@@ -10436,7 +11119,14 @@
     "swift",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 193,
@@ -10495,7 +11185,14 @@
     "swift",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 194,
@@ -10554,7 +11251,14 @@
     "swift",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 195,
@@ -10613,7 +11317,14 @@
     "swift",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 196,
@@ -10668,7 +11379,14 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 197,
@@ -10723,7 +11441,14 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 198,
@@ -10778,7 +11503,14 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 199,
@@ -10833,7 +11565,14 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 200,
@@ -10888,7 +11627,14 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 201,
@@ -10943,7 +11689,14 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 202,
@@ -10998,7 +11751,14 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 203,
@@ -11053,7 +11813,14 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 204,
@@ -11108,7 +11875,14 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 205,
@@ -11161,7 +11935,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 206,
@@ -11214,7 +11989,8 @@
    "figure": "hushed_2",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 207,
@@ -11267,7 +12043,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 208,
@@ -11320,7 +12097,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 209,
@@ -11373,7 +12151,8 @@
    "figure": "hushed_2",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 210,
@@ -11426,7 +12205,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 211,
@@ -11479,7 +12259,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 212,
@@ -11532,7 +12313,8 @@
    "figure": "hushed_2",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 213,
@@ -11585,7 +12367,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 214,
@@ -11638,7 +12421,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 215,
@@ -11690,7 +12474,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 216,
@@ -11742,7 +12527,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 217,
@@ -11794,7 +12580,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 218,
@@ -11846,7 +12633,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 219,
@@ -11898,7 +12686,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 220,
@@ -11950,7 +12739,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 221,
@@ -12002,7 +12792,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 222,
@@ -12054,7 +12851,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 223,
@@ -12106,7 +12910,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 224,
@@ -12158,7 +12969,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 225,
@@ -12210,7 +13028,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 226,
@@ -12262,7 +13087,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 227,
@@ -12314,7 +13146,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 228,
@@ -12366,7 +13205,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 229,
@@ -12418,7 +13264,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 230,
@@ -12470,7 +13323,14 @@
    "figure": "inkling",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 231,
@@ -12525,7 +13385,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 232,
@@ -12580,7 +13441,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 233,
@@ -12635,7 +13497,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 234,
@@ -12690,7 +13553,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 235,
@@ -12745,7 +13609,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 236,
@@ -12800,7 +13665,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 237,
@@ -12855,7 +13721,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 238,
@@ -12911,7 +13778,14 @@
     "fleeting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 239,
@@ -12970,7 +13844,14 @@
     "lightning",
     "fleeting"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 240,
@@ -13029,7 +13910,14 @@
     "lightning",
     "fleeting"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 241,
@@ -13088,7 +13976,14 @@
     "lightning",
     "fleeting"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 242,
@@ -13147,7 +14042,14 @@
     "lightning",
     "fleeting"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 243,
@@ -13206,7 +14108,14 @@
     "lightning",
     "fleeting"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 244,
@@ -13265,7 +14174,14 @@
     "lightning",
     "fleeting"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "sunk": 0,
+    "mcd": -1,
+    "pt": 0,
+    "vx": 0,
+    "vy": 0
+   }
   },
   {
    "id": 245,
@@ -13323,7 +14239,8 @@
    "half": [],
    "carries": [
     "precise"
-   ]
+   ],
+   "a1": null
   },
   {
    "id": 246,
@@ -13379,7 +14296,8 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 247,
@@ -13435,7 +14353,8 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 248,
@@ -13491,7 +14410,8 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 249,
@@ -13547,7 +14467,8 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 250,
@@ -13599,7 +14520,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 251,
@@ -13651,7 +14573,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 252,
@@ -13703,7 +14626,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 253,
@@ -13755,7 +14679,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 254,
@@ -13807,7 +14732,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 255,
@@ -13859,7 +14785,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 256,
@@ -13911,7 +14838,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 257,
@@ -13963,7 +14891,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 258,
@@ -14015,7 +14944,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 259,
@@ -14067,7 +14997,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 260,
@@ -14119,7 +15050,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 261,
@@ -14171,7 +15103,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 262,
@@ -14223,7 +15156,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 263,
@@ -14275,7 +15209,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 264,
@@ -14327,7 +15262,8 @@
    "figure": "bookwarden",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 265,
@@ -14386,7 +15322,13 @@
    "carries": [
     "frenzied",
     "poison"
-   ]
+   ],
+   "a1": {
+    "hx": 34.5,
+    "hy": 29.5,
+    "blk": 0,
+    "rp": 0
+   }
   }
  ],
  "defs": {
@@ -14494,6 +15436,664 @@
    "minDepth": 99,
    "weight": 0,
    "size": "boss"
+  }
+ },
+ "censor": {
+  "ground": [
+   2452,
+   2453,
+   2454,
+   2455,
+   2456,
+   2457,
+   2458,
+   2459,
+   2460,
+   2461,
+   2462,
+   2463,
+   2464,
+   2465,
+   2466,
+   2467,
+   2468,
+   2469,
+   2470,
+   2471,
+   2472,
+   2473,
+   2474,
+   2475,
+   2476,
+   2477,
+   2580,
+   2581,
+   2582,
+   2583,
+   2584,
+   2585,
+   2586,
+   2587,
+   2588,
+   2589,
+   2590,
+   2591,
+   2592,
+   2593,
+   2594,
+   2595,
+   2596,
+   2597,
+   2598,
+   2599,
+   2600,
+   2601,
+   2602,
+   2603,
+   2604,
+   2605,
+   2708,
+   2709,
+   2710,
+   2711,
+   2712,
+   2713,
+   2714,
+   2715,
+   2716,
+   2717,
+   2718,
+   2719,
+   2720,
+   2721,
+   2722,
+   2723,
+   2724,
+   2725,
+   2726,
+   2727,
+   2728,
+   2729,
+   2730,
+   2731,
+   2732,
+   2733,
+   2836,
+   2837,
+   2838,
+   2839,
+   2840,
+   2841,
+   2842,
+   2843,
+   2844,
+   2845,
+   2846,
+   2847,
+   2848,
+   2849,
+   2850,
+   2851,
+   2852,
+   2853,
+   2854,
+   2855,
+   2856,
+   2857,
+   2858,
+   2859,
+   2860,
+   2861,
+   2964,
+   2965,
+   2966,
+   2967,
+   2968,
+   2969,
+   2970,
+   2971,
+   2972,
+   2973,
+   2974,
+   2975,
+   2976,
+   2977,
+   2978,
+   2979,
+   2980,
+   2981,
+   2982,
+   2983,
+   2984,
+   2985,
+   2986,
+   2987,
+   2988,
+   2989,
+   3092,
+   3093,
+   3094,
+   3095,
+   3096,
+   3097,
+   3098,
+   3099,
+   3100,
+   3101,
+   3102,
+   3103,
+   3104,
+   3105,
+   3106,
+   3107,
+   3108,
+   3109,
+   3110,
+   3111,
+   3112,
+   3113,
+   3114,
+   3115,
+   3116,
+   3117,
+   3220,
+   3221,
+   3222,
+   3223,
+   3224,
+   3225,
+   3226,
+   3227,
+   3228,
+   3229,
+   3230,
+   3231,
+   3232,
+   3233,
+   3234,
+   3235,
+   3236,
+   3237,
+   3238,
+   3239,
+   3240,
+   3241,
+   3242,
+   3243,
+   3244,
+   3245,
+   3348,
+   3349,
+   3350,
+   3351,
+   3352,
+   3353,
+   3354,
+   3355,
+   3356,
+   3357,
+   3358,
+   3359,
+   3360,
+   3361,
+   3362,
+   3363,
+   3364,
+   3365,
+   3366,
+   3367,
+   3368,
+   3369,
+   3370,
+   3371,
+   3372,
+   3373,
+   3476,
+   3477,
+   3478,
+   3479,
+   3480,
+   3481,
+   3482,
+   3483,
+   3484,
+   3485,
+   3486,
+   3487,
+   3488,
+   3489,
+   3490,
+   3491,
+   3492,
+   3493,
+   3494,
+   3495,
+   3496,
+   3497,
+   3498,
+   3499,
+   3500,
+   3501,
+   3604,
+   3605,
+   3606,
+   3607,
+   3608,
+   3609,
+   3610,
+   3611,
+   3612,
+   3613,
+   3614,
+   3615,
+   3616,
+   3617,
+   3618,
+   3619,
+   3620,
+   3621,
+   3622,
+   3623,
+   3624,
+   3625,
+   3626,
+   3627,
+   3628,
+   3629,
+   3732,
+   3733,
+   3734,
+   3735,
+   3736,
+   3737,
+   3738,
+   3739,
+   3740,
+   3741,
+   3742,
+   3743,
+   3744,
+   3745,
+   3746,
+   3747,
+   3748,
+   3749,
+   3750,
+   3751,
+   3752,
+   3753,
+   3754,
+   3755,
+   3756,
+   3757,
+   3860,
+   3861,
+   3862,
+   3863,
+   3864,
+   3865,
+   3866,
+   3867,
+   3868,
+   3869,
+   3870,
+   3871,
+   3872,
+   3873,
+   3874,
+   3875,
+   3876,
+   3877,
+   3878,
+   3879,
+   3880,
+   3881,
+   3882,
+   3883,
+   3884,
+   3885,
+   3988,
+   3989,
+   3990,
+   3991,
+   3992,
+   3993,
+   3994,
+   3995,
+   3996,
+   3997,
+   3998,
+   3999,
+   4000,
+   4001,
+   4002,
+   4003,
+   4004,
+   4005,
+   4006,
+   4007,
+   4008,
+   4009,
+   4010,
+   4011,
+   4012,
+   4013,
+   4116,
+   4117,
+   4118,
+   4119,
+   4120,
+   4121,
+   4122,
+   4123,
+   4124,
+   4125,
+   4126,
+   4127,
+   4128,
+   4129,
+   4130,
+   4131,
+   4132,
+   4133,
+   4134,
+   4135,
+   4136,
+   4137,
+   4138,
+   4139,
+   4140,
+   4141,
+   4244,
+   4245,
+   4246,
+   4247,
+   4248,
+   4249,
+   4250,
+   4251,
+   4252,
+   4253,
+   4254,
+   4255,
+   4256,
+   4257,
+   4258,
+   4259,
+   4260,
+   4261,
+   4262,
+   4263,
+   4264,
+   4265,
+   4266,
+   4267,
+   4268,
+   4269,
+   4372,
+   4373,
+   4374,
+   4375,
+   4376,
+   4377,
+   4378,
+   4379,
+   4380,
+   4381,
+   4382,
+   4383,
+   4384,
+   4385,
+   4386,
+   4387,
+   4388,
+   4389,
+   4390,
+   4391,
+   4392,
+   4393,
+   4394,
+   4395,
+   4396,
+   4397,
+   4500,
+   4501,
+   4502,
+   4503,
+   4504,
+   4505,
+   4506,
+   4507,
+   4508,
+   4509,
+   4510,
+   4511,
+   4512,
+   4513,
+   4514,
+   4515,
+   4516,
+   4517,
+   4518,
+   4519,
+   4520,
+   4521,
+   4522,
+   4523,
+   4524,
+   4525,
+   4628,
+   4629,
+   4630,
+   4631,
+   4632,
+   4633,
+   4634,
+   4635,
+   4636,
+   4637,
+   4638,
+   4639,
+   4640,
+   4641,
+   4642,
+   4643,
+   4644,
+   4645,
+   4646,
+   4647,
+   4648,
+   4649,
+   4650,
+   4651,
+   4652,
+   4653,
+   4756,
+   4757,
+   4758,
+   4759,
+   4760,
+   4761,
+   4762,
+   4763,
+   4764,
+   4765,
+   4766,
+   4767,
+   4768,
+   4769,
+   4770,
+   4771,
+   4772,
+   4773,
+   4774,
+   4775,
+   4776,
+   4777,
+   4778,
+   4779,
+   4780,
+   4781,
+   4884,
+   4885,
+   4886,
+   4887,
+   4888,
+   4889,
+   4890,
+   4891,
+   4892,
+   4893,
+   4894,
+   4895,
+   4896,
+   4897,
+   4898,
+   4899,
+   4900,
+   4901,
+   4902,
+   4903,
+   4904,
+   4905,
+   4906,
+   4907,
+   4908,
+   4909,
+   5012,
+   5013,
+   5014,
+   5015,
+   5016,
+   5017,
+   5018,
+   5019,
+   5020,
+   5021,
+   5022,
+   5023,
+   5024,
+   5025,
+   5026,
+   5027,
+   5028,
+   5029,
+   5030,
+   5031,
+   5032,
+   5033,
+   5034,
+   5035,
+   5036,
+   5037,
+   5140,
+   5141,
+   5142,
+   5143,
+   5144,
+   5145,
+   5146,
+   5147,
+   5148,
+   5149,
+   5150,
+   5151,
+   5152,
+   5153,
+   5154,
+   5155,
+   5156,
+   5157,
+   5158,
+   5159,
+   5160,
+   5161,
+   5162,
+   5163,
+   5164,
+   5165,
+   5268,
+   5269,
+   5270,
+   5271,
+   5272,
+   5273,
+   5274,
+   5275,
+   5276,
+   5277,
+   5278,
+   5279,
+   5280,
+   5281,
+   5282,
+   5283,
+   5284,
+   5285,
+   5286,
+   5287,
+   5288,
+   5289,
+   5290,
+   5291,
+   5292,
+   5293,
+   5396,
+   5397,
+   5398,
+   5399,
+   5400,
+   5401,
+   5402,
+   5403,
+   5404,
+   5405,
+   5406,
+   5407,
+   5408,
+   5409,
+   5410,
+   5411,
+   5412,
+   5413,
+   5414,
+   5415,
+   5416,
+   5417,
+   5418,
+   5419,
+   5420,
+   5421,
+   5524,
+   5525,
+   5526,
+   5527,
+   5528,
+   5529,
+   5530,
+   5531,
+   5532,
+   5533,
+   5534,
+   5535,
+   5536,
+   5537,
+   5538,
+   5539,
+   5540,
+   5541,
+   5542,
+   5543,
+   5544,
+   5545,
+   5546,
+   5547,
+   5548,
+   5549
+  ],
+  "book": {
+   "x": 33.5,
+   "y": 31.5
   }
  }
 }

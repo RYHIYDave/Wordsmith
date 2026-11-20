@@ -62,6 +62,9 @@ var boss_at := Vector2.ZERO
 ## (FLOOR 14, THE HOUSE OF QUIET: its ward beds, each where one lying in it lies and the way it faces, and its key (`bt`): where
 ## the Physician's rounds lay new patients, game/act1_rules/patient.ts bedPlace, freeBeds; monsters.json `beds`)
 var beds: Array = []
+## (FLOOR 15, THE GREAT LIBRARY: the Censor's ground (`ground`: its tiles) and the book of stolen words (`book`: where it lies, or
+## null): monsters.json `censor`, game/act1_rules/censor.ts censorGround, STOLEN_BOOK)
+var censor: Dictionary = {}
 ## A THING OF A QUEST TAKEN UP WHERE IT LAY (game.ts furnaceGearTaken, templeKeyTaken): what ("gear": the forge crank's, the
 ## Stoker's; "key": one of the temple door's, a keybearer's) and where. The monster's own script lays it down as it falls and
 ## says so when the hero takes it; the floor's quest scripts listen.
@@ -74,6 +77,7 @@ func load_floor(path: String, figures_dir: String) -> void:
 	_defs = data["defs"]
 	_info = info
 	beds = data.get("beds", [])
+	censor = data.get("censor", {})
 	_figures_dir = figures_dir
 	for m in data["monsters"]:
 		var figure: String = m["figure"]

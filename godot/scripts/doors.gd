@@ -53,12 +53,14 @@ const LINES := {
 	"stag": ["HRRAAAWWNN!", "BRRRAAAWN!", "HAAARRRNN!"],
 	"eye": ["You are seen.", "Drown.", "The siege is my dream. Sleep in it."],
 	# (ACT 2, THE HUSH: the Crier has no voice, the Hush took it first; floor 12's Rat King, in a hundred stolen voices; floor 13's
-	# pair, the Scraper the one that greets; floor 14's Physician; floor 15's the Palimpsest)
+	# pair, the Scraper the one that greets; floor 14's Physician; floor 15's the Palimpsest, and the Censor, his mouth a bar of ink,
+	# saying nothing: a silence over him as his name comes up)
 	"crier": ["..."],
 	"ratking": ["Hear ye! Hear ye! ...Squeak!", "Who's there? Who's there? Who's there?", "A hundred voices. Yours makes a hundred and one."],
 	"scraper": ["Klak. Klak. Skrrrrrrtch...", "Skrrrrrrrrtch.", "Klak-klak-klak..."],
 	"physician": ["Say ah.", "Hold still. This won't hurt.", "Your last words, please."],
 	"palimpsest": ["Shhhhhhhhh...", "Rrrrsssshhhh...", "Sssshhhh."],
+	"censor": ["..."],
 }
 ## (ACT 1, game.ts meetOutdoorBoss: out on the open ground there is no gate to fall behind the hero: the boss waits until he
 ## comes into his ground, well inside its area (blobDist under 0.8) or within 6 tiles of him; then he is woken and says his

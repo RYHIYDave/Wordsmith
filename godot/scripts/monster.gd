@@ -87,6 +87,9 @@ const BOSS_AI := {
 	# (floor 14's: the patients, the orderlies, and its boss, the Physician)
 	"patient": preload("res://scripts/act2/patient.gd"), "orderly": preload("res://scripts/act2/orderly.gd"),
 	"physician": preload("res://scripts/act2/physician.gd"),
+	# (floor 15's: the inklings, the bookwardens, and its boss, the Censor)
+	"inkling": preload("res://scripts/act2/inkling.gd"), "bookwarden": preload("res://scripts/act2/bookwarden.gd"),
+	"censor": preload("res://scripts/act2/censor.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -1514,7 +1517,8 @@ func named() -> bool:
 
 ## Whether anything is over its head now: its bar, its name, the rune of what it carries.
 func _shows_over() -> bool:
-	if dead or not seen or boss and carries.is_empty():
+	# (nothing of one hidden, as an inkling going about as a pool of ink is, not its bar nor its name: render.ts `hidden`)
+	if dead or not seen or not _sprite.visible or boss and carries.is_empty():
 		return false
 	return _bar > 0.0 or named() or ((elite or boss) and not carries.is_empty())
 

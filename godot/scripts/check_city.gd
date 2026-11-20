@@ -133,13 +133,17 @@ func run(main, hero, out: String) -> void:
 		await _pair()
 	elif depth == 14:
 		await _physician()
+	elif depth == 15:
+		await _censor()
 	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
 
 
 ## The kinds of each floor with rules of their own; its common ones fought alone (the boss apart).
 const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"], 12: ["rat", "dredger", "scribe", "hushed", "ratking"],
-	13: ["fieldhand", "carter", "hushed", "scraper", "quill"], 14: ["patient", "orderly", "hushed", "physician"]}
-const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"], 13: ["fieldhand", "carter"], 14: ["patient", "orderly"]}
+	13: ["fieldhand", "carter", "hushed", "scraper", "quill"], 14: ["patient", "orderly", "hushed", "physician"],
+	15: ["inkling", "bookwarden", "scribe", "hushed", "censor"]}
+const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"], 13: ["fieldhand", "carter"], 14: ["patient", "orderly"],
+	15: ["inkling", "bookwarden"]}
 
 
 var chosen := {}
@@ -299,6 +303,54 @@ func _common(kind: String) -> void:
 			await _snap("orderly_gurney_crash")
 			await _run(0.5)
 			_line(laned and crashed and struck > 0, "the gurney charge: the lane marked (%s, along %s), the gurney slammed down it, crashing (%s) on him (%d)" % [laned, way, crashed, struck])
+		"inkling":
+			# (on open floor, clear of the library's shelves)
+			m.world = _open_spot(m.world)
+			# THE INK LASH: no melting meanwhile
+			m.h2.a1["mcd"] = 999.0
+			h.world = M._spot_near(m.world + m.face * 0.7, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var lashed: bool = await _run(6.0, func(): return m.h2.act != null and str(m.h2.acts()[m.h2.act["i"]]["id"]) == "inkling:lash" and float(m.h2.act["t"]) >= 0.55)
+			await _snap("inkling_lash")
+			await _run(1.2, func(): return m.h2.act == null)
+			_line(lashed and struck > 0, "the inkling's ink lash: its claws raked across before it, the hero struck (%d)" % struck)
+			# THE MELT: the hero off in its sight; a pool sliding to him, out of reach; rising before him
+			struck = 0
+			h.world = M._spot_near(m.world, 5.0, h.world)
+			m.h2.a1["mcd"] = 0.0
+			m.h2.cds[0] = 999.0
+			var pooled: bool = await _run(6.0, func(): return int(m.h2.a1.get("sunk", 0)) == 2)
+			await _run(0.5)
+			await _snap("inkling_pool")
+			var out_of_reach: bool = not m.h2.reachable(m)
+			var rose: bool = await _run(6.0, func(): return int(m.h2.a1.get("sunk", 0)) == 3)
+			var near: float = m.world.distance_to(h.world)
+			await _run(0.5)
+			await _snap("inkling_rises")
+			_line(pooled and out_of_reach and rose and near <= 1.5 and _a1("inkling:pool").is_empty(), "the melt: run down into a pool of ink, out of reach, sliding to the hero; risen %.1f tiles from him" % near)
+		"bookwarden":
+			m.world = _open_spot(m.world)
+			# THE TOME SLAM
+			h.world = M._spot_near(m.world + m.face * 1.8, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var slammed: bool = await _run(6.0, func(): return not _a1("bookwarden:mark").is_empty())
+			await _run(0.12)
+			await _snap("bookwarden_slam")
+			_line(slammed and struck > 0, "the bookwarden's tome slam: flat on the floor, the dust, the cracks, the loose pages; the hero struck and shoved back (%d)" % struck)
+			await _run(2.0, func(): return m.h2.act == null)
+			# THE BOOK BARRAGE
+			struck = 0
+			h.world = M._spot_near(m.world, 5.0, h.world)
+			_ready_only(m, 1)
+			var wheel: bool = await _run(6.0, func(): return not _a1("bookwarden:barrage", func(p): return float(p["t"]) >= 0.95).is_empty())
+			await _snap("bookwarden_books_wheel")
+			var flung: bool = await _run(1.0, func(): return not _a1("bookwarden:barrage", func(p): return float(p["t"]) >= 1.3).is_empty())
+			await _snap("bookwarden_books_flung")
+			await _run(2.0)
+			await _snap("bookwarden_books_lie")
+			_line(wheel and flung and struck > 0, "the book barrage: nine books torn up and wheeling round him, flung one after another, the hero struck by %d" % struck)
 		"hound":
 			h.world = M._spot_near(m.world, 1.0, h.world)
 			_ready_only(m, 0)
@@ -887,3 +939,153 @@ func _physician() -> void:
 	await _run(1.2)
 	await _snap("physician_falls")
 	_line(boss.dead and freed and h.loadout.front[0].has("frost"), "the Physician struck dead: the word he held flies home")
+
+
+# --- FLOOR 15 ---
+
+## The nearest place to `at` with open floor two tiles all round it (the library's shelves stand close).
+func _open_spot(at: Vector2) -> Vector2:
+	var map = M._monsters.map
+	var best := at
+	var bd := INF
+	for ty in range(floori(at.y) - 30, floori(at.y) + 31):
+		for tx in range(floori(at.x) - 30, floori(at.x) + 31):
+			var ok := true
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					if not map.walkable(tx + dx, ty + dy):
+						ok = false
+						break
+				if not ok:
+					break
+			var q := Vector2(tx + 0.5, ty + 0.5)
+			if ok and q.distance_to(at) < bd:
+				bd = q.distance_to(at)
+				best = q
+	return best
+
+
+# --- FLOOR 15'S BOSS, THE CENSOR ---
+
+const CER := preload("res://scripts/act2/censor.gd")
+
+
+func _censor() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "censor":
+			boss = o
+	if boss == null:
+		_line(false, "floor 15 has no Censor")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(4.0, func(): return boss._said != "")
+	await _snap("censor_met")
+	_line(met and boss.state != "sleep", "the Censor met in his Reading Room: '%s', %s, %.0f life; his room %d tiles" % [boss._said, boss.title, boss.max_life, (M._monsters.censor.get("ground", []) as Array).size()])
+	# (his ink all the while: held off for each move's own pictures, but where it is looked at; his words, which burn and poison, put by:
+	# each count of a blow is his move's own)
+	boss.h2.a1["iw"] = 999.0
+	boss.words = []
+	# THE BRUSH SLASH
+	struck = 0
+	h.world = M._spot_near(boss.world + boss.face * 1.8, 0.0, h.world)
+	boss.face = (h.world - boss.world).normalized()
+	_ready_only(boss, 0)
+	var slashed: bool = await _run(6.0, func(): return not _a1("censor:slash", func(p): return float(p["t"]) >= 0.15).is_empty())
+	await _snap("censor_slash")
+	_line(slashed and struck > 0, "the brush slash: down and across before him, its arc of ink on the floor; the hero struck (%d)" % struck)
+	await _run(2.0, func(): return boss.h2.act == null)
+	# STRIKE-THROUGH, TWICE IN A ROW
+	struck = 0
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	_ready_only(boss, 1)
+	var aimed: bool = await _run(6.0, func(): return not _a1("censor:aim", func(p): return _is_act(boss, "censor:strike") and float(boss.h2.act["t"]) >= 0.6).is_empty())
+	await _snap("censor_strike_aim")
+	var ran: bool = await _run(1.0, func(): return not _a1("censor:line", func(p): return float(p["t"]) >= 0.25).is_empty())
+	await _snap("censor_strike_line")
+	var before: int = int(M._monsters.used.get("censor_strike", 0)) - 1
+	await _run(4.5, func(): return int(M._monsters.used.get("censor_strike", 0)) - before >= 2 and boss.h2.act == null)
+	var lines: int = int(M._monsters.used.get("censor_strike", 0)) - before
+	_line(aimed and ran and lines >= 2 and struck > 0, "Strike-Through twice in a row: the line marked, the brush thrust, a burning line run out to the wall (%d lines), the hero struck (%d)" % [lines, struck])
+	await _run(3.0, func(): return boss.h2.act == null)
+	# REDACTION, BY TURNS: one way, both ways at once, the page struck out
+	var kinds := ["one way", "both ways at once", "the page struck out"]
+	for r in 3:
+		struck = 0
+		h.world = M._spot_near(boss.world, 4.0, h.world)
+		_ready_only(boss, 2)
+		var marked: bool = await _run(8.0, func(): return not _a1("censor:bars", func(p): return float(p["t"]) >= -0.3 and float(p["t"]) < 0.0).is_empty())
+		await _snap("censor_redaction_%d_marked" % r)
+		var slam: bool = await _run(1.5, func(): return not _a1("censor:bars", func(p): return int(p["done"]) == 1 and float(p["t"]) >= 0.08).is_empty())
+		await _snap("censor_redaction_%d_slams" % r)
+		await _run(1.2)
+		if r == 2:
+			await _snap("censor_page_struck_out")
+		_line(marked and slam, "Redaction, %s: the bars marked out in pink, slammed down black (%d struck), lying wet; %d tiles under his ink" % [kinds[r], struck, CER.inked_count(M._monsters.map)])
+		await _run(4.0, func(): return boss.h2.act == null)
+	# WHAT HE LAYS STAYS: standing on it, hurt
+	struck = 0
+	var map = M._monsters.map
+	var inked_at := Vector2.INF
+	for i in (M._monsters.censor.get("ground", []) as Array):
+		var q := Vector2(int(i) % map.w + 0.5, int(i) / map.w + 0.5)
+		if CER.inked(map, q.x, q.y) and q.distance_to(boss.world) > 3.0:
+			inked_at = q
+			break
+	boss.rise(1e9)
+	if inked_at != Vector2.INF:
+		var stand := func(): h.world = inked_at
+		await _run(1.6, Callable(), stand)
+	await _snap("censor_ink_on_the_floor")
+	_line(inked_at != Vector2.INF and struck >= 2, "his ink stays on the floor: standing on it the hero is hurt again and again (%d times in 1.6 s)" % struck)
+	boss._t = 0.0
+	# HIS INK ALL THE WHILE: a cross of bars where the hero is heading, and lines across the room
+	struck = 0
+	_ready_only(boss, 0)
+	boss.h2.cds[0] = 999.0
+	boss.h2.a1["iw"] = 0.1
+	h.world = M._spot_near(boss.world, 4.0, h.world)
+	var crossed_on: bool = await _run(3.0, func(): return not _a1("censor:bars", func(p): return int(p.get("c", 0)) == 1 and float(p["t"]) >= -0.2).is_empty())
+	await _snap("censor_ink_cross")
+	boss.h2.a1["ik"] = 2
+	boss.h2.a1["iw"] = 0.1
+	var margin: bool = await _run(3.0, func(): return not _a1("censor:margin", func(p): return float(p["t"]) >= 0.3).is_empty())
+	await _snap("censor_ink_line_across")
+	_line(crossed_on and margin, "his ink all the while: a cross of bars slamming where the hero is heading; a line of ink run across the room through him")
+	# HE WALKS OFF TO CLEAN FLOOR, his big move over
+	var from: Vector2 = boss.world
+	boss.h2.a1["wo"] = 1
+	boss.h2.a1["ww"] = 0.0
+	boss.h2.a1["iw"] = 999.0
+	var walked: bool = await _run(6.0, func(): return int(boss.h2.a1.get("wk", 0)) == 1)
+	await _run(1.5)
+	await _snap("censor_walks_off")
+	_line(walked and boss.world.distance_to(from) > 1.0, "he walks off to clean floor (%.1f tiles), none of his ink round where he goes" % boss.world.distance_to(from))
+	await _run(4.0, func(): return int(boss.h2.a1.get("wk", 0)) == 0)
+	# THE HUSH
+	h.hush_t = 0.0
+	h.loadout.set_hushed(false)
+	h.world = M._spot_near(boss.world, 7.0, h.world)
+	_ready_only(boss, 3)
+	var rolls: bool = await _run(6.0, func(): return not _a1("censor:hush", func(p): return float(p["t"]) >= 0.45).is_empty())
+	await _snap("censor_hush_rolls")
+	var dark: bool = await _run(2.0, func(): return h.hush_t > 0.0)
+	await _run(0.8)
+	await _snap("censor_hush_veil")
+	_line(rolls and dark, "the Hush: a ring of silence rolling out across his room; as it passed him the hero's words went dark")
+	await _run(2.0, func(): return boss.h2.act == null)
+	# HIS DEATH: his ink dries away; the book of stolen words bursts
+	var had: int = CER.inked_count(map)
+	boss.hurt(1e9)
+	var book: bool = not _a1("censor:book").is_empty()
+	await _run(0.6)
+	await _snap("censor_book_bursts")
+	await _run(1.2)
+	await _snap("censor_falls")
+	_line(boss.dead and book and had > 0 and CER.inked_count(map) == 0, "the Censor struck dead: his ink dried away (%d tiles of it), the book of stolen words burst, its words flying home" % had)

@@ -175,6 +175,8 @@ import { DIAG as PH_DIAG, OP_LONG as PH_OP_LONG, lensAt as phLensAt } from '../s
 import { GLYPH as WORD_GLYPH, WORD_COLOR as WORD_COLOUR } from '../src/art/icons';
 import { HELD_WORD_IDS } from '../src/game/types';
 import { TILE3 as PH_TILE3 } from '../src/art/new_mobs3';
+import { BOOK_CANVAS, bookPainted } from '../src/art/action_f11_warden';
+import { toSprite as wbSprite } from '../src/art/kit';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -866,6 +868,20 @@ for (const view of ['front', 'back'] as const) {
   tables.ph = { turns: TOOL_TURNS, diagnose: lens('diagnose', PH_DIAG.long), operate: lens('operate', PH_OP_LONG), glyph, colour };
 }
 
+// FLOOR 15'S BOOKWARDENS (render/act1_fx/bookwarden.ts BARRAGE_FX: WARDEN_BARRAGE on, as the game starts):
+//   wb_book_<c>_<l>_<g>  a book of the barrage, cover `c` (0 to 2), lying (`l` 1) or not, its brass corners glinting pink (`g` 1) or
+//                        not, turned each of 24 ways (the game's BOOK_TURNS a turn: bookPainted), as the game paints it ahead; its
+//                        middle the floor point; layer `stand`
+{
+  for (let c = 0; c < 3; c++) {
+    for (const lying of [0, 1]) {
+      for (const g of [0, 1]) {
+        films[`wb_book_${c}_${lying}_${g}`] = { fps: 0, n: 24, k0: 0, layers: { stand: Array.from({ length: 24 }, (_, q) => pic(wbSprite({ px: bookPainted((q / 24) * Math.PI * 2, c, lying === 1, g), lights: [] }, null, BOOK_CANVAS.ax, BOOK_CANVAS.ay))) } };
+      }
+    }
+  }
+}
+
 // --- the sheets: each SET of films on sheets of its own (the films of one kind of monster: the game loads a set only on a
 // floor that has its kind), the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
 /** The set a film is packed with: the first word of its name; the cultist's sigil and the Flame keybearer's apart. */
@@ -882,7 +898,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the bosses of floors 6 and 7)
   unfinished: ['uf'], queen: ['qn'],
   // (the city's)
-  watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'],
+  watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'], bookwarden: ['wb'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);
