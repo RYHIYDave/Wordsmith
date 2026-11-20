@@ -207,7 +207,12 @@ func _tint(q: Array) -> Color:
 	if fx.m3 != null:
 		var t3: Color = fx.m3.tint(m)
 		if t3.a > 0.0 and (base.a <= 0.0 or t3.a > base.a):
-			return t3
+			base = t3
+	# (v3: lit white as a blast, shard or arc of Volatile's five strikes it, crackling: render.ts tintV3, `tn[1] > overA`)
+	if fx.v3 != null:
+		var tv: Array = fx.v3.tint_of(m.id, fx.v3.clock)
+		if not tv.is_empty() and float(tv[1]) > 0.0 and (base.a <= 0.0 or float(tv[1]) > base.a):
+			base = Color(tv[0], float(tv[1]))
 	return base
 
 
@@ -239,16 +244,31 @@ func follow() -> void:
 			var o = instance_from_id(int(s["id"]))
 			if o != null and is_instance_valid(o):
 				slid[int(s["id"])] = o
+	# (v3: and those a blast of Volatile's five has jolted, by the game's own id: render.ts shiftV3)
+	var jolted := {}
+	if fx.v3 != null and not fx.v3.jolts.is_empty() and fx.monsters != null and is_instance_valid(fx.monsters):
+		var by_id := {}
+		for j: Dictionary in fx.v3.jolts:
+			by_id[j["id"]] = true
+		for o in fx.monsters.list:
+			if is_instance_valid(o) and by_id.has(o.id):
+				jolted[o.get_instance_id()] = o
+	var jolt := func(id: int) -> Vector2:
+		return Vector2(fx.v3.shift_of(jolted[id].id)) if jolted.has(id) else Vector2.ZERO
 	for id in marks:
 		var m = marks[id]["m"]
 		if is_instance_valid(m):
-			_nudge(m, id, Vector2.ZERO if m.dead else (fx.words3.shift_of(m) + (fx.m3.shift_of(id) if slid.has(id) else Vector2.ZERO)) * 2.0)
+			_nudge(m, id, Vector2.ZERO if m.dead else (fx.words3.shift_of(m) + (fx.m3.shift_of(id) if slid.has(id) else Vector2.ZERO) + jolt.call(id)) * 2.0)
 	for id in slid:
 		var m = slid[id]
 		if not marks.has(id):
-			_nudge(m, id, Vector2.ZERO if m.dead else fx.m3.shift_of(id) * 2.0)
-	for id in _moved.keys():
+			_nudge(m, id, Vector2.ZERO if m.dead else (fx.m3.shift_of(id) + jolt.call(id)) * 2.0)
+	for id in jolted:
+		var m = jolted[id]
 		if not marks.has(id) and not slid.has(id):
+			_nudge(m, id, Vector2.ZERO if m.dead else jolt.call(id) * 2.0)
+	for id in _moved.keys():
+		if not marks.has(id) and not slid.has(id) and not jolted.has(id):
 			var m = instance_from_id(id)
 			if m != null and is_instance_valid(m):
 				_nudge(m, id, Vector2.ZERO)

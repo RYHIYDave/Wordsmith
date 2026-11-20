@@ -70,6 +70,12 @@ var w10: Words10
 ## (THE TEN MELDED WORDS' OWN LOOKS, render/melds3.ts: fx_melds3.gd, handed on from its own lines below, each marked m3)
 const Melds3 := preload("res://scripts/fx_melds3.gd")
 var m3: Melds3
+## (VOLATILE'S FIVE MELDS' OWN LOOKS, render/volatile3.ts: fx_volatile3.gd, each line below marked v3; THE EIGHT MELDS ACROSS
+## THE GROUPS', render/melds8.ts: fx_melds8.gd, each marked m8)
+const Volatile3 := preload("res://scripts/fx_volatile3.gd")
+var v3: Volatile3
+const Melds8 := preload("res://scripts/fx_melds8.gd")
+var m8: Melds8
 
 ## (main.ts: `gdt = fx.freeze > 0 ? dt * 0.06 : dt`)
 const HOLD_PACE := 0.06
@@ -222,6 +228,10 @@ func _init() -> void:
 	w10.fx = self
 	m3 = Melds3.new()
 	m3.fx = self
+	v3 = Volatile3.new()
+	v3.fx = self
+	m8 = Melds8.new()
+	m8.fx = self
 
 
 func _ready() -> void:
@@ -253,6 +263,8 @@ func _exit_tree() -> void:
 	w610.clear()
 	w10.clear()
 	m3.clear()
+	v3.clear()
+	m8.clear()
 
 
 func _notification(what: int) -> void:
@@ -276,12 +288,22 @@ func event(e: Dictionary) -> void:
 		last["hit_words"] = e
 	# (m3: the melded words' looks, called up by what the rules said happened, before the effects take it: main.ts eventsM3)
 	m3.event(e)
-	# (m3: a melded word's own bolts, blasts and patches are its look's, not the effects': fx.ts handle, meldOwnsEvent)
-	if not Melds3.owns_event(e):
+	# (v3: Volatile's five melds' looks, called up as the ten's are: main.ts eventsV3; m8: the eight's moments, fx.ts handle)
+	v3.event(e)
+	m8.handle(e)
+	# (m3, v3, m8: a melded word's own bolts, blasts and patches are its look's, not the effects': fx.ts handle, meldOwnsEvent,
+	# ownsEventV3; Implode's burst and Forking's arc are melds8.ts's)
+	if not (Melds3.owns_event(e) or Volatile3.owns_event(e) or _m8_owns(e)):
 		_handle(e)
 	# (w10: what the rules said happened, as render/words10.ts eventsW10 reads it)
 	w10.event(e)
 	_redraw()
+
+
+## (fx.ts handle: IMPLODE's burst and FORKING's arc, with their own looks on, are drawn by render/melds8.ts)
+static func _m8_owns(e: Dictionary) -> bool:
+	var t = e.get("t")
+	return (t == "burst" and e.get("meld") == "implode") or (t == "arc" and e.get("meld") == "forking")
 
 
 ## Several at once (fx.ts handle).
@@ -397,6 +419,8 @@ func clear() -> void:
 	w610.clear()
 	w10.clear()
 	m3.clear()
+	v3.clear()
+	m8.clear()
 	_redraw()
 
 
@@ -1270,7 +1294,7 @@ func ambient(list: Array, dt: float) -> void:
 		# (its states, read at once; most are in none)
 		var bits := figures.read(m)
 		# (m3: a melded word's mark on it lays a colour over it too: a crush, Thunder's stun, Frostbite's bite, Blight's rot)
-		var m3t: bool = m3.tint(m).a > 0.0
+		var m3t: bool = m3.tint(m).a > 0.0 or not v3.tint_of(m.id, v3.clock).is_empty()
 		if bits == 0:
 			if marked:
 				words3.watch(m, false, false)
@@ -1421,6 +1445,10 @@ func update(dt: float, real: float) -> void:
 	w10.update(dt)
 	# (m3: the melded words' looks age, and what they do all the time: render.ts tickM3)
 	m3.update(dt)
+	# (v3: Volatile's five melds' looks age, what they read of the rules first: render.ts tickV3; m8: the eight's, fx.ts update)
+	v3.read()
+	v3.tick(dt)
+	m8.update(dt)
 
 
 static func _trim(list: Array, most: int) -> void:
@@ -1449,6 +1477,8 @@ func _spots() -> void:
 	w10.lights()
 	# (m3: render.ts lightsM3)
 	m3.lights()
+	# (v3: render.ts lightsV3)
+	v3.lights(func(x: float, y: float, r: float, a: float) -> void: look.spot(Vector2(x, y), r, a), v3.clock)
 
 
 # =====================================================================================================================
@@ -1545,7 +1575,7 @@ static func pline(c: CanvasItem, x0f: float, y0f: float, x1f: float, y1f: float,
 
 ## Whether anything is alive to be drawn; the layers are drawn again while there is, and once more after.
 func _alive() -> bool:
-	return pn > 0 or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or w10.alive() or m3.alive()
+	return pn > 0 or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or w10.alive() or m3.alive() or v3.alive() or m8.alive()
 
 
 func _redraw() -> void:
@@ -1585,6 +1615,9 @@ func _paint_ground(c: CanvasItem) -> void:
 	words3.draw_floor(c)
 	# (m3: the melded words' patches, scars, Blight's brand and Eruption's heat, with the floor: render.ts floorM3)
 	m3.paint(c, 0)
+	# (v3: Volatile's five melds' runes, their marks and their ground, with the floor: render.ts floorV3; m8: the eight's, fx.ts drawGround)
+	v3.draw_floor(c, v3.clock)
+	m8.draw_ground(c)
 	w610.draw_floor(c)
 	w10.draw_floor(c)
 	# (left out: the rifts of the enemies coming in, the other classes' and the unique items' marks, a volley's arrows
@@ -1724,6 +1757,9 @@ func _paint_air(c: CanvasItem) -> void:
 	words3.draw_air(c)
 	# (m3: the melded words' clouds, steam and fog, and what is over the monsters and him: render.ts airM3)
 	m3.paint(c, 1)
+	# (v3: Volatile's five melds' domes, pillars, spikes and what flies: render.ts airV3; m8: the eight's, fx.ts drawAir)
+	v3.draw_air(c, v3.clock)
+	m8.draw_air(c)
 	# (w10: Lasting's, Fleeting's and Vast's, over the figures and the dark: render/words10.ts airW10, before fx.drawAir)
 	w10.draw_air(c)
 	for q: Dictionary in whirls:
@@ -1886,6 +1922,8 @@ func _paint_air(c: CanvasItem) -> void:
 					rect(c, p.x, p.y, 1, 1, white)
 	# (m3: over the effects' sparks, the melded words' jaws, columns, bombs, bolts and the screen's flash: render/melds3.ts overM3)
 	m3.paint(c, 2)
+	# (v3: over everything, Volatile's five melds' bolts and the screen's flash: render.ts overV3)
+	v3.draw_over(c, v3.clock)
 
 
 ## Where one of the embers of his might is on the screen, `b` round its ring (fx.ts drawAir, `at`).

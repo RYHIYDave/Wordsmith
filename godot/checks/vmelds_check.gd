@@ -86,7 +86,7 @@ func _init() -> void:
 	var args := OS.get_cmdline_user_args()
 	if not args.is_empty():
 		dump = args[0]
-	var c: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
+	var c: Dictionary = _exact(JSON.parse_string(FileAccess.get_file_as_string(path)))
 	var dt: float = c["dt"]
 	var same := 0
 	var differ: Array = []
@@ -112,7 +112,7 @@ func _init() -> void:
 		var want: Array = s["frames"]
 		var wi := 0
 		var bad := ""
-		for f in int(s["frames"]):
+		for f in int(s["count"]):
 			if s.has("hero"):
 				hx += float(s["hero"]["vx"])
 				hy += float(s["hero"]["vy"])
@@ -222,6 +222,10 @@ func _init() -> void:
 								break
 					if bad == "":
 						bad = "frame %d, %s: %d lines, the game's %d%s" % [f, k, lines.size(), int(sum["n"]), at]
+						if dump != "":
+							var mine := FileAccess.open("%s/%s_%d_%s.here.txt" % [dump, s["name"], f, k], FileAccess.WRITE)
+							mine.store_string("\n".join(PackedStringArray(lines)))
+							mine.close()
 		if bad == "":
 			same += 1
 			print("VMELDS %s: %d frames painted, every one the game's" % [s["name"], want.size()])
@@ -231,3 +235,16 @@ func _init() -> void:
 	print("VMELDS CHECK: %d scenes of the five's and the eight's looks, %d of them dot for dot the game's own%s; %d frames, %d lines of the game's held (%.1f s)" % [
 		c["scenes"].size(), same, "" if differ.is_empty() else ", NOT: " + ", ".join(differ), frames_all, lines_all, (Time.get_ticks_usec() - t0) / 1e6])
 	quit(0 if differ.is_empty() else 1)
+
+
+## The game's numbers as they were: one not whole is written as '~' and its exact bits (Godot reads decimals back a little off).
+static func _exact(v):
+	if v is String and v.begins_with("~") and v.length() == 17:
+		return v.substr(1).hex_decode().decode_double(0)
+	if v is Array:
+		for i in v.size():
+			v[i] = _exact(v[i])
+	elif v is Dictionary:
+		for k in v.keys():
+			v[k] = _exact(v[k])
+	return v

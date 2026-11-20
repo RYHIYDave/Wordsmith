@@ -30,7 +30,10 @@ import { WORD_HUE } from '../src/render/fx';
 import { AIR, CRACKLE, LEAP_LIFT, THRUST_LIFT } from '../src/render/wild';
 import { NEW_RAMP, STAGGER, WORDS3 } from '../src/render/words3';
 import { MELD3, MELD_RAMP } from '../src/render/melds3';
-import { MELD_IDS } from '../src/game/types';
+import { VOLATILE3 } from '../src/render/volatile3';
+import { M8_RAMP, MELDS8_LOOK } from '../src/render/melds8';
+import { MELDS8 } from '../src/game/melds8';
+import { MELD8_IDS, MELD_IDS, VOLT_MELD_IDS } from '../src/game/types';
 
 gameSwitches();
 // THE TEN MELDED WORDS' OWN COLOURS (render/melds3.ts MELD_RAMP, the art chat's), in place of the placeholders in art/icons.ts and
@@ -40,6 +43,20 @@ if (MELD3.on) {
   for (const w of MELD_IDS) {
     WORD_HUE[w] = MELD_RAMP[w][3];
     WORD_COLOR[w] = MELD_RAMP[w][3];
+  }
+}
+// (VOLATILE'S FIVE MELDS' and THE EIGHT ACROSS THE GROUPS' own colours, the same way: main.ts, VOLATILE3 and MELDS8_LOOK)
+if (VOLATILE3.on) {
+  for (const w of VOLT_MELD_IDS) {
+    WORD_HUE[w] = MELD_RAMP[w][3];
+    WORD_COLOR[w] = MELD_RAMP[w][3];
+  }
+}
+if (MELDS8.on && MELDS8_LOOK.on) {
+  const R = M8_RAMP as unknown as Record<string, readonly string[]>;
+  for (const w of MELD8_IDS) {
+    WORD_HUE[w] = R[w][3];
+    WORD_COLOR[w] = R[w][3];
   }
 }
 const OUT = 'godot/assets/fx';

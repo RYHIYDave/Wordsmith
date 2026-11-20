@@ -320,7 +320,7 @@ if (process.argv[2] === 'check') {
         if (a.at !== f) continue;
         for (const id of a.kill ?? []) (mons.find((m) => m.id === id) as Mon).dead = true;
         for (const i of a.lift ?? []) zones.splice(i, 1);
-        for (const z of a.lay ?? []) zones.push(z);
+        for (const z of a.lay ?? []) zones.push({ ...z });
       }
       for (let i = zones.length - 1; i >= 0; i--) if (zones[i].kind !== 'rune' && zones[i].t >= zones[i].dur) zones.splice(i, 1);
       view();
@@ -362,8 +362,16 @@ if (process.argv[2] === 'check') {
         if (dump) writeFileSync(`${dump}/${s.name}_${f}.json`, JSON.stringify(each));
       }
     }
-    out.push({ ...s, top, half: FIGURE_SIZE.skeleton?.half ?? 9, hero0: H, pack: pack(), frames });
+    out.push({ ...s, count: s.frames, top, half: FIGURE_SIZE.skeleton?.half ?? 9, hero0: H, pack: pack(), frames });
   }
-  writeFileSync(`${OUT}/vmelds_check.json`, JSON.stringify({ dt, scenes: out }));
+  // (a number not whole is written as its exact bits, '~' and sixteen hex digits: Godot reads decimals back a little off, and a
+  // clock that should come to exactly 4 would come to 3.9999…)
+  const exact = (_k: string, v: unknown): unknown => {
+    if (typeof v !== 'number' || Number.isInteger(v)) return v;
+    const b = Buffer.alloc(8);
+    b.writeDoubleLE(v);
+    return `~${b.toString('hex')}`;
+  };
+  writeFileSync(`${OUT}/vmelds_check.json`, JSON.stringify({ dt, scenes: out }, exact));
   console.log(`check: ${scenes.length} scenes of the five's and the eight's looks run by the game's own painters, ${lines} lines kept`);
 }
