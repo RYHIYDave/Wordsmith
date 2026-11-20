@@ -114,3 +114,6 @@ directs and playtests, and Claude writes and tests everything.
   your task is done and you could just start working on it immediately.  Ask if you should start on a new task, then do it.  I’m
   trying to clear the queue not add to it”; asked whether every chat should work so, “Yes, add it for all chats (Recommended)”
   (also in the queue's meta/protocol). Finished work goes on the queue page's ship list, not back in the queue (meta/protocol).
+- NO HELPERS: DO THE WORK YOURSELF, without helper agents (subagents, background agents, workflows), whatever the task: they
+  spend his usage. His words, 20 Nov 2026, to the Godot cloud chat: “I'd rather you not use helpers”; asked whether it should
+  be a rule for every chat, “Yes, for all chats (Recommended)” (also in the queue's meta/protocol).
