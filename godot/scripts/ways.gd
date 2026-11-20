@@ -287,16 +287,23 @@ func _go() -> void:
 			main.unbar_due = true
 		main.loot.say("%s cleared" % str(map.title.get("level", "")), good)
 		main.go_to("town", "cage")
-	elif way_kind() == "onward" and (n >= 10 or not main.has_floor(n + 1)):
-		# (game.ts takeWay 'on' from the Fen: the siege broken, in through the gate)
-		main.loot.say("%s cleared. The siege is broken." % str(map.title.get("level", "")), good)
+	elif way_kind() == "onward" and (n == 10 or n == 15 or not main.has_floor(n + 1)):
+		# (game.ts takeWay 'on' from the Fen: the siege broken, in through the gate; from the fifteenth, the Great Library, home too
+		# (HIGH_CITY, on as the game starts): the stolen words flying home, the High City's gates shut)
+		var line := "%s cleared." % str(map.title.get("level", ""))
+		if n == 10:
+			line += " The siege is broken."
+		elif n == 15:
+			line += " The stolen words fly home. High above, the gates of the High City swing shut."
+		main.loot.say(line, good)
 		if sfx != null:
 			sfx.play("portal")
-		# (game.ts takeWay 'on' from the Fen: the city's first floor his to warp to (wayDepth 11), and so his town from now on the
-		# camp inside Vellum's gate, in through its city gate: game/camp.ts, his pick “Yes, the camp from then on (Recommended)”)
-		if n >= 10:
-			main.way_depth = maxi(main.way_depth, 11)
-		main.go_to(main.home_place(), "in_gate")
+		# (game.ts takeWay 'on': the next floor of the city his to warp to (wayDepth: 11 from the Fen, 16 from the Library), and
+		# so his town from now on the camp inside Vellum's gate, in through its city gate from the Fen: game/camp.ts, his pick
+		# “Yes, the camp from then on (Recommended)”)
+		if n == 10 or n == 15:
+			main.way_depth = maxi(main.way_depth, n + 1)
+		main.go_to(main.home_place(), "in_gate" if n == 10 else "start")
 	elif not main.has_floor(n + 1):
 		main.go_to("town", "cage")
 	else:

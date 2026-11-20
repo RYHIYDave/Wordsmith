@@ -3,7 +3,7 @@
 ## it), at its mouth; its look the game's own (recorded whole, its ground in blocks loaded only near him), its keepers and its
 ## three people by the fire among it; each of its services used as the town's (its prompt; the wordsmith's half, his shelf drawn
 ## from the Fen's words; the others); the kept Meldstone on its round over the wordsmith's slab; its waypoint (to the deepest
-## floor the Godot version has: the city's are not in yet); its way on into the city saying so. A line a step (OK or WRONG),
+## floor 11 he has reached); its way on into the city, down into floor 11. A line a step (OK or WRONG),
 ## pictures at the main ones; then the sum, CAMP.
 extends RefCounted
 
@@ -115,11 +115,12 @@ func run(main, hero, dir: String) -> void:
 		h.world = wy.at
 		await M._wait(0.5)
 	var wp: String = M.prompt()[0]
-	_line(wy != null and wy.awake and wp == "E: Waypoint: to dungeon 10", "its waypoint, awake: '%s' (the game's takes him on to the city's floor 11, not in yet: here the deepest he has)" % wp)
+	_line(wy != null and wy.awake and wp == "E: Waypoint: to dungeon 11", "its waypoint, awake: '%s' (on into the city, floor 11)" % wp)
 	# --- its way on into the city
 	var o = M.town.data.get("onward")
 	h.world = Vector2(o["x"], o["y"]) if o != null else h.world
 	await M._wait(0.5)
 	await M._snap(dir + "/c06_the_way_on.png")
-	_line(o != null and M.town._told_onward, "its way on into the city, the barricaded street (%.1f, %.1f): it says floor 11 is not in yet" % [o["x"] if o != null else 0.0, o["y"] if o != null else 0.0])
+	await M._w_until(func(): return M.place == "floor11" and not M._going, 4.0)
+	_line(M.place == "floor11", "its way on into the city, the barricaded street (%.1f, %.1f): down it, into %s" % [o["x"] if o != null else 0.0, o["y"] if o != null else 0.0, M.place_title()])
 	print("CAMP: %d steps of the camp inside Vellum's gate, %d as the game's%s" % [n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])

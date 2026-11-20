@@ -753,18 +753,20 @@ func _show_kept() -> void:
 
 
 ## THE CAMP'S WAY ON INTO THE CITY (game/camp.ts CAMP.onward, ways' `onward`: the barricaded street off to the right, its carts
-## hauled aside): in the game he goes down it to floor 11, which the Godot version has not yet: here, as he comes onto it, it
-## says so (once each time).
+## hauled aside): coming onto it, he goes down it into the city, floor 11 (game.ts leave 'on' from town).
 var _told_onward := false
 
 
 func _camp_onward() -> void:
 	var o = data.get("onward")
-	if o == null or not hero.alive:
+	if o == null or not hero.alive or main._going:
 		return
 	var d := Vector2(o["x"], o["y"]).distance_to(hero.world)
-	if d < 1.2 and not _told_onward:
+	if d < 1.0 and not _told_onward:
 		_told_onward = true
-		loot.say("The way on into the city. (Floor 11 is not in the Godot version yet.)", Color(0.55, 0.6, 0.8))
+		if main.has_floor(11):
+			main.go_to("floor11", "down")
+		else:
+			loot.say("The way on into the city. (Floor 11 is not in the Godot version yet.)", Color(0.55, 0.6, 0.8))
 	elif d > 2.5:
 		_told_onward = false
