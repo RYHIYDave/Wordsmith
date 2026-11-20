@@ -265,8 +265,16 @@ through chat, so the art and sounds go into the project whole).
     five, the eight across the groups, and rank II of the five damage words, in front of and behind each of his moves; a melded
     word does the work of both its words and takes its side's one damage-word place, grows with its own attribute, and melds no
     further. IN THE FIGHT (`melds.gd`, with small hooks in `hero.gd`, `monster.gd`, `monsters.gd`, `wakes.gd`; game.ts meldHit,
-    meldArc, meldPatch, meldZone, runeTwist, explodeKill, meld8Struck and the rest): each meld's twist, its head lists them all,
-    and the hooks its looks will read. ON GEAR as the game has it (EVERY WORD ON GEAR: a melded word's two properties in one place,
+    meldArc, meldPatch, meldZone, runeTwist, explodeKill, meld8Struck and the rest): each meld's twist, its head lists them all.
+    THEIR LOOKS IN THE FIGHT, the game's own painters brought over line for line (`fx.gd` hands the rules' tellings on to them):
+    the ten's (render/melds3.ts: `fx_melds3.gd`; Eruption's pool and heat, Avalanche's shove and crush, Thunder's bolt from the
+    sky and its clap, Scald's steam hiding him, and the rest), Volatile's five (render/volatile3.ts: `fx_volatile3.gd`; the
+    blasts, the runes waiting and going off, Powderkeg's fire and burning ground, Shatter's freezing and ice, Chain Reaction's
+    bolts, Rupture's cloud) and the eight across the groups (render/melds8.ts: `fx_melds8.gd`; Siphon's beads, Cauterize's brand,
+    Forking's bolt, Shiver's cross-hairs, Sunder's crack, Fervor's flames, Rime Ward's pane, Implode's vortex), and the
+    thirteen's own colours as the game sets them as it starts. Held against the game's painters dot for dot
+    (`checks/melds3_check.gd`, 121 moments; `checks/vmelds_check.gd`, 42 scenes) and seen at work by the rules on floor 2's pack
+    (`--only=looks_melds`, 67 pictures; `--only=looks_volatile`, 82 pictures; each with a cost line). ON GEAR as the game has it (EVERY WORD ON GEAR: a melded word's two properties in one place,
     a ranked word half as strong again; `tools/godot_loot.ts`), and their rune stones and colours the game's own as it starts
     (`tools/godot_meld_art.ts`). `--only=words --cases=meld` (each of the 28 in front of and behind his Strike, its twist held
     against the game's formula; `--cases=meld:scald,sunder`, those) and `--only=meld` (the page): `check_melds.gd`.
@@ -412,7 +420,7 @@ A controller: the left stick, RT, LT, A, B, X.
     runedust, gear, gold and a page of the cult's muster roll. Out by the hallway, before the door. Words laid and not burned go back
     to him when he leaves the floor.
   - RUNEDUST is counted as the game counts it and lies, glitters and is taken in the game's own pictures (`rd_` films), and the gear
-    screen shows it beside the gold; melding, which spends it, is not in yet. The MUSTER ROLL'S PAGES are taken and counted (three
+    screen shows it beside the gold; melding at the wordsmith spends it (above). The MUSTER ROLL'S PAGES are taken and counted (three
     at most); the mystic's ask for the roll and her reward are not in yet.
   - THE QUEST LINE OF FLOORS 6 TO 10 (game/quests610.ts; game.ts mysticDue, queenDown, sceneStep, piecesMade, dropPiece): the
     gate down the mountain open, the mystic asks for the Queen's feather ("Mystic: a task"); the Queen's first fall, her feather,
@@ -452,8 +460,7 @@ A controller: the left stick, RT, LT, A, B, X.
 
 ## Not in it yet
 
-The melded words' own looks in the fight (render/melds3.ts, volatile3.ts, melds8.ts: their rules are in, and Scald's steam is
-not drawn), the wordsmith's words for sale (his half's first page), the Meldstone shown by
+The wordsmith's words for sale (his half's first page), the Meldstone shown by
 INVENTORY while it is carried and its flight to the wordsmith's slab, the city's words and the last words (floors 11 and 16),
 Frenzied on the prison's bosses' own scripts
 (the mini fleshmancer's), the trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
@@ -486,6 +493,8 @@ breaks, what stands behind raised ground cut off by it, the rest of the heroes, 
 | `assets/town` | the town a new game begins in, its pictures, floor 1's gate up: `npx tsx tools/godot_town.ts 1` |
 | `assets/looks` | floor 1 as THE KING'S TOMB, floor 2 as THE PRISON'S GROUNDS AT NIGHT and the town as THE CASTLE'S HALL, recorded from the game's own renderer and painters with its startup switches on (every picture, where, how deep, its light; the stairwell's opening film in `<place>_stair.png`; floor 2's skies and dark by where he is; the traps' and the waypoint's pictures): `npx tsx tools/godot_looks.ts town`, `... floor1`, `... floor2` (all the tools put the game's startup switches on first: tools/godot_switches.ts) |
 | `assets/music` | the town's and floors 1 to 5's tracks from `assets/sound` made into `.ogg` (Godot does not play `.mp4`), each cut where the game loops it, and the game's table of them: `node tools/godot_music.mjs` (needs ffmpeg) |
+| `assets/words/melds3.json` | the ten melds' colours, beats and runes (render/melds3.ts): `npx tsx tools/godot_melds3.ts`; with `check`, the game's own painter on its moments, for `godot --headless --path godot -s res://checks/melds3_check.gd` (not kept) |
+| `assets/words/vmelds.json` | Volatile's five melds' and the eight's colours, times and runes (render/volatile3.ts, melds8.ts): `npx tsx tools/godot_vmelds.ts`; with `check`, the game's own painters on 42 scenes, for `godot --headless --path godot -s res://checks/vmelds_check.gd` (not kept) |
 | `assets/words/looks10.json` | Lasting's, Fleeting's and Vast's colours, beats and numbers (render/words10.ts): `npx tsx tools/godot_words10.ts`; with `check`, the game's own painter on 60 moments and 8 s of its clock, for `godot --headless --path godot -s res://checks/looks10_check.gd` (not kept) |
 | `assets/fx` | the films of what the moves mark and throw up, painted by the game's own painters: `npx tsx tools/godot_fx.ts` (about a minute) |
 | `assets/floor6/holds.json` ... `floor10/holds.json`, `assets/act1/quest610.json` | the strongholds (their places, guards, halls and each one's five waves as the game spawns them), the eyrie's edge (floor 7), the cult's obelisks (floor 10), and the words and numbers of the quest line: `npx tsx tools/godot_holds.ts` |

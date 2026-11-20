@@ -303,10 +303,17 @@ Smaller:
 
 ## In the Godot version (wordmelding)
 
-42. **Some melds' own looks are not drawn yet.** The fight's rules are all in, and tell what they do as the game tells it, but
-    what is drawn is only what the plain words' looks already give: Scald's steam behind is not drawn at all (the floor's looks know
-    no steam), and the twists' own pictures (Eruption's pool, Avalanche's shove, the meld runes' colours in the fight and the rest:
-    render/melds3.ts, volatile3.ts, melds8.ts) wait for their port.
+42. **~~Some melds' own looks are not drawn yet.~~ Done (20 Nov 2026).** Every melded word's own look is drawn now, the game's
+    painters brought over line for line and held against them dot for dot: the ten (render/melds3.ts: fx_melds3.gd, Scald's steam
+    with it), Volatile's five and the eight across the groups (render/volatile3.ts and melds8.ts: fx_volatile3.gd, fx_melds8.gd),
+    and the thirteen's own colours in the fight as the game sets them as it starts.
 
 43. **The wordsmith's first page is empty.** His words for sale and buying back are not in yet; his half opens on that page, as
     the game's does, and says so; MELD at its top turns it to melding. Before the Meldstone, using him is the old talk, as before.
+
+## In the game, found while bringing over the melds' looks (20 Nov 2026)
+
+44. **Fervor and Cauterize count only a kill by one of his blows.** "Each kill burns hotter" and "killing a burning enemy heals
+    you": but a kill by his own burning ground, his poison, or a Volatile blast does not count, only one his blow makes (game.ts
+    meld8Struck is called from hitMonster alone). With Flame behind, the ground he leaves often makes the kill, and Fervor is not
+    fed. Copied.
