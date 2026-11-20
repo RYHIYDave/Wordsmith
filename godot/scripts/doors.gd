@@ -159,6 +159,10 @@ func _process(dt: float) -> void:
 			_met = true
 			if boss.state == "sleep":
 				monsters.wake(boss)
+			# (FLOOR 13'S DOUBLE BOSS: the two wake together)
+			var other = _partner(boss)
+			if other != null and other.state == "sleep":
+				monsters.wake(other)
 			_intro(boss)
 		else:
 			gate_up = true
@@ -174,6 +178,10 @@ func _process(dt: float) -> void:
 	if boss != null:
 		var waited: bool = boss.waits
 		boss.waits = alive and (gate_up or intro_t > 0.0)
+		# (floor 13's pair: the other waits with it)
+		var other = _partner(boss)
+		if other != null:
+			other.waits = boss.waits
 		# (his wait over: he fights)
 		if waited and not boss.waits and boss.state == "sleep":
 			monsters.wake(boss)
@@ -320,9 +328,25 @@ func _locks() -> void:
 func _boss():
 	if monsters == null:
 		return null
+	# (the first that stands: floor 13's pair the one left when the other has fallen, game.ts kill, this.boss)
+	var any = null
 	for m in monsters.list:
 		if is_instance_valid(m) and m.boss:
-			return m
+			if not m.dead:
+				return m
+			if any == null:
+				any = m
+	return any
+
+
+## (FLOOR 13'S DOUBLE BOSS) the other of the pair, alive (pair.ts partnerOf).
+func _partner(m):
+	var want := "quill" if m.kind == "scraper" else ("scraper" if m.kind == "quill" else "")
+	if want == "":
+		return null
+	for o in monsters.list:
+		if is_instance_valid(o) and not o.dead and o != m and o.kind == want and o.pack_id == m.pack_id:
+			return o
 	return null
 
 
@@ -383,5 +407,8 @@ func _intro(boss) -> void:
 	var lines: Array = LINES.get(boss.kind, [])
 	if not lines.is_empty():
 		boss.say(lines.pick_random(), SAY_FOR)
+	# (FLOOR 13'S DOUBLE BOSS: both their names come up across the screen)
+	var other = _partner(boss)
+	var name: String = boss.title if other == null else "%s and %s" % [boss.title, "the " + other.title.substr(4) if other.title.begins_with("The ") else other.title]
 	if main != null:
-		main.boss_card(boss.title, INTRO)
+		main.boss_card(name, INTRO)

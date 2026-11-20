@@ -368,6 +368,15 @@ func on_kill(m) -> void:
 		main.quest610.killed(m)
 	if m.summoned:
 		return
+	# (FLOOR 13'S DOUBLE BOSS: the first of the pair to fall leaves part of a boss's hoard, the last the whole of it; the other
+	# fights on alone: game.ts kill)
+	var other = _partner_of(m) if m.boss else null
+	if other != null:
+		say("%s falls. %s fights on alone." % [m.title, other.title], Color("#ff8a3a"))
+		_gold(at, randi_range(12, 22))
+		_item(at, 4)
+		_orb(at)
+		return
 	if m.boss:
 		_gold(at, randi_range(25, 45))
 		_item(at, 4)
@@ -1278,6 +1287,17 @@ func give_meldstone() -> void:
 # --- what is said ---
 
 ## A line of what has just happened (game.ts msg; render/fx.ts messages): up for 5 s, a long one longer to be read.
+## The other of floor 13's pair, alive (pair.ts partnerOf).
+func _partner_of(m):
+	var want := "quill" if m.kind == "scraper" else ("scraper" if m.kind == "quill" else "")
+	if want == "" or m.mgr == null:
+		return null
+	for o in m.mgr.list:
+		if is_instance_valid(o) and not o.dead and o != m and o.kind == want and o.pack_id == m.pack_id:
+			return o
+	return null
+
+
 func say(text: String, color := Color.WHITE) -> void:
 	msgs.append({"text": text, "t": 0.0, "color": color, "life": maxf(5.0, 2.5 + text.length() * 0.08)})
 	if msgs.size() > 5:

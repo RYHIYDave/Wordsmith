@@ -81,6 +81,9 @@ const BOSS_AI := {
 	"crier": preload("res://scripts/act2/crier.gd"),
 	# (floor 12's: the plague rats, the dredgers, and its boss, the Rat King)
 	"rat": preload("res://scripts/act2/rat.gd"), "dredger": preload("res://scripts/act2/dredger.gd"), "ratking": preload("res://scripts/act2/ratking.gd"),
+	# (floor 13's: the fieldhands, the carters, and its double boss, the Scraper and the Quill)
+	"fieldhand": preload("res://scripts/act2/fieldhand.gd"), "carter": preload("res://scripts/act2/carter.gd"),
+	"scraper": preload("res://scripts/act2/scraper.gd"), "quill": preload("res://scripts/act2/quill.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")

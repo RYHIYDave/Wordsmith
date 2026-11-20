@@ -124,12 +124,15 @@ func run(main, hero, out: String) -> void:
 		await _crier()
 	elif depth == 12:
 		await _ratking()
+	elif depth == 13:
+		await _pair()
 	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
 
 
 ## The kinds of each floor with rules of their own; its common ones fought alone (the boss apart).
-const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"], 12: ["rat", "dredger", "scribe", "hushed", "ratking"]}
-const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"]}
+const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"], 12: ["rat", "dredger", "scribe", "hushed", "ratking"],
+	13: ["fieldhand", "carter", "hushed", "scraper", "quill"]}
+const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"], 13: ["fieldhand", "carter"]}
 
 
 var chosen := {}
@@ -197,6 +200,51 @@ func _common(kind: String) -> void:
 			await _run(0.2)
 			await _snap("dredger_net_lies")
 			_line(aimed and flies and netted and struck > 0, "the dredger's cast net: where it falls marked, flying, falling on him: struck (%d) and NETTED (held %.1f s)" % [struck, h.held])
+		"fieldhand":
+			# (thrown along the floor's way nearest him: he stands 3.5 tiles off along it, in the sickle's way out)
+			var ax: Vector2 = m.h2.axis_of(h.world - m.world)
+			h.world = M._spot_near(m.world + ax * 3.6, 0.0, h.world)
+			m.face = ax
+			_ready_only(m, 0)
+			# (once it has begun, he stands where the sickle passes on its way out, a third of its flight along)
+			var on_way := func():
+				if m.h2.act != null and float(m.h2.act["t"]) < 0.7:
+					var q = m.h2.boom_at(m.h2.BOOM_HIT + 0.3 * float(m.h2.BOOM["fly"]))
+					h.world = m.h2.beside(m.world, m.face, m.h2.act["hand"], q.x, q.y)
+			var marked: bool = await _run(6.0, func(): return not _a1("fieldhand:boom", func(p): return float(p["t"]) >= 0.5).is_empty(), on_way)
+			await _snap("fieldhand_curve_marked")
+			var flies: bool = await _run(2.0, func(): return m.h2.act != null and float(m.h2.act["t"]) >= 1.1)
+			await _snap("fieldhand_sickle_flies")
+			await _run(2.0, func(): return m.h2.act == null)
+			var b := int(m.h2.act.get("b", 0)) if m.h2.act != null else 0
+			_line(marked and flies and struck > 0, "the fieldhand's sickle boomerang: its curve marked, flung, spinning out and back: the hero struck %d (out and back)" % struck)
+		"carter":
+			# (the lash: caught out at its end, coiled round and dragged in)
+			h.world = M._spot_near(m.world + m.face * 2.2, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var d0: float = h.world.distance_to(m.world)
+			var lashed: bool = await _run(6.0, func(): return int(m.h2.a1.get("grab", 0)) == 1)
+			var held: bool = h.held > 0.0
+			await _run(0.4)
+			await _snap("carter_lash_drags")
+			await _run(1.0)
+			_line(lashed and held and struck > 0 and h.world.distance_to(m.world) < d0 - 0.3, "the carter's lash: struck (%d), LASHED, held, dragged in from %.2f to %.2f tiles" % [struck, d0, h.world.distance_to(m.world)])
+			await _run(1.0)
+			# (the driver's lash: he stands where its first crack falls)
+			struck = 0
+			var way: Vector2 = (h.world - m.world).normalized()
+			var stay := func():
+				if m.h2.act == null:
+					h.world = M._spot_near(m.world + way * 1.3, 0.0, h.world)
+			_ready_only(m, 1)
+			var rings: bool = await _run(6.0, func(): return not _a1("carter:warn", func(p): return float(p["t"]) >= 0.7).is_empty(), stay)
+			await _snap("carter_lashes_marked")
+			var cracked: bool = await _run(2.0, func(): return not _a1("carter:crack").is_empty())
+			await _run(0.1)
+			await _snap("carter_lashes_crack")
+			await _run(1.5)
+			_line(rings and cracked and struck > 0, "the carter's driver's lash: its three rings marked, the cracks striking the floor; the hero struck (%d)" % struck)
 		"hound":
 			h.world = M._spot_near(m.world, 1.0, h.world)
 			_ready_only(m, 0)
@@ -476,6 +524,147 @@ func _ratking() -> void:
 
 
 const RK_STOLEN := ["fire", "frost", "lightning", "poison"]
+
+
+# --- THE SCRAPER AND THE QUILL (floor 13's double boss) ---
+
+func _pair() -> void:
+	var sr = null
+	var ql = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.kind == "scraper":
+			sr = o
+		elif is_instance_valid(o) and o.kind == "quill":
+			ql = o
+	if sr == null or ql == null:
+		_line(false, "floor 13 has not its pair")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != sr and o != ql:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(sr.world, 5.0, h.world)
+	var met: bool = await _run(4.0, func(): return sr._said != "")
+	await _snap("pair_met")
+	_line(met and sr.state != "sleep" and ql.state != "sleep" and M._hud.card.get("name", "").find(" and ") > 0,
+		"the pair met on the Pulping Floor, waking together: '%s'; across the screen '%s'" % [sr._said, M._hud.card.get("name", "")])
+	await _run(3.5)
+	var keep := func():
+		if h.world.distance_to(sr.world) > 10.0:
+			h.world = M._spot_near(sr.world, 4.0, h.world)
+	# (the Quill held aside while the Scraper makes its own three)
+	ql.rise(1e9)
+	sr.h2.a1["combo"] = 999.0
+	sr.h2.a1["heal"] = 999.0
+	struck = 0
+	h.world = M._spot_near(sr.world + sr.face * 3.4, 0.0, h.world)
+	_ready_only(sr, 0)
+	var ringed: bool = await _run(6.0, func(): return not _a1("scraper:aim", func(p): return float(p["t"]) >= 0.3).is_empty(), keep)
+	await _snap("scraper_snap_ring")
+	await _run(0.4)
+	await _snap("scraper_snaps")
+	_line(ringed and struck > 0, "the Scraper's claw snap: its ring closing, the claw snapping shut on him (%d)" % struck)
+	await _run(1.0, func(): return sr.h2.act == null)
+	struck = 0
+	h.world = M._spot_near(sr.world + sr.face * 2.5, 0.0, h.world)
+	_ready_only(sr, 2)
+	var fan: bool = await _run(6.0, func(): return not _a1("scraper:aim", func(p): return float(p["t"]) >= 0.7).is_empty(), keep)
+	await _snap("scraper_scour_fan")
+	await _run(0.4)
+	await _snap("scraper_scours")
+	# (straight before it he is the last the claws reach, as they meet in its middle)
+	await _run(1.5, func(): return struck > 0 or sr.h2.act == null)
+	_line(fan and struck > 0, "the scour: the fan marked, both claws slammed down and dragged in; the hero struck (%d)" % struck)
+	await _run(2.0, func(): return sr.h2.act == null)
+	struck = 0
+	var lane := Vector2.ZERO
+	for w in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]:
+		if sr.h2.clear_along(sr, sr.world, w, 0.25, 6.0, 0.42):
+			lane = w
+			break
+	h.world = M._spot_near(sr.world + lane * 3.0, 0.0, h.world)
+	_ready_only(sr, 1)
+	var marked: bool = await _run(6.0, func(): return not _a1("scraper:aim", func(p): return int(p["c"]) == 1 and float(p["t"]) >= 0.5).is_empty())
+	await _snap("scraper_rush_lane")
+	var from: Vector2 = sr.world
+	await _run(0.9)
+	await _snap("scraper_rushes")
+	_line(marked and struck > 0 and sr.world.distance_to(from) > 3.0, "the backward rush: its tail turned on him, the lane marked, shooting back %.1f tiles: the hero struck and thrown aside (%d)" % [sr.world.distance_to(from), struck])
+	await _run(1.5, func(): return sr.h2.act == null)
+	# (the Quill's own two; the Scraper held aside)
+	ql._t = 0.0
+	await _run(0.2)
+	sr.rise(1e9)
+	struck = 0
+	h.world = M._spot_near(ql.world + ql.face * 2.4, 0.0, h.world)
+	_ready_only(ql, 0)
+	var stab: bool = await _run(6.0, func(): return not _a1("quill:aim", func(p): return float(p["t"]) >= 0.3).is_empty())
+	await _snap("quill_stab_ring")
+	await _run(0.5)
+	await _snap("quill_stabs")
+	_line(stab and struck > 0, "the Quill's nib stab: its ring closing, the nib striking (%d)" % struck)
+	await _run(1.0, func(): return ql.h2.act == null)
+	struck = 0
+	var qway: Vector2 = ql.face
+	h.world = M._spot_near(ql.world + qway * 3.3, 0.0, h.world)
+	_ready_only(ql, 1)
+	var laid: bool = await _run(6.0, func(): return not _a1("quill:line", func(p): return int(p["c"]) == 2).is_empty())
+	await _snap("quill_lines_laid")
+	await _run(0.8)
+	await _snap("quill_lines_burst")
+	_line(laid and struck > 0, "the ink lines: three lines laid across the floor before it, bursting; the hero on one struck (%d)" % struck)
+	await _run(1.5, func(): return ql.h2.act == null)
+	# OVERWRITE: the Scraper hurt; the Quill sent to write over its wounds
+	sr._t = 0.0
+	await _run(0.3)
+	sr.life = sr.max_life * 0.6
+	var l0: float = sr.life
+	sr.h2.a1["heal"] = 0.0
+	h.world = M._spot_near(sr.world, 6.0, h.world)
+	var sent: bool = await _run(4.0, func(): return int(ql.h2.a1["mode"]) == 1 or ql.h2.act != null and ql.h2.acts()[ql.h2.act["i"]]["id"] == "quill:takeoff")
+	var flew: bool = await _run(4.0, func(): return ql.h2.act != null and ql.h2.acts()[ql.h2.act["i"]]["id"] == "quill:fly")
+	await _snap("quill_flies")
+	var writes: bool = await _run(5.0, func(): return ql.h2.act != null and ql.h2.acts()[ql.h2.act["i"]]["id"] == "quill:write")
+	await _run(1.5)
+	await _snap("quill_overwrites")
+	await _run(1.0)
+	_line(sent and flew and writes and sr.life > l0 + 1.0, "overwrite: the Quill sent, flying to the Scraper's side and landing; writing over its wounds: %.0f to %.0f life" % [l0, sr.life])
+	await _run(5.0, func(): return int(sr.h2.a1["written"]) == 0)
+	# THE PALIMPSEST: their ultimate, five strips, each at him
+	struck = 0
+	sr.h2.a1["combo"] = 0.0
+	h.world = M._spot_near(sr.world, 5.0, h.world)
+	var begun: bool = await _run(6.0, func(): return int(sr.h2.a1["ult"]) == 1)
+	var stripped: bool = await _run(8.0, func(): return not _a1("scraper:strip").is_empty(), keep)
+	var stp: Dictionary = _a1("scraper:strip")
+	# (he stands on the strip, at its middle)
+	if not stp.is_empty():
+		h.world = M._spot_near(Vector2(stp["x"], stp["y"]) + Vector2(stp["fx"], stp["fy"]) * 6.0, 0.0, h.world)
+	await _snap("palimpsest_strip")
+	var written: bool = await _run(4.0, func(): return not _a1("scraper:strip", func(p): return int(p["d"]) >= 1).is_empty())
+	await _run(0.2)
+	await _snap("palimpsest_swoop")
+	var burst: bool = await _run(4.0, func(): return not _a1("scraper:strip", func(p): return int(p["done"]) == 1).is_empty())
+	await _run(0.1)
+	await _snap("palimpsest_bursts")
+	await _run(0.5)
+	var rounds: bool = await _run(30.0, func(): return int(sr.h2.a1["ult"]) == 0, func():
+		var q: Dictionary = _a1("scraper:strip", func(p): return int(p["done"]) == 0)
+		if not q.is_empty():
+			h.world = M._spot_near(Vector2(q["x"], q["y"]) + Vector2(q["fx"], q["fy"]) * 6.0, 0.0, h.world))
+	_line(begun and stripped and written and burst and struck > 0 and int(sr.h2.a1["round"]) >= 2, "the Palimpsest: %d strips scraped, the Quill swooping down each writing it, each bursting; the hero on them struck (%d); over %s" % [int(sr.h2.a1["round"]), struck, rounds])
+	# ONE FALLS, THE OTHER FIGHTS ON (the Quill struck down on the floor: in the air it is not felled)
+	await _run(6.0, func(): return not ql.h2.aloft(ql))
+	ql.hurt(1e9)
+	await _run(0.5)
+	var alone: bool = ql.dead and not sr.dead
+	await _snap("pair_one_falls")
+	sr.hurt(1e9)
+	await _run(1.5)
+	await _snap("pair_both_fallen")
+	_line(alone and sr.dead, "the Quill struck dead: the Scraper fights on alone; then it too")
 
 
 func _called() -> int:

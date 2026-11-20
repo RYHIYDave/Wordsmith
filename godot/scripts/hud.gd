@@ -429,13 +429,36 @@ func _draw() -> void:
 	# (and not before his own rules say he can be hit: the Swamp Colossus's as his first tentacles stand; game.ts bossShown, `hittable`)
 	if boss_up and boss.h2 != null and boss.h2.has_method("hittable"):
 		boss_up = boss.h2.hittable(boss)
+	# (FLOOR 13'S DOUBLE BOSS: while both stand, a bar each, the Scraper's first, between the place's name and the small map: side
+	# by side where both bars and both names fit there, else one under the other, each named in full where that fits, else by
+	# its own kind's name: hud.ts boss bar)
+	var shown: Array = []
 	if boss_up:
-		var bw := minf(150.0, W - 160.0)
-		var bx := floorf(W / 2.0 - bw / 2.0)
-		_text(boss.title, bx + floorf(bw / 2.0), 4, P["fr4"], {"align": "center", "shadow": ink})
-		_rect(bx - 1, 14, bw + 2, 6, T["ink"])
-		_rect(bx, 15, bw, 4, T["lifeLo"])
-		_rect(bx, 15, roundf(bw * maxf(0.0, boss.life) / boss.max_life), 4, T["life"])
+		var pair = _partner(boss)
+		shown = ([boss, pair] if boss.kind == "scraper" else [pair, boss]) if pair != null and pair.state != "sleep" else [boss]
+	var two := shown.size() > 1
+	var col_l := _width(place) + 10.0 if two else 0.0
+	var mw := minf(66.0, floorf(W * 0.2))
+	var col_r := W - mw - 10.0 if two else W
+	var room := col_r - col_l
+	var named := 0.0
+	for b2 in shown:
+		named = maxf(named, _width(b2.title))
+	var side := two and room >= 2.0 * maxf(70.0, named) + 10.0
+	var column := two and not side and room >= 70.0
+	for i in shown.size():
+		var b2 = shown[i]
+		var bw := minf(maxf(110.0, named), floorf((room - 10.0) / 2.0)) if side else (minf(150.0, room) if column else minf(150.0, W - 160.0))
+		var row := 0 if side else i
+		var bx := col_l + floorf((room - (2.0 * bw + 10.0)) / 2.0) + i * (bw + 10.0) if side else (col_l + floorf((room - bw) / 2.0) if column else floorf(W / 2.0 - bw / 2.0))
+		var by := 4.0 + row * 20.0
+		var label: String = b2.title
+		if two and not side and _width(b2.title) > (room if column else W - 160.0):
+			label = str(b2.def.get("name", b2.title))
+		_text(label, bx + floorf(bw / 2.0), by, P["fr4"], {"align": "center", "shadow": ink})
+		_rect(bx - 1, by + 10, bw + 2, 6, T["ink"])
+		_rect(bx, by + 11, bw, 4, T["lifeLo"])
+		_rect(bx, by + 11, roundf(bw * maxf(0.0, b2.life) / b2.max_life), 4, T["life"])
 
 	# ---- the prompt, and the word just found ----
 	# (a word found is the bigger news: for its moment it takes the prompt's place, under the boss's bar where that is up; it
@@ -478,13 +501,29 @@ func _draw() -> void:
 		_floor_card(W, H)
 
 
+## The other of floor 13's pair, alive (pair.ts partnerOf): the Quill for the Scraper, the Scraper for the Quill.
+func _partner(m):
+	var want := "quill" if m.kind == "scraper" else ("scraper" if m.kind == "quill" else "")
+	if want == "":
+		return null
+	for o in main._monsters.list:
+		if is_instance_valid(o) and not o.dead and o.kind == want and o.pack_id == m.pack_id:
+			return o
+	return null
+
+
 func _boss():
 	if main == null or main._monsters == null:
 		return null
+	# (the floor's boss: the first that stands, floor 13's pair the one left when the other has fallen: game.ts kill, this.boss)
+	var any = null
 	for m in main._monsters.list:
 		if is_instance_valid(m) and m.boss:
-			return m
-	return null
+			if not m.dead:
+				return m
+			if any == null:
+				any = m
+	return any
 
 
 # --- the attacks as they read: the words in front, the name, the words behind (hud.ts phrase, drawPhrase) ---

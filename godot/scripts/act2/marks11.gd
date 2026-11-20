@@ -70,18 +70,19 @@ static func step(P, p: Dictionary, _dt: float) -> bool:
 				p["dur"] = t
 		"scribe:ink":
 			if t < float(p["hit"]):
-				return true
+				return t < float(p["dur"])
 			if int(p["done"]) == 0:
 				# (it lands and bursts: whoever it lands on is struck)
 				p["done"] = 1
 				if hero.world.distance_to(at) <= SCR.SPLASH_R and hero._act != "lunge":
 					P._hurt(p, p["dmg"], at)
-				return true
+				return t < float(p["dur"])
 			# (the pool: whoever stands in it is slowed, while he does and a moment after)
 			if hero.alive and hero._act != "lunge" and hero.world.distance_to(at) <= SCR.pool_at(t - float(p["hit"])):
 				hero.chill_k = maxf(hero.chill_k if hero.chill_t > 0.0 else 0.0, float(SCR.POOL["slow"]))
 				hero.chill_t = maxf(hero.chill_t, float(SCR.POOL["linger"]))
-	return true
+	# (gone when its time is out)
+	return float(p["t"]) < float(p["dur"])
 
 
 ## Among the figures (render/act1_fx/watch.ts standing).

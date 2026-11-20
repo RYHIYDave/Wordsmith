@@ -165,6 +165,7 @@ import { paintToll } from '../src/art/crier_action_fx';
 import { TOLL as CR_TOLL } from '../src/art/crier_action';
 import { paintBurstRing, paintWordBurst } from '../src/art/ratking_action_fx';
 import { UNKNOT9, WORDS9 } from '../src/art/ratking_action';
+import { CURVE_GONE, CURVE_LAY, SICKLE_N, curveSprite, sickleSprite } from '../src/art/act1_figs/fieldhand';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -793,6 +794,19 @@ for (const view of ['front', 'back'] as const) {
   }
 }
 
+// FLOOR 13'S FIELDHANDS (render/act1_fx/fieldhand.ts BOOM_FX: FIELD_HARVEST on, as the game starts), their sickle boomerang, as the
+// game paints it ahead (art/films.ts things:fieldhand), as they are seen from in front or from behind (turned over as the game turns
+// them):
+//   fh_sickle_<v>  the sickle in flight, spinning (sickleSprite: SICKLE_N stills, a 30th of a second each from the throw, layer
+//                  `stand`); fh_curve_<v>: the way it will fly marked on the ground, laid out and gone behind it (curveSprite:
+//                  CURVE_LAY + CURVE_GONE stills, picked by curveFrame, layer `floor`)
+{
+  for (const view of ['front', 'back'] as const) {
+    films[`fh_sickle_${view}`] = { fps: 0, n: SICKLE_N, k0: 0, layers: { stand: Array.from({ length: SICKLE_N }, (_, i) => pic(sickleSprite(i, view))) } };
+    films[`fh_curve_${view}`] = { fps: 0, n: CURVE_LAY + CURVE_GONE, k0: 0, layers: { floor: Array.from({ length: CURVE_LAY + CURVE_GONE }, (_, i) => pic(curveSprite(i, view))) } };
+  }
+}
+
 // --- the sheets: each SET of films on sheets of its own (the films of one kind of monster: the game loads a set only on a
 // floor that has its kind), the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
 /** The set a film is packed with: the first word of its name; the cultist's sigil and the Flame keybearer's apart. */
@@ -809,7 +823,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the bosses of floors 6 and 7)
   unfinished: ['uf'], queen: ['qn'],
   // (the city's)
-  watch: ['wa'], crier: ['cr'], ratking: ['rk'],
+  watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);
