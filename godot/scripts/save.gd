@@ -1,0 +1,153 @@
+## THE SAVED GAME (main.ts writeSave, readSave; game.ts save, restore; game/state.ts SaveFile, RunSave, Meta): the run in progress,
+## so that closing the app, or a phone call, does not end it, and apart from it what outlasts any one character, the Lexicon
+## (which words are known, and how much of each; the words kept in it) and the stash. One file in the app's own folder,
+## user://wordsmith_save.json: { v: 1, run: {...} or null, meta: {...} }.
+##   WHEN (main.ts): every 5 s while he is up and about and nothing is changing place (saveT), and whenever the app is put away
+##     or closed (visibilitychange, pagehide: here the system's notices to the app).
+##   WHAT (game.ts save): who he is (level, experience, attributes and the points still to place), his gear and his bag, his
+##     spare words and those set in each move's slots, his gold, the floors (how far he has reached, the floor he last came up
+##     from, how many cleared), the quests (the master rune-stone, the ring, the furnace, the Meldstone, the strongholds' runedust,
+##     the feather and the ward-stone's pieces, the muster roll's pages), the words bought from the wordsmith on this visit.
+##   BACK (game.ts restore): in his town (the prison town, or the camp from floor 10 on), at its start, his life and his flasks
+##     full, as the game brings a run back.
+## No save is written or read by the checks and shot modes (`--only`, `--shots`): the game's automated tests switch saving off.
+extends RefCounted
+
+const PATH := "user://wordsmith_save.json"
+const V := 1
+
+
+## Everything of the run (game.ts save).
+static func run_of(main) -> Dictionary:
+	var loot = main.loot
+	var h = main.hero
+	var q = main.quest610
+	return {
+		"v": V,
+		"level": loot.level, "xp": loot.xp, "points": loot.points, "attrs": loot.attrs.duplicate(),
+		"gear": loot.gear.duplicate(true), "bag": loot.bag.duplicate(true), "words": loot.words.duplicate(),
+		"front": h.loadout.front.duplicate(true), "behind": h.loadout.behind.duplicate(true),
+		"gold": loot.gold, "kills": loot.kills,
+		# (how far through the first lessons he is: game.ts save `guide`, its `walked`)
+		"walked": h.walked,
+		"depth": main.last_floor, "cleared": loot.cleared, "way": main.way_depth,
+		"body": loot.body_searched, "asked": loot.quest_given, "ring": loot.ring_lit, "quest": loot.quest,
+		"furnace": loot.furnace, "meld": loot.meld, "meldAsk": loot.meld_ask, "toldCarrier": loot.told_carrier,
+		"dust": q.dust if q != null else 0, "feather": q.feather if q != null else "", "citySeen": q.city_seen if q != null else false,
+		"pieces": q.pieces if q != null else 0, "rollPages": q.roll_pages if q != null else 0,
+		"wordsBought": range(loot.word_stock.size()).filter(func(i): return loot.word_stock[i] == null),
+	}
+
+
+## What outlasts the character (game/state.ts Meta): the Lexicon and the stash; whether he has been shown how to play.
+static func meta_of(main) -> Dictionary:
+	var loot = main.loot
+	return {"known": loot.known.duplicate(true), "lexicon": loot.lexicon.duplicate(), "stash": loot.stash.duplicate(true), "taught": loot.taught}
+
+
+## Written (main.ts writeSave). Not while he is down, nor between places: the run as it stands at a quiet moment.
+static func write(main) -> bool:
+	var file := {"v": V, "run": run_of(main), "meta": meta_of(main)}
+	var f := FileAccess.open(PATH, FileAccess.WRITE)
+	if f == null:
+		return false
+	f.store_string(JSON.stringify(file))
+	f.close()
+	return true
+
+
+## Read (main.ts readSave): {} where there is none, or none that can be read.
+static func read() -> Dictionary:
+	if not FileAccess.file_exists(PATH):
+		return {}
+	var d = JSON.parse_string(FileAccess.get_file_as_string(PATH))
+	if not (d is Dictionary) or int(d.get("v", 0)) != V:
+		return {}
+	return d
+
+
+static func _num(v, d: float) -> float:
+	return float(v) if (v is float or v is int) else d
+
+
+## The Lexicon and the stash put back (cleanMeta).
+static func restore_meta(main, m: Dictionary) -> void:
+	var loot = main.loot
+	if m.get("known") is Dictionary:
+		loot.known = m["known"]
+	if m.get("lexicon") is Dictionary:
+		loot.lexicon = {}
+		for w in m["lexicon"]:
+			if int(m["lexicon"][w]) > 0:
+				loot.lexicon[w] = int(m["lexicon"][w])
+	if m.get("stash") is Array:
+		for i in mini(loot.stash.size(), m["stash"].size()):
+			loot.stash[i] = m["stash"][i] if m["stash"][i] is Dictionary else null
+	loot.taught = m.get("taught", false) == true
+
+
+## The run put back (game.ts restore), before his town is laid out.
+static func restore_run(main, s: Dictionary) -> void:
+	var loot = main.loot
+	var h = main.hero
+	var q = main.quest610
+	loot.level = maxi(1, int(_num(s.get("level"), 1)))
+	loot.xp = maxf(0.0, _num(s.get("xp"), 0.0))
+	loot.points = maxi(0, int(_num(s.get("points"), 0)))
+	if s.get("attrs") is Dictionary:
+		for k in ["str", "dex", "int"]:
+			loot.attrs[k] = _num(s["attrs"].get(k), loot.attrs[k])
+	if s.get("gear") is Dictionary:
+		for slot in loot.gear:
+			loot.gear[slot] = s["gear"].get(slot) if s["gear"].get(slot) is Dictionary else null
+	if s.get("bag") is Array:
+		loot.bag = s["bag"].filter(func(it): return it is Dictionary).slice(0, loot.BAG)
+	if s.get("words") is Dictionary:
+		loot.words = {}
+		for w in s["words"]:
+			if loot._words["color"].has(w):
+				loot.words[w] = maxi(0, int(s["words"][w]))
+	loot.gold = maxi(0, int(_num(s.get("gold"), 0)))
+	h.walked = maxf(0.0, _num(s.get("walked"), 0.0))
+	loot.kills = maxi(0, int(_num(s.get("kills"), 0)))
+	main.last_floor = maxi(1, int(_num(s.get("depth"), 1)))
+	loot.cleared = maxi(0, int(_num(s.get("cleared"), 0)))
+	main.way_depth = maxi(1, int(_num(s.get("way"), 1)))
+	loot.body_searched = s.get("body", false) == true
+	loot.quest_given = s.get("asked", false) == true
+	loot.ring_lit = s.get("ring", false) == true
+	loot.quest = "heart" if s.get("quest", "") == "heart" else ""
+	loot.furnace = str(s.get("furnace", "")) if s.get("furnace", "") in ["asked", "gear", "out", "done"] else ""
+	loot.meld = str(s.get("meld", "")) if s.get("meld", "") in ["stone", "open"] else ""
+	loot.meld_ask = s.get("meldAsk", false) == true
+	loot.told_carrier = s.get("toldCarrier", false) == true
+	if q != null:
+		q.dust = maxi(0, int(_num(s.get("dust"), 0)))
+		q.feather = str(s.get("feather", "")) if s.get("feather", "") in ["asked", "got", "given"] else ""
+		q.city_seen = s.get("citySeen", false) == true
+		q.pieces = clampi(int(_num(s.get("pieces"), 0)), 0, 7)
+		q.roll_pages = maxi(0, int(_num(s.get("rollPages"), 0)))
+	# his moves' slots: the words set in each, as they were (a word no longer one of the game's is let go)
+	for side in ["front", "behind"]:
+		var got = s.get(side)
+		if not (got is Array) or got.size() != 3:
+			continue
+		var into: Array = h.loadout.front if side == "front" else h.loadout.behind
+		for i in 3:
+			into[i] = (got[i] as Array).map(func(w): return w if (w is String and loot._words["color"].has(w)) else null) if got[i] is Array else []
+	loot.derive()
+	h.loadout.set_level(loot.level, loot.ring_lit)
+	# (back in his town, his life and his flasks full: game.ts restore)
+	h.life = h.max_life
+	loot.potions = loot.POTIONS
+
+
+## The words he had bought from the wordsmith on this visit, gone from his shelf again (game.ts restore, wordsBought): once his
+## town is laid out and the shelf rolled.
+static func restore_bought(main, s: Dictionary) -> void:
+	var loot = main.loot
+	if s.get("wordsBought") is Array:
+		for i in s["wordsBought"]:
+			var k := int(i)
+			if k >= 0 and k < loot.word_stock.size():
+				loot.word_stock[k] = null

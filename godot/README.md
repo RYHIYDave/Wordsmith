@@ -492,14 +492,27 @@ His pick, asked what to build next: “Town pieces still missing (Recommended)�
     what it is; refused for want of gold ("YOU HAVE ...") or with the bag full; the right button throws at once. (Its very rare
     unique: the uniques are not in yet.)
   - THE STASH (ui/town.ts stashSide; game.ts stashItem, unstashItem): 36 places, KEPT FOR LATER CHARACTERS; a piece of the bag
-    pressed is put away, one of the stash's taken out. The game keeps it past the character; with no saved game yet here, it
-    lasts while the game is open.
+    pressed is put away, one of the stash's taken out, kept past the character in the saved game (below).
   - THE LEXICON (ui/lexicon.ts lexiconSide, ui/lexicon28.ts its five pages, 'groups'): N OF 28 FOUND; DAMAGE, STRIKE, TIME,
     CONTROL, SPOILS, a tab each; each word found its stone with four pips for what is known of it, the rest "?"; the open word's
     page; KEPT FOR YOUR NEXT CHARACTER, a spare word kept from its card for 150 gold, doubled for each kept already (KEEP), taken
-    out again for nothing (TAKE IT OUT), melded and ranked words refused in the game's words. Kept, as the stash, while the game
-    is open.
+    out again for nothing (TAKE IT OUT), melded and ranked words refused in the game's words. Kept, as the stash, past the
+    character.
   `--only=services` (`check_services.gd`): 9 steps, the gamble's 1000 throws among them against the game's odds.
+
+## The saved game (the cloud chat, 20 Nov 2026)
+
+His pick, asked what to build next: “A saved game (Recommended)”. `scripts/save.gd` (main.ts writeSave, readSave; game.ts save,
+restore): one file in the app's own folder, `user://wordsmith_save.json`, holding the run in progress and, apart from it, what
+outlasts any one character (which words are known and how much of each, the words kept in the Lexicon, the stash). Written every
+5 s while he is up and about and not between places, and whenever the app is put away or closed; read as the app opens, the run
+brought back in his town (the prison town, or the camp from floor 10 on) at its start, his life and flasks full, as the game
+brings a run back: his level, experience, attributes and the points still to place, gear and bag, spare words and those set in
+his moves' slots, gold, the floors (reached, the one he came up from, how many cleared), the quests (the master rune-stone, the
+ring, the furnace, the Meldstone, runedust, the feather, the ward-stone's pieces, the muster roll's pages), how far through the
+first lessons he is, the words bought from the wordsmith on that visit. The checks and shot modes neither write nor read it, as
+the game's automated tests switch saving off. Checked in two runs of the app, as he would close it and open it again:
+`--only=save_write`, then `--only=save_read` (`check_save.gd`): 10 things, all back as written (the check deletes its save).
 
 ## Not in it yet
 
@@ -516,8 +529,8 @@ the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 
 and blows; what a boss says is shown, not spoken), the
 Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: the
 stone floating from him to the slab, the letters
-swirling round the ring and its column of light, a saved game (the stash and the Lexicon's shelf kept past the character),
-the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
+swirling round the ring and its column of light, a fallen hero's end (the game ends a fallen hero's run but for a Normal
+hero, who wakes in town; here he is back where the last save left him), the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
 breaks, what stands behind raised ground cut off by it, the rest of the heroes, menus, the title screen's music.
 

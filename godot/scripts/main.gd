@@ -34,6 +34,8 @@ const Furnace := preload("res://scripts/furnace.gd")
 const Fx := preload("res://scripts/fx.gd")
 const Wakes := preload("res://scripts/wakes.gd")
 const Town := preload("res://scripts/town.gd")
+## THE SAVED GAME (save.gd: main.ts writeSave, readSave; game.ts save, restore)
+const Save := preload("res://scripts/save.gd")
 const Guide := preload("res://scripts/guide.gd")
 const Look := preload("res://scripts/look.gd")
 const Doors := preload("res://scripts/doors.gd")
@@ -101,6 +103,11 @@ var _way: Waypoint
 ## THE WAYS: the deepest floor whose waypoint he has reached (game.ts wayDepth): the town's waypoint takes him back down to it.
 ## Under 6, the town's gate down the mountain is barred (town.gd).
 var way_depth := 1
+## (THE SAVED GAME: written while he plays (never by the checks and shot modes, but the saved game's own); the run read back as
+## the app opened, for what is put back once his town is laid out)
+var saving := false
+var _save_t := 0.0
+var _restored := {}
 ## (the last floor he was on: game.ts `depth`, which is still that floor's while he is in town; a new game's is floor 1)
 var last_floor := 1
 ## (the town's gate to be unbarred as he comes in sight of it, the next time the town is laid: the ride up from floor 5 with the
@@ -230,7 +237,19 @@ func _ready() -> void:
 	var first := _arg("place")
 	if first == "":
 		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent"] else "town"
+	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
+	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read"]
+	if saving and _arg("only") != "save_write":
+		var file := Save.read()
+		if file.get("meta") is Dictionary:
+			Save.restore_meta(self, file["meta"])
+		if file.get("run") is Dictionary:
+			Save.restore_run(self, file["run"])
+			_restored = file["run"]
+			first = home_place()
 	_build(first, "start")
+	if not _restored.is_empty():
+		Save.restore_bought(self, _restored)
 	if shots != "":
 		_shoot(hero, shots)
 
@@ -588,7 +607,25 @@ func _floor_gate(flats: Node2D) -> void:
 	flats.add_child(n)
 
 
+## THE SAVED GAME written: every 5 s while he is up and about and not between places (main.ts saveT), and whenever the app is
+## put away or closed (visibilitychange, pagehide).
+func save_now() -> bool:
+	if not saving or hero == null or not hero.alive or _going or not is_home(place) and map == null:
+		return false
+	return Save.write(self)
+
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_WM_CLOSE_REQUEST, NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_GO_BACK_REQUEST]:
+		save_now()
+
+
 func _process(dt: float) -> void:
+	if saving:
+		_save_t += dt
+		if _save_t > 5.0:
+			_save_t = 0.0
+			save_now()
 	# FLOOR 1'S GATE: walking into its doorway takes him up to the town (game.ts leave('gateOut'), enterTown('stairs'))
 	if place == "floor1" and hero.alive and not _going:
 		var tx := floori(hero.world.x)
@@ -1796,6 +1833,15 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE WORDSMITH'S TRADE IN WORDS: his half's first page: check_trade.gd)
 	if _arg("only") == "trade":
 		await preload("res://scripts/check_trade.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE SAVED GAME, in two runs of the app: check_save.gd)
+	if _arg("only") == "save_write":
+		await preload("res://scripts/check_save.gd").new().write(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "save_read":
+		await preload("res://scripts/check_save.gd").new().read(self, hero, dir)
 		get_tree().quit()
 		return
 	# (THE TOWN'S OTHER SERVICES: the stranger's gamble, the stash, the Lexicon: check_services.gd)
