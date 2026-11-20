@@ -166,6 +166,9 @@ import { TOLL as CR_TOLL } from '../src/art/crier_action';
 import { paintBurstRing, paintWordBurst } from '../src/art/ratking_action_fx';
 import { UNKNOT9, WORDS9 } from '../src/art/ratking_action';
 import { CURVE_GONE, CURVE_LAY, SICKLE_N, curveSprite, sickleSprite } from '../src/art/act1_figs/fieldhand';
+import { GURNEY_ROLL, GURNEY_WRECK, gurneySprite } from '../src/art/act1_figs/orderly';
+import { CRASH_CANVAS, GURNEY as OG_GURNEY, crashPainted } from '../src/art/action_f11_orderly';
+import { SLAM_CRACKS_FOR, SLAM_FOR, drawMalletSlam } from '../src/art/orderly_shots';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -807,6 +810,30 @@ for (const view of ['front', 'back'] as const) {
   }
 }
 
+// FLOOR 14'S ORDERLIES (render/act1_fx/orderly.ts GURNEY_FX: ORDERLY_GURNEY on, as the game starts):
+//   og_gurney_<v>  the gurney, from in front or behind (turned over as the game turns it), as the game paints it ahead (art/films.ts
+//                  things:orderly, gurneySprite): standing, careering on (GURNEY_ROLL, 30 a second from the slam), crashed (GURNEY_WRECK,
+//                  15 a second); picked by gurneyFrame, layer `stand`
+//   og_crash       where it crashes (crashPainted: `floor` 30 a second as long as it lies; `behind` and `before` its first second)
+//   og_slam        where the mallet goes into the floor (art/orderly_shots.ts drawMalletSlam, on the game's own canvas of its pixels)
+{
+  for (const view of ['front', 'back'] as const) {
+    const n = 1 + GURNEY_ROLL + GURNEY_WRECK;
+    films[`og_gurney_${view}`] = { fps: 0, n, k0: 0, layers: { stand: Array.from({ length: n }, (_, i) => pic(gurneySprite(i, view))) } };
+  }
+  const crash = (what: Layer, k: number): Sprite | null => (what !== 'floor' && k / FPS > 1.0 ? null : toSprite(crashPainted(k / FPS, what === 'floor' ? 'floor' : 'air', what === 'floor' ? 'all' : what), null, CRASH_CANVAS.ax, CRASH_CANVAS.ay));
+  film('og_crash', OG_GURNEY.lies, { floor: (k) => crash('floor', k), behind: (k) => crash('behind', k), before: (k) => crash('before', k) });
+  const W = 120;
+  const H = 72;
+  film('og_slam', Math.max(SLAM_FOR, SLAM_CRACKS_FOR) - 1 / FPS, {
+    floor: (k) => {
+      const g = new Dots(W, H);
+      drawMalletSlam(g as unknown as CanvasRenderingContext2D, (x, y) => [W / 2 + (x - y) * 16, H / 2 + (x + y) * 8] as const, 0, 0, k / FPS);
+      return rawPic(g, 2, W, H);
+    },
+  });
+}
+
 // --- the sheets: each SET of films on sheets of its own (the films of one kind of monster: the game loads a set only on a
 // floor that has its kind), the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
 /** The set a film is packed with: the first word of its name; the cultist's sigil and the Flame keybearer's apart. */
@@ -823,7 +850,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the bosses of floors 6 and 7)
   unfinished: ['uf'], queen: ['qn'],
   // (the city's)
-  watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'],
+  watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

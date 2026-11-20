@@ -101,11 +101,16 @@ func run(main, hero, out: String) -> void:
 	await _snap("the_floor")
 	# (one plain one of each common kind kept, the nearest; held where it stands till its turn; the rest of the floor, but the boss, put away)
 	for k in COMMON.get(depth, []):
-		# (a plain one, wordless, where the floor has one; else the plainest: a pack's minion)
+		# (a plain one, wordless, where the floor has one; else the plainest: a pack's minion; floor 14's patient one lying in its bed)
 		var m = null
-		for o in M._monsters.list:
-			if is_instance_valid(o) and not o.dead and o.kind == k and not o.boss and not o.elite and not o.champion and o.words.is_empty() and (m == null or o.world.distance_to(h.world) < m.world.distance_to(h.world)):
-				m = o
+		if k == "patient":
+			for o in M._monsters.list:
+				if is_instance_valid(o) and not o.dead and o.kind == k and int(o.a1_in.get("bed", 0)) == 1 and (m == null or o.world.distance_to(h.world) < m.world.distance_to(h.world)):
+					m = o
+		if m == null:
+			for o in M._monsters.list:
+				if is_instance_valid(o) and not o.dead and o.kind == k and not o.boss and not o.elite and not o.champion and o.words.is_empty() and (m == null or o.world.distance_to(h.world) < m.world.distance_to(h.world)):
+					m = o
 		if m == null:
 			for o in M._monsters.list:
 				if is_instance_valid(o) and not o.dead and o.kind == k and not o.boss and not o.elite and not o.champion and (m == null or o.world.distance_to(h.world) < m.world.distance_to(h.world)):
@@ -131,8 +136,8 @@ func run(main, hero, out: String) -> void:
 
 ## The kinds of each floor with rules of their own; its common ones fought alone (the boss apart).
 const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"], 12: ["rat", "dredger", "scribe", "hushed", "ratking"],
-	13: ["fieldhand", "carter", "hushed", "scraper", "quill"]}
-const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"], 13: ["fieldhand", "carter"]}
+	13: ["fieldhand", "carter", "hushed", "scraper", "quill"], 14: ["patient", "orderly", "hushed"]}
+const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"], 13: ["fieldhand", "carter"], 14: ["patient", "orderly"]}
 
 
 var chosen := {}
@@ -144,6 +149,8 @@ func _alone(kind: String):
 	if m == null or not is_instance_valid(m):
 		return null
 	P.list.clear()
+	# (he stands well off it as it is let go: a patient in its bed lies on till he comes near)
+	h.world = M._spot_near(m.world, 8.0, h.world)
 	m._t = 0.0
 	await M._wait(0.1)
 	return m
@@ -245,6 +252,51 @@ func _common(kind: String) -> void:
 			await _snap("carter_lashes_crack")
 			await _run(1.5)
 			_line(rings and cracked and struck > 0, "the carter's driver's lash: its three rings marked, the cracks striking the floor; the hero struck (%d)" % struck)
+		"patient":
+			# (lying in its bed: he comes near, in its sight; it rises; then its silent scream)
+			var abed: bool = int(m.h2.a1.get("bed", 0)) == 1
+			await _snap("patient_abed")
+			h.world = M._spot_near(m.world + m.face * 2.5, 0.0, h.world)
+			var rises: bool = await _run(4.0, func(): return m.h2.act != null and m.h2.acts()[m.h2.act["i"]]["id"] == "patient:rise" and float(m.h2.act["t"]) >= 1.0)
+			await _snap("patient_rises")
+			var up: bool = await _run(3.0, func(): return int(m.h2.a1.get("bed", 0)) == 0)
+			h.world = M._spot_near(m.world + m.face * 1.2, 0.0, h.world)
+			_ready_only(m, 0)
+			var screams: bool = await _run(5.0, func(): return not _a1("patient:scream", func(p): return float(p["t"]) >= 0.2).is_empty())
+			await _snap("patient_screams")
+			await _run(0.5)
+			_line(abed and rises and up and screams and struck > 0, "the Hushed patient: lying in its ward bed (%s), rising as he comes near (%s, up %s), its silent scream (%s) striking him (%d)" % [abed, rises, up, screams, struck])
+		"orderly":
+			h.world = M._spot_near(m.world + m.face * 1.4, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var slammed: bool = await _run(6.0, func(): return not _a1("orderly:slam").is_empty())
+			await _run(0.15)
+			await _snap("orderly_mallet")
+			_line(slammed and struck > 0, "the orderly's mallet blow: held high, into the floor; the hero struck and knocked back (%d)" % struck)
+			await _run(1.5, func(): return m.h2.act == null)
+			struck = 0
+			# (he stands 5 tiles off down a run of open floor from it, where the gurney can career)
+			var way := Vector2.ZERO
+			for w in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1), Vector2(0.7071, 0.7071), Vector2(-0.7071, 0.7071), Vector2(0.7071, -0.7071), Vector2(-0.7071, -0.7071)]:
+				var ok := true
+				for k2 in 13:
+					var q: Vector2 = m.world + w * (k2 * 0.5)
+					if not M._monsters.clear(q.x, q.y, 0.35):
+						ok = false
+				if ok:
+					way = w
+					break
+			var stay := func():
+				if m.h2.act == null:
+					h.world = m.world + way * 5.0
+			_ready_only(m, 1)
+			var laned: bool = await _run(6.0, func(): return not _a1("orderly:gurney", func(p): return float(p["t"]) >= -0.2).is_empty(), stay)
+			await _snap("orderly_gurney_lane")
+			var crashed: bool = await _run(3.0, func(): return not _a1("orderly:gurney", func(p): return float(p["hit"]) < 1e9 and float(p["t"]) - float(p["hit"]) >= 0.1).is_empty())
+			await _snap("orderly_gurney_crash")
+			await _run(0.5)
+			_line(laned and crashed and struck > 0, "the gurney charge: the lane marked (%s, along %s), the gurney slammed down it, crashing (%s) on him (%d)" % [laned, way, crashed, struck])
 		"hound":
 			h.world = M._spot_near(m.world, 1.0, h.world)
 			_ready_only(m, 0)

@@ -98,7 +98,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 2,
@@ -150,7 +151,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 3,
@@ -202,7 +204,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 4,
@@ -254,7 +257,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 5,
@@ -306,7 +310,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 6,
@@ -358,7 +363,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 7,
@@ -410,7 +418,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 8,
@@ -462,7 +473,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 9,
@@ -514,7 +528,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 10,
@@ -566,7 +583,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 11,
@@ -618,7 +638,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 12,
@@ -670,7 +693,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 13,
@@ -725,7 +751,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 14,
@@ -780,7 +809,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 15,
@@ -835,7 +867,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 16,
@@ -890,7 +925,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 17,
@@ -945,7 +983,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 18,
@@ -1000,7 +1041,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 19,
@@ -1055,7 +1099,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 20,
@@ -1110,7 +1157,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 21,
@@ -1162,7 +1212,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 22,
@@ -1214,7 +1267,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 23,
@@ -1266,7 +1322,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 24,
@@ -1318,7 +1377,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 25,
@@ -1370,7 +1432,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 26,
@@ -1422,7 +1487,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 27,
@@ -1474,7 +1542,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 28,
@@ -1526,7 +1597,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 29,
@@ -1578,7 +1652,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 30,
@@ -1630,7 +1707,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 31,
@@ -1688,7 +1768,10 @@
    "half": [],
    "carries": [
     "leech"
-   ]
+   ],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 32,
@@ -1747,7 +1830,10 @@
     "pulling",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 33,
@@ -1806,7 +1892,10 @@
     "pulling",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 34,
@@ -1865,7 +1954,10 @@
     "pulling",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 35,
@@ -1924,7 +2016,10 @@
     "pulling",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 36,
@@ -1983,7 +2078,10 @@
     "pulling",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 37,
@@ -2042,7 +2140,10 @@
     "pulling",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 38,
@@ -2097,7 +2198,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 39,
@@ -2152,7 +2254,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 40,
@@ -2207,7 +2310,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 41,
@@ -2262,7 +2366,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 42,
@@ -2317,7 +2422,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 43,
@@ -2372,7 +2478,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 44,
@@ -2427,7 +2534,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 45,
@@ -2482,7 +2590,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 46,
@@ -2534,7 +2643,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 47,
@@ -2586,7 +2698,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 48,
@@ -2638,7 +2753,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 49,
@@ -2690,7 +2808,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 50,
@@ -2742,7 +2863,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 51,
@@ -2794,7 +2918,17 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 1,
+    "bt": 13010,
+    "bfx": 0,
+    "bfy": 1,
+    "lx": 38.85,
+    "ly": 120.01031036307982,
+    "go": 0,
+    "wait": 0
+   }
   },
   {
    "id": 52,
@@ -2846,7 +2980,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 53,
@@ -2898,7 +3035,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 54,
@@ -2950,7 +3090,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 55,
@@ -3002,7 +3145,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 56,
@@ -3054,7 +3200,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 57,
@@ -3106,7 +3255,17 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 1,
+    "bt": 12574,
+    "bfx": 0,
+    "bfy": 1,
+    "lx": 38.85,
+    "ly": 116.01031036307982,
+    "go": 0,
+    "wait": 0
+   }
   },
   {
    "id": 58,
@@ -3158,7 +3317,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 59,
@@ -3210,7 +3372,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 60,
@@ -3262,7 +3427,17 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 1,
+    "bt": 12138,
+    "bfx": 0,
+    "bfy": 1,
+    "lx": 38.85,
+    "ly": 112.01031036307982,
+    "go": 0,
+    "wait": 0
+   }
   },
   {
    "id": 61,
@@ -3314,7 +3489,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 62,
@@ -3366,7 +3544,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 63,
@@ -3418,7 +3599,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 64,
@@ -3470,7 +3654,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 65,
@@ -3522,7 +3709,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 66,
@@ -3574,7 +3764,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 67,
@@ -3626,7 +3819,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 68,
@@ -3678,7 +3874,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 69,
@@ -3730,7 +3929,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 70,
@@ -3786,7 +3988,10 @@
     "fire"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 71,
@@ -3845,7 +4050,10 @@
     "guarding",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 72,
@@ -3904,7 +4112,10 @@
     "guarding",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 73,
@@ -3963,7 +4174,10 @@
     "guarding",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 74,
@@ -4022,7 +4236,10 @@
     "guarding",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 75,
@@ -4081,7 +4298,10 @@
     "guarding",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 76,
@@ -4133,7 +4353,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 77,
@@ -4185,7 +4406,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 78,
@@ -4237,7 +4459,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 79,
@@ -4289,7 +4512,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 80,
@@ -4341,7 +4565,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 81,
@@ -4393,7 +4618,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 82,
@@ -4445,7 +4671,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 83,
@@ -4501,7 +4728,8 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 84,
@@ -4557,7 +4785,8 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 85,
@@ -4613,7 +4842,8 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 86,
@@ -4669,7 +4899,8 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 87,
@@ -4725,7 +4956,8 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 88,
@@ -4781,7 +5013,8 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 89,
@@ -4833,7 +5066,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 90,
@@ -4885,7 +5119,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 91,
@@ -4937,7 +5172,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 92,
@@ -4989,7 +5225,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 93,
@@ -5041,7 +5278,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 94,
@@ -5093,7 +5331,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 95,
@@ -5145,7 +5384,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 96,
@@ -5197,7 +5437,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 97,
@@ -5252,7 +5493,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 98,
@@ -5307,7 +5551,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 99,
@@ -5362,7 +5609,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 100,
@@ -5417,7 +5667,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 101,
@@ -5472,7 +5725,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 102,
@@ -5527,7 +5783,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 103,
@@ -5582,7 +5841,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 104,
@@ -5637,7 +5899,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 105,
@@ -5692,7 +5957,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 106,
@@ -5747,7 +6015,10 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 107,
@@ -5805,7 +6076,10 @@
    "half": [],
    "carries": [
     "guarding"
-   ]
+   ],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 108,
@@ -5864,7 +6138,10 @@
     "hexing",
     "guarding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 109,
@@ -5923,7 +6200,10 @@
     "hexing",
     "guarding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 110,
@@ -5982,7 +6262,10 @@
     "hexing",
     "guarding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 111,
@@ -6041,7 +6324,10 @@
     "hexing",
     "guarding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 112,
@@ -6100,7 +6386,10 @@
     "hexing",
     "guarding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 113,
@@ -6159,7 +6448,10 @@
     "hexing",
     "guarding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 114,
@@ -6218,7 +6510,10 @@
     "hexing",
     "guarding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 115,
@@ -6277,7 +6572,10 @@
     "hexing",
     "guarding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 116,
@@ -6336,7 +6634,10 @@
     "hexing",
     "guarding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 117,
@@ -6395,7 +6696,10 @@
     "hexing",
     "guarding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 118,
@@ -6454,7 +6758,10 @@
     "hexing",
     "guarding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 119,
@@ -6510,7 +6817,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 120,
@@ -6569,7 +6879,10 @@
     "heavy",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 121,
@@ -6628,7 +6941,10 @@
     "heavy",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 122,
@@ -6687,7 +7003,10 @@
     "heavy",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 123,
@@ -6746,7 +7065,10 @@
     "heavy",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 124,
@@ -6805,7 +7127,10 @@
     "heavy",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 125,
@@ -6864,7 +7189,10 @@
     "heavy",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 126,
@@ -6923,7 +7251,10 @@
     "heavy",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 127,
@@ -6982,7 +7313,10 @@
     "heavy",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 128,
@@ -7041,7 +7375,10 @@
     "heavy",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 129,
@@ -7100,7 +7437,10 @@
     "heavy",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 130,
@@ -7155,7 +7495,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 131,
@@ -7210,7 +7553,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 132,
@@ -7265,7 +7611,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 133,
@@ -7320,7 +7669,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 134,
@@ -7375,7 +7727,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 135,
@@ -7430,7 +7785,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 136,
@@ -7485,7 +7843,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 137,
@@ -7540,7 +7901,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 138,
@@ -7595,7 +7959,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 139,
@@ -7650,7 +8017,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 140,
@@ -7705,7 +8075,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 141,
@@ -7757,7 +8130,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 142,
@@ -7809,7 +8183,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 143,
@@ -7861,7 +8236,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 144,
@@ -7913,7 +8289,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 145,
@@ -7965,7 +8342,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 146,
@@ -8017,7 +8395,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 147,
@@ -8069,7 +8448,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 148,
@@ -8121,7 +8501,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 149,
@@ -8173,7 +8556,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 150,
@@ -8225,7 +8611,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 151,
@@ -8277,7 +8666,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 152,
@@ -8329,7 +8721,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 153,
@@ -8381,7 +8776,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 154,
@@ -8433,7 +8831,17 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 1,
+    "bt": 10255,
+    "bfx": 0,
+    "bfy": 1,
+    "lx": 8.85,
+    "ly": 95.01031036307982,
+    "go": 0,
+    "wait": 0
+   }
   },
   {
    "id": 155,
@@ -8485,7 +8893,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 156,
@@ -8537,7 +8948,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 157,
@@ -8589,7 +9003,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 158,
@@ -8641,7 +9058,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 159,
@@ -8693,7 +9113,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 160,
@@ -8745,7 +9168,17 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 1,
+    "bt": 9278,
+    "bfx": 1,
+    "bfy": 0,
+    "lx": 13.010310363079828,
+    "ly": 85.85,
+    "go": 0,
+    "wait": 0
+   }
   },
   {
    "id": 161,
@@ -8797,7 +9230,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 162,
@@ -8849,7 +9285,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 163,
@@ -8901,7 +9340,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 164,
@@ -8953,7 +9395,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 165,
@@ -9008,7 +9453,10 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 166,
@@ -9063,7 +9511,10 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 167,
@@ -9118,7 +9569,10 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 168,
@@ -9173,7 +9627,10 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 169,
@@ -9228,7 +9685,10 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 170,
@@ -9283,7 +9743,10 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 171,
@@ -9338,7 +9801,10 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 172,
@@ -9393,7 +9859,10 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 173,
@@ -9448,7 +9917,10 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 174,
@@ -9503,7 +9975,10 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 175,
@@ -9555,7 +10030,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 176,
@@ -9607,7 +10085,17 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 1,
+    "bt": 7648,
+    "bfx": 1,
+    "bfy": 0,
+    "lx": 18.010310363079828,
+    "ly": 70.85,
+    "go": 0,
+    "wait": 0
+   }
   },
   {
    "id": 177,
@@ -9659,7 +10147,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 178,
@@ -9711,7 +10202,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 179,
@@ -9763,7 +10257,17 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 1,
+    "bt": 7650,
+    "bfx": 1,
+    "bfy": 0,
+    "lx": 20.010310363079828,
+    "ly": 70.85,
+    "go": 0,
+    "wait": 0
+   }
   },
   {
    "id": 180,
@@ -9815,7 +10319,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 181,
@@ -9867,7 +10374,17 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 1,
+    "bt": 7971,
+    "bfx": 0,
+    "bfy": 1,
+    "lx": 13.85,
+    "ly": 74.01031036307982,
+    "go": 0,
+    "wait": 0
+   }
   },
   {
    "id": 182,
@@ -9919,7 +10436,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 183,
@@ -9971,7 +10491,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 184,
@@ -10023,7 +10546,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 185,
@@ -10075,7 +10601,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 186,
@@ -10127,7 +10656,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 187,
@@ -10179,7 +10711,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 188,
@@ -10231,7 +10766,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 189,
@@ -10283,7 +10821,17 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 1,
+    "bt": 7658,
+    "bfx": 1,
+    "bfy": 0,
+    "lx": 28.010310363079828,
+    "ly": 70.85,
+    "go": 0,
+    "wait": 0
+   }
   },
   {
    "id": 190,
@@ -10335,7 +10883,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 191,
@@ -10387,7 +10938,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 192,
@@ -10439,7 +10993,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 193,
@@ -10491,7 +11048,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 194,
@@ -10543,7 +11103,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 195,
@@ -10595,7 +11158,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 196,
@@ -10647,7 +11213,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 197,
@@ -10699,7 +11268,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 198,
@@ -10751,7 +11323,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 199,
@@ -10803,7 +11378,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 200,
@@ -10858,7 +11436,10 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 201,
@@ -10913,7 +11494,10 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 202,
@@ -10968,7 +11552,10 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 203,
@@ -11023,7 +11610,10 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 204,
@@ -11078,7 +11668,10 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 205,
@@ -11133,7 +11726,10 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 206,
@@ -11189,7 +11785,10 @@
     "swift"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 207,
@@ -11248,7 +11847,10 @@
     "volatile",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 208,
@@ -11307,7 +11909,10 @@
     "volatile",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 209,
@@ -11366,7 +11971,10 @@
     "volatile",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 210,
@@ -11425,7 +12033,10 @@
     "volatile",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 211,
@@ -11484,7 +12095,10 @@
     "volatile",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 212,
@@ -11543,7 +12157,10 @@
     "volatile",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 213,
@@ -11602,7 +12219,10 @@
     "volatile",
     "swift"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 214,
@@ -11654,7 +12274,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 215,
@@ -11706,7 +12329,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 216,
@@ -11758,7 +12384,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 217,
@@ -11810,7 +12439,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 218,
@@ -11862,7 +12494,17 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 1,
+    "bt": 9977,
+    "bfx": 1,
+    "bfy": 0,
+    "lx": 58.01031036307983,
+    "ly": 91.85,
+    "go": 0,
+    "wait": 0
+   }
   },
   {
    "id": 219,
@@ -11914,7 +12556,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 220,
@@ -11966,7 +12611,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 221,
@@ -12018,7 +12666,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 222,
@@ -12070,7 +12721,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 223,
@@ -12122,7 +12776,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 224,
@@ -12174,7 +12831,17 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 1,
+    "bt": 6704,
+    "bfx": 0,
+    "bfy": 1,
+    "lx": 54.85,
+    "ly": 62.01031036307983,
+    "go": 0,
+    "wait": 0
+   }
   },
   {
    "id": 225,
@@ -12226,7 +12893,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 226,
@@ -12278,7 +12948,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 227,
@@ -12330,7 +13003,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 228,
@@ -12382,7 +13058,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 229,
@@ -12434,7 +13113,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 230,
@@ -12486,7 +13168,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 231,
@@ -12538,7 +13223,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 232,
@@ -12590,7 +13278,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 233,
@@ -12642,7 +13333,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 234,
@@ -12694,7 +13388,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 235,
@@ -12746,7 +13443,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 236,
@@ -12798,7 +13498,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 237,
@@ -12850,7 +13553,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 238,
@@ -12902,7 +13608,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 239,
@@ -12954,7 +13663,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 240,
@@ -13006,7 +13718,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 241,
@@ -13058,7 +13773,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 242,
@@ -13110,7 +13828,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 243,
@@ -13162,7 +13883,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 244,
@@ -13214,7 +13938,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 245,
@@ -13266,7 +13993,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 246,
@@ -13318,7 +14048,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 247,
@@ -13370,7 +14103,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 248,
@@ -13422,7 +14158,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 249,
@@ -13474,7 +14213,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 250,
@@ -13526,7 +14268,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 251,
@@ -13578,7 +14323,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 252,
@@ -13636,7 +14384,8 @@
    "half": [],
    "carries": [
     "hexing"
-   ]
+   ],
+   "a1": null
   },
   {
    "id": 253,
@@ -13692,7 +14441,8 @@
     "leech"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 254,
@@ -13748,7 +14498,8 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 255,
@@ -13804,7 +14555,8 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 256,
@@ -13860,7 +14612,8 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 257,
@@ -13916,7 +14669,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 258,
@@ -13972,7 +14726,8 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 259,
@@ -14024,7 +14779,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 260,
@@ -14076,7 +14832,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 261,
@@ -14128,7 +14885,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 262,
@@ -14180,7 +14938,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 263,
@@ -14232,7 +14991,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 264,
@@ -14284,7 +15044,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 265,
@@ -14336,7 +15097,8 @@
    "figure": "orderly",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 266,
@@ -14388,7 +15150,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 267,
@@ -14440,7 +15205,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 268,
@@ -14492,7 +15260,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 269,
@@ -14544,7 +15315,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 270,
@@ -14596,7 +15370,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 271,
@@ -14648,7 +15425,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 272,
@@ -14700,7 +15480,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 273,
@@ -14752,7 +15535,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 274,
@@ -14804,7 +15590,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 275,
@@ -14856,7 +15645,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 276,
@@ -14908,7 +15700,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 277,
@@ -14960,7 +15755,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 278,
@@ -15012,7 +15810,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 279,
@@ -15064,7 +15865,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 280,
@@ -15116,7 +15920,10 @@
    "figure": "patient",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 281,
@@ -15171,7 +15978,10 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 282,
@@ -15226,7 +16036,10 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 283,
@@ -15281,7 +16094,10 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 284,
@@ -15336,7 +16152,10 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 285,
@@ -15391,7 +16210,10 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 286,
@@ -15446,7 +16268,10 @@
     "poison"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 287,
@@ -15501,7 +16326,10 @@
     "poison"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 288,
@@ -15556,7 +16384,10 @@
     "poison"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 289,
@@ -15611,7 +16442,10 @@
     "poison"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 290,
@@ -15666,7 +16500,10 @@
     "poison"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 291,
@@ -15721,7 +16558,10 @@
     "poison"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 292,
@@ -15776,7 +16616,10 @@
     "poison"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 293,
@@ -15831,7 +16674,10 @@
     "poison"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "bed": 0
+   }
   },
   {
    "id": 294,
@@ -15888,7 +16734,11 @@
    "half": [],
    "carries": [
     "volatile"
-   ]
+   ],
+   "a1": {
+    "held": 0,
+    "upT": -1
+   }
   }
  ],
  "defs": {

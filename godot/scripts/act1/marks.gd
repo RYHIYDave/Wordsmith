@@ -53,7 +53,8 @@ const OWN := {"unfinished": preload("res://scripts/act1/unfinished_marks.gd"), "
 	"crier": preload("res://scripts/act2/crier_marks.gd"), "dredger": preload("res://scripts/act2/marks12.gd"),
 	"ratking": preload("res://scripts/act2/rk_marks.gd"), "fieldhand": preload("res://scripts/act2/marks13.gd"),
 	"carter": preload("res://scripts/act2/marks13.gd"), "scraper": preload("res://scripts/act2/pair_marks.gd"),
-	"quill": preload("res://scripts/act2/pair_marks.gd")}
+	"quill": preload("res://scripts/act2/pair_marks.gd"), "patient": preload("res://scripts/act2/marks14.gd"),
+	"orderly": preload("res://scripts/act2/marks14.gd")}
 
 
 static func _own(p: Dictionary):

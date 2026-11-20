@@ -84,6 +84,8 @@ const BOSS_AI := {
 	# (floor 13's: the fieldhands, the carters, and its double boss, the Scraper and the Quill)
 	"fieldhand": preload("res://scripts/act2/fieldhand.gd"), "carter": preload("res://scripts/act2/carter.gd"),
 	"scraper": preload("res://scripts/act2/scraper.gd"), "quill": preload("res://scripts/act2/quill.gd"),
+	# (floor 14's: the patients and the orderlies)
+	"patient": preload("res://scripts/act2/patient.gd"), "orderly": preload("res://scripts/act2/orderly.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -144,6 +146,8 @@ var champion := false
 var elite := false
 ## (one the Warden called up: it leaves nothing)
 var summoned := false
+## (what its kind's rules kept about it as the game laid it: the export's `a1`)
+var a1_in := {}
 ## THE WORDS IT HAS (game.ts spawn; the floor's monsters.json): `words`, the words it fights with (an elite's one, a guardian's,
 ## a boss's, its pack's); `half`, a pack's minion's, its leader's at half strength; `carries`, the word it gives up when it
 ## dies, shown as a rune over its head (none before the wordsmith's ring is lit).
@@ -275,6 +279,8 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	shield = float(m.get("shield", 0.0))
 	_moves = MM.moves_of(kind, champion)
 	own_seed = float(m.get("seed", randf()))
+	# (what its kind's rules keep about it as the game laid it: floor 14's patients lying in their beds)
+	a1_in = m["a1"] if m.get("a1") is Dictionary else {}
 	if BOSS_AI.has(kind):
 		h2 = BOSS_AI[kind].new()
 		# (what one with rules of its own has about it from the first, before it wakes: the Fleshmancer's circle)

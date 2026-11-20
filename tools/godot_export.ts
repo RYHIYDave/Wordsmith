@@ -183,7 +183,8 @@ const kinds = new Set<string>();
 // pack's minion's, its leader's at half strength; `carries`, the word it gives up when it dies, the rune over its head)
 const monsters = game.monsters.map((m, i) => {
   kinds.add(m.kind);
-  return { ...plain(m), figure: bakeName(figureOf(m)), words: [...m.words], half: [...(m.half ?? [])], carries: [...lit.monsters[i].carries] };
+  // (`a1`: what its kind's rules keep about it as it comes into the world: floor 14's patients lying in their beds)
+  return { ...plain(m), figure: bakeName(figureOf(m)), words: [...m.words], half: [...(m.half ?? [])], carries: [...lit.monsters[i].carries], a1: m.a1 ? plain(m.a1) : null };
 });
 const defs: Record<string, Record<string, number | string | boolean>> = {};
 for (const k of kinds) defs[k] = plain(MONSTERS[k as keyof typeof MONSTERS]);
