@@ -1,0 +1,291 @@
+{
+ "kind": "housequiet",
+ "areas": [
+  {
+   "role": "start",
+   "room": 0,
+   "blob": {
+    "x": 42.5,
+    "y": 13.5,
+    "rx": 5.5,
+    "ry": 5.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "path",
+   "room": 1,
+   "blob": {
+    "x": 45.5,
+    "y": 38.5,
+    "rx": 2.5,
+    "ry": 7.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "path",
+   "room": 2,
+   "blob": {
+    "x": 44.5,
+    "y": 63,
+    "rx": 5.5,
+    "ry": 11,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "path",
+   "room": 3,
+   "blob": {
+    "x": 43.5,
+    "y": 89,
+    "rx": 2.5,
+    "ry": 11,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "path",
+   "room": 4,
+   "blob": {
+    "x": 42.5,
+    "y": 114,
+    "rx": 4.5,
+    "ry": 8,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "path",
+   "room": 5,
+   "blob": {
+    "x": 61,
+    "y": 119.5,
+    "rx": 10,
+    "ry": 2.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "path",
+   "room": 6,
+   "blob": {
+    "x": 82.5,
+    "y": 119,
+    "rx": 4.5,
+    "ry": 6,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "path",
+   "room": 7,
+   "blob": {
+    "x": 81,
+    "y": 141.5,
+    "rx": 3,
+    "ry": 10.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "path",
+   "room": 8,
+   "blob": {
+    "x": 64.5,
+    "y": 138.5,
+    "rx": 8.5,
+    "ry": 5.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "path",
+   "room": 9,
+   "blob": {
+    "x": 44,
+    "y": 142,
+    "rx": 7,
+    "ry": 3,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "path",
+   "room": 10,
+   "blob": {
+    "x": 46.5,
+    "y": 154.5,
+    "rx": 4.5,
+    "ry": 4.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "boss",
+   "room": 11,
+   "blob": {
+    "x": 46.5,
+    "y": 174,
+    "rx": 10.5,
+    "ry": 10,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "path",
+   "room": 12,
+   "blob": {
+    "x": 56,
+    "y": 192,
+    "rx": 4,
+    "ry": 4,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "side",
+   "room": 13,
+   "blob": {
+    "x": 27,
+    "y": 91.5,
+    "rx": 7,
+    "ry": 5.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "side",
+   "room": 14,
+   "blob": {
+    "x": 12.5,
+    "y": 93.5,
+    "rx": 4.5,
+    "ry": 8.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "side",
+   "room": 15,
+   "blob": {
+    "x": 22.5,
+    "y": 75.5,
+    "rx": 9.5,
+    "ry": 5.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "side",
+   "room": 16,
+   "blob": {
+    "x": 29.5,
+    "y": 109.5,
+    "rx": 4.5,
+    "ry": 8.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "side",
+   "room": 17,
+   "blob": {
+    "x": 59,
+    "y": 95.5,
+    "rx": 8,
+    "ry": 4.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "side",
+   "room": 18,
+   "blob": {
+    "x": 59.5,
+    "y": 55.5,
+    "rx": 5.5,
+    "ry": 9.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "lair",
+   "room": 19,
+   "blob": {
+    "x": 96,
+    "y": 120.5,
+    "rx": 5,
+    "ry": 6.5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "side",
+   "room": 20,
+   "blob": {
+    "x": 44.5,
+    "y": 129,
+    "rx": 3.5,
+    "ry": 4,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  },
+  {
+   "role": "side",
+   "room": 21,
+   "blob": {
+    "x": 22.5,
+    "y": 141,
+    "rx": 6.5,
+    "ry": 5,
+    "rot": 0,
+    "wob": 0,
+    "seed": 0
+   }
+  }
+ ]
+}
