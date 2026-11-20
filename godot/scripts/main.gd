@@ -151,6 +151,17 @@ static func dir_of(where: String) -> String:
 	return TOWN_DIR if where == "town" else "res://assets/" + where
 
 
+## A place that is his town: the prison town, or the camp inside Vellum's gate (game/camp.ts).
+static func is_home(where: String) -> bool:
+	return where == "town" or where == "camp"
+
+
+## His town now: from floor 10 on, once he has come through into it, the camp inside Vellum's gate (game.ts campTown, wayDepth 11
+## or more: his pick, “Yes, the camp from then on (Recommended)”); before, the prison town.
+func home_place() -> String:
+	return "camp" if way_depth >= 11 and FileAccess.file_exists("res://assets/camp/layout.json") else "town"
+
+
 ## Whether a floor's files are there.
 static func has_floor(n: int) -> bool:
 	return FileAccess.file_exists("res://assets/floor%d/layout.json" % n)
@@ -243,9 +254,10 @@ func _build(where: String, arrive: String) -> void:
 	if map != null and int(map.depth) >= 1:
 		last_floor = int(map.depth)
 	map = FloorMap.new(dir + "/layout.json")
-	var ground := GroundArt.new(dir)
+	# (the camp has its look and no stone of its own: the town's stands in for the walls it never builds)
+	var ground := GroundArt.new(dir if FileAccess.file_exists(dir + "/ground.json") else TOWN_DIR)
 	# (THE WORDSMITH'S TRADE: coming into town, his shelf for this visit, and nothing of the hero's sold him yet: game.ts rollShop)
-	if where == "town":
+	if is_home(where):
 		loot.roll_word_stock(last_floor)
 
 	# THE PLACE'S LOOK as the game draws it (look.gd), where tools/godot_looks.ts has recorded one; else the plain ground
@@ -275,7 +287,7 @@ func _build(where: String, arrive: String) -> void:
 	stands.art = ground
 	stands.build_walls = not looked
 	# (every wall stands and fades round him on floors 1 to 5; the town's hall leaves its near walls out)
-	stands.fade = where != "town"
+	stands.fade = not is_home(where)
 	_place.add_child(stands)
 	if _hero_light != null:
 		_hero_light.queue_free()
@@ -303,7 +315,7 @@ func _build(where: String, arrive: String) -> void:
 			face = Vector2(_gate["hero"]["fx"], _gate["hero"]["fy"])
 		"way":
 			# (game.ts enterTown('way'), enterDungeon('way'): out of the waypoint's column of light)
-			if where == "town" and looked and look.data.has("waypoint"):
+			if is_home(where) and looked and look.data.has("waypoint"):
 				at = Vector2(look.data["waypoint"]["wx"], look.data["waypoint"]["wy"])
 				face = Vector2(0.7071, 0.7071)
 			elif map.waypoint != null:
@@ -322,6 +334,11 @@ func _build(where: String, arrive: String) -> void:
 			# ways.ts TOWN_SHAFT)
 			at = Vector2(20.5, 18.5)
 			face = Vector2(-0.7071, -0.7071)
+		"in_gate" when where == "camp":
+			# (game.ts enterTown('gate') into the camp, from floor 10: in through its city gate, at its mouth, looking in: CAMP.arrive)
+			at = map.start
+			if map.start_face != Vector2.ZERO:
+				face = map.start_face
 		"in_gate":
 			# (game.ts enterTown('gate'), from floor 10: just inside the gate, which is up behind him as he comes through it and
 			# falls once he has walked off (town.gd); ways.ts TOWN_GATE, its doorway's first tile and its line)
@@ -370,7 +387,7 @@ func _build(where: String, arrive: String) -> void:
 	_place.move_child(wakes, perils.get_index())
 	hero.wakes = wakes
 	_place.add_child(monsters)
-	if where != "town":
+	if not is_home(where):
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)
 	# (the films of what this floor's kinds mark and throw up: fetched now, behind the game; the other floors' let go)
 	var kinds := {}
@@ -456,27 +473,27 @@ func _build(where: String, arrive: String) -> void:
 		_way.look = look
 		_way.hero = hero
 		_way.sfx = sfx
-		_way.in_town = where == "town"
+		_way.in_town = is_home(where)
 		_place.add_child(_way)
-		if where != "town":
+		if not is_home(where):
 			way_depth = maxi(way_depth, map.depth)
 		if arrive == "way":
 			_way.awake = true
 			look.wake_waypoint()
 			look.play_warp(0.25)
-	elif where != "town" and map.waypoint != null:
+	elif not is_home(where) and map.waypoint != null:
 		# (game.ts enterDungeon: a floor with a waypoint is reached as he comes into it, its look or none)
 		way_depth = maxi(way_depth, map.depth)
 	# (FLOOR_NAMES: the floor's own name across the screen as he comes into it, its level under it: ui/cards.ts drawFloorCard;
 	# gone with the floor if he leaves it while it is still up)
-	if where != "town" and _hud != null:
+	if not is_home(where) and _hud != null:
 		_hud.floor_card_for(where)
 	elif _hud != null:
 		_hud.floor_card = {}
 	loot.enter_place(map, stands, monsters, where == "floor1")
 	# (the ways on from a floor that has no stairwell: floor 3's door, floor 4's cave, floor 5's cage: ways.gd)
 	ways = null
-	if where != "town" and map.stairs.is_empty():
+	if not is_home(where) and map.stairs.is_empty():
 		ways = Ways.new()
 		ways.main = self
 		ways.map = map
@@ -487,7 +504,7 @@ func _build(where: String, arrive: String) -> void:
 		_place.add_child(ways)
 	# (floor 10: THE SWAMP COLOSSUS'S STONE, the landing that carries him across to it, the picture drawn back on it: act1/stone.gd)
 	stone = null
-	if where != "town" and map.stone != null:
+	if not is_home(where) and map.stone != null:
 		stone = Stone.new()
 		stone.main = self
 		stone.map = map
@@ -496,7 +513,7 @@ func _build(where: String, arrive: String) -> void:
 		_place.add_child(stone)
 	# (what he has seen: sight.gd; the town is seen whole; --seeall, a floor too)
 	sight = null
-	if where != "town":
+	if not is_home(where):
 		sight = Sight.new()
 		sight.map = map
 		sight.hero = hero
@@ -511,7 +528,7 @@ func _build(where: String, arrive: String) -> void:
 			look.sight = sight
 
 	town = null
-	if where == "town":
+	if is_home(where):
 		# (game.ts enterTown: life and flasks filled)
 		hero.life = hero.max_life
 		loot.potions = loot.POTIONS
@@ -525,9 +542,15 @@ func _build(where: String, arrive: String) -> void:
 		town.stands = stands
 		town.flats = flats
 		town.looked = looked
+		town.camp = where == "camp"
 		_place.add_child(town)
-		sfx.background("fire_small_loop.wav", "")
-		_veil.material.set_shader_parameter("deep", Look._num(look.data.get("vignette"), 0.26) if looked else 0.45)
+		# (the camp: no loop under it (game/world_sounds.ts WORLD_LOOPS off), its own sounds now and then (amb_camp))
+		if where == "camp":
+			sfx.background("", "amb_camp")
+		else:
+			sfx.background("fire_small_loop.wav", "")
+		# (the camp at dusk: its vignette game/camp.ts CAMP_DUSK's, its dark and tint in its look)
+		_veil.material.set_shader_parameter("deep", Look._num(look.data.get("vignette"), 0.32 if where == "camp" else 0.26) if looked else 0.45)
 	else:
 		if not looked and where == "floor1":
 			_floor_gate(flats)
@@ -540,7 +563,7 @@ func _build(where: String, arrive: String) -> void:
 			_veil.material.set_shader_parameter("deep", day["vignette"])
 			_veil.material.set_shader_parameter("veil_rgb", Color8(day["tint"][0], day["tint"][1], day["tint"][2]))
 		_veil.material.set_shader_parameter("veil_a", float(day.get("dark", 0.0)))
-	if where == "town":
+	if is_home(where):
 		_veil.material.set_shader_parameter("veil_a", 0.0)
 	# (FLOORS 6 TO 10 BESIDES THEIR FIGHTS: the floor's strongholds, its part of the quest line, the quest marks: act1/quest610.gd)
 	if quest610 != null:
@@ -584,7 +607,8 @@ func _process(dt: float) -> void:
 
 ## Which place's music (game/level_music.ts musicPlace): the town's, or floor 1's.
 func _music_place() -> String:
-	return "town" if place == "town" else "f%d" % depth_of(place)
+	# (the camp has none: game/level_music.ts musicPlace, `!isCamp(L)`)
+	return "town" if place == "town" else "" if place == "camp" else "f%d" % depth_of(place)
 
 
 ## Is there a fight on: something awake within reach of him (game.ts inFight; no doors here yet to shut one in)?
@@ -1772,6 +1796,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE WORDSMITH'S TRADE IN WORDS: his half's first page: check_trade.gd)
 	if _arg("only") == "trade":
 		await preload("res://scripts/check_trade.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE CAMP INSIDE VELLUM'S GATE, his town from floor 10 on: check_camp.gd)
+	if _arg("only") == "camp":
+		await preload("res://scripts/check_camp.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "meldstone":
@@ -5207,14 +5236,14 @@ func _descent_shots(h: Hero, dir: String) -> void:
 		var was := place
 		await _w_until(func(): return place != was and not _going, 3.0)
 		await _wait(0.2)
-		var to := "floor%d" % (n + 1) if n < 10 else "town"
+		var to := "floor%d" % (n + 1) if n < 10 else "camp"
 		await _d_step(dir, "f%d_taken" % n, place == to, "onto its way in (%d, %d): on to %s (%s)" % [on_at.x, on_at.y, place, place_title()])
-	# --- home ---
-	if place == "town":
+	# --- home: the camp inside Vellum's gate, his town from now on (game/camp.ts; game.ts takeWay 'on' from the Fen) ---
+	if place == "camp":
 		await _wait(1.2)
 		var home: String = _wu_said("The Sunken Fen, Level 10 cleared. The siege is broken.")
-		await _d_step(dir, "home", home != "" and town.gate_open == 1.0 and h.world.distance_to(Vector2(14.5, 7.2)) < 0.3,
-			"home: in town just inside the gate, up behind him (%.2f): \"%s\"" % [town.gate_open, home])
+		await _d_step(dir, "home", home != "" and way_depth >= 11 and home_place() == "camp" and h.world.distance_to(Vector2(13.6, 22.5)) < 0.3,
+			"home: in through the city gate into the camp inside Vellum's gate, at its mouth (%.1f, %.1f), his town from now on (way depth %d): \"%s\"" % [h.world.x, h.world.y, way_depth, home])
 	print("DESCENT: %d of %d steps as the game has them%s" % [_d_n - _d_bad.size(), _d_n, ("; not: " + ", ".join(_d_bad)) if not _d_bad.is_empty() else ""])
 
 

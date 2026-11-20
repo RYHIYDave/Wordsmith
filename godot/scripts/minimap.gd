@@ -78,7 +78,7 @@ func _process(dt: float) -> void:
 			inv.toggle()
 	elif Input.is_action_just_pressed("pause"):
 		show_panel("" if open != "" else "pause")
-	elif Input.is_action_just_pressed("map") and main.place != "town" and open != "pause":
+	elif Input.is_action_just_pressed("map") and not main.is_home(main.place) and open != "pause":
 		show_panel("" if open == "map" else "map")
 	queue_redraw()
 
@@ -116,7 +116,7 @@ func _input(e: InputEvent) -> void:
 		return
 	var W := floorf(size.x / 2.0)
 	var mw := minf(66.0, floorf(W * 0.2))
-	if main.place != "town" and Rect2(W - mw - 4, 4, mw, MH).has_point(p):
+	if not main.is_home(main.place) and Rect2(W - mw - 4, 4, mw, MH).has_point(p):
 		show_panel("map")
 		get_viewport().set_input_as_handled()
 	elif Rect2(W - 14 - 4, MH + 7, 14, 12).has_point(p):
@@ -184,7 +184,7 @@ func _draw() -> void:
 	var H := floorf(size.y / 2.0)
 	var mw := minf(66.0, floorf(W * 0.2))
 	_small(W - mw - 4, 4, mw, MH)
-	if main.place != "town":
+	if not main.is_home(main.place):
 		_text("M", W - mw - 2, 6, T["dim"], {"font": "small", "shadow": P["ink"]})
 	_button(W - 14 - 4, MH + 7, 14, 12, "II", true)
 	_keys()
@@ -230,7 +230,7 @@ func _lit(i: int) -> bool:
 func _marks() -> Array:
 	var map: FloorMap = main.map
 	var out: Array = []
-	var town: bool = main.place == "town"
+	var town: bool = main.is_home(main.place)
 	# (in town the way out is the gate in the back wall)
 	if town and main.town != null:
 		for s in main.town.data.get("stations", []):

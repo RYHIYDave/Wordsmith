@@ -303,6 +303,11 @@
     if (depth > 0) {
       g.depth = depth;
       g.enterDungeon(depth === 1 ? 'gate' : undefined);
+    } else if (depth === -1) {
+      // (THE CAMP INSIDE VELLUM'S GATE, game/camp.ts: his town from floor 10 on, game.ts campTown: in from the Fen, through its gate)
+      g.wayDepth = 11;
+      g.depth = 10;
+      g.enterTown('gate');
     }
     return { town: !!g.level.town, depth: g.depth, w: g.level.floor.w, h: g.level.floor.h };
   };

@@ -621,7 +621,7 @@ class _Marks extends Node2D:
 			return
 		var main = q.main
 		var at: Array = []
-		if main.place == "town" and main.town != null:
+		if main.is_home(main.place) and main.town != null:
 			var who: Array = q.givers()
 			for s in main.town.data["stations"]:
 				if not who.has(s["kind"]):

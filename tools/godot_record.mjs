@@ -50,12 +50,13 @@ import { load, ROOT } from './lib.mjs';
 const args = process.argv.slice(2);
 const opt = (name, def) => { const i = args.indexOf('--' + name); return i >= 0 ? args[i + 1] : def; };
 const place = args.find((a) => !a.startsWith('--') && args[args.indexOf(a) - 1]?.startsWith('--') !== true) ?? args[0];
-if (!place) { console.error('which place? town, or a floor number'); process.exit(1); }
-const depth = place === 'town' ? 0 : Number(place);
-if (place !== 'town' && !(depth >= 1 && depth <= 20)) { console.error(`not a place: ${place}`); process.exit(1); }
+if (!place) { console.error('which place? town, camp, or a floor number'); process.exit(1); }
+// (camp: THE CAMP INSIDE VELLUM'S GATE, his town from floor 10 on: game/camp.ts; depth -1 here)
+const depth = place === 'town' ? 0 : place === 'camp' ? -1 : Number(place);
+if (place !== 'town' && place !== 'camp' && !(depth >= 1 && depth <= 20)) { console.error(`not a place: ${place}`); process.exit(1); }
 // (--hold n: a stronghold's hall on floors 6 to 10, as it is drawn from in it: floor<N>_hold<n>, REC.hall)
 const hold = opt('hold', null) === null ? null : Number(opt('hold', '0'));
-const name = depth === 0 ? 'town' : hold !== null ? `floor${depth}_hold${hold}` : `floor${depth}`;
+const name = depth === 0 ? 'town' : depth === -1 ? 'camp' : hold !== null ? `floor${depth}_hold${hold}` : `floor${depth}`;
 const seed = Number(opt('seed', '1'));
 const N = Number(opt('samples', '120'));
 const pageFile = path.resolve(ROOT, opt('page', 'dist/godot_rec.html'));
@@ -110,13 +111,14 @@ console.log(`${name}: ${where.w}x${where.h}, ${ready.props} props, ${ready.doors
 
 // (is this the level the Godot side has laid out? tools/godot_export.ts, the same seed: its tiles, doors and props held to it)
 {
-  const layoutFile = path.resolve(ROOT, `godot/assets/${depth === 0 ? name : `floor${depth}`}/layout.json`);
+  const layoutFile = path.resolve(ROOT, `godot/assets/${depth <= 0 ? name : `floor${depth}`}/layout.json`);
   if (fs.existsSync(layoutFile)) {
     const lay = JSON.parse(fs.readFileSync(layoutFile, 'utf8'));
     let hash = 0;
     for (const t of lay.tiles) hash = (Math.imul(hash, 31) + t) | 0;
     const doors = (lay.doors ?? []).map((q) => `${q.kind}:${q.alongX ? 'x' : 'y'}:${q.a}:${q.plane}`);
-    const props = (lay.props ?? []).map((p) => `${p.i}:${p.kind}:${p.tx}:${p.ty}`);
+    // (the camp's layout lists every piece of it, the floors' only their chests, barrels, urns and levers: held to its tiles alone)
+    const props = depth === -1 ? ready.sig.props : (lay.props ?? []).map((p) => `${p.i}:${p.kind}:${p.tx}:${p.ty}`);
     const same = hash === ready.sig.tiles && JSON.stringify(doors) === JSON.stringify(ready.sig.doors) && JSON.stringify(props) === JSON.stringify(ready.sig.props);
     console.log(same ? '  the same level as godot/assets/' + name + '/layout.json (tiles, doors, chests, barrels, urns and levers)' : `  !! NOT the level in godot/assets/${name}/layout.json: tiles ${hash === ready.sig.tiles ? 'the same' : 'differ'}, doors ${JSON.stringify(doors) === JSON.stringify(ready.sig.doors) ? 'the same' : 'differ'}, props ${JSON.stringify(props) === JSON.stringify(ready.sig.props) ? 'the same' : `differ (${props.length} against ${ready.sig.props.length})`}`);
   } else console.log(`  (no godot/assets/${name}/layout.json to hold it against)`);
@@ -198,7 +200,7 @@ if (Object.keys(sum.odd).length) console.log('  not brought over: ' + Object.ent
 let variants = {};
 let waypoint = null;
 if (!args.includes('--still') && hold === null) {
-  const layoutFile = path.resolve(ROOT, `godot/assets/${depth === 0 ? name : `floor${depth}`}/layout.json`);
+  const layoutFile = path.resolve(ROOT, `godot/assets/${depth <= 0 ? name : `floor${depth}`}/layout.json`);
   const layout = fs.existsSync(layoutFile) ? JSON.parse(fs.readFileSync(layoutFile, 'utf8')) : null;
   // (the lengths of the films, as the game has them: game/ways.ts; game/temple_door.ts TEMPLE_TIMES; game/quests15.ts CRANK_TIMES)
   // (and the descent's way on, floors 6 to 10: game/ways.ts ONWARD secs)
@@ -252,7 +254,7 @@ if (depth >= 6 && hold === null) {
 const skyRec = hold === null ? await page.evaluate(() => window.__rec.sky()) : null;
 if (skyRec) console.log(`  its sky: ${skyRec.wrap}x${skyRec.h} (${skyRec.done} painted)${skyRec.town ? `, the town below ${skyRec.town.w}x${skyRec.town.h} at ${skyRec.town.x},${skyRec.town.y}` : ''}`);
 const res = await page.evaluate(() => window.__rec.result);
-const sheets = await page.evaluate((grid) => window.__rec.sheets(4096, grid), depth >= 6);
+const sheets = await page.evaluate((grid) => window.__rec.sheets(4096, grid), depth >= 6 || depth === -1);
 const pageErrors = await page.evaluate(() => window.__rec.errors);
 for (const e of pageErrors) console.log('  !! ' + e);
 await browser.close();

@@ -102,10 +102,17 @@ var _port := {}
 var _bars := {}
 var _unbar_f := -1
 var _kept: Array = []
+## THE CAMP INSIDE VELLUM'S GATE (game/camp.ts), his town from floor 10 on: its layout assets/camp/layout.json (tools/godot_town.ts),
+## its look recorded whole from the game, its keepers and its three people by the fire among it (tools/godot_record.mjs camp);
+## its services used as the town's are (the same hand-ins, the wordsmith's half, the armourer's and the mystic's); the prison
+## town's own pieces (its ring of stones drawn here, its people, its stairs, its gate) not in it. No loop under it: the game's
+## world loops are off (game/world_sounds.ts WORLD_LOOPS).
+var camp := false
+const CAMP_DIR := "res://assets/camp"
 
 
 func _ready() -> void:
-	data = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/layout.json"))
+	data = JSON.parse_string(FileAccess.get_file_as_string((CAMP_DIR if camp else DIR) + "/layout.json"))
 	_sheet = load(DIR + "/pics.png")
 	for p in JSON.parse_string(FileAccess.get_file_as_string(DIR + "/pics.json")):
 		_pics[p["name"]] = {"rect": Rect2(p["x"], p["y"], p["w"], p["h"]), "anchor": Vector2(p["ax"], p["ay"]), "tex": _sheet}
@@ -122,7 +129,10 @@ func _ready() -> void:
 		_folk_sheets.append(load(FOLK_DIR + "/" + s))
 	for l in _folk_data["lists"]:
 		_folk_lists[l["name"]] = l["at"]
-	_ring = data["ring"]
+	_ring = data["ring"] if data.get("ring") != null else {"power": {"done": 0.0, "flare": 0.0}, "stones": []}
+	if camp:
+		_lay_gate()
+		return
 	for p in data["props"]:
 		var kind: String = p["kind"]
 		var at := Vector2(p["x"], p["y"])
@@ -215,7 +225,10 @@ func _process(dt: float) -> void:
 	if given_at >= 0.0 and _word_due > 0.0 and _t >= _word_due:
 		_word_due = -1.0
 		loot.give_word(loot.first_word())
-	_show()
+	if not camp:
+		_show()
+	else:
+		_camp_onward()
 	_use()
 	_step_gate(dt)
 	_show_gate()
@@ -440,7 +453,7 @@ func _use() -> void:
 			# (QUESTS610, game.ts handInNear, mysticDue: her ask for the Queen's feather, or the feather taken from him: act1/quest610.gd)
 			var task: String = main.quest610.mystic_prompt() if main.quest610 != null else ""
 			prompt = ["E: " + task, "feather"] if task != "" else ["E: Mystic", "mystic"]
-		"stash", "lexicon", "stranger":
+		"stash", "lexicon", "stranger", "gate":
 			prompt = ["E: %s" % best.capitalize(), "later"]
 	if prompt[1] != "" and Input.is_action_just_pressed("interact"):
 		_do(prompt[1])
@@ -732,3 +745,21 @@ func _show_kept() -> void:
 	var o: Vector2 = _kept[1] + Vector2(cos(a), sin(a)) * float(ORBIT["r"])
 	var z: float = ORBIT["z"] + ORBIT["bob"] * sin(_t * PI)
 	_kept[0].put("ms_stone", floori(_t * 12.0) % 24, Iso.to_screen(o.x, o.y), o.x + o.y + 0.08, z * 2.0, ORBIT["scale"])
+
+
+## THE CAMP'S WAY ON INTO THE CITY (game/camp.ts CAMP.onward, ways' `onward`: the barricaded street off to the right, its carts
+## hauled aside): in the game he goes down it to floor 11, which the Godot version has not yet: here, as he comes onto it, it
+## says so (once each time).
+var _told_onward := false
+
+
+func _camp_onward() -> void:
+	var o = data.get("onward")
+	if o == null or not hero.alive:
+		return
+	var d := Vector2(o["x"], o["y"]).distance_to(hero.world)
+	if d < 1.2 and not _told_onward:
+		_told_onward = true
+		loot.say("The way on into the city. (Floor 11 is not in the Godot version yet.)", Color(0.55, 0.6, 0.8))
+	elif d > 2.5:
+		_told_onward = false

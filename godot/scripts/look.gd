@@ -164,7 +164,7 @@ func _ready() -> void:
 		if it.get("what", "") == "the fallen wordsmith":
 			continue
 		# (WHAT IS SEEN WHEN, on a floor: the tile this stands on, by its place on the screen; what is behind everything is always drawn)
-		var tile := _tile1(it) if place != "town" and layer != "back" else -1
+		var tile := _tile1(it) if place != "town" and place != "camp" and layer != "back" else -1
 		if still.has(layer) and frames.size() == 1 and not it.has("stair") and not it.has("waypoint"):
 			(still_yh if it.has("yh") else still)[layer].append([frames[0], at, tile])
 			continue
@@ -233,7 +233,7 @@ func _ready() -> void:
 			layers[layer].move_child(drawer, 1 if yh else 0)
 			if yh:
 				_yh_nodes.append(drawer)
-	if place != "town":
+	if place != "town" and place != "camp":
 		_fogged = true
 		# (a door's leaf and a gate's bars wait on the tile they stand on too)
 		for D in _doors:

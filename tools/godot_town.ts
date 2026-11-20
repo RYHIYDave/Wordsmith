@@ -160,3 +160,27 @@ if (gate) {
 }
 console.log(`town: ${f.w}x${f.h}, ${L.props.length} pieces, start ${game.hero.x},${game.hero.y}; gate ${gateTiles.length} tiles; ground ${gh}px, pictures ${named.length} in a sheet ${ph}px tall`);
 console.log(gate ? `floor 1's gate: ${gate.spot.alongX ? 'along x' : 'along y'} at ${gate.spot.a},${doorFace(gate.spot)}; he comes in at ${down.hero.x.toFixed(2)},${down.hero.y.toFixed(2)}` : 'floor 1 has no gate');
+
+// --- THE CAMP INSIDE VELLUM'S GATE (game/camp.ts makeCamp, by Game.enterTown('gate') once he has come through from floor 10:
+// game.ts campTown, wayDepth 11): godot/assets/camp/layout.json, for godot/scripts/town.gd with `camp` on. Its look (the camp as
+// the game draws it, its keepers and its three people by the fire among it) is recorded by tools/godot_record.mjs camp.
+{
+  const cg = new Game('warrior', seed);
+  (cg as unknown as { wayDepth: number }).wayDepth = 11;
+  cg.depth = 10;
+  (cg as unknown as { enterTown(by?: string): void }).enterTown('gate');
+  const CL = cg.level;
+  const cf = CL.floor;
+  mkdirSync('godot/assets/camp', { recursive: true });
+  writeFileSync('godot/assets/camp/layout.json', JSON.stringify({
+    depth: 0, camp: true, seed, w: cf.w, h: cf.h, tiles: Array.from(cf.tiles), variant: Array.from(cf.variant), walk: Array.from(CL.walk),
+    start: { x: cg.hero.x, y: cg.hero.y, fx: cg.hero.fx, fy: cg.hero.fy },
+    rooms: cf.rooms.map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h })),
+    props: CL.props.map((p) => ({ kind: p.kind, name: (p as unknown as { name?: string }).name ?? null, x: p.x, y: p.y, variant: p.variant, solid: p.solid })),
+    stair: null, shaft: null, gate: null, ring: null,
+    stations: CL.stations,
+    way: CL.ways?.way ? { x: CL.ways.way.x, y: CL.ways.way.y } : null,
+    onward: CL.ways?.onward ? { x: CL.ways.onward.x, y: CL.ways.onward.y } : null,
+  }));
+  console.log(`camp: ${cf.w}x${cf.h}, ${CL.props.length} pieces, ${CL.stations.length} services (${CL.stations.map((s) => s.kind).join(', ')}); he comes in at ${cg.hero.x},${cg.hero.y}; its waypoint ${CL.ways?.way ? `${CL.ways.way.x},${CL.ways.way.y}` : 'none'}; its way on to floor 11 ${CL.ways?.onward ? `${CL.ways.onward.x},${CL.ways.onward.y}` : 'none'}`);
+}

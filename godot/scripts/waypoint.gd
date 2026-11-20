@@ -50,7 +50,16 @@ func here() -> bool:
 func prompt() -> Array:
 	if not here():
 		return ["", ""]
-	return ["E: Waypoint: to town", "way"] if not in_town else ["E: Waypoint: to dungeon %d" % main.way_depth, "way"]
+	return ["E: Waypoint: to town", "way"] if not in_town else ["E: Waypoint: to dungeon %d" % target(), "way"]
+
+
+## The floor his town's waypoint takes him to (game.ts takeWay: max(2, wayDepth)). From the camp that is the city's first floor,
+## 11, which the Godot version has not yet: until it has, the deepest floor it has that he has reached.
+func target() -> int:
+	var n: int = maxi(2, main.way_depth)
+	while n > 2 and not main.has_floor(n):
+		n -= 1
+	return n
 
 
 ## The warp: the column of light flares over it, and 0.25 s later he is gone, to town or back down.
@@ -62,4 +71,4 @@ func warp() -> void:
 	sfx.play("power", linear_to_db(0.7))
 	await get_tree().create_timer(WARP).timeout
 	sfx.play("portal")
-	main.go_warp("town" if not in_town else "floor%d" % main.way_depth)
+	main.go_warp(main.home_place() if not in_town else "floor%d" % target())

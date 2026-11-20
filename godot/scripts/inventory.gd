@@ -804,7 +804,7 @@ func _draw_attacks(blink: bool, first: bool) -> void:
 ## close this and try it.
 func _coach() -> String:
 	if _coached:
-		if main == null or main.place == "town":
+		if main == null or main.is_home(main.place):
 			return ""
 		return "%s! Close this and try it." % str(hero.loadout.r(main.guide.at)["name"]).to_upper()
 	if not loot.first_word_waits():

@@ -292,7 +292,11 @@ func _go() -> void:
 		main.loot.say("%s cleared. The siege is broken." % str(map.title.get("level", "")), good)
 		if sfx != null:
 			sfx.play("portal")
-		main.go_to("town", "in_gate")
+		# (game.ts takeWay 'on' from the Fen: the city's first floor his to warp to (wayDepth 11), and so his town from now on the
+		# camp inside Vellum's gate, in through its city gate: game/camp.ts, his pick “Yes, the camp from then on (Recommended)”)
+		if n >= 10:
+			main.way_depth = maxi(main.way_depth, 11)
+		main.go_to(main.home_place(), "in_gate")
 	elif not main.has_floor(n + 1):
 		main.go_to("town", "cage")
 	else:

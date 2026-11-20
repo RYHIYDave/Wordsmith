@@ -58,7 +58,7 @@ func banner(seen := true) -> Dictionary:
 	if seen and not main.get_tree().paused:
 		_speak["t"] -= dt
 	var who: String = _speak["who"]
-	var where: String = main.loot.quest_text["speakWhere"].get(who, "") if main.place == "town" else main.loot.quest_text["speakBack"]
+	var where: String = main.loot.quest_text["speakWhere"].get(who, "") if main.is_home(main.place) else main.loot.quest_text["speakBack"]
 	return {"caption": "QUEST", "text": "%s the %s" % ["Return to" if _speak["back"] else "Speak to", who.to_upper()], "sub": where}
 
 
@@ -66,7 +66,7 @@ func banner(seen := true) -> Dictionary:
 func _lesson() -> Dictionary:
 	var hero = main.hero
 	var loot = main.loot
-	var town: bool = main.place == "town"
+	var town: bool = main.is_home(main.place)
 	var L = hero.loadout
 	if use_t > 0.0 and (not L.fronts(at).is_empty() or not L.behinds(at).is_empty()):
 		# (what the word is doing there, in the word's own plain line)
@@ -152,7 +152,7 @@ func _speak_step() -> void:
 	var back := _back_now()
 	var secs: float = main.loot.quest_text["speakSecs"]
 	if _place != main.place:
-		var who: String = back if back != "" else (due[0] if main.place == "town" and not due.is_empty() else "")
+		var who: String = back if back != "" else (due[0] if main.is_home(main.place) and not due.is_empty() else "")
 		if who != "":
 			_speak = {"who": who, "t": secs, "back": who == back}
 	elif back != "" and back != _back:
