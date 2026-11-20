@@ -483,6 +483,23 @@ His pick, asked what to build next: “Town pieces still missing (Recommended)�
   and no loop (as the game). Its way on into the city (the barricaded street) says floor 11 is not in yet; its waypoint, which
   in the game takes him on to the city's floor 11, takes him to the deepest floor the Godot version has until the city is in.
   `--only=camp` (`check_camp.gd`): 8 steps, in from the Fen the way the game has it.
+- **The town's other services** (his pick, asked what next: “Rest of the town (Recommended)”), each its half beside the gear
+  screen, used at its place in town (`inventory.gd` THE TOWN'S OTHER SERVICES, `loot.gd`):
+  - THE STRANGER (ui/trades.ts gambleSide; game.ts gambleKinds, gamblePrice, gamble): the fourteen kinds of piece he throws for a
+    Warrior, a throw costing three times a plain piece of the kind as he comes up from his floor (the game's own prices,
+    `tools/godot_loot.ts` `gamble`); paid, a piece of that kind, plain, magic or rare by the game's own odds (55, 35 and 10 in a
+    hundred), one of the pieces the game's own roller made for that kind, quality and floor; YOU GOT, its name in the colour of
+    what it is; refused for want of gold ("YOU HAVE ...") or with the bag full; the right button throws at once. (Its very rare
+    unique: the uniques are not in yet.)
+  - THE STASH (ui/town.ts stashSide; game.ts stashItem, unstashItem): 36 places, KEPT FOR LATER CHARACTERS; a piece of the bag
+    pressed is put away, one of the stash's taken out. The game keeps it past the character; with no saved game yet here, it
+    lasts while the game is open.
+  - THE LEXICON (ui/lexicon.ts lexiconSide, ui/lexicon28.ts its five pages, 'groups'): N OF 28 FOUND; DAMAGE, STRIKE, TIME,
+    CONTROL, SPOILS, a tab each; each word found its stone with four pips for what is known of it, the rest "?"; the open word's
+    page; KEPT FOR YOUR NEXT CHARACTER, a spare word kept from its card for 150 gold, doubled for each kept already (KEEP), taken
+    out again for nothing (TAKE IT OUT), melded and ranked words refused in the game's words. Kept, as the stash, while the game
+    is open.
+  `--only=services` (`check_services.gd`): 9 steps, the gamble's 1000 throws among them against the game's odds.
 
 ## Not in it yet
 
@@ -499,8 +516,8 @@ the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 
 and blows; what a boss says is shown, not spoken), the
 Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: the
 stone floating from him to the slab, the letters
-swirling round the ring and its column of light, the stranger's gamble, the stash, the
-Lexicon, the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
+swirling round the ring and its column of light, a saved game (the stash and the Lexicon's shelf kept past the character),
+the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
 breaks, what stands behind raised ground cut off by it, the rest of the heroes, menus, the title screen's music.
 

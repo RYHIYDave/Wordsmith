@@ -190,6 +190,7 @@ func toggle() -> void:
 		shop = ""
 		altar = -1
 		wsmith = ""
+		svc = ""
 	mouse_filter = Control.MOUSE_FILTER_STOP if visible else Control.MOUSE_FILTER_IGNORE
 
 
@@ -206,7 +207,7 @@ func _gui_input(e: InputEvent) -> void:
 		_mouse = e.position
 		_hover = {}
 		for h in _hits:
-			if h[0].has_point(e.position) and (h[1] == "worn" or h[1] == "bag" or h[1] == "buy"):
+			if h[0].has_point(e.position) and (h[1] == "worn" or h[1] == "bag" or h[1] == "buy" or h[1] == "st_take"):
 				_hover = {"item": h[3], "at": e.position}
 		if not _drag.is_empty() and not _drag["moving"] and e.position.distance_to(_drag["at"]) > 5.0 * K:
 			_begin_drag()
@@ -220,10 +221,15 @@ func _gui_input(e: InputEvent) -> void:
 			for c in _slots:
 				if c["r"].has_point(e.position) and _set_in(c) != null:
 					_unsocket(c["i"], c["side"], c["k"])
-			# (THE WORDSMITH'S TRADE: on one of his words, it is bought at once, as everywhere: ui/trades.ts)
+			# (THE WORDSMITH'S TRADE: on one of his words, it is bought at once, as everywhere: ui/trades.ts; THE STRANGER: on a kind
+			# of piece, a throw at once)
 			for h in _hits:
 				if h[1] == "ws_cell" and h[0].has_point(e.position):
 					_ws_quick(h[2])
+				elif h[1] == "gm_kind" and h[0].has_point(e.position):
+					gm_pick = int(h[2])
+					var why: String = loot.gamble_problem(gm_pick)
+					_say(why if why != "" else loot.gamble(gm_pick))
 			accept_event()
 		elif not e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 			_released(e.position)
@@ -387,6 +393,9 @@ func _press(action: String, arg) -> void:
 				loot.unequip(arg)
 			elif shop != "":
 				loot.sell(arg)
+			elif svc == "stash":
+				# (THE STASH: a piece of the bag put away: game.ts stashItem)
+				_say(loot.stash_item(int(arg)))
 			else:
 				loot.equip_from_bag(arg)
 		"yes":
@@ -420,6 +429,8 @@ func _press(action: String, arg) -> void:
 			_altar_press(action, arg)
 		"ws_tab", "ws_hollow", "ws_meld", "ws_to_meld", "ws_cell", "ws_buy", "ws_sell":
 			_ws_press(action, arg)
+		"gm_kind", "gm_throw", "st_take", "lx_tab", "lx_word", "lx_kept", "lx_take", "lx_keep":
+			_svc_press(action, arg)
 	_hover = {}
 
 
@@ -692,6 +703,8 @@ func _draw() -> void:
 		_altar_side(blink)
 	if wsmith != "":
 		_ws_side(blink)
+	if svc != "":
+		_svc_side(blink)
 	_draw_reading(blink, first)
 	if _note_t > 0.0:
 		var nw := minf(W - 8.0, _width(_note, NORMAL) + 16.0)
@@ -1148,6 +1161,11 @@ func _draw_reading(blink: bool, first: bool) -> void:
 				if hint != "":
 					_lines(rows, hint, DIM, SMALL, inner)
 				buttons = [["TO THE MELD", "ws_to_meld"]]
+			# (THE LEXICON: what keeping it in the book costs, and KEEP: ui/lexicon.ts wordHint, wordButtons)
+			elif svc == "lexicon":
+				var cost: int = loot.keep_cost()
+				_lines(rows, ("Keeping it here costs %d gold: you have %d." % [cost, loot.gold]) if loot.gold < cost else "Kept here, it waits for your next character.", DIM, SMALL, inner)
+				buttons = [["KEEP: %d GOLD" % cost, "lx_keep"]]
 			# (THE WORDSMITH'S TRADE: his half on its first page: what he pays, and SELL: ui/trades.ts wordHint, wordButtons)
 			elif wsmith == "trade":
 				_lines(rows, "He pays %d gold for a spare word." % loot.word_sell_value(), DIM, SMALL, inner)
@@ -1982,3 +2000,260 @@ func _ws_page(w: String, x: float, y: float, pw: float, end: float) -> void:
 		for r in rows:
 			_top(Vector2(x + r[3], y), r[0], r[2], r[1])
 			y += 6.0 * K if r[2] <= SMALL else 9.0 * K
+
+
+# =====================================================================================================================
+# THE TOWN'S OTHER SERVICES, each its half beside the gear screen as a vendor's shelf is (Godot's plain letters and frames, as
+# the rest of the gear screen):
+#   THE STRANGER (ui/trades.ts gambleSide): "Pay, and take what comes"; A THROW FOR: the kinds of piece he throws for, each its
+#     Normal picture, dimmed where a throw costs more than the hero has; one pressed: its name and THROW: <price> GOLD (why not
+#     in red: YOU HAVE <gold>, BAG IS FULL); the right button throws at once; what the last throw brought: YOU GOT, its name in
+#     the colour of what it is, "A <plain/magic/rare> piece. It is in your bag." (loot.gd gamble)
+#   THE STASH (ui/town.ts stashSide): KEPT FOR LATER CHARACTERS, its places in rows of nine; a piece of the bag pressed is put
+#     away, one of the stash's pressed is taken out (loot.gd stash_item, unstash_item).
+#   THE LEXICON (ui/lexicon.ts lexiconSide, ui/lexicon28.ts 'groups'): LEXICON, N OF 28 FOUND; its five pages by what the words
+#     do, a tab each; the open page's words, each its stone with four pips for what is known of it (in front, behind, on gear,
+#     on a dungeon), or "?" not yet found; the word that is open, its page; along the bottom KEPT FOR YOUR NEXT CHARACTER, the
+#     words kept in the book (ONE MORE: <price> GOLD), one pressed taken out (TAKE IT OUT); a spare word of the hero's kept from
+#     its card (KEEP: <price> GOLD) (loot.gd keep_cost, deposit_word, withdraw_word).
+# =====================================================================================================================
+
+## (the service whose half is open: "stranger", "stash", "lexicon"; "": none)
+var svc := ""
+var gm_pick := -1
+var lx_tab := 0
+var lx_sel := ""
+var lx_pick := ""
+const RARITY_WORD := ["plain", "magic", "rare", "unique"]
+
+
+## Opened at a stranger's, a stash's or a Lexicon's place in town (town.gd).
+func open_service(kind: String) -> void:
+	shop = ""
+	altar = -1
+	wsmith = ""
+	if not visible:
+		toggle()
+	svc = kind
+	gm_pick = -1
+	lx_pick = ""
+	if kind == "lexicon":
+		lx_sel = ""
+		for p in Words.data()["lexPages"]:
+			for w in p["words"]:
+				if lx_sel == "" and _lx_found(w):
+					lx_sel = w
+		lx_tab = _lx_page_of(lx_sel) if lx_sel != "" else 0
+
+
+func _lx_found(w: String) -> bool:
+	return Words.data()["words"].has(w) and bool(loot._know(w)["found"])
+
+
+func _lx_page_of(w: String) -> int:
+	var pages: Array = Words.data()["lexPages"]
+	for i in pages.size():
+		if (pages[i]["words"] as Array).has(w):
+			return i
+	return 0
+
+
+func _svc_press(action: String, arg) -> void:
+	match action:
+		"gm_kind":
+			gm_pick = int(arg)
+			_word = ""
+		"gm_throw":
+			if gm_pick >= 0:
+				var why: String = loot.gamble_problem(gm_pick)
+				_say(why if why != "" else loot.gamble(gm_pick))
+		"st_take":
+			_say(loot.unstash_item(int(arg)))
+		"lx_tab":
+			lx_tab = int(arg)
+			lx_pick = ""
+			for w in Words.data()["lexPages"][lx_tab]["words"]:
+				if _lx_found(w):
+					lx_sel = w
+					break
+		"lx_word":
+			lx_sel = str(arg)
+			lx_pick = ""
+		"lx_kept":
+			lx_pick = str(arg)
+			_word = ""
+			if _lx_found(lx_pick):
+				lx_sel = lx_pick
+				lx_tab = _lx_page_of(lx_pick)
+		"lx_take":
+			if lx_pick != "":
+				var why: String = loot.withdraw_word(lx_pick)
+				_say(why)
+				if int(loot.lexicon.get(lx_pick, 0)) <= 0:
+					lx_pick = ""
+		"lx_keep":
+			if _word != "":
+				var why: String = loot.deposit_word(_word)
+				_say(why)
+				if why == "" and int(loot.words.get(_word, 0)) <= 0:
+					_word = ""
+
+
+func _svc_side(blink: bool) -> void:
+	var x0 := size.x / 2.0 + 12.0
+	var w := size.x / 2.0 - 24.0
+	draw_rect(Rect2(x0 - 12, 0, w + 24, size.y), PANEL)
+	match svc:
+		"stranger":
+			_gm_side(blink, x0, w)
+		"stash":
+			_st_side(x0, w)
+		"lexicon":
+			_lx_side(blink, x0, w)
+
+
+func _svc_button(label: String, x0: float, w: float, action: String, can: bool, blink: bool) -> Rect2:
+	var bwid := _width(label, NORMAL) + 32.0
+	var br := Rect2(x0 + w - bwid, size.y - 52.0, bwid, 30.0)
+	draw_rect(br, Color(PRESS, (0.35 if blink else 0.18) if can else 0.06))
+	draw_rect(br, PRESS if can else FAINT, false, 1.5)
+	_mid(br, label, NORMAL, Color.WHITE if can else FAINT)
+	_hits.append([br, action, null, null])
+	return br
+
+
+# --- THE STRANGER ---
+
+func _gm_side(blink: bool, x0: float, w: float) -> void:
+	_text(Vector2(x0, 22), "THE STRANGER", 16, PICK)
+	var y := 42.0
+	for l in _wrap("Pay, and take what comes: most often plain, sometimes better.", w, 10):
+		_text(Vector2(x0, y), l, 10, TEXT)
+		y += 13.0
+	_text(Vector2(x0, y + 4.0), "A THROW FOR", 10, DIM)
+	var gy := y + 12.0
+	var cols := maxi(1, mini(8, int(floorf((w + 2.0) / PITCH))))
+	var kinds: Array = loot.gamble_kinds()
+	for k in kinds.size():
+		var r := Rect2(x0 + (k % cols) * PITCH, gy + floorf(k / float(cols)) * PITCH, CELL, CELL)
+		var on := k == gm_pick
+		draw_rect(r, HOT if on or r.has_point(_mouse) else INK)
+		draw_rect(r, PICK if on else EDGE, false, 1.5 if on else 1.0)
+		_icon(str(kinds[k]["icon"]), r.grow(-K))
+		if loot.gold < loot.gamble_price(k):
+			draw_rect(r.grow(-1.0), Color(INK, 0.45))
+		_hits.append([r, "gm_kind", k, null])
+	y = gy + ceilf(kinds.size() / float(cols)) * PITCH + 8.0
+	if _word != "" or not _pending.is_empty() or not _result.is_empty():
+		return
+	# what the last throw brought
+	if loot.won >= 0 and loot.won < loot.bag.size():
+		var it: Dictionary = loot.bag[loot.won]
+		_text(Vector2(x0, y + 9.0), "YOU GOT", 9, DIM)
+		y += 14.0
+		for l in _wrap(str(it["name"]).to_upper(), w, NORMAL):
+			_text(Vector2(x0, y + 12.0), l, NORMAL, loot.RARITY_COLOR[int(it["rarity"])])
+			y += 16.0
+		_text(Vector2(x0, y + 9.0), "A %s piece. It is in your bag." % RARITY_WORD[clampi(int(it["rarity"]), 0, 3)], 10, DIM)
+		y += 18.0
+	if gm_pick < 0:
+		_text(Vector2(x0, y + 9.0), "Click a kind of piece to throw for it. Right-click throws at once.", 9, FAINT)
+		return
+	var cost: int = loot.gamble_price(gm_pick)
+	var why: String = loot.gamble_problem(gm_pick)
+	_text(Vector2(x0, y + 12.0), str(kinds[gm_pick]["name"]).to_upper(), NORMAL, PICK)
+	var br := _svc_button("THROW: %d GOLD" % cost, x0, w, "gm_throw", why == "", blink)
+	if why != "":
+		var t := ("YOU HAVE %d" % loot.gold) if why == "Not enough gold" else why.to_upper()
+		_text(Vector2(br.position.x - 8.0 - _width(t, 10), br.position.y + 19), t, 10, BAD)
+
+
+# --- THE STASH ---
+
+func _st_side(x0: float, w: float) -> void:
+	_text(Vector2(x0, 22), "STASH", 16, PICK)
+	_text(Vector2(x0, 42), "KEPT FOR LATER CHARACTERS", 10, DIM)
+	var cols := maxi(1, mini(9, int(floorf((w + 2.0) / PITCH))))
+	for i in loot.stash.size():
+		var r := Rect2(x0 + (i % cols) * PITCH, 50.0 + floorf(i / float(cols)) * PITCH, CELL, CELL)
+		var it = loot.stash[i]
+		draw_rect(r, INK)
+		draw_rect(r, (loot.RARITY_COLOR[int(it["rarity"])] if it != null else EDGE), false, 1.0)
+		if it != null:
+			_icon(it["icon"], r.grow(-K))
+			_hits.append([r, "st_take", i, it])
+	var fy := 50.0 + ceilf(loot.stash.size() / float(cols)) * PITCH + 12.0
+	_text(Vector2(x0, fy), "CLICK A PIECE TO MOVE IT ACROSS.", 9, FAINT)
+
+
+# --- THE LEXICON ---
+
+func _lx_side(blink: bool, x0: float, w: float) -> void:
+	var D: Dictionary = Words.data()
+	var found := 0
+	for p in D["lexPages"]:
+		for wd in p["words"]:
+			if _lx_found(wd):
+				found += 1
+	_text(Vector2(x0, 22), "LEXICON", 16, PICK)
+	_text(Vector2(x0 + _width("LEXICON", 16) + 10, 22), "%d OF %d FOUND" % [found, int(D["allWords"])], 10, DIM)
+	# its five tabs
+	var pages: Array = D["lexPages"]
+	var tx := x0
+	for i in pages.size():
+		var name: String = pages[i]["name"]
+		var tw := _width(name, SMALL) + 12.0 * K
+		var tr := Rect2(tx, 30.0, tw, 20.0)
+		var on := i == lx_tab
+		draw_rect(tr, HOT if on else BOX)
+		draw_rect(tr, PICK if on else EDGE, false, 1.5 if on else 1.0)
+		_mid(tr, name, SMALL, PICK if on else TEXT)
+		_hits.append([tr, "lx_tab", i, null])
+		tx += tw + 2.0 * K
+	# the open page's words: found, its stone and what is known of it; not yet, "?"
+	var words: Array = pages[lx_tab]["words"]
+	for i in words.size():
+		var wd: String = words[i]
+		var r := Rect2(x0 + i * PITCH, 58.0, CELL, CELL)
+		if not _lx_found(wd):
+			draw_rect(r, INK)
+			draw_rect(r, EDGE, false, 1.0)
+			_mid(r, "?", NORMAL, FAINT)
+			continue
+		var on := wd == lx_sel
+		_tile(r, wd, "name", {"stone": true, "lit": on or r.has_point(_mouse), "edge": PICK if on else null})
+		var k: Dictionary = loot._know(wd)
+		var kn := [k["front"], k["behind"], k["gear"], false]
+		for j in 4:
+			draw_rect(Rect2(r.position.x + 3.0 * K + j * 4.0 * K, r.end.y - 2.5 * K, 3.0 * K, 1.5 * K), loot.word_color(wd) if kn[j] else EDGE)
+		_hits.append([r, "lx_word", wd, null])
+	# the shelf along the bottom: the words kept in the book
+	var shelf_y := size.y - 58.0 - CELL
+	var page_y := 58.0 + CELL + 10.0
+	if _word == "" and _pending.is_empty() and _result.is_empty():
+		if lx_sel != "" and _lx_found(lx_sel):
+			_ws_page(lx_sel, x0, page_y, w, shelf_y - 10.0)
+		elif found == 0:
+			for l in _wrap("No word found yet. The first lies in a satchel, half way through the first dungeon.", w, 10):
+				_text(Vector2(x0, page_y + 12.0), l, 10, DIM)
+				page_y += 13.0
+	draw_rect(Rect2(x0, shelf_y, w, 1), EDGE)
+	_text(Vector2(x0, shelf_y + 14.0), "KEPT FOR YOUR NEXT CHARACTER", 9, DIM)
+	var kept: Array = []
+	for p in pages:
+		for wd in p["words"]:
+			if int(loot.lexicon.get(wd, 0)) > 0:
+				kept.append(wd)
+	if lx_pick != "":
+		_svc_button("TAKE IT OUT", x0, w, "lx_take", true, blink)
+	else:
+		var price := "ONE MORE: %d GOLD" % loot.keep_cost()
+		_text(Vector2(x0 + w - _width(price, 9), shelf_y + 14.0), price, 9, GOLD)
+	if kept.is_empty():
+		_text(Vector2(x0, shelf_y + 34.0), "None.", 9, FAINT)
+	for i in kept.size():
+		var wd: String = kept[i]
+		var r := Rect2(x0 + i * PITCH, shelf_y + 20.0, CELL, CELL)
+		var on := wd == lx_pick
+		_tile(r, wd, "name", {"stone": true, "lit": on or r.has_point(_mouse), "edge": PICK if on else null, "count": int(loot.lexicon[wd])})
+		_hits.append([r, "lx_kept", wd, null])

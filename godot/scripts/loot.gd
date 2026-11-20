@@ -167,6 +167,9 @@ func _ready() -> void:
 	quest_text = data["quest"]
 	stat_info = data["stats"]
 	_tune = data["tune"]
+	_gamble = data.get("gamble", {})
+	stash = []
+	stash.resize(int(_tune["stashSize"]))
 	_attr = data["attr"]
 	sheet = load(DIR + "/icons.png")
 	for p in JSON.parse_string(FileAccess.get_file_as_string(DIR + "/icons.json")):
@@ -1363,6 +1366,8 @@ func roll_word_stock(depth: int) -> void:
 		word_stock.append(pool[k])
 		pool.remove_at(k)
 	words_sold = []
+	# (and the stranger has thrown nothing for him yet on this visit: game.ts rollShop, `won`)
+	won = -1
 
 
 ## What one of his words costs on this visit (game.ts wordPrice).
@@ -1558,3 +1563,132 @@ class _FilmPic extends Node2D:
 		_s.scale = Vector2(scale, scale)
 		_s.modulate.a = alpha
 		return true
+
+
+# --- THE STRANGER'S GAMBLE (ui/trades.ts gambleSide; game.ts gambleKinds, gamblePrice, gamble; defs.ts TUNE.gambleMult,
+# gambleOdds): the kinds of piece he throws for (tools/godot_loot.ts `gamble`), a throw for one costing so many times a plain
+# piece of that kind at the vendors' as he comes up from his floor; paid, a piece of that kind: plain most often, magic
+# sometimes, now and then rare (the game's own odds), one the game itself rolled for that kind, quality and floor. (Its very
+# rare unique, gambleOdds.unique: the uniques are not in the Godot version.) ---
+
+var _gamble := {}
+## (where in the bag the piece the last throw brought lies; -1: nothing thrown for on this visit)
+var won := -1
+
+
+func gamble_kinds() -> Array:
+	return _gamble.get("kinds", [])
+
+
+## (the floor he came up from: game.ts `power`, his depth while he is in town)
+func _town_power() -> int:
+	return clampi(int(main.last_floor) if main != null else 1, 1, 10)
+
+
+func gamble_price(k: int) -> int:
+	var row: Array = _gamble["price"][str(_town_power())]
+	return int(row[k]) if k >= 0 and k < row.size() else 0
+
+
+## Why a throw for kind `k` cannot be made just now, or "" (ui/trades.ts problem).
+func gamble_problem(k: int) -> String:
+	if gold < gamble_price(k):
+		return "Not enough gold"
+	if bag.size() >= BAG:
+		return "Bag is full"
+	return ""
+
+
+## A throw for kind `k`: "" or why not, in the game's own words.
+func gamble(k: int) -> String:
+	if k < 0 or k >= gamble_kinds().size():
+		return "Nothing there"
+	var price := gamble_price(k)
+	if gold < price:
+		return "Not enough gold"
+	if bag.size() >= BAG:
+		return "Bag is full"
+	var odds: Dictionary = _tune["gambleOdds"]
+	var roll := randf()
+	var rarity := 2 if roll < float(odds["rare"]) else (1 if roll < float(odds["rare"]) + float(odds["magic"]) else 0)
+	var pool: Array = _gamble["pieces"][str(_town_power())][k][rarity]
+	var it: Dictionary = pool[randi() % pool.size()].duplicate(true)
+	gold -= price
+	bag.append(it)
+	won = bag.size() - 1
+	sfx.play("rare" if rarity >= 2 else "buy")
+	return ""
+
+
+# --- THE STASH (ui/town.ts stashSide; game.ts stashItem, unstashItem; defs.ts TUNE.stashSize): pieces put away out of the bag
+# and taken out again, TUNE.stashSize places. In the game it outlasts the character (meta.stash); the Godot version keeps no
+# saved game yet, so here it lasts as long as the game is open. ---
+
+var stash: Array = []
+
+
+func stash_item(i: int) -> String:
+	if i < 0 or i >= bag.size():
+		return "Nothing there"
+	var free := stash.find(null)
+	if free < 0:
+		return "Stash is full"
+	stash[free] = bag[i]
+	bag.remove_at(i)
+	sfx.play("equip")
+	return ""
+
+
+func unstash_item(i: int) -> String:
+	if i < 0 or i >= stash.size() or stash[i] == null:
+		return "Nothing there"
+	if bag.size() >= BAG:
+		return "Bag is full"
+	bag.append(stash[i])
+	stash[i] = null
+	sfx.play("equip")
+	return ""
+
+
+# --- THE LEXICON'S SHELF (ui/lexicon.ts lexiconSide; game.ts keepCost, depositWord, withdrawWord): a spare word kept in the book,
+# for gold, for his next character: TUNE.keepCost, doubled for each word kept there already; taken out again for nothing. Like
+# the stash, the game keeps it past the character (meta.lexicon); here, as long as the game is open. ---
+
+## (how many of each word are kept in the book)
+var lexicon := {}
+
+
+func keep_cost() -> int:
+	var kept := 0
+	for w in lexicon:
+		kept += int(lexicon[w])
+	return int(_tune["keepCost"]) * int(pow(2, mini(20, kept)))
+
+
+func deposit_word(w: String) -> String:
+	if int(words.get(w, 0)) <= 0:
+		return "No spare word"
+	if Words.is_meld(w):
+		return "The Lexicon keeps no melded word"
+	if Words.is_rank(w):
+		return "The Lexicon keeps no ranked word"
+	var cost := keep_cost()
+	if gold < cost:
+		return "Needs %d gold" % cost
+	gold -= cost
+	words[w] = int(words[w]) - 1
+	lexicon[w] = int(lexicon.get(w, 0)) + 1
+	sfx.play("word")
+	return ""
+
+
+func withdraw_word(w: String) -> String:
+	if int(lexicon.get(w, 0)) <= 0:
+		return "None in the Lexicon"
+	lexicon[w] = int(lexicon[w]) - 1
+	if int(lexicon[w]) <= 0:
+		lexicon.erase(w)
+	words[w] = int(words.get(w, 0)) + 1
+	_know(w)["found"] = true
+	sfx.play("word")
+	return ""

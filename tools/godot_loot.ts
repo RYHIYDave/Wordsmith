@@ -29,6 +29,7 @@ import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { DARK_RING, Game } from '../src/game/game';
+import { rollItem } from '../src/game/items';
 import { ITEM_ROOM, STAT_INFO, flatPair, imbueItem, imbueLines, imbueOptions, imbueOptionsFor, itemMods, itemRoom, itemValue, kindName, modLines, rarityFor, starterWeapon, statGroup } from '../src/game/items';
 import { FIRST_WORD, WORDS, wordGrowth, wordsAt } from '../src/game/defs';
 import { TUNE, ATTR_GIVES } from '../src/game/defs';
@@ -251,6 +252,33 @@ const inTown = new Game('warrior', seed);
 const shopsOf = (inTown as unknown as { shops: Record<string, (Item | null)[]> }).shops;
 const shops: Record<string, unknown[]> = {};
 for (const [id, list] of Object.entries(shopsOf)) shops[id] = list.filter((it): it is Item => it !== null).map(plain);
+// THE STRANGER'S GAMBLE (game.ts gambleKinds, gamblePrice, gamble; defs.ts TUNE.gambleMult, gambleOdds): the kinds he throws for
+// a Warrior (each its name and its Normal picture), what a throw costs coming up from each floor (power 1 to 10), and for each
+// such floor and each quality a throw can come out at (0 plain, 1 magic, 2 rare) GAMBLE_N pieces rolled by the game's own
+// rollItem as gamble() rolls them; loot.gd rolls the quality as the game does and takes one of them. (Its very rare unique,
+// TUNE.gambleOdds.unique: the uniques are not in the Godot version.)
+const GAMBLE_N = 8;
+const gambleKindsList = inTown.gambleKinds();
+const gamble = {
+  kinds: gambleKindsList.map((k) => {
+    const key = `${k.icon}:0`;
+    if (!pics.has(key)) pics.set(key, itemPic(icons, k.icon, 0));
+    return { name: k.name, slot: k.slot, weapon: k.weapon ?? null, icon: key };
+  }),
+  price: {} as Record<string, number[]>,
+  pieces: {} as Record<string, unknown[][][]>,
+};
+for (let depth = 1; depth <= 10; depth++) {
+  const gg = new Game('warrior', seed);
+  gg.depth = depth;
+  gamble.price[String(depth)] = gambleKindsList.map((_, k) => gg.gamblePrice(k));
+  const forHim = (it: Item): Item => (gg as unknown as { forHim(i: Item): Item }).forHim(it);
+  const rng = (gg as unknown as { rng: Parameters<typeof rollItem>[1] }).rng;
+  gamble.pieces[String(depth)] = gambleKindsList.map((kind) =>
+    [0, 1, 2].map((rarity) => Array.from({ length: GAMBLE_N }, () => plain(forHim(rollItem(Math.max(1, depth), rng, { slot: kind.slot, rarity: rarity as 0 | 1 | 2, weapons: kind.weapon ? [kind.weapon] : undefined, cls: 'warrior' }))))),
+  );
+}
+tally.push(`the stranger: ${gambleKindsList.length} kinds (${gambleKindsList.map((k) => k.name).join(', ')}), a throw ${gamble.price['1'].join('/')} gold coming up from floor 1, ${gamble.price['10'].join('/')} from floor 10; ${GAMBLE_N} pieces of each quality for each kind and floor`);
 const body = game.level.body;
 // (what each word becomes on each kind of piece: once every piece that is written has been seen)
 const imbue: Record<string, Record<string, unknown[]>> = {};
@@ -296,7 +324,7 @@ const quest = {
   speakBack: SPEAK_BACK,
   speakSecs: QUEST_MARKS.secs,
 };
-writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest }));
+writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble }));
 tally.push(`words on gear: ${[...OURS, ...MADE].join(', ')} on ${kinds.size} kinds of piece by level, ${sizes} sizes in all`);
 
 // --- the pictures in one sheet: each at two picture pixels to a game pixel, its anchor kept ---

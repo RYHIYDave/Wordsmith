@@ -1798,6 +1798,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_trade.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	# (THE TOWN'S OTHER SERVICES: the stranger's gamble, the stash, the Lexicon: check_services.gd)
+	if _arg("only") == "services":
+		await preload("res://scripts/check_services.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE CAMP INSIDE VELLUM'S GATE, his town from floor 10 on: check_camp.gd)
 	if _arg("only") == "camp":
 		await preload("res://scripts/check_camp.gd").new().run(self, hero, dir)

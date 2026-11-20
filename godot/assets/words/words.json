@@ -1634,5 +1634,61 @@
    ],
    "note": "Half as strong again as Poison."
   }
- }
+ },
+ "lexPages": [
+  {
+   "name": "DAMAGE",
+   "words": [
+    "power",
+    "poison",
+    "fire",
+    "frost",
+    "lightning"
+   ]
+  },
+  {
+   "name": "STRIKE",
+   "words": [
+    "twin",
+    "heavy",
+    "precise",
+    "splitting",
+    "piercing",
+    "volatile",
+    "vast",
+    "surging",
+    "mirroring"
+   ]
+  },
+  {
+   "name": "TIME",
+   "words": [
+    "swift",
+    "frenzied",
+    "stilling",
+    "lasting",
+    "fleeting"
+   ]
+  },
+  {
+   "name": "CONTROL",
+   "words": [
+    "pulling",
+    "binding",
+    "hexing",
+    "guarding"
+   ]
+  },
+  {
+   "name": "SPOILS",
+   "words": [
+    "leech",
+    "bleeding",
+    "reaping",
+    "culling",
+    "plundering"
+   ]
+  }
+ ],
+ "allWords": 28
 }

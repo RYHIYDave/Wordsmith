@@ -28,6 +28,7 @@ import { MELD8_TUNE } from '../src/game/melds8';
 import { gearLines, gearNote } from '../src/ui/lexicon';
 import { NEW_GLYPH, NEW_RAMP } from '../src/render/words3';
 import { W10_RAMP } from '../src/render/words10';
+import { LEX_PAGES } from '../src/ui/lexicon28';
 import type { Derived } from '../src/game/state';
 import type { WordId } from '../src/game/types';
 
@@ -128,6 +129,10 @@ writeFileSync(`${OUT}/words.json`, JSON.stringify({
   // (each word's page as the wordsmith's half reads it, under the word just made and under a word of his picked to buy,
   // ui/lexicon.ts wordPage: what it becomes on gear, in the Lexicon's words, and the note under it)
   page: Object.fromEntries([...OURS, ...MADE].map((w) => [w, { gear: gearLines(w, 'cooldown'), note: gearNote(w) }])),
+  // (THE LEXICON's five pages by what the words do, ui/lexicon28.ts LEX_PAGES ('groups', his pick of 9 Nov 2026), and how many
+  // words there are in all, types.ts WORD_IDS: "N OF 28 FOUND")
+  lexPages: LEX_PAGES.map((p) => ({ name: p.name, words: [...p.words] })),
+  allWords: WORD_IDS.length,
 }, null, 1));
 console.log(`words: ${OURS.join(', ')}; made: ${MADE.join(', ')}; moves ${moves.join(', ')}`);
 

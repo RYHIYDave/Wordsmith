@@ -453,7 +453,10 @@ func _use() -> void:
 			# (QUESTS610, game.ts handInNear, mysticDue: her ask for the Queen's feather, or the feather taken from him: act1/quest610.gd)
 			var task: String = main.quest610.mystic_prompt() if main.quest610 != null else ""
 			prompt = ["E: " + task, "feather"] if task != "" else ["E: Mystic", "mystic"]
-		"stash", "lexicon", "stranger", "gate":
+		"stash", "lexicon", "stranger":
+			# (his half beside the gear screen: the stranger's gamble, the stash, the Lexicon: inventory.gd)
+			prompt = ["E: %s" % best.capitalize(), best]
+		"gate":
 			prompt = ["E: %s" % best.capitalize(), "later"]
 	if prompt[1] != "" and Input.is_action_just_pressed("interact"):
 		_do(prompt[1])
@@ -506,6 +509,8 @@ func _do(what: String) -> void:
 			main.quest610.mystic_hand_in()
 		"later":
 			loot.say("Not in the Godot version yet.", Color(0.55, 0.6, 0.8))
+		"stash", "lexicon", "stranger":
+			main._inv.open_service(what)
 
 
 # --- the gate out to the Quarry ---
