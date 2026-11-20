@@ -74,6 +74,11 @@ const BOSS_AI := {
 	"unfinished": preload("res://scripts/act1/unfinished.gd"), "queen": preload("res://scripts/act1/queen.gd"),
 	# (FLOOR 10'S BOSS, THE SWAMP COLOSSUS, and his tentacles, of his kind: game/act1_rules/colossus.ts; scripts/act1/colossus.gd)
 	"eye": preload("res://scripts/act1/colossus.gd"),
+	# (THE CITY'S COMMON MONSTERS, floors 11 to 15, each by its kind's own rules: game/act1_rules/; scripts/act2/)
+	"hushed": preload("res://scripts/act2/hushed.gd"), "hound": preload("res://scripts/act2/hound.gd"),
+	"scribe": preload("res://scripts/act2/scribe.gd"), "watch": preload("res://scripts/act2/watch.gd"),
+	# (THE CITY'S BOSSES: floor 11's, the Crier)
+	"crier": preload("res://scripts/act2/crier.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -92,12 +97,16 @@ const VOICE := {
 	"vulture": "vulture", "crawler": "bug", "scorpion": "bug", "rubbling": "stone", "qgolem": "stone", "devil": "devil",
 	# (floors 9 and 10's, and floor 9's side bosses)
 	"wolf": "wolf", "mistwolf": "wolf", "deer": "deer", "leech": "leech", "spawn": "leech", "drowned": "spirit", "warchief": "troll",
+	# (the city's: sound_families.ts VOICE, its third batch the silent ones)
+	"rat": "rat", "inkling": "ink", "bookwarden": "book", "hound": "hound", "hushed": "hushed", "fieldhand": "hushed", "patient": "hushed", "watch": "watch",
 }
 const ATK := {
 	"skeleton": "atkBones", "champion": "atkBones", "beast": "atkBones", "mite": "atkBones", "brute": "atkTroll", "bat": "atkBat",
 	"dagger": "atkDagger", "cultist": "atkHex", "priest": "atkHex", "boneward": "atkShield", "shade": "atkSpirit",
 	"chanter": "atkHex", "vulture": "atkVulture", "crawler": "atkSting", "scorpion": "atkSting", "rubbling": "atkStone", "qgolem": "atkStone", "firepot": "atkFirepot",
 	"wolf": "atkBite", "mistwolf": "atkBite", "deer": "atkAntler", "leech": "atkLeech", "spawn": "atkLeech", "drowned": "atkSpirit", "warchief": "atkTroll",
+	# (the city's)
+	"rat": "atkRat", "ratking": "atkRat", "hushed": "atkClub", "watch": "atkClub", "inkling": "atkInk", "bookwarden": "atkBook",
 }
 ## (sound_families.ts BOSS_VOICE: the bosses that roar: their roar as the fight begins, their hurt, their death. The Stoker's
 ## is in the game's table too and is never heard there: he is an elite, and these wait on a boss. The Warden, the Headsman
@@ -108,7 +117,9 @@ const BOSS_VOICE := {"chained": "chained", "amalgam": "amalgam",
 	# (the bosses of floors 6 and 7)
 	"unfinished": "unfinished", "queen": "cqueen",
 	# (the Swamp Colossus: his roar as he is first come upon is the old Eye's; his hurt and his death his own: colossus.gd hurt_voice, died)
-	"eye": "eye"}
+	"eye": "eye",
+	# (the city's: the Rat King's roar, and the silent bosses', sound_families.ts BOSS_VOICE)
+	"ratking": "ratking", "crier": "crier", "scraper": "scraper", "quill": "quill", "censor": "censor"}
 
 var mgr  # monsters.gd
 var art: BakedFigure

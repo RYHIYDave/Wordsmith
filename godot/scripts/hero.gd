@@ -192,6 +192,10 @@ var burn_t := 0.0
 var burn_dps := 0.0
 var chill_t := 0.0
 var chill_k := 0.0
+## (ACT 2, THE HUSH on him, game.ts hush, hushT: his words dark, every one, for so long yet: the Crier's shout, and the city's
+## others; his moves made as if no word were in them, and his words written dark on the bar)
+var hush_t := 0.0
+const HUSH_FOR := 4.0
 var shock_t := 0.0
 var poison_t := 0.0
 var poison_dps := 0.0
@@ -748,6 +752,11 @@ func _process(dt: float) -> void:
 	# (what the monsters' words left on him runs down: game.ts updateHero)
 	if chill_t > 0.0:
 		chill_t -= dt
+	# (ACT 2, THE HUSH: his words come back as it runs out: game.ts update)
+	if hush_t > 0.0:
+		hush_t = maxf(0.0, hush_t - dt)
+		if hush_t == 0.0:
+			loadout.set_hushed(false)
 	if shock_t > 0.0:
 		shock_t -= dt
 	if burn_t > 0.0:
@@ -1303,6 +1312,14 @@ func heal(share: float) -> void:
 
 ## A NEW PLACE, or fallen and back (game.ts enterLevel: what was on him is over as he comes into a level): his might and
 ## his haste are gone, and what the monsters' words had left on him, burning, chill, shock and poison.
+## game.ts hush: his words hushed for `secs` (the longer of this and what is left of one already on him).
+func hush(secs := HUSH_FOR) -> void:
+	if not alive or secs <= 0.0:
+		return
+	hush_t = maxf(hush_t, secs)
+	loadout.set_hushed(true)
+
+
 func fresh_place() -> void:
 	might = 0.0
 	might_t = 0.0
@@ -1320,6 +1337,9 @@ func fresh_place() -> void:
 	shock_t = 0.0
 	poison_t = 0.0
 	poison_dps = 0.0
+	# (ACT 2, THE HUSH: none carries off the place; his words are his again: game.ts clearLevel)
+	hush_t = 0.0
+	loadout.set_hushed(false)
 
 
 ## Fallen: back where he came in, whole again, and the monsters that were after him gone back to sleep.

@@ -75,6 +75,9 @@ func load_floor(path: String, figures_dir: String) -> void:
 		var figure: String = m["figure"]
 		if not _figures.has(figure):
 			_figures[figure] = BakedFigure.new(figures_dir, figure, info)
+		# (the first plain one of each kind, wordless, of no pack's rank: what a boss calls up of it is made as it is: call_up)
+		if not _plain.has(m["kind"]) and not m["boss"] and not m["elite"] and not m["champion"] and (m["words"] as Array).is_empty() and m.get("rarity") == null:
+			_plain[m["kind"]] = m
 		var mon := Monster.new()
 		mon.mgr = self
 		mon.setup(m, data["defs"][m["kind"]], _figures[figure])
@@ -495,6 +498,42 @@ func _lay_spear(a: Dictionary) -> void:
 						at = c
 	owner.spear_lies(at, a["dir"], flow_to(at))
 	perils.spear(at, a["dir"], owner)
+
+
+## One of a kind called up into the fight by a boss (game.ts spawn, plain: no words, no rank), as the floor's own plain one of it is
+## made (its life, its blows, its pace), at `at`, of pack `pack`, facing `face`; awake and coming on at once, its first blow a
+## moment off (cd 0.4 to 0.9 s); giving nothing as it falls (xp 0). Its look by its number, as the game gives the Hushed theirs
+## (hushed.ts: Monster.form = id % 3). null where the floor has no plain one of the kind.
+var _plain := {}
+var _called := 0
+func call_up(kind: String, at: Vector2, pack: int, face: Vector2) -> Monster:
+	if not _plain.has(kind):
+		return null
+	var d: Dictionary = _plain[kind].duplicate(true)
+	_called += 1
+	d["id"] = 100000 + _called
+	d["x"] = at.x
+	d["y"] = at.y
+	var f := face.normalized() if face.length() > 0.001 else Vector2(1, 0)
+	d["fx"] = f.x
+	d["fy"] = f.y
+	d["packId"] = pack
+	d["state"] = "chase"
+	d.erase("xp")
+	if kind == "hushed":
+		var form := int(d["id"]) % 3
+		d["figure"] = "hushed" if form == 0 else "hushed_%d" % form
+	var figure: String = d["figure"]
+	if not _figures.has(figure):
+		_figures[figure] = BakedFigure.new(_figures_dir, figure, _info)
+	var m := Monster.new()
+	m.mgr = self
+	m.setup(d, _defs[kind], _figures[figure])
+	m.state = "chase"
+	m._cd = randf_range(0.4, 0.9)
+	stands.add_child(m)
+	list.append(m)
+	return m
 
 
 ## THE WARDEN CALLS THE DEAD (game.ts callDead): four skeletons crawl up out of the ground on open floor round him, a little

@@ -159,6 +159,10 @@ import { boulderRolling, hurledBlock, stompCracks } from '../src/art/unfinished'
 import { BALL_CRASH_FOR, drawBallCrash } from '../src/art/boss_shots';
 import { QA_DIVE } from '../src/art/carrion_queen_action';
 import { paintDiveBurst, paintDiveMarks } from '../src/art/carrion_queen_action_fx';
+import { FLY_CANVAS, OIL_CANVAS, POOL as WA_POOL, SHADOW_CANVAS, lanternFlying, lanternShadow, lobFly, oilPainted } from '../src/art/action_f11_watch';
+import { OIL_FPS, oilSprite } from '../src/art/act1_figs/watch';
+import { paintToll } from '../src/art/crier_action_fx';
+import { TOLL as CR_TOLL } from '../src/art/crier_action';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -719,6 +723,52 @@ for (const view of ['front', 'back'] as const) {
   });
 }
 
+// FLOOR 11'S AND THE CITY'S (render/act1_fx/watch.ts, the chop and the lantern: WATCH_LANTERN on, as the game starts): the Hushed
+// Watchman's lantern (what of his aims any way, the floor his chop splits, is painted in Godot itself: godot/scripts/act2/marks11.gd)
+//   wa_mark     where the lantern will smash marked, filling as it comes (markRing round POOL.burst: 25 stills, a 24th of its flight
+//               each, layer `floor`); wa_shadow: its shadow under it in flight (lanternShadow: 21 stills, a 20th each)
+//   wa_fly      the lantern in flight, tumbling, its flame streaming (lanternFlying, 30 a second, layer `stand`, as long as its
+//               longest flight)
+//   wa_oil      the burning oil on the floor from its smash to its end (oilSprite: OIL_FPS a second, as the game paints it ahead,
+//               layer `floor`); wa_smash: the smash itself (oilPainted 'air', by halves: `behind` and `before`, 30 a second)
+{
+  const stills = (name: string, n: number, layer: string, at: (i: number) => Sprite | number): void => {
+    films[name] = { fps: 0, n, k0: 0, layers: { [layer]: Array.from({ length: n }, (_, i) => { const q = at(i); return typeof q === 'number' ? q : pic(q); }) } };
+  };
+  const O = OIL_CANVAS;
+  stills('wa_mark', 25, 'floor', (q) => {
+    const px = new Px(O.w, O.h);
+    markRing(px, O.ax, O.ay, WA_POOL.burst, q / 24);
+    return rawPic(px, 1, O.ax, O.ay);
+  });
+  stills('wa_shadow', 21, 'floor', (q) => toSprite({ px: lanternShadow(q / 20), lights: [] }, null, SHADOW_CANVAS.ax, SHADOW_CANVAS.ay));
+  film('wa_fly', Math.ceil(lobFly(8) * FPS) / FPS, { stand: (k) => toSprite(lanternFlying(k / FPS), null, FLY_CANVAS.ax, FLY_CANVAS.ay) });
+  film('wa_oil', WA_POOL.burn, { floor: (k) => oilSprite(k) }, 0, OIL_FPS);
+  film('wa_smash', WA_POOL.smash, {
+    behind: (k) => toSprite(oilPainted(k / FPS, 'air', 'behind'), null, O.ax, O.ay),
+    before: (k) => toSprite(oilPainted(k / FPS, 'air', 'before'), null, O.ax, O.ay),
+  });
+}
+
+// FLOOR 11'S BOSS, THE CRIER (render/act1_fx/crier.ts ACTION_FX, his fight the action way: CRIER_ACTION on, as the game starts):
+//   cr_toll     a toll's mark where the hero stood as it was rung, counting down, and its burst (art/crier_action_fx.ts paintToll:
+//               30 a second from its toll, layer `floor`, on the game's own canvas for it). What of his aims any way (the shout
+//               off the walls, the decree down its lane, his call's pools) is painted in Godot itself (godot/scripts/act2/
+//               crier_paint.gd).
+{
+  // (floorPicture round it, TOLL.r and 0.6 more each way, its floor point the canvas's middle)
+  const span = Math.hypot(CR_TOLL.r + 0.6, CR_TOLL.r + 0.6) + 1;
+  const W = Math.ceil(64 * span) + 8;
+  const H = Math.ceil(32 * span) + 8;
+  film('cr_toll', CR_TOLL.burst + 0.5, {
+    floor: (k) => {
+      const px = new Px(W, H);
+      paintToll(px, [W / 2, H / 2], k / FPS);
+      return rawPic(px, 1, W / 2, H / 2);
+    },
+  });
+}
+
 // --- the sheets: each SET of films on sheets of its own (the films of one kind of monster: the game loads a set only on a
 // floor that has its kind), the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
 /** The set a film is packed with: the first word of its name; the cultist's sigil and the Flame keybearer's apart. */
@@ -734,6 +784,8 @@ const KIND_SETS: Record<string, string[]> = {
   cantor: ['cn'], stag: ['sg'],
   // (the bosses of floors 6 and 7)
   unfinished: ['uf'], queen: ['qn'],
+  // (the city's)
+  watch: ['wa'], crier: ['cr'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

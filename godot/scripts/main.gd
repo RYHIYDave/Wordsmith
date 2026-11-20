@@ -1854,6 +1854,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_camp.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	# (THE CITY'S FLOORS' MONSTERS, floors 11 to 15: check_city.gd)
+	if _arg("only") == "city":
+		await preload("res://scripts/check_city.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "meldstone":
 		await preload("res://scripts/check_trade.gd").new().meldstone(self, hero, dir)
 		get_tree().quit()

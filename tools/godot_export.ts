@@ -199,9 +199,12 @@ console.log(`layout: seed ${seed}, ${L.w}x${L.h}, ${count(1)} floor / ${count(2)
 // --- 4. THE DESCENT'S OPEN GROUND (floors 6 and down: game/act1_layout.ts Land): its areas, each its role ('start', 'boss',
 // 'lair', ...), the room it stands for and its blob (an ellipse `rx` by `ry` round (x, y), turned `rot`, its edge wandering by
 // `wob` from `seed`: blobDist). The boss waits on it till the hero comes into his ground (game.ts meetOutdoorBoss); the Hollow
-// Stag's clearing is his area's (game/act1_rules/stag.ts own). Written beside the layout, only for a floor that has one. ---
+// Stag's clearing is his area's (game/act1_rules/stag.ts own). Its lanes (`w` wide along `pts`): the Crier's call brings the Hushed
+// out of their mouths into his square first (game/act1_rules/crier.ts spotsFor). Written beside the layout, only for a floor that
+// has one. ---
 if (level.land) {
   const areas = level.land.areas.map((a) => ({ role: a.role, room: a.room, blob: { ...a.blob } }));
-  writeFileSync(`${OUT}/land.json`, JSON.stringify({ kind: level.land.kind, areas }, null, 1));
-  console.log(`land: ${level.land.kind}, ${areas.length} areas (${areas.map((a) => a.role).join(', ')})`);
+  const lanes = level.land.lanes.map((l) => ({ w: l.w, pts: l.pts.map(([x, y]) => [x, y]) }));
+  writeFileSync(`${OUT}/land.json`, JSON.stringify({ kind: level.land.kind, areas, lanes }, null, 1));
+  console.log(`land: ${level.land.kind}, ${areas.length} areas (${areas.map((a) => a.role).join(', ')}), ${lanes.length} lanes`);
 }

@@ -31,6 +31,8 @@ const DIR := "res://assets/hud/"
 
 var main  # main.gd
 var hero  # hero.gd
+## (hud.ts HUSHED.color: the dark his words are written in while the Hush is on him)
+const HUSHED := Color("#4a4658")
 var loot  # loot.gd (may be null)
 var words := ""
 var words_frame := 0
@@ -539,7 +541,8 @@ func _name_parts(s: int) -> Array:
 
 func _word_piece(w: String, form: String, rune: bool) -> Dictionary:
 	var text: String = _data["words"][w][form]
-	var c := Color(_data["word_color"][w])
+	# (ACT 2, THE HUSH on him: his words written dark, hud.ts HUSHED)
+	var c := HUSHED if hero.hush_t > 0.0 else Color(_data["word_color"][w])
 	if rune:
 		return {"kind": "rune", "text": text, "color": c, "w": 12.0, "word": w}
 	return {"kind": "word", "text": text, "color": c, "w": _width(text), "word": w}

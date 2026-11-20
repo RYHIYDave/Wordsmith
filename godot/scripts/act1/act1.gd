@@ -34,7 +34,9 @@ const ATK := {"qgolem": "atkStone", "rubbling": "atkStone", "firepot": "atkFirep
 	# (floors 9 and 10's, and floor 9's two side bosses: act1/wolf.gd, deer.gd, leech.gd, spawn.gd, drowned.gd, warchief.gd, mistwolf.gd)
 	"wolf": "atkBite", "mistwolf": "atkBite", "deer": "atkAntler", "leech": "atkLeech", "spawn": "atkLeech", "drowned": "atkSpirit", "warchief": "atkTroll",
 	# (floor 9's boss; a boss's heard at 0.9; the Cantor has none)
-	"stag": "atkAntler"}
+	"stag": "atkAntler",
+	# (the city's: sound_families.ts ATK)
+	"rat": "atkRat", "ratking": "atkRat", "hushed": "atkClub", "watch": "atkClub", "inkling": "atkInk", "bookwarden": "atkBook"}
 ## (chanter.ts CHANTER.ward: the cult's kinds a chanter shields, within `r` tiles of it, each taking `share` less harm)
 const WARD := {"r": 4.5, "share": 0.4, "kinds": ["dagger", "cultist", "firepot", "minifm", "priest"]}
 

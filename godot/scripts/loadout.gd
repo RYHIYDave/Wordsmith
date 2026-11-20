@@ -20,6 +20,8 @@ var behind: Array = [[], [], []]
 ## (his numbers the words read: stats.ts derive; set_stats)
 var _d := {"str": 14.0, "dex": 8.0, "int": 6.0, "area": 1.0, "aps": 1.092, "cdr": 0.0}
 var _r: Array = [null, null, null]
+## (ACT 2, THE HUSH on him: each move made as if no word were in it, game.ts refresh `dark`)
+var hushed := false
 
 
 ## His level, and whether the ring is lit: the slots there are now. A slot that opens is empty; none is ever taken away.
@@ -113,8 +115,17 @@ func any() -> bool:
 	return false
 
 
-## MOVE `i` WITH ITS WORDS (words.gd resolve; the game's Resolved), as his numbers stand.
+## MOVE `i` WITH ITS WORDS (words.gd resolve; the game's Resolved), as his numbers stand; hushed, as if none were in it.
 func r(i: int) -> Dictionary:
 	if _r[i] == null:
-		_r[i] = Words.resolve(Words.moves()[i], front[i], behind[i], _d)
+		var none := func(_w): return null
+		_r[i] = Words.resolve(Words.moves()[i], front[i].map(none) if hushed else front[i], behind[i].map(none) if hushed else behind[i], _d)
 	return _r[i]
+
+
+## Hushed or not (game.ts hush, and its running out): his moves made afresh.
+func set_hushed(on: bool) -> void:
+	if hushed == on:
+		return
+	hushed = on
+	_r = [null, null, null]
