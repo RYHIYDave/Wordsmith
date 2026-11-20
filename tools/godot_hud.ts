@@ -18,6 +18,7 @@ import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { CLASSES, FLOOR_NAMES, SKILLS, WORDS, floorTitle, growsWith } from '../src/game/defs';
 import { makeStoneArt } from '../src/art/quest3';
+import { makeMeldDropsArt } from '../src/art/meld_drops';
 import { keySprite } from '../src/art/key_bearers_fx';
 import { WORD_COLOR, makeIconArt } from '../src/art/icons';
 import { ELEMENT_RAMP, P } from '../src/art/palette';
@@ -38,6 +39,8 @@ pics.set('potion', icons.potion);
 pics.set('gold', icons.gold[0]);
 // (the Master Rune-stone, while it is carried: art/quest3.ts, its icon)
 pics.set('stone', makeStoneArt().icon);
+// (the Meldstone, while it is carried: art/meld_drops.ts, its small picture by INVENTORY, ui/hud.ts)
+pics.set('meldstone', makeMeldDropsArt().carried);
 for (const [w, s] of Object.entries(icons.word)) pics.set(`word:${w}`, s as Sprite);
 const W = CLASSES.warrior;
 const ids = [W.tap, W.hold, W.evade] as const;

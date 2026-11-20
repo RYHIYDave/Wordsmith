@@ -11,13 +11,14 @@ var M
 var h
 var n := 0
 var bad: Array = []
+var tag := "TRADE"
 
 
 func _line(ok: bool, what: String) -> void:
 	n += 1
 	if not ok:
 		bad.append(n)
-	print("TRADE %02d %s: %s" % [n, "OK" if ok else "WRONG", what])
+	print("%s %02d %s: %s" % [tag, n, "OK" if ok else "WRONG", what])
 
 
 func run(main, hero, dir: String) -> void:
@@ -126,3 +127,65 @@ func run(main, hero, dir: String) -> void:
 	await M._snap(dir + "/t08_next_visit.png")
 	inv.toggle()
 	print("TRADE: %d steps of the wordsmith's trade in words, %d as the game's%s" % [n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
+
+
+## THE MELDSTONE CARRIED AND GIVEN (--only=meldstone): carried, its small picture by INVENTORY (ui/hud.ts); given, its flight to
+## the wordsmith's slab at its beats (render/meld_drops.ts givenOf: risen, over, the shudder, the halves whirling, the slam and
+## its burst, settling) and then its round of the column of light. A line a picture; then the sum, MELDSTONE.
+func meldstone(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	tag = "MELDSTONE"
+	var loot = M.loot
+	var smith := Vector2(9.5, 14.5)
+	await M.go_to("town", "gate")
+	await M._wait(0.8)
+	h.walked = 5.0
+	loot.ring_lit = true
+	loot.quest = ""
+	loot.taught = true
+	loot.furnace = "done"
+	loot.meld_ask = true
+	loot.meld = "stone"
+	loot.derive()
+	h.world = M._spot_near(smith, 1.4, h.world)
+	await M._wait(0.6)
+	await RenderingServer.frame_post_draw
+	var img: Image = M.get_viewport().get_texture().get_image()
+	img.get_region(Rect2i(0, 0, mini(img.get_width(), 960), mini(img.get_height(), 240))).save_png(dir + "/s01_carried.png")
+	_line(M.town.prompt[0] == "E: Give the Meldstone", "carried: its small picture by INVENTORY (picture s01); his prompt '%s'" % M.town.prompt[0])
+	await M._key(KEY_E)
+	var beats := [[0.3, "rising out of him", "s02"], [1.0, "floating over to his slab", "s03"], [1.4, "a shudder, its halves straining", "s04"],
+		[1.9, "its halves whirling round each other", "s05"], [2.3, "SLAMMED together, its burst", "s06"], [2.7, "going out to its round", "s07"], [3.6, "on its round of the column of light", "s08"]]
+	for b in beats:
+		# (by the flight's own clock: the pictures take time of their own)
+		var at: float = b[0]
+		if b[2] == "s08":
+			await M._w_until(func() -> bool: return M.town._given.is_empty(), 6.0)
+			await M._wait(0.5)
+		else:
+			await M._w_until(func() -> bool: return float(M.town._given.get("g", 99.0)) >= at, 6.0)
+		var g: float = float(M.town._given.get("g", -1.0))
+		var G: Dictionary = M.town.given_of(g, M.town._t, h.world, M.town._kept[1]) if g >= 0.0 else {}
+		var what: String = "the stone %s" % ("-" if G.is_empty() or G["stone"] == null else G["stone"]["shown"])
+		if not G.is_empty() and G["halves"] != null:
+			what = "two halves"
+		if not G.is_empty() and G["burst"] != null:
+			what += ", its burst"
+		await M._snap("%s/%s_given.png" % [dir, b[2]])
+		var ok := true
+		match b[2]:
+			"s02", "s03":
+				ok = not G.is_empty() and G["stone"] != null and G["stone"]["shown"] == "hang"
+			"s04":
+				ok = not G.is_empty() and G["stone"] != null and G["stone"]["shown"] == "apart"
+			"s05":
+				ok = not G.is_empty() and G["halves"] != null
+			"s06":
+				ok = not G.is_empty() and G["burst"] != null and bool(M.town._given["slammed"])
+			"s07":
+				ok = not G.is_empty() and G["stone"] != null and G["stone"]["shown"] == "whole"
+			"s08":
+				ok = M.town._given.is_empty() and M.town._kept[0].visible and loot.meld == "open"
+		_line(ok, "%.1f s after it was given, %s: %s (picture %s)" % [b[0], b[1], what if b[2] != "s08" else "its flight over, the kept stone on its round", b[2]])
+	print("MELDSTONE: %d pictures of the Meldstone carried and given, %d as the game's%s" % [n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])

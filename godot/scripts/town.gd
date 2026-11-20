@@ -220,6 +220,8 @@ func _process(dt: float) -> void:
 	_step_gate(dt)
 	_show_gate()
 	_show_kept()
+	if not _kept.is_empty():
+		_show_given(dt)
 	# THE STAIRS DOWN: on their top step he goes down to floor 1 (ways.ts onTopStep)
 	var st = data["stair"]
 	if st != null and hero.alive:
@@ -472,6 +474,13 @@ func _do(what: String) -> void:
 		"meld":
 			# (game.ts takeMeldstone: he takes it, gives the two words and the lesson; and the gate down the mountain unbarred)
 			loot.give_meldstone()
+			# (its flight to his slab: render/meld_drops.ts givenOf, from 'stoneGiven')
+			var gp: Array = []
+			for i in 4:
+				var q := Loot._FilmPic.new()
+				stands.add_child(q)
+				gp.append(q)
+			_given = {"g": 0.0, "hero": hero.world, "slammed": false, "pics": gp}
 			if int(main.way_depth) < 6:
 				main.way_depth = 6
 				barred = true
@@ -606,6 +615,102 @@ func _show_gate() -> void:
 		b["pic"].put(film % k, f, b["at"], b["d"])
 
 
+## GIVEN (render/meld_drops.ts givenOf, GIVEN; render.ts standMeldMoments): the Meldstone given, `g` seconds after, from him
+## (`hero`, tiles) to over the slab (`slab`): it rises out of him and floats over the slab; a shudder, its halves straining;
+## torn apart, they whirl round each other faster and faster and crash back together in a great burst (the screen kicked);
+## and it goes out to its round of the column of light, still spinning. {stone: {x, y, z, shown, yaw, scale} or null, halves:
+## [{x, y, z, yaw}] or null, burst: {scale, alpha} or null, slammed}; {} once it has settled.
+const GIVEN := {"risen": 0.5, "over": 1.3, "split": 1.45, "slam": 2.25, "burst": 0.45, "settled": 2.9, "riseZ": 34.0}
+## (the Meldstone given: {g, hero, slammed, pics}: empty when none is being given)
+var _given := {}
+
+
+static func _ease(k: float) -> float:
+	return k * k * (3.0 - 2.0 * k)
+
+
+func _orbit_at(t: float, slab: Vector2) -> Vector3:
+	var a := t / float(ORBIT["secs"]) * TAU
+	return Vector3(slab.x + cos(a) * float(ORBIT["r"]), slab.y + sin(a) * float(ORBIT["r"]), float(ORBIT["z"]) + float(ORBIT["bob"]) * sin(t * PI))
+
+
+func given_of(g: float, t: float, hero_at: Vector2, slab: Vector2) -> Dictionary:
+	if g < 0.0 or g >= float(GIVEN["settled"]):
+		return {}
+	var kz: float = ORBIT["z"]
+	var since: float = g - float(GIVEN["slam"])
+	var burst = {"scale": 0.6 + (since / float(GIVEN["burst"])) * 1.8, "alpha": 1.0 - since / float(GIVEN["burst"])} if since >= 0.0 and since < float(GIVEN["burst"]) else null
+	var whole := func(x: float, y: float, z: float, shown: String, yaw: float, scale: float, slammed: bool) -> Dictionary:
+		return {"stone": {"x": x, "y": y, "z": z, "shown": shown, "yaw": yaw, "scale": scale}, "halves": null, "burst": burst, "slammed": slammed}
+	var rz: float = GIVEN["riseZ"]
+	if g < float(GIVEN["risen"]):
+		# up out of him
+		var k := _ease(g / float(GIVEN["risen"]))
+		return whole.call(hero_at.x, hero_at.y, 16.0 + (rz - 16.0) * k, "hang", 0.0, 0.4 + 0.6 * k, false)
+	if g < float(GIVEN["over"]):
+		# over to the slab
+		var k := _ease((g - float(GIVEN["risen"])) / (float(GIVEN["over"]) - float(GIVEN["risen"])))
+		return whole.call(hero_at.x + (slab.x - hero_at.x) * k, hero_at.y + (slab.y - hero_at.y) * k, rz + (kz + 2.0 - rz) * k + 6.0 * sin(k * PI), "hang", 0.0, 1.0, false)
+	if g < float(GIVEN["split"]):
+		# a shudder, its halves straining
+		var k := (g - float(GIVEN["over"])) / (float(GIVEN["split"]) - float(GIVEN["over"]))
+		return whole.call(slab.x, slab.y, kz + 2.0, "apart", 30.0 * sin(k * PI * 4.0), 1.0 + 0.1 * k, false)
+	if g < float(GIVEN["slam"]):
+		# its halves torn apart, whirling round each other, faster and faster; then crashing back in
+		var k := (g - float(GIVEN["split"])) / (float(GIVEN["slam"]) - float(GIVEN["split"]))
+		var turn := TAU * (0.5 * k + 2.2 * k * k)
+		var r := 0.55 * minf(1.0, k / 0.22) * ((1.0 - (k - 0.8) / 0.2) if k > 0.8 else 1.0)
+		var z := kz + 2.0 + 4.0 * sin(k * PI)
+		var halves: Array = []
+		for n in 2:
+			var a := turn + n * PI
+			halves.append({"x": slab.x + cos(a) * r, "y": slab.y + sin(a) * r, "z": z + 2.0 * sin(a * 2.0), "yaw": a * 180.0 / PI + 90.0})
+		return {"stone": null, "halves": halves, "burst": null, "slammed": false}
+	# slammed together; it goes out to its round of the column of light, still spinning
+	var o := _orbit_at(t, slab)
+	var k2 := _ease(clampf((g - float(GIVEN["slam"])) / (float(GIVEN["settled"]) - float(GIVEN["slam"])), 0.0, 1.0))
+	return whole.call(slab.x + (o.x - slab.x) * k2, slab.y + (o.y - slab.y) * k2, kz + 2.0 + (o.z - kz - 2.0) * k2, "whole", 720.0 * (1.0 - k2), 1.2 - 0.2 * k2, true)
+
+
+## (art/meld_drops.ts spinStep: the step of its turn, of 16)
+static func _spin(yaw: float) -> int:
+	return posmod(roundi(yaw / 360.0 * 16.0), 16)
+
+
+## The Meldstone given, as it goes (from loot.give_meldstone, `_do("meld")`).
+func _show_given(dt: float) -> bool:
+	if _given.is_empty():
+		return false
+	_given["g"] = float(_given["g"]) + dt
+	var pics: Array = _given["pics"]
+	var G := given_of(_given["g"], _t, _given["hero"], _kept[1])
+	if G.is_empty():
+		for q in pics:
+			q.queue_free()
+		_given = {}
+		return false
+	var ks: float = ORBIT["scale"]
+	var st = G["stone"]
+	pics[0].visible = st != null
+	if st != null:
+		var film: String = "ms_apart" if st["shown"] == "apart" else ("ms_whole" if st["shown"] == "whole" else "ms_stone")
+		var f: int = floori(_t * 12.0) % 24 if st["shown"] == "hang" else _spin(st["yaw"])
+		pics[0].put(film, f, Iso.to_screen(st["x"], st["y"]), st["x"] + st["y"] + 0.08, float(st["z"]) * 2.0, float(st["scale"]) * ks)
+	var hv = G["halves"]
+	for n in 2:
+		pics[1 + n].visible = hv != null
+		if hv != null:
+			var hf: Dictionary = hv[n]
+			pics[1 + n].put("ms_half%d" % n, _spin(hf["yaw"]), Iso.to_screen(hf["x"], hf["y"]), hf["x"] + hf["y"] + 0.08, float(hf["z"]) * 2.0, ks)
+	var b = G["burst"]
+	var slab: Vector2 = _kept[1]
+	pics[3].visible = b != null and pics[3].put("ms_burst", 0, Iso.to_screen(slab.x, slab.y), slab.x + slab.y + 0.09, (float(ORBIT["z"]) + 2.0) * 2.0, b["scale"], b["alpha"])
+	if G["slammed"] and not _given["slammed"]:
+		_given["slammed"] = true
+		hero.kick(4.0)
+	return true
+
+
 ## KEPT (render.ts standMeldMoments): once the wordsmith has the Meldstone, it goes round the column of light over his slab,
 ## turning as it goes, a little bigger, to be seen (render/meld_drops.ts orbitAt).
 func _show_kept() -> void:
@@ -619,6 +724,10 @@ func _show_kept() -> void:
 				_kept = [pic, Vector2(p["x"], p["y"])]
 		if _kept.is_empty():
 			return
+	# (just given: its flight there, in place of its round)
+	_kept[0].visible = _given.is_empty()
+	if not _given.is_empty():
+		return
 	var a := _t / float(ORBIT["secs"]) * TAU
 	var o: Vector2 = _kept[1] + Vector2(cos(a), sin(a)) * float(ORBIT["r"])
 	var z: float = ORBIT["z"] + ORBIT["bob"] * sin(_t * PI)

@@ -408,6 +408,18 @@ func _draw() -> void:
 		var cx := lx + (26.0 if spare > 0 else 0.0) + 7
 		var cy := btn_y + btn_h / 2.0
 		_pic("stone", roundf(cx - sp[4] / 2.0), roundf(cy - sp[5] / 2.0), st.x, st.y)
+	if loot != null and loot.meld == "stone":
+		# (the Meldstone while it is carried, art/meld_drops.ts: from the moment it has dived into him (0.8 s after it was taken),
+		# popping in a little bigger: ui/hud.ts)
+		var g: float = float(loot._taken["g"]) if not loot._taken.is_empty() else 9.0
+		if g >= 0.8:
+			var since := g - 0.8
+			var pop := 1.5 - since / 0.6 if since < 0.3 else 1.0
+			var mp: Array = _data["pics"]["meldstone"]
+			var ms := _pic_size("meldstone")
+			var cx := lx + (26.0 if spare > 0 else 0.0) + (16.0 if loot.quest != "" else 0.0) + 7
+			var cy := btn_y + btn_h / 2.0
+			_pic("meldstone", roundf(cx - mp[4] / 2.0 * pop), roundf(cy - mp[5] / 2.0 * pop), ms.x * pop, ms.y * pop)
 
 	# ---- the boss's bar ----
 	var boss = _boss()

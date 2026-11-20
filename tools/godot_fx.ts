@@ -512,6 +512,11 @@ for (const view of ['front', 'back'] as const) {
   stills('ms_whole', Array.from({ length: STONE_SPIN }, (_, i) => M.spinWhole[i]));
   stills('ms_burst', [M.burst]);
   stills('ms_crack', Array.from({ length: CRACK_STEPS }, (_, i) => M.crack[i]));
+  // (GIVEN to the wordsmith: its two halves whirling round each other over his slab, each STONE_SPIN steps of its turn,
+  // render.ts standMeldMoments `a.halves[n][spinStep(yaw)]`; and CARRIED, its small picture by INVENTORY, ui/hud.ts)
+  stills('ms_half0', Array.from({ length: STONE_SPIN }, (_, i) => M.halves[0][i]));
+  stills('ms_half1', Array.from({ length: STONE_SPIN }, (_, i) => M.halves[1][i]));
+  stills('ms_carried', [M.carried]);
   tables.ms = { fps: STONE_FPS, frames: STONE_FRAMES, spin: STONE_SPIN };
 }
 

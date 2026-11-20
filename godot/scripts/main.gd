@@ -1774,6 +1774,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_trade.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	if _arg("only") == "meldstone":
+		await preload("res://scripts/check_trade.gd").new().meldstone(self, hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "rmb":
 		await _rmb_test(hero, dir)
 		get_tree().quit()
