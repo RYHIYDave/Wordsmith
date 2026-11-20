@@ -1,0 +1,303 @@
+{
+ "ramp": {
+  "eruption": [
+   "#1c0806",
+   "#4a1208",
+   "#8a2c0c",
+   "#c25a12",
+   "#ffb43a",
+   "#fff0b0"
+  ],
+  "avalanche": [
+   "#1a2430",
+   "#34485c",
+   "#6a8aa2",
+   "#a5c6d7",
+   "#e2f0f8",
+   "#ffffff"
+  ],
+  "thunder": [
+   "#1c1038",
+   "#3a2070",
+   "#6c48c0",
+   "#bc84ff",
+   "#f0e4ff",
+   "#ffffff"
+  ],
+  "blight": [
+   "#161c0a",
+   "#2e3a12",
+   "#52661e",
+   "#7e9a3a",
+   "#b8cc7a",
+   "#e8f0c8"
+  ],
+  "scald": [
+   "#2a2024",
+   "#5a4446",
+   "#a08884",
+   "#f2dccc",
+   "#fff4ec",
+   "#ffffff"
+  ],
+  "wildfire": [
+   "#3a1004",
+   "#8a2a06",
+   "#e06a10",
+   "#ffb81c",
+   "#fff4c0",
+   "#ffffff"
+  ],
+  "fumes": [
+   "#1c1806",
+   "#3e3610",
+   "#76681c",
+   "#b4a02c",
+   "#e0d07a",
+   "#fbf4cc"
+  ],
+  "hailstorm": [
+   "#141a34",
+   "#2c3a6a",
+   "#6878b8",
+   "#cad6ff",
+   "#eef2ff",
+   "#ffffff"
+  ],
+  "frostbite": [
+   "#0a1428",
+   "#142a50",
+   "#22508a",
+   "#3a78b8",
+   "#8cc0ec",
+   "#e4f4ff"
+  ],
+  "contagion": [
+   "#08240c",
+   "#105a1a",
+   "#22a02c",
+   "#62ff5a",
+   "#c4ffb0",
+   "#f4fff0"
+  ],
+  "demolition": [
+   "#120c16",
+   "#2c2232",
+   "#5a4a64",
+   "#a08ab4",
+   "#e2d6f0",
+   "#ffffff"
+  ],
+  "powderkeg": [
+   "#140806",
+   "#3a1410",
+   "#6e2418",
+   "#a83c28",
+   "#ff9a50",
+   "#fff0b0"
+  ],
+  "shatter": [
+   "#060a2c",
+   "#0e1c70",
+   "#1838c0",
+   "#2054fc",
+   "#9cbcff",
+   "#ffffff"
+  ],
+  "chainreaction": [
+   "#200420",
+   "#540a56",
+   "#a808aa",
+   "#fc00f8",
+   "#f4d4ff",
+   "#ffffff"
+  ],
+  "rupture": [
+   "#160818",
+   "#3c1440",
+   "#6c2a68",
+   "#9c4890",
+   "#d4ec7a",
+   "#f6ffd0"
+  ],
+  "siphon": [
+   "#161c0a",
+   "#2e3a12",
+   "#52661e",
+   "#7e9a3a",
+   "#b8cc7a",
+   "#e8f0c8"
+  ],
+  "cauterize": [
+   "#1c0806",
+   "#4a1208",
+   "#8a2c0c",
+   "#c25a12",
+   "#ffb43a",
+   "#fff0b0"
+  ],
+  "forking": [
+   "#1c1038",
+   "#3a2070",
+   "#6c48c0",
+   "#bc84ff",
+   "#f0e4ff",
+   "#ffffff"
+  ],
+  "shiver": [
+   "#1a2430",
+   "#34485c",
+   "#6a8aa2",
+   "#a5c6d7",
+   "#e2f0f8",
+   "#ffffff"
+  ],
+  "sunder": [
+   "#1c0806",
+   "#4a1208",
+   "#8a2c0c",
+   "#c25a12",
+   "#ffb43a",
+   "#fff0b0"
+  ],
+  "fervor": [
+   "#3a1004",
+   "#8a2a06",
+   "#e06a10",
+   "#ffb81c",
+   "#fff4c0",
+   "#ffffff"
+  ],
+  "rimeward": [
+   "#141a34",
+   "#2c3a6a",
+   "#6878b8",
+   "#cad6ff",
+   "#eef2ff",
+   "#ffffff"
+  ],
+  "implode": [
+   "#08240c",
+   "#105a1a",
+   "#22a02c",
+   "#62ff5a",
+   "#c4ffb0",
+   "#f4fff0"
+  ]
+ },
+ "of": {
+  "eruption": [
+   "power",
+   "fire"
+  ],
+  "avalanche": [
+   "power",
+   "frost"
+  ],
+  "thunder": [
+   "power",
+   "lightning"
+  ],
+  "blight": [
+   "power",
+   "poison"
+  ],
+  "scald": [
+   "fire",
+   "frost"
+  ],
+  "wildfire": [
+   "fire",
+   "lightning"
+  ],
+  "fumes": [
+   "fire",
+   "poison"
+  ],
+  "hailstorm": [
+   "frost",
+   "lightning"
+  ],
+  "frostbite": [
+   "frost",
+   "poison"
+  ],
+  "contagion": [
+   "lightning",
+   "poison"
+  ],
+  "demolition": [
+   "power",
+   "volatile"
+  ],
+  "powderkeg": [
+   "fire",
+   "volatile"
+  ],
+  "shatter": [
+   "frost",
+   "volatile"
+  ],
+  "chainreaction": [
+   "lightning",
+   "volatile"
+  ],
+  "rupture": [
+   "poison",
+   "volatile"
+  ],
+  "siphon": [
+   "leech",
+   "poison"
+  ],
+  "cauterize": [
+   "leech",
+   "fire"
+  ],
+  "forking": [
+   "twin",
+   "lightning"
+  ],
+  "shiver": [
+   "precise",
+   "frost"
+  ],
+  "sunder": [
+   "heavy",
+   "power"
+  ],
+  "fervor": [
+   "frenzied",
+   "fire"
+  ],
+  "rimeward": [
+   "guarding",
+   "frost"
+  ],
+  "implode": [
+   "pulling",
+   "volatile"
+  ]
+ },
+ "ten": [
+  "eruption",
+  "avalanche",
+  "thunder",
+  "blight",
+  "scald",
+  "wildfire",
+  "fumes",
+  "hailstorm",
+  "frostbite",
+  "contagion"
+ ],
+ "volt": [
+  "demolition",
+  "powderkeg",
+  "shatter",
+  "chainreaction",
+  "rupture"
+ ],
+ "heatFull": 5,
+ "clapEvery": 4
+}

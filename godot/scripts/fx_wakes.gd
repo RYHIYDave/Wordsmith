@@ -22,6 +22,8 @@ extends RefCounted
 
 const L := preload("res://scripts/fx_looks.gd")
 const Words3 := preload("res://scripts/fx_words3.gd")
+## (m3: the patches a melded word lays are drawn as its own look: fx_melds3.gd; render.ts ownsZone)
+const Melds3 := preload("res://scripts/fx_melds3.gd")
 
 const KINDS := ["burn", "ice", "storm", "venom", "cracks"]
 
@@ -146,7 +148,8 @@ func tend(dt: float) -> void:
 	var amb: float = dt * 60.0 * fx.room()
 	for p: Dictionary in _list:
 		var kind := str(p.get("kind", ""))
-		if not kind in KINDS:
+		# (m3: a melded word's patch is its own look's, laid, sending up and lit: fx_melds3.gd; render.ts ownsZone)
+		if not kind in KINDS or Melds3.owns_zone(p):
 			continue
 		var x: float = p["x"]
 		var y: float = p["y"]
@@ -189,7 +192,7 @@ func lights() -> void:
 	var lit := PackedFloat32Array()
 	for p: Dictionary in _list:
 		var kind := str(p.get("kind", ""))
-		if not kind in KINDS:
+		if not kind in KINDS or Melds3.owns_zone(p):
 			continue
 		if kind == "cracks":
 			fx.words3.crack_light(p)
@@ -226,7 +229,7 @@ func draw(c: CanvasItem, p: Dictionary) -> void:
 	# (floors 6 to 10's words: Volatile's rune and Guarding's ward, fx_words610.gd)
 	if fx.w610 != null and fx.w610.draw_patch(c, p):
 		return
-	if not kind in KINDS:
+	if not kind in KINDS or Melds3.owns_zone(p):
 		return
 	var P: Dictionary = L.P
 	var x: float = p["x"]
@@ -326,7 +329,7 @@ func draw_air(c: CanvasItem) -> void:
 	var t: float = fx.clock
 	var wisps := PackedFloat32Array()
 	for z: Dictionary in _list:
-		if str(z.get("kind", "")) != "storm":
+		if str(z.get("kind", "")) != "storm" or Melds3.owns_zone(z):
 			continue
 		# Lightning behind: a thundercloud hangs over its patch of ground and flickers (the small patches a shot leaves
 		# along its path get a wisp of cloud each, lower down, so a trail of them does not roof the whole room over)
@@ -380,7 +383,7 @@ func draw_air(c: CanvasItem) -> void:
 		if struck >= 0:
 			fx.rect(c, floorf(cx - wide * 0.7 + 0.5), floorf(cy + 5.0 + 0.5), floorf(wide * 1.4 + 0.5), 1, Color(P["lt3"], al))
 	for z: Dictionary in _list:
-		if str(z.get("kind", "")) != "venom":
+		if str(z.get("kind", "")) != "venom" or Melds3.owns_zone(z):
 			continue
 		# Poison behind: puffs of it turn slowly over the slick, low enough to stand in
 		var x: float = z["x"]

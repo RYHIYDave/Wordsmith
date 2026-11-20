@@ -1854,6 +1854,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_looks10.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	# (THE TEN MELDED WORDS' LOOKS, each at work in front and behind, pictured at its beats: check_looks_melds.gd)
+	if _arg("only") == "looks_melds":
+		await preload("res://scripts/check_looks_melds.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (FLOORS 6 TO 10 BESIDES THEIR FIGHTS: the strongholds, the quest line, floor 9's side areas: act1/check610.gd)
 	if _arg("only") == "quests610":
 		await preload("res://scripts/act1/check610.gd").new().run(self, hero, dir)
