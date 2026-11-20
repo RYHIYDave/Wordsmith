@@ -1340,6 +1340,9 @@ func fresh_place() -> void:
 	# (ACT 2, THE HUSH: none carries off the place; his words are his again: game.ts clearLevel)
 	hush_t = 0.0
 	loadout.set_hushed(false)
+	# (FLOOR 14: a word the Physician holds is never lost: left behind, or fallen, it is the hero's again: game.ts die, clearLevel,
+	# giveBackAll)
+	load("res://scripts/act2/physician.gd").give_back_all()
 
 
 ## Fallen: back where he came in, whole again, and the monsters that were after him gone back to sleep.

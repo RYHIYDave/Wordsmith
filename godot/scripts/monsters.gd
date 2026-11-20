@@ -59,6 +59,9 @@ const MSG_FOE := Color("#ff8a3a")
 ## (the floor's boss has fallen, and where: the ways on open clear of him, ways.gd)
 var boss_fell := false
 var boss_at := Vector2.ZERO
+## (FLOOR 14, THE HOUSE OF QUIET: its ward beds, each where one lying in it lies and the way it faces, and its key (`bt`): where
+## the Physician's rounds lay new patients, game/act1_rules/patient.ts bedPlace, freeBeds; monsters.json `beds`)
+var beds: Array = []
 ## A THING OF A QUEST TAKEN UP WHERE IT LAY (game.ts furnaceGearTaken, templeKeyTaken): what ("gear": the forge crank's, the
 ## Stoker's; "key": one of the temple door's, a keybearer's) and where. The monster's own script lays it down as it falls and
 ## says so when the hero takes it; the floor's quest scripts listen.
@@ -70,6 +73,7 @@ func load_floor(path: String, figures_dir: String) -> void:
 	var info: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(figures_dir + "/lists.json"))
 	_defs = data["defs"]
 	_info = info
+	beds = data.get("beds", [])
 	_figures_dir = figures_dir
 	for m in data["monsters"]:
 		var figure: String = m["figure"]
@@ -506,10 +510,12 @@ func _lay_spear(a: Dictionary) -> void:
 ## (hushed.ts: Monster.form = id % 3). null where the floor has no plain one of the kind.
 var _plain := {}
 var _called := 0
-func call_up(kind: String, at: Vector2, pack: int, face: Vector2) -> Monster:
+func call_up(kind: String, at: Vector2, pack: int, face: Vector2, a1 := {}) -> Monster:
 	if not _plain.has(kind):
 		return null
 	var d: Dictionary = _plain[kind].duplicate(true)
+	# (`a1`: what its kind's rules keep about it as it comes: one laid in a ward bed, lying there: act2/physician.gd rounds)
+	d["a1"] = a1 if not a1.is_empty() else null
 	_called += 1
 	d["id"] = 100000 + _called
 	d["x"] = at.x

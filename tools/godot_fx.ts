@@ -169,6 +169,12 @@ import { CURVE_GONE, CURVE_LAY, SICKLE_N, curveSprite, sickleSprite } from '../s
 import { GURNEY_ROLL, GURNEY_WRECK, gurneySprite } from '../src/art/act1_figs/orderly';
 import { CRASH_CANVAS, GURNEY as OG_GURNEY, crashPainted } from '../src/art/action_f11_orderly';
 import { SLAM_CRACKS_FOR, SLAM_FOR, drawMalletSlam } from '../src/art/orderly_shots';
+import { TOOL_TURNS, toolSprites } from '../src/art/act1_figs/physician';
+import { TOOL_KINDS } from '../src/art/physician_action_fx';
+import { DIAG as PH_DIAG, OP_LONG as PH_OP_LONG, lensAt as phLensAt } from '../src/art/physician_action';
+import { GLYPH as WORD_GLYPH, WORD_COLOR as WORD_COLOUR } from '../src/art/icons';
+import { HELD_WORD_IDS } from '../src/game/types';
+import { TILE3 as PH_TILE3 } from '../src/art/new_mobs3';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -834,6 +840,32 @@ for (const view of ['front', 'back'] as const) {
   });
 }
 
+// FLOOR 14'S BOSS, THE PHYSICIAN (render/act1_fx/physician.ts ACTION: PHYSICIAN_ACTION on, as the game starts):
+//   ph_tool_<k>   his instrument `k` (TOOL_KINDS: scalpel, bone saw, forceps, needle, knife), each of TOOL_TURNS ways round, as the game
+//                 paints it ahead (art/films.ts things:physician, toolSprites): its middle the floor point; layer `stand`
+//   ph_glint_<k>  the same, its blade alone in his gold (the glint running along it is a band of this)
+// and in the tables (`ph`): where his lens is through his look and his operation, a frame at a time (lensAt: tiles before him, tiles
+// to his left, picture pixels up), and the rune of every word he may hold over his head (art/icons.ts GLYPH) with its own colour.
+{
+  for (let kind = 0; kind < TOOL_KINDS.length; kind++) {
+    const all = Array.from({ length: TOOL_TURNS }, (_, k) => toolSprites(kind, k));
+    films[`ph_tool_${kind}`] = { fps: 0, n: TOOL_TURNS, k0: 0, layers: { stand: all.map((s) => pic(s.tool)) } };
+    films[`ph_glint_${kind}`] = { fps: 0, n: TOOL_TURNS, k0: 0, layers: { stand: all.map((s) => pic(s.glint)) } };
+  }
+  const lens = (move: 'diagnose' | 'operate', long: number): number[][] =>
+    Array.from({ length: Math.round(long * 30) + 1 }, (_, i) => {
+      const p = phLensAt(move, i / 30);
+      return [p[0] / PH_TILE3, p[1] / PH_TILE3, p[2]];
+    });
+  const glyph: Record<string, readonly string[]> = {};
+  const colour: Record<string, string> = {};
+  for (const w of HELD_WORD_IDS) {
+    if (WORD_GLYPH[w]) glyph[w] = WORD_GLYPH[w];
+    if (WORD_COLOUR[w]) colour[w] = WORD_COLOUR[w];
+  }
+  tables.ph = { turns: TOOL_TURNS, diagnose: lens('diagnose', PH_DIAG.long), operate: lens('operate', PH_OP_LONG), glyph, colour };
+}
+
 // --- the sheets: each SET of films on sheets of its own (the films of one kind of monster: the game loads a set only on a
 // floor that has its kind), the tallest pictures first, shelf by shelf, 2048 wide and at most 4096 tall each ---
 /** The set a film is packed with: the first word of its name; the cultist's sigil and the Flame keybearer's apart. */
@@ -850,7 +882,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the bosses of floors 6 and 7)
   unfinished: ['uf'], queen: ['qn'],
   // (the city's)
-  watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'],
+  watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

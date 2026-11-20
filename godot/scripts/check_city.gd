@@ -131,12 +131,14 @@ func run(main, hero, out: String) -> void:
 		await _ratking()
 	elif depth == 13:
 		await _pair()
+	elif depth == 14:
+		await _physician()
 	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
 
 
 ## The kinds of each floor with rules of their own; its common ones fought alone (the boss apart).
 const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"], 12: ["rat", "dredger", "scribe", "hushed", "ratking"],
-	13: ["fieldhand", "carter", "hushed", "scraper", "quill"], 14: ["patient", "orderly", "hushed"]}
+	13: ["fieldhand", "carter", "hushed", "scraper", "quill"], 14: ["patient", "orderly", "hushed", "physician"]}
 const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"], 13: ["fieldhand", "carter"], 14: ["patient", "orderly"]}
 
 
@@ -725,3 +727,163 @@ func _called() -> int:
 		if is_instance_valid(o) and not o.dead and o.has_meta("crier_called"):
 			k += 1
 	return k
+
+
+# --- FLOOR 14'S BOSS, THE PHYSICIAN ---
+
+const PHR := preload("res://scripts/act2/physician.gd")
+const SAVE := preload("res://scripts/save.gd")
+
+
+func _is_act(m, id: String) -> bool:
+	return m.h2 != null and m.h2.act != null and str(m.h2.acts()[m.h2.act["i"]]["id"]) == id
+
+
+## A place `away` tiles from him that his lens sees, the line to it clear of what cannot be walked.
+func _in_his_light(boss, away: float) -> Vector2:
+	var best: Vector2 = h.world
+	var map = M._monsters.map
+	for ty in range(floori(boss.world.y - away - 2), floori(boss.world.y + away + 3)):
+		for tx in range(floori(boss.world.x - away - 2), floori(boss.world.x + away + 3)):
+			if not map.walkable(tx, ty):
+				continue
+			var q := Vector2(tx + 0.5, ty + 0.5)
+			if absf(q.distance_to(boss.world) - away) > 0.6:
+				continue
+			var f: Vector2 = (q - boss.world).normalized()
+			if PHR.lens_sees(map, PHR.lens_spot(boss.world, f, 1), q) and M._monsters.sees(boss.world, q):
+				return q
+	return best
+
+
+func _physician() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "physician":
+			boss = o
+	if boss == null:
+		_line(false, "floor 14 has no Physician")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(4.0, func(): return boss._said != "")
+	await _snap("physician_met")
+	_line(met and boss.state != "sleep", "the Physician met in his theatre: '%s', %s, %.0f life" % [boss._said, boss.title, boss.max_life])
+	await _run(1.5)
+	# THE RAP
+	struck = 0
+	h.world = M._spot_near(boss.world, 1.8, h.world)
+	_ready_only(boss, 0)
+	var held_up: bool = await _run(6.0, func(): return not _a1("physician:rapmark", func(p): return _is_act(boss, "physician:rap") and float(boss.h2.act["t"]) >= 0.75).is_empty())
+	await _snap("physician_rap_marked")
+	await _run(0.3)
+	await _snap("physician_rap_cracks")
+	await _run(2.0, func(): return boss.h2.act == null)
+	_line(held_up and struck > 0, "the rap: the cane held up, its line and star marked; brought down, the boards cracked; the hero struck (%d)" % struck)
+	# THE DRAW: his FROST set, that the Physician draws it out
+	struck = 0
+	h.loadout.front[0] = h.loadout.front[0].map(func(_w): return null)
+	h.loadout.put(0, "front", "frost")
+	h.world = M._spot_near(boss.world, 2.5, h.world)
+	_ready_only(boss, 1)
+	var en_garde: bool = await _run(6.0, func(): return _is_act(boss, "physician:draw") and float(boss.h2.act["t"]) >= 0.85)
+	await _snap("physician_draw_lane")
+	await _run(0.28)
+	await _snap("physician_draw_needle")
+	var drawn: bool = await _run(1.0, func(): return boss.h2.held_word() != "")
+	var gone_from_him: bool = not h.loadout.front[0].has("frost")
+	var hangs: bool = await _run(3.0, func(): return not _a1("physician:held", func(p): return float(p["t"]) >= 0.5).is_empty())
+	await _snap("physician_holds_frost")
+	_line(en_garde and drawn and gone_from_him and hangs and boss.h2.held_word() == "frost" and struck > 0, "the Draw: the lane marked, the lunge's needle of light; struck (%d), his FROST drawn out of its socket, hanging over the Physician's head" % struck)
+	# (the save has it where it would go back to; the game itself goes on as it is)
+	var run: Dictionary = SAVE.run_of(M)
+	_line((run["front"][0] as Array).has("frost") and not h.loadout.front[0].has("frost"), "saved while he holds it: FROST written into the save in its own socket; still his in the game")
+	await _run(1.0, func(): return boss.h2.act == null)
+	# BEATEN BACK OUT OF HIM: five blows that land
+	_ready_only(boss, 0)
+	boss.h2.cds[0] = 999.0
+	for k in 5:
+		boss.hurt(1.0)
+		await _run(0.12)
+	var home: bool = h.loadout.front[0].has("frost") and boss.h2.held_word() == ""
+	var flies: bool = not _a1("physician:freed").is_empty()
+	await _run(0.25)
+	await _snap("physician_frost_flies_home")
+	_line(home and flies, "five blows land on him: FROST beaten back out of him, flying home to its socket")
+	await _run(0.6)
+	# DIAGNOSIS: in the lens's light, standing there, the mark fills; he operates
+	struck = 0
+	h.world = _in_his_light(boss, 6.0)
+	_ready_only(boss, 2)
+	var looks: bool = await _run(6.0, func(): return _is_act(boss, "physician:diagnose") and int(boss.h2.a1.get("dOn", 0)) == 1 and float(boss.h2.a1.get("dFill", 0.0)) >= 0.55)
+	await _snap("physician_diagnosis")
+	var op_on: bool = await _run(3.0, func(): return not _a1("physician:op").is_empty())
+	var op: Dictionary = _a1("physician:op")
+	await _run(0.35)
+	await _snap("physician_operation_dark")
+	await _run(0.6)
+	await _snap("physician_instruments_held")
+	var hit: bool = await _run(1.0, func(): return not op.is_empty() and float(op["t"]) >= PHR.OP_HIT + 0.02)
+	await _snap("physician_instruments_strike")
+	await _run(0.5)
+	await _snap("physician_stuck_scorched")
+	_line(looks and op_on and hit and struck > 0, "Diagnosis: the lens's beam on him, the mark filling; full, HE OPERATES: dark, the spotlight on him, his instruments flung out, held, closing in: struck (%d)" % struck)
+	await _run(2.5, func(): return boss.h2.act == null)
+	# HID FROM THE LENS: the mark drains, he lowers it, no operation
+	struck = 0
+	h.world = _in_his_light(boss, 6.0)
+	_ready_only(boss, 2)
+	await _run(6.0, func(): return _is_act(boss, "physician:diagnose") and int(boss.h2.a1.get("dOn", 0)) == 1 and float(boss.h2.a1.get("dFill", 0.0)) >= 0.3)
+	# (out of the light: well round him, behind him)
+	var behind: Vector2 = M._spot_near(boss.world - boss.face * 4.0, 0.0, h.world)
+	h.world = behind
+	var drained: bool = await _run(3.0, func(): return float(boss.h2.a1.get("dFill", 1.0)) <= 0.0)
+	var lowered: bool = await _run(10.0, func(): return boss.h2.act == null)
+	_line(drained and lowered and _a1("physician:op").is_empty(), "out of his light: the mark drains away; he lowers the lens and does not operate")
+	# ROUNDS: three raps, the rings of the Hush; patients laid in the free beds near him rise
+	struck = 0
+	h.hush_t = 0.0
+	h.loadout.set_hushed(false)
+	h.world = M._spot_near(boss.world, 3.0, h.world)
+	_ready_only(boss, 4)
+	var reach: bool = await _run(6.0, func(): return _is_act(boss, "physician:rounds") and float(boss.h2.act["t"]) >= 0.8)
+	await _snap("physician_rounds_reach")
+	await _run(0.35)
+	await _snap("physician_rounds_ring")
+	var hushed: bool = await _run(1.5, func(): return h.hush_t > 0.0)
+	var called := 0
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and o.kind == "patient" and o.h2 != null and int(o.h2.a1.get("called", -1)) == boss.id:
+			called += 1
+	await _run(2.0)
+	await _snap("physician_patients_rise")
+	var up := 0
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and o.kind == "patient" and o.h2 != null and int(o.h2.a1.get("called", -1)) == boss.id and int(o.h2.a1.get("go", 0)) == 1:
+			up += 1
+	_line(reach and hushed and called > 0 and up == called, "rounds: three raps, rings of the Hush rolling out: the hero hushed; %d patients laid in the free beds near him, rising" % called)
+	await _run(2.0, func(): return boss.h2.act == null)
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.kind == "patient":
+			o.queue_free()
+	await M._wait(0.1)
+	# A WORD NEVER LOST: held as the hero leaves the place, it is his again
+	h.loadout.front[0] = h.loadout.front[0].map(func(_w): return null)
+	h.loadout.put(0, "front", "frost")
+	boss.h2._draw_out(boss, h)
+	var took: bool = boss.h2.held_word() == "frost"
+	h.fresh_place()
+	_line(took and h.loadout.front[0].has("frost") and boss.h2.held_word() == "", "a word never lost: held as the hero leaves, FROST is his again in its socket")
+	# HIS DEATH, holding a word: it flies home
+	boss.h2._draw_out(boss, h)
+	await _run(0.3)
+	boss.hurt(1e9)
+	var freed: bool = not _a1("physician:freed").is_empty()
+	await _run(1.2)
+	await _snap("physician_falls")
+	_line(boss.dead and freed and h.loadout.front[0].has("frost"), "the Physician struck dead: the word he held flies home")

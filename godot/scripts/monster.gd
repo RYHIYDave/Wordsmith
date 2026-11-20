@@ -84,8 +84,9 @@ const BOSS_AI := {
 	# (floor 13's: the fieldhands, the carters, and its double boss, the Scraper and the Quill)
 	"fieldhand": preload("res://scripts/act2/fieldhand.gd"), "carter": preload("res://scripts/act2/carter.gd"),
 	"scraper": preload("res://scripts/act2/scraper.gd"), "quill": preload("res://scripts/act2/quill.gd"),
-	# (floor 14's: the patients and the orderlies)
+	# (floor 14's: the patients, the orderlies, and its boss, the Physician)
 	"patient": preload("res://scripts/act2/patient.gd"), "orderly": preload("res://scripts/act2/orderly.gd"),
+	"physician": preload("res://scripts/act2/physician.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")

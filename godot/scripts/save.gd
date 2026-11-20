@@ -22,7 +22,7 @@ static func run_of(main) -> Dictionary:
 	var loot = main.loot
 	var h = main.hero
 	var q = main.quest610
-	return {
+	var run := {
 		"v": V,
 		"level": loot.level, "xp": loot.xp, "points": loot.points, "attrs": loot.attrs.duplicate(),
 		"gear": loot.gear.duplicate(true), "bag": loot.bag.duplicate(true), "words": loot.words.duplicate(),
@@ -37,6 +37,10 @@ static func run_of(main) -> Dictionary:
 		"pieces": q.pieces if q != null else 0, "rollPages": q.roll_pages if q != null else 0,
 		"wordsBought": range(loot.word_stock.size()).filter(func(i): return loot.word_stock[i] == null),
 	}
+	# (FLOOR 14: a word the Physician holds is written into the save where it would go back to, as if beaten out of him: game.ts
+	# save, inTheSave; the game itself goes on as it is)
+	load("res://scripts/act2/physician.gd").in_the_save(run)
+	return run
 
 
 ## What outlasts the character (game/state.ts Meta): the Lexicon and the stash; whether he has been shown how to play.

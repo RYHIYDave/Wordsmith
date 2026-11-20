@@ -54,7 +54,7 @@ const OWN := {"unfinished": preload("res://scripts/act1/unfinished_marks.gd"), "
 	"ratking": preload("res://scripts/act2/rk_marks.gd"), "fieldhand": preload("res://scripts/act2/marks13.gd"),
 	"carter": preload("res://scripts/act2/marks13.gd"), "scraper": preload("res://scripts/act2/pair_marks.gd"),
 	"quill": preload("res://scripts/act2/pair_marks.gd"), "patient": preload("res://scripts/act2/marks14.gd"),
-	"orderly": preload("res://scripts/act2/marks14.gd")}
+	"orderly": preload("res://scripts/act2/marks14.gd"), "physician": preload("res://scripts/act2/ph_marks.gd")}
 
 
 static func _own(p: Dictionary):
@@ -381,11 +381,13 @@ static func air(P, c: CanvasItem, p: Dictionary) -> void:
 		P._film_pic(c, "ch_static", "air", P._film_frame("ch_static", t), Iso.to_screen(h.x, h.y))
 
 
-# --- over the dark (perils.gd _draw_glow): floors 9 and 10's alone have any ---
+# --- over the dark (perils.gd _draw_glow): floors 9 and 10's, and the city's own (the Physician's beam and his operation) ---
 
 static func glow(P, c: CanvasItem, p: Dictionary) -> void:
 	if M9.mine(p):
 		M9.glow(P, c, p)
+	elif _own(p) != null:
+		_own(p).glow(P, c, p)
 
 
 # --- their lights in the dark (the game's c.spot; perils.gd _spots_of) ---
