@@ -125,9 +125,9 @@ writeFileSync(`${OUT}/words.json`, JSON.stringify({
   },
   // (PULLING, a city word, for the meld it is part of, Implode: its numbers, defs.ts PULL)
   pull: PULL,
-  // (each made word's page as the wordsmith's half reads it under the word just made, ui/lexicon.ts wordPage: what it becomes on
-  // gear, in the Lexicon's words, and the note under it)
-  page: Object.fromEntries(MADE.map((w) => [w, { gear: gearLines(w, 'cooldown'), note: gearNote(w) }])),
+  // (each word's page as the wordsmith's half reads it, under the word just made and under a word of his picked to buy,
+  // ui/lexicon.ts wordPage: what it becomes on gear, in the Lexicon's words, and the note under it)
+  page: Object.fromEntries([...OURS, ...MADE].map((w) => [w, { gear: gearLines(w, 'cooldown'), note: gearNote(w) }])),
 }, null, 1));
 console.log(`words: ${OURS.join(', ')}; made: ${MADE.join(', ')}; moves ${moves.join(', ')}`);
 

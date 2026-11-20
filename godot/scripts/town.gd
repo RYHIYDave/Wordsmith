@@ -418,11 +418,12 @@ func _use() -> void:
 				prompt = ["E: Give the Meldstone", "meld"]
 			elif loot.meld_ask_due():
 				prompt = ["E: Wordsmith: a task", "meldask"]
-			elif loot.meld == "open":
-				# (WORDMELDING: the Meldstone his, he opens his half of the screen, melding its second page: inventory.gd)
-				prompt = ["E: Wordsmith", "wordsmith"]
-			else:
+			elif not loot.ring_lit and not loot.quest_given:
 				prompt = ["E: Talk to the wordsmith", "talk"]
+			else:
+				# (his half of the screen, his trade in words its first page (game.ts interactHint 'Wordsmith', ui/trades.ts); the
+				# Meldstone his, MELD turns it to melding, its second: inventory.gd)
+				prompt = ["E: Wordsmith", "wordsmith"]
 		"armourer":
 			# (THE ARMOURER'S QUEST, game.ts handInNear, interactHint: while he has a quest to give or its reward, his prompt
 			# says so, and using him gives it in place of his shelves; used again, his shelves)

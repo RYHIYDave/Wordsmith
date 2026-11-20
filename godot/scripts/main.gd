@@ -101,6 +101,8 @@ var _way: Waypoint
 ## THE WAYS: the deepest floor whose waypoint he has reached (game.ts wayDepth): the town's waypoint takes him back down to it.
 ## Under 6, the town's gate down the mountain is barred (town.gd).
 var way_depth := 1
+## (the last floor he was on: game.ts `depth`, which is still that floor's while he is in town; a new game's is floor 1)
+var last_floor := 1
 ## (the town's gate to be unbarred as he comes in sight of it, the next time the town is laid: the ride up from floor 5 with the
 ## Meldstone already given, game.ts takeWay 'up'; and whether he came into town through the gate, from floor 10)
 var unbar_due := false
@@ -237,8 +239,14 @@ func _build(where: String, arrive: String) -> void:
 	add_child(_place)
 	move_child(_place, 0)
 	var dir := dir_of(where)
+	# (the floor he is leaving: in town the game's depth is still that floor's, and the wordsmith's shelf is drawn from its words)
+	if map != null and int(map.depth) >= 1:
+		last_floor = int(map.depth)
 	map = FloorMap.new(dir + "/layout.json")
 	var ground := GroundArt.new(dir)
+	# (THE WORDSMITH'S TRADE: coming into town, his shelf for this visit, and nothing of the hero's sold him yet: game.ts rollShop)
+	if where == "town":
+		loot.roll_word_stock(last_floor)
 
 	# THE PLACE'S LOOK as the game draws it (look.gd), where tools/godot_looks.ts has recorded one; else the plain ground
 	var looked := Look.has_look(where)
@@ -1759,6 +1767,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (WORDMELDING: the wordsmith's meld page: check_melds.gd)
 	if _arg("only") == "meld":
 		await CheckMelds.new(self, hero).page(dir)
+		get_tree().quit()
+		return
+	# (THE WORDSMITH'S TRADE IN WORDS: his half's first page: check_trade.gd)
+	if _arg("only") == "trade":
+		await preload("res://scripts/check_trade.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "rmb":

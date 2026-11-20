@@ -1315,6 +1315,115 @@ func sell(i: int) -> void:
 	sfx.play("coin", -4.0)
 
 
+# --- THE WORDSMITH'S TRADE IN WORDS (game.ts rollShop's lot of words, wordPrice, wordSellValue, buyWord, sellWord, buyBackWord;
+# defs.ts TUNE.wordStock and the rest): on each coming into town, his shelf: TUNE.wordStock words, no two the same, drawn from the
+# words found at the depth of the floor he has come from (types.ts wordsAt) by a lot of their own, the game's own sequence for the
+# game's seed (the one the floors were taken with), so that the same run at the same point has the same shelf. One costs
+# TUNE.wordPrice gold for each floor cleared so far (never less than one floor's worth); he pays TUNE.wordSellRate of that for a
+# spare word, and keeps the last TUNE.wordsSoldKept sold to him on this visit to be had back for what he paid. ---
+
+## (the game's seed the floors were taken with: tools/godot_export.ts 1 <depth>)
+const GAME_SEED := 1
+## (the game's own refusal while his ring is dark: game.ts DARK_RING)
+const DARK_RING := "The runes are dark"
+## His shelf on this visit: a word, or null where one has been bought (its place stays, "SOLD"). What he has been sold, oldest first.
+var word_stock: Array = []
+var words_sold: Array = []
+
+
+## Math.imul: the low 32 bits of a x b, as a signed number (the halves kept apart, so that nothing overflows).
+static func imul(a: int, b: int) -> int:
+	a &= 0xffffffff
+	b &= 0xffffffff
+	var lo := (a & 0xffff) * (b & 0xffff)
+	var mid := (((a >> 16) * (b & 0xffff) + (a & 0xffff) * (b >> 16)) & 0xffff) << 16
+	var r := (lo + mid) & 0xffffffff
+	return r - 0x100000000 if r >= 0x80000000 else r
+
+
+## The game's RNG (engine/rng.ts, mulberry32): `s` its state; the next float in [0, 1).
+static func mulberry(st: Array) -> float:
+	st[0] = (int(st[0]) + 0x6d2b79f5) & 0xffffffff
+	var t: int = st[0]
+	t = imul(t ^ (t >> 15), t | 1) & 0xffffffff
+	t = (t ^ ((t + (imul(t ^ (t >> 7), t | 61) & 0xffffffff)) & 0xffffffff)) & 0xffffffff
+	return float((t ^ (t >> 14)) & 0xffffffff) / 4294967296.0
+
+
+## His shelf for this visit, he having come from floor `depth` (game.ts rollShop): and nobody has anything of his yet.
+func roll_word_stock(depth: int) -> void:
+	var st := [((imul(GAME_SEED, 69069) ^ (depth * 7919 + cleared * 104729 + 0x57a1)) & 0xffffffff)]
+	if st[0] == 0:
+		st[0] = 0x9e3779b9
+	var pool: Array = (_words["at"].get(str(clampi(depth, 1, 10)), [_words["first"]]) as Array).duplicate()
+	word_stock = []
+	while word_stock.size() < int(_tune["wordStock"]) and not pool.is_empty():
+		var hi := pool.size() - 1
+		var k := int(floorf(mulberry(st) * (hi + 1)))
+		word_stock.append(pool[k])
+		pool.remove_at(k)
+	words_sold = []
+
+
+## What one of his words costs on this visit (game.ts wordPrice).
+func word_price() -> int:
+	return int(_tune["wordPrice"]) * maxi(1, cleared)
+
+
+## What he pays for a word (game.ts wordSellValue).
+func word_sell_value() -> int:
+	return maxi(1, floori(word_price() * float(_tune["wordSellRate"])))
+
+
+## The word in place `i` of his shelf bought: it joins his spare words. "" or why not, in the game's own words.
+func buy_word(i: int) -> String:
+	if not ring_lit:
+		return DARK_RING
+	if i < 0 or i >= word_stock.size() or word_stock[i] == null:
+		return "Sold"
+	var price := word_price()
+	if gold < price:
+		return "Not enough gold"
+	var w: String = word_stock[i]
+	gold -= price
+	words[w] = int(words.get(w, 0)) + 1
+	word_stock[i] = null
+	sfx.play("word")
+	return ""
+
+
+## A spare word sold him: he keeps it for the rest of this visit (the oldest of more than he keeps goes for good).
+func sell_word(w: String) -> String:
+	if not ring_lit:
+		return DARK_RING
+	if int(words.get(w, 0)) <= 0:
+		return "No spare word"
+	words[w] = int(words[w]) - 1
+	gold += word_sell_value()
+	words_sold.append(w)
+	if words_sold.size() > int(_tune["wordsSoldKept"]):
+		words_sold.remove_at(0)
+	sfx.play("gold")
+	return ""
+
+
+## Word `i` of those sold him on this visit taken back, for what he paid for it.
+func buy_back_word(i: int) -> String:
+	if not ring_lit:
+		return DARK_RING
+	if i < 0 or i >= words_sold.size():
+		return "Nothing there"
+	var price := word_sell_value()
+	if gold < price:
+		return "Not enough gold"
+	var w: String = words_sold[i]
+	gold -= price
+	words[w] = int(words.get(w, 0)) + 1
+	words_sold.remove_at(i)
+	sfx.play("word")
+	return ""
+
+
 ## (render.ts labels) The names of the pieces lying about, the lowest on the screen first, each moved up 8 game pixels at a
 ## time (at most 12 times) while it would lie over one already placed.
 func _lay_tags() -> void:

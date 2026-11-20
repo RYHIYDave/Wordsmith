@@ -220,6 +220,10 @@ func _gui_input(e: InputEvent) -> void:
 			for c in _slots:
 				if c["r"].has_point(e.position) and _set_in(c) != null:
 					_unsocket(c["i"], c["side"], c["k"])
+			# (THE WORDSMITH'S TRADE: on one of his words, it is bought at once, as everywhere: ui/trades.ts)
+			for h in _hits:
+				if h[1] == "ws_cell" and h[0].has_point(e.position):
+					_ws_quick(h[2])
 			accept_event()
 		elif not e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 			_released(e.position)
@@ -318,6 +322,9 @@ func _target_at(at: Vector2) -> Dictionary:
 	if wsmith == "meld" and at.x >= size.x / 2.0:
 		var nx: int = meld_in.find(null)
 		return {"kind": "meld", "r": _ws_hollows()[nx] if nx >= 0 else Rect2(size.x / 2.0, 0, size.x / 2.0, size.y)}
+	# (THE WORDSMITH'S TRADE: over his half, a spare word is sold him: where the next he is sold will lie)
+	if wsmith == "trade" and at.x >= size.x / 2.0:
+		return {"kind": "sell", "r": _ws_next_sold()}
 	for c in _slots:
 		if c["r"].grow_individual(2.0 * K, 3.0 * K, 2.0 * K, 3.0 * K).has_point(at):
 			return {"kind": "slot", "i": c["i"], "side": c["side"], "k": c["k"], "r": c["r"]}
@@ -411,7 +418,7 @@ func _press(action: String, arg) -> void:
 			toggle()
 		"altar_put", "altar_take", "altar_open":
 			_altar_press(action, arg)
-		"ws_tab", "ws_hollow", "ws_meld", "ws_to_meld":
+		"ws_tab", "ws_hollow", "ws_meld", "ws_to_meld", "ws_cell", "ws_buy", "ws_sell":
 			_ws_press(action, arg)
 	_hover = {}
 
@@ -517,6 +524,12 @@ func _drop(w: String, to: Dictionary) -> void:
 		if why != "":
 			_say(why)
 		else:
+			_word = ""
+		return
+	if to["kind"] == "sell":
+		var why: String = loot.sell_word(w)
+		_say(why)
+		if why == "":
 			_word = ""
 		return
 	if to["kind"] == "slot":
@@ -1100,6 +1113,9 @@ func _draw_reading(blink: bool, first: bool) -> void:
 			about = _over["r"]
 			if _over["kind"] == "slot":
 				_slot_rows(rows, _word, _over["i"], _over["side"], _over["k"], inner, dragging)
+			elif _over["kind"] == "sell":
+				# (THE WORDSMITH'S TRADE: what letting go does: ui/trades.ts wordRead)
+				_lines(rows, "Let go, and he pays %d gold for %s." % [loot.word_sell_value(), Words.word(_word)["name"]], GOLD, SMALL, inner)
 			elif _over["kind"] == "meld":
 				# (WORDMELDING: over the wordsmith's half: what letting go does, or why it will not go in: ui/meld.ts wordRead)
 				var no := _ws_problem(_word)
@@ -1132,6 +1148,10 @@ func _draw_reading(blink: bool, first: bool) -> void:
 				if hint != "":
 					_lines(rows, hint, DIM, SMALL, inner)
 				buttons = [["TO THE MELD", "ws_to_meld"]]
+			# (THE WORDSMITH'S TRADE: his half on its first page: what he pays, and SELL: ui/trades.ts wordHint, wordButtons)
+			elif wsmith == "trade":
+				_lines(rows, "He pays %d gold for a spare word." % loot.word_sell_value(), DIM, SMALL, inner)
+				buttons = [["SELL: %d GOLD" % loot.word_sell_value(), "ws_sell"]]
 		"look":
 			for c in _slots:
 				if _look == [c["i"], c["side"], c["k"]]:
@@ -1552,6 +1572,7 @@ func open_wordsmith() -> void:
 	if not visible:
 		toggle()
 	wsmith = "trade"
+	ws_pick = ""
 	meld_in = [null, null]
 	loot.melded = {}
 
@@ -1630,6 +1651,27 @@ func _ws_press(action: String, arg) -> void:
 	match action:
 		"ws_tab":
 			wsmith = "meld" if wsmith == "trade" else "trade"
+			ws_pick = ""
+		"ws_cell":
+			# (one of his words pressed: it is read, with the button that buys it; a second press does NOT buy: ui/trades.ts)
+			_word = ""
+			_pending = {}
+			_look = null
+			_result = {}
+			ws_pick = "" if _ws_cell_word(arg) == null else str(arg)
+		"ws_buy":
+			var o := _ws_offer(ws_pick)
+			if not o.is_empty():
+				var why: String = "Not enough gold" if loot.gold < int(o["cost"]) else _ws_act(ws_pick)
+				_say(why)
+				if why == "":
+					ws_pick = ""
+		"ws_sell":
+			if _word != "":
+				var why: String = loot.sell_word(_word)
+				_say(why)
+				if why == "":
+					_word = ""
 		"ws_hollow":
 			var i := int(arg)
 			if meld_in[i] != null:
@@ -1685,10 +1727,7 @@ func _ws_side(blink: bool) -> void:
 		_mid(tab, label, SMALL, PICK if wsmith == "trade" else TEXT)
 		_hits.append([tab, "ws_tab", null, null])
 	if wsmith == "trade":
-		var y := 42.0
-		for l in _wrap("His words for sale, and buying back what you sold him, are not in the Godot version yet.", w, 10):
-			_text(Vector2(x0, y), l, 10, DIM)
-			y += 13.0
+		_ws_trade(blink, x0, w)
 		return
 	# what melding is
 	var y: float = 42.0
@@ -1782,6 +1821,130 @@ func _ws_side(blink: bool) -> void:
 	draw_rect(br, PRESS if can else FAINT, false, 1.5)
 	_mid(br, label2, NORMAL, Color.WHITE if can else FAINT)
 	_hits.append([br, "ws_meld", null, null])
+
+
+# --- ITS FIRST PAGE, HIS TRADE IN WORDS (ui/trades.ts wordsmithSide): his shelf, "HIS WORDS: <price> GOLD EACH", the few words
+# he has for sale on this visit (a place bought from: "SOLD"); under it, BUY BACK, the words sold him on this visit, each to be
+# had back for what he paid. One of his pressed is read (its page), with the button that buys it (a second press does not buy:
+# a word is a floor's whole purse; the right button buys at once). One he asks more for than the hero has is dimmed. A spare
+# word of the hero's is sold from its card (SELL) or carried over to this half and let go. ---
+
+## (the word of his picked: "word:<i>" on his shelf, "wsold:<i>" among those sold him; "": none)
+var ws_pick := ""
+
+
+## The word in cell `id`, or null.
+func _ws_cell_word(id) -> Variant:
+	var p := str(id).split(":")
+	if p.size() != 2:
+		return null
+	var i := int(p[1])
+	var list: Array = loot.word_stock if p[0] == "word" else loot.words_sold
+	return list[i] if i >= 0 and i < list.size() else null
+
+
+## What having the word in cell `id` costs, and its button's label (ui/trades.ts offer).
+func _ws_offer(id: String) -> Dictionary:
+	if _ws_cell_word(id) == null:
+		return {}
+	if id.begins_with("wsold"):
+		return {"label": "BUY BACK: %d GOLD" % loot.word_sell_value(), "cost": loot.word_sell_value()}
+	return {"label": "BUY: %d GOLD" % loot.word_price(), "cost": loot.word_price()}
+
+
+func _ws_act(id: String) -> String:
+	var i := int(id.split(":")[1])
+	return loot.buy_back_word(i) if id.begins_with("wsold") else loot.buy_word(i)
+
+
+## The right button on one of his: bought at once.
+func _ws_quick(id) -> void:
+	if _ws_cell_word(id) == null:
+		return
+	_say(_ws_act(str(id)))
+	ws_pick = ""
+
+
+## Where his shelf, BUY BACK and its cells lie.
+func _ws_trade_layout(x0: float, w: float) -> Dictionary:
+	var shelf_y := 50.0
+	var sold_cap := shelf_y + CELL + 10.0
+	var sold_y := sold_cap + 16.0
+	var cols := maxi(1, int(floorf((w + 2.0) / PITCH)))
+	var kept := int(loot._tune["wordsSoldKept"])
+	var cells: Array = []
+	for i in loot.word_stock.size():
+		cells.append({"id": "word:%d" % i, "r": Rect2(x0 + i * PITCH, shelf_y, CELL, CELL), "bought": false})
+	for i in kept:
+		cells.append({"id": "wsold:%d" % i, "r": Rect2(x0 + (i % cols) * PITCH, sold_y + floorf(i / float(cols)) * PITCH, CELL, CELL), "bought": true})
+	var end := sold_y + ceilf(kept / float(cols)) * PITCH - 2.0
+	return {"cap": 42.0, "sold_cap": sold_y - 5.0, "cells": cells, "page_y": end + 10.0, "next": cells[loot.word_stock.size() + mini(loot.words_sold.size(), kept - 1)]["r"]}
+
+
+## Where the next word he is sold will lie.
+func _ws_next_sold() -> Rect2:
+	var L := _ws_layout()
+	return _ws_trade_layout(L["x0"], L["w"])["next"]
+
+
+func _ws_trade(blink: bool, x0: float, w: float) -> void:
+	var T := _ws_trade_layout(x0, w)
+	if ws_pick != "" and (_ws_cell_word(ws_pick) == null or _word != "" or not _pending.is_empty() or _look != null):
+		ws_pick = ""
+	_text(Vector2(x0, T["cap"]), "HIS WORDS: %d GOLD EACH" % loot.word_price(), 10, DIM)
+	_text(Vector2(x0, T["sold_cap"]), "BUY BACK", 10, DIM)
+	for c: Dictionary in T["cells"]:
+		var r: Rect2 = c["r"]
+		var wd = _ws_cell_word(c["id"])
+		if wd == null:
+			draw_rect(r, INK)
+			draw_rect(r, EDGE, false, 1.0)
+			# (a place on his shelf that is empty is a word that has been bought)
+			if not c["bought"]:
+				_mid(r, "SOLD", SMALL, FAINT)
+			continue
+		var on: bool = ws_pick == c["id"]
+		_tile(r, wd, "name", {"stone": true, "lit": on or r.has_point(_mouse), "edge": PICK if on else null})
+		# (one he asks more for than the hero has is dimmed)
+		if loot.gold < int(_ws_offer(c["id"])["cost"]):
+			draw_rect(r.grow(-1.0), Color(INK, 0.45))
+		_hits.append([r, "ws_cell", c["id"], null])
+	var page_y: float = T["page_y"]
+	# a word of the hero's carried over this half: what letting go will do
+	if not _over.is_empty() and _over["kind"] == "sell" and not _drag.is_empty() and _drag["moving"]:
+		var half := Rect2(size.x / 2.0 + 2.0, 2.0, size.x / 2.0 - 4.0, size.y - 4.0)
+		draw_rect(half, PICK if blink else PICK_LO, false, 2.0)
+		var nr: Rect2 = T["next"]
+		draw_rect(nr, PICK_BG)
+		draw_rect(nr, PICK, false, 1.5)
+		_mid(Rect2(x0, page_y + 6.0, w, 16.0), "LET GO TO SELL: %d GOLD" % loot.word_sell_value(), NORMAL, PICK)
+		return
+	if ws_pick != "":
+		# the word picked: its page, and the button that buys it
+		var o := _ws_offer(ws_pick)
+		var bwid := _width(o["label"], NORMAL) + 32.0
+		var br := Rect2(x0 + w - bwid, size.y - 52.0, bwid, 30.0)
+		var poor: bool = loot.gold < int(o["cost"])
+		_ws_page(_ws_cell_word(ws_pick), x0, page_y, w, br.position.y - 6.0)
+		if poor:
+			var yh := "YOU HAVE %d" % loot.gold
+			_text(Vector2(br.position.x - 8.0 - _width(yh, 10), br.position.y + 19), yh, 10, BAD)
+		draw_rect(br, Color(PRESS, (0.35 if blink else 0.18) if not poor else 0.06))
+		draw_rect(br, PRESS if not poor else FAINT, false, 1.5)
+		_mid(br, o["label"], NORMAL, Color.WHITE if not poor else FAINT)
+		_hits.append([br, "ws_buy", null, null])
+		return
+	# nothing of his picked: how the trade is done
+	if _word != "" or not _pending.is_empty() or not _result.is_empty():
+		return
+	var y := page_y + 4.0
+	for t in [["Click one of his words to read it. Right-click buys it.", TEXT], ["To sell a spare word of yours, click it and press SELL, or drag it here.", TEXT], ["Burn a word into your gear as you always have: on your side of the screen.", FAINT]]:
+		for l in _wrap(t[0], w, 10):
+			if y + 13.0 > size.y - 8.0:
+				return
+			_text(Vector2(x0, y + 9.0), l, 10, t[1])
+			y += 13.0
+		y += 4.0
 
 
 ## A made word's page under it (ui/lexicon.ts drawWordPage, tight): its name and what it grows with; what it is; ON AN ATTACK, in

@@ -768,12 +768,14 @@ func page(dir: String) -> void:
 	M.quest610.dust = 0
 	h.world = M._spot_near(smith, 1.4, h.world)
 	await M._wait(0.5)
-	# --- before the Meldstone: no melding
+	# --- before the Meldstone: his half opens on its trade page, and there is no melding (game.ts interactHint 'Wordsmith')
 	var before: String = M.town.prompt[0]
 	await M._key(KEY_E)
 	await M._wait(0.3)
-	_line(before == "E: Talk to the wordsmith" and not inv.visible and inv.wsmith == "" and loot.meld_problem("fire", "frost") == "He needs the MELDSTONE to meld",
-		"before the Meldstone: his prompt '%s', used: no half of his opens (%s); melding refused: %s" % [before, inv.visible, loot.meld_problem("fire", "frost")])
+	_line(before == "E: Wordsmith" and inv.visible and inv.wsmith == "trade" and loot.meld != "open" and loot.meld_problem("fire", "frost") == "He needs the MELDSTONE to meld",
+		"before the Meldstone: his prompt '%s', used: his half on its trade page (%s), no MELD tab; melding refused: %s" % [before, inv.wsmith, loot.meld_problem("fire", "frost")])
+	if inv.visible:
+		inv.toggle()
 	# --- the Meldstone given: FLAME and FROST
 	loot.meld = "stone"
 	await M._wait(0.2)

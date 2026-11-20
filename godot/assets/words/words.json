@@ -1265,6 +1265,128 @@
   "monster": 0.6
  },
  "page": {
+  "power": {
+   "gear": [
+    "Weapon, gloves, ring: Physical Damage or Added Damage or Strength.",
+    "Amulet: Physical Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "poison": {
+   "gear": [
+    "Weapon: Poison Damage (% or added).",
+    "Gloves, ring: Poison Damage (% or added) or Poison Resistance.",
+    "Amulet: Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Poison Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "frost": {
+   "gear": [
+    "Weapon: Frost Damage (% or added).",
+    "Gloves, ring: Frost Damage (% or added) or Frost Resistance.",
+    "Amulet: Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Frost Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "fire": {
+   "gear": [
+    "Weapon: Fire Damage (% or added).",
+    "Gloves, ring: Fire Damage (% or added) or Fire Resistance.",
+    "Amulet: Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Fire Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "lightning": {
+   "gear": [
+    "Weapon: Lightning Damage (% or added).",
+    "Gloves, ring: Lightning Damage (% or added) or Lightning Resistance.",
+    "Amulet: Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Lightning Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "swift": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Dexterity.",
+    "Boots: Movement Speed or Dexterity.",
+    "Off hand, helm, chest, belt: Cooldown Recovery or Dexterity."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "heavy": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "twin": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "leech": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Max Life or Life Regen."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "volatile": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "precise": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "frenzied": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Movement Speed or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "guarding": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Chance to Block or Strength.",
+    "Off hand, helm, chest, belt, boots: Chance to Block or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "lasting": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "fleeting": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Dexterity."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "vast": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
   "eruption": {
    "gear": [
     "Weapon: Physical Damage and Fire Damage, or Physical Damage and Added Fire Damage, or Added Damage and Fire Damage, or Added Damage and Added Fire Damage, or Strength and Fire Damage, or Strength and Added Fire Damage.",
