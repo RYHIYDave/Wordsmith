@@ -271,6 +271,9 @@ func event(e: Dictionary) -> void:
 	var t: String = e.get("t", "")
 	seen[t] = int(seen.get(t, 0)) + 1
 	last[t] = e
+	# (and the last hit that carried its move's words: a splash's and an area's fourth and later carry none, game.ts hitMonster)
+	if t == "hit" and e.has("words"):
+		last["hit_words"] = e
 	# (m3: the melded words' looks, called up by what the rules said happened, before the effects take it: main.ts eventsM3)
 	m3.event(e)
 	# (m3: a melded word's own bolts, blasts and patches are its look's, not the effects': fx.ts handle, meldOwnsEvent)

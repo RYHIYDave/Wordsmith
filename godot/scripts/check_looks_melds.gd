@@ -341,7 +341,8 @@ func _ranked() -> void:
 	await _begin(0, ["power2"], ["fire2"])
 	await M._w_strike(h)
 	await M._wait(0.05)
-	var hit: Dictionary = fx.last.get("hit", {})
+	# (the strike's own hit on A: Power in front gives it a splash, whose hits are told after it and carry no words, as the game's)
+	var hit: Dictionary = fx.last.get("hit_words", {})
 	var words: Array = hit.get("words", [])
 	var plain := true
 	for z: Dictionary in M.wakes.list:
