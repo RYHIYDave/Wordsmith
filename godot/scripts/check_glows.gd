@@ -978,3 +978,58 @@ func touch(main, hero, dir: String) -> void:
 	h.unhurt = false
 	print("TOUCH: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
+
+## WHAT THE HERO AND THE TOWN'S PEOPLE SAY (--only=speech; speech.gd): in town, walking up to the armourer, his greeting over him
+## and heard (its chance made sure for the check); on floor 2, the Headsman killed by a Strike, the hero's word on it (a boss always
+## earns one), one of the lines that fit; his line as he comes into a dungeon. Each shown on its slip and heard. Pictured.
+func speech(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var S = M._speech
+	var V: Dictionary = S.V
+	_line(V.has("hero") and V["hero"].has(h.cls) and V.has("town"), "the voices' table: %d of %s's lines, %d of the town's" % [V.get("hero", {}).get(h.cls, {}).size(), h.cls, V.get("town", {}).values().reduce(func(n, t): return n + t.size(), 0)])
+	await M.go_to("town", "start")
+	await M._wait(1.0)
+	S.V["tags"]["chance"] = 1.0
+	var at = S._where(M.town, "armourer")
+	# (from where he comes into town, far from him, up to him)
+	var n0: int = S.heard.size()
+	var far: bool = h.world.distance_to(at) > 3.2
+	h.world = M._free_near(at + Vector2(1.6, 0.6))
+	await M._wait(0.4)
+	await M._snap(dir + "/sp01_the_armourer.png")
+	var got: Array = S.heard.back() if S.heard.size() > n0 else []
+	_line(far and not got.is_empty() and got[0] == "armourer" and V["tags"]["lines"]["armourer"].has(got[1]) and S.tag.get("who", "") == "armourer",
+		"in town, walking up to the armourer: \"%s\" over him, and heard in his voice" % [got[1] if got.size() > 1 else "-"])
+	# HIS WORD ON A BIG KILL
+	M.way_depth = maxi(M.way_depth, 2)
+	await M.go_to("floor2", "down")
+	await M._wait(1.0)
+	var b = M._d_boss()
+	b.last_skill = 0
+	n0 = S.heard.size()
+	# (struck down as the game's checks strike a boss down, his wait over: the kill itself)
+	b._die()
+	await M._wait(0.3)
+	await M._snap(dir + "/sp02_the_word_on_a_kill.png")
+	got = S.heard.back() if S.heard.size() > n0 else []
+	var fits: Array = (V["quips"]["boss"] as Array) + (V["quips"]["any"] as Array) + (V["quips"]["cls"][h.cls] as Array) + (V["quips"]["skill"].get(h.loadout.id(0), []) as Array)
+	for l in V["quips"]["attr"].values():
+		fits += l
+	for l in V["quips"]["weapon"].values():
+		fits += l
+	for l in V["quips"]["word"].values():
+		fits += l
+	_line(b.dead and not got.is_empty() and fits.has(got[1]) and S.quip.get("text", "") == got[1], "the Headsman killed by a Strike: his word on it, \"%s\", over him and heard" % [got[1] if got.size() > 1 else "-"])
+	# HIS LINE AS HE COMES INTO A DUNGEON
+	await M._wait(3.0)
+	n0 = S.heard.size()
+	S.arrived()
+	await M._wait(1.0)
+	await M._snap(dir + "/sp03_coming_in.png")
+	got = S.heard.back() if S.heard.size() > n0 else []
+	_line(not got.is_empty() and V["arrival"][h.cls].has(got[1]), "coming into a dungeon: \"%s\", 0.75 s after he is there" % [got[1] if got.size() > 1 else "-"])
+	h.unhurt = false
+	print("SPEECH: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+

@@ -947,7 +947,7 @@ lights over the dark (town.gd `_ring_moments`):
   (the Warden's jailer's bark, the Headsman's cold breath, the Chained One's insane growl, the Amalgamation's many voices, ... the
   King's dying rasp). The game makes those voices in code as it plays; here they are the game's own voices' takes of every line,
   two of each, made by the game's own synthesizer offline (`node tools/godot_voices.mjs`: `assets/voices`, 13 bosses, 44 lines,
-  88 takes, about 1 MB) and played as he calls out (`monsters.gd` speak, `monster.gd` call_line). The bosses that called out
+  88 takes) and played as he calls out (`monsters.gd` speak, `monster.gd` call_line). The bosses that called out
   in the Godot version without being heard are heard now (the Headsman, the Chained One, the Amalgamation, the Fleshmancer, the
   Unfinished, the Cantor), and those that did not call out at all now do, by the game's rule (`monster.gd` call_out: never two
   within 5 s, a basic blow's line not within 20 s): the Warden (his slam, his lockdown, his bolts), the Rat King, the Physician,
@@ -986,6 +986,17 @@ lights over the dark (town.gd `_ring_moments`):
   HOLD, SWIPE, INVENTORY, the flask larger and without its key). The app is held sideways and turns with the phone either way
   (the game's own way on a phone held upright, turned for him: `window/handheld/orientation`). `--only=touch`
   (`check_glows.gd`): 7 checks, real touches, pictured.
+
+## What the hero and the town's people say (the cloud chat, 21 Nov 2026)
+
+- **Shown and heard** (game.ts quip, tags; main.ts `arrived`, speak; render/fx.ts their slips; `speech.gd`): the hero's word on a
+  big kill (a boss always earns one; an elite or a champion 3 times in 10, never within 45 s of the last; from the lists that fit
+  the kill, the boss's, a word's on the move that killed it, the move's, his weapon's, his highest attribute's, his class's, any,
+  by their weights, none twice till all have been said); his line as he comes into a dungeon; what the armourer, the mystic, the
+  wordsmith and the stranger say as he comes up (4 times in 10, never within 90 s of their last nor 30 s of anyone's). Each on
+  the game's dark slip over whoever says it, and heard in their own voice: the game's own made voices, said by it offline into
+  files (`node tools/godot_voices.mjs`, which now also says each hero's 210 or so lines and the town's 24: 1,358 takes, 6 MB).
+  `--only=speech` (`check_glows.gd`): 4 checks, pictured.
 
 ## Not in it yet
 

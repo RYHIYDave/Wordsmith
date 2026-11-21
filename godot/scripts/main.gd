@@ -160,6 +160,8 @@ var _loot: Loot
 var _inv
 ## (TOUCH, for a phone: touch.gd)
 var _touch = null
+## (what the hero and the town's people say: speech.gd)
+var _speech = null
 ## (the small map top right, the large one and the pause panel: minimap.gd)
 var _mini
 var _veil: ColorRect
@@ -278,6 +280,10 @@ func _ready() -> void:
 		_touch = preload("res://scripts/touch.gd").new()
 		_touch.main = self
 		add_child(_touch)
+	if _speech == null:
+		_speech = preload("res://scripts/speech.gd").new()
+		_speech.main = self
+		add_child(_speech)
 	var inv := Inventory.new()
 	inv.loot = loot
 	inv.hero = hero
@@ -324,7 +330,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -560,6 +566,9 @@ func _picked(c: String, m: String, first: String) -> void:
 ## (main.ts enter: they warp in where the run begins: fx.arrive, the ring and the motes of a warp, the figure coming together)
 func _warp_in() -> void:
 	hero.arrive()
+	# (and a line of his own as he comes into a dungeon; in town there is nothing to say it about: speech.gd)
+	if _speech != null:
+		_speech.arrived()
 	if fx != null:
 		var C := preload("res://scripts/fx_looks.gd").P
 		var cols := PackedColorArray([C["tl5"], C["tl4"], C["white"]])
@@ -2308,6 +2317,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "fxleft":
 		await preload("res://scripts/check_glows.gd").new().fxleft(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "speech":
+		await preload("res://scripts/check_glows.gd").new().speech(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "touch":

@@ -1811,6 +1811,9 @@ func _die() -> void:
 	# goes off after a short warning, of its element and none of its words (a minion, of its leader's Volatile, at half))
 	if mgr.hero != null and is_instance_valid(mgr.hero) and mgr.hero.has_method("killed"):
 		mgr.hero.killed(self)
+		# (and his word on a big kill: game.ts quip, speech.gd)
+		if mgr.main != null and mgr.main._speech != null:
+			mgr.main._speech.killed(self)
 	# (THE WARLOCK: a cursed one dying spreads every burn on it to those near it: game.ts kill, spreadBurns)
 	if curse_t > 0.0:
 		mgr.spread_burns(self)
