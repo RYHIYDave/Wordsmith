@@ -14,6 +14,8 @@ const Words := preload("res://scripts/words.gd")
 ## (his level, and whether the wordsmith's ring is lit: what opens the slots)
 ## His class (main.gd set_class): whose three moves these are, and what they grow with.
 ## (THE PRACTICE ROOM: every slot open: practice.gd)
+## ABILITIES: COOLDOWNS or MANA (the device's choice, loot.gd `limit`): what limits his moves that wait
+var limit := "cooldown"
 var practice := false
 var cls := "warrior"
 var level := 1
@@ -146,7 +148,7 @@ func r(i: int) -> Dictionary:
 	if _r[i] == null:
 		var none := func(_w): return null
 		var by: String = cls if str(grows[i]) == "" else str(grows[i])
-		_r[i] = Words.resolve(id(i), front[i].map(none) if hushed else front[i], behind[i].map(none) if hushed else behind[i], _d, by)
+		_r[i] = Words.resolve(id(i), front[i].map(none) if hushed else front[i], behind[i].map(none) if hushed else behind[i], _d, by, limit)
 	return _r[i]
 
 

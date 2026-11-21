@@ -249,6 +249,11 @@ func _draw() -> void:
 	var life_x := 19.0
 	_globe(life_x, gy, 14, hero.life / hero.max_life, T["life"], T["lifeHi"], T["edgeHi"])
 	_text("%d" % ceili(hero.life), life_x, gy - 3, P["white"], {"align": "center", "font": "small", "shadow": ink})
+	# (mana is only there to be seen when it is what limits the slow abilities: hud.ts, its globe at the right)
+	var by_mana: bool = hero.by_mana()
+	if by_mana:
+		_globe(W - 20, gy, 14, hero.mana / maxf(1.0, hero.max_mana), T["mana"], T["manaHi"], T["edgeHi"])
+		_text("%d" % floori(hero.mana), W - 20, gy - 3, P["white"], {"align": "center", "font": "small", "shadow": ink})
 
 	# ---- the flask (Q) ----
 	var ps := 20.0
@@ -265,7 +270,7 @@ func _draw() -> void:
 	# ---- the Lunge: beside where the mana would be, as the flask is beside the life ----
 	var ready: Dictionary = hero.readiness()
 	var skills: Array = _skills()
-	var ex := W - ps - 5
+	var ex := W - 37.0 - ps if by_mana else W - ps - 5
 	# (what the prompt points at, an attack's plate or the Lunge's button, and which of them is under the pointer)
 	var point: int = int(main.guide.point) if main != null else -1
 	var mouse: Vector2 = pointer if pointer != null else get_viewport().get_mouse_position() / 2.0

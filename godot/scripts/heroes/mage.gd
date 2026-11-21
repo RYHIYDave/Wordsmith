@@ -219,6 +219,10 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 	at = _evasive_at(at, way)
 	if charges[2] < 1:
 		return
+	# (ABILITIES: MANA: not without the mana for it: game.ts useEvasive, noMana)
+	if h.mana < float(h.loadout.r(2)["mana"]):
+		h.no_mana()
+		return
 	# (where she comes out: as near there as she can see; nowhere (less than half a tile), and nothing is spent)
 	var land := _reach_point(at, float(def["range"]))
 	if land.distance_to(h.world) < 0.5:

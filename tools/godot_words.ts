@@ -20,7 +20,7 @@ import { gameSwitches } from './godot_switches';
 import { DEMON_KIT } from '../src/game/warlock';
 import { WARRIOR_KITS } from '../src/game/talents';
 import { readFileSync } from 'node:fs';
-import { ARC_CHAIN, ATTR_GIVES, ATTR_SPLIT, BIND, BLEED, CLASSES, HYBRID_LESS, CULL, FIRST_WORD, FLEETING, FRENZY, GUARD, HEAVY, HEX, HUSH_LEAVES, LASTING, LEECH, MIRRORING, MOVE_OPENS, PIERCE, PLUNDER, PRECISE, PULL, REAP, SKILLS, SLOT_OPENS, SPLIT, STILL, SURGE, TUNE, VAST, WORDS, skillsFor, wordsAt } from '../src/game/defs';
+import { ARC_CHAIN, ATTR_GIVES, ATTR_SPLIT, BIND, BLEED, CLASSES, HYBRID_LESS, CULL, FIRST_WORD, FLEETING, FRENZY, GUARD, HEAVY, HEX, HUSH_LEAVES, LASTING, LEECH, MANA_MODE, MIRRORING, MOVE_OPENS, PIERCE, PLUNDER, PRECISE, PULL, REAP, SKILLS, SLOT_OPENS, SPLIT, STILL, SURGE, TUNE, VAST, WORDS, skillsFor, wordsAt } from '../src/game/defs';
 import { MANA_AS_CDR } from '../src/game/items';
 import { FURNACE_WORD, MELDSTONE_WORDS } from '../src/game/quests15';
 import { resolveSkill, socketProblem } from '../src/game/words';
@@ -126,6 +126,9 @@ writeFileSync(`${OUT}/words.json`, JSON.stringify({
   primaryDmg: ATTR_GIVES.primaryDmg,
   intCdr: ATTR_GIVES.intCdr,
   manaAsCdr: MANA_AS_CDR,
+  // (ABILITIES: MANA, the start screen's and the pause panel's switch: defs.ts MANA_MODE, what a move costs and the moment between
+  // its uses when mana is the limit; game/words.ts resolveSkill)
+  manaMode: MANA_MODE,
   byWeapon: ATTR_SPLIT.on ? ATTR_SPLIT.byWeapon.filter((w) => OURS.includes(w)) : [],
   // (when a move opens, and when each of its slots does: defs.ts MOVE_OPENS, SLOT_OPENS as the first levels set them)
   moveOpens: MOVE_OPENS,

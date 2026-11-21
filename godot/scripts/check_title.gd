@@ -21,6 +21,11 @@
 ## options; the Mage: the game begun again in the arena with the game's practice hero (level 10, every word slot open, every word),
 ## told so; a pack comes up out of its rifts and fights; struck down, he is UP AGAIN at once; what he kills gives no experience;
 ## three or fewer left, the next pack comes; "Leave": the game begun again with no practice room.
+## ABILITIES: COOLDOWNS or MANA (--only=mana; main.ts flipLimit, defs.ts MANA_MODE, game/words.ts resolveSkill, game.ts useSkill,
+## manaToBegin, updateChannel, endChannel, useEvasive, noMana; ui/hud.ts, render.ts): the switch on the start screen's options and
+## the pause panel; mana the limit, each move that waits costs mana (its listed mana x1.4, less what would have shortened its wait;
+## the evasive move 6) and needs only a moment between uses; the Warrior's Whirlwind refused without the mana to begin it ("No
+## mana"), going on while he has it, paid as it goes; the Lunge paid for; a roll one charge; the HUD's mana globe; back to cooldowns.
 ## A line a thing; then the sum, TITLE.
 extends RefCounted
 
@@ -417,4 +422,79 @@ func practice_check(main, hero, d: String) -> void:
 			_line(not M.practice and M.place != "practice", "\"Leave\": the game begun again, no practice room")
 			print("TITLE PRACTICE: done")
 			M.get_tree().quit()
+
+
+## ABILITIES: COOLDOWNS or MANA, in shot mode on floor 1.
+func mana_check(main, hero, d: String) -> void:
+	M = main
+	h = hero
+	dir = d
+	shot = 50
+	n = 110
+	var loot = M.loot
+	await M._wait(0.5)
+	var ts = M.title_up(M.place)
+	ts.pointer = Vector2(-50, -50)
+	await _frames(3)
+	await _press(ts, "options")
+	await _press(ts, "limit")
+	await _frames(2)
+	await _snap("options_mana")
+	_line(loot.limit == "mana" and ts._items()[1][1] == "ABILITIES: MANA" and ts._items()[1][2] == "No cooldowns: use them until you run dry",
+		"OPTIONS: ABILITIES pressed: %s, \"%s\"" % [ts._items()[1][1], ts._items()[1][2]])
+	M._title_down()
+	await _frames(3)
+	var L = h.loadout
+	var cdr: float = float(h.stats["cdr"])
+	var MM: Dictionary = preload("res://scripts/words.gd").data()["manaMode"]
+	var wm := floori(16.0 * float(MM["cost"]) * (1.0 - cdr) + 0.5)
+	var lm := floori(float(MM["evade"]) * (1.0 - cdr) + 0.5)
+	_line(int(L.r(1)["mana"]) == wm and is_equal_approx(float(L.r(1)["cooldown"]), float(MM["recover"])) and int(L.r(2)["mana"]) == lm and is_equal_approx(float(L.r(2)["cooldown"]), float(MM["evadeRecover"])),
+		"the Warrior's Whirlwind costs %d mana (16 x 1.4, less his %.1f%% recovery), a moment of %.1f s between uses; his Lunge %d, %.1f s" % [L.r(1)["mana"], cdr * 100.0, L.r(1)["cooldown"], L.r(2)["mana"], L.r(2)["cooldown"]])
+	var int_: float = float(loot.attrs["int"])
+	_line(h.max_mana >= 40.0 + int_ * 3.0 - 0.5, "his mana: %d (a base of 40 and three for each of his %d Intelligence, and his gear's)" % [h.max_mana, int_])
+	# (without the mana to begin it, his Whirlwind is refused)
+	h.mana = 1.0
+	h.auto_whirl = true
+	await _frames(3)
+	var refused: bool = h._act != "whirl" and h._deny_t > 0.0
+	h.auto_whirl = false
+	await _frames(2)
+	_line(refused, "with 1 mana the Whirlwind is refused: \"No mana\"")
+	h.mana = h.max_mana
+	h.auto_whirl = true
+	var t := 0.0
+	while t < 1.2:
+		await M.get_tree().process_frame
+		t += 1.0 / 60.0
+	var spinning: bool = h._act == "whirl" and h.mana < h.max_mana - 1.0
+	await _snap("mana_hud_whirl")
+	h.auto_whirl = false
+	t = 0.0
+	while t < 1.5 and h._act == "whirl":
+		await M.get_tree().process_frame
+		t += 1.0 / 60.0
+	_line(spinning and is_equal_approx(h._whirl_full, float(MM["recover"])), "with mana it spins, paid as it goes (%d left); let go, it waits only %.1f s" % [h.mana, h._whirl_full])
+	var m0: float = h.mana
+	h.auto_lunge = h.world + h.face * 3.0
+	await _frames(4)
+	_line(absf((m0 - h.mana) - float(lm)) < 2.0, "the Lunge: %d mana paid" % roundi(m0 - h.mana))
+	await M._wait(0.6)
+	M._mini.show_panel("pause")
+	await _frames(3)
+	await _snap("pause_abilities")
+	var row: Array = M._mini._hits.filter(func(x): return x[1] == "limit")
+	_line(not row.is_empty(), "the pause panel: ABILITIES: MANA over its three buttons")
+	M._mini.show_panel("")
+	await _frames(3)
+	# (a Ranger: his roll one charge while mana is the limit, two with cooldowns)
+	M.set_class("ranger", true)
+	await _frames(3)
+	var one: int = h.kit.max_charges[2]
+	M.flip_limit()
+	await _frames(2)
+	var two: int = h.kit.max_charges[2]
+	_line(one == 1 and two == 2 and loot.limit == "cooldown", "a Ranger's roll: %d charge with mana the limit, %d with cooldowns (the switch pressed again)" % [one, two])
+	print("TITLE MANA: done")
+	M.get_tree().quit()
 

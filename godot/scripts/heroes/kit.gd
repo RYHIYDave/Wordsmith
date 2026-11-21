@@ -53,9 +53,16 @@ func _init(hero, c := "") -> void:
 	for k in ["rangerArrow", "volleySeen", "trackAim", "palette", "ramps", "crackle", "swap"]:
 		T[k] = all[k]
 	# (game.ts refresh: a roll holds two charges while the moves wait their turns; anything else one)
+	limit_changed()
+
+
+## (game.ts refresh: a roll holds two charges while the moves wait their turns, cooldowns the limit; anything else one)
+func limit_changed() -> void:
 	for i in 3:
-		max_charges[i] = 2 if str(_def(i)["kind"]) == "roll" else 1
+		max_charges[i] = 2 if str(_def(i)["kind"]) == "roll" and not h.by_mana() else 1
 		charges[i] = max_charges[i]
+	if has_method("talents_changed"):
+		call("talents_changed")
 
 
 func _def(i: int) -> Dictionary:
@@ -260,6 +267,10 @@ func _use_skill(i: int, at: Vector2) -> void:
 	# (one that is being held is already being made: the button held down does not ask for another)
 	if not channel.is_empty() or charges[i] < 1:
 		return
+	# (ABILITIES: MANA: not without the mana to begin it: game.ts useSkill, noMana)
+	if h.mana < h.mana_to_begin(i):
+		h.no_mana()
+		return
 	if not windup.is_empty():
 		# (another attack is being made: this one waits its turn, briefly; it is not lost)
 		queued = {"tx": at.x, "ty": at.y, "t": 0.4}
@@ -312,12 +323,13 @@ func _release() -> void:
 		_deliver(0, h.world, to, 1.0, true)
 		return
 	# (what it needs may have gone in the meantime: then nothing happens, and nothing is paid)
-	if charges[i] < 1:
+	if charges[i] < 1 or h.mana < h.mana_to_begin(i):
 		return
 	# (an attack that goes on while it is held begins here: it is paid for when it ends)
 	if float(def.get("channel", 0.0)) > 0.0:
 		_begin_channel(i, Vector2(w["tx"], w["ty"]))
 		return
+	h.mana -= float(r["mana"])
 	charges[i] -= 1
 	h.uses[i] += 1
 	if cd[i] <= 0.0:
@@ -389,7 +401,9 @@ func _update_channel(dt: float) -> void:
 			snipe_power = 0.0
 		return
 	var tick: float = float(def.get("tick", 0.25)) / float(r["pace"])
-	if int(ch["bites"]) > 0 and (not hold or float(ch["t"]) >= length - 1e-6):
+	# (ABILITIES: MANA: it goes on while he has the mana for it, paid as it goes: game.ts updateChannel)
+	var by_m: bool = float(r["mana"]) > 0.0
+	if int(ch["bites"]) > 0 and (not hold or (h.mana <= 0.0 if by_m else float(ch["t"]) >= length - 1e-6)):
 		_end_channel(true)
 		return
 	if hold:
@@ -407,6 +421,8 @@ func _update_channel(dt: float) -> void:
 		ch["bites"] = int(ch["bites"]) + 1
 	ch["t"] = float(ch["t"]) + dt
 	ch["next"] = float(ch["next"]) - dt
+	if by_m and length > 0.0:
+		h.mana = maxf(0.0, h.mana - float(r["mana"]) / length * dt)
 	_hold_pose(i, def)
 
 
@@ -433,7 +449,8 @@ func _end_channel(echoes: bool) -> void:
 	var part: float = clampf(float(ch["t"]) / length, 0.0, 1.0) if length > 0.0 else 1.0
 	if charges[i] > 0:
 		charges[i] -= 1
-	cd[i] = float(r["cooldown"]) * maxf(float(T["tune"]["channelMinCool"]), part)
+	# (when mana is the limit the wait is only a moment, whatever the length)
+	cd[i] = float(r["cooldown"]) if float(r["mana"]) > 0.0 else float(r["cooldown"]) * maxf(float(T["tune"]["channelMinCool"]), part)
 	full[i] = maxf(0.01, cd[i])
 	if not attack.is_empty():
 		attack["t"] = float(def["follow"])
@@ -483,6 +500,11 @@ func _use_evasive(_at: Vector2, _way: Vector2) -> void:
 func _pay_evasive() -> bool:
 	if charges[2] < 1:
 		return false
+	# (ABILITIES: MANA: the evasive move costs its mana too: game.ts useEvasive, noMana)
+	if h.mana < float(h.loadout.r(2)["mana"]):
+		h.no_mana()
+		return false
+	h.mana -= float(h.loadout.r(2)["mana"])
 	charges[2] -= 1
 	h.uses[2] += 1
 	if cd[2] <= 0.0:

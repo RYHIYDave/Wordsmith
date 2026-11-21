@@ -163,6 +163,8 @@ func _items() -> Array:
 	if page == "options":
 		return [
 			["mute", "SOUND: OFF" if AudioServer.is_bus_mute(0) else "SOUND: ON", "", false, false],
+			["limit", "ABILITIES: MANA" if main != null and main.loot.limit == "mana" else "ABILITIES: COOLDOWNS",
+				"No cooldowns: use them until you run dry" if main != null and main.loot.limit == "mana" else "No mana: each waits its turn", false, false],
 			["guide", "PROMPTS: OFF" if main != null and main.loot.taught else "PROMPTS: ON", "", false, false],
 			["practice", "PRACTICE ROOM", "", false, false],
 			["floors", "LEVEL SELECT", "", false, false],
@@ -271,6 +273,10 @@ func _pressed(id: String) -> void:
 			page = "menu"
 		"mute":
 			AudioServer.set_bus_mute(0, not AudioServer.is_bus_mute(0))
+		"limit":
+			main.loot.set_limit("cooldown" if main.loot.limit == "mana" else "mana")
+			if main.saving:
+				preload("res://scripts/save.gd").write(main, main._restored if not main._restored.is_empty() else null)
 		"guide":
 			# (the switch is the device's, kept as "has been shown the game", or not: main.ts guideOn, meta.taught)
 			main.loot.taught = not main.loot.taught
@@ -410,6 +416,11 @@ func _draw_front() -> void:
 		if sub != "" and page == "menu" and sw <= W - 8.0:
 			var sx := maxf(4.0 + ceilf(sw / 2.0), minf(W - 4.0 - ceilf(sw / 2.0), r.position.x + floorf(r.size.x / 2.0)))
 			_text(ci, sub, sx, r.position.y - 8.0, T["text"], {"align": "center", "font": "small", "shadow": P["black"]})
+	# (what the abilities' switch means, in a line over the options)
+	if page == "options":
+		var hint: String = items.filter(func(m): return m[2] != "").map(func(m): return m[2]).front() if items.any(func(m): return m[2] != "") else ""
+		if hint != "" and PF.width(hint, "small") <= W - 8.0:
+			_text(ci, hint, floorf(W / 2.0), L["rowsTop"] - 9.0, T["dim"], {"align": "center", "font": "small", "shadow": P["black"]})
 
 
 # --- THE LEVEL SELECT'S PAGE (ui/panels.ts drawFloors) -------------------------------------------------------------------------

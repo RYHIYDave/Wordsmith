@@ -103,6 +103,11 @@ const Loadout := preload("res://scripts/loadout.gd")
 ## (WORDMELDING: the melded words' twists in the fight, and what their looks read: melds.gd)
 const Melds := preload("res://scripts/melds.gd")
 ## (THE PRACTICE ROOM: nothing there can kill him: main.gd, practice.gd)
+## HIS MANA (ABILITIES: MANA, loot.gd `limit`): what is left, how much he holds, how fast it comes back (loot.gd derive)
+var mana := 40.0
+var max_mana := 40.0
+var mana_regen := 2.5
+var _deny_t := 0.0
 var practice := false
 var _melds = null
 var melds:
@@ -1050,6 +1055,12 @@ func _process(dt: float) -> void:
 			_back()
 		return
 	life = minf(max_life, life + stats["life_regen"] * dt)
+	# (his mana comes back, faster when it is what limits his moves: game.ts updateHero, MANA_MODE.regen; in THE PRACTICE ROOM a
+	# quarter of it a second besides, so the slow ability can be tried again and again: updatePractice)
+	mana = minf(max_mana, mana + mana_regen * (float(Words.data()["manaMode"]["regen"]) if by_mana() else 1.0) * dt)
+	if practice:
+		mana = minf(max_mana, mana + max_mana * 0.25 * dt)
+	_deny_t = maxf(0.0, _deny_t - dt)
 	# (his might and his haste run out: game.ts updateHero)
 	if might_t > 0.0:
 		might_t -= dt
@@ -1110,7 +1121,10 @@ func _process(dt: float) -> void:
 		if Input.is_action_just_pressed("lunge") and scene_pace <= 0.0:
 			lunge_at = _pointer(way, LUNGE["range"])
 		if lunge_at != Vector2.INF and _lunge_cd <= 0.0 and _act != "lunge" and not hooked:
-			_begin_lunge(lunge_at)
+			if mana < float(loadout.r(2)["mana"]):
+				no_mana()
+			else:
+				_begin_lunge(lunge_at)
 		if _act == "lunge":
 			_fly(dt)
 			_place()
@@ -1134,7 +1148,10 @@ func _process(dt: float) -> void:
 		var strike_asked := (Input.is_action_just_pressed("attack") and scene_pace <= 0.0) or auto_attack
 		whirl_held = (Input.is_action_pressed("whirl") and scene_pace <= 0.0) or auto_whirl
 		auto_attack = false
-		if whirl_held and _whirl_cd <= 0.0 and (_act == "" or (_act == "strike" and _landed)):
+		if whirl_held and _whirl_cd <= 0.0 and (_act == "" or (_act == "strike" and _landed)) and mana < mana_to_begin(1):
+			if Input.is_action_just_pressed("whirl") or auto_whirl:
+				no_mana()
+		elif whirl_held and _whirl_cd <= 0.0 and (_act == "" or (_act == "strike" and _landed)):
 			_begin_whirl()
 		# (a Strike no sooner after the last was begun than his blows a second allow, whether he still stands in the last one or
 		# has walked out of it: game.ts useBasic, `swingT`)
@@ -1285,7 +1302,9 @@ func _spin(dt: float, held: bool) -> void:
 		if _spun >= _stopped_at + WHIRL["follow"]:
 			_end_act()
 		return
-	if _bites > 0 and (not held or _spun >= length - 1e-6):
+	# (ABILITIES: MANA: it goes on while he has the mana for it, paid as it goes: game.ts updateChannel)
+	var by_m: bool = float(r1["mana"]) > 0.0
+	if _bites > 0 and (not held or (mana <= 0.0 if by_m else _spun >= length - 1e-6)):
 		_end_channel(true)
 		return
 	if _next_bite <= 1e-9:
@@ -1297,6 +1316,8 @@ func _spin(dt: float, held: bool) -> void:
 		_next_bite += tick
 	_spun += dt
 	_next_bite -= dt
+	if by_m and length > 0.0:
+		mana = maxf(0.0, mana - float(r1["mana"]) / length * dt)
 	var a := atan2(face.y, face.x) + WHIRL["spin"] * TAU * dt
 	face = Vector2(cos(a), sin(a))
 
@@ -1310,7 +1331,8 @@ func _end_channel(echoes: bool) -> void:
 	_landed = true
 	_stopped_at = _spun
 	var k := clampf(_spun / length, WHIRL["min_cool"], 1.0)
-	_whirl_cd = float(r["cooldown"]) * k
+	# (when mana is the limit the wait is only a moment, whatever the length)
+	_whirl_cd = float(r["cooldown"]) if float(r["mana"]) > 0.0 else float(r["cooldown"]) * k
 	_whirl_full = _whirl_cd
 	if echoes and float(r["echo"]) > 0.0 and _bites > 0:
 		var at := world
@@ -1380,6 +1402,7 @@ func _begin_lunge(target: Vector2) -> void:
 	_turn(dir)
 	_lunge_cd = float(loadout.r(2)["cooldown"])
 	_lunge_full = _lunge_cd
+	mana -= float(loadout.r(2)["mana"])
 	_lunge = {"from": world, "to": land, "dur": 0.26 + dist * 0.03}
 	_act = "lunge"
 	_act_t = 0.0
@@ -1769,6 +1792,29 @@ func dots() -> void:
 			_fall()
 
 
+## Is mana what limits his moves (ABILITIES: MANA)?
+func by_mana() -> bool:
+	return loadout.limit == "mana"
+
+
+## (game.ts manaToBegin) What move `i` must have in mana to be begun: all it costs, or for one held, its first bite's worth.
+func mana_to_begin(i: int) -> float:
+	var r: Dictionary = loadout.r(i)
+	var def: Dictionary = Words.skill(loadout.id(i))
+	if float(def.get("channel", 0.0)) > 0.0 and float(def.get("tick", 0.0)) > 0.0:
+		return float(r["mana"]) * float(def["tick"]) / float(def["channel"])
+	return float(r["mana"])
+
+
+## (game.ts noMana) Not enough mana: a dull sound and the words, not again for a moment.
+func no_mana() -> void:
+	if _deny_t > 0.0:
+		return
+	_deny_t = 0.8
+	sfx.play("deny")
+	_tell({"t": "text", "x": world.x, "y": world.y, "text": "No mana", "color": "#58a8f0"})
+
+
 ## He falls. (In THE PRACTICE ROOM he does not: game.ts die, "The practice room only knocks the wind out of you": up again at
 ## once, his life full, a moment untouchable.)
 func _fall() -> void:
@@ -2115,10 +2161,16 @@ func _draw() -> void:
 		edge = Color("#58a8f0")
 	elif shock_t > 0.0:
 		edge = Color("#fff060")
-	draw_rect(Rect2(-w / 2 - 1, top - 1, w + 2, 7), edge)
+	# (ABILITIES: MANA: the bar two pixels taller, his mana a thin line under the life: render.ts)
+	var more := 4.0 if by_mana() else 0.0
+	draw_rect(Rect2(-w / 2 - 1, top - 1, w + 2, 7 + more), edge)
 	draw_rect(Rect2(-w / 2, top, w * clampf(life / max_life, 0.0, 1.0), 5), Color(0.86, 0.16, 0.24))
+	if more > 0.0:
+		draw_rect(Rect2(-w / 2 - 1, top + 5, w + 2, 2), Color(0.04, 0.04, 0.1))
+		draw_rect(Rect2(-w / 2, top + 7, w, 2), Color("#0e0c24"))
+		draw_rect(Rect2(-w / 2, top + 7, w * clampf(mana / maxf(1.0, max_mana), 0.0, 1.0), 2), Color("#58a8f0"))
 	if kit != null and kit.has_method("draw_over"):
-		kit.draw_over(self, top, 1.0)
+		kit.draw_over(self, top + more, 1.0)
 
 
 ## (main.gd _picked: he has just warped in where the run begins)

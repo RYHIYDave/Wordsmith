@@ -229,6 +229,11 @@ func _press(kind: String, at := Vector2.ZERO) -> bool:
 				h.sfx.play("deny")
 				h._tell({"t": "text", "x": h.world.x, "y": h.world.y, "text": "No jump", "color": "#8c8090"})
 			return true
+		# (ABILITIES: MANA: not without the mana for it: game.ts useEvasive, noMana)
+		if h.mana < float(h.loadout.r(2)["mana"]):
+			h.no_mana()
+			return true
+		h.mana -= float(h.loadout.r(2)["mana"])
 		# (A SWIPE BREAKS A LOCKED COMBO: cut short where it is, the rest let go, and he jumps out at once)
 		if _full():
 			mv = {}

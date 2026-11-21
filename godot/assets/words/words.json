@@ -1733,6 +1733,13 @@
   "perMana": 0.1,
   "perRegen": 2
  },
+ "manaMode": {
+  "cost": 1.4,
+  "regen": 1.3,
+  "recover": 0.5,
+  "evade": 6,
+  "evadeRecover": 0.3
+ },
  "byWeapon": [
   "fire",
   "frost",

@@ -284,7 +284,7 @@ static func _num(n: float) -> String:
 
 ## A MOVE WITH ITS WORDS (resolveSkill), for a hero whose numbers are `d`: {str, dex, int, area, aps, cdr} (stats.ts derive).
 ## `front`, `behind`: the words in its slots, null where one is empty.
-static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls := "warrior") -> Dictionary:
+static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls := "warrior", limit := "cooldown") -> Dictionary:
 	var D := data()
 	var def: Dictionary = D["skills"][id]
 	# (WORDMELDING: a melded word does the work of both its words, so for all that follows it is both of them; a ranked word is its
@@ -334,12 +334,20 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	var size: float = d["area"]
 	var rate: float = d["aps"]
 	var cooldown: float = float(def["cooldown"]) * (1.0 - float(d["cdr"]))
+	# (ABILITIES: MANA, the start screen's and the pause panel's switch: a move that waits costs mana instead, what would have
+	# shortened its wait making it cheaper, and needs only a moment between uses: defs.ts MANA_MODE)
+	var mana := 0.0
+	var by_mana: bool = limit == "mana" and float(def["cooldown"]) > 0.0
+	if by_mana:
+		var MM: Dictionary = D["manaMode"]
+		mana = (float(def.get("mana", 0.0)) * float(MM["cost"]) if float(def.get("mana", 0.0)) > 0.0 else float(MM["evade"])) * (1.0 - float(d["cdr"]))
+		cooldown = float(MM["recover"]) if float(def.get("mana", 0.0)) > 0.0 else float(MM["evadeRecover"])
 	# (how fast what the move sends flies: an arrow, a wave; Swift in front, faster)
 	var proj_speed: float = float(def["speed"])
 	var waits: bool = float(def["cooldown"]) > 0.0
 	var heavy: Dictionary = D["heavy"]
 	var r := {
-		"id": id, "name": skill_name(id, front, behind), "element": element, "dmg_mult": 0.0, "size": 1.0, "rate": 0.0, "cooldown": 0.0,
+		"id": id, "name": skill_name(id, front, behind), "element": element, "dmg_mult": 0.0, "size": 1.0, "rate": 0.0, "cooldown": 0.0, "mana": 0,
 		"splash": 0.0, "splash_dmg": 0.0, "pierce": false,
 		"ignite": 0.0, "chill": 0.0, "arcs": 0, "arc_dmg": 0.0, "poison": 0.0, "stun": 0.0,
 		"might": 0.0, "haste": 0.0, "zone": null, "cloud": 0.0, "cracks": 0.0, "lines": lines,
@@ -374,8 +382,12 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		var a: float = grows_by.call(front, "swift")
 		if waits:
 			var cut := minf(60.0, 20.0 + 0.3 * a)
-			cooldown *= 1.0 - cut / 100.0
-			lines.append("Swift: %s shorter cooldown." % _pct(cut))
+			if by_mana:
+				mana *= 1.0 - cut / 100.0
+				lines.append("Swift: costs %s less mana." % _pct(cut))
+			else:
+				cooldown *= 1.0 - cut / 100.0
+				lines.append("Swift: %s shorter cooldown." % _pct(cut))
 		else:
 			var fast := 25.0 + 0.5 * a
 			rate *= 1.0 + fast / 100.0
@@ -451,7 +463,9 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		# (slower, much harder, and it stuns)
 		var more: float = 50.0 + 0.5 * grows_by.call(front, "heavy")
 		dmg_mult *= 1.0 + more / 100.0
-		if waits:
+		if waits and by_mana:
+			mana *= float(heavy["slower"])
+		elif waits:
 			cooldown *= float(heavy["slower"])
 		else:
 			rate /= float(heavy["slower"])
@@ -820,5 +834,6 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	r["size"] = size
 	r["rate"] = rate
 	r["cooldown"] = cooldown
+	r["mana"] = floori(mana + 0.5)
 	r["proj_speed"] = proj_speed
 	return r

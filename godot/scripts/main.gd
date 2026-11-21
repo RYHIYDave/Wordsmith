@@ -497,6 +497,13 @@ func practice_run(c: String) -> Dictionary:
 		"bag": (h.get("bag", []) as Array).filter(func(it): return it is Dictionary), "words": h.get("words", {}), "gold": 0, "depth": 4, "cleared": 0, "way": 1, "ring": true}
 
 
+## ABILITIES: COOLDOWNS or MANA turned (main.ts flipLimit): the device's choice, kept; his moves made again under the other.
+func flip_limit() -> void:
+	loot.set_limit("cooldown" if loot.limit == "mana" else "mana")
+	save_now()
+	sfx.play("click")
+
+
 ## THE PAUSE PANEL'S THIRD BUTTON (main.ts: "End run", or for a test hero "Leave"): back to the start screen. A hero of one's own is
 ## given up (main.ts clearSave: the run gone from the save, the Lexicon and the stash kept); a test hero leaves the save as it was.
 func end_run() -> void:
@@ -2262,6 +2269,9 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "trial":
 		await preload("res://scripts/check_title.gd").new().trial_run(self, hero, dir)
+		return
+	if _arg("only") == "mana":
+		await preload("res://scripts/check_title.gd").new().mana_check(self, hero, dir)
 		return
 	if _arg("only") == "practice":
 		await preload("res://scripts/check_title.gd").new().practice_check(self, hero, dir)

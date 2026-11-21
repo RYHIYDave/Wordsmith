@@ -115,6 +115,19 @@ var told_carrier := false
 ## A NEW PLAYER'S FIRST WORD HAS BEEN SET IN AN ATTACK (game.ts guide.set, endGuide): the lesson of the first word is over.
 ## Until then a word he holds is pressed on him (guide.gd), and goes on an attack and nowhere else.
 var taught := false
+## ABILITIES: COOLDOWNS or MANA (main.ts meta.limit, flipLimit; the start screen's options and the pause panel): what limits his
+## moves that wait, the device's own choice, kept with the Lexicon
+var limit := "cooldown"
+
+
+## The switch turned: his moves made again under the other limit, his mana full.
+func set_limit(l: String) -> void:
+	limit = "mana" if l == "mana" else "cooldown"
+	if hero != null:
+		derive()
+		hero.mana = hero.max_mana
+		if hero.kit != null:
+			hero.kit.limit_changed()
 ## THE WORD JUST COME BY, for the top of the screen (main.ts toast; hud.gd WORD FOUND): {word, t, big}, empty when none.
 var toast := {}
 ## A word waiting for a quiet moment to be offered a place (game.ts offer), and the word the gear screen is opened on
@@ -268,8 +281,15 @@ func derive() -> void:
 	# (his moves' words: the slots his level and the lit ring open, and the numbers the words read. Cooldown recovery as
 	# stats.ts derive has it: his gear's, a tenth of its mana and twice its mana regeneration, a quarter of his Intelligence,
 	# 60% at most)
-	var cdr: float = minf(0.6, (g.call("cdr") + g.call("maxMana") * 0.1 + g.call("manaRegen") * 2.0 + int_ * float(_attr["intCdr"])) / 100.0)
+	# (ABILITIES: MANA: no mana turned into quicker waits; his mana, as stats.ts derive has it: a base, three for each point of
+	# Intelligence and his gear's; it comes back as fast as its base, his Intelligence's share and his gear's say)
+	var mana_cdr: float = g.call("maxMana") * 0.1 + g.call("manaRegen") * 2.0 if limit == "cooldown" else 0.0
+	var cdr: float = minf(0.6, (g.call("cdr") + mana_cdr + int_ * float(_attr["intCdr"])) / 100.0)
 	hero.stats["cdr"] = cdr
+	hero.max_mana = float(roundi(float(_tune["baseMana"]) + int_ * float(_attr["intMana"]) + g.call("maxMana")))
+	hero.mana_regen = float(_tune["baseManaRegen"]) + int_ * float(_attr["intManaRegen"]) + g.call("manaRegen")
+	hero.mana = minf(hero.mana, hero.max_mana)
+	hero.loadout.limit = limit
 	hero.loadout.set_level(level, ring_lit)
 	hero.loadout.set_stats({"str": str_, "dex": dex, "int": int_, "area": hero.stats["area"], "aps": hero.stats["aps"], "cdr": cdr})
 

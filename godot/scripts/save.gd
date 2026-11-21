@@ -76,7 +76,9 @@ static func meta_of(main) -> Dictionary:
 	# (and the heroes lost: game.ts die, `meta.deaths`, the Lexicon's count of the fallen)
 	return {"known": loot.known.duplicate(true), "lexicon": loot.lexicon.duplicate(), "stash": loot.stash.duplicate(true), "taught": loot.taught, "deaths": main.deaths,
 		# (the mode the next hero is made in: the class cards remember it, main.ts meta.mode)
-		"mode": main.next_mode}
+		"mode": main.next_mode,
+		# (ABILITIES: COOLDOWNS or MANA: the device's choice, main.ts meta.limit)
+		"limit": loot.limit}
 
 
 ## Written (main.ts writeSave). Not while he is down, nor between places: the run as it stands at a quiet moment. A FALLEN HERO
@@ -122,6 +124,7 @@ static func restore_meta(main, m: Dictionary) -> void:
 	loot.taught = m.get("taught", false) == true
 	main.deaths = maxi(0, int(_num(m.get("deaths"), 0)))
 	main.next_mode = "hardcore" if m.get("mode") == "hardcore" else "normal"
+	loot.limit = "mana" if m.get("limit") == "mana" else "cooldown"
 
 
 ## The run put back (game.ts restore), before his town is laid out.

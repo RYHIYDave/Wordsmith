@@ -24,14 +24,15 @@ var _next_volley := 0
 func _init(hero) -> void:
 	super(hero, "ranger")
 	# (THE RANGER'S TREE: Light Step, his roll holds three charges)
-	if h.has("lightstep"):
+	if h.has("lightstep") and not h.by_mana():
 		max_charges[2] = int(Talents.D["tune"]["lightStep"]["charges"])
 		charges[2] = max_charges[2]
 
 
 ## (his tree, on a change of his talents: Light Step's charges, three; two without)
 func talents_changed() -> void:
-	var most: int = int(Talents.D["tune"]["lightStep"]["charges"]) if h.has("lightstep") else 2
+	# (the roll's charges are a thing of cooldowns: when mana is the limit, one: game.ts refresh)
+	var most: int = 1 if h.by_mana() else (int(Talents.D["tune"]["lightStep"]["charges"]) if h.has("lightstep") else 2)
 	if most != max_charges[2]:
 		max_charges[2] = most
 		charges[2] = mini(charges[2], most)

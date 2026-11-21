@@ -956,6 +956,9 @@ func hit_range(i: int) -> Array:
 ## How a move is limited, said short ("1.09/S", "3.5 S") and long (ui/inventory.ts paceText).
 func _pace(i: int) -> Array:
 	var r: Dictionary = hero.loadout.r(i)
+	# (ABILITIES: MANA: what it costs)
+	if hero.by_mana() and float(r.get("mana", 0)) > 0.0:
+		return ["%d MANA" % roundi(float(r["mana"])), "costs %d mana" % roundi(float(r["mana"]))]
 	if float(_skill(i)["cooldown"]) > 0.0 and float(r["cooldown"]) > 0.0:
 		return ["%.1f S" % r["cooldown"], "once every %.1f seconds" % r["cooldown"]]
 	if float(r["rate"]) > 0.0:
