@@ -554,9 +554,40 @@ home to the camp, the camp's waypoint to the city's floors he has reached.
   its ground and the bells on the maps. A Splitting one struck down with the Hush breaks in two as it dies, as in the game.
   `--only=bells --floor=N` (`check_bells.gd`): 10 steps, on floors 11 and 14.
 
+## The High City, floors 16 to 20 (the cloud chat, 21 Nov 2026)
+
+His pick, asked what to build next: “The High City, floors 16 to 20 (Recommended)”. Each floor exported from the game and its
+look recorded from it, as the city's: the Swan Gardens, the Masque, the Glass Gallery, the Keep, the Quiet Tower; the ways on
+through them in their own opening pictures.
+- THE MONSTERS AND BOSSES, each by its kind's own rules (`scripts/act3/`), with the art's own pictures and painters: floor 16's
+  swans, gardeners, grooms and palace guard, its nettle beds and the vine in the yew, and the Princess; floor 17's dancers,
+  footmen and the Silent Order, the clock, and the Prince; floor 18's ladies, reflections and queen's guard, the mirrors, and the
+  Glass Queen; floor 19's crossbowmen on the walls, the Order's armed last, the king's knights, the portcullises, and the King
+  (his charge and its line of sparks, the Decree, the crown's weight, the Curtains, the Hush at his side, the songbird as he dies);
+  floor 20's Hush in its own shapes, the shadows of the four royals, the Rime Shade and its line of frost, the tower's stair up
+  and its trapdoor down. Their sounds as the game's: each kind's blows and voice (the swans', the Moth's, the steel and spear and
+  crossbow of the guards and knights, the Princess's vines). `--only=city --floor=N` (`check_city.gd`).
+- THE MOTH, floor 20's boss, made ghostly as he said yes to it (`scripts/act3/moth.gd`, `moth_marks.gd`, `moth_paint.gd`;
+  game/act1_rules/moth.ts, art/moth2_fx.ts, render/act1_fx/moth.ts): her slow beat, each move begun at its top; the ghost wing,
+  the Hush falling like snow, Eclipse (the moon rising behind her, her shadow thrown at him), the Phantoms; the Hush shed over him
+  from her second phase; in her last, unhurt, to the lectern, the chapter knocked to the stones, down on it, and the Unwriting;
+  her death, every word she swallowed flying home and her coming apart into light; the songbird's song in her fight, once a
+  phase. HER PICTURES are too big to hold whole (1,304 frames; the game paints them beside itself a frame at a time): baked a move
+  at a time into 187 sheets, 37 MB (`node tools/godot_bake_moth.mjs`), and taken in a move at a time, those not shown for four
+  seconds let go of (`baked_figure.gd`). Her effects painted afresh every frame as the game paints them: 68 moments of them held
+  against the game's own painters, every fillRect the same (`npx tsx tools/godot_moth.ts check`, then
+  `godot --headless --path godot -s res://checks/moth_check.gd`). `--only=city --floor=20`: her fight, 10 steps, and her death in
+  the tower's.
+- THE SEVEN LAST WORDS (Piercing, Bleeding, Reaping, Culling, Surging, Plundering, Mirroring), by the game's rules on monsters
+  and in front and behind his moves, and their looks (render/words7.ts) ported line for line: 136 moments dot for dot the game's
+  and its clock (`checks/looks7_check.gd`).
+- THE ROYAL CARDS, the High City's event: crests over the packs they touch, their cards dropped and kept, the stranger's page of
+  hands; and THE QUEST LINE (`scripts/act3/quest1620.gd`): the clockwork songbird (its three parts, mended, its song opening the
+  Quiet Tower and singing in the Moth's fight), the whole court, the captain's voice. In the saved game. `--only=quests1620`
+  (`check_quest1620.gd`): 21 steps.
+
 ## Not in it yet
 
-The last words (floor 16),
 Frenzied on the prison's bosses' own scripts
 (the mini fleshmancer's), the trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
 above), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched
@@ -593,6 +624,8 @@ breaks, what stands behind raised ground cut off by it, the rest of the heroes, 
 | `assets/words/vmelds.json` | Volatile's five melds' and the eight's colours, times and runes (render/volatile3.ts, melds8.ts): `npx tsx tools/godot_vmelds.ts`; with `check`, the game's own painters on 42 scenes, for `godot --headless --path godot -s res://checks/vmelds_check.gd` (not kept) |
 | `assets/words/looks10.json` | Lasting's, Fleeting's and Vast's colours, beats and numbers (render/words10.ts): `npx tsx tools/godot_words10.ts`; with `check`, the game's own painter on 60 moments and 8 s of its clock, for `godot --headless --path godot -s res://checks/looks10_check.gd` (not kept) |
 | `assets/fx` | the films of what the moves mark and throw up, painted by the game's own painters: `npx tsx tools/godot_fx.ts` (about a minute) |
+| `assets/monsters/moth.json`, `moth-N.png` | the Moth's pictures, baked a move at a time with the sheets each move lies on: `node tools/godot_bake_moth.mjs` (about six minutes) |
+| `assets/act3/moth.json` | the Moth's numbers, her wings' outlines, her colours, where her death's motes and words leave her: `npx tsx tools/godot_moth.ts`; with `check`, the game's own painters on 68 moments, for `godot --headless --path godot -s res://checks/moth_check.gd` (not kept) |
 | `assets/floor6/holds.json` ... `floor10/holds.json`, `assets/act1/quest610.json` | the strongholds (their places, guards, halls and each one's five waves as the game spawns them), the eyrie's edge (floor 7), the cult's obelisks (floor 10), and the words and numbers of the quest line: `npx tsx tools/godot_holds.ts` |
 | `assets/looks/floor<N>_hold<n>` | a stronghold's hall as it is drawn from in it: `node tools/godot_record.mjs <N> --hold <n>` |
 | `assets/floor6/boss.json`, `floor7/boss.json` | a boss's ground out on the open floors (his area and what is well inside it, where his rules stand him, the drop round him), from the game's own map-maker: `npx tsx tools/godot_boss_ground.ts 1 6` (`1 7`) |

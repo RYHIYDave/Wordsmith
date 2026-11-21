@@ -151,6 +151,7 @@ import { MASKS_SHADOW_FLIGHT as RSH_FLIGHT, SHADOW_MASKS as RSH_MASKS, SHADOW_SN
 import { FROZEN_CANVAS as RS_FROZEN_CANVAS, frozenPainted as rsFrozen } from '../src/art/rime_shade_fx';
 import { BIRD as GK_BIRD, BIRD_CANVAS as GK_BIRD_CANVAS, DECREE_FX as GK_DECREE, FACE_CANVAS as GK_FACE_CANVAS, KN_CANVAS as GK_KN_CANVAS, WEIGHT_CANVAS as GK_WEIGHT_CANVAS, WEIGHT_FX as GK_WEIGHT, birdPainted as gkBird, facePainted as gkFace, knightPainted as gkKnight, weightPainted as gkWeight } from '../src/art/king_fx';
 import { BANNER_N, bannerSprite } from '../src/art/act1_figs/kknight';
+import { CHAPTER_CANVAS as MO_CHAPTER_CANVAS, chapterPainted as moChapter } from '../src/art/moth_fx';
 import { CLOUD_CANVAS as QN_CLOUD_CANVAS, CLOUD_FX as QN_CLOUD_FX, HALL_MIRROR_CANVAS, SHATTER_FX as QN_SHATTER_FX, TALK_CANVAS as QN_TALK_CANVAS, TALK_FX as QN_TALK_FX, cloudPainted as qnCloud, hallMirrorPainted, shardsAt as qnShardsAt, talkingMirrorPainted } from '../src/art/queen_fx';
 import { BOULDER, HAMMER, SMASH_CANVAS, smashPainted } from '../src/art/action_f6_golem';
 import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, RING_CANVAS as CH_RING_CANVAS, STATIC_CANVAS, blazePainted, makeFlyingPotArt, potShadowPainted, ringPainted as chRing, staticPainted } from '../src/art/action_f6_cult';
@@ -817,6 +818,19 @@ for (const view of ['front', 'back'] as const) {
   films.gk_bird_singing = { fps: BF, n: ns, k0: 0, layers: { stand: Array.from({ length: ns }, (_, k) => pic(toSprite(gkBird('singing', k / BF, 'front'), null, GK_BIRD_CANVAS.ax, GK_BIRD_CANVAS.ay))) } };
 }
 
+// FLOOR 20'S BOSS, THE MOTH (godot/scripts/act3/moth_marks.gd; render/act1_fx/moth.ts standing, `moth:book`): THE LAST CHAPTER on the
+// stones, from the moment it fell from its lectern, under her as she comes down on it, its pages lifting in the wind of her wings
+// (art/moth_fx.ts chapterPainted, seen from in front, its floor point hers):
+//   mo_book_0             still (she is gone): one picture
+//   mo_book_35, mo_book_100  in the wind of her wings as she hovers over it (0.35) and as she beats (1): twenty pictures each, a
+//                         tenth of a second apart, the game picking one by its clock (layer `stand`)
+{
+  for (const [name, wind] of [['mo_book_0', 0], ['mo_book_35', 0.35], ['mo_book_100', 1]] as const) {
+    const n = wind > 0 ? 20 : 1;
+    films[name] = { fps: 0, n, k0: 0, layers: { stand: Array.from({ length: n }, (_, k) => pic(toSprite(moChapter('front', wind, k / 10), null, MO_CHAPTER_CANVAS.ax, MO_CHAPTER_CANVAS.ay))) } };
+  }
+}
+
 // floors 6 to 8's common monsters, as the game starts with their new moves on (render/act1_fx/qgolem.ts, firepot.ts, chanter.ts,
 // devil.ts, scorpion.ts: each painted afresh a frame at a time by the art's own painter, render/act1_fx/live.ts)
 {
@@ -1156,7 +1170,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the city's)
   watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'], bookwarden: ['wb'],
   // (the High City's)
-  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['gq'], kknight: ['kk'], gking: ['gk'], hshape: ['hs'], rshadow: ['rsh'], rshade: ['rs'],
+  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['gq'], kknight: ['kk'], gking: ['gk'], hshape: ['hs'], rshadow: ['rsh'], rshade: ['rs'], moth: ['mo'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

@@ -169,6 +169,8 @@ func run(main, hero, out: String) -> void:
 		await _ports()
 	if depth == 19 and (M._arg("kind") == "" or M._arg("kind").split(",").has("gking")):
 		await _gking()
+	if depth == 20 and (M._arg("kind") == "" or M._arg("kind").split(",").has("moth")):
+		await _moth()
 	if depth == 20 and (M._arg("kind") == "" or M._arg("kind").split(",").has("tower")):
 		await _tower()
 	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
@@ -2202,6 +2204,150 @@ func _rshadows() -> void:
 		await M._wait(0.1)
 
 
+## FLOOR 20'S BOSS, THE MOTH MADE GHOSTLY (act3/moth.gd, moth_marks.gd, moth_paint.gd): met on the top; her beat; her pictures taken in a
+## move at a time; the ghost wing, the Hush, Eclipse and the Phantoms, each made and what it does seen; her second phase's Hush shed over
+## him; her last: unhurt as she flies to the lectern, the chapter knocked to the stones, down on it; the Unwriting; the songbird's
+## song. Her death is the tower's check's (_tower), as the trapdoor opens after it.
+func _moth() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "moth":
+			boss = o
+	if boss == null:
+		_line(false, "floor 20 has no Moth")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	var A: Array = boss.h2.acts()
+	var I := {}
+	for i in A.size():
+		I[str(A[i]["id"])] = i
+	var hold := func() -> void:
+		for k in boss.h2.cds.size():
+			boss.h2.cds[k] = 999.0
+	# (where he stands before her, along the way her picture faces, so far)
+	var before := func(d: float) -> Vector2:
+		var w: Vector2 = boss.h2.picture_way(boss.face)
+		return M._spot_near(boss.world + w * d, 0.0, h.world)
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	var met: bool = await _run(8.0, func(): return boss.state != "sleep" and not boss.waits)
+	var b0: float = boss.h2.beat()
+	await _run(0.5, Callable(), hold)
+	var b1: float = boss.h2.beat()
+	var own: Dictionary = boss.h2.shown(boss)
+	await _snap("moth_met")
+	var held: int = boss.art.held()
+	_line(met and b1 != b0 and own.get("list", "") in ["idle", "walk"] and int(own["i"]) == floori(b1 * 15.0 + 1e-6) % 36, "the Moth met on the top: %s, %.0f life; her wings beat by her own clock (%.2f s into the beat), her picture its frame" % [boss.title, boss.max_life, b1])
+	_line(boss.art.lazy and held > 0 and held < 40, "her pictures taken in a move at a time: %d of her %d sheets in hand" % [held, boss.art.sheets.size()])
+	# GHOST WING (the buffet)
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	h.world = before.call(4.0)
+	var d0: float = h.world.distance_to(boss.world)
+	_ready_only(boss, I["moth:buffet"])
+	var warned: bool = await _run(5.0, func(): return _is_act(boss, "moth:buffet") and float(boss.h2.act["t"]) >= 0.7)
+	await _snap("moth_ghost_wing_cone")
+	var swept: bool = await _run(2.0, func(): return not _a1("moth:gust", func(q): return float(q["t"]) >= 0.25).is_empty(), hold)
+	var d1: float = h.world.distance_to(boss.world)
+	await _snap("moth_ghost_wing")
+	_line(warned and swept and struck > 0 and d1 > d0 + 0.5, "the ghost wing: its cone marked, her wings' ghost sweeping it: the hero in it struck (%d) and thrown back (%.1f to %.1f tiles)" % [struck, d0, d1])
+	# THE HUSH (her Dust)
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	h.world = before.call(4.5)
+	_ready_only(boss, I["moth:dust"])
+	var fell: bool = await _run(5.0, func(): return not _a1("moth:dust", func(q): return float(q["t"]) >= 0.8).is_empty())
+	await _snap("moth_hush_falling")
+	var dust := _a1("moth:dust")
+	if not dust.is_empty():
+		h.world = Vector2(dust["x"], dust["y"])
+	var hushed: bool = await _run(2.5, func(): return h.hush_t > 0.0 and struck > 0, hold)
+	await _snap("moth_hush_lying")
+	_line(fell and hushed, "the Hush: her scales falling like snow before her; settled, his words dark in it (%.1f s) and it biting (%d)" % [h.hush_t, struck])
+	# ECLIPSE (her Eyes)
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	for p in P.list.duplicate():
+		if str(p.get("a1", "")).begins_with("moth:dust"):
+			P.list.erase(p)
+	h.hush_t = 0.0
+	h.world = before.call(3.5)
+	_ready_only(boss, I["moth:eyes"])
+	var rose: bool = await _run(5.0, func(): return _is_act(boss, "moth:eyes") and float(boss.h2.act["t"]) >= 0.9)
+	await _snap("moth_eclipse_moon")
+	var cast: bool = await _run(1.0, func(): return not _a1("moth:eclipse", func(q): return float(q["t"]) >= 0.15).is_empty(), hold)
+	await _snap("moth_eclipse_strikes")
+	_line(rose and cast and struck > 0, "Eclipse: the moon rising behind her, her shadow thrown toward him, its eyes opening; it strikes: the hero in it struck (%d)" % struck)
+	# THE PHANTOMS (her Swarm)
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	h.world = before.call(6.0)
+	_ready_only(boss, I["moth:swarm"])
+	var wrapped: bool = await _run(5.0, func(): return _is_act(boss, "moth:swarm") and float(boss.h2.act["t"]) >= 0.95)
+	await _snap("moth_phantoms_gather")
+	var glided: bool = await _run(1.5, func(): return not _a1("moth:phantoms", func(q): return float(q["t"]) >= 0.45).is_empty(), hold)
+	await _snap("moth_phantoms")
+	await _run(1.5, Callable(), hold)
+	_line(wrapped and glided and struck > 0, "the Phantoms: copies of her shimmering off her, their lanes marked; three gliding down them, the first at him: struck (%d)" % struck)
+	# HER SECOND PHASE: the Hush shed over him
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	boss.life = boss.max_life * 0.6
+	var shed: bool = await _run(8.0, func(): return not _a1("moth:shed", func(q): return float(q["t"]) >= -0.6).is_empty(), hold)
+	await _snap("moth_shed_marked")
+	await _run(0.3, Callable(), hold)
+	var quick: bool = absf(boss.speed - float(boss.h2.a1["base"]) * 1.25) < 1e-3
+	_line(shed and quick, "her second phase: she drifts faster (%.2f), and sheds the Hush over him, where it will fall marked first" % boss.speed)
+	# HER LAST: in the air she cannot die; unhurt, she flies to the lectern; the chapter knocked to the stones; down on it
+	for p in P.list.duplicate():
+		if str(p.get("a1", "")).begins_with("moth:"):
+			P.list.erase(p)
+	boss.life = boss.max_life * 0.3
+	boss.hurt(boss.life + 1e6)
+	var kept: bool = not boss.dead and boss.life >= 1.0
+	var flying: bool = await _run(3.0, func(): return int(boss.h2.a1.get("toLand", 0)) == 1, hold)
+	var was: float = boss.life
+	boss.hurt(1000.0)
+	var unhurt: bool = boss.life == was
+	var down: bool = await _run(12.0, func(): return boss.h2.perched(), hold)
+	await _run(0.5, Callable(), hold)
+	var book := _a1("moth:book")
+	await _snap("moth_on_the_book")
+	_line(kept and flying and unhurt and down and not book.is_empty() and M.look.data["variants"].has("lectern"), "her last phase: she cannot die in the air (her life held at %.0f); unhurt, she flies to the lectern; the chapter knocked to the stones; she comes down on it" % was)
+	# THE UNWRITING (her beat, on the book)
+	struck = 0
+	h.world = M._spot_near(boss.world, 4.0, h.world)
+	_ready_only(boss, I["moth:beat"])
+	var rearing: bool = await _run(5.0, func(): return _is_act(boss, "moth:beat") and float(boss.h2.act["t"]) >= 0.85)
+	await _snap("moth_pages_loosing")
+	var ring: bool = await _run(1.0, func(): return not _a1("moth:wave", func(q): return float(q["t"]) >= 0.3).is_empty(), hold)
+	await _snap("moth_unwriting")
+	await _run(1.0, Callable(), hold)
+	_line(rearing and ring and struck > 0, "the Unwriting: the chapter's pages tearing loose as she rears; a ring of burning pages rolling out over the whole top: struck as it passed under him (%d)" % struck)
+	# THE SONGBIRD, mended
+	var Q = M.quest1620
+	var bird_was: String = Q.bird
+	Q.bird = "mended"
+	Q.sung_in = 0
+	await _run(0.1, Callable(), hold)
+	var ready: bool = Q.song_ready()
+	var said: Array = Q.prompt()
+	h.hush(5.0)
+	var lying := {"kind": "a1", "a1": "moth:shed", "x": h.world.x, "y": h.world.y, "fx": 1.0, "fy": 0.0, "t": 2.0, "hit": 0.0, "dur": 6.6, "dmg": 1.0, "done": 0, "a": 0.0, "b": 0.0, "c": 0.0, "d": 0.0, "hand": 1, "src": boss, "by": boss.blow(), "fig": boss.art}
+	P.list.append(lying)
+	Q.sing()
+	var unhushed: bool = h.hush_t == 0.0
+	await _run(0.2, Callable(), hold)
+	var stunned: bool = boss.stun_t > 2.0
+	var cleared: bool = not P.list.has(lying) and unhushed
+	var once: bool = not Q.song_ready()
+	await _snap("moth_songbird")
+	Q.bird = bird_was
+	_line(ready and str(said[1]) == "song" and stunned and cleared and once, "the songbird, mended: \"%s\"; it sings: her Hush blown away, his words back, she stunned (%.1f s); once a phase" % [said[0], boss.stun_t])
+
+
 ## FLOOR 20'S WAY UP AND DOWN (act3/tower.gd): up the stair at the stairhead onto the top, through the trapdoor; the trapdoor slamming
 ## shut behind him as the Moth wakes to him; back down through it once open.
 func _tower() -> void:
@@ -2235,7 +2381,15 @@ func _tower() -> void:
 		await _run(1.0)
 		var stayed: bool = T.on_top(h.world)
 		moth.waits = false
+		# (she cannot die in the air: down on the book first, as in her last phase)
+		moth.h2.a1["perched"] = 1
 		moth.hurt(moth.life + 1e6)
+		var words: bool = moth.dead and not _a1("moth:words").is_empty()
+		await _run(1.6)
+		await _snap("moth_dies_words")
+		await _run(1.8)
+		await _snap("moth_dies_light")
+		_line(words, "the Moth's death: her scream; every word she swallowed flying home; she comes apart into drifting light")
 		var opened: bool = await _run(9.0, func(): return not T.shut)
 		await _snap("tower_trapdoor_open")
 		_line(slammed and stayed and opened, "the trapdoor: slammed shut behind him as the Moth woke to him (standing on it takes him nowhere); open again once its death has played out")

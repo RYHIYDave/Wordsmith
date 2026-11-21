@@ -383,6 +383,59 @@ func _process(dt: float) -> void:
 		_prompt = ["E: " + (_t("captainGivePrompt") if captain_jar == "got" else _t("captainPrompt")), "captain"]
 		if Input.is_action_just_pressed("interact") and h.alive and not main._inv.visible:
 			captain_used()
+	# (in the Moth's fight, the songbird mended: E, and it sings, once a phase)
+	elif song_ready():
+		_prompt = ["E: " + _t("songPrompt"), "song"]
+		if Input.is_action_just_pressed("interact") and h.alive and not main._inv.visible:
+			sing()
+
+
+# --- the songbird in the Moth's fight (game.ts songReady, sing) ---
+
+## The Moth, alive, on this floor.
+func _moth():
+	if main._monsters == null:
+		return null
+	for m in main._monsters.list:
+		if is_instance_valid(m) and m.kind == "moth" and not m.dead:
+			return m
+	return null
+
+
+## Whether the songbird may sing now: the Moth's fight, the bird mended, not yet in this phase of it.
+func song_ready() -> bool:
+	if not on() or main.map == null or int(main.map.depth) != 20 or bird != "mended":
+		return false
+	var m = _moth()
+	if m == null or m.state == "sleep":
+		return false
+	return (sung_in & (1 << _phase(m))) == 0
+
+
+static func _phase(m) -> int:
+	var k: float = m.life / maxf(1.0, m.max_life)
+	return 0 if k > 2.0 / 3.0 else (1 if k > 1.0 / 3.0 else 2)
+
+
+## The songbird sings: the Moth's Hush blown away, his words back, the Moth stunned a moment; once a phase.
+func sing() -> void:
+	var m = _moth()
+	if m == null:
+		return
+	var h = main.hero
+	sung_in |= 1 << _phase(m)
+	for p in m.mgr.perils.list:
+		var n := str(p.get("a1", ""))
+		if n == "moth:dust" or n == "moth:shed":
+			p["dur"] = minf(float(p["dur"]), float(p["t"]))
+	h.hush_t = 0.0
+	h.loadout.set_hushed(false)
+	var secs: float = Q["song"]["stun"]
+	m.stun_t = maxf(m.stun_t, secs)
+	main.fx.event({"t": "stun", "id": m.id, "x": m.world.x, "y": m.world.y, "secs": secs})
+	main.fx.event({"t": "bells", "what": "ring", "x": h.world.x, "y": h.world.y, "k": 0, "n": 0})
+	main.sfx.play("songbird", linear_to_db(0.9))
+	main.loot.say(_t("sang"), MSG_QUEST)
 
 
 func _king_alive() -> bool:

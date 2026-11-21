@@ -45,7 +45,8 @@ let ok = 0;
 const wrong: string[] = [];
 // (and the kinds' other looks the release does not bake, baked for Godot by tools/godot_bake_figures.mjs: the palace guard's)
 const baked = bakedFigures();
-for (const figure of [...baked, ...act1Looks().filter((f) => !baked.includes(f as never))] as typeof baked) {
+// (and the Moth, floor 20's boss, too big for the release's bake and baked for Godot a move at a time: tools/godot_bake_moth.mjs)
+for (const figure of [...baked, ...act1Looks().filter((f) => !baked.includes(f as never)), 'moth'] as typeof baked) {
   const name = bakeName(figure);
   const file = `${dir}/${name}.json`;
   if (!existsSync(file)) continue;

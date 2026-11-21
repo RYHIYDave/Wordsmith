@@ -108,7 +108,7 @@ const BOSS_AI := {
 	"gking": preload("res://scripts/act3/gking.gd"),
 	# (floor 20's: the Hush in its own shapes)
 	"hshape": preload("res://scripts/act3/hshape.gd"), "rshadow": preload("res://scripts/act3/rshadow.gd"),
-	"rshade": preload("res://scripts/act3/rshade.gd"),
+	"rshade": preload("res://scripts/act3/rshade.gd"), "moth": preload("res://scripts/act3/moth.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -129,6 +129,9 @@ const VOICE := {
 	"wolf": "wolf", "mistwolf": "wolf", "deer": "deer", "leech": "leech", "spawn": "leech", "drowned": "spirit", "warchief": "troll",
 	# (the city's: sound_families.ts VOICE, its third batch the silent ones)
 	"rat": "rat", "inkling": "ink", "bookwarden": "book", "hound": "hound", "hushed": "hushed", "fieldhand": "hushed", "patient": "hushed", "watch": "watch",
+	# (the High City's)
+	"swan": "swan", "moth": "moth", "rshadow": "spirit", "reflection": "spirit", "order": "order", "hshape": "hshape", "gardener": "hushed",
+	"groom": "hushed", "rshade": "rshade",
 }
 const ATK := {
 	"skeleton": "atkBones", "champion": "atkBones", "beast": "atkBones", "mite": "atkBones", "brute": "atkTroll", "bat": "atkBat",
@@ -137,6 +140,9 @@ const ATK := {
 	"wolf": "atkBite", "mistwolf": "atkBite", "deer": "atkAntler", "leech": "atkLeech", "spawn": "atkLeech", "drowned": "atkSpirit", "warchief": "atkTroll",
 	# (the city's)
 	"rat": "atkRat", "ratking": "atkRat", "hushed": "atkClub", "watch": "atkClub", "inkling": "atkInk", "bookwarden": "atkBook",
+	# (the High City's)
+	"qguard": "atkShield", "rshadow": "atkSpirit", "reflection": "atkSpirit", "swan": "atkSwan", "moth": "atkMoth", "footman": "atkSteel",
+	"kknight": "atkSteel", "pguard": "atkSpear", "xbow": "atkCrossbow", "rshade": "rshade",
 }
 ## (sound_families.ts BOSS_VOICE: the bosses that roar: their roar as the fight begins, their hurt, their death. The Stoker's
 ## is in the game's table too and is never heard there: he is an elite, and these wait on a boss. The Warden, the Headsman
@@ -149,7 +155,9 @@ const BOSS_VOICE := {"chained": "chained", "amalgam": "amalgam",
 	# (the Swamp Colossus: his roar as he is first come upon is the old Eye's; his hurt and his death his own: colossus.gd hurt_voice, died)
 	"eye": "eye",
 	# (the city's: the Rat King's roar, and the silent bosses', sound_families.ts BOSS_VOICE)
-	"ratking": "ratking", "crier": "crier", "scraper": "scraper", "quill": "quill", "censor": "censor"}
+	"ratking": "ratking", "crier": "crier", "scraper": "scraper", "quill": "quill", "censor": "censor",
+	# (the High City's: the Princess, silent but for her vines)
+	"princess": "princess"}
 
 var mgr  # monsters.gd
 var art: BakedFigure
@@ -1714,7 +1722,9 @@ func _show() -> void:
 	_sprite.offset = f["offset"]
 	_sprite.flip_h = f["flip"]
 	_sprite.scale = Vector2.ONE * float(f["scale"]) * look
-	_sprite.self_modulate = Color(2.4, 2.4, 2.4) if _flash > 0.0 else Color.WHITE
+	# (a body as big as the Moth's flashes fainter: render.ts, its kind's own Act1Fx.flash)
+	var fk: float = h2.flash_k(self) if h2 != null and h2.has_method("flash_k") else 1.0
+	_sprite.self_modulate = Color.WHITE.lerp(Color(2.4, 2.4, 2.4), fk) if _flash > 0.0 else Color.WHITE
 	_sprite.region_enabled = false
 	# (ARRIVALS, render/arrivals.ts risingSprite: coming up out of its rift, what is still below the floor not drawn, dark as it comes,
 	# lit as it steps out: its picture's top `above` rows, let down by what is still under the floor)

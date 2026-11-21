@@ -4041,5 +4041,58 @@
     "fps": 30
    }
   ]
+ },
+ "moth": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 15
+   },
+   {
+    "name": "walk",
+    "fps": 15
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "dust",
+    "fps": 30
+   },
+   {
+    "name": "eyes",
+    "fps": 30
+   },
+   {
+    "name": "swarm",
+    "fps": 30
+   },
+   {
+    "name": "land",
+    "fps": 30
+   },
+   {
+    "name": "perch",
+    "fps": 15
+   },
+   {
+    "name": "beat",
+    "fps": 30
+   },
+   {
+    "name": "perchReel",
+    "fps": 30
+   }
+  ]
  }
 }
