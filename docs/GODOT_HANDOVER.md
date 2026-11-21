@@ -38,7 +38,8 @@ recommendation first.
   `heroes/<mark>/` (a group's sheets in one file, `<group>-packs.png`: each PNG whole one after another, the JSON's `packs` giving
   each one's `off` and `len`), `monsters/<mark>/` (`<figure>-pack.png`: the PNGs one after another, then the figure's JSON, then
   `WSMB` and the JSON's length in 8 hex digits; tools/monster_packs.mjs), `townsfolk/<mark>/`, and `assets/colossus/` in the
-  repository. The marks of this release are in `docs/handoff.md`. These sheets can be cut into Godot SpriteFrames as they are.
+  repository. This release's marks: heroes `eccc11d9382f`, monsters `a9b22fa26169`, townsfolk `9ff1ce3dcc32`, Colossus
+  `f133999cbf23`, sounds `1b3b4c7d4a61`. These sheets can be cut into Godot SpriteFrames as they are.
 - THE SOUNDS: `assets/sound/` (MP3, 48 kHz), every batch's README in `assets/sound/README.md`. A sound by name has takes
   `<name>_1` … `_n` (two, three for the breeze, four for the enemies' voices: src/engine/audio.ts `takesOf`). The level music:
   `music_<place>_<walk|fight>_long.mp3`, each one loop and 2 s more, its loop length and fight-in point in
