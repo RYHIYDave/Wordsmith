@@ -65,6 +65,12 @@ const timesOf = (s: AnimSet & { idleFps?: number; walkFps?: number }): Record<st
   (c?.reelWalk ?? []).forEach((w, k) => (lists[48 + k] = one(w)));
   (c?.lurchWalk ?? []).forEach((w, k) => (lists[52 + k] = one(w)));
   (c?.attack2Walk ?? []).forEach((w, k) => (lists[125 + k] = one(w)));
+  // (THE WARRIOR'S BATTLE AXE AND WARHAMMER, art/heroes3.ts HEAVY_MOVES: running and braced with his hands empty, his catch on the
+  // run, both caught, the axe appearing, both thrown, braced with both out, both caught standing, the crouches: 116 to 124)
+  (['runEmpty', 'runCatch', 'twinRunCatch', 'cleaveAppear', 'twinThrow', 'twinBraced', 'twinCatch', 'chopCrouch', 'chargeCrouch'] as const).forEach((k, n) => {
+    const m = (c?.moves as Record<string, Clip | undefined> | undefined)?.[k];
+    if (m) lists[116 + n] = one(m);
+  });
   return { idleFps: s.idleFps ?? 2, walkFps: s.walkFps ?? 8, walkStride: s.walkStride ?? null, startAt: s.startAt ?? 0, start: one(s.start), stops: (s.stops ?? []).map((x) => one(x)), lists };
 };
 for (const cls of Object.keys(CLASSES) as ClassId[]) {
@@ -80,6 +86,9 @@ for (const cls of Object.keys(CLASSES) as ClassId[]) {
 }
 // (THE WARLOCK AS THE DEMON, art/heroes.ts lookOfPlace('demon'): its own pictures, two sides, its rakes, Damning, its burning out)
 out['warlock:demon'] = timesOf(heroSides(art.of('warlock', { ...lookOfPlace('demon') }))[0] as AnimSet & { idleFps?: number; walkFps?: number });
+// (THE WARRIOR WITH THE BATTLE AXE AND THE WARHAMMER, art/heroes.ts lookOfPlace('axe', 'hammer'): their own pictures' times)
+out['warrior:axe'] = timesOf(heroSides(art.of('warrior', { ...lookOfPlace('axe') }))[0] as AnimSet & { idleFps?: number; walkFps?: number });
+out['warrior:hammer'] = timesOf(heroSides(art.of('warrior', { ...lookOfPlace('hammer') }))[0] as AnimSet & { idleFps?: number; walkFps?: number });
 // (THE SCARF, THE FEATHER, THE BRAIDS: engine/tails.ts, each kind as art/heroes.ts HERO_TAILS has it)
 out.tails = HERO_TAILS;
 // (THE CLASS CARDS, ui/panels.ts drawTitle with CARDS3: the classes in their order, each card's name, words and numbers, the
@@ -113,7 +122,7 @@ out.palette = P;
 out.ramps = ELEMENT_RAMP;
 out.crackle = CRACKLE;
 writeFileSync('godot/assets/heroes/clips.json', JSON.stringify(out, null, 1));
-for (const [cls, v] of Object.entries(out).filter(([k]) => k in CLASSES || k === 'warlock:demon')) {
+for (const [cls, v] of Object.entries(out).filter(([k]) => k in CLASSES || k.includes(':'))) {
   const L = (v as { lists: Record<string, { fps: number; hit: number | null; n: number } | null> }).lists;
   console.log(cls, Object.entries(L).filter(([, x]) => x).map(([k, x]) => `${k}:${x!.n}@${x!.fps}${x!.hit !== null ? 'h' + x!.hit.toFixed(2) : ''}`).join(' '));
 }

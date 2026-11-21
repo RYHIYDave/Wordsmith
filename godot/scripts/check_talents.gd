@@ -77,7 +77,7 @@ func run(main, hero, d: String) -> void:
 	var w3 := Talents.take_problem("warrior", 50, [], iron_first)
 	var w4 := Talents.open("warrior", ["greatsword"], iron_first)
 	var w5 := Talents.open("warrior", ["greatsword", "sweepingcut", "drilledleap"], "honededge") and not Talents.open("warrior", ["greatsword", "sweepingcut", "drilledleap", "honededge"], "redmist")
-	_line(w1 == "Not in the port yet" and w2 == "One weapon only" and w3 == "Pick your weapon first" and w4 and w5 and Talents.warrior_weapon([]) == "greatsword" and Talents.warrior_weapon(["warhammer"]) == "warhammer",
+	_line(w1 == "" and w2 == "One weapon only" and w3 == "Pick your weapon first" and w4 and w5 and Talents.warrior_weapon([]) == "greatsword" and Talents.warrior_weapon(["warhammer"]) == "warhammer",
 		"his weapon his first point: the battle axe open ('%s'), not with the greatsword his ('%s'); IRON's %s waits for one ('%s'), open once the greatsword is his (%s); a join open from his path, the axe's beyond it not his (%s)" % [w1, w2, iron_first, w3, w4, w5])
 	# UNDOING, AND A LIST MADE SAFE
 	var u1 := Talents.unlearn_problem("warrior", ["greatsword", "sweepingcut"], "greatsword")
@@ -87,6 +87,8 @@ func run(main, hero, d: String) -> void:
 		"the greatsword not undone while Sweeping Cut hangs on it ('%s'), Sweeping Cut undone (''); a save's list made safe at level 7: %s" % [u1, cl])
 	# THE WARRIOR'S TALENTS IN PLAY (game.ts, TALENTS2's rules)
 	await _warrior()
+	# THE WARRIOR'S BATTLE AXE AND WARHAMMER, their moves and their talents
+	await _arms()
 	# THE VETERAN'S TALENTS
 	await _veteran()
 	# THE WARLOCK'S TALENTS
@@ -246,6 +248,255 @@ func _warrior() -> void:
 	h.killed(m)
 	_line(h._lunge_cd == 0.0, "Footwork: a kill makes the Lunge ready again at once")
 	h.talents = []
+
+
+## `k` monsters of the floor, the nearest him, each brought where `at` says (tiles: [ahead, to his left]), awake, whole, ordinary, held
+## still (stunned) where `hold`.
+func _foes(at: Array, hold := false) -> Array:
+	var out: Array = []
+	var pool: Array = []
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and not o.boss and o.state != "rise":
+			pool.append(o)
+	pool.sort_custom(func(a, b): return a.world.distance_to(h.world) < b.world.distance_to(h.world))
+	var left := Vector2(h.face.y, -h.face.x)
+	for k in mini(at.size(), pool.size()):
+		var mm = pool[k]
+		var a: Array = at[k]
+		mm.world = h.world + h.face * float(a[0]) + left * float(a[1])
+		mm.max_life = maxf(mm.max_life, 100000.0)
+		mm.life = mm.max_life
+		mm.elite = false
+		mm.cracks = 0
+		mm.daze = 0.0
+		mm.bleed_t = 0.0
+		mm.bleed_dps = 0.0
+		mm.stagger_cd = 0.0
+		mm.stun_t = 30.0 if hold else 0.0
+		out.append(mm)
+	return out
+
+
+## His tree taken as given, made his (hero.gd talents_changed: his weapon's moves and pictures).
+func _take(list: Array) -> void:
+	h.talents = list.duplicate()
+	h.talents_changed()
+
+
+## The nearest place to him with open floor all round, 4 tiles every way: he is set there, facing down the floor's +x.
+func _open_ground() -> void:
+	var best := Vector2.INF
+	var at := Vector2i(floori(h.world.x), floori(h.world.y))
+	for r in 40:
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) != r:
+					continue
+				var c := at + Vector2i(dx, dy)
+				var clear := true
+				for y in range(-4, 5):
+					for x in range(-6, 7):
+						if not h.map.open_at(c.x + x, c.y + y):
+							clear = false
+							break
+					if not clear:
+						break
+				if clear:
+					best = Vector2(c.x + 0.5, c.y + 0.5)
+					break
+			if best != Vector2.INF:
+				break
+		if best != Vector2.INF:
+			break
+	if best != Vector2.INF:
+		h.world = best
+	h.face = Vector2(1, 0)
+
+
+func _arms() -> void:
+	M.set_class("warrior", true)
+	M.loot.level = 50
+	h.life = h.max_life
+	await _run(0.2)
+	var start: Vector2 = h.world
+	_open_ground()
+	await _run(0.1)
+	# THE BATTLE AXE PICKED: its three moves on his buttons, his pictures the axe's, his greatsword made a battle axe
+	_take(["battleaxe"])
+	var kit = h.kit
+	var ids: Array = [h.loadout.id(0), h.loadout.id(1), h.loadout.id(2)]
+	var mh: Dictionary = M.loot.gear["mainhand"]
+	var skills: Array = M._hud._skills().map(func(x): return x["id"])
+	_line(kit != null and kit.weapon == "battleaxe" and ids == ["cleave", "axethrow", "chop"] and h.art.count(0, 116) > 0 and skills == ids and mh["kind"] == "Battle Axe" and str(mh["name"]).contains("Battle Axe") and str(mh["icon"]).begins_with("battleaxe:"),
+		"the battle axe his first point: his moves %s (the bar's %s), his pictures the axe's (%d frames running empty-handed), his greatsword made a %s, '%s' (%s)" % [ids, skills, h.art.count(0, 116), mh["kind"], mh["name"], mh["icon"]])
+	# CLEAVE: every enemy in its arc struck; REND, each bleeds a third of the hit again over 3 s
+	var two := _foes([[1.0, 0.0], [1.0, 0.85]], true)
+	if two.size() < 2:
+		_line(false, "not two monsters on the floor to try the Cleave on")
+		return
+	var w0: float = two[1].life
+	h._strike(0, h.world, h.face, 1.0, 0, false, 1.7)
+	var both: bool = two[0].life < two[0].max_life and two[1].life < w0
+	_take(["battleaxe", "rend"])
+	two = _foes([[1.0, 0.0], [1.0, 0.85]], true)
+	h._strike(0, h.world, h.face, 1.0, 0, false, 1.7)
+	_line(both and two[0].bleed_t > 2.9 and two[1].bleed_t > 2.9 and two[0].bleed_dps > 0.0,
+		"Cleave: the one before him and the one beside struck in its arc (%s); Rend: each bleeds (%.1f and %.1f a second for %.1f s)" % [both, two[0].bleed_dps, two[1].bleed_dps, two[0].bleed_t])
+	# THE AXE THROWN: his hands empty; it flies through the one in its way, turns, strikes it again coming back, and is caught
+	_take(["battleaxe"])
+	kit = h.kit
+	var m = _foes([[3.0, 0.0]], true)[0]
+	kit._use_skill(1, h.world + h.face * 6.0)
+	var empty_at_once: bool = kit.hands_empty
+	var out_hit := false
+	var back_hit := false
+	var t := 0.0
+	var appeared := false
+	var caught := false
+	var tapped := false
+	while t < 3.0:
+		await M.get_tree().process_frame
+		t += M.get_process_delta_time()
+		for p in kit.shots:
+			if p.get("look", "") == "axe" and (p["hit"] as Array).has(m):
+				if p["back"]:
+					back_hit = true
+				else:
+					out_hit = true
+		if not tapped and t > 0.6 and kit.hands_empty:
+			# (a tap while it flies: an axe appears in his hands and he Cleaves)
+			tapped = true
+			kit._use_basic(h.world + h.face)
+			appeared = kit.appear and not kit.hands_empty
+		if kit.caught_t >= 0.0 or (tapped and not kit._axe_out()):
+			caught = true
+			break
+	await _snap("axe_back")
+	_line(empty_at_once and out_hit and back_hit and appeared and caught and not kit._axe_out(),
+		"Axe Throw: his hands empty as he throws (%s); it strikes the one in its way going (%s) and coming back (%s); a tap while it flies and an axe appears in his hands (%s); back, it is gone into his hands (%s)" % [empty_at_once, out_hit, back_hit, appeared, caught])
+	# TWIN AXES: two thrown, one to each side of his aim, each for less
+	await _run(0.5)
+	_take(["battleaxe", "twinaxes"])
+	kit = h.kit
+	kit.charges[1] = 1
+	kit._use_skill(1, h.world + h.face * 6.0)
+	await _run(0.45)
+	var axes: Array = kit.shots.filter(func(p): return p.get("look", "") == "axe")
+	var spread := 0.0
+	if axes.size() == 2:
+		spread = rad_to_deg(absf(Vector2(axes[0]["vx"], axes[0]["vy"]).angle_to(Vector2(axes[1]["vx"], axes[1]["vy"]))))
+	await _snap("twin_axes")
+	_line(axes.size() == 2 and absf(spread - 28.0) < 0.5 and absf(float(axes[0]["dmg"]) - 0.65) < 0.01,
+		"Twin Axes: %d thrown, %.1f degrees apart, each for %.2f of the throw" % [axes.size(), spread, float(axes[0]["dmg"]) if axes.size() > 0 else 0.0])
+	await _run(2.0)
+	# LEAPING CHOP: a crouch, then the leap; the axe comes down 1.5 tiles before where he lands
+	_take(["battleaxe"])
+	kit = h.kit
+	_open_ground()
+	var from: Vector2 = h.world
+	kit._use_evasive(h.world + h.face * 4.0, Vector2.ZERO)
+	m = _foes([[5.5, 0.0]], true)[0]
+	await _run(0.1)
+	var stayed: bool = h.world.distance_to(from) < 0.01 and not kit.move.is_empty()
+	var crouch_pic: Array = kit.picture(0)
+	await _run(0.6)
+	_line(stayed and crouch_pic[0] == 123 and kit.move.is_empty() and h.world.distance_to(from) > 3.5 and m.life < m.max_life and kit.land_t >= 0.0,
+		"Leaping Chop: he crouches where he stands first (%s, picture %s), then leaps %.1f tiles, and the axe brought down before him strikes the one there (%s)" % [stayed, crouch_pic, h.world.distance_to(from), m.life < m.max_life])
+	# RED MIST, HEADLONG: a kill, faster, and Leaping Chop ready again
+	_take(["battleaxe", "rend", "redmist", "headlong"])
+	kit = h.kit
+	kit.charges[2] = 0
+	kit.cd[2] = 3.0
+	var pace0: float = h.frenzy_pace()
+	h.red_mist = 0
+	h.red_mist_t = 0.0
+	m = _foes([[1.0, 0.0]])[0]
+	h.killed(m)
+	h.killed(m)
+	_line(kit.charges[2] == 1 and kit.cd[2] == 0.0 and h.red_mist == 2 and absf(h.frenzy_pace() - pace0 * 1.16) < 0.001,
+		"Red Mist: two kills, %d stacks, his swings %.0f%% faster; Headlong: Leaping Chop ready again at once (%d)" % [h.red_mist, (h.frenzy_pace() / pace0 - 1.0) * 100.0, kit.charges[2]])
+	h.red_mist_t = 0.0
+	# THE WARHAMMER PICKED
+	_take(["warhammer"])
+	kit = h.kit
+	ids = [h.loadout.id(0), h.loadout.id(1), h.loadout.id(2)]
+	mh = M.loot.gear["mainhand"]
+	_line(kit != null and kit.weapon == "warhammer" and ids == ["smash", "quake", "charge"] and h.art.count(0, 124) > 0 and mh["kind"] == "Warhammer",
+		"the warhammer instead: his moves %s, his pictures the hammer's (%d frames of the charge's crouch), his weapon a %s, '%s'" % [ids, h.art.count(0, 124), mh["kind"], mh["name"]])
+	# SMASH: on its spot, knocked back a little and dazed; a second soon after stuns
+	_open_ground()
+	m = _foes([[1.4, 0.0]])[0]
+	var was: Vector2 = m.world
+	h._strike(0, h.world, h.face, 1.0, 0, false, 1.4)
+	var pushed: float = m.world.distance_to(was)
+	var daze1: float = m.daze
+	m.stun_t = 0.0
+	var nx: Vector2 = was + h.face * 0.4
+	h._strike(0, h.world, h.face, 1.0, 0, false, 1.4)
+	_line(m.life < m.max_life and absf(pushed - 0.4) < 0.01 and absf(daze1 - 0.6) < 0.01 and m.stun_t > 0.0 and m.daze == 0.0,
+		"Smash: the one on its spot struck, knocked %.2f tiles back, dazed %.2f; a second blow soon after stuns it (%.1f s)" % [pushed, daze1, m.stun_t])
+	# HEAVY HEAD: Smash stuns half a second; WIDE SWING: the half circle before him
+	_take(["warhammer", "heavyhead"])
+	m = _foes([[1.4, 0.0]])[0]
+	h._strike(0, h.world, h.face, 1.0, 0, false, 1.4)
+	var hh: float = m.stun_t
+	two = _foes([[1.4, 0.0], [0.6, 1.0]])
+	w0 = two[1].life
+	h._strike(0, h.world, h.face, 1.0, 0, false, 1.4)
+	var spared: bool = two[1].life == w0
+	_take(["warhammer", "heavyhead", "bulldozer", "wideswing"])
+	two = _foes([[1.4, 0.0], [0.6, 1.0]])
+	h._strike(0, h.world, h.face, 1.0, 0, false, 1.4)
+	_line(hh >= 0.5 and spared and two[1].life < two[1].max_life,
+		"Heavy Head: Smash stuns (%.1f s); the one beside him spared by the spot (%s), struck with Wide Swing (%s)" % [hh, spared, two[1].life < two[1].max_life])
+	# EARTHQUAKE: the ground before him quakes in the floor's stone, the slam ring left to it; what stands there struck and stunned
+	_take(["warhammer"])
+	kit = h.kit
+	m = _foes([[1.4, 0.0]])[0]
+	var slams: int = int(M.fx.seen.get("burst", 0))
+	kit._use_skill(1, h.world + h.face * 2.0)
+	await _run(0.75)
+	await _snap("quake")
+	var look = kit.look
+	var one_quake: bool = look != null and look.quakes.size() == 1
+	_line(one_quake and m.life < m.max_life and m.stun_t > 0.0 and int(M.fx.seen.get("burst", 0)) > slams,
+		"Earthquake: the ground quakes before him in the floor's stone (%s, %s), the one on it struck and stunned (%.1f s)" % [look.quakes.size() if look != null else -1, look._stone() if look != null else "", m.stun_t])
+	await _run(2.0)
+	# TREMORS: three shakes, each wider and weaker
+	_take(["warhammer", "tremors"])
+	kit = h.kit
+	kit.charges[1] = 1
+	kit._use_skill(1, h.world + h.face * 2.0)
+	await _run(1.4)
+	look = kit.look
+	var qs: Array = look.quakes.map(func(q): return q["q"]) if look != null else []
+	_line(qs == [0, 1, 2], "Tremors: the ground shakes three times, each its own (%s)" % [qs])
+	await _run(2.0)
+	# SHOULDER CHARGE, BULLDOZER: what it strikes carried along before him and stunned where he stops
+	_take(["warhammer", "heavyhead", "bulldozer"])
+	kit = h.kit
+	_open_ground()
+	from = h.world
+	m = _foes([[1.5, 0.0]])[0]
+	kit._use_evasive(h.world + h.face * 5.0, Vector2.ZERO)
+	await _run(0.45)
+	await _snap("charge")
+	await _run(0.5)
+	var ahead: float = (m.world - h.world).dot(h.face)
+	_line(kit.move.is_empty() and m.life < m.max_life and ahead > 0.5 and ahead < 1.5 and m.stun_t > 0.0 and h.world.distance_to(from) > 3.5,
+		"Shoulder Charge: struck in his way, carried along before him (%.1f tiles before him where he stops), stunned there (%.1f s)" % [ahead, m.stun_t])
+	# BACK TO THE GREATSWORD: his tree undone, his own moves, pictures and weapon again
+	_take([])
+	mh = M.loot.gear["mainhand"]
+	_line(h.kit == null and h.weapon == "greatsword" and h.loadout.id(1) == "whirlwind" and mh["kind"] == "Greatsword",
+		"his tree undone: the greatsword's moves again (%s), its pictures, his weapon a %s, '%s'" % [h.loadout.id(0), mh["kind"], mh["name"]])
+	# (he and the monsters let go as they were for the others' checks)
+	h.world = start
+	h.face = Vector2(1, 0)
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead:
+			o.stun_t = 0.0
+			o.daze = 0.0
 
 
 func _veteran() -> void:

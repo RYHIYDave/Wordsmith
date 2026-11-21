@@ -58,6 +58,9 @@ func write(main, hero, dir: String) -> void:
 	loot.words["fire"] = 1
 	loot.words["scald"] = 1
 	loot.derive()
+	# (his tree: the warhammer his weapon, and Heavy Head)
+	h.talents = ["warhammer", "heavyhead"]
+	h.talents_changed()
 	h.loadout.put(0, "front", "lightning")
 	loot.bag = [loot._pools["1"][0].duplicate(true), loot._pools["2"][0].duplicate(true)]
 	loot.gear["ring1"] = _ring_of(loot).duplicate(true)
@@ -90,6 +93,9 @@ func read(main, hero, dir: String) -> void:
 		"his gear (his ring: %s) and his bag (%d pieces)" % [loot.gear["ring1"]["name"] if loot.gear["ring1"] != null else "-", loot.bag.size()])
 	_line(int(loot.words.get("power", 0)) == 2 and int(loot.words.get("fire", 0)) == 1 and int(loot.words.get("scald", 0)) == 1 and h.loadout.front[0].has("lightning"),
 		"his spare words (POWER x%d, FLAME x%d, SCALD x%d) and LIGHTNING set in front of his Strike (%s)" % [int(loot.words.get("power", 0)), int(loot.words.get("fire", 0)), int(loot.words.get("scald", 0)), h.loadout.front[0]])
+	var mh: Dictionary = loot.gear["mainhand"] if loot.gear["mainhand"] != null else {}
+	_line(h.talents == ["warhammer", "heavyhead"] and h.weapon == "warhammer" and h.kit != null and h.loadout.id(0) == "smash" and mh.get("kind", "") == "Warhammer",
+		"his tree (%s): the warhammer his weapon, its moves his (%s), his weapon a %s, '%s'" % [h.talents, h.loadout.id(0), mh.get("kind", "-"), mh.get("name", "-")])
 	_line(loot.ring_lit and loot.furnace == "done" and loot.meld == "open" and loot.meld_ask and loot.body_searched and loot.quest_given,
 		"the ring lit, the furnace quest done, the Meldstone his, the fallen wordsmith searched")
 	_line(M.quest610.dust == 3 and M.quest610.feather == "given" and M.quest610.pieces == 2,

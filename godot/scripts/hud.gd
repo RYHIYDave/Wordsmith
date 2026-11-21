@@ -946,6 +946,9 @@ func _skills() -> Array:
 	# (THE WARLOCK AS THE DEMON: its three on his buttons)
 	if hero != null and hero.kit != null and hero.kit.get("form") == "demon" and of.has(hero.cls + ":demon"):
 		return of[hero.cls + ":demon"]
+	# (THE WARRIOR'S BATTLE AXE AND WARHAMMER: their three on his buttons once his tree picks one: hero.gd arm)
+	if hero != null and hero.cls == "warrior" and of.has("warrior:" + str(hero.weapon)):
+		return of["warrior:" + str(hero.weapon)]
 	if hero != null and of.has(hero.cls):
 		return of[hero.cls]
 	return _data["skills"]

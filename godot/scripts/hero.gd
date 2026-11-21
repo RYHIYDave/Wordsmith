@@ -413,9 +413,11 @@ func walk_pace() -> float:
 	return sp
 
 
-## FRENZIED (game.ts frenzyPace): how much faster the frenzy makes his Strike and every wait of his moves; 1, no frenzy.
+## FRENZIED (game.ts frenzyPace): how much faster the frenzy makes his Strike and every wait of his moves; 1, no frenzy. (THE
+## WARRIOR'S BATTLE AXE: Red Mist, his kills' fury, faster still)
 func frenzy_pace() -> float:
-	return 1.0 + float(Words.data()["frenzy"]["each"]) * frenzy
+	var mist: float = 1.0 + float(Talents.D["warriorTune"]["redMist"]["each"]) * red_mist if red_mist_t > 0.0 else 1.0
+	return (1.0 + float(Words.data()["frenzy"]["each"]) * frenzy) * mist
 
 
 ## (game.ts `after`) `fn` done `t` seconds from now, on the hero's clock.
@@ -624,6 +626,20 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 			m.still_t = CW["still"]["secs"]
 			if fresh:
 				_tell({"t": "stillOn", "id": m.id, "m": m, "x": at.x, "y": at.y, "secs": m.still_t})
+		# (THE WARRIOR'S WARHAMMER: Earthquake stuns what it shakes; Smash staggers what it strikes; his tree: Heavy Head, Smash
+		# stuns too; Rend, Cleave makes it bleed a third of the hit again over three seconds: game.ts hitMonster)
+		var sid := loadout.id(i)
+		var sd: Dictionary = Words.skill(sid)
+		if float(sd.get("stun", 0.0)) > 0.0:
+			m.stun_for(float(sd["stun"]))
+		if sd.get("stagger", false):
+			m.stagger_from(world)
+		if sid == "smash" and has("heavyhead"):
+			m.stun_for(float(Talents.D["warriorTune"]["heavyHead"]["secs"]))
+		if sid == "cleave" and has("rend"):
+			var RD: Dictionary = Talents.D["warriorTune"]["rend"]
+			m.bleed_dps = maxf(m.bleed_dps if m.bleed_t > 0.0 else 0.0, dmg * float(RD["share"]) / float(RD["secs"]))
+			m.bleed_t = float(RD["secs"])
 		if float(r["bind"]) > 0.0:
 			var held_for: float = city.bind_monster(m, r["bind"])
 			if held_for > 0.0:
@@ -697,6 +713,11 @@ func killed(m) -> void:
 	# (THE SKILL TREES REMADE: Footwork, every kill makes the Lunge ready again at once: game.ts talentKill, readyAgain('leap'))
 	if has("footwork") and cls == "warrior":
 		_lunge_cd = 0.0
+	# (THE WARRIOR'S BATTLE AXE: Red Mist, each kill a step faster for a while, up to five: game.ts warriorKill)
+	if cls == "warrior" and has("redmist"):
+		var RM: Dictionary = Talents.D["warriorTune"]["redMist"]
+		red_mist = mini(int(RM["most"]), (red_mist if red_mist_t > 0.0 else 0) + 1)
+		red_mist_t = float(RM["secs"])
 	var i: int = m.last_skill
 	if i < 0 or i > 2:
 		return
@@ -838,32 +859,66 @@ func _wake(i: int, at: Vector2, rad: float, frac: float) -> void:
 ## what the move leaves, round what it struck. A swing that meets nothing still leaves its wake where the blade passed.
 func _strike(i: int, from: Vector2, way: Vector2, frac: float, n := 0, echo := false, base := -1.0) -> void:
 	var r: Dictionary = loadout.r(i)
-	# (`base`: the move's own reach, a demon's rake's: defs.ts SKILLS range; the Warrior's Strike's otherwise)
+	# (`base`: the move's own reach, a demon's rake's, the battle axe's and the warhammer's: defs.ts SKILLS range; the Warrior's
+	# Strike's otherwise)
 	var reach: float = (base if base >= 0.0 else STRIKE["reach"]) * float(r["size"])
 	var front: Array = loadout.wfronts(i)
 	_tell({"t": "swing", "x": from.x, "y": from.y, "dx": way.x, "dy": way.y, "reach": reach, "el": r["element"], "words": front, "n": n, "echo": echo})
-	var best = monsters.strike_target(from, way, reach) if monsters != null else null
-	_break_props(i, from + way * reach * 0.6, 0.9)
+	# (THE WARRIOR'S WARHAMMER: Smash comes down on a spot before him, `spot`, striking all on it (no smaller for a word that narrows a
+	# blow, wider for one that widens it), each struck knocked back and dazed toward a stun; his tree's Wide Swing sweeps it round the
+	# half circle before him instead, as a Cleave is. THE BATTLE AXE: Cleave strikes every enemy in its arc, its arc its own: game.ts
+	# strike)
+	var sid := loadout.id(i)
+	var def: Dictionary = Words.skill(sid)
+	var wide: bool = sid == "smash" and has("wideswing")
+	var spot := Vector4.ZERO
+	var spotted: bool = def.has("spot") and not wide
+	if spotted:
+		var sp: Dictionary = def["spot"]
+		var c: Vector2 = from + way * float(sp["at"])
+		spot = Vector4(c.x, c.y, float(sp["r"]) * maxf(1.0, float(r["size"])), 0.0)
+		_tell({"t": "burst", "x": spot.x, "y": spot.y, "r": spot.z + 0.3, "el": r["element"], "style": "land", "words": front, "n": n, "echo": echo})
+	var min_dot: float = float(def["arcCos"]) if def.get("arcCos") != null else 0.35
+	var best = null
+	var arc: Array = []
+	if spotted:
+		var bd := INF
+		if monsters != null:
+			for o in monsters.list:
+				if not is_instance_valid(o) or o.dead or o.state == "rise" or monsters.shut_in(o):
+					continue
+				var d: float = o.world.distance_to(Vector2(spot.x, spot.y))
+				if d > spot.z + o.r:
+					continue
+				arc.append(o)
+				if d < bd:
+					bd = d
+					best = o
+		_break_props(i, Vector2(spot.x, spot.y), spot.z + 0.3)
+	else:
+		best = monsters.strike_target(from, way, reach, min_dot) if monsters != null else null
+		_break_props(i, from + way * reach * 0.6, 0.9)
 	if best == null:
-		var past := from + way * reach * 0.75
+		var past: Vector2 = Vector2(spot.x, spot.y) if spotted else from + way * reach * 0.75
 		if map.open_at(floori(past.x), floori(past.y)):
 			_wake(i, past, 1.0, frac)
 		return
 	var at: Vector2 = best.world
-	# (THE SKILL TREES REMADE: Sweeping Cut, the swing cleaves: every enemy in its arc, as the game gathers it, struck as hard)
-	var arc: Array = []
-	if has("sweepingcut"):
+	# (THE SKILL TREES REMADE: Sweeping Cut, the swing cleaves: every enemy in its arc, as the game gathers it, struck as hard; the
+	# battle axe's Cleave and the hammer's Wide Swing the same)
+	if not spotted and (has("sweepingcut") or def.get("arc", false) or wide):
 		for o in monsters.list:
-			if not is_instance_valid(o) or o.dead or o == best or monsters.shut_in(o):
+			if not is_instance_valid(o) or o.dead or o == best or o.state == "rise" or monsters.shut_in(o):
 				continue
 			var d: Vector2 = o.world - from
 			var dist := d.length()
 			if dist > reach + o.r:
 				continue
 			var dot := d.dot(way) / dist if dist > 0.01 else 1.0
-			if dot < 0.35 and dist > 0.9 + o.r:
+			if dot < min_dot and dist > 0.9 + o.r:
 				continue
 			arc.append(o)
+	arc.erase(best)
 	hit_monster(best, i, frac, false)
 	# (THE LAST WORDS: PIERCING in front, the blow goes on through the first, to every enemy in a line behind it)
 	if float(r["through"]) > 0.0:
@@ -871,6 +926,10 @@ func _strike(i: int, from: Vector2, way: Vector2, frac: float, n := 0, echo := f
 	for o in arc:
 		if is_instance_valid(o) and not o.dead:
 			hit_monster(o, i, frac, true)
+	if sid == "smash":
+		for o in [best] + arc:
+			if is_instance_valid(o) and not o.dead:
+				smashed(o, way)
 	_landed_on(i)
 	if front.has("power"):
 		sfx.play("power", -6.0)
@@ -996,6 +1055,9 @@ func _process(dt: float) -> void:
 		if frenzy_t <= 0.0:
 			frenzy_t = 0.0
 			frenzy = 0
+	# (THE WARRIOR'S BATTLE AXE: Red Mist runs out)
+	if red_mist_t > 0.0:
+		red_mist_t = maxf(0.0, red_mist_t - dt)
 	if shield_t > 0.0:
 		shield_t -= dt
 		if shield_t <= 0.0:
@@ -2060,8 +2122,39 @@ func readiness() -> Dictionary:
 func talents_changed() -> void:
 	if loadout != null:
 		loadout.refresh()
+	arm()
 	if kit != null and kit.has_method("talents_changed"):
 		kit.talents_changed()
+
+
+## THE WARRIOR'S WEAPON (game/talents.ts warriorWeapon, warriorKit, heavyDrawn): his tree's first point picks the greatsword, the
+## battle axe or the warhammer. The greatsword's moves are this script's own; the axe's and the hammer's are heroes/warrior_arms.gd,
+## its three in his moves' places (the words in them stay where they are), and he is drawn with what he picked (the bake's `axe`
+## and `hammer` sets, in his town and anywhere else). Nothing changes while he keeps the one he has.
+func arm() -> void:
+	if cls != "warrior":
+		return
+	var w := Talents.warrior_weapon(talents)
+	if w == weapon and (w == "greatsword") == (kit == null):
+		return
+	weapon = w
+	var dir := "res://assets/heroes"
+	if w == "greatsword":
+		loadout.form_moves = []
+		arts = {"dungeon": BakedHero.new(dir, "warrior"), "town": BakedHero.new(dir, "warrior", "town")}
+		kit = null
+	else:
+		loadout.form_moves = Words.data()["warriorKits"][w]
+		var place := "axe" if w == "battleaxe" else "hammer"
+		var group := "warrior-" + place
+		arts = {"dungeon": BakedHero.new(dir, group, place), "town": BakedHero.new(dir, group, place + "Town")}
+		kit = load("res://scripts/heroes/warrior_arms.gd").new(self, w)
+	loadout.refresh()
+	art = arts["town" if in_town else "dungeon"]
+	_act = ""
+	_list = BakedHero.IDLE
+	if on_armed.is_valid():
+		on_armed.call()
 
 
 ## Whether talent `id` is his (game.ts has).
@@ -2072,6 +2165,12 @@ func has(id: String) -> bool:
 # --- THE SKILL TREES: the Warrior's talents' rules (game/talents.ts; game.ts, under TALENTS and TALENTS2) ---
 
 const Talents := preload("res://scripts/talents.gd")
+## (THE WARRIOR'S WEAPON: talents.gd warrior_weapon; what is called when it changes, main.gd: his kit's look laid in the place)
+var weapon := "greatsword"
+var on_armed := Callable()
+## (THE WARRIOR'S BATTLE AXE: Red Mist, his kills counted, and how long it lasts)
+var red_mist := 0
+var red_mist_t := 0.0
 ## (Master Stroke: his hits landed since the last certain critical; Unbreakable: spent in this dungeon)
 var _strokes := 0
 var unbroken := false
@@ -2177,3 +2276,20 @@ func _kindle(at: Vector2) -> void:
 	wakes.add_patch(-1, "burn", at, float(K["r"]), float(K["secs"]), talent_hit("fire", float(K["share"])), "fire")
 	if wakes.list.size() > before:
 		wakes.list.back()["from"] = "kindling"
+
+
+## (THE WARRIOR'S WARHAMMER, game.ts smashed) What a Smash struck: pushed a little back from him along the blow, where there is
+## floor, and dazed toward a stun, its daze fading meanwhile (WARRIOR_TUNE.smash; his words of 11 Nov 2026, 09:41: “Tap should have
+## a small knockback and high stun buildup/chance”).
+func smashed(m, way: Vector2) -> void:
+	var S: Dictionary = Talents.D["warriorTune"]["smash"]
+	if not m.boss:
+		var n: Vector2 = m.world + way * float(S["knock"])
+		if map.open_at(floori(n.x), floori(n.y)):
+			m.world = n
+	var was: float = maxf(0.0, m.daze - (_clock - m.daze_at) * float(S["fade"]))
+	m.daze = was + float(S["daze"])
+	m.daze_at = _clock
+	if m.daze >= 1.0 - 1e-9:
+		m.daze = 0.0
+		m.stun_for(float(S["stun"]))

@@ -185,6 +185,9 @@ var bind_again := 0.0
 ## shockwave's clock, the gold PLUNDERING stole from him, and whether REAPING has stood it up once already: last_words.gd)
 var bleed_t := 0.0
 var bleed_dps := 0.0
+## (THE WARRIOR'S WARHAMMER: Smash's daze toward a stun, and when it was last added to, on his clock: hero.gd smashed)
+var daze := 0.0
+var daze_at := 0.0
 var bleed_move := 0.0
 var bleed_at := Vector2.INF
 ## (THE WARLOCK, game/warlock.ts: his HELLFIRE on it (his bolt's), `hell_dps` a second for `hell_t`; his CURSE's smoulder, `curse_dps`

@@ -375,9 +375,46 @@ func set_class(c: String, fresh: bool) -> void:
 	hero.loadout.cls = c
 	hero.loadout.refresh()
 	hero.kit = null
+	hero.loadout.form_moves = []
+	hero.weapon = "greatsword"
 	if c != "warrior" and ResourceLoader.exists("res://scripts/heroes/%s.gd" % c):
 		hero.kit = load("res://scripts/heroes/%s.gd" % c).new(hero)
+	# (THE WARRIOR'S WEAPON: the battle axe's or the warhammer's moves and pictures, where his tree has picked one: hero.gd arm)
+	hero.on_armed = _armed
+	hero.arm()
 	loot.set_class(c, fresh)
+
+
+## (the place's perils, after which his kit's look is laid: _kit_look)
+var _perils: Node = null
+var _kit_lookn: Node = null
+
+
+## His kit's own look of what he sends and lays (heroes/<class>_look.gd; the Warrior's axe and hammer, the kit's look_path), laid in
+## the place under everyone, just after its perils; laid afresh when his kit changes in the place (hero.gd arm).
+func _kit_look() -> void:
+	if _kit_lookn != null and is_instance_valid(_kit_lookn):
+		_kit_lookn.queue_free()
+	_kit_lookn = null
+	if hero.kit == null or _place == null or _perils == null or not is_instance_valid(_perils):
+		return
+	var look_path: String = hero.kit.look_path() if hero.kit.has_method("look_path") else "res://scripts/heroes/%s_look.gd" % hero.cls
+	if not ResourceLoader.exists(look_path):
+		return
+	var kl = load(look_path).new()
+	kl.kit = hero.kit
+	kl.loot = loot
+	_place.add_child(kl)
+	_place.move_child(kl, _perils.get_index() + 1)
+	hero.kit.look = kl
+	_kit_lookn = kl
+
+
+## (THE WARRIOR'S WEAPON picked or changed: hero.gd arm) His kit's look laid afresh; every greatsword, axe or hammer he has made it.
+func _armed() -> void:
+	_kit_look()
+	if loot != null:
+		loot.all_for_him()
 
 
 ## Lay a place out, and set him down in it: `arrive` says where (the town's start, the foot of floor 1's gate, the top of
@@ -435,13 +472,8 @@ func _build(where: String, arrive: String) -> void:
 	# (a class's own look of what he sends and lays: heroes/<class>_look.gd)
 	if hero.kit != null:
 		hero.kit.clear()
-		var look_path := "res://scripts/heroes/%s_look.gd" % hero.cls
-		if ResourceLoader.exists(look_path):
-			var kl = load(look_path).new()
-			kl.kit = hero.kit
-			kl.loot = loot
-			_place.add_child(kl)
-			hero.kit.look = kl
+	_perils = perils
+	_kit_look()
 	var stands := Stands.new()
 	perils.stands = stands
 	stands.map = map

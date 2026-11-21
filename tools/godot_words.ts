@@ -18,6 +18,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { gameSwitches } from './godot_switches';
 import { DEMON_KIT } from '../src/game/warlock';
+import { WARRIOR_KITS } from '../src/game/talents';
 import { readFileSync } from 'node:fs';
 import { ARC_CHAIN, ATTR_GIVES, ATTR_SPLIT, BIND, BLEED, CLASSES, HYBRID_LESS, CULL, FIRST_WORD, FLEETING, FRENZY, GUARD, HEAVY, HEX, HUSH_LEAVES, LASTING, LEECH, MIRRORING, MOVE_OPENS, PIERCE, PLUNDER, PRECISE, PULL, REAP, SKILLS, SLOT_OPENS, SPLIT, STILL, SURGE, TUNE, VAST, WORDS, skillsFor, wordsAt } from '../src/game/defs';
 import { MANA_AS_CDR } from '../src/game/items';
@@ -68,7 +69,10 @@ const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
 const classes = Object.fromEntries(CLASS_IDS.map((c) => [c, { name: CLASSES[c].name, blurb: CLASSES[c].blurb, primary: CLASSES[c].primary, two: CLASSES[c].grows ?? null, attrs: CLASSES[c].attrs, starts: CLASSES[c].starts, moves: skillsFor(c, CLASSES[c].starts) }]));
 // (THE WARLOCK'S DEMON, game/warlock.ts DEMON_KIT: its three in the places of his, his words in them, as the demon)
 const demonKit = [...DEMON_KIT];
-const allMoves = [...new Set([...CLASS_IDS.flatMap((c) => classes[c].moves), ...demonKit])];
+// (THE WARRIOR'S BATTLE AXE AND WARHAMMER, game/talents.ts WARRIOR_KITS: their three each, his in place of the greatsword's once
+// his tree's first point picks one)
+const warriorArms = [...WARRIOR_KITS.battleaxe, ...WARRIOR_KITS.warhammer];
+const allMoves = [...new Set([...CLASS_IDS.flatMap((c) => classes[c].moves), ...demonKit, ...warriorArms])];
 const words = Object.fromEntries([...OURS, ...MADE].map((w) => [w, WORDS[w]]));
 const skills = Object.fromEntries(allMoves.map((id) => [id, SKILLS[id]]));
 writeFileSync(`${OUT}/words.json`, JSON.stringify({
@@ -82,6 +86,7 @@ writeFileSync(`${OUT}/words.json`, JSON.stringify({
   grows: CLASSES.warrior.primary,
   classes,
   demonKit,
+  warriorKits: WARRIOR_KITS,
   hybridLess: HYBRID_LESS,
   // (the numbers the words' rules read)
   heavy: HEAVY,
@@ -234,8 +239,7 @@ if (process.argv[2] === 'check') {
   // first all, the others every third); every pair the sockets allow against nothing (the first all, the others every fifth), and
   // against one word a sample (every 29th); the words melding makes alone, against nothing
   for (const c of CLASS_IDS) {
-    if (c === 'warrior') continue;
-    for (const id of c === 'warlock' ? [...classes[c].moves, ...demonKit] : classes[c].moves) {
+    for (const id of c === 'warlock' ? [...classes[c].moves, ...demonKit] : c === 'warrior' ? warriorArms : classes[c].moves) {
       for (const d of heroes) {
         const first = d === heroes[0];
         let n = 0;

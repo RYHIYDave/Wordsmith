@@ -601,9 +601,10 @@ brought over yet says so on its card and cannot be taken (talents.gd `PORTED`). 
 Cut (every enemy in the swing's arc struck), Drilled Lunge (every enemy passed struck), Footwork (a kill readies the Lunge);
 IRON's Thick Skin, Shieldwall (the shield breaking bursts, throwing back and stunning), Second Wind (a flask throws back what is
 near, a second untouchable), Bulwark; the joins Honed Edge (a critical bleeds), Giant Slayer (an elite's or a boss's guard
-cracked, 3% more a crack, ten at most), Resolute, Executioner, Master Stroke and Unbreakable (once a dungeon). Not yet: the
-Whirlwind talent (his Whirlwind is his from the start here, at his pick of 14 Nov 2026) and the battle axe's and the warhammer's
-paths (their own moves). THE VETERAN'S, ALL FIFTEEN: Stiff Jab, Viper Jab, Guard Up, Knockdown, Launcher; Light on His Feet, Fire
+cracked, 3% more a crack, ten at most), Resolute, Executioner, Master Stroke and Unbreakable (once a dungeon). THE BATTLE AXE AND
+THE WARHAMMER, his first point's other two weapons, each with its own three moves and pictures (below), and their paths: Twin
+Axes, Rend, Red Mist, Headlong; Tremors, Heavy Head, Bulldozer, Wide Swing. Not yet: the Whirlwind talent (his Whirlwind is his
+from the start here, at his pick of 14 Nov 2026). THE VETERAN'S, ALL FIFTEEN: Stiff Jab, Viper Jab, Guard Up, Knockdown, Launcher; Light on His Feet, Fire
 Starter, Stoke, Hang Time, The Full Set; Switch Kick, Long Legs, Wall Slam, Aftershock, Thunder Knee (heroes/brawler.gd, by game.ts
 vetHit and its neighbours, VET_TALENTS' numbers). THE WARLOCK'S: Hunger, Feast, Bloodlust (the demon's kills), Branded, Hex
 Chain, Withering, Pyre, Blazing Arm, Soul Debt and Last Rites (heroes/warlock.gd: game.ts warlockHit, warlockKill, hexChain,
@@ -621,6 +622,36 @@ walking, let go by her next hit as a leaping bolt), Forking, Storm Warp, Overloa
 one struck slides, freezing what it meets), Frost Warp, Rime, Shatter, her AURA (R, a tap on herself: fire, lightning or frost,
 picked on its stone; six seconds, then ten to wait; drawn as render/swap_fx.ts draws it) and Lasting Aura (heroes/mage.gd,
 mage_look.gd; monsters now keep a shock, monster.gd `shock_t`). Not yet: her three moves to learn (Ball, Beam, Spear).
+
+## The Warrior's battle axe and warhammer (the cloud chat, 21 Nov 2026)
+
+His first talent point picks his weapon (game/talents.ts WARRIOR_TREE2): the greatsword (hero.gd's own Strike, Whirlwind and
+Lunge, as before), or the battle axe or the warhammer, each with its own three moves (WARRIOR_KITS) in his moves' places, the
+words in them kept (`loadout.form_moves`), the bar's three their own (hud.json `skillsOf`), and his pictures the art chat's with
+that weapon (the bake's `axe`/`axeTown` and `hammer`/`hammerTown` sets, every list of theirs: braced and running empty-handed, the
+catch, both axes thrown, braced with both, caught, the axe appearing, the two crouches: tools/godot_hero_clips.ts times them).
+Picked, every greatsword he wears or carries and the vendors' shelves become his weapon's kind, and so does every one he finds
+(game.ts forHim, allForHim; loot.gd `for_him`: name, picture and kind, numbers kept); undone, back again. `hero.gd arm` makes the
+change; `scripts/heroes/warrior_arms.gd` (over kit.gd) has the moves, by game.ts:
+- THE BATTLE AXE. CLEAVE, a wide chop, every enemy in its arc struck (hero.gd `_strike`, the move's own arc). AXE THROW: the axe
+  flies through what it meets to the end of its flight (a wall turns it sooner), turns, comes back to his hand over walls through
+  what it meets again; his hands empty meanwhile, braced or running; a tap while it is out and an axe appears in his hands and he
+  Cleaves; back to empty hands it is caught, to full ones it goes into the axe he holds in a cyan glint. LEAPING CHOP: a crouch,
+  the leap, the axe brought down 1.5 tiles before where he lands. Twin Axes, two thrown 14 degrees either side of his aim, each
+  for 65%; Rend, Cleave bleeds a third of its hit over 3 s; Red Mist, each kill 8% faster for 4 s, five at most (hero.gd
+  `frenzy_pace`); Headlong, a kill readies Leaping Chop.
+- THE WARHAMMER. SMASH, the maul down on a spot 1.4 tiles before him, all on it struck, knocked 0.4 tiles back and dazed toward a
+  stun (hero.gd `smashed`: 0.6 a blow, fading 0.15 a second; full, stunned a second) and staggered. EARTHQUAKE: the ground 1.4
+  tiles before him quakes, 2 tiles round, all on it stunned 0.6 s. SHOULDER CHARGE: a crouch, then the charge, striking everyone
+  in his way. Tremors, three shakes 0.35 s apart, each 0.6 tiles wider, at 1, 0.6 and 0.35 of the blow; Heavy Head, Smash stuns
+  half a second; Bulldozer, what the charge strikes carried along before him and stunned 0.8 s where he stops; Wide Swing, Smash
+  sweeps the half circle before him.
+Their looks (`scripts/heroes/warrior_arms_look.gd`, render/render.ts and render/warrior_fx.ts) are the art chat's pictures, baked
+by `tools/godot_warrior_fx.ts`: the thrown axe spinning flat (`warrior_fx-0.png`), the glint, and the Earthquake's ground heaving
+in the floor's own stone in place of the slam ring (fx.gd `claims_slam`), its cracks the way he struck, kept 2.4 s: one sheet for
+each stone the game paints it in (`quake_<stone>-0.png`: floors 1 to 3 the Crypt's own, floor 4 and the rest but the fifth the
+Crypt's fourth, the fifth the lair's, the vault's in town), only the floor's own loaded. `--only=talents` checks all of it
+(check_talents.gd, 13 lines) and pictures the axe back in his hands, two axes flying, a quake and the charge.
 
 ## The shadows under the figures, and the named ones' rings (the cloud chat, 21 Nov 2026)
 

@@ -12,11 +12,12 @@ static var D := {}
 
 ## The talents whose rules this port has (by class): the rest are shown and read, marked NOT IN THE PORT YET, and cannot be
 ## taken. (The greatsword is the Warrior's weapon as he starts: taking it changes nothing but opens his tree. His Whirlwind is
-## his from the start in this port, at his pick of 14 Nov 2026, so the Whirlwind talent waits; and the battle axe's and the
-## warhammer's moves are not here yet.)
+## his from the start in this port, at his pick of 14 Nov 2026, so the Whirlwind talent waits. The battle axe and the warhammer
+## bring their own three moves and pictures: hero.gd arm, heroes/warrior_arms.gd.)
 const PORTED := {
 	"warrior": ["greatsword", "sweepingcut", "drilledleap", "footwork", "thickskin", "shieldwall", "secondwind", "bulwark",
-		"honededge", "giantslayer", "resolute", "executioner", "mastertop", "unbreakable"],
+		"honededge", "giantslayer", "resolute", "executioner", "mastertop", "unbreakable",
+		"battleaxe", "twinaxes", "rend", "redmist", "headlong", "warhammer", "tremors", "heavyhead", "bulldozer", "wideswing"],
 	"ranger": ["fleet", "windrunner", "keeneye", "steadyaim", "quickdraw", "longshot", "lightstep", "huntersmark", "widetraps",
 		"minefield", "splitshot", "hail", "piercing", "farsight"],
 	"mage": ["kindling", "searing", "flamewarp", "fuel", "inferno", "charged", "forking", "stormwarp", "overload", "stormcaller",

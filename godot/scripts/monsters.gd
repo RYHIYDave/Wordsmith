@@ -387,7 +387,7 @@ func wake(m: Monster) -> void:
 ## The monsters a blow at (from, facing `way`) reaches: those within `reach` + their radius in front of him (dot at
 ## least 0.35), or within 0.9 + their radius whichever way; the one hit is the best of them, nearest and most in front
 ## (game.ts strike: score = dist - dot * 0.5).
-func strike_target(from: Vector2, way: Vector2, reach: float) -> Monster:
+func strike_target(from: Vector2, way: Vector2, reach: float, min_dot := 0.35) -> Monster:
 	var best: Monster = null
 	var best_score := INF
 	for m in list:
@@ -396,7 +396,7 @@ func strike_target(from: Vector2, way: Vector2, reach: float) -> Monster:
 		var to := m.world - from
 		var dist := to.length()
 		var dot := way.dot(to / dist) if dist > 0.001 else 1.0
-		if not ((dist <= reach + m.r and dot >= 0.35) or dist <= 0.9 + m.r):
+		if not ((dist <= reach + m.r and dot >= min_dot) or dist <= 0.9 + m.r):
 			continue
 		var score := dist - dot * 0.5
 		if score < best_score:

@@ -305,6 +305,11 @@ func _notification(what: int) -> void:
 # What it is told
 
 ## The rules say what happened (game.ts emit): counted, kept, and shown.
+## (THE WARRIOR'S EARTHQUAKE: whether a slam ring at (x, y) is a quake of his just begun, whose ground is drawn in its place:
+## heroes/warrior_arms_look.gd claims)
+var claims_slam := Callable()
+
+
 func event(e: Dictionary) -> void:
 	var t: String = e.get("t", "")
 	seen[t] = int(seen.get(t, 0)) + 1
@@ -1224,6 +1229,9 @@ func _burst(e: Dictionary) -> void:
 	var style: String = e.get("style", "shock")
 	# (THE TINKERER's vials, her Golem's pound and her bomb: drawn by heroes/tinkerer_look.gd, render/tinkerer_fx.ts)
 	if style == "vial" or style == "pound" or style == "bomb":
+		return
+	# (THE WARRIOR'S EARTHQUAKE: its ground heaves in the floor's stone in place of the slam ring: heroes/warrior_arms_look.gd)
+	if style == "slam" and claims_slam.is_valid() and claims_slam.call(x, y):
 		return
 	# (m3: as for a hit: fx.ts meldLookWords)
 	var w = Melds3.look_words(e.get("words"))

@@ -29,7 +29,7 @@ import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { DARK_RING, Game } from '../src/game/game';
-import { rollFullRare, rollItem } from '../src/game/items';
+import { CLASS_BASES, ITEM_BASES, rollFullRare, rollItem } from '../src/game/items';
 import { RNG as LootRNG } from '../src/engine/rng';
 import { CLAPPER_REWARD, PAGES, QUEST1115_TEXT, QUESTS1115, jarWords } from '../src/game/quests1115';
 import { ROYALS, ROYAL_NAMES, ROYAL_TUNE } from '../src/game/royal_cards';
@@ -446,7 +446,16 @@ const quest = {
     },
   }));
 }
-writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, fullRares, value: VALUE, starter, starters, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble, royal }));
+// (THE WARRIOR'S THREE WEAPONS, game/items.ts asWarriorWeapon: a greatsword, battle axe or warhammer made his weapon's kind of the
+// same name tier, its name, picture and kind its new kind's, its numbers the same (the three's are): each kind's name, its three
+// bases' names, its picture at the three plain rarities)
+const armsKinds = ['greatsword', 'battleaxe', 'warhammer'] as const;
+const warriorArms = Object.fromEntries(armsKinds.map((w) => {
+  const tiers = [...ITEM_BASES, ...CLASS_BASES].filter((b) => b.weapon === w).sort((a, b) => a.id.localeCompare(b.id));
+  for (const r of [0, 1, 2] as Rarity[]) if (!pics.has(`${tiers[0].icon}:${r}`)) pics.set(`${tiers[0].icon}:${r}`, itemPic(icons, tiers[0].icon, r));
+  return [w, { kind: kindName({ weapon: w, offhand: null, slot: 'mainhand' } as unknown as Item), names: tiers.map((b) => b.name), icon: tiers[0].icon }];
+}));
+writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, fullRares, value: VALUE, starter, starters, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble, royal, warriorArms }));
 tally.push(`words on gear: ${[...OURS, ...MADE].join(', ')} on ${kinds.size} kinds of piece by level, ${sizes} sizes in all`);
 
 // --- the pictures in one sheet: each at two picture pixels to a game pixel, its anchor kept ---

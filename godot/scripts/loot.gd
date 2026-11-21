@@ -181,6 +181,7 @@ func _ready() -> void:
 	stat_info = data["stats"]
 	_tune = data["tune"]
 	_gamble = data.get("gamble", {})
+	_arms = data.get("warriorArms", {})
 	royal = data.get("royal", {})
 	stash = []
 	stash.resize(int(_tune["stashSize"]))
@@ -619,7 +620,9 @@ func _drop(kind: String, at: Vector2, pic: String, extra: Dictionary) -> void:
 	if kind == "gear":
 		var tag := _Tag.new()
 		extra["tag"] = tag
-		var it: Dictionary = extra["item"]
+		var it: Dictionary = for_him(extra["item"])
+		s.texture = _pic_tex(it["icon"])
+		s.offset = -pics[it["icon"]]["anchor"]
 		tag.text = it["kind"]
 		tag.color = RARITY_COLOR[int(it["rarity"])]
 		tag.z_index = 60
@@ -1576,6 +1579,51 @@ func say(text: String, color := Color.WHITE) -> void:
 		msgs.pop_front()
 
 
+# --- THE WARRIOR'S THREE WEAPONS (game/items.ts asWarriorWeapon; game.ts forHim, allForHim): a greatsword, battle axe or warhammer
+# found, bought or won by a Warrior made his own weapon's kind of the same name tier (his words, 7 Nov 2026, 21:11: “These will
+# change his current weapon drops as well.  Swords become hammers become axes.”); his weapon picked or changed, every one he wears
+# and carries, and the vendors' shelves, made it. Its name, picture and kind its new kind's; its numbers, words and colour kept. ---
+
+var _arms := {}
+
+
+func for_him(it):
+	if not (it is Dictionary) or cls != "warrior" or hero == null or _arms.is_empty():
+		return it
+	var to: Dictionary = _arms.get(str(hero.weapon), {})
+	var from := ""
+	for k in _arms:
+		if _arms[k]["kind"] == it.get("kind"):
+			from = k
+	if to.is_empty() or from == "" or from == str(hero.weapon):
+		return it
+	var tier := maxi(0, (_arms[from]["names"] as Array).find(it.get("base", "")))
+	var nb: String = to["names"][tier]
+	var ob: String = it.get("base", "")
+	if ob != "" and str(it["name"]).contains(ob):
+		it["name"] = str(it["name"]).replace(ob, nb)
+	it["base"] = nb
+	it["kind"] = to["kind"]
+	var key := "%s:%s" % [to["icon"], str(it["icon"]).get_slice(":", 1)]
+	if pics.has(key):
+		it["icon"] = key
+	return it
+
+
+func all_for_him() -> void:
+	if cls != "warrior":
+		return
+	for slot in gear:
+		if gear[slot] != null:
+			for_him(gear[slot])
+	for it in bag:
+		if it != null:
+			for_him(it)
+	for k in shops:
+		for it in shops[k]:
+			for_him(it)
+
+
 # --- the vendors ---
 
 ## Buy a piece off a vendor's shelf (game.ts buy): its price, into the bag; gone from the shelf.
@@ -1906,7 +1954,7 @@ func gamble(k: int) -> String:
 	var roll := randf()
 	var rarity := 2 if roll < float(odds["rare"]) else (1 if roll < float(odds["rare"]) + float(odds["magic"]) else 0)
 	var pool: Array = _gamble["pieces"][str(_town_power())][k][rarity]
-	var it: Dictionary = pool[randi() % pool.size()].duplicate(true)
+	var it: Dictionary = for_him(pool[randi() % pool.size()].duplicate(true))
 	gold -= price
 	bag.append(it)
 	won = bag.size() - 1

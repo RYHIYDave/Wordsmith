@@ -17,6 +17,7 @@ import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { DEMON_KIT } from '../src/game/warlock';
+import { WARRIOR_KITS } from '../src/game/talents';
 import type { SkillId } from '../src/game/defs';
 import { CLASSES, FLOOR_NAMES, SKILLS, WORDS, floorTitle, growsWith, skillsFor } from '../src/game/defs';
 import type { ClassId } from '../src/game/types';
@@ -52,6 +53,9 @@ const ids = [W.tap, W.hold, W.evade] as const;
 const classMoves: Record<string, readonly string[]> = Object.fromEntries((Object.keys(CLASSES) as ClassId[]).map((c) => [c, skillsFor(c, CLASSES[c].starts)]));
 // (THE WARLOCK AS THE DEMON, game/warlock.ts DEMON_KIT: its three on his buttons while he is it)
 classMoves['warlock:demon'] = DEMON_KIT;
+// (THE WARRIOR'S BATTLE AXE AND WARHAMMER, game/talents.ts WARRIOR_KITS: their three on his buttons once his tree picks one)
+classMoves['warrior:battleaxe'] = WARRIOR_KITS.battleaxe;
+classMoves['warrior:warhammer'] = WARRIOR_KITS.warhammer;
 const allIds = [...new Set([...ids, ...Object.values(classMoves).flat()])];
 for (const id of allIds) {
   const icon = SKILLS[id as SkillId].icon;

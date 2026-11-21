@@ -1076,6 +1076,225 @@
    }
   }
  },
+ "warrior:axe": {
+  "idleFps": 30,
+  "walkFps": 30,
+  "walkStride": null,
+  "startAt": 0,
+  "start": null,
+  "stops": [],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": true,
+    "n": 37
+   },
+   "19": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": true,
+    "n": 28
+   },
+   "20": {
+    "fps": 30,
+    "hit": 0.36666666666666664,
+    "loop": null,
+    "tail": null,
+    "n": 21
+   },
+   "39": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 16
+   },
+   "40": null,
+   "41": {
+    "fps": 30,
+    "hit": null,
+    "loop": 0,
+    "tail": null,
+    "n": 30
+   },
+   "42": null,
+   "43": {
+    "fps": 30,
+    "hit": 0,
+    "loop": null,
+    "tail": null,
+    "n": 19
+   },
+   "44": null,
+   "45": {
+    "fps": 30,
+    "hit": 0,
+    "loop": null,
+    "tail": null,
+    "n": 23
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 47
+   },
+   "116": {
+    "fps": 30,
+    "hit": null,
+    "loop": 0,
+    "tail": null,
+    "n": 15
+   },
+   "117": {
+    "fps": 30,
+    "hit": 0,
+    "loop": null,
+    "tail": null,
+    "n": 15
+   },
+   "118": {
+    "fps": 30,
+    "hit": 0,
+    "loop": null,
+    "tail": null,
+    "n": 30
+   },
+   "119": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": true,
+    "n": 4
+   },
+   "120": {
+    "fps": 30,
+    "hit": 0.36666666666666664,
+    "loop": null,
+    "tail": null,
+    "n": 21
+   },
+   "121": {
+    "fps": 30,
+    "hit": null,
+    "loop": 0,
+    "tail": null,
+    "n": 30
+   },
+   "122": {
+    "fps": 30,
+    "hit": 0,
+    "loop": null,
+    "tail": null,
+    "n": 23
+   },
+   "123": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 6
+   }
+  }
+ },
+ "warrior:hammer": {
+  "idleFps": 30,
+  "walkFps": 30,
+  "walkStride": null,
+  "startAt": 0,
+  "start": null,
+  "stops": [],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.43333333333333335,
+    "loop": null,
+    "tail": true,
+    "n": 39
+   },
+   "19": {
+    "fps": 30,
+    "hit": 0.43333333333333335,
+    "loop": null,
+    "tail": true,
+    "n": 39
+   },
+   "20": {
+    "fps": 30,
+    "hit": 0.6333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 50
+   },
+   "39": {
+    "fps": 30.000000000000004,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 16
+   },
+   "40": null,
+   "41": null,
+   "42": null,
+   "43": null,
+   "44": null,
+   "45": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 22
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 47
+   },
+   "124": {
+    "fps": 30,
+    "hit": 0.2,
+    "loop": null,
+    "tail": null,
+    "n": 7
+   }
+  }
+ },
  "tails": {
   "w-scarf-a": {
    "n": 9,
