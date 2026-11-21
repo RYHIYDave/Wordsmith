@@ -379,6 +379,14 @@ func _press(action: String, arg) -> void:
 			_result = {}
 		"worn", "bag":
 			var where = arg
+			# (BINDING: the second piece, pressed while the question waits for it: ui/inventory.ts)
+			if not _pending.is_empty() and _pending["word"] == "binding" and loot.piece(where) != null and not (typeof(where) == typeof(_pending["where"]) and where == _pending["where"]):
+				var why: String = loot.bind_problem(_pending["where"], where)
+				if why != "":
+					_say(why)
+				else:
+					_pending["with"] = where
+				return
 			if _word != "" and loot.piece(where) != null:
 				# a word is in hand: it is burned into this piece (asked first)
 				if _burn_now:
@@ -399,12 +407,19 @@ func _press(action: String, arg) -> void:
 			else:
 				loot.equip_from_bag(arg)
 		"yes":
-			# yes: the word is burned into the piece
+			# yes: the word is burned into the piece; (SPLITTING AND BINDING) the piece split in two, or the second bound into it
 			if not _pending.is_empty():
 				var p := _pending
+				if p["word"] == "binding" and not p.has("with"):
+					return
 				_pending = {}
 				_word = ""
-				_say(loot.burn(p["word"], p["where"]))
+				if p["word"] == "splitting":
+					_say(loot.split_piece(p["where"]))
+				elif p["word"] == "binding":
+					_say(loot.bind_pieces(p["where"], p["with"]))
+				else:
+					_say(loot.burn(p["word"], p["where"]))
 				_burned()
 		"no":
 			_pending = {}
@@ -1121,7 +1136,9 @@ func _draw_reading(blink: bool, first: bool) -> void:
 		"pending":
 			about = _cell_rect(_pending["where"])
 			_piece_rows(rows, _pending["word"], _pending["where"], true, inner)
-			buttons = [["BURN IT", "yes"], ["CANCEL", "no"]]
+			# (SPLITTING AND BINDING: SPLIT IT, BIND THEM; Binding's only once its second piece is pressed)
+			var yes := "SPLIT IT" if _pending["word"] == "splitting" else ("BIND THEM" if _pending["word"] == "binding" else "BURN IT")
+			buttons = [["CANCEL", "no"]] if _pending["word"] == "binding" and not _pending.has("with") else [[yes, "yes"], ["CANCEL", "no"]]
 		"over":
 			about = _over["r"]
 			if _over["kind"] == "slot":
@@ -1277,6 +1294,22 @@ func _piece_rows(rows: Array, w: String, where, asking: bool, inner: float) -> v
 	var why: String = "" if asking else loot.burn_problem(w, where)
 	if why != "":
 		_lines(rows, why, BAD, NORMAL, inner)
+		return
+	# (SPLITTING AND BINDING: what it will do to the piece: ui/inventory.ts itemPreview)
+	if w == "splitting":
+		var n: int = int(it.get("affixes", 0)) + it.get("imbues", []).size()
+		_lines(rows, "It splits in two: its %d properties shared between it and a second like it, at random." % n, Color.WHITE, SMALL, inner)
+		_lines(rows, "Which go where is rolled. The word is used up." if asking else ("Let go to choose this." if not _drag.is_empty() and _drag["moving"] else "Click to choose this."), DIM, SMALL, inner)
+		return
+	if w == "binding":
+		var other = loot.piece(_pending["with"]) if asking and _pending.has("with") else null
+		if other == null:
+			_lines(rows, "Now press the piece to bind into it: another of the same kind." if asking else "It takes another piece of the same kind into it.", Color.WHITE, SMALL, inner)
+			_lines(rows, "The other piece is gone after." if asking else ("Let go to choose this." if not _drag.is_empty() and _drag["moving"] else "Click to choose this."), DIM, SMALL, inner)
+			return
+		rows.append({"parts": [{"text": "+ " + str(other["name"]), "color": loot.RARITY_COLOR[int(other["rarity"])], "small": false}], "px": NORMAL})
+		_lines(rows, "It keeps its own properties and as many of the other's as there is room for, four in all, never two of a kind.", Color.WHITE, SMALL, inner)
+		_lines(rows, "Which of the other's is rolled. The other piece and the word are used up.", DIM, SMALL, inner)
 		return
 	var opts: Array = loot.burn_options(w, it)
 	var could: Array = []

@@ -530,8 +530,12 @@ home to the camp, the camp's waypoint to the city's floors he has reached.
   book of stolen words bursting as he dies). `--only=city --floor=N` (`check_city.gd`): 13, 11, 13, 14 and 16 steps.
 - THE CITY'S FIVE WORDS (Pulling, Splitting, Hexing, Stilling, Binding), found from floor 11 on: on monsters (Pulling drags him a
   step, Hexing curses him, Stilling slows his moves' waits, Binding roots him, Splitting splits in two at half its life) and in his
-  moves, in front and behind, with their looks (the art's own, render/words3.ts, binding3.ts). Not yet: burning Splitting or
-  Binding into gear at the wordsmith's bench (refused there, with a word why). `--only=citywords` (`check_citywords.gd`): 16 steps.
+  moves, in front and behind, with their looks (the art's own, render/words3.ts, binding3.ts). `--only=citywords`
+  (`check_citywords.gd`): 16 steps. At the wordsmith's bench they change a piece rather than burn into it (items.ts ITEM_WORDS):
+  SPLITTING shares a piece's properties between it and a second like it in the bag, at random; BINDING takes a second piece of
+  the same kind into the first (its own kept and as many of the other's as there is room for, four in all, never two of a kind,
+  at least one of each's), the other gone; each piece's colour, picture and price by its properties. On the gear screen as the
+  game asks it: SPLIT IT; BIND THEM once the second piece is pressed. `--only=itemwords` (`check_itemwords.gd`): 8 steps.
 - THE QUEST LINE (`scripts/act2/quest1115.gd`; game/quests1115.ts): the mystic's ask once floor 11 is cleared, the Crier's jar
   taken from the Rat King's nest (gone from it: the look's state `jar<i>`), brought for one of the city's words; the three
   unstruck pages (the last of floor 13's pair to fall, the Physician, the library's stacks), one laid in the Censor's fight with
@@ -553,7 +557,6 @@ home to the camp, the camp's waypoint to the city's floors he has reached.
 ## Not in it yet
 
 The last words (floor 16), the rifts for anything but the Bells' monsters (the strongholds' waves come in as before),
-burning Splitting or Binding into gear,
 Frenzied on the prison's bosses' own scripts
 (the mini fleshmancer's), the trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
 above), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched

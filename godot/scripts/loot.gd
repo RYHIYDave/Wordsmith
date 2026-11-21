@@ -136,6 +136,8 @@ var _pools := {}
 var _by_depth := {}
 ## (QUESTS1115: the armourer's pick for the clapper, fully modded rares by level and slot: tools/godot_loot.ts fullRares)
 var _full_rares := {}
+## (items.ts VALUE_BY_RARITY, VALUE_PER_AFFIX, VALUE_IMBUED: a piece's price from its own, `vbase`: tools/godot_loot.ts VALUE)
+var _value := {}
 ## the vendors' shelves (Game.rollShop on his first day in town)
 var shops := {}
 ## (what each word becomes on each kind of piece; which words are found where; the armourer's quest's own lines:
@@ -164,6 +166,7 @@ func _ready() -> void:
 	_pools = data["pools"]
 	_by_depth = data.get("byDepth", {})
 	_full_rares = data.get("fullRares", {})
+	_value = data.get("value", {})
 	shops = data["shops"]
 	_imbue = data["imbue"]
 	_words = data["words"]
@@ -917,9 +920,11 @@ func burn_problem(w: String, where) -> String:
 		return "No spare word"
 	if int(it["rarity"]) == 3:
 		return "A unique piece takes no word"
-	# (SPLITTING and BINDING change a piece at the bench rather than burn into it, items.ts ITEM_WORDS: not yet in the Godot version)
-	if w == "splitting" or w == "binding":
-		return "This word changes a piece; not yet here"
+	# (SPLITTING and BINDING change a piece at the bench rather than burn into it, items.ts ITEM_WORDS: split_problem, bind_problem)
+	if w == "splitting":
+		return split_problem(where)
+	if w == "binding":
+		return "A unique piece will not bind" if int(it["rarity"]) == 3 else ""
 	if room(it) <= 0:
 		return "That piece is full"
 	if burn_options(w, it).is_empty():
@@ -948,14 +953,20 @@ func burn(w: String, where) -> String:
 	it["mods"] = it["mods"] + got[1]
 	if not it.has("imbues"):
 		it["imbues"] = []
-	it["imbues"].append({"word": w, "lines": got[2], "stats": stats})
+	it["imbues"].append({"word": w, "lines": got[2], "stats": stats, "mods": got[1]})
 	var n: int = int(it.get("affixes", 0)) + it["imbues"].size()
 	it["rarity"] = maxi(int(it["rarity"]), 2 if n >= 3 else (1 if n >= 1 else 0))
 	# (its price with that many words in it, as the game counts it, items.ts itemValue: a fifth more for each word, and its
 	# colour's own worth where the word has changed its colour: tools/godot_loot.ts `worth`)
 	var worth: Array = it.get("worth", [])
 	var nth: int = it["imbues"].size() - 1
-	it["value"] = int(worth[nth]) if nth < worth.size() else roundi(float(it.get("value", 0)) * 1.2)
+	# (a piece split or bound has no `worth` kept: its price by the game's sum from its own, item_value)
+	if nth < worth.size():
+		it["value"] = int(worth[nth])
+	elif it.has("vbase"):
+		it["value"] = item_value(it)
+	else:
+		it["value"] = roundi(float(it.get("value", 0)) * 1.2)
 	words[w] = int(words[w]) - 1
 	if where is String:
 		derive()
@@ -964,6 +975,186 @@ func burn(w: String, where) -> String:
 	# (WORDMELDING: what a made word becomes on gear is known from now on: game.ts learn(word, 'gear'))
 	if Words.made().has(w):
 		_know(w)["gear"] = true
+	return ""
+
+
+# --- SPLITTING AND BINDING CHANGE THE PIECE (items.ts ITEM_WORDS, splitProblem, splitItem, bindProblem, bindItems; game.ts
+# itemWordProblem, splitPiece, bindPieces). His words, 4 Nov 2026, 19:15: “And I really love the erasing type words that don’t
+# craft a specific mod but change the item in a different way.  Like splitting would make take a single item and turn it into two
+# items and divide the mods up between them.  And maybe another that takes two items and slaps them into 1 item and takes mods
+# from both.” SPLITTING shares a piece's properties between it and a second like it, at random (the first the odd one), the
+# second into the bag; BINDING takes a second piece of the same kind into the first, which keeps its own and as many of the other's
+# as there is room for (four in all, never two of a kind; at least one of each's, the rest rolled), the second gone. A piece's
+# colour follows the count of its properties, its picture and its price with it. ---
+
+## A price by the game's sum (items.ts itemValue), from what the piece was before its colour, its properties and its words.
+func item_value(it: Dictionary) -> int:
+	if not it.has("vbase") or _value.is_empty():
+		return int(it.get("value", 0))
+	var v: float = float(it["vbase"]) * float(_value["rarity"][int(it["rarity"])]) * (1.0 + float(_value["affix"]) * int(it.get("affixes", 0))) * pow(float(_value["imbued"]), it.get("imbues", []).size())
+	return maxi(1, roundi(v))
+
+
+## Its properties, each {a: one it was found with} or {i: a word burned into it}, in its own order.
+func _props_of(it: Dictionary) -> Array:
+	var out: Array = []
+	for a in it.get("props", []):
+		out.append({"a": a})
+	for im in it.get("imbues", []):
+		out.append({"i": im})
+	return out
+
+
+func _prop_group(p: Dictionary) -> String:
+	var mods: Array = p["a"]["mods"] if p.has("a") else p["i"].get("mods", [])
+	if mods.is_empty():
+		return str(p["i"]["stats"][0]) if p.has("i") and not p["i"]["stats"].is_empty() else ""
+	return _group(str(mods[0][0]))
+
+
+## (items.ts withProps) The piece with these properties and no others; its colour, its picture and its price theirs.
+func _with_props(it: Dictionary, props: Array) -> Dictionary:
+	var out: Dictionary = it.duplicate(true)
+	var affs: Array = []
+	var ims: Array = []
+	for p in props:
+		if p.has("a"):
+			affs.append(p["a"].duplicate(true))
+		else:
+			ims.append(p["i"].duplicate(true))
+	out["props"] = affs
+	out["imbues"] = ims
+	out["affixes"] = affs.size()
+	var mods: Array = it.get("imods", []).duplicate(true)
+	var has: Array = []
+	var lines: Array = []
+	for a in affs:
+		mods.append_array(a["mods"])
+		lines.append_array(a["lines"])
+		for m in a["mods"]:
+			has.append(m[0])
+	for im in ims:
+		mods.append_array(im.get("mods", []))
+	out["mods"] = mods
+	out["has"] = has
+	out["lines"] = lines
+	if int(out["rarity"]) != 3:
+		var n := affs.size() + ims.size()
+		out["rarity"] = 2 if n >= 3 else (1 if n >= 1 else 0)
+		var base := str(out["icon"]).split(":")[0]
+		if pics.has("%s:%d" % [base, int(out["rarity"])]):
+			out["icon"] = "%s:%d" % [base, int(out["rarity"])]
+	out["value"] = item_value(out)
+	out.erase("worth")
+	return out
+
+
+## Why Splitting will not split the piece at `where`, or "" (it wants room in the bag for the second piece).
+func split_problem(where) -> String:
+	var it = piece(where)
+	if it == null:
+		return "Nothing there"
+	if int(it["rarity"]) == 3:
+		return "A unique piece will not split"
+	if not it.has("props"):
+		return "Nothing on it to share between two"
+	if _props_of(it).size() < 2:
+		return "Nothing on it to share between two"
+	if bag.size() >= BAG:
+		return "No room in your bag for the second piece"
+	return ""
+
+
+## Why Binding will not take the piece at `other` into the one at `into`, or "".
+func bind_problem(into, other) -> String:
+	var a = piece(into)
+	var b = piece(other)
+	if a == null or b == null:
+		return "Nothing there"
+	if typeof(into) == typeof(other) and into == other:
+		return "Bind it to another piece"
+	if str(a["slot"]) != str(b["slot"]):
+		return "Only two pieces of the same kind bind"
+	if int(a["rarity"]) == 3 or int(b["rarity"]) == 3:
+		return "A unique piece will not bind"
+	if not a.has("props") or not b.has("props"):
+		return "Only two pieces of the same kind bind"
+	return ""
+
+
+## SPLITTING at the bench: the piece and a second like it in the bag, its properties shared between them at random. "" if done.
+func split_piece(where) -> String:
+	var why := split_problem(where) if int(words.get("splitting", 0)) > 0 else "No spare word"
+	if why != "":
+		return why
+	var it: Dictionary = piece(where)
+	var ps := _props_of(it)
+	ps.shuffle()
+	var half := ceili(ps.size() / 2.0)
+	var one := _with_props(it, ps.slice(0, half))
+	var two := _with_props(it, ps.slice(half))
+	if where is String:
+		gear[where] = one
+	else:
+		bag[int(where)] = one
+	bag.append(two)
+	words["splitting"] = int(words["splitting"]) - 1
+	if where is String:
+		derive()
+	_know("splitting")["gear"] = true
+	sfx.play("imbue")
+	burned = {"word": "splitting", "item": it["name"], "text": "Split in two: the second is in your bag"}
+	return ""
+
+
+## BINDING at the bench: the piece at `other` taken into the one at `into`, which keeps its own and as many of the other's as
+## there is room for; the other gone. "" if done.
+func bind_pieces(into, other) -> String:
+	var why := bind_problem(into, other) if int(words.get("binding", 0)) > 0 else "No spare word"
+	if why != "":
+		return why
+	var a: Dictionary = piece(into)
+	var b: Dictionary = piece(other)
+	var mine := _props_of(a)
+	var groups: Array = mine.map(_prop_group)
+	var theirs: Array = _props_of(b).filter(func(p): return not groups.has(_prop_group(p)))
+	var room_n := int(_words["room"])
+	var keep: Array = []
+	if mine.size() + theirs.size() <= room_n:
+		keep = mine + theirs
+	else:
+		var x: Array = mine.duplicate()
+		var y: Array = theirs.duplicate()
+		x.shuffle()
+		y.shuffle()
+		if not x.is_empty():
+			keep.append(x.pop_front())
+		if not y.is_empty():
+			keep.append(y.pop_front())
+		var rest: Array = x + y
+		rest.shuffle()
+		while keep.size() < room_n and not rest.is_empty():
+			keep.append(rest.pop_front())
+		# (in the piece's own order: what it was found with, then the words burned in)
+		keep.sort_custom(func(p, q): return p.has("a") and q.has("i"))
+	var made := _with_props(a, keep)
+	if into is String:
+		gear[into] = made
+	else:
+		bag[int(into)] = made
+	if other is String:
+		gear[other] = null
+	else:
+		bag.remove_at(int(other))
+	words["binding"] = int(words["binding"]) - 1
+	if into is String or other is String:
+		derive()
+	_know("binding")["gear"] = true
+	sfx.play("imbue")
+	var lines: Array = []
+	for p in keep:
+		lines.append_array(p["a"]["lines"] if p.has("a") else p["i"]["lines"])
+	burned = {"word": "binding", "item": made["name"], "text": ", ".join(lines)}
 	return ""
 
 

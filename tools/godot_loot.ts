@@ -75,8 +75,13 @@ const pics = new Map<string, Sprite>();
 const picKey = (it: Item): string => {
   const key = `${it.icon}:${it.rarity}`;
   if (!pics.has(key)) pics.set(key, itemPic(icons, it.icon, it.rarity));
+  // (SPLITTING AND BINDING change a piece's colour with the count of its properties: its picture in each of the three)
+  if (it.rarity < 3) for (const r of [0, 1, 2] as Rarity[]) if (!pics.has(`${it.icon}:${r}`)) pics.set(`${it.icon}:${r}`, itemPic(icons, it.icon, r));
   return key;
 };
+// (items.ts VALUE_BY_RARITY, VALUE_PER_AFFIX, VALUE_IMBUED: what a piece's colour, each property it was found with and each word
+// burned into it make of its price, itemValue)
+const VALUE = { rarity: [1, 2.5, 6, 15], affix: 0.15, imbued: 1.2 };
 icons.gold.forEach((s, i) => pics.set(`gold:${i}`, s));
 pics.set('orb', icons.lifeOrb);
 pics.set('potion', icons.potion);
@@ -119,6 +124,11 @@ const plain = (it: Item): Record<string, unknown> => {
     has: it.affixes.flatMap((a) => a.mods.map((m) => m.stat)),
     // (its price with one word burned into it, with two, as far as it has room)
     worth: worth(it),
+    // (SPLITTING AND BINDING, items.ts splitItem, bindItems: each property it was found with, its mods and its lines; what is built
+    // into its base; its price before its colour, its properties and its words, itemValue)
+    props: it.affixes.map((a) => ({ mods: a.mods.map((m) => [m.stat, m.value]), lines: modLines(a.mods, 'cooldown') })),
+    imods: it.implicit.map((m) => [m.stat, m.value]),
+    vbase: itemValue(it) / (VALUE.rarity[it.rarity] * (1 + VALUE.affix * it.affixes.length) * VALUE.imbued ** it.imbues.length),
   };
 };
 
@@ -356,7 +366,7 @@ const quest = {
     },
   }));
 }
-writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, fullRares, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble }));
+writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, fullRares, value: VALUE, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble }));
 tally.push(`words on gear: ${[...OURS, ...MADE].join(', ')} on ${kinds.size} kinds of piece by level, ${sizes} sizes in all`);
 
 // --- the pictures in one sheet: each at two picture pixels to a game pixel, its anchor kept ---

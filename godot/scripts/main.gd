@@ -1876,6 +1876,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_city.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	# (SPLITTING AND BINDING at the wordsmith's bench: check_itemwords.gd)
+	if _arg("only") == "itemwords":
+		await preload("res://scripts/check_itemwords.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE BELLS, the city floors' event: check_bells.gd, `--floor=N`)
 	if _arg("only") == "bells":
 		await preload("res://scripts/check_bells.gd").new().run(self, hero, dir, int(_arg("floor")) if _arg("floor") != "" else 11)
