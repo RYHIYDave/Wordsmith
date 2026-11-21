@@ -13,6 +13,8 @@ extends Node2D
 const Iso := preload("res://scripts/iso.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
 const MM := preload("res://scripts/monster_moves.gd")
+## (the Headsman's vault, as the game draws it: art/headsman2_shots.ts)
+const VaultFx := preload("res://scripts/vault_fx.gd")
 
 const ENEMY := Color(0.96, 0.27, 0.47)
 ## (art/palette.ts P.bl3, bl4, bl5: the reds of the game's warning circle and of a charge's lane)
@@ -135,6 +137,25 @@ func bars(src: Object, x: float, y: float, dmg: float, windup: float) -> void:
 ## A red circle marked on the floor for `dur` seconds, harmless of itself (the Headsman's vault: his own blow does the harm).
 func mark(x: float, y: float, r: float, dur: float, src: Object) -> void:
 	list.append({"kind": "warn", "x": x, "y": y, "r": r * _vast(_by(src)), "t": 0.0, "dur": dur, "dmg": 0.0, "src": src, "mark": true})
+
+
+## THE HEADSMAN'S VAULT (render/bossfx.ts 'h2:vault', art/headsman2_shots.ts): the spot it will come down on marked as wide as the
+## slam from his warning on, for `dur` seconds (gone if he falls or his act is broken off); then the slam itself, on the floor and
+## over everything, 1.8 seconds.
+func vault_mark(x: float, y: float, dur: float, src: Object) -> void:
+	list.append({"kind": "vault_mark", "x": x, "y": y, "t": 0.0, "dur": dur, "src": src})
+
+
+func vault_slam(x: float, y: float) -> void:
+	list.append({"kind": "vault_slam", "x": x, "y": y, "t": 0.0})
+
+
+## (the game's FloorAt: where a point of the floor is on the screen, in the game's pixels, lifted with the ground there)
+func _floor_px(x: float, y: float) -> Vector2:
+	var p := Iso.to_screen(x, y)
+	if map != null:
+		p.y -= map.lift_at(x, y)
+	return p / 2.0
 
 
 ## A ring going out over the floor where a blow came down.
@@ -570,6 +591,10 @@ func _draw_air(c: CanvasItem) -> void:
 		if p["kind"] == "a1":
 			A1M.air(self, c, p)
 			continue
+		if p["kind"] == "vault_slam":
+			# (what flies from his slam and burns up out of the floor: drawVaultSlamOver)
+			VaultFx.over(c, _floor_px, p["x"], p["y"], p["t"])
+			continue
 		if p["kind"] == "st_coals" and has_film("st_lump_0"):
 			# (the Stoker's coals in the air: each one's trail of sparks behind it, the way it came, flickering: coalInAir)
 			var since := float(p["t"]) - ST.COALS_HIT
@@ -772,7 +797,12 @@ func _process(dt: float) -> void:
 						hero.shake()
 						if hero.alive and hero.world.distance_to(Vector2(p["x"], p["y"])) <= p["r"] + 0.1:
 							_hurt(p, p["dmg"])
-						keep.append({"kind": "blast", "x": p["x"], "y": p["y"], "r": p["r"], "t": 0.0})
+						# (game.ts updateZones: what comes down is the game's own burst, its `blast`, of the blow's element: fx.ts)
+						var by: Dictionary = p.get("by", {})
+						if hero.fx != null and is_instance_valid(hero.fx):
+							hero.fx.event({"t": "burst", "x": p["x"], "y": p["y"], "r": p["r"], "el": str(by.get("el", "phys")), "style": "blast"})
+						else:
+							keep.append({"kind": "blast", "x": p["x"], "y": p["y"], "r": p["r"], "t": 0.0})
 					stays = false
 				elif p.get("mark", false) and (not is_instance_valid(p["src"]) or p["src"].dead):
 					stays = false
@@ -812,6 +842,11 @@ func _process(dt: float) -> void:
 				stays = _fm2_stays(p)
 			"blast":
 				stays = p["t"] < 0.3
+			"vault_mark":
+				var o = p["src"]
+				stays = p["t"] < p["dur"] and is_instance_valid(o) and not o.dead and o.state == "act"
+			"vault_slam":
+				stays = p["t"] < VaultFx.FOR
 			"ring":
 				stays = p["t"] < MM.RING["long"]
 			"spear":
@@ -1291,6 +1326,10 @@ func _draw() -> void:
 			"blast":
 				var k: float = p["t"] / 0.3
 				draw_polyline(_ring(p["x"], p["y"], p["r"] * (0.6 + 0.5 * k)), Color(1, 0.75, 0.8, 1.0 - k), 4.0)
+			"vault_mark":
+				VaultFx.mark(self, _floor_px, p["x"], p["y"], clampf(float(p["t"]) / maxf(0.01, float(p["dur"])), 0.0, 1.0), _clock)
+			"vault_slam":
+				VaultFx.slam(self, _floor_px, p["x"], p["y"], p["t"])
 			"fm_shards", "fm_rings", "fm_fire", "fm_heap", "fm_pit", "fm_rise", "fm_glow":
 				# (THE FLESHMANCER'S: its own block below)
 				_draw_fm(p)
@@ -3008,6 +3047,10 @@ func _spots_of(p: Dictionary) -> void:
 		return
 	var t: float = p["t"]
 	match p["kind"]:
+		"vault_slam":
+			# (its fire lights the dark: render/bossfx.ts spots, `slam`)
+			if t < 0.9:
+				look.spot(_floor_px(p["x"], p["y"]) + Vector2(0, -6), 30.0 + 16.0 * 2.0 * VaultFx.REACH * minf(1.0, t / 0.3), 0.9 * (1.0 - t / 0.9))
 		"a1":
 			A1M.spots(self, p)
 		"fm_circle":

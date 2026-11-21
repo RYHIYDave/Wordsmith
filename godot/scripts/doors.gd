@@ -281,6 +281,9 @@ func _levers() -> void:
 				continue
 			_raise(d)
 			raised += 1
+		# (its sparks, six: game.ts pullLever emits 'spark')
+		if hero.fx != null and is_instance_valid(hero.fx):
+			hero.fx.event({"t": "spark", "x": float(p["x"]), "y": float(p["y"]), "el": "phys", "n": 6})
 		sfx.play("door", linear_to_db(0.8))
 		if raised > 0:
 			_say("A gate rises.", GOOD)

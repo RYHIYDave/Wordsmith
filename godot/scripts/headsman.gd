@@ -207,7 +207,7 @@ func _acting(m, a: Dictionary, t0: float, t1: float, hero) -> void:
 		"vault":
 			var spot := Vector2(act["x"], act["y"])
 			if at.call(VAULT["warnFrom"]):
-				m.mgr.perils.mark(spot.x, spot.y, VAULT["reach"], a["hit"] - VAULT["warnFrom"], m)
+				m.mgr.perils.vault_mark(spot.x, spot.y, a["hit"] - VAULT["warnFrom"], m)
 			if not at.call(a["hit"]):
 				return
 			# (THE SLAM: everything within its reach of the spot struck, hard, and thrown)
@@ -215,7 +215,7 @@ func _acting(m, a: Dictionary, t0: float, t1: float, hero) -> void:
 				_blow(m, hero, a["dmg"])
 				var way := h - spot
 				hero.knock(way.normalized() if way.length() > 0.01 else -hero.face, HEAVY_KNOCK * VAULT["knock"])
-			m.mgr.perils.blast(spot.x, spot.y, VAULT["reach"])
+			m.mgr.perils.vault_slam(spot.x, spot.y)
 			hero.kick(VAULT["shake"])
 			m.mgr.sfx.play("slam")
 			m.mgr.sfx.play("explode", -4.0)

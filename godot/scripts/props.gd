@@ -4,8 +4,8 @@
 ##   A CHEST opens as the hero comes within 1.5 tiles of it: one piece of gear (a better one in a treasure vault, where it may
 ##   hold a second), and 10 to 20 gold (twice that in a vault). (Its word, the game's chance of one, falls nowhere on floor 1.)
 ##   A BARREL OR AN URN breaks under a blow that reaches it (the Strike's, each of the Whirlwind's cuts, the Lunge's landing):
-##   its leavings on the floor, its tile walkable again, and maybe gold (4 in 10: 1 to 5), a life orb (8 in 100) or a piece of
-##   gear (4 in 100).
+##   its sparks (fx.gd 'spark', eight), its leavings on the floor, its tile walkable again, and maybe gold (4 in 10: 1 to 5), a
+##   life orb (8 in 100) or a piece of gear (4 in 100).
 ## Their pictures whole, open and broken: look.gd (recorded from the game's renderer, tools/godot_looks.ts recordProps).
 extends Node
 
@@ -40,6 +40,9 @@ func strike(at: Vector2, rad: float) -> void:
 		p["state"] = 1
 		p["solid"] = false
 		map.walk[int(p["ty"]) * map.w + int(p["tx"])] = 1
+		# (game.ts breakProps: its sparks, eight of them, the plain ones: fx.ts 'spark')
+		if hero != null and hero.fx != null and is_instance_valid(hero.fx):
+			hero.fx.event({"t": "spark", "x": where.x, "y": where.y, "el": "phys", "n": 8})
 		# (by what it is made of: a barrel's wood; an urn's clay)
 		sfx.play("break_wood" if p["kind"] == "barrel" else "break_pottery", linear_to_db(0.7))
 		if look != null:

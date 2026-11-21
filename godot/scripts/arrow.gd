@@ -1,6 +1,6 @@
 ## Something in flight at the hero (monsters.gd moves it): a bone arrow, one of the Warden's bolts (a pink glow: the enemy's),
 ## the marksman's great arrow, or the Boneward's spear. The great arrow and the spear are drawn as the game draws them
-## (art/mob_shots.ts); the bone arrow and the bolt are stand-ins for the game's.
+## (art/mob_shots.ts); the bone arrow as render.ts draws a monster's arrow; the bolt as its ball of light (art/icons.ts orbFrame).
 extends Node2D
 
 const Iso := preload("res://scripts/iso.gd")
@@ -12,6 +12,12 @@ const F4 := Color("#fff0a0")
 
 var dir := Vector2.RIGHT
 var look := "arrow"
+## (a ball of light's element, and its size in the rules: twice as big over 0.4 round: render.ts)
+var el := "phys"
+var r := 0.2
+## (the balls of light's pictures: tools/godot_orbs.ts)
+static var _orbs := {}
+static var _orb_tex: Texture2D
 ## (the Boneward's spear: how high it flies over the floor, the game's pixels: render/mob_world.ts spearHeight)
 var high := 0.0
 ## (the great arrow's sparks go by the clock)
@@ -19,9 +25,18 @@ var _t := 0.0
 
 
 func _process(dt: float) -> void:
-	if look == "great":
+	if look == "great" or look == "bolt":
 		_t += dt
 		queue_redraw()
+
+
+## (art/icons.ts orbFrame, as tools/godot_orbs.ts wrote them) The picture of frame `f` of an element's orb: [rect, anchor].
+static func _orb(e: String, f: int) -> Array:
+	if _orbs.is_empty():
+		_orb_tex = load("res://assets/fx/orbs.png")
+		for o in JSON.parse_string(FileAccess.get_file_as_string("res://assets/fx/orbs.json")):
+			_orbs[o["key"]] = [Rect2(o["x"], o["y"], o["w"], o["h"]), Vector2(o["ax"], o["ay"])]
+	return _orbs.get("orb:%s:%d" % [e, f], _orbs.get("orb:phys:%d" % f, []))
 
 
 ## So many of the game's pixels laid at a point (game pixels from this node), `w` by `h`.
@@ -58,9 +73,13 @@ func _draw() -> void:
 	var lift := Vector2(0, -36)
 	match look:
 		"bolt":
-			draw_circle(lift, 7.0, Color(0.96, 0.27, 0.47, 0.35))
-			draw_circle(lift, 4.0, Color(1.0, 0.55, 0.7))
-			draw_line(lift - s * 14.0, lift, Color(0.96, 0.27, 0.47, 0.5), 3.0)
+			# (THE GAME'S OWN, render.ts: a hostile shot that is not an arrow is a ball of light of its element, 10 game pixels over
+			# the floor, turning at twelve frames a second; twice the size where it is over 0.4 round)
+			var o := _orb(el, int(_t * 12.0) % 3)
+			if not o.is_empty():
+				var k := 2.0 if r > 0.4 else 1.0
+				var src: Rect2 = o[0]
+				draw_texture_rect_region(_orb_tex, Rect2(Vector2(0, -20.0) - o[1] * k, src.size * k), src)
 		"great":
 			# (THE GAME'S OWN, art/mob_shots.ts drawGreatArrow: its head over this point of the floor, 14 game pixels up
 			# (defs.ts AIM.z), flying the way it goes: its shadow on the floor; behind it a long streak of light, white-gold
@@ -97,5 +116,9 @@ func _draw() -> void:
 			_px_line(hd, h + up, Color("#7672b0"))
 			draw_rect(Rect2(roundf(h.x + up.x) * 2.0, roundf(h.y + up.y) * 2.0, 2.0, 2.0), Color("#fff0a0"))
 		_:
-			draw_line(lift - s * 14.0, lift + s * 6.0, Color(0.78, 0.7, 0.55), 2.0)
-			draw_line(lift + s * 6.0, lift + s * 10.0, Color(1.0, 0.85, 0.55), 2.0)
+			# (THE GAME'S OWN, render.ts: a monster's arrow 10 game pixels over the floor, flying the way it goes: its bone shaft
+			# six pixels long (P.bn3), its head two pixels of the enemy's red (P.bl4), and its faint shadow on the floor under it)
+			var u := s
+			_px_line(Vector2(roundf(-u.x * 6.0), roundf(-10.0 - u.y * 6.0)), Vector2(0, -10), Color("#d4cbb0"))
+			_dot(Vector2(0, -10), 2, 2, Color("#e03c44"))
+			_dot(Vector2(-2, 0), 4, 1, Color(Color("#07050a"), 0.35))

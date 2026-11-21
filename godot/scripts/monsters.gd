@@ -542,6 +542,8 @@ func shoot(from: Monster, dir: Vector2, speed: float, reach: float, dmg: float, 
 	var node := Arrow.new()
 	node.dir = dir
 	node.look = look
+	node.el = str(from.blow().get("el", "phys"))
+	node.r = r
 	stands.add_child(node)
 	# (THE LAST WORDS: PIERCING, on it, its shots fly on through walls, to the map's edge)
 	_arrows.append({"pos": from.world + dir * (from.r + 0.1), "dir": dir, "speed": speed, "left": reach, "dmg": dmg, "node": node, "r": r, "pierce": pierce, "hit": false, "by": from.blow(), "walls": from.words.has("piercing")})

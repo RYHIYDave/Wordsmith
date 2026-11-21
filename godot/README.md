@@ -870,20 +870,33 @@ letters and boxes, on the wrong half, and laid out otherwise. Now, as the game d
 `--only=menus` (check_glows.gd), pictured; the trades', services', melding, item words', skill trees', saved game's and words'
 checks run again on the new screen, all as before.
 
+## The effects that were stand-ins (the cloud chat, 21 Nov 2026)
+
+His word: “Move on to the next task and stop asking. Keep going until everything is caught up”. What was still drawn plainly is
+now the game's own:
+- A RED CIRCLE COMING DOWN plays the game's own burst, its `blast` (game.ts updateZones 'burst'; fx.gd, as fx.ts), where a pale
+  ring stood in.
+- THE HEADSMAN'S VAULT (art/headsman2_shots.ts, line for line: vault_fx.gd): the spot marked as wide as the slam from his warning
+  on, a ring burning, a second running in, the cracks to come glowing; the slam, its flash and rays, its cracks racing out
+  burning, its crater, its shock ring of fire and wave of dust; over him, a column of fire out of the crater and flames out of
+  the cracks, chunks of the floor flung up and bouncing, sparks, dust rolling; its fire lighting the dark.
+- A MONSTER'S BONE ARROW (render.ts): its bone shaft six pixels long, its red head, its shadow on the floor. THE WARDEN'S BOLTS
+  (and any monster's shot that is not an arrow): a ball of light of its element, turning (art/icons.ts orbFrame, three frames at
+  twelve a second; tools/godot_orbs.ts).
+- A BARREL OR AN URN BROKEN throws its eight sparks (game.ts breakProps), a lever pulled its six (pullLever).
+`--only=fxleft` (check_glows.gd), each alone on floor 2, pictured.
+
 ## Not in it yet
 
 Frenzied on the prison's bosses' own scripts
 (the mini fleshmancer's), the trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
 above), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched
-as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), what a red circle or the
-Headsman's vault sends up as it lands and a bone arrow and the Warden's bolts in flight (plain drawings: the game's
-general effects are brought over only for the words so far), the bosses' spoken lines aloud (the Chained One and
+as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), the bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
 and blows; what a boss says is shown, not spoken), the
 Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them; in the town: the
 stone floating from him to the slab, the letters
-swirling round the ring and its column of light, the camp's GATE service; uniques, magic find, the sparks as a pot
-breaks, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+swirling round the ring and its column of light, the camp's GATE service; uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); a phone's own options (where an attack aims, the screen turned).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 

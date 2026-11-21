@@ -254,3 +254,107 @@ func menus(main, hero, dir: String) -> void:
 		await M._snap(dir + "/u08_%s.png" % k)
 		inv.toggle()
 	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## THE EFFECTS THAT WERE STAND-INS (--only=fxleft), each as the game draws it, on floor 2 by the hero, pictured:
+##   a pot broken: its eight sparks (game.ts breakProps 'spark');
+##   a monster's bone arrow in flight (render.ts: its bone shaft, its red head, its shadow);
+##   one of the Warden's bolts (render.ts: a ball of light of its element, art/icons.ts orbFrame);
+##   a red circle coming down: the game's own burst (game.ts updateZones 'burst', style 'blast');
+##   the Headsman's vault: its mark, its slam on the floor and what flies from it (art/headsman2_shots.ts).
+func fxleft(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	await M._wait(1.0)
+	var fx = h.fx
+	# (one plain monster lends its blow, held still and out of sight; the rest of the floor's taken off it, so that each effect is
+	# seen alone)
+	var src = null
+	for m in M._monsters.list:
+		if is_instance_valid(m) and not m.dead and not m.boss and (m.words as Array).is_empty() and str(m.blow().get("el", "phys")) == "phys":
+			src = m
+			break
+	for m in M._monsters.list:
+		if is_instance_valid(m) and m != src:
+			m.queue_free()
+	M._monsters.list.assign([src])
+	src.process_mode = Node.PROCESS_MODE_DISABLED
+	src.visible = false
+	# (and what they had already set going on the floor, gone)
+	for p in M._monsters.perils.list:
+		M._monsters.perils._film_free(p)
+	M._monsters.perils.list = []
+	# (the pot farthest from every monster, in a quiet room)
+	var far := func(w: Vector2) -> float:
+		var d := INF
+		for m in M._monsters.list:
+			if is_instance_valid(m):
+				d = minf(d, w.distance_to(m.world))
+		return d
+	var pot = null
+	var in_boss := func(w: Vector2) -> bool:
+		for r in M.map.rooms:
+			if str(r.get("kind", "")) == "boss" and w.x >= float(r["x"]) - 4.0 and w.y >= float(r["y"]) - 4.0 and w.x < float(r["x"]) + float(r["w"]) + 4.0 and w.y < float(r["y"]) + float(r["h"]) + 4.0:
+				return true
+		var yard = M.look.data.get("zones", {}).get("yard") if M.look != null else null
+		return yard != null and w.distance_to(Vector2(float(yard["x"]), float(yard["y"]))) < 22.0
+	for p in M.map.props:
+		if (p["kind"] == "urn" or p["kind"] == "barrel") and int(p["state"]) == 0 and not in_boss.call(Vector2(p["x"], p["y"])):
+			if pot == null or far.call(Vector2(p["x"], p["y"])) > far.call(Vector2(pot["x"], pot["y"])):
+				pot = p
+	await M._wait(0.3)
+	if pot != null and h.props != null:
+		h.world = M.loot.floor_near(Vector2(pot["x"], pot["y"]) + Vector2(1.0, 1.0))
+		await M._wait(0.5)
+		var sparks: int = int(fx.seen.get("spark", 0))
+		h.props.strike(Vector2(pot["x"], pot["y"]), 0.6)
+		await M._wait(0.06)
+		await M._snap(dir + "/x01_a_pot_broken.png")
+		_line(int(fx.seen.get("spark", 0)) > sparks and int(pot["state"]) == 1, "a %s broken: its sparks (%d)" % [pot["kind"], int(fx.last.get("spark", {}).get("n", 0))])
+	else:
+		_line(false, "no pot on this floor to break")
+	# (a bone arrow and a bolt, loosed at him by one of the floor's monsters from four tiles off)
+	var at: Vector2 = h.world
+	for look in ["arrow", "bolt"]:
+		# (from a spot three or four tiles off with a clear line to him)
+		var from: Vector2 = M.loot.floor_near(at + Vector2(-4.0, 0.0))
+		for k in 8:
+			var q: Vector2 = M.loot.floor_near(at + Vector2(3.5, 0.0).rotated(k * PI / 4.0))
+			if q.distance_to(at) > 2.8 and M.sees(q, at):
+				from = q
+				break
+		var was: Vector2 = src.world
+		src.world = from
+		M._monsters.shoot(src, (at - from).normalized(), 5.0, 8.0, 0.0, look)
+		src.world = was
+		await M._wait(0.15)
+		var flying: bool = M._flying(look)
+		await M._snap(dir + "/x02_%s_in_flight.png" % look)
+		_line(flying, "a monster's %s in flight, as the game draws it" % ("bone arrow" if look == "arrow" else "bolt (its ball of light)"))
+		await M._wait(1.2)
+	# (a red circle coming down)
+	var bursts: int = int(fx.seen.get("burst", 0))
+	M._monsters.perils.warn(at.x + 1.5, at.y, 1.2, 0.6, 0.0, src)
+	await M._wait(0.4)
+	await M._snap(dir + "/x03_red_circle.png")
+	await M._wait(0.28)
+	await M._snap(dir + "/x04_red_circle_comes_down.png")
+	_line(int(fx.seen.get("burst", 0)) == bursts + 1 and str(fx.last.get("burst", {}).get("style", "")) == "blast", "the red circle comes down: the game's own burst ('blast')")
+	await M._wait(0.8)
+	# (the vault: its mark, its slam)
+	var spot: Vector2 = at + Vector2(2.0, 1.0)
+	M._monsters.perils.vault_mark(spot.x, spot.y, 1.2, src)
+	src.state = "act"
+	await M._wait(0.9)
+	await M._snap(dir + "/x05_vault_mark.png")
+	src.state = "chase"
+	M._monsters.perils.vault_slam(spot.x, spot.y)
+	await M._wait(0.08)
+	await M._snap(dir + "/x06_vault_slam.png")
+	await M._wait(0.25)
+	await M._snap(dir + "/x07_vault_what_flies.png")
+	var slams: Array = M._monsters.perils.list.filter(func(p): return p["kind"] == "vault_slam")
+	_line(slams.size() == 1, "the vault: its mark as wide as the slam, the slam's cracks, crater and ring of fire, what flies from it")
+	h.unhurt = false
+	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
