@@ -270,6 +270,8 @@ var _kick := 0.0
 ## (game.ts slowT, slowBy: the Shade's rime underfoot, a while and how much slower he walks)
 var _slow_t := 0.0
 var _slow_by := 0.0
+## (THE HIGH CITY, FLOOR 16: in the Swan Gardens' nettles, and a moment after, his pace times this: act3/garden.gd)
+var nettle_k := 1.0
 ## (game.ts held: hooked by the Chained One, for so many seconds more he cannot walk or dodge: he goes where he is dragged.
 ## chained.gd sets it)
 var held := 0.0
@@ -324,6 +326,8 @@ func walk_pace() -> float:
 		sp *= 1.0 - chill_k
 	if _slow_t > 0.0:
 		sp *= 1.0 - _slow_by
+	# (THE HIGH CITY, FLOOR 16: slowed in the nettles, and a moment after: act3/garden.gd)
+	sp *= nettle_k
 	return sp
 
 

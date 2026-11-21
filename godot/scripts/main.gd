@@ -147,6 +147,8 @@ var quest610
 var quest1115
 ## (ACT 2, THE BELLS, the city floors' event: act2/bells.gd)
 var bells
+## (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds and her vine in the yew: act3/garden.gd)
+var garden = null
 var holds:
 	get:
 		return quest610.holds if quest610 != null else null
@@ -241,6 +243,9 @@ func _ready() -> void:
 	bells = preload("res://scripts/act2/bells.gd").new()
 	bells.main = self
 	add_child(bells)
+	garden = preload("res://scripts/act3/garden.gd").new()
+	garden.main = self
+	add_child(garden)
 
 	var shots := _arg("shots")
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
@@ -601,6 +606,8 @@ func _build(where: String, arrive: String) -> void:
 		quest1115.enter(where)
 	if bells != null:
 		bells.enter(where)
+	if garden != null:
+		garden.enter(where)
 
 
 ## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.

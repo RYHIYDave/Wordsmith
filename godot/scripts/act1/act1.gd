@@ -184,7 +184,8 @@ func step(m, dt: float, hero) -> void:
 		_show(m)
 		return
 	# CARRIED OVER THE FLOOR AT ITS PACE, from the first moment of setting off to the last of stopping
-	var sp: float = m.speed * m.slow() * rage
+	# (THE HIGH CITY, FLOOR 16: and in the Swan Gardens' nettles, act3/garden.gd)
+	var sp: float = m.speed * m.slow() * rage * m.nettle_k
 	var v := Vector2.ZERO
 	if dist > 0.01:
 		v = to / dist if dist < 2.5 and los else m.mgr.flow_dir(m.world)

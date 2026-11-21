@@ -138,7 +138,9 @@ func run(main, hero, out: String) -> void:
 		await _physician()
 	elif depth == 15:
 		await _censor()
-	elif depth == 16 and (M._arg("kind") == "" or M._arg("kind").split(",").has("princess")):
+	if depth == 16 and (M._arg("kind") == "" or M._arg("kind").split(",").has("garden")):
+		await _garden()
+	if depth == 16 and (M._arg("kind") == "" or M._arg("kind").split(",").has("princess")):
 		await _princess()
 	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
 
@@ -1318,4 +1320,73 @@ func _princess() -> void:
 	await _run(0.3)
 	await _snap("princess_whispers")
 	_line(again and floored and falls and flying and whispered, "her third phase: on her steed again; struck down on it, held at 1 life (%s), the steed fades and she falls; her swans fly off; she whispers \"%s\"" % [floored, boss._said])
+
+
+## FLOOR 16'S OWN GROUND (act3/garden.gd): a bed of nettles walked into: slowed, stung after a moment and again while in it, the
+## patch stirring; a monster in it stung too; her vine in the yew drawn back as he comes near.
+func _garden() -> void:
+	var G = M.garden
+	if G == null or not G.on():
+		_line(false, "floor 16 has no nettle beds")
+		return
+	# (a bed's middle, open ground; the hero stands just out of it)
+	var bed := Vector2.INF
+	var out := Vector2.INF
+	var map = M.map
+	for i in map.w * map.h:
+		var p := Vector2(i % map.w + 0.5, i / map.w + 0.5)
+		if not G.in_nettles(p) or not map.walkable(i % map.w, i / map.w):
+			continue
+		for d in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
+			var q: Vector2 = p + d * 2.0
+			if not G.in_nettles(q) and map.walkable(floori(q.x), floori(q.y)):
+				bed = p
+				out = q
+				break
+		if bed != Vector2.INF:
+			break
+	if bed == Vector2.INF:
+		_line(false, "no bed of nettles to walk into")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.boss:
+			o.rise(1e9)
+	h.world = out
+	await _run(0.6)
+	var pace0: float = h.walk_pace()
+	struck = 0
+	h.world = bed
+	var stung_first: bool = await _run(0.5, func(): return struck > 0)
+	var pace1: float = h.walk_pace()
+	var stirred: bool = false
+	for name in G._patch.get(floori(bed.y) * map.w + floori(bed.x), []):
+		stirred = stirred or float(G._shown.get(name, 0.0)) > 0.0
+	await _snap("garden_nettles_stir")
+	await _run(1.0)
+	var again: int = struck
+	_line(stung_first and again >= 2 and pace1 < pace0 * 0.65 and stirred, "a bed of nettles walked into: stung at once (%d) and again while in it (%d in 1.5 s); slowed, his pace %.2f to %.2f; the patch stirred (%s)" % [1 if stung_first else 0, again, pace0, pace1, stirred])
+	h.world = out
+	await _run(0.7)
+	_line(h.walk_pace() >= pace0 - 0.01, "stepped out: his pace back a moment after (%.2f)" % h.walk_pace())
+	# (a monster on foot in it: stung too)
+	var mob = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.boss and not o.dead:
+			mob = o
+			break
+	if mob != null:
+		var was: float = mob.life
+		mob.world = bed
+		# (let go: one held rising is reached by nothing)
+		mob._t = 0.0
+		await _run(0.5)
+		_line(mob.life < was and mob.nettle_k < 1.0, "a %s in it: stung (%.0f to %.0f), slowed (%.1f)" % [mob.kind, was, mob.life, mob.nettle_k])
+		mob.world = mob.world + Vector2(0, 40)
+	# (her vine in the yew: drawn back as he comes near, and the last kept)
+	if not G._vines.is_empty():
+		var v: Dictionary = G._vines[0]
+		h.world = M._spot_near(v["at"], 2.5, h.world)
+		await _run(1.0)
+		await _snap("garden_yew_vine")
+		_line(float(G._shown.get(v["name"], 0.0)) >= 1.0, "her vine in the yew: he comes near, it draws back into the yew (%.2f)" % float(G._shown.get(v["name"], 0.0)))
 

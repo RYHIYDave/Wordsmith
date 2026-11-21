@@ -242,6 +242,8 @@ var _said := ""
 var _said_t := 0.0
 var _said_lift := SAY_LIFT
 var _said_fallen := false
+## (THE HIGH CITY, FLOOR 16: in the Swan Gardens' nettles, and a moment after, its pace times this: act3/garden.gd)
+var nettle_k := 1.0
 var _said_secs := 0.0
 var _not_yet := 0.0
 var _not_yet_t := 0.0
@@ -885,7 +887,7 @@ func _for_spear(dt: float, dist: float) -> bool:
 	if way == Vector2.ZERO:
 		return false
 	face = way
-	var step := way * speed * slow() * dt
+	var step := way * speed * slow() * nettle_k * dt
 	var rr := minf(r, 0.42)
 	if mgr.clear(world.x + step.x, world.y, rr):
 		world.x += step.x
@@ -946,7 +948,7 @@ func _run_charge(dt: float, hero) -> void:
 	var f := (b - a) / len
 	var P := _charge_of()
 	# (chilled, he runs slower by the chill's share)
-	var step: float = P["speed"] * slow() * dt
+	var step: float = P["speed"] * slow() * nettle_k * dt
 	var was := world
 	var rr := minf(r, 0.42)
 	if mgr.clear(world.x + f.x * step, world.y, rr):
@@ -1029,7 +1031,7 @@ func _go(dt: float, to: Vector2, dist: float, sees: bool) -> bool:
 		way = (way + Vector2(-way.y, way.x) * sin(_weave) * 0.6).normalized()
 	face = way
 	# (chilled, it walks slower by the chill's share: game.ts updateMonsters, `slow`; FRENZIED, faster the more it is hurt)
-	var step := way * speed * slow() * rage() * dt
+	var step := way * speed * slow() * rage() * nettle_k * dt
 	# (game.ts: a monster walks with a body no bigger than 0.42 round, so that a big one gets through a doorway)
 	var rr := minf(r, 0.42)
 	var fly := kind == "bat"

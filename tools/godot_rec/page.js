@@ -1114,6 +1114,22 @@
       if (r.err) { note[`jar${i}`] = r.err; return; }
       out[`jar${i}`] = { kind: 'jar', at: { tx: p.tx, ty: p.ty, variant: p.variant ?? 0 }, frames: [none(), r.frames[0]] };
     });
+    // THE HIGH CITY, FLOOR 16, THE SWAN GARDENS (game/act2/garden_rules.ts): each patch of nettles stirred, `nettle<i>` (its steps:
+    // still, stirred: the art's two pictures, `variant` 0 and 1); her vine in the yew, `yew<i>` (its four pictures, `variant` 0 to
+    // 3: the first until he comes near, then the rest once, the last kept)
+    L.props.forEach((p, i) => {
+      if (p.kind !== 'piece') return;
+      const was = p.variant;
+      if (p.name === 'nettles') {
+        const r = REC.variant(T0, W, H, [1], () => { p.variant = 1; }, () => { p.variant = was; });
+        if (r.err) { note[`nettle${i}`] = r.err; return; }
+        out[`nettle${i}`] = { kind: 'nettle', at: { tx: p.tx, ty: p.ty }, frames: [none(), r.frames[0]] };
+      } else if (p.name === 'a yew cone, her vine reaching out of it') {
+        const r = REC.variant(T0, W, H, [1, 2, 3], (v) => { p.variant = v; }, () => { p.variant = was; });
+        if (r.err) { note[`yew${i}`] = r.err; return; }
+        out[`yew${i}`] = { kind: 'yew', at: { x: p.x, y: p.y }, frames: [none(), ...r.frames] };
+      }
+    });
     // ACT 2, THE BELLS (floors 11 to 15; game/bells.ts, render/act1_pieces.ts bellFrame, by the game's clock): each bell to ring,
     // `bell<k>` in the plan's order, its steps [as it stands asleep, awake, ringing (its two frames, a third of a second each),
     // rung out and hanging still]; the Muffled Bell, `muffled`, its steps [gagged, torn loose (its three frames: 1, 2 and 3 of

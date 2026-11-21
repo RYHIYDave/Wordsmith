@@ -276,6 +276,8 @@ console.log(`layout: seed ${seed}, ${L.w}x${L.h}, ${count(1)} floor / ${count(2)
 if (level.land) {
   const areas = level.land.areas.map((a) => ({ role: a.role, room: a.room, blob: { ...a.blob } }));
   const lanes = level.land.lanes.map((l) => ({ w: l.w, pts: l.pts.map(([x, y]) => [x, y]) }));
-  writeFileSync(`${OUT}/land.json`, JSON.stringify({ kind: level.land.kind, areas, lanes }, null, 1));
+  // (THE HIGH CITY, FLOOR 16: the Swan Gardens' beds gone over to nettles, each [x0, y0, x1, y1] (x1, y1 not in it): godot/scripts/act3/garden.gd)
+  const garden = level.land.garden ? { nettles: level.land.garden.nettles.map((r) => [...r]) } : null;
+  writeFileSync(`${OUT}/land.json`, JSON.stringify({ kind: level.land.kind, areas, lanes, ...(garden ? { garden } : {}) }, null, 1));
   console.log(`land: ${level.land.kind}, ${areas.length} areas (${areas.map((a) => a.role).join(', ')}), ${lanes.length} lanes`);
 }
