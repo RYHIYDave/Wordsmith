@@ -197,6 +197,15 @@ var chill_k := 0.0
 var hush_t := 0.0
 const HUSH_FOR := 4.0
 var shock_t := 0.0
+## THE CITY'S WORDS, on monsters (game.ts hurtHero, Version 23.8): HEXING's curse on him (he takes `hex_more` more, for `hex_t`);
+## STILLING, his moves' waits running `still_k` slower for `still_t`; BINDING, rooted where he stands for `root_t`, and not again
+## for `root_again`
+var hex_t := 0.0
+var hex_more := 0.0
+var still_t := 0.0
+var still_k := 0.0
+var root_t := 0.0
+var root_again := 0.0
 var poison_t := 0.0
 var poison_dps := 0.0
 ## (the last blow that reached him, as hurt_by weighed it: for a check to read)
@@ -289,9 +298,17 @@ func rate() -> float:
 	return r
 
 
+## How fast the waits of his moves come round (game.ts updateHero `pace`): the frenzy's quicker; STILLING, on a monster, slower.
+func cd_pace() -> float:
+	return frenzy_pace() * ((1.0 - still_k) if still_t > 0.0 else 1.0)
+
+
 ## His pace on his feet, tiles a second (game.ts walkPace): his own and his gear's, quickened by his haste; chilled by a
 ## monster's Frost, slower by the chill's share; in the Shade's rime, slower by its.
 func walk_pace() -> float:
+	# (BINDING, on a monster: rooted, he walks nowhere; his evade still takes him away)
+	if root_t > 0.0:
+		return 0.0
 	var sp: float = SPEED * (1.0 + stats["move_speed"] / 100.0) * (1.0 + haste / 100.0)
 	if chill_t > 0.0:
 		sp *= 1.0 - chill_k
@@ -714,8 +731,13 @@ func _process(dt: float) -> void:
 	_slow_t = maxf(0.0, _slow_t - dt)
 	_invuln = maxf(0.0, _invuln - dt)
 	# (Frenzied: the frenzy makes every wait come round faster: game.ts updateHero)
-	_whirl_cd = maxf(0.0, _whirl_cd - dt * frenzy_pace())
-	_lunge_cd = maxf(0.0, _lunge_cd - dt * frenzy_pace())
+	_whirl_cd = maxf(0.0, _whirl_cd - dt * cd_pace())
+	_lunge_cd = maxf(0.0, _lunge_cd - dt * cd_pace())
+	# (THE CITY'S WORDS, on monsters: a curse on him, his waits slowed, rooted, run out)
+	hex_t = maxf(0.0, hex_t - dt)
+	still_t = maxf(0.0, still_t - dt)
+	root_t = maxf(0.0, root_t - dt)
+	root_again = maxf(0.0, root_again - dt)
 	_run_later(dt)
 	# (WORDMELDING: Implode's bursts to come, Fervor's time: melds.gd)
 	melds.step(dt)
@@ -1209,6 +1231,9 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 				ward = maxf(ward, float(z["dmg"]))
 	if ward > 0.0:
 		dmg *= 1.0 - ward
+	# (THE CITY'S WORDS: HEXING on a monster, a hero cursed by it takes more)
+	if hex_t > 0.0 and hex_more > 0.0:
+		dmg *= 1.0 + hex_more
 	dmg = maxf(1.0, roundf(dmg))
 	# HEAVY, on a monster: its blow knocks him back a step (game.ts knockHero)
 	var knocked := 0.0
@@ -1217,6 +1242,10 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 		var way := d / d.length() if d.length() >= 0.01 else -face
 		knocked = float(Words.data()["heavy"]["knock"]) * float(k.call("heavy"))
 		knock(way, knocked)
+	# THE CITY'S WORDS, on a monster (Version 23.8): PULLING drags him a step toward it; HEXING curses him, he takes more for a
+	# while; STILLING makes the waits of his moves run slower for a while; BINDING roots him where he stands, then not again for a
+	# while (a minion, of its leader's words, at half)
+	_city_words(k, by)
 	# GUARDING in front: his shield takes the blow first; all of it taken, nothing reaches him
 	var soaked := 0.0
 	if shield > 0.0:
@@ -1274,6 +1303,39 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	last_blow = {"raw": raw, "el": el, "words": words, "half": hw, "parts": each, "shocked": shocked, "dmg": dmg, "knock": knocked, "soaked": soaked, "ward": ward, "longer": longer, "lasts": lasts, "healed": healed}
 	if life <= 0.0:
 		_fall()
+
+
+## (game.ts hurtHero, pullHero) THE CITY'S WORDS on the blow that struck him, `k` each word's share of it, from `by`.
+func _city_words(k: Callable, by: Vector2) -> void:
+	var C: Dictionary = Words.data().get("city", {})
+	if C.is_empty():
+		return
+	var FOE := "#ff8a80"
+	if k.call("pulling") > 0.0:
+		# (a step toward it, short of it)
+		var d := by - world
+		var far := minf(float(C["pull"]["monster"]) * float(k.call("pulling")), d.length() - 0.8)
+		if d.length() >= 0.01 and far > 0.05:
+			knock(d / d.length(), far)
+			_tell({"t": "heroPulled", "x": world.x, "y": world.y, "fromX": by.x, "fromY": by.y})
+	if k.call("hexing") > 0.0:
+		if hex_t <= 0.0:
+			_tell({"t": "heroHexed", "x": world.x, "y": world.y, "secs": C["hex"]["monsterSecs"]})
+			_tell({"t": "text", "x": world.x, "y": world.y, "text": "Hexed", "color": FOE})
+		hex_more = maxf(hex_more if hex_t > 0.0 else 0.0, float(C["hex"]["monster"]) * float(k.call("hexing")))
+		hex_t = C["hex"]["monsterSecs"]
+	if k.call("stilling") > 0.0:
+		if still_t <= 0.0:
+			_tell({"t": "heroStilled", "x": world.x, "y": world.y, "secs": C["still"]["monsterSecs"]})
+			_tell({"t": "text", "x": world.x, "y": world.y, "text": "Slowed", "color": FOE})
+		still_k = maxf(still_k if still_t > 0.0 else 0.0, float(C["still"]["cooldowns"]) * float(k.call("stilling")))
+		still_t = C["still"]["monsterSecs"]
+	if k.call("binding") > 0.0 and root_again <= 0.0:
+		var secs := float(C["bind"]["rootSecs"]) * float(k.call("binding"))
+		root_t = secs
+		root_again = secs + float(C["bind"]["rootAgain"])
+		_tell({"t": "rooted", "x": by.x, "y": by.y, "secs": secs})
+		_tell({"t": "text", "x": world.x, "y": world.y, "text": "Rooted", "color": FOE})
 
 
 ## WHAT BURNS AND POISONS HIM BITES (game.ts updateDots, twice a second, on the monsters' clock: monsters.gd _dots): his
@@ -1340,6 +1402,11 @@ func fresh_place() -> void:
 	# (ACT 2, THE HUSH: none carries off the place; his words are his again: game.ts clearLevel)
 	hush_t = 0.0
 	loadout.set_hushed(false)
+	# (THE CITY'S WORDS, on monsters: none carries off the place)
+	hex_t = 0.0
+	still_t = 0.0
+	root_t = 0.0
+	root_again = 0.0
 	# (FLOOR 14: a word the Physician holds is never lost: left behind, or fallen, it is the hero's again: game.ts die, clearLevel,
 	# giveBackAll)
 	load("res://scripts/act2/physician.gd").give_back_all()

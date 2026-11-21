@@ -18,11 +18,11 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { gameSwitches } from './godot_switches';
 import { readFileSync } from 'node:fs';
-import { ARC_CHAIN, ATTR_GIVES, ATTR_SPLIT, CLASSES, FIRST_WORD, FLEETING, FRENZY, GUARD, HEAVY, LASTING, LEECH, MOVE_OPENS, PRECISE, PULL, SKILLS, SLOT_OPENS, TUNE, VAST, WORDS, skillsFor, wordsAt } from '../src/game/defs';
+import { ARC_CHAIN, ATTR_GIVES, ATTR_SPLIT, BIND, CLASSES, FIRST_WORD, FLEETING, FRENZY, GUARD, HEAVY, HEX, LASTING, LEECH, MOVE_OPENS, PRECISE, PULL, SKILLS, SLOT_OPENS, SPLIT, STILL, TUNE, VAST, WORDS, skillsFor, wordsAt } from '../src/game/defs';
 import { MANA_AS_CDR } from '../src/game/items';
 import { FURNACE_WORD, MELDSTONE_WORDS } from '../src/game/quests15';
 import { resolveSkill, socketProblem } from '../src/game/words';
-import { MELD8_IDS, MELD_IDS, MELD_OF, PRISON_WORD_IDS, RANK_IDS, RANK_OF, VOLT_MELD_IDS, WORD_IDS } from '../src/game/types';
+import { DEEP_WORDS_FROM, DEEP_WORD_IDS, MELD8_IDS, MELD_IDS, MELD_OF, PRISON_WORD_IDS, RANK_IDS, RANK_OF, VOLT_MELD_IDS, WORD_IDS } from '../src/game/types';
 import { MELD_DUST_COLOR, MELD_TUNE, RANK_TUNE, wordIds } from '../src/game/melds';
 import { MELD8_TUNE } from '../src/game/melds8';
 import { gearLines, gearNote } from '../src/ui/lexicon';
@@ -126,6 +126,9 @@ writeFileSync(`${OUT}/words.json`, JSON.stringify({
   },
   // (PULLING, a city word, for the meld it is part of, Implode: its numbers, defs.ts PULL)
   pull: PULL,
+  // (THE CITY'S FIVE WORDS, found from floor 11 down (types.ts DEEP_WORD_IDS, DEEP_WORDS_FROM): their ids and their numbers, defs.ts
+  // PULL, SPLIT, HEX, STILL, BIND; on a monster's blow and in his moves)
+  city: { ids: DEEP_WORD_IDS, from: DEEP_WORDS_FROM, pull: PULL, split: SPLIT, hex: HEX, still: STILL, bind: BIND },
   // (each word's page as the wordsmith's half reads it, under the word just made and under a word of his picked to buy,
   // ui/lexicon.ts wordPage: what it becomes on gear, in the Lexicon's words, and the note under it)
   page: Object.fromEntries([...OURS, ...MADE].map((w) => [w, { gear: gearLines(w, 'cooldown'), note: gearNote(w) }])),

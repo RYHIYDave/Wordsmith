@@ -1264,6 +1264,76 @@
   "middle": 0.45,
   "monster": 0.6
  },
+ "city": {
+  "ids": [
+   "pulling",
+   "splitting",
+   "hexing",
+   "stilling",
+   "binding"
+  ],
+  "from": 11,
+  "pull": {
+   "far": 1.5,
+   "most": 2.5,
+   "reach": 2.2,
+   "stop": 0.62,
+   "secs": 0.24,
+   "vortex": 3,
+   "pace": 0.9,
+   "middle": 0.45,
+   "monster": 0.6
+  },
+  "split": {
+   "copies": 3,
+   "share": 0.4,
+   "most": 0.6,
+   "reach": 3.2,
+   "speed": 9,
+   "shards": 6,
+   "shardShare": 0.25,
+   "shardMost": 0.4,
+   "shardReach": 3,
+   "shardWidth": 0.45,
+   "every": 0.3,
+   "life": 0.5,
+   "look": 0.75
+  },
+  "hex": {
+   "secs": 4,
+   "more": 0.2,
+   "most": 0.4,
+   "circle": 4,
+   "weaker": 0.25,
+   "weakest": 0.45,
+   "monster": 0.2,
+   "monsterSecs": 3
+  },
+  "still": {
+   "secs": 2,
+   "slower": 0.4,
+   "most": 0.6,
+   "bubble": 4,
+   "crawl": 0.6,
+   "crawlMost": 0.75,
+   "boss": 0.5,
+   "cooldowns": 0.4,
+   "monsterSecs": 4
+  },
+  "bind": {
+   "secs": 1.4,
+   "most": 2.2,
+   "elite": 0.5,
+   "again": 2,
+   "snareLife": 10,
+   "every": 0.5,
+   "reach": 0.9,
+   "snareSecs": 1.8,
+   "snareMost": 2.6,
+   "rootSecs": 0.8,
+   "rootAgain": 3
+  }
+ },
  "page": {
   "power": {
    "gear": [

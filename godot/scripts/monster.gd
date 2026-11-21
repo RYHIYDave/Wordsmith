@@ -139,6 +139,10 @@ var kind := ""
 var world := Vector2.ZERO
 var face := Vector2(0.7071, 0.7071)
 var r := 0.32
+## (THE CITY'S WORDS: SPLITTING, on it: one of the two it split into as the one carrying it fell (splits no more), drawn `look` the
+## size: game.ts splitMonster)
+var split := false
+var look := 1.0
 var life := 1.0
 var max_life := 1.0
 var dmg_min := 1.0
@@ -1157,6 +1161,31 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 			mgr.voice(VOICE[kind] + "_hurt", 0.7, -4.4)
 
 
+## SPLITTING (game.ts splitMonster): two of its kind where it fell, each at half its life, of no words, drawn smaller; awake and
+## coming on.
+func _split() -> void:
+	var S: Dictionary = Words.data().get("city", {}).get("split", {"life": 0.5, "look": 0.75})
+	for k in 2:
+		var at := world
+		for tries in 12:
+			var q := world + Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0))
+			if mgr.clear(q.x, q.y, 0.3):
+				at = q
+				break
+		var o = mgr.call_up(kind, at, pack_id, face)
+		if o == null:
+			continue
+		o.max_life = maxf(1.0, roundf(max_life * float(S["life"])))
+		o.life = o.max_life
+		o.words = []
+		o.half = []
+		o.carries = []
+		o.split = true
+		o.r *= float(S["look"])
+		o.look = float(S["look"])
+	_tell({"t": "split", "x": world.x, "y": world.y, "dx": face.x, "dy": face.y, "to": []})
+
+
 ## What it tells of itself (fx.gd: the game's own telling; the place may have none).
 func _tell(e: Dictionary) -> void:
 	if mgr != null and mgr.fx != null:
@@ -1392,6 +1421,9 @@ func _die() -> void:
 	var blast := word_share("volatile")
 	if blast > 0.0:
 		mgr.perils.warn(world.x, world.y, 1.8, 0.7, (dmg_min + dmg_max) / 2.0 * 1.5 * blast, null, {"el": element(), "words": [], "half": half_of()})
+	# (THE CITY'S WORDS, Version 23.8: one carrying Splitting splits in two at half its life, a minion, of its leader's, too)
+	if word_share("splitting") > 0.0 and not split and not boss:
+		_split()
 	if mgr.loot != null:
 		mgr.loot.on_kill(self)
 	if boss and h2 != null and h2.has_method("hurt_voice"):
@@ -1464,7 +1496,7 @@ func _show() -> void:
 	_sprite.texture = f["tex"]
 	_sprite.offset = f["offset"]
 	_sprite.flip_h = f["flip"]
-	_sprite.scale = Vector2.ONE * float(f["scale"])
+	_sprite.scale = Vector2.ONE * float(f["scale"]) * look
 	_sprite.self_modulate = Color(2.4, 2.4, 2.4) if _flash > 0.0 else Color.WHITE
 
 

@@ -1859,6 +1859,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_city.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	# (THE CITY'S FIVE WORDS: check_citywords.gd)
+	if _arg("only") == "citywords":
+		await preload("res://scripts/check_citywords.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "meldstone":
 		await preload("res://scripts/check_trade.gd").new().meldstone(self, hero, dir)
 		get_tree().quit()
