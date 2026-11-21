@@ -332,6 +332,9 @@ var nettle_k := 1.0
 ## chained.gd sets it)
 var held := 0.0
 var _down_for := 0.0
+## (NORMAL OR HARDCORE, game/modes.ts: fallen, he stays down, and main.gd says what comes of it; a check of something else has him
+## up again where he came in)
+var stays_down := false
 
 
 func _ready() -> void:
@@ -1041,7 +1044,7 @@ func _process(dt: float) -> void:
 	if not alive:
 		_down_for += dt
 		_sprite.modulate.a = clampf(1.0 - _down_for, 0.0, 1.0)
-		if _down_for >= BACK_AFTER:
+		if _down_for >= BACK_AFTER and not stays_down:
 			_back()
 		return
 	life = minf(max_life, life + stats["life_regen"] * dt)

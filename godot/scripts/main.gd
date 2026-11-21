@@ -114,6 +114,22 @@ var _restored := {}
 ## in the save; what a death does in each is not in the port yet)
 var _cards: CanvasLayer = null
 var hero_mode := "normal"
+## NORMAL OR HARDCORE (game/modes.ts; game.ts die, wakes, wakeSave, losses; main.ts wake; ui/panels.ts drawDeath, wakeLine): his
+## rulebook's “Every hero is made in one of two modes, picked at the start and kept for life.” A NORMAL hero who falls in a dungeon
+## wakes in town as he went into that floor (`entry`), without what he found there and a quarter of the gold he carried in
+## (NORMAL.goldShare, his “A quarter (Recommended)”), but with his level and what it brought; a HARDCORE hero is lost, the
+## Lexicon and the stash kept for the next. Fallen, the screen darkens round him, then says what it cost (minimap.gd "death").
+## `entry`: the run as he came into this floor ({} in town); `deaths`: the heroes lost (meta); `wake_note`: the line he wakes to.
+var entry := {}
+var deaths := 0
+static var wake_note := ""
+var _fell_for := -1.0
+var fall_lost := {}
+var fall_depth := 0
+## (main.ts FALL_SEEN: how long he is seen falling before the screen says what it cost; a press after 0.4 s brings it at once)
+const FALL_SEEN := 2.0
+## (game/modes.ts NORMAL.goldShare)
+const GOLD_SHARE := 0.25
 ## (the last floor he was on: game.ts `depth`, which is still that floor's while he is in town; a new game's is floor 1)
 var last_floor := 1
 ## (the town's gate to be unbarred as he comes in sight of it, the next time the town is laid: the ride up from floor 5 with the
@@ -284,8 +300,8 @@ func _ready() -> void:
 	if first == "":
 		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
-	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read"]
-	if saving and _arg("only") != "save_write":
+	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live"]
+	if saving and _arg("only") != "save_write" and not (_arg("only") == "fall_live" and preload("res://scripts/check_fall.gd").stage == 0):
 		var file := Save.read()
 		if file.get("meta") is Dictionary:
 			Save.restore_meta(self, file["meta"])
@@ -314,6 +330,12 @@ func _ready() -> void:
 	_build(first, "start")
 	if not _restored.is_empty():
 		Save.restore_bought(self, _restored)
+	# (NORMAL OR HARDCORE: fallen, he stays down and the screen says what comes of it; in a check of something else he is up again
+	# where he came in. Woken in town from a fall, the line of what it cost: main.ts wake)
+	hero.stays_down = saving or _arg("only") in ["fall", "fall_live"]
+	if wake_note != "":
+		loot.say(wake_note, hud.T.get("text", Color.WHITE) if hud != null and hud.T is Dictionary else Color.WHITE)
+		wake_note = ""
 	# (A NEW GAME, no hero saved: the class cards first (class_cards.gd), the game waiting behind them till a hero is picked)
 	if saving and _restored.is_empty() and _arg("cls") == "" and _arg("only") == "":
 		cards_up(first)
@@ -790,6 +812,8 @@ func _build(where: String, arrive: String) -> void:
 		keep.enter(where)
 	if tower != null:
 		tower.enter(where)
+	# (NORMAL MODE: the hero as he came into this floor, for a fall here to go back to: game.ts enterLevel `entry`)
+	entry = {} if is_home(where) else Save.run_of(self).duplicate(true)
 
 
 ## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.
@@ -824,6 +848,8 @@ func _notification(what: int) -> void:
 
 
 func _process(dt: float) -> void:
+	if hero != null and not hero.alive and hero.stays_down:
+		_fallen(dt)
 	if saving:
 		_save_t += dt
 		if _save_t > 5.0:
@@ -2047,6 +2073,14 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE WORDSMITH'S TRADE IN WORDS: his half's first page: check_trade.gd)
 	if _arg("only") == "trade":
 		await preload("res://scripts/check_trade.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (A FALLEN HERO, Normal and Hardcore: check_fall.gd; and the real way of it, the game begun again from its save: fall_live)
+	if _arg("only") == "fall_live":
+		await preload("res://scripts/check_fall.gd").new().live(self, hero, dir)
+		return
+	if _arg("only") == "fall":
+		await preload("res://scripts/check_fall.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (THE SAVED GAME, in two runs of the app: check_save.gd)
@@ -6197,3 +6231,160 @@ func _b67_queen(boss: Monster, perch: Vector2, base: Vector2) -> Array:
 		await _b67_run(boss, 4.0, func() -> bool: return not is_same(AI.act, act))
 	said.append("struck to the last: held at %.0f of her life %s; flown home %s, %.2f off her perch, home for good %s" % [AI.last_of(boss), held, flew, boss.world.distance_to(perch), AI.home_for_good()])
 	return said
+
+
+
+# =====================================================================================================================
+# A FALLEN HERO (game/modes.ts; game.ts die, wakes, wakeSave, losses; main.ts writeSave, wake; ui/panels.ts drawDeath, wakeLine)
+
+## Whether he would wake in town from a fall here: a Normal hero, in a floor he came into (not his town).
+func will_wake() -> bool:
+	return hero_mode == "normal" and not is_home(place) and not entry.is_empty()
+
+
+## The part of the gold he carried into this floor a Normal fall costs.
+func _gold_share() -> int:
+	return floori(maxf(0.0, float(entry.get("gold", 0))) * GOLD_SHARE)
+
+
+## (game.ts wakeSave) The run as he will wake in town: as he came into this floor (his gear, his bag, his words and where they
+## were set, his gold), less a share of the gold he carried in; with his level, his points and what they were spent on, and his
+## kills as they are now. {} where he would not wake.
+func wake_save() -> Dictionary:
+	if not will_wake():
+		return {}
+	var now := Save.run_of(self)
+	var e: Dictionary = entry.duplicate(true)
+	for k in ["level", "xp", "points", "attrs", "kills", "walked"]:
+		if now.has(k):
+			e[k] = now[k]
+	e["gold"] = maxi(0, int(e.get("gold", 0)) - _gold_share())
+	e["mode"] = "normal"
+	return e
+
+
+## (game.ts losses) What a Normal fall here costs: the pieces of gear, the words and the gold found on this floor, and the share of
+## the gold he carried in. {} where he would not wake.
+func losses() -> Dictionary:
+	if not will_wake():
+		return {}
+	var now := Save.run_of(self)
+	# (a piece is his own if he had one the same as it as he came in, counted as many times as he had it)
+	var had := {}
+	for it in _pieces_of(entry):
+		var k := JSON.stringify(it)
+		had[k] = int(had.get(k, 0)) + 1
+	var items := 0
+	for it in _pieces_of(now):
+		var k := JSON.stringify(it)
+		if int(had.get(k, 0)) > 0:
+			had[k] = int(had[k]) - 1
+		else:
+			items += 1
+	# (a word counted wherever it is: in the pouch, or set in a move)
+	var words := 0
+	var then := _words_of(entry)
+	var held := _words_of(now)
+	for w in held:
+		words += maxi(0, int(held[w]) - int(then.get(w, 0)))
+	return {"items": items, "words": words, "gold": maxi(0, int(now.get("gold", 0)) - int(entry.get("gold", 0))), "share": _gold_share()}
+
+
+func _pieces_of(run: Dictionary) -> Array:
+	var out: Array = []
+	var gear = run.get("gear", {})
+	if gear is Dictionary:
+		for s in gear:
+			if gear[s] is Dictionary:
+				out.append(gear[s])
+	for it in run.get("bag", []):
+		if it is Dictionary:
+			out.append(it)
+	return out
+
+
+func _words_of(run: Dictionary) -> Dictionary:
+	var out := {}
+	var pouch = run.get("words", {})
+	if pouch is Dictionary:
+		for w in pouch:
+			out[w] = int(out.get(w, 0)) + int(pouch[w])
+	for side in ["front", "behind"]:
+		for move in run.get(side, []):
+			for w in move:
+				if w != null:
+					out[str(w)] = int(out.get(str(w), 0)) + 1
+	return out
+
+
+## (ui/panels.ts wakeLine) What a Normal fall cost, in a line: what was found on this floor, and the gold of his own.
+static func wake_line(lost: Dictionary, depth: int) -> String:
+	var found: Array = []
+	var n: int = lost.get("items", 0)
+	if n:
+		found.append("%d item%s" % [n, "" if n == 1 else "s"])
+	n = lost.get("words", 0)
+	if n:
+		found.append("%d word%s" % [n, "" if n == 1 else "s"])
+	if int(lost.get("gold", 0)):
+		found.append("%d gold" % int(lost["gold"]))
+	var parts: Array = []
+	if not found.is_empty():
+		parts.append("what you found in dungeon %d (%s)" % [depth, ", ".join(found)])
+	if int(lost.get("share", 0)):
+		parts.append("%d of your own gold" % int(lost["share"]))
+	return "Lost: %s." % ", and ".join(parts) if not parts.is_empty() else "Nothing was lost."
+
+
+## He has fallen: (game.ts die) the count of the lost, and the save as it will stand (a Normal hero as he will wake in town, so
+## that closing the game on the screen changes nothing; a Hardcore hero gone); then, seen falling a while (main.ts FALL_SEEN), the
+## screen that says what it cost.
+func _fallen(dt: float) -> void:
+	if _fell_for < 0.0:
+		_fell_for = 0.0
+		var w := will_wake()
+		fall_lost = losses() if w else {}
+		fall_depth = depth_of(place)
+		if not w:
+			deaths += 1
+		if saving:
+			var run = wake_save() if w else null
+			Save.write(self, run)
+		return
+	if _mini == null or _mini.open == "death":
+		return
+	_fell_for += dt
+	var press := _fell_for > 0.4 and (Input.is_action_just_pressed("attack") or Input.is_action_just_pressed("interact") or Input.is_key_pressed(KEY_ENTER) or Input.is_key_pressed(KEY_SPACE))
+	if _fell_for >= FALL_SEEN or press:
+		_mini.show_panel("death")
+
+
+## What the screen says (ui/panels.ts drawDeath): its title, its rows, its line of what it cost or what is kept, its button.
+func death_info() -> Dictionary:
+	var w := not fall_lost.is_empty()
+	var rows: Array = ["%s, level %d" % [str(Words.data()["classes"][hero.cls]["name"]), loot.level], "Fell in dungeon %d" % fall_depth]
+	var after := ""
+	if w:
+		after = wake_line(fall_lost, fall_depth)
+	else:
+		rows.append("%d dungeon%s cleared, %d monsters slain" % [loot.cleared, "" if loot.cleared == 1 else "s", loot.kills])
+		var words := 0
+		for k in loot.lexicon:
+			words += int(loot.lexicon[k])
+		var kept: int = loot.stash.filter(func(it): return it != null).size()
+		after = "The Lexicon keeps %d word%s, the stash %d item%s" % [words, "" if words == 1 else "s", kept, "" if kept == 1 else "s"]
+	return {"wakes": w, "title": "YOU FELL" if w else "YOU DIED", "rows": rows, "after": after, "button": "Back to town" if w else "New run"}
+
+
+## Its button (or Enter): a Normal hero wakes in town (main.ts wake: the game begins again from the save made as he fell, the line he
+## wakes to shown there); a Hardcore hero's run is over, and the class cards come up for the next (the Lexicon and the stash kept).
+func death_done() -> void:
+	if not fall_lost.is_empty():
+		wake_note = ("You wake in town. " + wake_line(fall_lost, fall_depth)).strip_edges()
+	get_tree().paused = false
+	if saving:
+		get_tree().reload_current_scene()
+	else:
+		# (a check, saving nothing: he is up again where he came in, and the fall is over)
+		hero._back()
+		_fell_for = -1.0

@@ -24,7 +24,7 @@ const HELP := [["MOVE", "WASD"], ["ATTACK", "left button"], ["SLOW ATTACK", "rig
 var main  # main.gd
 var hud  # hud.gd: its colours
 var inv  # inventory.gd
-## ("": the game goes on; "map": the large map; "pause": the pause panel)
+## ("": the game goes on; "map": the large map; "pause": the pause panel; "death": a fallen hero's screen, main.gd death_info)
 var open := ""
 
 var T := {}
@@ -44,6 +44,7 @@ var _x1 := -1
 var _y1 := -1
 var _resume_at := -1
 var _hits: Array = []
+var _enter_was := true
 
 
 func _ready() -> void:
@@ -76,6 +77,13 @@ func _process(dt: float) -> void:
 		open = ""
 		if Input.is_action_just_pressed("pause"):
 			inv.toggle()
+	elif open == "death":
+		# (the fallen hero's screen: Enter presses its button, as in the game, but not one already held as it came up; Esc does
+		# nothing)
+		var enter := Input.is_key_pressed(KEY_ENTER)
+		if (enter and not _enter_was) or Input.is_action_just_pressed("interact"):
+			_press("death")
+		_enter_was = enter
 	elif Input.is_action_just_pressed("pause"):
 		show_panel("" if open != "" else "pause")
 	elif Input.is_action_just_pressed("map") and not main.is_home(main.place) and open != "pause":
@@ -88,6 +96,7 @@ func show_panel(what: String) -> void:
 	if what == open:
 		return
 	open = what
+	_enter_was = Input.is_key_pressed(KEY_ENTER)
 	if what != "":
 		get_tree().paused = true
 		_resume_at = -1
@@ -107,7 +116,7 @@ func _input(e: InputEvent) -> void:
 		show_panel("")
 		get_viewport().set_input_as_handled()
 		return
-	if open == "pause":
+	if open == "pause" or open == "death":
 		for h in _hits:
 			if h[0].has_point(p):
 				_press(h[1])
@@ -128,6 +137,9 @@ func _press(what: String) -> void:
 	match what:
 		"resume":
 			show_panel("")
+		"death":
+			open = ""
+			main.death_done()
 		"sound":
 			AudioServer.set_bus_mute(0, not AudioServer.is_bus_mute(0))
 
@@ -192,6 +204,11 @@ func _draw() -> void:
 		_large(W, H)
 	elif open == "pause":
 		_pause(W, H)
+	elif open == "death":
+		_death(W, H)
+	elif main.hero != null and not main.hero.alive and main.hero.stays_down and main._fell_for >= 0.0:
+		# (he is falling: the screen darkens a little round him as he goes down: main.ts)
+		_rect(0, 0, W, H, Color(P["black"], 0.3 * minf(1.0, main._fell_for / main.FALL_SEEN)))
 
 
 ## FLOOR 5, THE TEMPLE DOOR'S KEYS (ui/hud.ts): top left, after the inventory button (and the word he may place, and the stone
@@ -478,3 +495,53 @@ func _pause(W: float, H: float) -> void:
 	_hits = [[Rect2(px + 6, by, bw, bh), "resume"], [Rect2(px + 8 + bw, by, bw, bh), "sound"]]
 	_button(px + 6, by, bw, bh, "Resume", false, true)
 	_button(px + 8 + bw, by, bw, bh, "Sound off" if AudioServer.is_bus_mute(0) else "Sound on")
+
+
+## (ui/panels.ts drawDeath) A FALLEN HERO'S SCREEN: YOU FELL (a Normal hero, who wakes in town) or YOU DIED (a Hardcore hero, lost),
+## in the bad red, twice the size; who he was and where he fell (and, lost, what he did); a Normal hero's "You wake in town." and
+## what it cost, or what the Lexicon and the stash keep; and its one button.
+func _death(W: float, H: float) -> void:
+	var d: Dictionary = main.death_info()
+	var rows: Array = d["rows"]
+	var pw := minf(W - 8, 220.0)
+	var after: Array = _wrap(str(d["after"]), pw - 14.0)
+	var w: bool = d["wakes"]
+	var ph := 124.0 + (rows.size() - 4) * 10.0 + (11.0 if w else 0.0) + (after.size() - 1) * 7.0
+	var px := floorf((W - pw) / 2.0)
+	var py := maxf(3.0, floorf((H - ph) / 2.0))
+	var bh := 14.0
+	_rect(0, 0, W, H, Color(P["black"], 0.7))
+	_block(px + 2, py + 2, pw, ph, Color(P["black"], 0.55))
+	_box(px, py, pw, ph, T["bg"], T["edge"])
+	_rect(px + 2, py + 0.5, pw - 4, 0.5, T["accentLo"])
+	_text(str(d["title"]), px + floorf(pw / 2.0), py + 8, T["bad"], {"align": "center", "scale": 2, "shadow": T["lifeLo"]})
+	var y := py + 34.0
+	for r in rows:
+		var small := PF.width(r, "normal") > pw - 10.0
+		_text(r, px + floorf(pw / 2.0), y + (1.0 if small else 0.0), T["text"], {"align": "center", "font": "small" if small else "normal"})
+		y += 10.0
+	if w:
+		_text("You wake in town.", px + floorf(pw / 2.0), y + 1.0, T["text"], {"align": "center"})
+		y += 11.0
+	for part in after:
+		_text(part, px + floorf(pw / 2.0), y + 3.0, T["accent"], {"align": "center", "font": "small"})
+		y += 7.0
+	var by := py + ph - bh - 6.0
+	_hits = [[Rect2(px + 40, by, pw - 80, bh), "death"]]
+	_button(px + 40, by, pw - 80, bh, str(d["button"]), false, true)
+
+
+## Words broken into lines no wider than `w` (ui/text.ts wrapText, the small letters).
+func _wrap(s: String, w: float) -> Array:
+	var out: Array = []
+	var line := ""
+	for word in s.split(" "):
+		var t := word if line == "" else line + " " + word
+		if line != "" and PF.width(t, "small") > w:
+			out.append(line)
+			line = word
+		else:
+			line = t
+	if line != "":
+		out.append(line)
+	return out

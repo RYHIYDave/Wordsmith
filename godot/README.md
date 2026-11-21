@@ -751,6 +751,18 @@ is hurt and falls:
 `--only=heroes --cls=<class>` (`check_heroes.gd`, on floor 2 with three of its skeletons held where they stand): the Ranger 5 steps,
 the Mage 7, the Warlock 11, the Tinkerer 9, the Brawler 7, each with what is drawn with him and his town pictures.
 
+## A fallen hero: Normal and Hardcore
+
+As the game has it (game/modes.ts; game.ts die, wakes, wakeSave, losses; main.ts wake; ui/panels.ts drawDeath, wakeLine): every
+hero is made Normal or Hardcore on the class cards and kept so for life (saved, `mode`; a hero saved before, Normal). Fallen, he
+stays down and the screen darkens round him; after two seconds (or a press) the screen of it (minimap.gd "death"). A NORMAL hero
+in a dungeon: YOU FELL, "You wake in town.", and what it cost: what he found on that floor (gear, words, gold) and a quarter of the
+gold he carried in (main.gd `entry`, the run as he came into the floor); "Back to town" begins the game again from the save made as
+he fell, he in his town at his new level, the line of what it cost his first. A HARDCORE hero: YOU DIED, who he was and what he
+did, what the Lexicon and the stash keep; "New run" begins again at the class cards, the Lexicon and the stash kept, and one more of
+the lost counted (`deaths`). `--only=fall` (check_fall.gd) checks both, pictured; `--only=fall_live` the real way of it, the game
+begun again from its save.
+
 ## Not in it yet
 
 Frenzied on the prison's bosses' own scripts
@@ -764,12 +776,11 @@ the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 
 and blows; what a boss says is shown, not spoken), the
 Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: the
 stone floating from him to the slab, the letters
-swirling round the ring and its column of light, a fallen hero's end (the game ends a fallen hero's run but for a Normal
-hero, who wakes in town; here he is back where the last save left him), the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
+swirling round the ring and its column of light, the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
 breaks, what stands behind raised ground cut off by it, menus (a new hero is picked on the class cards; there is no title menu to
-go BACK to), the title screen's music and the ring's moving light; the talents' own rules (the trees and their page are in:
-above), the modes' rules for a fallen hero.
+go BACK to), the title screen's music and the ring's moving light; the Warrior's Whirlwind talent (his Whirlwind is his from the
+start, at his pick).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made

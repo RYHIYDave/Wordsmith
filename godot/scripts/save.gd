@@ -24,8 +24,9 @@ static func run_of(main) -> Dictionary:
 	var q = main.quest610
 	var run := {
 		"v": V,
-		# (his class: game.ts save `cls`)
+		# (his class: game.ts save `cls`; NORMAL OR HARDCORE, game/modes.ts, kept for life)
 		"cls": h.cls,
+		"mode": main.hero_mode,
 		"level": loot.level, "xp": loot.xp, "points": loot.points, "attrs": loot.attrs.duplicate(),
 		"gear": loot.gear.duplicate(true), "bag": loot.bag.duplicate(true), "words": loot.words.duplicate(),
 		"front": h.loadout.front.duplicate(true), "behind": h.loadout.behind.duplicate(true),
@@ -72,12 +73,15 @@ static func run_of(main) -> Dictionary:
 ## What outlasts the character (game/state.ts Meta): the Lexicon and the stash; whether he has been shown how to play.
 static func meta_of(main) -> Dictionary:
 	var loot = main.loot
-	return {"known": loot.known.duplicate(true), "lexicon": loot.lexicon.duplicate(), "stash": loot.stash.duplicate(true), "taught": loot.taught}
+	# (and the heroes lost: game.ts die, `meta.deaths`, the Lexicon's count of the fallen)
+	return {"known": loot.known.duplicate(true), "lexicon": loot.lexicon.duplicate(), "stash": loot.stash.duplicate(true), "taught": loot.taught, "deaths": main.deaths}
 
 
-## Written (main.ts writeSave). Not while he is down, nor between places: the run as it stands at a quiet moment.
-static func write(main) -> bool:
-	var file := {"v": V, "run": run_of(main), "meta": meta_of(main)}
+## Written (main.ts writeSave). Not while he is down, nor between places: the run as it stands at a quiet moment. A FALLEN HERO
+## (game/modes.ts): `run` given, the run to keep in place of his (a Normal hero, as he will wake in town: main.gd wake_save), or
+## null for none (a Hardcore hero, lost: the Lexicon and the stash kept).
+static func write(main, run = false) -> bool:
+	var file := {"v": V, "run": run_of(main) if run is bool else run, "meta": meta_of(main)}
 	var f := FileAccess.open(PATH, FileAccess.WRITE)
 	if f == null:
 		return false
@@ -114,6 +118,7 @@ static func restore_meta(main, m: Dictionary) -> void:
 		for i in mini(loot.stash.size(), m["stash"].size()):
 			loot.stash[i] = m["stash"][i] if m["stash"][i] is Dictionary else null
 	loot.taught = m.get("taught", false) == true
+	main.deaths = maxi(0, int(_num(m.get("deaths"), 0)))
 
 
 ## The run put back (game.ts restore), before his town is laid out.
@@ -121,6 +126,8 @@ static func restore_run(main, s: Dictionary) -> void:
 	var loot = main.loot
 	var h = main.hero
 	var q = main.quest610
+	# (NORMAL OR HARDCORE: a hero saved before there were modes, Normal: game/modes.ts MODE_BEFORE)
+	main.hero_mode = "hardcore" if s.get("mode") == "hardcore" else "normal"
 	loot.level = maxi(1, int(_num(s.get("level"), 1)))
 	loot.xp = maxf(0.0, _num(s.get("xp"), 0.0))
 	loot.points = maxi(0, int(_num(s.get("points"), 0)))
