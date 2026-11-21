@@ -98,6 +98,14 @@ func _asleep() -> void:
 func _started() -> void:
 	var m: Dictionary = B.D["plan"]["muffled"]
 	var at := Vector2(m["x"], m["y"])
+	# THE MUFFLED BELL MADE EASIER TO SEE (render/bell_mark.ts): seen from a few tiles off, its name over it, its rings, its light,
+	# its cyan mark on the map
+	h.world = M._spot_near(at, 4.5, h.world)
+	await _run(3.2)
+	await _snap("the_muffled_bell_marked")
+	var marks: Array = B.on_map(floori(at.x), floori(at.y), 8, func(_a, _b, _c, _d): pass, func(_x, _y): return true)
+	var cyan: bool = not marks.is_empty() and (marks[0][2] == B.MARK_CYAN or marks[0][2] == B.MARK_HI) and int(marks[0][3]) == 3
+	_line(B.marked() and B._rings != null and B._tag != null and cyan, "the Muffled Bell marked while it is gagged: its name and STRIKE TO BEGIN over it, its rings and its light, its mark on the map cyan and a size bigger (%s)" % cyan)
 	h.world = M._spot_near(at, 1.6, h.world)
 	await _run(0.6)
 	await _snap("the_muffled_bell")

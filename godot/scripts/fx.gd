@@ -1850,7 +1850,9 @@ func _rift(c: CanvasItem, f: Dictionary) -> void:
 		var p := Vector2(cx + cos(a) * r * 18.0 * rag, cy + sin(a) * r * 9.0 * rag)
 		pts.append(p)
 		poly.append(p.round() * 2.0)
-	c.draw_colored_polygon(poly, RIFT_VOID)
+	# (a rift only just opening rounds to a ragged edge that folds on itself: drawn only once it is a shape the triangulator takes)
+	if not Geometry2D.triangulate_polygon(poly).is_empty():
+		c.draw_colored_polygon(poly, RIFT_VOID)
 	oval(c, roundf(cx), roundf(cy - r * 2.0), r * 10.0, r * 4.5, Color(RIFT_DEEP, 0.85))
 	for i in n:
 		var p0: Vector2 = pts[i]

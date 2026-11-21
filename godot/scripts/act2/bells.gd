@@ -57,6 +57,18 @@ var _shown: Dictionary = {}
 var _fog: Sprite2D
 var _fog_v := -1
 var _arrows: Node2D
+## THE MUFFLED BELL MADE EASIER TO SEE (render/bell_mark.ts, BELL_MARK, on at his word of 21 Nov 2026: “Make sure it's easier to
+## see the starting bell.  Have a label above it”): while it is gagged, rings of the friend's cyan going out over the floor round it
+## (with the floor's flats), its name and STRIKE TO BEGIN over it (over everything), its own light; its mark on the maps cyan and
+## blinking, a size bigger.
+var _rings: Node2D
+var _tag: Node2D
+const MARK := {"on": true, "ring": true, "hint": true, "light": true}
+const MARK_CYAN := Color("#22d0e0")
+const MARK_HI := Color("#b8fff8")
+const MARK_RING := {"secs": 1.8, "n": 2, "r0": 0.55, "r1": 1.9, "foot": 0.75}
+## (how high each floor's Muffled Bell's picture stands over its foot, game pixels: the art's own, tools: its sprite's `ay`)
+const MARK_LIFT := {11: 93.0, 12: 98.0, 13: 100.0, 14: 100.0, 15: 105.0}
 
 
 ## THE FLOOR COME INTO (game.ts bellsMade): its Bells asleep, where its map-maker and dresser laid them; none: no Bells here.
@@ -69,6 +81,11 @@ func enter(where: String) -> void:
 	if _arrows != null and is_instance_valid(_arrows):
 		_arrows.queue_free()
 	_arrows = null
+	for n in [_rings, _tag]:
+		if n != null and is_instance_valid(n):
+			n.queue_free()
+	_rings = null
+	_tag = null
 	if main.is_home(where) or main._monsters == null or main._monsters.bells.is_empty():
 		return
 	D = main._monsters.bells
@@ -118,6 +135,15 @@ func enter(where: String) -> void:
 	layer.layer = 9
 	layer.add_child(_arrows)
 	main._place.add_child(layer)
+	if MARK["on"]:
+		_rings = _Rings.new()
+		_rings.b = self
+		var host = main.look.flat_layer if main.look != null and main.look.flat_layer != null else main._place
+		host.add_child(_rings)
+		_tag = _Tag.new()
+		_tag.b = self
+		_tag.z_index = 46
+		main._place.add_child(_tag)
 	main.hero.bells = self
 	_show_bells()
 
@@ -310,6 +336,18 @@ func _process(dt: float) -> void:
 	_step(dt)
 	_show_bells()
 	_show_fog()
+	# (its own light in the dark while it is gagged)
+	if MARK["on"] and MARK["light"] and marked() and main.look != null and main.fx != null:
+		var m: Dictionary = D["plan"]["muffled"]
+		main.look.spot(Vector2(main.fx.gx(m["x"], m["y"]), main.fx.gy(m["x"], m["y"]) - 14.0), 58.0 + sin(_clock * 3.0) * 4.0, 0.85)
+
+
+## (BELL_MARK) The Muffled Bell is gagged and has been seen: marked.
+func marked() -> bool:
+	if phase != "asleep" or D.is_empty():
+		return false
+	var m: Dictionary = D["plan"]["muffled"]
+	return main.sight == null or main.sight.seen_at(Vector2(m["x"], m["y"]))
 
 
 func _step(dt: float) -> void:
@@ -549,7 +587,12 @@ func on_map(hx: int, hy: int, R: int, veil: Callable, seen: Callable) -> Array:
 	elif phase == "asleep":
 		var m: Dictionary = D["plan"]["muffled"]
 		if seen.call(floori(m["x"]), floori(m["y"])):
-			out.append([floori(m["x"]), floori(m["y"]), Color("#b8b4c6"), 2, 4, false])
+			# (BELL_MARK: in the friend's cyan, blinking, a size bigger, as the bells to ring are)
+			var lit := floori(_clock * 3.0) % 2 == 0
+			if MARK["on"]:
+				out.append([floori(m["x"]), floori(m["y"]), MARK_CYAN if lit else MARK_HI, 3, 4, false])
+			else:
+				out.append([floori(m["x"]), floori(m["y"]), Color("#b8b4c6"), 2, 4, false])
 	return out
 
 
@@ -595,8 +638,69 @@ class _Arrows extends Node2D:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	func _tri(at: Vector2, ang: float, r: float, c: Color) -> void:
-		var pts := PackedVector2Array([Vector2(r, 0), Vector2(-r * 0.75, -r * 0.7), Vector2(-r * 0.4, 0), Vector2(-r * 0.75, r * 0.7)])
-		var out := PackedVector2Array()
-		for p in pts:
-			out.append(at + p.rotated(ang))
-		draw_colored_polygon(out, c)
+		# (the arrowhead, notched at its back: two triangles, tip to notch, so that no turn of it is a shape the triangulator refuses)
+		var tip := at + Vector2(r, 0).rotated(ang)
+		var notch := at + Vector2(-r * 0.4, 0).rotated(ang)
+		draw_colored_polygon(PackedVector2Array([tip, at + Vector2(-r * 0.75, -r * 0.7).rotated(ang), notch]), c)
+		draw_colored_polygon(PackedVector2Array([tip, notch, at + Vector2(-r * 0.75, r * 0.7).rotated(ang)]), c)
+
+
+## (BELL_MARK) The rings going out over the floor round the Muffled Bell while it is gagged, and the steady one at its foot.
+class _Rings extends Node2D:
+	var b
+
+	func _process(_dt: float) -> void:
+		queue_redraw()
+
+	func _ring(c: Vector2, r: float, col: Color, a: float) -> void:
+		if a <= 0.01:
+			return
+		var n := 48
+		var pts := PackedVector2Array()
+		for i in n + 1:
+			var t := float(i) / n * TAU
+			pts.append(c + Vector2(cos(t) * maxf(1.0, r * 22.6), sin(t) * maxf(1.0, r * 11.3)) * 2.0)
+		draw_polyline(pts, Color(col, a), 4.0)
+
+	func _draw() -> void:
+		if not b.MARK["ring"] or not b.marked():
+			return
+		var m: Dictionary = b.D["plan"]["muffled"]
+		var c := Vector2(roundf(b.main.fx.gx(m["x"], m["y"])), roundf(b.main.fx.gy(m["x"], m["y"])))
+		var R: Dictionary = b.MARK_RING
+		_ring(c, R["foot"], b.MARK_CYAN, 0.55 + 0.15 * sin(b._clock * 3.0))
+		for k in int(R["n"]):
+			var u := fposmod(b._clock / float(R["secs"]) + float(k) / float(R["n"]), 1.0)
+			var r: float = float(R["r0"]) + (float(R["r1"]) - float(R["r0"])) * (1.0 - (1.0 - u) * (1.0 - u))
+			_ring(c, r, b.MARK_HI if u < 0.25 else b.MARK_CYAN, 0.85 * (1.0 - u))
+
+
+## (BELL_MARK) Its name over it and what it is for, as the town's services' names and the exits' are drawn: the small letters on a
+## dark strip; white and pale cyan when he is near.
+class _Tag extends Node2D:
+	const PF := preload("res://scripts/pixel_font.gd")
+	var b
+
+	func _process(_dt: float) -> void:
+		queue_redraw()
+
+	func _line(text: String, x: float, y: float, col: Color) -> void:
+		var w := PF.width(text, "small") + 4.0
+		var left := roundf(x - w / 2.0)
+		draw_rect(Rect2(left, roundf(y) - 1.0, w, 7.0), Color(Color("#07050a"), 0.78))
+		PF.draw(self, text, left + 2.0, roundf(y), col, {"font": "small"})
+
+	func _draw() -> void:
+		if not b.marked():
+			return
+		var m: Dictionary = b.D["plan"]["muffled"]
+		var lift: float = float(b.MARK_LIFT.get(int(b.main.map.depth), 96.0))
+		var x: float = b.main.fx.gx(m["x"], m["y"])
+		var y: float = b.main.fx.gy(m["x"], m["y"]) - lift - 6.0
+		var h = b.main.hero
+		var near: bool = h != null and h.world.distance_to(Vector2(m["x"], m["y"])) < 3.0
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))
+		_line("MUFFLED BELL", x, y - 8.0, Color.WHITE if near else b.MARK_CYAN)
+		if b.MARK["hint"]:
+			_line("STRIKE TO BEGIN", x, y, b.MARK_HI if near else Color("#c8c4d8"))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
