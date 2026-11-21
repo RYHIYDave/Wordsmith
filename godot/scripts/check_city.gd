@@ -117,8 +117,16 @@ func run(main, hero, out: String) -> void:
 					m = o
 		if m != null:
 			chosen[k] = m
+	# (a dancer's partner kept with it: the pair's throw is theirs together)
+	var also: Array = []
+	var dn = chosen.get("dancer")
+	if dn != null:
+		for o in M._monsters.list:
+			if is_instance_valid(o) and o.kind == "dancer" and o.id == int(dn.a1_in.get("partner", -2)):
+				also.append(o)
+				chosen["dancer_partner"] = o
 	for o in M._monsters.list:
-		if is_instance_valid(o) and not o.boss and not chosen.values().has(o):
+		if is_instance_valid(o) and not o.boss and not chosen.values().has(o) and not also.has(o):
 			o.queue_free()
 	for m in chosen.values():
 		m.rise(1e9)
@@ -142,15 +150,18 @@ func run(main, hero, out: String) -> void:
 		await _garden()
 	if depth == 16 and (M._arg("kind") == "" or M._arg("kind").split(",").has("princess")):
 		await _princess()
+	if depth == 17 and (M._arg("kind") == "" or M._arg("kind").split(",").has("prince")):
+		await _prince()
 	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
 
 
 ## The kinds of each floor with rules of their own; its common ones fought alone (the boss apart).
 const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"], 12: ["rat", "dredger", "scribe", "hushed", "ratking"],
 	13: ["fieldhand", "carter", "hushed", "scraper", "quill"], 14: ["patient", "orderly", "hushed", "physician"],
-	15: ["inkling", "bookwarden", "scribe", "hushed", "censor"], 16: ["swan", "gardener", "groom", "pguard"]}
+	15: ["inkling", "bookwarden", "scribe", "hushed", "censor"], 16: ["swan", "gardener", "groom", "pguard"],
+	17: ["dancer", "footman", "order", "prince"]}
 const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"], 13: ["fieldhand", "carter"], 14: ["patient", "orderly"],
-	15: ["inkling", "bookwarden"], 16: ["swan", "gardener", "groom", "pguard"]}
+	15: ["inkling", "bookwarden"], 16: ["swan", "gardener", "groom", "pguard"], 17: ["dancer", "footman", "order"]}
 
 
 var chosen := {}
@@ -267,6 +278,59 @@ func _common(kind: String) -> void:
 					await _snap("pguard_pulls_it_out")
 					var back: bool = await _run(3.0, func(): return m.form == 0)
 					_line(pulled and back and _a1("pguard:jav", mine).is_empty(), "he marches to his partisan and wrenches it out of the turf (%s): the partisan guard again (%d)" % [pulled, m.form])
+		"dancer":
+			await _dancers(m)
+		"footman":
+			# (on its loop: it crosses straight before him at its far end, 5.95 tiles out)
+			for k in 32:
+				var u := Vector2(cos(k * TAU / 32.0), sin(k * TAU / 32.0))
+				var at: Vector2 = m.world + u * 5.95
+				if M.map.walkable(floori(at.x), floori(at.y)) and M._monsters.sees(m.world, at):
+					h.world = at
+					break
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var flung: bool = await _run(6.0, func(): return _is_act(m, "footman:tray") and float(m.h2.act["t"]) >= 1.1)
+			var lane: bool = not _a1("footman:warn").is_empty() or not _a1("footman:show").is_empty()
+			await _snap("footman_tray_flies")
+			await _run(1.5, func(): return m.h2.act == null)
+			_line(flung and lane and struck > 0, "the footman's tray flung out along its loop and back into his hand: the hero struck (%d; flung %s, %.1f tiles off)" % [struck, flung, m.world.distance_to(h.world)])
+			struck = 0
+			h.world = M._spot_near(m.world + m.face * 1.8, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 1)
+			var raised: bool = await _run(6.0, func(): return _is_act(m, "footman:fire") and float(m.h2.act["t"]) >= 1.05)
+			await _snap("footman_fire_fan")
+			await _run(1.5, func(): return m.h2.act == null)
+			_line(raised and struck > 0, "his candelabrum brought down: the fire fan bursting out before him, the hero struck (%d)" % struck)
+		"order":
+			h.world = M._spot_near(m.world + m.face * 4.5, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			m.h2.a1["rush_cd"] = 99.0
+			var thrown: bool = await _run(6.0, func(): return not _a1("order:knife").is_empty())
+			await _run(0.1)
+			await _snap("order_knife_flies")
+			await _run(1.2)
+			_line(thrown and struck > 0, "the Order's curved knife thrown along its marked line: the hero struck (%d)" % struck)
+			struck = 0
+			h.hush_t = 0.0
+			h.world = M._spot_near(m.world + m.face * 2.5, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 1)
+			var palmed: bool = await _run(6.0, func(): return _is_act(m, "order:palm") and float(m.h2.act["t"]) >= 1.05)
+			await _snap("order_grey_wave")
+			_line(palmed and struck > 0 and h.hush_t > 0.0, "the hushing palm: the grey wave over its cone, the hero struck (%d) and HUSHED (%.1f s)" % [struck, h.hush_t])
+			await _run(1.5, func(): return m.h2.act == null)
+			# (still, then sudden: from far off, flung at him)
+			_ready_only(m, -1)
+			h.world = M._spot_near(m.world, 9.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			var d0: float = m.world.distance_to(h.world)
+			m.h2.a1["rush_cd"] = 0.0
+			var rushed: bool = await _run(3.0, func(): return _is_act(m, "order:rush"))
+			await _run(0.8, func(): return m.h2.act == null)
+			_line(rushed and m.world.distance_to(h.world) < d0 - 3.5, "still, then sudden: the rush from %.1f tiles off, flung at him to %.1f" % [d0, m.world.distance_to(h.world)])
 		"hushed":
 			h.world = M._spot_near(m.world, 0.9, h.world)
 			_ready_only(m, 0)
@@ -1389,4 +1453,154 @@ func _garden() -> void:
 		await _run(1.0)
 		await _snap("garden_yew_vine")
 		_line(float(G._shown.get(v["name"], 0.0)) >= 1.0, "her vine in the yew: he comes near, it draws back into the yew (%.2f)" % float(G._shown.get(v["name"], 0.0)))
+
+
+## THE MASKED DANCERS (act3/dancer.gd), a pair: waltzing as they sleep; noticing him, the waltz broken; the partner throw, she spun down
+## the lane at him; his lady gone, the gentleman's spin; the clock's chime calling them to stop dead and look (act3/masque.gd).
+func _dancers(m) -> void:
+	var lady = chosen.get("dancer_partner")
+	if lady != null and int(m.form) % 2 == 0:
+		# (the gentleman leads: m is he)
+		var g = lady
+		lady = m
+		m = g
+	if lady == null or not is_instance_valid(lady):
+		_line(false, "no pair of dancers")
+		return
+	# (the pair asleep again at their spot, he far off: as the floor lays them)
+	lady._t = 0.0
+	var spot: Vector2 = lady.world
+	h.world = M._spot_near(spot, 25.0, h.world)
+	await _run(0.2)
+	for d in [m, lady]:
+		d.state = "sleep"
+		d.h2.act = null
+		d.world = spot
+		var k: Dictionary = d.h2._keep(d)
+		k["noticed"] = 0
+		k["split"] = 0
+		k["want"] = 0
+	await _run(0.5)
+	var waltz: bool = m.state == "sleep" and m.h2.shown(m).get("list", "") == "waltz" and lady.h2.shown(lady).get("list", "") == "waltz"
+	await _snap("dancers_waltz")
+	_line(waltz, "a pair of masked dancers waltzing at their spot as they sleep (%s and %s)" % [m.name, lady.name])
+	# NOTICED: let go, he near: the waltz breaks
+	h.world = M._spot_near(m.world, 5.0, h.world)
+	var noticed: bool = await _run(4.0, func(): return _is_act(m, "dancer:notice") or _is_act(lady, "dancer:notice"))
+	await _run(1.0, func(): return m.h2.act == null and lady.h2.act == null)
+	_line(noticed and m.world.distance_to(lady.world) > 0.05, "noticing him, the waltz breaks: each steps out of the pair (%.2f apart)" % m.world.distance_to(lady.world))
+	# THE PARTNER THROW
+	struck = 0
+	lady.world = m.world + Vector2(0.3, 0.3)
+	h.world = M._spot_near(m.world + (h.world - m.world).normalized() * 5.0, 0.0, h.world)
+	m.face = (h.world - m.world).normalized()
+	_ready_only(m, 0)
+	_ready_only(lady, -1)
+	var whirl: bool = await _run(6.0, func(): return _is_act(lady, "dancer:thrown") and float(lady.h2.act["t"]) >= 0.9)
+	var lane: bool = not _a1("dancer:warn").is_empty()
+	await _snap("dancers_whirl_lane")
+	var at0: Vector2 = lady.world
+	await _run(0.5)
+	await _snap("dancers_she_is_flung")
+	await _run(1.5, func(): return lady.h2.act == null)
+	_line(whirl and lane and struck > 0 and lady.world.distance_to(at0) > 2.0, "the partner throw: she takes his hands, the pair whirl, the lane marked; flung down it spinning like a top (%.1f tiles), the hero struck (%d)" % [lady.world.distance_to(at0), struck])
+	# HIS LADY GONE: he spins into him
+	lady.hurt(lady.life + 1000.0)
+	await _run(0.5)
+	struck = 0
+	h.world = M._spot_near(m.world + m.face * 1.6, 0.0, h.world)
+	m.face = (h.world - m.world).normalized()
+	_ready_only(m, 2)
+	var spun: bool = await _run(5.0, func(): return _is_act(m, "dancer:spin") and float(m.h2.act["t"]) >= 0.55)
+	await _snap("dancer_spin_marked")
+	await _run(1.5, func(): return m.h2.act == null)
+	_line(spun and struck > 0, "his lady gone, the whirling spin: its circle marked, carried in, the hero struck (%d)" % struck)
+	# THE CLOCK CHIMES
+	var Q = M.masque
+	if Q == null or not Q.on():
+		_line(false, "no clock on the floor")
+		return
+	Q.chime_now()
+	var chimed: bool = await _run(1.0, func(): return _is_act(m, "dancer:chime"))
+	await _run(0.4)
+	await _snap("clock_chimes")
+	_line(chimed and M._wu_said("The ebony clock chimes.") != "" and Q._ring > 0.0, "the great ebony clock chimes (\"%s\"), striking: the dancer stops dead and looks" % M._wu_said("The ebony clock chimes."))
+
+
+## FLOOR 17'S BOSS, THE PRINCE (act3/prince.gd, marks17.gd): met; darting about him; the thrust; the masks; the dance; Midnight's rings
+## rolling from the clock; his death.
+func _prince() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "prince":
+			boss = o
+	if boss == null:
+		_line(false, "floor 17 has no Prince")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(8.0, func(): return boss.state != "sleep" and not boss.waits)
+	await _snap("prince_met")
+	_line(met, "the Prince met in the Black Room: %s, %.0f life" % [boss.title, boss.max_life])
+	# NEVER STILL: his darts
+	_ready_only(boss, -1)
+	boss.h2._keep()["dart_cd"] = 0.0
+	var darted: bool = await _run(3.0, func(): return _is_act(boss, "prince:dart"))
+	var from: Vector2 = boss.world
+	await _run(0.9, func(): return boss.h2.act == null)
+	await _snap("prince_darts")
+	_line(darted and boss.world.distance_to(from) > 1.5, "never still: he darts across him (%.1f tiles)" % boss.world.distance_to(from))
+	# THE THRUST
+	struck = 0
+	boss.h2._keep()["dart_cd"] = 99.0
+	h.world = M._spot_near(boss.world + boss.face * 2.5, 0.0, h.world)
+	boss.face = (h.world - boss.world).normalized()
+	_ready_only(boss, 0)
+	var thrust: bool = await _run(5.0, func(): return _is_act(boss, "prince:thrust") and float(boss.h2.act["t"]) >= 0.6)
+	await _snap("prince_thrust_marked")
+	await _run(1.5, func(): return boss.h2.act == null)
+	_line(thrust and struck > 0, "the rapier thrust along its marked line: the hero struck (%d)" % struck)
+	# MASKS
+	struck = 0
+	h.world = M._spot_near(boss.world + boss.face * 5.0, 0.0, h.world)
+	boss.face = (h.world - boss.world).normalized()
+	_ready_only(boss, 1)
+	var masks: bool = await _run(5.0, func(): return not _a1("prince:mask").is_empty())
+	await _run(0.2)
+	await _snap("prince_masks_fly")
+	await _run(1.2)
+	_line(masks and struck > 0, "masks: five smiling masks flung spinning in a fan: the hero struck (%d)" % struck)
+	# THE DANCE
+	struck = 0
+	h.world = M._spot_near(boss.world + boss.face * 3.0, 0.0, h.world)
+	_ready_only(boss, 2)
+	var danced: bool = await _run(5.0, func(): return not _a1("prince:dance").is_empty())
+	await _run(1.0)
+	await _snap("prince_dance_ring")
+	var waltzed: bool = await _run(3.0, func(): return _is_act(boss, "prince:waltz"))
+	await _run(1.0)
+	_line(danced and struck > 0 and waltzed, "the Dance: a ring of masked partners closing round him, snapping shut: caught (%d); he waltzes away" % struck)
+	# MIDNIGHT
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null)
+	_ready_only(boss, 3)
+	var Q = M.masque
+	var at: Vector2 = Q.at if Q != null and Q.on() else boss.world
+	h.world = M._spot_near(at, 4.0, h.world)
+	var midnight: bool = await _run(6.0, func(): return not _a1("prince:chime").is_empty())
+	await _run(0.9)
+	await _snap("prince_midnight_rings")
+	await _run(2.5)
+	_line(midnight and struck > 0 and Q != null and Q._clock != "", "Midnight: the great ebony clock strikes twelve, a ring rolling out at each chime, its gap: the hero struck (%d)" % struck)
+	# HIS DEATH
+	boss.hurt(boss.life + 1e6)
+	var fell: bool = await _run(2.0, func(): return boss.dead)
+	await _run(0.6)
+	await _snap("prince_falls")
+	_line(fell and _a1("prince:chime", func(p): return int(p["done"]) == 0).is_empty(), "the Prince falls: his mask cracks; what of his was still to come does not come")
 

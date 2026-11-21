@@ -60,7 +60,9 @@ const OWN := {"unfinished": preload("res://scripts/act1/unfinished_marks.gd"), "
 	# (THE HIGH CITY'S, floors 16 to 20: act3/marks16.gd and on)
 	"swan": preload("res://scripts/act3/marks16.gd"), "gardener": preload("res://scripts/act3/marks16.gd"),
 	"groom": preload("res://scripts/act3/marks16.gd"), "pguard": preload("res://scripts/act3/marks16.gd"),
-	"princess": preload("res://scripts/act3/pr_marks.gd")}
+	"princess": preload("res://scripts/act3/pr_marks.gd"),
+	"dancer": preload("res://scripts/act3/marks17.gd"), "footman": preload("res://scripts/act3/marks17.gd"),
+	"order": preload("res://scripts/act3/marks17.gd"), "prince": preload("res://scripts/act3/marks17.gd")}
 
 
 static func _own(p: Dictionary):

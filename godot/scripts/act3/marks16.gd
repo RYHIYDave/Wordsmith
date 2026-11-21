@@ -29,9 +29,13 @@ static func gone(_P, _p: Dictionary) -> void:
 	pass
 
 
-static func _acting(src, id: String) -> bool:
-	return src != null and is_instance_valid(src) and not src.dead and src.state == "act" and src.h2 != null and src.h2.act != null \
-		and str(src.h2.acts()[src.h2.act["i"]]["id"]) == id
+static func _acting(src, id: String, p := {}) -> bool:
+	if src == null or not is_instance_valid(src) or src.dead or src.state != "act" or src.h2 == null or src.h2.act == null:
+		return false
+	# (this act of it, where the warning knows which: not the next of its kind)
+	if p.get("act") != null and not is_same(src.h2.act, p["act"]):
+		return false
+	return str(src.h2.acts()[src.h2.act["i"]]["id"]) == id
 
 
 static func horse_gone(t: float) -> float:
@@ -55,7 +59,7 @@ static func step(P, p: Dictionary, _dt: float) -> bool:
 	var src = p.get("src")
 	var name := str(p["a1"])
 	if name.ends_with(":warn"):
-		if not _acting(src, str(p["act_id"])):
+		if not _acting(src, str(p["act_id"]), p):
 			p["dur"] = t
 	elif name == "groom:horse":
 		_horse(P, p)
@@ -190,20 +194,25 @@ static func draw(P, p: Dictionary) -> void:
 	var name := str(p["a1"])
 	if name.ends_with(":warn"):
 		var src = p.get("src")
-		if not _acting(src, str(p["act_id"])):
+		if not _acting(src, str(p["act_id"]), p):
 			return
 		var T: float = src.h2.act["t"]
 		var k := GW.warn_k(T, float(p["w0"]), float(p["hit"]))
 		if k < 0.0:
 			return
+		k *= float(p.get("kmul", 1.0))
 		var hand: int = src.h2.act["hand"]
+		var base: Vector2 = Vector2(src.h2.act["x"], src.h2.act["y"]) if p.get("at_act", false) else src.world
+		var f0: Vector2 = src.face
 		for s in p["strips"]:
-			GW.strip(P, src.world, src.face, hand, s[0], s[1], s[2], s[3], k, P._clock)
+			# (along a way turned off its facing: its forward share and its left share)
+			var f: Vector2 = Vector2(f0.x * float(s[4]) + f0.y * float(s[5]), f0.y * float(s[4]) - f0.x * float(s[5])) if s.size() >= 6 else f0
+			GW.strip(P, base, f, hand, s[0], s[1], s[2], s[3], k, P._clock)
 		for fa in p["fans"]:
 			if p.get("on_hero", false):
 				GW.fan(P, P.hero.world, Vector2(1, 0), 1, fa[0], fa[1], fa[2], k, P._clock)
 			else:
-				GW.fan(P, src.world, src.face, hand, fa[0], fa[1], fa[2], k, P._clock)
+				GW.fan(P, base + f0 * (float(fa[3]) if fa.size() >= 4 else 0.0), f0, hand, fa[0], fa[1], fa[2], k, P._clock)
 		return
 	match name:
 		"groom:horse":

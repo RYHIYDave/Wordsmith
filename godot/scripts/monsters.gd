@@ -40,6 +40,8 @@ var perils: Perils
 ## (what the fight shows of a blow and of a word: fx.gd; the rules tell it with fx.event)
 var fx
 var loot  # loot.gd
+## (the game itself, main.gd: what of a floor's own a kind's rules reach for, the Masque's clock)
+var main = null
 var list: Array[Monster] = []
 ## (shot mode: how many times each move was made)
 var used := {}

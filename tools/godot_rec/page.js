@@ -1124,6 +1124,12 @@
         const r = REC.variant(T0, W, H, [1], () => { p.variant = 1; }, () => { p.variant = was; });
         if (r.err) { note[`nettle${i}`] = r.err; return; }
         out[`nettle${i}`] = { kind: 'nettle', at: { tx: p.tx, ty: p.ty }, frames: [none(), r.frames[0]] };
+      } else if (p.name === 'the great ebony clock') {
+        // (THE HIGH CITY, FLOOR 17: the Masque's great ebony clock striking, `clock<i>`: its state 1, its hammer and bell drawn)
+        const ws = p.state;
+        const r = REC.variant(T0, W, H, [1], () => { p.state = 1; }, () => { p.state = ws; });
+        if (r.err) { note[`clock${i}`] = r.err; return; }
+        out[`clock${i}`] = { kind: 'clock', at: { x: p.x, y: p.y }, frames: [none(), r.frames[0]] };
       } else if (p.name === 'a yew cone, her vine reaching out of it') {
         const r = REC.variant(T0, W, H, [1, 2, 3], (v) => { p.variant = v; }, () => { p.variant = was; });
         if (r.err) { note[`yew${i}`] = r.err; return; }

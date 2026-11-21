@@ -278,6 +278,8 @@ if (level.land) {
   const lanes = level.land.lanes.map((l) => ({ w: l.w, pts: l.pts.map(([x, y]) => [x, y]) }));
   // (THE HIGH CITY, FLOOR 16: the Swan Gardens' beds gone over to nettles, each [x0, y0, x1, y1] (x1, y1 not in it): godot/scripts/act3/garden.gd)
   const garden = level.land.garden ? { nettles: level.land.garden.nettles.map((r) => [...r]) } : null;
-  writeFileSync(`${OUT}/land.json`, JSON.stringify({ kind: level.land.kind, areas, lanes, ...(garden ? { garden } : {}) }, null, 1));
+  // (FLOOR 17: the Masque's great ebony clock, where it stands (the Prince's Midnight rings roll out from it): act3/masque.gd, prince.gd)
+  const masque = level.land.masque ? { clock: { x: level.land.masque.clock.x, y: level.land.masque.clock.y } } : null;
+  writeFileSync(`${OUT}/land.json`, JSON.stringify({ kind: level.land.kind, areas, lanes, ...(garden ? { garden } : {}), ...(masque ? { masque } : {}) }, null, 1));
   console.log(`land: ${level.land.kind}, ${areas.length} areas (${areas.map((a) => a.role).join(', ')}), ${lanes.length} lanes`);
 }

@@ -137,6 +137,12 @@ import { CLIP_CANVAS, clippingsPainted } from '../src/art/action_f16_gardener';
 import { HORSE_N, MIST_N, horseSprite, mistSprite } from '../src/art/act1_figs/groom';
 import { FLIGHT_CANVAS, JAV, STUCK_CANVAS, javAt, javFly, spearFlying, spearStuck } from '../src/art/action_f16_guard';
 import { SWAN_FRAMES as PR_SWAN, snareFrame, snareShots, swanThing, vowFrame, vowShots } from '../src/art/act1_figs/princess';
+import { FIRE_CANVAS as FT_FIRE_CANVAS, FIRE_FX as FT_FIRE, TRAY_SHOT_CANVAS, firePainted as ftFire, trayShotPainted } from '../src/art/masque_footmen_fx';
+import { TRAY_FLIGHT, trayFlight } from '../src/art/masque_footmen_moves';
+import { KNIFE_CANVAS as OD_KNIFE_CANVAS, PALM_WAVE, WAVE_CANVAS as OD_WAVE_CANVAS, knifeAt as odKnifeAt, knifePainted as odKnife, wavePainted as odWave } from '../src/art/silent_order_fx';
+import { RUSH as OD_RUSH, rushCarry } from '../src/art/silent_order_moves';
+import { DANCE_CANVAS as PC_DANCE_CANVAS, DANCE_FX as PC_DANCE_FX, MASKS_FX as PC_MASKS_FX, MASK_CANVAS as PC_MASK_CANVAS, MASK_FLIGHT as PC_MASK_FLIGHT, dancePainted as pcDance, flungMask, maskPainted as pcMask } from '../src/art/prince_fx';
+import { TILE3 as T3 } from '../src/art/new_mobs3';
 import { BOULDER, HAMMER, SMASH_CANVAS, smashPainted } from '../src/art/action_f6_golem';
 import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, RING_CANVAS as CH_RING_CANVAS, STATIC_CANVAS, blazePainted, makeFlyingPotArt, potShadowPainted, ringPainted as chRing, staticPainted } from '../src/art/action_f6_cult';
 import { markRing } from '../src/art/action_f6_fx';
@@ -623,6 +629,38 @@ for (const view of ['front', 'back'] as const) {
   }
 }
 
+// FLOOR 17, THE MASQUE (godot/scripts/act3/marks17.gd), as the game starts with its new moves on (render/act1_fx/footman.ts,
+// order.ts, prince.ts):
+//   ft_tray_<view>   the footman's tray in flight, a frame each thirtieth of a second of its loop (trayShotPainted, its last three
+//                    places trailing); the table ft_tray, where it is each frame (tiles before him, tiles to his left: trayFlight)
+//   ft_fire_<view>   his candelabrum's fire fan from its blow (firePainted)
+//   od_wave_<view>   the Order's grey wave from the palm's blow (wavePainted); od_knife_<view>, the knife flying and lying
+//                    (knifePainted); the tables od_rush (how far the rush has carried them, each frame) and od_knife (how far along
+//                    its way the knife is, and whether it still flies)
+//   pc_dance         the Prince's ring of masked partners round where the hero stood, fifteen frames a second (dancePainted)
+//   pc_mask          a smiling mask, twelve ways round its spin (maskPainted); the table pc_masks, each of the five's place each
+//                    thirtieth of a second of its flight ([tiles before him, to his left, game pixels up, its spin])
+{
+  const FT = 30;
+  for (const view of ['front', 'back'] as const) {
+    const nt = Math.round(TRAY_FLIGHT.long * FT) + 1;
+    films[`ft_tray_${view}`] = { fps: FT, n: nt, k0: 0, layers: { stand: Array.from({ length: nt }, (_, k) => { const t = k / FT; const was = [1, 2, 3].map((j) => trayFlight(Math.max(0, t - j / FT)).c); return pic(toSprite(trayShotPainted(trayFlight(t), view, was), null, TRAY_SHOT_CANVAS.ax, TRAY_SHOT_CANVAS.ay)); }) } };
+    const nf = Math.ceil(FT_FIRE.long * FT);
+    films[`ft_fire_${view}`] = { fps: FT, n: nf, k0: 0, layers: { stand: Array.from({ length: nf }, (_, k) => pic(toSprite(ftFire(k / FT, view), null, FT_FIRE_CANVAS.ax, FT_FIRE_CANVAS.ay))) } };
+    const nw = Math.ceil(PALM_WAVE.long * FT) + 1;
+    films[`od_wave_${view}`] = { fps: FT, n: nw, k0: 0, layers: { stand: Array.from({ length: nw }, (_, k) => pic(toSprite(odWave(k / FT, view), null, OD_WAVE_CANVAS.ax, OD_WAVE_CANVAS.ay))) } };
+    films[`od_knife_${view}`] = { fps: FT, n: 31, k0: 0, layers: { stand: Array.from({ length: 31 }, (_, k) => pic(toSprite(odKnife(k / FT, view), null, OD_KNIFE_CANVAS.ax, OD_KNIFE_CANVAS.ay))) } };
+  }
+  tables.ft_tray = Array.from({ length: Math.round(TRAY_FLIGHT.long * FT) + 1 }, (_, k) => { const c = trayFlight(k / FT).c; return [c[0] / T3, c[1] / T3]; });
+  tables.od_rush = Array.from({ length: Math.round(OD_RUSH.long * FT) + 1 }, (_, k) => rushCarry(k / FT) / T3);
+  tables.od_knife = Array.from({ length: 41 }, (_, k) => { const a = odKnifeAt(k / FT); return [a.x, a.flying ? 1 : 0]; });
+  const nd = Math.ceil(PC_DANCE_FX.long * 15);
+  films.pc_dance = { fps: 15, n: nd, k0: 0, layers: { stand: Array.from({ length: nd }, (_, k) => pic(toSprite(pcDance(k / 15, 'front'), null, PC_DANCE_CANVAS.ax, PC_DANCE_CANVAS.ay))) } };
+  films.pc_mask = { fps: 0, n: 12, k0: 0, layers: { stand: Array.from({ length: 12 }, (_, k) => pic(toSprite(pcMask((k / 12) * Math.PI * 2, 'front'), null, PC_MASK_CANVAS.ax, PC_MASK_CANVAS.ay))) } };
+  tables.pc_masks = Array.from({ length: PC_MASKS_FX.n }, (_, i) => Array.from({ length: Math.round(PC_MASK_FLIGHT * FT) + 1 }, (_, k) => { const f = flungMask(i, k / FT); return [f.at[0] / T3, f.at[1] / T3, f.at[2] / 2, f.spin]; }));
+  tables.pc_ways = Array.from({ length: PC_MASKS_FX.n }, (_, i) => flungMask(i, 0).way.slice(0, 2));
+}
+
 // floors 6 to 8's common monsters, as the game starts with their new moves on (render/act1_fx/qgolem.ts, firepot.ts, chanter.ts,
 // devil.ts, scorpion.ts: each painted afresh a frame at a time by the art's own painter, render/act1_fx/live.ts)
 {
@@ -962,7 +1000,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the city's)
   watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'], bookwarden: ['wb'],
   // (the High City's)
-  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'],
+  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

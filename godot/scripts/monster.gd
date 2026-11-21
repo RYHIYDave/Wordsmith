@@ -96,6 +96,9 @@ const BOSS_AI := {
 	"groom": preload("res://scripts/act3/groom.gd"), "pguard": preload("res://scripts/act3/pguard.gd"),
 	# (and its boss, the Princess)
 	"princess": preload("res://scripts/act3/princess.gd"),
+	# (floor 17's: the masked dancers, the footmen, the Silent Order (floors 19 and 20 theirs too), and the Prince)
+	"dancer": preload("res://scripts/act3/dancer.gd"), "footman": preload("res://scripts/act3/footman.gd"),
+	"order": preload("res://scripts/act3/order.gd"), "prince": preload("res://scripts/act3/prince.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")

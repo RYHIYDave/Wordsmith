@@ -149,6 +149,8 @@ var quest1115
 var bells
 ## (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds and her vine in the yew: act3/garden.gd)
 var garden = null
+## (THE HIGH CITY, FLOOR 17: the Masque's great ebony clock: act3/masque.gd)
+var masque = null
 var holds:
 	get:
 		return quest610.holds if quest610 != null else null
@@ -246,6 +248,9 @@ func _ready() -> void:
 	garden = preload("res://scripts/act3/garden.gd").new()
 	garden.main = self
 	add_child(garden)
+	masque = preload("res://scripts/act3/masque.gd").new()
+	masque.main = self
+	add_child(masque)
 
 	var shots := _arg("shots")
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
@@ -396,6 +401,7 @@ func _build(where: String, arrive: String) -> void:
 	monsters.stands = stands
 	monsters.perils = perils
 	monsters.loot = loot
+	monsters.main = self
 	perils.hero = hero
 	perils.sfx = sfx
 	perils.look = look if looked else null
@@ -608,6 +614,8 @@ func _build(where: String, arrive: String) -> void:
 		bells.enter(where)
 	if garden != null:
 		garden.enter(where)
+	if masque != null:
+		masque.enter(where)
 
 
 ## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.
