@@ -88,7 +88,15 @@ const SCORCH_N := 40
 ## (render.ts) The Golem's shadow, tiles round; a figure's shadow's strength.
 const GOLEM_SHADOW := 0.6
 const SHADOW := 0.7
-const GRUN_ROUND := 16
+## (its run's frames to a round, the old look's; the wheel's own its json's `runN`)
+var GRUN_ROUND := 16
+## THE GOLEM THAT ONLY SHOOTS IN ITS NEW LOOK (tools/godot_golem_wheel.ts: one great wheel in place of its legs, its big gun at
+## its side in place of its giant fist; his picks of 21 Nov 2026, “fist to a big gun, but id like him to have 1 wheel instead of
+## legs” and “At its side”): OFF until he has seen all its moves and said yes (pictures first); the old look with its cannon arm
+## till then.
+const WHEEL_LOOK := false
+## (a check's hand on the switch: the new look shown in a check's pictures, the switch left as it is)
+static var wheel_look_now := false
 
 ## (each Golem's own node, standing among the figures; and those of its take-offs and landings that stand)
 var _golem_nodes := {}
@@ -126,7 +134,9 @@ class _Stand extends Node2D:
 
 
 func _ready() -> void:
-	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/golem.json"))
+	var look_name := "golem_wheel" if WHEEL_LOOK or wheel_look_now else "golem"
+	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/%s.json" % look_name))
+	GRUN_ROUND = int(d.get("runN", 16))
 	_gpics = d["pics"]
 	_clips = d["clips"]
 	_aura = d["aura"]
@@ -139,7 +149,7 @@ func _ready() -> void:
 		if q.size() > 6:
 			most = maxi(most, int(q[6]))
 	for n in most + 1:
-		_gsheets.append(load("res://assets/heroes/golem-%d.png" % n))
+		_gsheets.append(load("res://assets/heroes/%s-%d.png" % [look_name, n]))
 	CH = d["charge"]
 	paint = Paint.new(CH)
 	var f: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/tinkerer_fx.json"))

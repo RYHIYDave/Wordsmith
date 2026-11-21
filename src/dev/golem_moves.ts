@@ -475,3 +475,40 @@ export function chargeFrame(t: number, held: number): number {
   if (t < h) return C.loop + ((t - C.loop) % C.round);
   return C.fire + (t - h);
 }
+
+/**
+ * (GOLEM_RANGED, dev/sculpt_golem.ts: the Golem on one wheel, its big gun at its side; the Godot chat, his pick of 21 Nov 2026)
+ * ITS ROLL: GROLL.n frames to a sixth of a turn of its wheel (its six spokes come round to where the last was), leaning into it,
+ * bobbing a touch over the tread; `stride` the floor (in its own measure) a sixth of a turn covers, its wheel `r` round.
+ */
+export const GROLL = { n: 12, r: 15.5 * 0.82, get stride(): number {
+  return (2 * Math.PI * this.r) / 6;
+} };
+export function golemRoll(i: number): { swing: number; fold: number; lean: number; bob: number; feet: [number, number, number, number]; level: number; roll: number } {
+  const u = i / GROLL.n;
+  return { swing: 0, fold: 0, lean: 7, bob: 0.4 * Math.sin(u * Math.PI * 2 * 2), feet: [0, 0, 0, 0], level: 0, roll: 60 * u };
+}
+/**
+ * (GOLEM_RANGED) ITS BIG SHOT from the gun at its side, by the charged shot's own frames (GCHARGE_SHELL, GCHARGE_BEAM, as the
+ * game times them): its body as the charged shot moves it, hunched into the charge and thrown back by the shot; its big gun's
+ * hoops lit as the charge passes along it, kicked back along itself as it fires, its aim raised a touch as it braces; its wheel
+ * rolled back as the shot throws it back (chargeSkid). Its little gun stays at rest.
+ */
+export function golemChargeWheel(kind: 'shell' | 'beam', f: number): { swing: number; fold: number; lean: number; bob: number; feet: [number, number, number, number]; level: number; bigCharge: number; bigKick: number; bigRaise: number; roll: number } {
+  const q = chargePose(kind, f);
+  const back = chargeSkid(kind, f);
+  // (tiles back to degrees of its wheel: a tile is 32 / GRID of its own measure)
+  const roll = -((back * (32 / Math.sqrt(2 / 3))) / GROLL.r) * (180 / Math.PI);
+  return { swing: 0, fold: 0, lean: q.lean * 0.7, bob: q.bob * 0.6, feet: [0, 0, 0, 0], level: 0, bigCharge: q.charge, bigKick: Math.min(1, q.kick), bigRaise: 4 * q.aim, roll };
+}
+/**
+ * (GOLEM_RANGED) ITS WINDING DOWN on its wheel, by the old one's frames (GDOWN): jolted, staggering, its light going out; then
+ * slumped forward over its wheel (it has no legs to give out under it), its big gun drooping to the floor at its side.
+ */
+export function golemDownWheel(f: number): { swing: number; fold: number; lean: number; bob: number; feet: [number, number, number, number]; level: number; dim: number; crumple: number; bigRaise: number } {
+  const q = golemDown(f);
+  const u = f > GDOWN.slump ? Math.min(1, (f - GDOWN.slump) / (GDOWN.down - GDOWN.slump)) : 0;
+  const lean = Math.min(q.lean, 17) + 13 * u * u;
+  const bob = Math.max(q.bob, -1.8) - 2.2 * u * u;
+  return { swing: 0, fold: 0, lean, bob, feet: [0, 0, 0, 0], level: 0, dim: q.dim, crumple: 0, bigRaise: -8 * u * u };
+}

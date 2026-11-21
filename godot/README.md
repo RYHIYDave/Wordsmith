@@ -727,9 +727,12 @@ is hurt and falls:
   closing on it (the game's gun arm's cannon act, a shot about as often as it punched: tinkerer.gd `SHOT_WAIT`, his to change);
   her next whistle, held, braces it and charges its BIG SHOT where she points, fired as she lets go (the game's charged shot, its
   shell 2.5 tiles round at its full, the Golem thrown back by it; Twin, a second; "of Echoes", a weaker one after); far behind,
-  it still rocket-jumps to catch up; left behind, whistled up beside her again; winding down as she falls. ITS LOOK IS TO CHANGE,
-  his pick (“fist to a big gun, but id like him to have 1 wheel instead of legs”): until he has seen it and said yes, it keeps
-  the game's look with its cannon arm. The Golem's pictures (its run, its small shot, its charge, its rocket jump and everything
+  it still rocket-jumps to catch up; left behind, whistled up beside her again; winding down as she falls. ITS NEW LOOK, his pick (“fist to a big gun, but id like him to have 1 wheel instead of legs”; of three ways to
+  carry the gun, “At its side”): one great wheel in place of its legs, its giant fist a big gun at its side that charges and
+  fires the big shot (its little cannon, or her tree's tesla coil, on its other arm for the small shots). Every move of it baked
+  by `npx tsx tools/godot_golem_wheel.ts` (`assets/heroes/golem_wheel*`; the sculpt's GOLEM_RANGED, dev/golem_moves.ts
+  golemRoll, golemChargeWheel, golemDownWheel); drawn with tinkerer_look.gd `WHEEL_LOOK` on, OFF until he says yes (a check
+  shows it with `--look=wheel`); till then the game's look with its cannon arm. The Golem's pictures (its run, its small shot, its charge, its rocket jump and everything
   at them, its take-offs and landings, its trail; the tesla coil's set) and her effects (its flash, the shell's blast), baked
   once: `assets/heroes/golem*`, `tinkerer_fx*`; what runs any way (the shell in flight, the beam, the tesla coil's zaps) painted
   as it comes by the game's own painter ported line for line, ahead of time off the screen's thread (`heroes/golem_paint.gd`;

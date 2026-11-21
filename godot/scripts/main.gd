@@ -295,6 +295,9 @@ func _ready() -> void:
 			first = home_place()
 	# (HIS CLASS: the saved hero's, or for a check the one asked for (--cls=ranger); a new game's the Warrior until the hero choice)
 	var cls := _arg("cls")
+	# (a check of the Tinkerer's Golem in its new look, its switch left off: --look=wheel, heroes/tinkerer_look.gd WHEEL_LOOK)
+	if _arg("look") == "wheel":
+		preload("res://scripts/heroes/tinkerer_look.gd").wheel_look_now = true
 	if cls == "":
 		cls = str(_restored.get("cls", "warrior"))
 	set_class(cls, _restored.is_empty())

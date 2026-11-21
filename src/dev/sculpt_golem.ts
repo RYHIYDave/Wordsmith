@@ -997,8 +997,9 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
       // brass, its hoops lit one by one in the friend's cyan as it charges its big shot (GOLEM_POSE.bigCharge, 0 to 1), its
       // muzzle flared and black; a lamp on the breech. At rest it is carried low before it, its muzzle down by the floor; its
       // arm swung up (GOLEM_POSE.swing) brings it level to fire; it kicks back along itself as it fires (GOLEM_POSE.bigKick).
-      // (its aim raised a little as it fires from its shoulder or its side: GOLEM_POSE.swing, degrees)
-      const raise = (GOLEM_POSE.swing * Math.PI) / 180;
+      // (its aim raised a little as it fires from its shoulder or its side: GOLEM_POSE.bigRaise, degrees; carried low, its arm's swing)
+      // (held near level as its body leans and bobs over its wheel: most of its lean taken back out of it)
+      const raise = (((GOLEM_POSE.bigRaise ?? 0) + 0.8 * GOLEM_POSE.lean) * Math.PI) / 180;
       let wrist = turnE(P(reach + 18, rl - 10, 21));
       let way = norm(sub(wrist, turnS(elbow0)));
       let pipeTo = turnS(elbow0);
@@ -1040,6 +1041,7 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
       for (const sd of [1, -1]) sc.cone(copper, 'giantR', add(along(1.5), mul(s1, sd * 7.6 * G2)), add(pipeTo, mul(s1, sd * 4.4)), 1.1, 1.1, 0.2, { tag: 'piston' });
       GOLEM_BIG_MUZZLE.p = along(32.0);
       GOLEM_BIG_MUZZLE.way = way;
+      GOLEM_BIG_MUZZLE.breech = along(7.0);
     } else fistAt('giantR', fistC, fistDir, lv ? mul(L, 1) : dirE(mul(L, 1)), 10.5);
     GOLEM_FIST.c = fistC;
     const l0 = roots.armL ?? P(0, 14, 44);
@@ -1143,6 +1145,7 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     }
     GOLEM_FIST.c = mv(GOLEM_FIST.c);
     GOLEM_BIG_MUZZLE.p = mv(GOLEM_BIG_MUZZLE.p);
+    GOLEM_BIG_MUZZLE.breech = mv(GOLEM_BIG_MUZZLE.breech);
     GOLEM_BIG_MUZZLE.way = tv(GOLEM_BIG_MUZZLE.way);
     GOLEM_MUZZLE.p = mv(GOLEM_MUZZLE.p);
     GOLEM_MUZZLE.way = tv(GOLEM_MUZZLE.way);
@@ -1156,6 +1159,7 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
   scaleBy(sc, k);
   GOLEM_MUZZLE.p = mul(GOLEM_MUZZLE.p, k);
   GOLEM_BIG_MUZZLE.p = mul(GOLEM_BIG_MUZZLE.p, k);
+  GOLEM_BIG_MUZZLE.breech = mul(GOLEM_BIG_MUZZLE.breech, k);
   GOLEM_VENTS.pts = GOLEM_VENTS.pts.map((p) => mul(p, k));
   GOLEM_STACKS.pts = GOLEM_STACKS.pts.map((p) => mul(p, k));
   GOLEM_STACKS.feet = GOLEM_STACKS.feet.map((p) => mul(p, k));
@@ -1190,6 +1194,8 @@ export const GOLEM_POSE: {
   /** (GOLEM_RANGED) Its big gun charged, 0 to 1 (its hoops lit one by one, white-hot at its full); and kicked back along itself as it fires, 0 to 1. */
   bigCharge?: number;
   bigKick?: number;
+  /** (GOLEM_RANGED, carried at its side or on its shoulder) Its big gun's aim raised, degrees. */
+  bigRaise?: number;
 } = { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0], level: 0, dim: 0, crumple: 0 };
 /** Where the last drawn Golem's stacks' mouths are (as it was built, before it is turned), the way each points (out of its mouth), and each one's foot (where it swings). */
 export const GOLEM_STACKS: { pts: V3[]; ways: V3[]; feet: V3[] } = { pts: [], ways: [], feet: [] };
@@ -1216,14 +1222,15 @@ export function kneeFor(hip: [number, number], ankle: [number, number], a: numbe
 /**
  * THE GOLEM THAT ONLY SHOOTS (the Godot chat, his words of 21 Nov 2026: “i think we should change the golem to be ranged, small
  * shots, then big shot on the whistle.”; asked for its new look, “fist to a big gun, but id like him to have 1 wheel instead of
- * legs”): one great wheel under it in place of its legs, a big gun in place of its giant fist. OFF until he has seen it and said
- * yes (pictures first).
+ * legs”): one great wheel under it in place of its legs, a big gun in place of its giant fist. Shown it carried low before it,
+ * his “Close, but change it”, “Gun held differently”; shown it on its shoulder and at its side, his pick “At its side”. OFF
+ * until he has seen all its moves and said yes (pictures first). `carry` the way it carries its big gun.
  */
-export const GOLEM_RANGED: { on: boolean; carry: 'low' | 'shoulder' | 'side' } = { on: false, carry: 'low' };
+export const GOLEM_RANGED: { on: boolean; carry: 'low' | 'shoulder' | 'side' } = { on: false, carry: 'side' };
 /** (GOLEM_RANGED) How far its big gun's arm is swung up as it stands, degrees: carried forward, its muzzle seen. */
 const RANGED_CARRY = 58;
 /** (GOLEM_RANGED) Where the last drawn Golem's big gun fires from, as it was built (before it is turned), and which way. */
-export const GOLEM_BIG_MUZZLE: { p: V3; way: V3 } = { p: [0, 0, 0], way: [1, 0, 0] };
+export const GOLEM_BIG_MUZZLE: { p: V3; way: V3; breech: V3 } = { p: [0, 0, 0], way: [1, 0, 0], breech: [0, 0, 0] };
 /** Where the last drawn Golem's giant fist is (its middle, as it was built, before it is turned). */
 export const GOLEM_FIST: { c: V3 } = { c: [0, 0, 0] };
 /** `v` turned about the unit `k` by `a` (radians). */
