@@ -257,6 +257,8 @@ var tails: Tails
 var _aura: Sprite2D
 var _tails_back: Node2D
 var _tails_front: Node2D
+## (the lights his frame gives off, a lit crystal, and his feather's: added, over his picture: render/figure.ts lights)
+var _lights: Node2D
 ## (the seconds since his tails were last moved on: they are moved once a frame, however often his picture is chosen)
 var _tails_dt := 0.0
 ## WARPED IN (main.ts enter; render.ts `coming`, ARRIVE_IN): a hero just come into the world, picked on a class card, comes together
@@ -265,9 +267,15 @@ var _tails_dt := 0.0
 const ARRIVE_IN := 0.4
 const PHASE_APART := 7.0
 var _arrive_t := -1.0
+var _arrive_for := ARRIVE_IN
 var _coming := 0.0
 var _shown := {}
 var _phased: Node2D
+## WARPED (the Mage's warp: render.ts PHASE_OUT, PHASE_IN): the figure she was, where she was, coming apart in slices and fading over
+## PHASE_OUT seconds ({frame, at (where her feet were, picture pixels), t}), as she comes together where she comes out (phase_in).
+const PHASE_OUT := 0.2
+var _was := {}
+var _ghost: Node2D
 var _cam: Camera2D
 ## (how high the ground he stands on lifts him on the screen, picture pixels: floor_map.gd lift_at)
 var _lift := 0.0
@@ -332,9 +340,17 @@ func _ready() -> void:
 	_phased = Node2D.new()
 	_phased.draw.connect(_draw_phased)
 	add_child(_phased)
+	_ghost = Node2D.new()
+	_ghost.top_level = true
+	_ghost.draw.connect(_draw_ghost)
+	add_child(_ghost)
 	_tails_front = Node2D.new()
 	_tails_front.draw.connect(func(): tails.draw_on(_tails_front, 0.0, -_lift, true, 2.0, _tails_mod()))
 	add_child(_tails_front)
+	_lights = Node2D.new()
+	_lights.material = Glow.added()
+	_lights.draw.connect(_draw_lights)
+	add_child(_lights)
 	_cam = Camera2D.new()
 	# (render.ts: the hero stands 12 game pixels below the middle of the screen)
 	_cam.offset = Vector2(0, -24)
@@ -856,8 +872,13 @@ func _process(dt: float) -> void:
 	_tails_dt += dt
 	if _arrive_t >= 0.0:
 		_arrive_t += dt
-		if _arrive_t >= ARRIVE_IN:
+		if _arrive_t >= _arrive_for:
 			_arrive_t = -1.0
+	if not _was.is_empty():
+		_was["t"] = float(_was["t"]) + dt
+		if float(_was["t"]) >= PHASE_OUT:
+			_was = {}
+		_ghost.queue_redraw()
 	_flash = maxf(0.0, _flash - dt)
 	_shake = maxf(0.0, _shake - dt)
 	_kick = maxf(0.0, _kick - dt * 22.0)
@@ -1778,7 +1799,7 @@ func _with(f: Dictionary, side: int) -> void:
 	if tails == null:
 		return
 	_shown = f
-	_coming = 1.0 - _arrive_t / ARRIVE_IN if _arrive_t >= 0.0 else 0.0
+	_coming = 1.0 - _arrive_t / _arrive_for if _arrive_t >= 0.0 else 0.0
 	_sprite.visible = _coming <= 0.0
 	_phased.queue_redraw()
 	var p: Dictionary = f["part"]
@@ -1796,6 +1817,30 @@ func _with(f: Dictionary, side: int) -> void:
 	tails.refresh()
 	_tails_back.queue_redraw()
 	_tails_front.queue_redraw()
+	_lights.queue_redraw()
+
+
+## (render/figure.ts lights; engine/px.ts drawLights, drawGlow) What his frame gives off (a lit crystal: the bake's part `lights`,
+## {x, y, r, color, a}, game pixels) and the light his feather carries (tails.gd lights), added, over his picture; out as he falls.
+func _draw_lights() -> void:
+	if _shown.is_empty() or not visible or _coming > 0.0:
+		return
+	var lit := clampf(_sprite.modulate.a, 0.0, 1.0)
+	if lit <= 0.02:
+		return
+	var p: Dictionary = _shown["part"]
+	var ax := float(p["ax"])
+	var ay := float(p["ay"])
+	for l in p.get("lights", []):
+		var r := float(l["r"]) * 2.0
+		var c := Glow.tint(l)
+		c.a *= lit
+		_lights.draw_texture_rect(Glow.tex(), Rect2((float(l["x"]) - ax) * 2.0 - r, (float(l["y"]) - ay) * 2.0 - _lift - r, r * 2.0, r * 2.0), false, c)
+	for l in tails.lights():
+		var r := float(l["r"]) * 2.0
+		var c := Glow.tint(l)
+		c.a *= lit
+		_lights.draw_texture_rect(Glow.tex(), Rect2(float(l["x"]) * 2.0 - r, float(l["y"]) * 2.0 - _lift - r, r * 2.0, r * 2.0), false, c)
 
 
 ## Warped in: his tails as faint as he is.
@@ -1807,20 +1852,49 @@ func _tails_mod() -> Color:
 func _draw_phased() -> void:
 	if _coming <= 0.0 or _shown.is_empty():
 		return
-	var tex: AtlasTexture = _shown["tex"]
-	var p: Dictionary = _shown["part"]
+	_slices(_phased, _shown, Vector2(0, -_lift), _coming, _tails_mod().a)
+
+
+## The figure he was, coming apart where he was as he warps (render.ts: PHASE_OUT, 1 - k^2 faint, 0.15 + 0.85 k apart).
+func _draw_ghost() -> void:
+	if _was.is_empty():
+		return
+	var k := float(_was["t"]) / PHASE_OUT
+	_slices(_ghost, _was["frame"], _was["at"], 0.15 + k * 0.85, 1.0 - k * k)
+
+
+## (render.ts stand, `phase`) A frame in slices two game pixels tall, each pulled the other way from the one above it, `phase` apart
+## (0 whole, 1 wholly), `alpha` faint, its feet at `at` on `ci`.
+func _slices(ci: CanvasItem, f: Dictionary, at: Vector2, phase: float, alpha: float) -> void:
+	var tex: AtlasTexture = f["tex"]
+	var p: Dictionary = f["part"]
 	var d := float(p.get("density", 1))
 	var w := float(p["w"])
 	var h := float(p["h"])
-	var left := -float(p["ax"]) * 2.0
-	var top := -float(p["ay"]) * 2.0 - _lift
-	var mod := Color(1, 1, 1, _tails_mod().a)
+	var left := at.x - float(p["ax"]) * 2.0
+	var top := at.y - float(p["ay"]) * 2.0
+	var mod := Color(1, 1, 1, clampf(alpha, 0.0, 1.0))
 	var j := 0
 	while j * 2 < h:
 		var tall := minf(2.0, h - j * 2)
-		var off := roundf((1.0 if j % 2 == 0 else -1.0) * _coming * (PHASE_APART - (j % 3) * 2.0))
-		_phased.draw_texture_rect_region(tex.atlas, Rect2(left + off * 2.0, top + j * 4.0, w * 2.0, tall * 2.0), Rect2(tex.region.position + Vector2(0, j * 2 * d), Vector2(w * d, tall * d)), mod)
+		var off := roundf((1.0 if j % 2 == 0 else -1.0) * phase * (PHASE_APART - (j % 3) * 2.0))
+		ci.draw_texture_rect_region(tex.atlas, Rect2(left + off * 2.0, top + j * 4.0, w * 2.0, tall * 2.0), Rect2(tex.region.position + Vector2(0, j * 2 * d), Vector2(w * d, tall * d)), mod)
 		j += 1
+
+
+## (the Mage's warp) The figure she was stays where she was, coming apart.
+func warp_out() -> void:
+	if _shown.is_empty():
+		return
+	_was = {"frame": _shown, "at": position + Vector2(0, -_lift), "t": 0.0}
+	_ghost.global_position = Vector2.ZERO
+	_ghost.queue_redraw()
+
+
+## He comes together out of slices over `secs` (a warp: PHASE_IN 0.22; picked on a class card: ARRIVE_IN 0.4).
+func phase_in(secs: float) -> void:
+	_arrive_t = 0.0
+	_arrive_for = secs
 
 
 ## His life over his head in a fight or when he is hurt (Version 11.2). Its edge takes the colour of what ails him (render.ts,
@@ -1848,7 +1922,7 @@ func _draw() -> void:
 
 ## (main.gd _picked: he has just warped in where the run begins)
 func arrive() -> void:
-	_arrive_t = 0.0
+	phase_in(ARRIVE_IN)
 
 
 ## How soon each attack is ready again, 0 to 1 (the HUD).

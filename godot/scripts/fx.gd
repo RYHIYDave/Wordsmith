@@ -57,6 +57,7 @@ extends Node2D
 const PF := preload("res://scripts/pixel_font.gd")
 const L := preload("res://scripts/fx_looks.gd")
 const Wild := preload("res://scripts/fx_wild.gd")
+const WildMage := preload("res://scripts/fx_wild_mage.gd")
 const Words3 := preload("res://scripts/fx_words3.gd")
 const Wakes := preload("res://scripts/fx_wakes.gd")
 const Figures := preload("res://scripts/fx_figures.gd")
@@ -169,6 +170,8 @@ var _held := false
 var _held_tick := 0
 
 var wild: Wild
+## (big and wild, the Mage's: her crystal's crackle, the Wave, the Orb, the Warp: fx_wild_mage.gd)
+var wild_mage
 var words3: Words3
 var ground: Wakes
 var figures: Figures
@@ -224,6 +227,8 @@ func _init() -> void:
 	_pramp.resize(most)
 	wild = Wild.new()
 	wild.fx = self
+	wild_mage = WildMage.new()
+	wild_mage.fx = self
 	words3 = Words3.new()
 	words3.fx = self
 	ground = Wakes.new()
@@ -270,6 +275,7 @@ func _exit_tree() -> void:
 	# (nothing of it is left waiting once its place is gone)
 	later = []
 	wild.clear()
+	wild_mage.clear()
 	words3.clear()
 	figures.clear()
 	w610.clear()
@@ -433,6 +439,7 @@ func clear() -> void:
 	haste_t = 0.0
 	_scan_in = 0.0
 	wild.clear()
+	wild_mage.clear()
 	words3.clear()
 	ground.clear()
 	figures.clear()
@@ -821,6 +828,11 @@ static func _num(v) -> String:
 
 
 ## An element's colours, dark to light (fx.ts ramp; a Mage's untyped damage in arcane purple is the Mage's, left out).
+## (fx.ts magic) The Mage's colours for an element, brightest first: her arcane violet where there is none.
+func _magic(el: String) -> PackedColorArray:
+	return L.turned(_ramp("arcane" if el == "phys" else el)) if L.EL.has("arcane" if el == "phys" else el) else _ramp(el)
+
+
 func _ramp(el: String) -> PackedColorArray:
 	return L.EL.get(el, L.EL["phys"])
 
@@ -895,6 +907,27 @@ func _handle(e: Dictionary) -> void:
 				rifts.append({"x": e["x"], "y": e["y"], "t": -float(e.get("delay", 0.0)), "out": float(e["secs"]), "dur": float(e["secs"]) + 0.4, "r": float(e["r"]), "seed": randi() % 1000000})
 		"spark":
 			spray(e["x"], e["y"], int(e.get("n", 10)), _ramp(str(e.get("el", "phys"))), 2.4, 60.0, 10.0)
+		"wave":
+			# (THE MAGE: the staff is swung: a breath of light leaves it the way the wave goes; big and wild, let go with a blast)
+			var cs := L.MIRROR if e.get("echo", false) else _magic(str(e["el"]))
+			flash(float(e["x"]) + float(e["dx"]) * 0.5, float(e["y"]) + float(e["dy"]) * 0.5, 12.0, 0.4, 0.09, cs)
+			streaks(float(e["x"]) + float(e["dx"]) * 0.4, float(e["y"]) + float(e["dy"]) * 0.4, 6, cs, 5.0, 6.0, {"dx": e["dx"], "dy": e["dy"], "spread": 0.9, "life": 0.18, "z": 10.0})
+			wild_mage.cast(e["x"], e["y"], e["dx"], e["dy"], e.get("echo", false))
+		"orbSet":
+			# (the staff comes down: a pulse runs out round the caster, and the orb is there; big and wild, a great bolt to it)
+			var cs := _magic(str(e["el"]))
+			var hp := hero_at()
+			ring(hp.x, hp.y, 1.25, 0.22, cs, false)
+			spray(hp.x, hp.y, 6, cs, 2.2, 30.0, 2.0)
+			flash(e["x"], e["y"], 13.0, 0.55, 0.12, cs)
+			for i in 8:
+				mote(e["x"], e["y"], cs)
+			wild_mage.orb_set(e["x"], e["y"])
+		"orbEnd":
+			var cs := _magic(str(e["el"]))
+			flash(e["x"], e["y"], 13.0, 0.3, 0.1, cs)
+			for i in 6:
+				mote(e["x"], e["y"], cs)
 		_:
 			# (floors 6 to 10's words' own tellings: echo, mark, leech, orb, markOn, markSpent, frenzy, frenzyFed, shield,
 			# guarded, blocked)
@@ -1009,7 +1042,8 @@ func _hit(e: Dictionary) -> void:
 	var heavy: bool = e.get("heavy", false)
 	# (big and wild: what his blade hits is struck hard, and what it is made of flies off it)
 	if not on_hero:
-		wild.hit(x, y)
+		if not wild_mage.hit(x, y):
+			wild.hit(x, y)
 	if on_hero:
 		float_text(x, y, "-" + amount, L.P["bl4"], false, 30.0)
 	else:
@@ -1153,6 +1187,10 @@ func _burst(e: Dictionary) -> void:
 			wild.whirl_turn(x, y, r)
 		elif style == "land":
 			wild.landing(x, y, r)
+		elif style == "warp":
+			wild_mage.warp(x, y)
+		elif style == "nova":
+			wild_mage.nova(x, y, r)
 		elif style == "blast" and wild.has_method("blast"):
 			wild.blast(x, y, r)
 	if style == "ruin":
@@ -1222,6 +1260,11 @@ func _burst(e: Dictionary) -> void:
 		power_impact(x, y, r, area)
 		ring(x, y, r * (1.12 if area else 1.0), 0.34 if area else 0.22, L.POWER_HOT if el == "phys" else ramp, false, {"heavy": area, "delay": 0.07 if area else 0.0})
 	if not area:
+		return
+	if style == "warp":
+		# (the Mage's warp: motes where she went from and where she came out)
+		for i in 14:
+			mote(x, y, PackedColorArray([P["tl5"], P["tl4"], P["white"]]))
 		return
 	# the element's body
 	if el == "fire":
@@ -1517,6 +1560,7 @@ func update(dt: float, real: float) -> void:
 		if bolts[k]["t"] >= 0.16:
 			bolts.remove_at(k)
 	wild.update(dt)
+	wild_mage.update(dt)
 	words3.tick(dt)
 	city3.tick(dt)
 	figures.tick(dt)
@@ -1557,6 +1601,10 @@ func _spots() -> void:
 		return
 	for l: Dictionary in glows:
 		look.spot(Vector2(gx(l["x"], l["y"]), gy(l["x"], l["y"]) - 8.0), l["r"], 0.9 * (1.0 - l["t"] / l["dur"]))
+	# (what a hero of another class sends and sets down lights the dark: render.ts spot, his projectiles, her orbs: heroes/<class>_look.gd)
+	var h = hero()
+	if h != null and h.get("kit") != null and h.kit.look != null and is_instance_valid(h.kit.look) and h.kit.look.has_method("lights"):
+		h.kit.look.lights(func(x: float, y: float, r: float, a: float) -> void: look.spot(Vector2(x, y), r, a), self)
 	words3.lights()
 	city3.lights(wakes.list if wakes != null and is_instance_valid(wakes) else [])
 	ground.lights()
@@ -1663,7 +1711,7 @@ static func pline(c: CanvasItem, x0f: float, y0f: float, x1f: float, y1f: float,
 
 ## Whether anything is alive to be drawn; the layers are drawn again while there is, and once more after.
 func _alive() -> bool:
-	return pn > 0 or not rifts.is_empty() or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or city3.alive() or w10.alive() or w7.alive() or m3.alive() or v3.alive() or m8.alive()
+	return pn > 0 or not rifts.is_empty() or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or wild_mage.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or city3.alive() or w10.alive() or w7.alive() or m3.alive() or v3.alive() or m8.alive()
 
 
 func _redraw() -> void:
@@ -2061,8 +2109,9 @@ func _paint_air(c: CanvasItem) -> void:
 		else:
 			var size := _psize[i] * 2.0
 			c.draw_rect(Rect2(sx * 2.0, sy * 2.0, size, size), col)
-	# (big and wild: the rings of wind and of the blade's light, over the sparks)
+	# (big and wild: the rings of wind and of the blade's light, over the sparks; the Mage's arcs)
 	wild.draw(c)
+	wild_mage.draw(c)
 	# "of Power": an ember circles the hero for every stack held: on a ring that is tilted, high behind the hero and low
 	# in front; the ones on the far side drawn small and dull and the near ones big and bright; each drags a tail of where
 	# it has just been; the more of them the faster the ring turns.

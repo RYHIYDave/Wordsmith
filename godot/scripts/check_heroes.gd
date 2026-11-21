@@ -62,6 +62,8 @@ func run(main, hero, d: String) -> void:
 	print("HEROES: the %s, %s; his moves %s" % [h.cls, "his own kit" if h.kit != null else "the Warrior's", h.loadout.r(0)["name"] + ", " + h.loadout.r(1)["name"] + ", " + h.loadout.r(2)["name"]])
 	if h.cls == "ranger":
 		await _ranger()
+	elif h.cls == "mage":
+		await _mage()
 	# (every hero: what is drawn with him, the pool of light behind him and his scarf, feather or braids; and in town his own look)
 	await _looks()
 	print("HEROES: the %s, %d steps, %d as the game's%s" % [h.cls, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
@@ -177,11 +179,135 @@ func _ranger() -> void:
 		"Trap: his roll (%.1f tiles, nothing reaching him, his rolling picture); the trap left where it began; one come onto it, it bursts (%.0f to %.0f); a charge spent (%d of 2 left) [rolled %s, untouchable %s, picture %s, laid %s, burst %s]" % [away, a0, A.life, K.charges[2], rolled, untouchable, pic2, laid, burst])
 
 
+## A clear way out from where he stands (a hall with room: open floor 8 tiles on).
+func _open_way(home: Vector2) -> Vector2:
+	for a in 16:
+		var w := Vector2(cos(a * PI / 8.0), sin(a * PI / 8.0))
+		var clear := true
+		for st in range(1, 9):
+			var p: Vector2 = home + w * st
+			if not h._clear(p.x, p.y):
+				clear = false
+				break
+		if clear:
+			return w
+	return Vector2(1, 0)
+
+
+## THE MAGE: her Wave (through two in a line, each once), her Orb (set where she aims, its waves striking what is round it, gone when
+## its time is up, its wait begun), her Warp (out where she aims, at once, nothing reaching her, a burst there hurting what stands
+## round; nowhere to go: "No room", nothing spent), her crystal crackling and her power's arcs.
+func _mage() -> void:
+	var K = h.kit
+	var home: Vector2 = h.world
+	var way := _open_way(home)
+	var side := Vector2(-way.y, way.x)
+	var pack := _pack(home, way)
+	if pack.size() < 3:
+		_line(false, "floor 2 has no three skeletons to set out")
+		return
+	var A = pack[0]
+	var B = pack[1]
+	var C = pack[2]
+	var put := func(m, at: Vector2) -> void:
+		m.world = at
+		m._place()
+		_hold(m)
+	var keep := func(): for m in pack: _hold(m)
+	# (the three made hard to kill, that each move may be seen striking them all through)
+	for m in pack:
+		m.max_life = 1000.0
+		m.life = 1000.0
+	# WAVE: two in a line before her, the third well aside
+	put.call(A, home + way * 2.5)
+	put.call(B, home + way * 4.0)
+	put.call(C, home + way * 4.0 + side * 6.0)
+	h._turn(way)
+	await _run(0.4, Callable(), keep)
+	var a0: float = A.life
+	var b0: float = B.life
+	var c0: float = C.life
+	h.auto_attack = true
+	var went: bool = await _run(1.0, func(): return not K.shots.is_empty(), keep)
+	var is_wave: bool = went and K.shots[0].get("look", "") == "wave"
+	var pic: Array = K.picture(h._side)
+	await _run(0.12, Callable(), keep)
+	await _snap("mage_wave_flying")
+	var arcs: int = h.fx.wild_mage.arcs.size() if h.fx != null else 0
+	await _run(0.8, Callable(), keep)
+	_line(went and is_wave and A.life < a0 and B.life < b0 and C.life == c0 and not pic.is_empty() and int(pic[0]) == 14 and arcs > 0,
+		"Wave: a wave of force out of the staff (her picture list %s), through the two in its way (%.0f to %.0f, %.0f to %.0f), the one aside untouched (%.0f); her power crackling (%d arcs)" % [pic, a0, A.life, b0, B.life, C.life, arcs])
+	# ORB: two together 5 tiles on; set there, its waves strike them, out 4 s, then gone; its wait begun
+	put.call(A, home + way * 5.0 + side * 6.0)
+	put.call(B, home + way * 5.0)
+	put.call(C, home + way * 5.0 + side * 0.9)
+	await _run(0.9, Callable(), keep)
+	b0 = B.life
+	c0 = C.life
+	var a1: float = A.life
+	h.auto_whirl = true
+	var set_down: bool = await _run(1.0, func(): return not K.orbs.is_empty(), keep)
+	var o: Dictionary = K.orbs[0] if set_down else {}
+	var near_aim: bool = set_down and Vector2(o["x"], o["y"]).distance_to(B.world) < 1.0
+	await _run(0.05, Callable(), keep)
+	var b1: float = B.life
+	await _run(1.3, Callable(), keep)
+	await _snap("mage_orb")
+	var waves_sent: int = int(o.get("waves", 0))
+	var waited: bool = K.charges[1] == 0
+	var gone: bool = await _run(4.0, func(): return K.orbs.is_empty(), keep)
+	_line(set_down and near_aim and b1 < b0 and B.life < b1 and C.life < c0 and A.life == a1 and waves_sent >= 2 and gone and waited,
+		"Orb: set where she aimed (%.2f tiles from it); its first wave struck as it landed (%.0f to %.0f), its next ones after (to %.0f; the other beside it %.0f to %.0f; %d waves by 1.3 s); the one aside untouched; gone when its time was up (%s); its wait begun" % [Vector2(o.get("x", 0.0), o.get("y", 0.0)).distance_to(B.world) if set_down else -1.0, b0, b1, B.life, c0, C.life, waves_sent, gone])
+	# WARP: out where she aims, at once, beside the pair; nothing reaching her; the burst hurting them
+	put.call(B, home + way * 4.5)
+	put.call(C, home + way * 4.5 + side * 0.9)
+	h.world = home
+	h._place()
+	await _run(5.5, func(): return K.charges[2] >= 1, keep)
+	await _run(0.2, Callable(), keep)
+	b0 = B.life
+	c0 = C.life
+	var start: Vector2 = h.world
+	h.auto_lunge = home + way * 4.0
+	var warped: bool = await _run(0.2, func(): return h.world.distance_to(start) > 2.0, keep)
+	var at: Vector2 = h.world
+	var safe: bool = h._invuln > 0.0
+	var phasing: bool = not h._was.is_empty() and h._coming > 0.0
+	await _snap("mage_warp")
+	await _run(0.4, Callable(), keep)
+	_line(warped and at.distance_to(home + way * 4.0) < 0.6 and safe and phasing and B.life < b0 and C.life < c0 and K.charges[2] == 0,
+		"Warp: out %.1f tiles on, at once (%.2f from where she aimed), nothing reaching her, coming apart where she was and together there; the burst struck the two round her (%.0f to %.0f, %.0f to %.0f); its charge spent" % [at.distance_to(start), at.distance_to(home + way * 4.0), b0, B.life, c0, C.life])
+	# NO ROOM: stood against a wall (a tile that is not floor), aimed through it: nothing happens, nothing spent
+	await _run(5.5, func(): return K.charges[2] >= 1)
+	var wall := Vector2.INF
+	for st in 150:
+		var p: Vector2 = home + way * (st * 0.2)
+		if not h.map.open_at(floori(p.x), floori(p.y)):
+			h.world = p - way * 0.45
+			h._place()
+			wall = h.world + way * 3.0
+			break
+	var here: Vector2 = h.world
+	h.auto_lunge = wall
+	await _run(0.3)
+	var said: bool = false
+	for f in h.fx.floaters if h.fx != null else []:
+		if str(f.get("text", "")) == "No room":
+			said = true
+	_line(wall != Vector2.INF and h.world.distance_to(here) < 0.01 and K.charges[2] >= 1,
+		"Warp into a wall beside her: she stays where she is, nothing spent (\"No room\" %s) [wall %s, from %s to %s, charges %d]" % ["shown" if said else "said", wall, here, h.world, K.charges[2]])
+	# HER CRYSTAL: where it burns in her frame, told to the effects (fx_wild_mage.gd charge)
+	var held: bool = h.fx != null and not h.fx.wild_mage.held.is_empty()
+	_line(held, "her crystal told to her effects each frame, where it burns in her picture and how hot (%s)" % (str(h.fx.wild_mage.held.get("heat", "-")) if held else "none"))
+
+
 ## WHAT IS DRAWN WITH HIM (render.ts: drawAura, the tails): the pool of light behind him, his scarf (the Warrior), feather (the
 ## Ranger) or braids (the Mage) hanging from where his frame fixes them and moving; standing, striking, walking; then in his town,
 ## his weapon on his back (the bake's `town` pictures).
 func _looks() -> void:
 	var want := {"warrior": ["w-scarf-a", "w-scarf-b"], "ranger": ["r-feather"], "mage": ["m-braid-a", "m-braid-b"]}
+	h.world = h.home
+	h._place()
 	var ids: Array = want.get(h.cls, [])
 	h.auto_attack = false
 	h.auto_whirl = false
