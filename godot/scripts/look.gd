@@ -32,6 +32,7 @@ extends Node2D
 
 const DIR := "res://assets/looks/"
 const Glow := preload("res://scripts/figure_glow.gd")
+const HideClip := preload("res://scripts/hide_clip.gd")
 const HH := 16.0  # picture pixels in half a tile's height: a depth of d sorts at y = d * 16
 const DARK_GRAIN := 4.0  # game pixels to a pixel of the dark's picture
 
@@ -82,6 +83,8 @@ var _dark: Sprite2D
 ## THE HEADSMAN'S YARD'S OWN GATE AS IT FALLS (art/yard_gate.ts, YARD_GATE; render.ts standDoors; its pictures and beat from
 ## tools/godot_yard_gate.ts, assets/looks/floor2_gate.*): which of the doors it is, its frames, its sprites, its lights
 var _yg := {}
+## (a look of the first kind: what stands, with its item, to be cut off behind raised ground: clip_behind)
+var _stand1: Array = []
 var _hero: Node2D
 ## (the moves' lights in the dark this frame: where, picture pixels; how wide and how strong: spot)
 const SPOTS_MOST := 96
@@ -190,6 +193,7 @@ func _ready() -> void:
 			s.position = Vector2(at.x, d * HH)
 			s.offset.y += at.y - d * HH
 			_stand(s)
+			_stand1.append([s, it])
 			if it.has("prop"):
 				_props[int(it["prop"])] = {"node": s}
 			if it.get("kind", "") == "wall":
@@ -1658,6 +1662,50 @@ func blocks_in() -> Vector2i:
 
 
 # --- seen through (render.ts seeThrough, veil) ---
+
+## WHAT STANDS BEHIND RAISED GROUND, CUT OFF BY IT (render.ts hide; hide_clip.gd): on a floor with ledges, each thing of the look
+## that stands, at the place on the floor its item says (its screen x and its depth; a wall, its own tile, on the room's floor),
+## left out where the raised ground before it would hide it. They stand still: worked out once, as the floor is laid out.
+func clip_behind(map) -> void:
+	if not HideClip.has_relief(map):
+		return
+	var n := 0
+	var pairs: Array = []
+	if _format == 2:
+		for i in mini(data["items"].size(), _s_node.size()):
+			if _s_node[i] is Sprite2D:
+				pairs.append([_s_node[i], data["items"][i]])
+	else:
+		pairs = _stand1
+	for p in pairs:
+		var s: CanvasItem = p[0]
+		var it: Dictionary = p[1]
+		var w := Vector2.ZERO
+		var lift := 0.0
+		var tile := -1
+		if it.has("wall") and (it["wall"] as Array).size() > 3:
+			tile = int(it["wall"][3])
+		elif str(it.get("kind", "")) == "wall":
+			tile = _tile1(it)
+		if tile >= 0:
+			w = Vector2(tile % map.w + 0.5, tile / map.w + 0.5)
+		else:
+			if it.get("d") == null:
+				continue
+			var d := float(it["d"])
+			var dif := float(it["x"]) / 16.0
+			w = Vector2((d + dif) / 2.0, (d - dif) / 2.0)
+			lift = map.lift_at(w.x, w.y)
+		var pts := HideClip.blocks(map, w.x, w.y, lift)
+		if not pts.is_empty():
+			HideClip.apply(s, pts)
+			n += 1
+	clipped = n
+
+
+## (for the checks: how many of the look's standing things are cut off behind raised ground)
+var clipped := 0
+
 
 ## Whether this place's tall things go by the game's `veil` (floors 1 to 5 and the castle hall: big things, the hero alone) and not
 ## by its `seeThrough` (from floor 6 down, and the camp, whose pieces are the descent's kind: SEE_TALL, and the monsters in sight).

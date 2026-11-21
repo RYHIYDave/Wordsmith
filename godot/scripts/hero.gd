@@ -82,6 +82,7 @@
 extends Node2D
 
 const Iso := preload("res://scripts/iso.gd")
+const HideClip := preload("res://scripts/hide_clip.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
 const BakedHero := preload("res://scripts/baked_hero.gd")
 const Tails := preload("res://scripts/tails.gd")
@@ -1990,11 +1991,25 @@ func _clear(x: float, y: float) -> bool:
 
 ## Where he is on the screen; on raised or sunken ground and on stairs he is drawn as high as the ground is there, and the
 ## picture follows him up (render.ts heroLift; floor_map.gd lift_at).
+var _relief_of = null
+var _relief := false
+
+
 func _place() -> void:
 	position = Iso.to_screen(world.x, world.y)
 	_lift = map.lift_at(world.x, world.y) if map != null else 0.0
 	if _sprite != null:
 		_sprite.position.y = -_lift
+	# (WHAT STANDS BEHIND RAISED GROUND, CUT OFF BY IT: render.ts `if (relief && !h.move) this.hide(h.x, h.y, heroLift)`; his
+	# picture, his scarf and what is drawn of him with it: hide_clip.gd)
+	if map != _relief_of:
+		_relief_of = map
+		_relief = HideClip.has_relief(map)
+		for c in [_tails_back, _sprite, _phased, _tails_front]:
+			if c != null:
+				c.use_parent_material = _relief
+	if _relief:
+		HideClip.apply(self, PackedVector2Array() if _act == "leap" else HideClip.blocks(map, world.x, world.y, _lift))
 
 
 func _show() -> void:

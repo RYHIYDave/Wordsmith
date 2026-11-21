@@ -37,6 +37,7 @@
 extends Node2D
 
 const Glow := preload("res://scripts/figure_glow.gd")
+const HideClip := preload("res://scripts/hide_clip.gd")
 const Iso := preload("res://scripts/iso.gd")
 const BakedFigure := preload("res://scripts/baked_figure.gd")
 const MM := preload("res://scripts/monster_moves.gd")
@@ -1853,9 +1854,20 @@ func _set_list(list: String, again := false) -> void:
 
 ## Where it is on the screen; on raised or sunken ground and on stairs it is drawn as high as the ground is there
 ## (floor_map.gd lift_at).
+var _relief_of = null
+var _relief := false
+
+
 func _place() -> void:
 	position = Iso.to_screen(world.x, world.y)
 	_lift = mgr.map.lift_at(world.x, world.y) if mgr != null and mgr.map != null else 0.0
+	# (WHAT STANDS BEHIND RAISED GROUND, CUT OFF BY IT: render.ts hide, at its place and its ground's lift: hide_clip.gd)
+	if mgr != null and mgr.map != null and _sprite != null:
+		if mgr.map != _relief_of:
+			_relief_of = mgr.map
+			_relief = HideClip.has_relief(mgr.map)
+		if _relief:
+			HideClip.apply(_sprite, HideClip.blocks(mgr.map, world.x, world.y, mgr.map.lift_at(world.x, world.y)))
 	# (one with rules of its own drawn up off the floor, or let down under its edge: a vulture overhead, a crawler under the lip)
 	if h2 != null and h2.has_method("lift"):
 		_lift += 2.0 * h2.lift(self)

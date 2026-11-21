@@ -747,3 +747,71 @@ func wallsee(main, hero, dir: String) -> void:
 	h.unhurt = false
 	print("WALLSEE: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
+
+## WHAT STANDS BEHIND RAISED GROUND, CUT OFF BY IT (--only=behind; render.ts hide, blockPath; hide_clip.gd): on floor 4 (ledges and
+## stairs) he stands on low floor just behind raised ground: his picture left out where the raised block before him is; out on
+## open floor he is whole; a monster the same; and the floor's own standing things behind raised ground cut off as they stand.
+func behind(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	M.way_depth = maxi(M.way_depth, 4)
+	await M.go_to("floor4", "down")
+	await M._wait(0.8)
+	var map = M.map
+	var HC := preload("res://scripts/hide_clip.gd")
+	_line(HC.has_relief(map) and M.look.clipped > 0, "floor 4 has ledges; %d of its look's standing things are cut off behind them" % M.look.clipped)
+	# (a place on the floor where the ground before it stands higher than it (raised ground, or the floor's edge before sunken
+	# floor), and open floor a few tiles off where nothing hides him)
+	var spot := Vector2.ZERO
+	var open := Vector2.ZERO
+	for i in map.w * map.h:
+		var tx: int = i % map.w
+		var ty: int = i / map.w
+		if tx < 4 or ty < 4 or not map.walkable(tx, ty) or map.stair[i] != 0:
+			continue
+		var c := Vector2(tx + 0.5, ty + 0.5)
+		if HC.blocks(map, c.x, c.y, map.lift_at(c.x, c.y)).is_empty():
+			continue
+		for o in [Vector2(-3, -3), Vector2(-3, 0), Vector2(0, -3), Vector2(3, 0), Vector2(0, 3)]:
+			var q: Vector2 = c + o
+			if map.walkable(floori(q.x), floori(q.y)) and HC.blocks(map, q.x, q.y, map.lift_at(q.x, q.y)).is_empty():
+				spot = c
+				open = q
+				break
+		if spot != Vector2.ZERO:
+			break
+	_line(spot != Vector2.ZERO, "a place where the ground before it stands higher (%.1f, %.1f, its ground %.0f), open floor beside it (%.1f, %.1f)" % [spot.x, spot.y, map.lift_at(spot.x, spot.y), open.x, open.y])
+	if spot == Vector2.ZERO:
+		return
+	for m in M._monsters.list:
+		if is_instance_valid(m):
+			m.process_mode = Node.PROCESS_MODE_DISABLED
+	h.world = spot
+	await M._wait(0.4)
+	var hn: int = h.material.get_shader_parameter("n") if h.material is ShaderMaterial else 0
+	await M._snap(dir + "/bh_behind_the_ledge.png")
+	_line(hn > 0 and h._sprite.use_parent_material, "he behind it: cut off by %d block(s) of the raised ground before him" % hn)
+	h.world = open
+	await M._wait(0.4)
+	var hn2: int = h.material.get_shader_parameter("n") if h.material is ShaderMaterial else 0
+	_line(hn2 == 0, "out on open floor: whole (%d)" % hn2)
+	var mon = null
+	for m in M._monsters.list:
+		if is_instance_valid(m) and not m.dead:
+			mon = m
+			break
+	if mon != null:
+		mon.world = spot
+		mon._place()
+		var mn: int = mon._sprite.material.get_shader_parameter("n") if mon._sprite.material is ShaderMaterial else 0
+		h.world = spot + Vector2(-1.5, 1.5)
+		await M._wait(0.3)
+		await M._snap(dir + "/bh_a_monster_behind.png")
+		mon.world = open
+		mon._place()
+		var mn2: int = mon._sprite.material.get_shader_parameter("n") if mon._sprite.material is ShaderMaterial else 0
+		_line(mn > 0 and mn2 == 0, "a %s behind it cut off by %d block(s); on open floor whole (%d)" % [mon.kind, mn, mn2])
+	h.unhurt = false
+	print("BEHIND: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+

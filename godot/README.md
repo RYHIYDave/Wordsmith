@@ -960,9 +960,19 @@ lights over the dark (town.gd `_ring_moments`):
   comes back whole once it is not; never a wall that is a back wall to it. `stands.gd` `_want`. `--only=wallsee`
   (`check_glows.gd`): 3 checks on floor 4, pictured.
 
+## What stands behind raised ground, cut off by it (the cloud chat, 21 Nov 2026)
+
+- **Raised ground before a thing** (render.ts hide, blockPath): on the floors with ledges and stairs (1, 3, 4 and 5) the ground is
+  drawn before anything stands; so what stands on lower ground behind raised ground (or down in sunken floor behind its edge) is
+  left out where that ground's block is before it, as the game shuts the screen to it there: the eight tiles before it whose top
+  stands over its own ground, each a block from its top down to that ground (a flight of stairs a wedge; never the flight it
+  stands on). Him (not while leaping), every monster, and the look's own standing things and walls (worked out once, as the floor
+  is laid). `hide_clip.gd`: the blocks' outlines and a shader that leaves out what falls inside them. `--only=behind`
+  (`check_glows.gd`): 5 checks on floor 4, pictured.
+
 ## Not in it yet
 
-Uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+Uniques, magic find; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); a phone's own options (where an attack aims, the screen turned).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
