@@ -924,10 +924,18 @@ lights over the dark (town.gd `_ring_moments`):
   hurry on top once below half his life); and the Warlock's Withering slows them as it does the rest (`monster.gd` frenzy,
   rage). `--only=bossrage` (`check_glows.gd`): 9 checks, each at half its life (the Fleshmancer at three tenths).
 
+## Seen through on floors 1 to 5 (the cloud chat, 21 Nov 2026)
+
+- **What he is behind** (render.ts veil): on floors 1 to 5 and in the castle hall a big thing that stands (60 game pixels across
+  and 70 high and more: the Stoker's crank, the Ossuary's bone carts and pillars, the temple's cages, the yard's great bell) is
+  drawn at SEEN_THROUGH (0.38) while he is behind it and its picture covers his middle, his head or his feet, as the game does,
+  and solid again once he is in front; for him alone (the monsters in sight are the open floors' rule, `seeThrough`, from floor 6
+  down, which was in already). `look.gd` `_veiled`, `_see_add`. `--only=veil` (`check_glows.gd`): 16 checks on floors 2 to 5,
+  pictured.
+
 ## Not in it yet
 
-The trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
-above), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched
+A phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched
 as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), the bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
 and blows; what a boss says is shown, not spoken), the

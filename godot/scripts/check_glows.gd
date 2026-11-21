@@ -491,3 +491,68 @@ func bossrage(main, hero, dir: String) -> void:
 	h.unhurt = false
 	print("BOSSRAGE: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
+
+## SEEN THROUGH ON FLOORS 1 TO 5 (--only=veil; render.ts veil): a big thing that stands (60 game pixels across and 70 high and
+## more) drawn at SEEN_THROUGH while the hero is behind it and it covers his middle, his head or his feet; solid again once he is
+## in front; and for him alone, not for a monster behind it (the game's seenFoes are the open ground's). On floor 4 and on
+## floor 2 (the great bell, in the first kind of look). Pictured.
+func veil(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	for place in ["floor3", "floor4", "floor5", "floor2"]:
+		M.way_depth = maxi(M.way_depth, int(place.substr(5)))
+		await M.go_to(place, "down")
+		await M._wait(0.8)
+		var look = M.look
+		var tall: Array = look._tall
+		# (the big things he can stand behind and in front of: open floor a tile behind it and a tile before it)
+		var spots: Array = []
+		for q in tall:
+			var pic: Dictionary = look._pics[q["key"]]
+			var at: Vector2 = ((q["box"] as Rect2).position + pic["anchor"]) / 2.0
+			var dsum: float = q["d"]
+			var dif: float = at.x / 16.0
+			var w0 := Vector2((dsum + dif) / 2.0, (dsum - dif) / 2.0)
+			var back: Vector2 = w0 - Vector2(0.7, 0.7)
+			var front: Vector2 = w0 + Vector2(0.9, 0.9)
+			if M.map.walkable(floori(back.x), floori(back.y)) and M.map.walkable(floori(front.x), floori(front.y)) and look.covering(back).has(tall.find(q)):
+				spots.append([q, back, front])
+		_line(not tall.is_empty(), "%s: %d big things to be seen through, %d he can stand behind" % [place, tall.size(), spots.size()])
+		if spots.is_empty():
+			continue
+		var e: Dictionary = spots[0][0]
+		for m in M._monsters.list:
+			if is_instance_valid(m):
+				m.process_mode = Node.PROCESS_MODE_DISABLED
+		h.world = spots[0][1]
+		await M._wait(0.4)
+		var a_behind := _alpha_of(e)
+		await M._snap("%s/v_%s_behind.png" % [dir, place])
+		_line(look.seen_through() >= 1 and absf(a_behind - 0.38) < 1e-3, "%s: he behind %s, its picture over him: drawn at %.2f (the game's SEEN_THROUGH 0.38)" % [place, e["key"], a_behind])
+		h.world = spots[0][2]
+		await M._wait(0.2)
+		var a_front := _alpha_of(e)
+		await M._snap("%s/v_%s_in_front.png" % [dir, place])
+		_line(absf(a_front - 1.0) < 1e-3, "%s: he in front of it: solid again (%.2f)" % [place, a_front])
+		# (a monster in sight behind it, he away in front: not seen through, his alone)
+		var mon = null
+		for m in M._monsters.list:
+			if is_instance_valid(m) and not m.dead:
+				mon = m
+				break
+		if mon != null:
+			mon.world = spots[0][1]
+			mon.seen = true
+			await M._wait(0.2)
+			_line(absf(_alpha_of(e) - 1.0) < 1e-3, "%s: a monster behind it (%s), he in front: solid (%.2f), as the game's veil is his alone" % [place, mon.kind, _alpha_of(e)])
+	h.unhurt = false
+	print("VEIL: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+func _alpha_of(e: Dictionary) -> float:
+	var node = e["node"]
+	if int(e["k"]) >= 0:
+		return float(node.alpha[int(e["k"])])
+	return float(node.modulate.a) if e.get("mod", false) else float(node.self_modulate.a)
+

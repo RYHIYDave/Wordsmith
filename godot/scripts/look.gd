@@ -108,6 +108,9 @@ var _warp_t := -1.0
 ## cover; each picture's solid pixels; those seen through now; and who may be behind one: the hero and the monsters (main.gd))
 const SEE_CELL := 128.0
 const SEE_TALL := 88.0  # picture pixels: act1_pieces.ts SEE_TALL, 44 game pixels
+## (render.ts veil: a thing at least this wide and high, picture pixels, is seen through on floors 1 to 5 and in the castle hall)
+const VEIL_W := 120.0
+const VEIL_H := 140.0
 const SEEN_THROUGH := 0.38
 var _see_cells := {}
 var _tall: Array = []
@@ -191,6 +194,9 @@ func _ready() -> void:
 				_props[int(it["prop"])] = {"node": s}
 			if it.get("kind", "") == "wall":
 				stands.add_wall(s, d, at)
+			# (a big thing that stands, seen through while he is behind it: render.ts veil; the yard's own are `see`, below)
+			if (it.get("kind", "") == "prop" or it.get("kind", "") == "piece") and not it.has("see") and not it.has("door"):
+				_see_add(frames[0], at, d, s, -1, true)
 		if tile >= 0:
 			_fog_sprite1(s, tile)
 		if it.has("stair"):
@@ -212,6 +218,7 @@ func _ready() -> void:
 			_anim.append({"node": s, "frames": frames, "fps": _num(it.get("fps"), 30.0), "t0": _num(it.get("t0"), 0.0),
 				"secs": it.get("secs", null), "dy": s.offset.y + _pics[frames[0]]["anchor"].y})
 	_make_doors()
+	_see_pictures()
 	for p in data.get("props", []):
 		var q: Dictionary = _props.get(int(p["i"]), {})
 		q["open"] = p["open"]
@@ -741,6 +748,7 @@ func _process(dt: float) -> void:
 		_step_zone(_hero.world)
 		if _zone["yard"] and not _see.is_empty():
 			_see_through(_hero.world)
+	_see_through2()
 
 
 func draw_still(c: CanvasItem, items: Array, fog := PackedByteArray()) -> void:
@@ -983,7 +991,8 @@ func _ready2() -> void:
 		s.set_meta("dy", at.y - d * HH)
 		_place2(s, _first2(it["f"]))
 		_stand(s)
-		if (it["f"] as Array).size() == 1 and not it.has("wall") and not it.has("w"):
+		# (one that moves too, where the game's `veil` is the rule: it is asked of whatever frame it shows; here, of its first)
+		if ((it["f"] as Array).size() == 1 or _veiled()) and not it.has("wall") and not it.has("w"):
 			_see_add(_first2(it["f"]), at, d, s, -1)
 		if it.has("prop"):
 			_props[int(it["prop"])] = {"node": s}
@@ -1650,19 +1659,29 @@ func blocks_in() -> Vector2i:
 
 # --- seen through (render.ts seeThrough, veil) ---
 
+## Whether this place's tall things go by the game's `veil` (floors 1 to 5 and the castle hall: big things, the hero alone) and not
+## by its `seeThrough` (from floor 6 down, and the camp, whose pieces are the descent's kind: SEE_TALL, and the monsters in sight).
+func _veiled() -> bool:
+	return place != "camp" and int(data.get("depth", 0)) < 6
+
 ## A tall thing of the look (a tree, a tall rock, a big piece) put down for SEEING THROUGH: its picture `key` with its anchor
 ## at `at` (picture pixels), its depth `d`, drawn by `node` (a sprite, or a group and which of its pictures, `k`).
-func _see_add(key: String, at: Vector2, d: float, node, k: int) -> void:
+func _see_add(key: String, at: Vector2, d: float, node, k: int, mod := false) -> void:
 	var pic: Dictionary = _pics.get(key, {})
 	if pic.is_empty():
 		return
 	var r: Rect2 = pic["rect"]
-	# (on the descent's open ground, as the game has it: render.ts openGround; elsewhere the walls fade, stands.gd)
-	if r.size.y < SEE_TALL or int(data.get("depth", 0)) < 6:
+	# (from floor 6 down, and in the camp, as the game has it for the descent's own pieces: anything SEE_TALL high and more
+	# (render.ts seeThrough); on floors 1 to 5 and in the castle hall, a big thing only, 60 game pixels across and 70 high and
+	# more (render.ts veil: `sp.w < 60 || sp.h < 70`), for the hero alone; the walls fade by their own rule, stands.gd)
+	if _veiled():
+		if r.size.x < VEIL_W or r.size.y < VEIL_H:
+			return
+	elif r.size.y < SEE_TALL:
 		return
 	var box := Rect2(at - pic["anchor"], r.size)
 	var i := _tall.size()
-	_tall.append({"key": key, "box": box, "d": d, "node": node, "k": k})
+	_tall.append({"key": key, "box": box, "d": d, "node": node, "k": k, "mod": mod})
 	for cy in range(floori(box.position.y / SEE_CELL), floori(box.end.y / SEE_CELL) + 1):
 		for cx in range(floori(box.position.x / SEE_CELL), floori(box.end.x / SEE_CELL) + 1):
 			var c := Vector2i(cx, cy)
@@ -1680,7 +1699,7 @@ func _see_pictures() -> void:
 		if _see_masks.has(key):
 			continue
 		_see_masks[key] = null
-		var sheet: Texture2D = _pics[key]["sheet"]
+		var sheet: Texture2D = _pics[key].get("sheet", _sheet)
 		if not by_sheet.has(sheet):
 			by_sheet[sheet] = []
 		by_sheet[sheet].append(key)
@@ -1703,7 +1722,8 @@ func _see_through2() -> void:
 	var who: Array = []
 	if _hero != null and is_instance_valid(_hero):
 		who.append(_hero.world)
-	if foes != null and is_instance_valid(foes):
+	# (the monsters in sight too, on the open floors: render.ts seenFoes, filled only on the open ground; `veil`, his alone)
+	if foes != null and is_instance_valid(foes) and not _veiled():
 		var vp := get_viewport_rect()
 		var cam := get_viewport().get_camera_2d()
 		var mid: Vector2 = cam.get_screen_center_position() if cam != null else Vector2.ZERO
@@ -1762,7 +1782,9 @@ func _see_alpha(e: Dictionary, a: float) -> void:
 	var node = e["node"]
 	if not is_instance_valid(node):
 		return
-	if int(e["k"]) < 0:
+	if int(e["k"]) < 0 and e.get("mod", false):
+		node.modulate.a = a
+	elif int(e["k"]) < 0:
 		node.self_modulate.a = a
 	else:
 		node.alpha[int(e["k"])] = a
