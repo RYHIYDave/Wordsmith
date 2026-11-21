@@ -538,6 +538,16 @@ func call_up(kind: String, at: Vector2, pack: int, face: Vector2, a1 := {}) -> M
 	return call_up_as(d, at, pack, face)
 
 
+## One of its kind's other looks, its pictures with it (game.ts Monster.form; art/bestiary.ts figureOf): `figure` the baked figure's
+## name (the palace guard's partisan thrown, his sword drawn: pguard_2).
+func look_to(m: Monster, figure: String) -> void:
+	if not _figures.has(figure):
+		if not FileAccess.file_exists("%s/%s.json" % [_figures_dir, figure]):
+			return
+		_figures[figure] = BakedFigure.new(_figures_dir, figure, _info)
+	m.art = _figures[figure]
+
+
 ## ARRIVALS (game.ts arriveFrom; game/arrivals.ts): `m`, just come into the world, comes in up out of a rift in the floor: its
 ## rift opening a little after the last of those still to open (0.12 s apart), the rift's size by its own (small, medium, large).
 func arrive(m: Monster) -> void:

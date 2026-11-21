@@ -51,7 +51,7 @@ const Sight := preload("res://scripts/sight.gd")
 const Stone := preload("res://scripts/act1/stone.gd")
 const ColossusCheck := preload("res://checks/colossus_check.gd")
 ## (the deepest floor that has its files)
-const FLOORS := 15
+const FLOORS := 20
 const TOWN_DIR := "res://assets/town"
 const HERO_DIR := "res://assets/heroes"
 const MONSTER_DIR := "res://assets/monsters"

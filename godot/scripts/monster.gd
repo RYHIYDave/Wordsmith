@@ -90,6 +90,10 @@ const BOSS_AI := {
 	# (floor 15's: the inklings, the bookwardens, and its boss, the Censor)
 	"inkling": preload("res://scripts/act2/inkling.gd"), "bookwarden": preload("res://scripts/act2/bookwarden.gd"),
 	"censor": preload("res://scripts/act2/censor.gd"),
+	# (THE HIGH CITY, floors 16 to 20, each by its kind's own rules: game/act1_rules/; scripts/act3/. Floor 16's: the swans, the
+	# gardeners, the grooms, the palace guard)
+	"swan": preload("res://scripts/act3/swan.gd"), "gardener": preload("res://scripts/act3/gardener.gd"),
+	"groom": preload("res://scripts/act3/groom.gd"), "pguard": preload("res://scripts/act3/pguard.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -134,6 +138,8 @@ const BOSS_VOICE := {"chained": "chained", "amalgam": "amalgam",
 
 var mgr  # monsters.gd
 var art: BakedFigure
+## (one of a kind's other looks, game.ts Monster.form: the palace guard's four, floor 16)
+var form := 0
 var def: Dictionary
 var kind := ""
 var world := Vector2.ZERO
@@ -293,6 +299,7 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	xp = float(m.get("xp", kind_def.get("xp", 0)))
 	_anim_t = m.get("animT", 0.0)
 	shield = float(m.get("shield", 0.0))
+	form = int(m.get("form", 0))
 	_moves = MM.moves_of(kind, champion)
 	own_seed = float(m.get("seed", randf()))
 	# (what its kind's rules keep about it as the game laid it: floor 14's patients lying in their beds)
