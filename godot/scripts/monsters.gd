@@ -540,6 +540,15 @@ func call_up(kind: String, at: Vector2, pack: int, face: Vector2, a1 := {}) -> M
 	return call_up_as(d, at, pack, face)
 
 
+## A baked figure by its name (loaded the first time it is wanted), or null: the King's Hush at his side, drawn by its mark.
+func figure_of(figure: String):
+	if not _figures.has(figure):
+		if not FileAccess.file_exists("%s/%s.json" % [_figures_dir, figure]):
+			return null
+		_figures[figure] = BakedFigure.new(_figures_dir, figure, _info)
+	return _figures[figure]
+
+
 ## One of its kind's other looks, its pictures with it (game.ts Monster.form; art/bestiary.ts figureOf): `figure` the baked figure's
 ## name (the palace guard's partisan thrown, his sword drawn: pguard_2).
 func look_to(m: Monster, figure: String) -> void:

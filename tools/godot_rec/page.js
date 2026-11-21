@@ -1155,6 +1155,12 @@
         const r = REC.variant(T0, W, H, [1], () => { p.state = 1; }, () => { p.state = ws; });
         if (r.err) { note[`clock${i}`] = r.err; return; }
         out[`clock${i}`] = { kind: 'clock', at: { x: p.x, y: p.y }, frames: [none(), r.frames[0]] };
+      } else if (p.name === 'the clockwork songbird, broken') {
+        // (THE HIGH CITY, FLOOR 19: the King's broken songbird before his throne, `bird`: gone from the floor as he dies, winding
+        // itself up and singing in its place: game/act1_rules/gking.ts died)
+        const r = REC.variant(T0, W, H, [1], () => { L.props.splice(i, 1); }, () => { L.props.splice(i, 0, p); });
+        if (r.err) { note.bird = r.err; return; }
+        out.bird = { kind: 'bird', at: { x: p.x, y: p.y }, frames: [none(), r.frames[0]] };
       } else if (p.name === 'a yew cone, her vine reaching out of it') {
         const r = REC.variant(T0, W, H, [1, 2, 3], (v) => { p.variant = v; }, () => { p.variant = was; });
         if (r.err) { note[`yew${i}`] = r.err; return; }

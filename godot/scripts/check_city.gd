@@ -158,6 +158,8 @@ func run(main, hero, out: String) -> void:
 		await _gqueen()
 	if depth == 19 and (M._arg("kind") == "" or M._arg("kind").split(",").has("ports")):
 		await _ports()
+	if depth == 19 and (M._arg("kind") == "" or M._arg("kind").split(",").has("gking")):
+		await _gking()
 	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
 
 
@@ -1875,4 +1877,161 @@ func _ports() -> void:
 	var shut: bool = M.map.walk[t0] == 0
 	var up: bool = await _run(7.0, func(): return s["phase"] == "up")
 	_line(shook and slammed and thrown and shut and struck > 0 and up and M.map.walk[t0] == 1, "a portcullis near him shakes, falls and slams: he under it thrown clear and struck (%d); its row cut off while it is down; wound up again" % struck)
+
+
+## FLOOR 19'S BOSS, THE KING (act3/gking.gd): met in the Throne Hall; his charge and its line of sparks, the Decree, the crown's weight,
+## the Curtains; at a third of his life the Hush climbing off him (nothing hurts him the while), and at his side its three moves (the
+## shield struck off by six blows, the grab and drag, the grey fog); his death: the Hush unwinding, the songbird winding and singing.
+func _gking() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "gking":
+			boss = o
+	if boss == null:
+		_line(false, "floor 19 has no King")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(8.0, func(): return boss.state != "sleep" and not boss.waits)
+	await _snap("gking_met")
+	_line(met, "the King met in the Throne Hall: %s, %.0f life" % [boss.title, boss.max_life])
+	var hold := func() -> void:
+		for k in boss.h2.cds.size():
+			boss.h2.cds[k] = 999.0
+	# THE CHARGE, AND ITS LINE OF SPARKS
+	await _run(1.0, func(): return boss.h2.act == null)
+	h.world = M._spot_near(boss.world + boss.face * 6.0, 0.0, h.world)
+	boss.face = (h.world - boss.world).normalized()
+	_ready_only(boss, 0)
+	var warned: bool = await _run(4.0, func(): return _is_act(boss, "gking:charge") and float(boss.h2.act["t"]) >= 0.5)
+	await _snap("gking_charge_lane")
+	var ran: bool = await _run(1.5, func(): return _is_act(boss, "gking:charge") and float(boss.h2.act["t"]) >= 1.2)
+	await _snap("gking_charge_running")
+	await _run(1.0, func(): return not _is_act(boss, "gking:charge") or float(boss.h2.act["t"]) >= 1.6, hold)
+	var hit_run := struck
+	var line: bool = await _run(2.0, func(): return not _a1("gking:sparks", func(q): return float(q["d"]) > 0.0 and float(q["t"]) >= float(q["d"]) + 0.45).is_empty(), hold)
+	await _snap("gking_sparks_held")
+	await _run(0.27, Callable(), hold)
+	await _snap("gking_sparks_shot")
+	await _run(0.2, Callable(), hold)
+	await _snap("gking_sparks_pop")
+	await _run(0.8, Callable(), hold)
+	var sp: Dictionary = _a1("gking:sparks")
+	_line(warned and ran and line and hit_run > 0 and struck > hit_run, "the charge: his lane marked, run at 12 tiles a second, the hero in it struck (%d); the line of sparks cut behind him bursting a moment after he stops: struck again (%d)" % [hit_run, struck - hit_run])
+	# THE DECREE
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	h.world = M._spot_near(boss.world + boss.face * 4.0, 0.0, h.world)
+	_ready_only(boss, 1)
+	var sword: bool = await _run(5.0, func(): return not _a1("gking:decree").is_empty())
+	await _run(1.2)
+	await _snap("gking_decree_rising")
+	await _run(1.6, Callable(), hold)
+	await _snap("gking_decree_march")
+	await _run(3.0, Callable(), hold)
+	_line(sword and struck > 0, "the Decree: three lines of his knights rising behind him and marching across the hall: the hero walked into, struck (%d)" % struck)
+	# THE CROWN'S WEIGHT
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	_ready_only(boss, 2)
+	var sent: bool = await _run(5.0, func(): return not _a1("gking:weight").is_empty())
+	await _run(1.4, Callable(), hold)
+	await _snap("gking_weight_follows")
+	var w: Dictionary = _a1("gking:weight")
+	var over: bool = not w.is_empty() and h.world.distance_to(Vector2(w["x"], w["y"])) < 0.6
+	await _run(1.2, func(): return not w.is_empty() and float(w["t"]) >= 2.6, hold)
+	await _snap("gking_weight_hangs")
+	await _run(0.5, func(): return not w.is_empty() and int(w["done"]) == 1, hold)
+	await _run(0.05, Callable(), hold)
+	await _snap("gking_weight_slam")
+	_line(sent and over and struck > 0, "the crown's weight: sent up, hanging over him, following him; stopped, trembling, slammed down: the hero under it struck (%d)" % struck)
+	await _run(1.4, Callable(), hold)
+	await _snap("gking_weight_home")
+	# THE CURTAINS
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	_ready_only(boss, 3)
+	var flung: bool = await _run(5.0, func(): return not _a1("gking:faces").is_empty())
+	await _run(0.45)
+	await _snap("gking_curtains_faces")
+	await _run(2.5, Callable(), hold)
+	_line(flung and struck > 0, "the Curtains: the faces of his deeds streaming out of the hangings behind him at where he stood: the hero struck (%d)" % struck)
+	# HIS LAST PHASE: THE HUSH CLIMBS OFF HIM
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	hold.call()
+	boss.life = boss.max_life * 0.3
+	h.world = M._spot_near(boss.world, 4.0, h.world)
+	var climbing: bool = await _run(4.0, func(): return _is_act(boss, "gking:climb") and float(boss.h2.act["t"]) >= 1.0, hold)
+	var life0: float = boss.life
+	boss.damage(50.0)
+	var unhurt: bool = absf(boss.life - life0) < 0.01
+	await _snap("gking_climb")
+	var beside: bool = await _run(3.0, func(): return not _a1("gking:hush").is_empty(), hold)
+	await _run(0.3, Callable(), hold)
+	await _snap("gking_hush_beside")
+	_line(climbing and unhurt and beside and int(boss.form) == 1, "his last phase: the Hush climbs off him (a blow then does nothing: \"Invulnerable\") and stands at his side")
+	# ITS SHIELD, struck off by six blows
+	var hp: Dictionary = _a1("gking:hush")
+	var wrapped: bool = await _run(5.0, func(): return boss.h2.shielding(boss), hold)
+	await _run(0.2, Callable(), hold)
+	await _snap("gking_hush_shield")
+	life0 = boss.life
+	for k in 6:
+		boss.damage(40.0)
+		await _run(0.1, Callable(), hold)
+	var held_off: bool = absf(boss.life - life0) < 0.01
+	var off: bool = await _run(1.0, func(): return int(hp["b"]) == boss.h2.STAND and float(boss.h2.a1.get("dazed", 0.0)) > 0.0, hold)
+	_line(wrapped and held_off and off, "its shield: wrapped round him, his blows land on it (\"Shielded\"); at the sixth it is struck off, dazed")
+	# ITS GRAB AND DRAG
+	struck = 0
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	var keep_far := func() -> void:
+		hold.call()
+		if int(hp["b"]) == boss.h2.STAND:
+			h.world = M._spot_near(boss.world, 6.0, h.world)
+	var reared: bool = await _run(6.0, func(): return int(hp["b"]) == boss.h2.GRABS, keep_far)
+	await _run(0.4, Callable(), hold)
+	await _snap("gking_hush_grab_line")
+	var caught: bool = await _run(1.0, func(): return int(hp["done"]) == 1, hold)
+	await _run(0.2, Callable(), hold)
+	await _snap("gking_hush_drags")
+	await _run(2.0, func(): return int(hp["b"]) != boss.h2.GRABS, hold)
+	var dragged: float = h.world.distance_to(boss.world)
+	_line(reared and caught and struck > 0 and dragged < 2.6, "its grab: its arms shooting out along the line marked; caught, struck (%d) and dragged back before the King (%.1f tiles from him)" % [struck, dragged])
+	# ITS GREY FOG
+	var breathed: bool = await _run(6.0, func(): return not _a1("gking:fog").is_empty(), hold)
+	await _run(0.4, Callable(), hold)
+	await _snap("gking_fog_marked")
+	var fog: Dictionary = _a1("gking:fog")
+	var slowed := false
+	if not fog.is_empty():
+		h.world = Vector2(fog["x"], fog["y"])
+		await _run(1.2, Callable(), func(): hold.call(); h.world = Vector2(fog["x"], fog["y"]))
+		slowed = h._slow_t > 0.0 and h._slow_by >= 0.44
+	await _snap("gking_fog_lies")
+	var patches := 0
+	for q in P.list:
+		if str(q.get("a1", "")) == "gking:fog":
+			patches += 1
+	_line(breathed and slowed and patches >= 2, "its grey fog: %d patches on and either side of him; standing in one he goes slower (by %.2f)" % [patches, h._slow_by])
+	# HIS DEATH
+	boss.h2.a1["cdShield"] = 999.0
+	await _run(0.5, func(): return not boss.h2.shielding(boss), hold)
+	boss.hurt(boss.life + 1e6)
+	var fell: bool = await _run(2.0, func(): return boss.dead)
+	await _run(0.6)
+	await _snap("gking_dies_hush_unwinds")
+	var unwinding: bool = float(hp["c"]) == 1.0
+	await _run(1.6)
+	await _snap("gking_bird_sings")
+	var bird: Dictionary = _a1("gking:bird")
+	var gone_broken: bool = M.look != null and M.look._shown.has("bird")
+	_line(fell and unwinding and not bird.is_empty() and gone_broken and _a1("gking:fog").is_empty(), "the King dies: the Hush unwinds into nothing, the fog lifts; the broken songbird before his throne winds itself up and sings")
 

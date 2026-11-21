@@ -46,7 +46,8 @@ func _init(dir: String, figure: String, lists_info: Dictionary) -> void:
 	var info: Array = lists_info[figure]["lists"]
 	for i in info.size():
 		_names[info[i]["name"]] = i
-		_fps.append(float(info[i]["fps"]))
+		# (a list it has no pictures of has no pace: the King's Hush, which never walks)
+		_fps.append(float(info[i]["fps"]) if info[i]["fps"] != null else 0.0)
 
 
 func has(list: String) -> bool:

@@ -104,6 +104,8 @@ const BOSS_AI := {
 	"qguard": preload("res://scripts/act3/qguard.gd"), "gqueen": preload("res://scripts/act3/gqueen.gd"),
 	# (floor 19's: the crossbowmen on the walls, the king's knights; the Order's armed last are the Order's)
 	"xbow": preload("res://scripts/act3/xbow.gd"), "kknight": preload("res://scripts/act3/kknight.gd"),
+	# (and its boss, the King)
+	"gking": preload("res://scripts/act3/gking.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -255,6 +257,8 @@ var nettle_k := 1.0
 var _said_secs := 0.0
 var _not_yet := 0.0
 var _not_yet_t := 0.0
+## (when it last said why a blow did nothing: _told_word)
+var _word_told := -9.0
 
 var _moves: Array = []
 var _move_cd: Array = []
@@ -1164,6 +1168,15 @@ func damage(dmg: float, el := "phys", crit := false, heavy := false, front: Arra
 	_take(dmg, el, crit, heavy, front, poison, dot, skill)
 
 
+## A word rising from it that says why a blow did nothing ("Invulnerable", "Shielded"), no oftener than every `gap` seconds.
+func _told_word(text: String, gap: float) -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - _word_told < gap:
+		return
+	_word_told = now
+	_tell({"t": "text", "x": world.x, "y": world.y, "text": text, "color": "#ffd27a"})
+
+
 func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison: bool, dot: bool, skill := -1) -> void:
 	# (nor is a boss who waits: game.ts damageMonster, "Not yet")
 	if waits:
@@ -1174,6 +1187,15 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 		return
 	# (nor one whose own rules say nothing reaches it now: the Fleshmancer gone under the floor, game.ts damage, blinkedAway)
 	if h2 != null and h2.has_method("reachable") and not h2.reachable(self):
+		return
+	# (nor one that cannot be hurt now, and says so: a boss as he changes into his next phase, the King as the Hush climbs off him;
+	# nor one with another wrapped round it, which takes the blow instead: the King's Hush, struck off by enough of them. game.ts
+	# damageMonster, invulnerable, absorbs)
+	if h2 != null and h2.has_method("invulnerable") and h2.invulnerable(self):
+		_told_word("Invulnerable", 0.7)
+		return
+	if h2 != null and h2.has_method("absorbs") and h2.absorbs(self):
+		_told_word("Shielded", 0.4)
 		return
 	# (WORDMELDING, SUNDER: stunned since a Sunder hit, it takes more from everything while the stun lasts; a blow on it while its
 	# crack shows is its look's "hit", not what burns or poisons it: melds.gd)

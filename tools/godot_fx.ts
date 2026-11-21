@@ -145,6 +145,7 @@ import { DANCE_CANVAS as PC_DANCE_CANVAS, DANCE_FX as PC_DANCE_FX, MASKS_FX as P
 import { TILE3 as T3 } from '../src/art/new_mobs3';
 import { FLASH_CANVAS as LD_FLASH_CANVAS, FLASH_FX as LD_FLASH_FX, flashPainted as ldFlash } from '../src/art/gallery_ladies_fx';
 import { RALLY_CANVAS as KK_RALLY_CANVAS, STANDING_CANVAS as KK_STANDING_CANVAS, bannerPainted, rallyPainted } from '../src/art/action_f16_knight';
+import { BIRD as GK_BIRD, BIRD_CANVAS as GK_BIRD_CANVAS, DECREE_FX as GK_DECREE, FACE_CANVAS as GK_FACE_CANVAS, KN_CANVAS as GK_KN_CANVAS, WEIGHT_CANVAS as GK_WEIGHT_CANVAS, WEIGHT_FX as GK_WEIGHT, birdPainted as gkBird, facePainted as gkFace, knightPainted as gkKnight, weightPainted as gkWeight } from '../src/art/king_fx';
 import { BANNER_N, bannerSprite } from '../src/art/act1_figs/kknight';
 import { CLOUD_CANVAS as QN_CLOUD_CANVAS, CLOUD_FX as QN_CLOUD_FX, HALL_MIRROR_CANVAS, SHATTER_FX as QN_SHATTER_FX, TALK_CANVAS as QN_TALK_CANVAS, TALK_FX as QN_TALK_FX, cloudPainted as qnCloud, hallMirrorPainted, shardsAt as qnShardsAt, talkingMirrorPainted } from '../src/art/queen_fx';
 import { BOULDER, HAMMER, SMASH_CANVAS, smashPainted } from '../src/art/action_f6_golem';
@@ -744,6 +745,29 @@ for (const view of ['front', 'back'] as const) {
   films.kk_splinters = { fps: FPS, n: 30, k0: 0, layers: { stand: Array.from({ length: 30 }, (_, k) => pic(toSprite(rallyPainted(2.0 + k / FPS, 'air', k / FPS), null, KK_RALLY_CANVAS.ax, KK_RALLY_CANVAS.ay))) } };
 }
 
+// FLOOR 19'S BOSS, THE KING (godot/scripts/act3/gk_marks.gd; render/act1_fx/gking.ts, as the game paints them, each the first time it
+// is wanted):
+//   gk_kn_<view>          a knight of his Decree, each of the twelve frames of his march (knightPainted); layer `stand`
+//   gk_face               a face of his deeds, each of its four kinds, seen from in front (facePainted); layer `stand`
+//   gk_weight_<part>_<view>  THE CROWN'S WEIGHT, thirty frames a second from his sending it up (weightPainted): `floor`, its shadow,
+//                         its warning ring, the slam's crack and dust (under the figures); `crown`, the crown itself (among them)
+//   gk_bird_<state>       THE CLOCKWORK SONGBIRD as he dies, fifteen frames a second (birdPainted): `winding` itself up, `singing`
+{
+  for (const view of ['front', 'back'] as const) {
+    films[`gk_kn_${view}`] = { fps: 0, n: GK_DECREE.march.frames, k0: 0, layers: { stand: Array.from({ length: GK_DECREE.march.frames }, (_, j) => pic(toSprite({ px: gkKnight(j, view), lights: [] }, null, GK_KN_CANVAS.ax, GK_KN_CANVAS.ay))) } };
+    const n = Math.ceil(GK_WEIGHT.long * FPS);
+    for (const part of ['floor', 'crown'] as const) {
+      films[`gk_weight_${part}_${view}`] = { fps: FPS, n, k0: 0, layers: { [part === 'floor' ? 'floor' : 'stand']: Array.from({ length: n }, (_, k) => pic(toSprite(gkWeight(k / FPS, view, part), null, GK_WEIGHT_CANVAS.ax, GK_WEIGHT_CANVAS.ay))) } };
+    }
+  }
+  films.gk_face = { fps: 0, n: 4, k0: 0, layers: { stand: Array.from({ length: 4 }, (_, kind) => pic(toSprite({ px: gkFace(kind, 'front'), lights: [] }, null, GK_FACE_CANVAS.ax, GK_FACE_CANVAS.ay))) } };
+  const BF = 15;
+  const nw = Math.floor(GK_BIRD.wind * BF);
+  const ns = Math.floor(GK_BIRD.song * BF);
+  films.gk_bird_winding = { fps: BF, n: nw, k0: 0, layers: { stand: Array.from({ length: nw }, (_, k) => pic(toSprite(gkBird('winding', k / BF, 'front'), null, GK_BIRD_CANVAS.ax, GK_BIRD_CANVAS.ay))) } };
+  films.gk_bird_singing = { fps: BF, n: ns, k0: 0, layers: { stand: Array.from({ length: ns }, (_, k) => pic(toSprite(gkBird('singing', k / BF, 'front'), null, GK_BIRD_CANVAS.ax, GK_BIRD_CANVAS.ay))) } };
+}
+
 // floors 6 to 8's common monsters, as the game starts with their new moves on (render/act1_fx/qgolem.ts, firepot.ts, chanter.ts,
 // devil.ts, scorpion.ts: each painted afresh a frame at a time by the art's own painter, render/act1_fx/live.ts)
 {
@@ -1083,7 +1107,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the city's)
   watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'], bookwarden: ['wb'],
   // (the High City's)
-  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['gq'], kknight: ['kk'],
+  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['gq'], kknight: ['kk'], gking: ['gk'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

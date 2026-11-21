@@ -11,6 +11,8 @@ const PORT := {"up": 9.0, "warn": 1.3, "fall": 0.15, "slam": 0.35, "down": 4.5, 
 const NEXT := {"up": "warn", "warn": "fall", "fall": "slam", "slam": "down", "down": "rise", "rise": "up"}
 ## (the look's state's step each phase shows: up, the warning, falling, slammed, down; wound up as falling, run back)
 const STEP := {"up": 0, "warn": 1, "fall": 2, "slam": 3, "down": 4, "rise": 2}
+## (scene_sounds.ts PORT_SOUND_LEAD: how long before the slam its sound begins)
+const SOUND_LEAD := 0.5
 
 var main
 ## [{x, y, n, along_x, phase, t, state}]
@@ -89,6 +91,12 @@ func _process(dt: float) -> void:
 		var mid := Vector2(float(s["x"]) + float(s["n"]) / 2.0, float(s["y"]) + 0.5) if s["along_x"] else Vector2(float(s["x"]) + 0.5, float(s["y"]) + float(s["n"]) / 2.0)
 		if s["phase"] == "up" and h.world.distance_to(mid) > float(PORT["near"]):
 			continue
+		# (THE FLOORS' SCENE SOUNDS, game.ts updatePortcullises: its sound has the chain falling first and the slam half a second in,
+		# so it is begun that long before the slam, once a fall, the louder the nearer him)
+		var to_slam := float(s["t"]) + float(PORT["fall"])
+		if s["phase"] == "warn" and to_slam > SOUND_LEAD and to_slam - dt <= SOUND_LEAD:
+			var near := clampf(1.0 - (h.world.distance_to(mid) - 3.0) / (float(PORT["near"]) - 3.0), 0.0, 1.0)
+			main.sfx.play("portcullis", linear_to_db(0.3 + 0.6 * near))
 		s["t"] = float(s["t"]) - dt
 		if float(s["t"]) > 0.0:
 			continue
@@ -112,7 +120,7 @@ func _process(dt: float) -> void:
 ## It slams: whatever is under it struck and thrown clear (a boss only thrown).
 func _slam(s: Dictionary) -> void:
 	var mid := Vector2(float(s["x"]) + float(s["n"]) / 2.0, float(s["y"]) + 0.5) if s["along_x"] else Vector2(float(s["x"]) + 0.5, float(s["y"]) + float(s["n"]) / 2.0)
-	main.sfx.play("slam", linear_to_db(0.8))
+	# (the slam is the scene sound's own, begun with its chain: _process)
 	main.fx.event({"t": "spark", "x": mid.x, "y": mid.y, "el": "phys", "n": 10})
 	var h = main.hero
 	if h.world.distance_to(mid) < 12.0:
