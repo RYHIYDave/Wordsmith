@@ -7,8 +7,13 @@
 // His picks: “Both words plus a twist (Recommended)” (a melded word on a monster does what each of its two words does there, and a
 // twist of its own); a ranked word “Yes, half as strong again (Recommended)” (defs.ts wordShare); “Counts as two words
 // (Recommended)” (as hard and as rich as two words, so the altar's three hollows can come to six); and the gate too, “Yes, the gate
-// too (Recommended)”. Each melded word's twist, his pick of two offered (his own words for Siphon, one of the eight not yet live):
-// below, FOE_TEXT. The eight new melds' twists (Siphon to Implode) wait for those melds (branch melds8): docs/foe_melds/README.md.
+// too (Recommended)”. Each melded word's twist, his pick of two offered (his own words for Siphon): below, FOE_TEXT.
+// THE EIGHT NEW MELDS' TWISTS (Siphon to Implode), live since 25.3.17 and built here at his word (the queue's
+// build-eight-melds-twists-on-monsters; asked to start it, “Yes, the melds' twists (Recommended)”), each his pick of 12 Nov 2026
+// (docs/mockups/foe_melds/README.md): Siphon, his words “make it so you cant heal as much if youre poisoned”; Cauterize “Burns its
+// wounds shut”; Forking “Forked bolt (Recommended)”; Shiver “Crits freeze briefly (Recommended)”; Sunder “Follow-up blow
+// (Recommended)”; Fervor “Fed by deaths (Recommended)”; Rime Ward “Cold shield (Recommended)”; Implode “Pull, then burst
+// (Recommended)”.
 //
 // My readings, told him: a melded word on the altar or the gate brings its own elements, and no other word of an element may lie
 // beside it (one element per dungeon, as before, or a melded word's two); nor a word already in a melded word on it (no Frost
@@ -54,6 +59,22 @@ export const FOE_TUNE = {
   chain: { near: 4.5, k: 0.6 },
   /** RUPTURE: the poison it splashes over the ground, and its poison a tick (times its blow). */
   rupture: { r: 2.0, secs: 5, k: 0.15 },
+  /** SIPHON: while its poison is on him, how much less he heals (of every heal: a flask, an orb, his regeneration, life on hit). */
+  siphon: 0.5,
+  /** CAUTERIZE: below this share of its life it sears its wounds shut, once: a flash, then, this long after, this share of its life back. */
+  cauterize: { below: 0.3, flash: 0.6, heal: 0.35 },
+  /** FORKING: each of its lightning blows forks: a second bolt on where he was struck, this wide, after this long, this hard (times its blow). */
+  forking: { r: 0.9, wait: 0.5, k: 0.45 },
+  /** SHIVER: the chance a blow of its is a critical hit, how much harder, and how long it freezes him (seconds). */
+  shiver: { chance: 0.22, crit: 1.5, freeze: 0.45 },
+  /** SUNDER: its next blow within this long (seconds) after one has knocked him back, this much harder. */
+  sunder: { window: 2.0, k: 0.8 },
+  /** FERVOR: an enemy dying this near it feeds it (at most so many times; they last this long): each faster by this share, its fire hotter by this. */
+  fervor: { near: 5, most: 5, secs: 8, speed: 0.1, fire: 0.12 },
+  /** RIME WARD: a blow of his on its shield chills him this much, this long, and not again for so long. */
+  rimeward: { chill: 0.4, secs: 1.5, every: 0.6 },
+  /** IMPLODE: its dying blast (a warning ring first), and as it comes the pull drawing him toward it from this near, every so often. */
+  implode: { r: 2.6, wait: 1.2, k: 1.8, pull: 4.5, every: 0.2, share: 0.55 },
 };
 
 /**
@@ -76,6 +97,14 @@ export const FOE_TEXT: Readonly<Partial<Record<MeldId, string>>> = {
   shatter: 'Bursts into a ring of ice shards when it dies.',
   chainreaction: 'Its dying blast throws lightning at you.',
   rupture: 'Bursts when it dies, splashing poison on the ground.',
+  siphon: 'While its poison is on you, you heal less.',
+  cauterize: 'When low on life, it sears its wounds shut and heals, once.',
+  forking: 'Each lightning blow forks: a second bolt strikes where you were.',
+  shiver: 'Its critical hits freeze you for a moment.',
+  sunder: 'Its next blow after knocking you back hits much harder.',
+  fervor: 'Each enemy dying near it makes it faster and its fire hotter.',
+  rimeward: 'Hitting its shield chills you.',
+  implode: 'When it dies it pulls you in, then bursts.',
 };
 
 const isMeld = (w: WordId): w is MeldId => w in MELD_OF;
@@ -154,10 +183,32 @@ export function foeText(w: WordId): string {
 // ---------------------------------------------------------------------------------------------
 // In play. Each takes the game and does its work; game.ts calls them where a blow lands, a monster thinks, dies, or its ground ticks.
 
-/** Of what's laid on the blow: how much harder it lands on him (Avalanche, Blight's poison on him, Scald's crack). */
-export function foeHarder(g: Game, s: (w: WordId) => number, parts: readonly (readonly [Element, number])[]): number {
+/** A blow's twists decided as it lands, for what it leaves after (foeAfterBlow): a Shiver critical, a Sunder follow-up. */
+const blow = { shiver: false, sunder: false };
+
+/** Of what's laid on the blow: how much harder it lands on him (Avalanche, Blight's poison on him, Scald's crack; Shiver's
+ * critical, Sunder's follow-up, Fervor's fire). `by`: the monster whose blow it is, if any. */
+export function foeHarder(g: Game, s: (w: WordId) => number, parts: readonly (readonly [Element, number])[], by: Monster | null = null): number {
   const h = g.hero;
   let k = 1;
+  blow.shiver = false;
+  blow.sunder = false;
+  // (SHIVER: now and then a critical hit, freezing him a moment: foeAfterBlow)
+  if (s('shiver') > 0 && g.rng.chance(FOE_TUNE.shiver.chance * s('shiver'))) {
+    blow.shiver = true;
+    k *= FOE_TUNE.shiver.crit;
+    g.emit({ t: 'text', x: h.x, y: h.y, text: 'Critical', color: '#ff8a80' });
+  }
+  // (SUNDER: its blow soon after one that knocked him back, much harder; that one does not make another due)
+  if (by && s('sunder') > 0 && (by.sunderAt ?? -1e9) >= g.time - FOE_TUNE.sunder.window) {
+    blow.sunder = true;
+    by.sunderAt = undefined;
+    k *= 1 + FOE_TUNE.sunder.k * s('sunder');
+    g.emit({ t: 'text', x: h.x, y: h.y, text: 'Sundered', color: '#ff8a80' });
+    g.emit({ t: 'burst', x: h.x, y: h.y, r: 0.8, el: 'phys', style: 'shock' });
+  }
+  // (FERVOR: fed by the deaths round it, its fire burns hotter)
+  if (by && (by.fervorN ?? 0) > 0 && parts.some(([e]) => e === 'fire')) k *= 1 + FOE_TUNE.fervor.fire * (by.fervorN ?? 0) * Math.max(s('fervor'), wordShare(by, 'fervor'));
   if (s('avalanche') > 0 && h.chillT > 0) k *= 1 + FOE_TUNE.avalanche * s('avalanche');
   if (s('scald') > 0 && ((h.chillT > 0 && parts.some(([e]) => e === 'fire')) || (h.burnT > 0 && parts.some(([e]) => e === 'frost')))) {
     k *= 1 + FOE_TUNE.scald * s('scald');
@@ -169,9 +220,32 @@ export function foeHarder(g: Game, s: (w: WordId) => number, parts: readonly (re
   return k;
 }
 
-/** After a blow from `by` (or a shot or warning of its) has hurt him `dmg`: what its words leave on him and round him. */
-export function foeAfterBlow(g: Game, s: (w: WordId) => number, by: Monster | null, dmg: number): void {
+/** After a blow from `by` (or a shot or warning of its) has hurt him `dmg`: what its words leave on him and round him. `parts`:
+ * the blow's elements. */
+export function foeAfterBlow(g: Game, s: (w: WordId) => number, by: Monster | null, dmg: number, parts: readonly (readonly [Element, number])[] = []): void {
   const h = g.hero;
+  // (SIPHON: while that poison is on him he heals less: Game.healHero)
+  if (s('siphon') > 0 && h.poisonT > 0) {
+    if (!(h.siphonLess ?? 0)) g.emit({ t: 'text', x: h.x, y: h.y, text: 'Healing cut', color: '#ff8a80' });
+    h.siphonLess = Math.max(h.siphonLess ?? 0, Math.min(0.9, FOE_TUNE.siphon * s('siphon')));
+  }
+  // (SHIVER: a critical hit freezes him a moment)
+  if (blow.shiver) {
+    blow.shiver = false;
+    h.iceT = Math.max(h.iceT ?? 0, FOE_TUNE.shiver.freeze);
+    g.emit({ t: 'freeze', x: h.x, y: h.y });
+    g.emit({ t: 'text', x: h.x, y: h.y, text: 'Frozen', color: '#a5d8ff' });
+  }
+  // (SUNDER: a blow of its that knocks him back makes its next, soon after, a follow-up)
+  if (by && !by.dead && s('sunder') > 0) {
+    if (!blow.sunder) by.sunderAt = g.time;
+    blow.sunder = false;
+  }
+  // (FORKING: a lightning blow forks: a second bolt on where he was struck, a moment after, marked)
+  if (by && !by.dead && s('forking') > 0 && parts.some(([e]) => e === 'lightning')) {
+    const F = FOE_TUNE.forking;
+    g.addWarn(h.x, h.y, F.r, F.wait, ((by.dmgMin + by.dmgMax) / 2) * F.k * s('forking'), 'lightning', ['lightning'], `${by.name}'s forked bolt`, by.id, g.halfOf(by));
+  }
   if (s('blight') > 0 && h.poisonT > 0) h.blightMore = Math.max(h.blightMore ?? 0, FOE_TUNE.blight * s('blight'));
   if (s('frostbite') > 0 && h.chillT > 0) h.frostbiteDps = Math.max((h.frostbiteDps ?? 0) > 0 ? h.frostbiteDps ?? 0 : 0, dmg * FOE_TUNE.frostbite * s('frostbite'));
   // (Wildfire: a small fire where he stood, sparking at him while he stays near it; not too many)
@@ -198,8 +272,29 @@ export function foeAfterBlow(g: Game, s: (w: WordId) => number, by: Monster | nu
   }
 }
 
-/** A monster's turn, awake and near: Hailstorm's hail on a marked circle round him, every few seconds. */
+/** A monster's turn, awake and near: Hailstorm's hail on a marked circle round him, every few seconds; Cauterize searing its
+ * wounds shut, once, low on life; Fervor's feeding wearing off. */
 export function foeTick(g: Game, m: Monster, dt: number, dist: number): void {
+  if ((m.fervorT ?? 0) > 0) {
+    m.fervorT = Math.max(0, (m.fervorT ?? 0) - dt);
+    if (m.fervorT <= 0) m.fervorN = 0;
+  }
+  const C = FOE_TUNE.cauterize;
+  const ck = wordShare(m, 'cauterize');
+  if (ck > 0 && !m.seared && m.life > 0 && m.life < m.maxLife * C.below) {
+    // (a flash of its fire first, then its wounds seared shut: some of its life back)
+    m.seared = true;
+    g.emit({ t: 'burst', x: m.x, y: m.y, r: 1.0, el: 'fire', style: 'shock' });
+    g.emit({ t: 'text', x: m.x, y: m.y, text: 'Searing', color: '#ffb070' });
+    g.sfx('fire', 0.7);
+    g.after(C.flash, () => {
+      if (m.dead) return;
+      const n = m.maxLife * C.heal * ck;
+      m.life = Math.min(m.maxLife, m.life + n);
+      g.emit({ t: 'burst', x: m.x, y: m.y, r: 1.4, el: 'fire', style: 'blast' });
+      g.emit({ t: 'text', x: m.x, y: m.y, text: 'Seared shut', color: '#ffb070' });
+    });
+  }
   const H = FOE_TUNE.hailstorm;
   const k = wordShare(m, 'hailstorm');
   if (k <= 0 || m.state === 'sleep') return;
@@ -211,15 +306,52 @@ export function foeTick(g: Game, m: Monster, dt: number, dist: number): void {
   g.addWarn(h.x, h.y, H.r, H.wait, ((m.dmgMin + m.dmgMax) / 2) * H.k * k, 'frost', ['frost', 'lightning', 'hailstorm'], `${m.name}'s hail`, undefined, g.halfOf(m));
 }
 
-/** A monster carrying Volatile's blast, as Demolition makes it: wider, slower and harder; null, Volatile's own. */
+/** A monster carrying Volatile's blast, as Demolition makes it (wider, slower and harder) or Implode (drawing him in first); null,
+ * Volatile's own. */
 export function foeBlast(m: Monster): { r: number; wait: number; k: number } | null {
-  return wordShare(m, 'demolition') > 0 ? FOE_TUNE.demolition : null;
+  if (wordShare(m, 'demolition') > 0) return FOE_TUNE.demolition;
+  if (wordShare(m, 'implode') > 0) return FOE_TUNE.implode;
+  return null;
+}
+
+/** A monster's pace and the quickness of its blows, as Fervor's feeding hurries it (1: as it is). */
+export function foeRage(m: Monster): number {
+  return (m.fervorN ?? 0) > 0 ? 1 + FOE_TUNE.fervor.speed * (m.fervorN ?? 0) * Math.max(0.5, wordShare(m, 'fervor')) : 1;
+}
+
+/** A blow of his on a monster's shield (`soaked` of it): Rime Ward chills him. */
+export function foeShield(g: Game, m: Monster, soaked: number): void {
+  const k = wordShare(m, 'rimeward');
+  if (k <= 0 || soaked <= 0 || (m.rimeAt ?? -1e9) > g.time - FOE_TUNE.rimeward.every) return;
+  m.rimeAt = g.time;
+  const h = g.hero;
+  const R = FOE_TUNE.rimeward;
+  h.chill = Math.max(h.chillT > 0 ? h.chill : 0, R.chill * k);
+  h.chillT = Math.max(h.chillT, R.secs);
+  g.emit({ t: 'burst', x: m.x, y: m.y, r: 1.0, el: 'frost', style: 'shock' });
+  g.emit({ t: 'text', x: h.x, y: h.y, text: 'Chilled', color: '#a5d8ff' });
 }
 
 /** As a monster dies: what its melded word leaves (Fumes' and Contagion's clouds, Powderkeg's fire, Shatter's shards, Chain Reaction's arc, Rupture's splash). */
 export function foeDeath(g: Game, m: Monster): void {
   const avg = (m.dmgMin + m.dmgMax) / 2;
   const s = (w: WordId): number => wordShare(m, w);
+  // (FERVOR: each enemy dying near one feeds it: faster, its fire hotter)
+  const F = FOE_TUNE.fervor;
+  for (const o of g.monsters) {
+    if (o === m || o.dead || wordShare(o, 'fervor') <= 0 || Math.hypot(o.x - m.x, o.y - m.y) > F.near) continue;
+    o.fervorN = Math.min(F.most, (o.fervorN ?? 0) + 1);
+    o.fervorT = F.secs;
+    g.emit({ t: 'burst', x: o.x, y: o.y, r: 0.8, el: 'fire', style: 'shock' });
+    g.emit({ t: 'text', x: o.x, y: o.y, text: `Fervor ${o.fervorN}`, color: '#ffb070' });
+  }
+  // (IMPLODE: as its blast comes (Volatile's warning, foeBlast), it draws him in)
+  if (s('implode') > 0) {
+    const I = FOE_TUNE.implode;
+    const z = foeGround(m.x, m.y, I.r, I.wait, 'vortex', 'phys', 0, [], m, 'implode');
+    z.tick = 0;
+    g.zones.push(z);
+  }
   if (s('fumes') > 0) g.zones.push(foeGround(m.x, m.y, FOE_TUNE.fumes.r, FOE_TUNE.fumes.secs, 'venom', 'phys', avg * FOE_TUNE.fumes.k * s('fumes'), ['poison'], m, 'fumes'));
   if (s('contagion') > 0) {
     const C = FOE_TUNE.contagion;
@@ -255,7 +387,7 @@ export function foeDeath(g: Game, m: Monster): void {
 }
 
 /** A monster's ground, hostile: it harms the hero (foeZone), not the monsters. */
-function foeGround(x: number, y: number, r: number, secs: number, kind: 'burn' | 'venom', el: Element, dmg: number, words: WordId[], m: Monster, foe: MeldId): Zone {
+function foeGround(x: number, y: number, r: number, secs: number, kind: 'burn' | 'venom' | 'vortex', el: Element, dmg: number, words: WordId[], m: Monster, foe: MeldId): Zone {
   return { x, y, r, t: 0, dur: secs, kind, element: el, dmg, slow: 0, tick: 0.25, hostile: true, skill: -1, words, from: `${m.name}'s ${WORDS[foe].name.toLowerCase()}`, src: m.id, foe };
 }
 
@@ -265,7 +397,14 @@ export function foeZone(g: Game, z: Zone, i: number, dt: number): boolean {
   const h = g.hero;
   if (z.t < 0) return true;
   const inside = Math.hypot(h.x - z.x, h.y - z.y) <= z.r + TUNE.heroRadius * 0.5;
-  if (z.foe === 'wildfire') {
+  if (z.foe === 'implode') {
+    // (drawing him in toward where it died, harming nothing itself: its blast is Volatile's warning's)
+    z.tick -= dt;
+    if (z.tick <= 0) {
+      z.tick += FOE_TUNE.implode.every;
+      if (Math.hypot(h.x - z.x, h.y - z.y) <= FOE_TUNE.implode.pull) g.pullHero(z.x, z.y, FOE_TUNE.implode.share);
+    }
+  } else if (z.foe === 'wildfire') {
     // (it does not burn him to stand in; it throws a spark at him now and then while he is near)
     z.tick -= dt;
     if (z.tick <= 0) {

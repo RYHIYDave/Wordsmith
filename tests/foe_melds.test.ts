@@ -3,7 +3,8 @@
 // stronghold's altar, “Counts as two words (Recommended)”; on the gate too, “Yes, the gate too (Recommended)”; on a monster, “Both
 // words plus a twist (Recommended)”, a ranked word “Yes, half as strong again (Recommended)”; and, of gear, “One line, crafting only
 // (Recommended)” (MELD_LINE). What is held: with the switch off the game is as it was; with it on, the altar and the gate take them
-// and count them as two, what each comes to on a monster, and each of the fifteen live melded words' twists at work.
+// and count them as two, what each comes to on a monster, and each of the fifteen live melded words' twists at work; and the eight new
+// melds' (Siphon to Implode), his picks of 12 Nov 2026, built at his word (“Yes, the melds' twists (Recommended)”).
 //   run: tsx --test tests/foe_melds.test.ts
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
@@ -11,12 +12,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { RNG } from '../src/engine/rng';
 import { FOE_WORDS, LOOT2, WORDS, wordShare } from '../src/game/defs';
-import { FOE_TEXT, FOE_TUNE, foeText, foeWordsOf, upTo, wordsWeight } from '../src/game/foe_melds';
+import { FOE_TEXT, FOE_TUNE, foeRage, foeText, foeWordsOf, upTo, wordsWeight } from '../src/game/foe_melds';
 import { Game } from '../src/game/game';
 import { MELD_LINE, imbueItem, imbueLines, rollItem } from '../src/game/items';
 import { emptyControls } from '../src/game/state';
 import type { GameEvent, Monster, Zone } from '../src/game/state';
-import { MELD_IDS, RANK_IDS, VOLT_MELD_IDS } from '../src/game/types';
+import { MELD8_IDS, MELD_IDS, RANK_IDS, VOLT_MELD_IDS } from '../src/game/types';
 import type { MonsterKind, WordId } from '../src/game/types';
 import { RNG as Rng } from '../src/engine/rng';
 
@@ -152,7 +153,7 @@ test('on: what the words come to on a monster, and a ranked word half as strong 
 
 test('on: every live melded word and ranked word has its page, its two words and its twist', () => {
   withFoe(true, () => {
-    for (const w of [...MELD_IDS, ...VOLT_MELD_IDS]) {
+    for (const w of [...MELD_IDS, ...VOLT_MELD_IDS, ...MELD8_IDS]) {
       assert.ok(FOE_TEXT[w], `${w} has a twist`);
       assert.ok(foeText(w).includes(FOE_TEXT[w] ?? '~'), w);
     }
@@ -289,6 +290,100 @@ test('on: Fumes\' cloud goes off when he walks in burning', () => {
     const seen = run(g, 0.2);
     assert.ok(!a.zones.includes(cloud), 'gone off');
     assert.ok(seen.some((e) => e.t === 'burst') && g.hero.life < was);
+  });
+});
+
+test('on: the eight new melds: Siphon cuts his healing, Cauterize sears its wounds shut, Forking forks, Shiver freezes', () => {
+  withFoe(true, () => {
+    // (Siphon: its poison on him, every heal the less)
+    const healed = (words: WordId[]): number => {
+      const { g, a } = room();
+      const m = put(g, a, words);
+      g.hurtHero(100, 'phys', m.words, m);
+      g.hero.life = 1000;
+      (g as unknown as { healHero(n: number): void }).healHero(1000);
+      return g.hero.life - 1000;
+    };
+    const plain = healed(['poison']);
+    const cut = healed(['siphon']);
+    assert.ok(Math.abs(cut - plain * (1 - FOE_TUNE.siphon)) < 2, `Siphon: healed ${cut}, without it ${plain}`);
+    // (Cauterize: low on life, a flash, then some of its life back, once)
+    let r = room();
+    const c = put(r.g, r.a, ['cauterize']);
+    c.life = c.maxLife * 0.2;
+    const seen = run(r.g, 0.2);
+    assert.ok(c.seared && seen.some((e) => e.t === 'burst'), 'Cauterize: it flashes');
+    run(r.g, FOE_TUNE.cauterize.flash + 0.2);
+    assert.ok(c.life > c.maxLife * (0.2 + FOE_TUNE.cauterize.heal * 0.9), `Cauterize: its wounds seared shut, ${c.life / c.maxLife}`);
+    c.life = c.maxLife * 0.1;
+    run(r.g, FOE_TUNE.cauterize.flash + 0.3);
+    assert.ok(c.life <= c.maxLife * 0.1 + 1, 'only once');
+    // (Forking: a lightning blow, then a second bolt marked where he was struck)
+    r = room();
+    const f = put(r.g, r.a, ['forking']);
+    r.g.hurtHero(100, 'lightning', f.words, f);
+    const fork = r.a.zones.find((z) => z.kind === 'warn' && z.from.endsWith("'s forked bolt"));
+    assert.ok(fork && Math.hypot(fork.x - r.g.hero.x, fork.y - r.g.hero.y) < 0.1 && fork.dur === FOE_TUNE.forking.wait, 'Forking: its second bolt');
+    // (Shiver: now and then a critical hit, and he is frozen a moment)
+    r = room();
+    const sh = put(r.g, r.a, ['shiver']);
+    let froze = 0;
+    for (let i = 0; i < 80; i++) {
+      r.g.hero.iceT = 0;
+      r.g.hurtHero(100, 'frost', sh.words, sh);
+      if ((r.g.hero.iceT ?? 0) > 0) froze++;
+    }
+    assert.ok(froze > 5 && froze < 35, `Shiver: frozen by ${froze} of 80 blows`);
+  });
+});
+
+test('on: Sunder follows a knockback up harder; Fervor is fed by deaths; Rime Ward\'s shield chills; Implode draws him in', () => {
+  withFoe(true, () => {
+    // (Sunder: its blow after one that knocked him back, much harder; the one after that, as before)
+    let r = room();
+    const su = put(r.g, r.a, ['sunder']);
+    const hit = (): number => {
+      const was = r.g.hero.life;
+      r.g.hurtHero(100, 'phys', su.words, su);
+      return was - r.g.hero.life;
+    };
+    const first = hit();
+    const second = hit();
+    const third = hit();
+    assert.ok(second > first * 1.5 && third < second * 0.8, `Sunder: ${first}, then ${second}, then ${third}`);
+    // (Fervor: one dying near it feeds it: faster, its fire hotter)
+    r = room();
+    const fv = put(r.g, r.a, ['fervor']);
+    const near = put(r.g, r.a, [], 0, 1.5);
+    let was = r.g.hero.life;
+    r.g.hurtHero(100, 'fire', fv.words, fv);
+    const before = was - r.g.hero.life;
+    r.a.kill(near);
+    assert.equal(fv.fervorN, 1, 'fed');
+    assert.ok(foeRage(fv) > 1, 'faster');
+    r.g.hero.burnT = 0;
+    was = r.g.hero.life;
+    r.g.hurtHero(100, 'fire', fv.words, fv);
+    assert.ok(was - r.g.hero.life > before * 1.05, `hotter: ${was - r.g.hero.life} after, ${before} before`);
+    run(r.g, FOE_TUNE.fervor.secs + 0.5);
+    assert.ok(!fv.fervorN, 'it wears off');
+    // (Rime Ward: a blow of his on its shield chills him)
+    r = room();
+    const rw = put(r.g, r.a, ['rimeward']);
+    rw.shield = 500;
+    r.g.hero.chillT = 0;
+    r.g.damageMonster(rw, 100, 'phys', false, 0);
+    assert.ok(r.g.hero.chillT > 0, 'Rime Ward: chilled');
+    // (Implode: as it dies its blast is marked, and he is drawn in toward it)
+    r = room();
+    const im = put(r.g, r.a, ['implode'], 3, 0);
+    const from = Math.hypot(r.g.hero.x - im.x, r.g.hero.y - im.y);
+    r.a.kill(im);
+    const blast = r.a.zones.find((z) => z.kind === 'warn' && z.from.endsWith('dying blast'));
+    assert.ok(blast && blast.r === FOE_TUNE.implode.r && blast.dur === FOE_TUNE.implode.wait, 'Implode: its blast marked');
+    assert.ok(r.a.zones.some((z) => z.foe === 'implode' && z.kind === 'vortex'), 'its pull');
+    run(r.g, 0.8);
+    assert.ok(Math.hypot(r.g.hero.x - im.x, r.g.hero.y - im.y) < from - 0.5, `drawn in: ${from.toFixed(2)} to ${Math.hypot(r.g.hero.x - im.x, r.g.hero.y - im.y).toFixed(2)}`);
   });
 });
 
