@@ -7,6 +7,7 @@ const DIR := "res://assets/sound/"
 const VOICES := 12
 
 var _takes := {}
+var _files := {}
 var _voices: Array[AudioStreamPlayer] = []
 var _next := 0
 var _bed: AudioStreamPlayer
@@ -106,6 +107,19 @@ func _process(dt: float) -> void:
 	if _amb_in <= 0.0:
 		play(_amb_name, -4.0)
 		_amb_in = randf_range(6.0, 14.0)
+
+
+## A sound file of its own (a boss's called line in his voice, assets/voices: monsters.gd speak), played as a take is.
+func play_path(path: String, volume_db := 0.0) -> void:
+	if not _files.has(path):
+		_files[path] = load(path) if ResourceLoader.exists(path) else null
+	if _files[path] == null:
+		return
+	var p := _voices[_next]
+	_next = (_next + 1) % VOICES
+	p.stream = _files[path]
+	p.volume_db = volume_db
+	p.play()
 
 
 func _takes_of(name: String) -> Array:

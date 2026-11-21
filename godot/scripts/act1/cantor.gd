@@ -100,7 +100,7 @@ func start(m, a: Dictionary, _hero) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	if CALLS.has(a["id"]) and now - _last_call >= CALL_GAP:
 		_last_call = now
-		m.say(CALLS[a["id"]], SAY_FOR)
+		m.call_line(CALLS[a["id"]], SAY_FOR)
 
 
 func acting(m, a: Dictionary, t0: float, t1: float, _dt: float, hero) -> void:

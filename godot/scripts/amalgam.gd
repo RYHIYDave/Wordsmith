@@ -191,7 +191,7 @@ func _start(m, i: int, hero) -> void:
 		m.mgr.sfx.play("boss_roar", -6.0)
 	if CALLS.has(a["id"]) and _clock - _last_call >= CALL_GAP:
 		_last_call = _clock
-		m.say(CALLS[a["id"]], SAY_FOR)
+		m.call_line(CALLS[a["id"]], SAY_FOR)
 
 
 func _step_act(m, dt: float, hero) -> void:

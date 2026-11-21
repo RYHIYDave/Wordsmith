@@ -1,0 +1,291 @@
+{
+ "calls": {
+  "warden": {
+   "slam": "On your knees!",
+   "lockdown": "On your knees!",
+   "bolts": "Back to your cell!"
+  },
+  "headsman": {
+   "h2:flurry": "Hold still.",
+   "h2:wheel": "Heads will roll.",
+   "h2:vault": "The block awaits."
+  },
+  "chained": {
+   "hook": "Mine! MINE!",
+   "whirl": "Round... round... ROUND!",
+   "ball": "Mmmph... FREE!"
+  },
+  "amalgam": {
+   "floorArms": "All our hands.",
+   "swarm": "Fly, brothers.",
+   "am:rain": "Fly, brothers.",
+   "devour": "Be one of us.",
+   "burst": "We break. We mend."
+  },
+  "fleshmancer": {
+   "shards": "Bone remembers how to cut.",
+   "rings": "Stay in the circle.",
+   "raise": "Rise. Serve.",
+   "fire": "Burn, and be useful.",
+   "fm:shards": "Bone remembers how to cut.",
+   "fm:rings": "Stay in the circle.",
+   "fm:fire": "Burn, and be useful."
+  },
+  "unfinished": {
+   "unfinished:hurl": "Catch.",
+   "unfinished:stomp": "Be still. Be stone.",
+   "unfinished:rockslide": "The mountain falls with me.",
+   "unfinished:tear": "Tear me free!",
+   "unfinished:hurlWall": "Catch.",
+   "unfinished:stompWall": "Be still. Be stone.",
+   "unfinished:rockslideWall": "The mountain falls with me."
+  },
+  "cantor": {
+   "cantor:shout": "LISTEN!",
+   "cantor:copies": "My choir, sing!",
+   "cantor:rockfall": "Let the stones sing."
+  },
+  "eye": {
+   "eye:sweep": "I see you.",
+   "eye:call": "Rise, my drowned.",
+   "eye:surface": "Come up for air.",
+   "eye:spew": "Drink deep."
+  },
+  "ratking": {
+   "ratking:words": "Hear ye! Hear ye!",
+   "ratking:roll": "Who's there? Who's there?",
+   "ratking:unknot": "A hundred teeth!"
+  },
+  "physician": {
+   "physician:draw": "A little blood, for the tests.",
+   "physician:tonic": "Take your medicine.",
+   "physician:rounds": "Rounds, everyone!"
+  },
+  "prince": {
+   "prince:masks": "Who am I tonight?",
+   "prince:dance": "May I have this dance?",
+   "prince:midnight": "The clock strikes twelve!"
+  },
+  "gqueen": {
+   "gqueen:glass": "Where am I now?",
+   "gqueen:reflect": "So many of you. One fairest.",
+   "gqueen:shatter": "Break!",
+   "gqueen:ring": "Look at me. All of me."
+  },
+  "gking": {
+   "gking:charge": "Make way for the King!",
+   "gking:decree": "By royal decree!",
+   "gking:weight": "Heavy is the crown.",
+   "gking:curtains": "See what I have done."
+  }
+ },
+ "voices": {
+  "warden": {
+   "On your knees!": [
+    "warden_0_1.ogg",
+    "warden_0_2.ogg"
+   ],
+   "Back to your cell!": [
+    "warden_1_1.ogg",
+    "warden_1_2.ogg"
+   ]
+  },
+  "headsman": {
+   "Hold still.": [
+    "headsman_0_1.ogg",
+    "headsman_0_2.ogg"
+   ],
+   "Heads will roll.": [
+    "headsman_1_1.ogg",
+    "headsman_1_2.ogg"
+   ],
+   "The block awaits.": [
+    "headsman_2_1.ogg",
+    "headsman_2_2.ogg"
+   ]
+  },
+  "chained": {
+   "Mine! MINE!": [
+    "chained_0_1.ogg",
+    "chained_0_2.ogg"
+   ],
+   "Round... round... ROUND!": [
+    "chained_1_1.ogg",
+    "chained_1_2.ogg"
+   ],
+   "Mmmph... FREE!": [
+    "chained_2_1.ogg",
+    "chained_2_2.ogg"
+   ]
+  },
+  "amalgam": {
+   "All our hands.": [
+    "amalgam_0_1.ogg",
+    "amalgam_0_2.ogg"
+   ],
+   "Fly, brothers.": [
+    "amalgam_1_1.ogg",
+    "amalgam_1_2.ogg"
+   ],
+   "Be one of us.": [
+    "amalgam_2_1.ogg",
+    "amalgam_2_2.ogg"
+   ],
+   "We break. We mend.": [
+    "amalgam_3_1.ogg",
+    "amalgam_3_2.ogg"
+   ]
+  },
+  "fleshmancer": {
+   "Bone remembers how to cut.": [
+    "fleshmancer_0_1.ogg",
+    "fleshmancer_0_2.ogg"
+   ],
+   "Stay in the circle.": [
+    "fleshmancer_1_1.ogg",
+    "fleshmancer_1_2.ogg"
+   ],
+   "Rise. Serve.": [
+    "fleshmancer_2_1.ogg",
+    "fleshmancer_2_2.ogg"
+   ],
+   "Burn, and be useful.": [
+    "fleshmancer_3_1.ogg",
+    "fleshmancer_3_2.ogg"
+   ]
+  },
+  "unfinished": {
+   "Catch.": [
+    "unfinished_0_1.ogg",
+    "unfinished_0_2.ogg"
+   ],
+   "Be still. Be stone.": [
+    "unfinished_1_1.ogg",
+    "unfinished_1_2.ogg"
+   ],
+   "The mountain falls with me.": [
+    "unfinished_2_1.ogg",
+    "unfinished_2_2.ogg"
+   ],
+   "Tear me free!": [
+    "unfinished_3_1.ogg",
+    "unfinished_3_2.ogg"
+   ]
+  },
+  "cantor": {
+   "LISTEN!": [
+    "cantor_0_1.ogg",
+    "cantor_0_2.ogg"
+   ],
+   "My choir, sing!": [
+    "cantor_1_1.ogg",
+    "cantor_1_2.ogg"
+   ],
+   "Let the stones sing.": [
+    "cantor_2_1.ogg",
+    "cantor_2_2.ogg"
+   ]
+  },
+  "eye": {
+   "I see you.": [
+    "eye_0_1.ogg",
+    "eye_0_2.ogg"
+   ],
+   "Rise, my drowned.": [
+    "eye_1_1.ogg",
+    "eye_1_2.ogg"
+   ],
+   "Come up for air.": [
+    "eye_2_1.ogg",
+    "eye_2_2.ogg"
+   ],
+   "Drink deep.": [
+    "eye_3_1.ogg",
+    "eye_3_2.ogg"
+   ]
+  },
+  "ratking": {
+   "Hear ye! Hear ye!": [
+    "ratking_0_1.ogg",
+    "ratking_0_2.ogg"
+   ],
+   "Who's there? Who's there?": [
+    "ratking_1_1.ogg",
+    "ratking_1_2.ogg"
+   ],
+   "A hundred teeth!": [
+    "ratking_2_1.ogg",
+    "ratking_2_2.ogg"
+   ]
+  },
+  "physician": {
+   "A little blood, for the tests.": [
+    "physician_0_1.ogg",
+    "physician_0_2.ogg"
+   ],
+   "Take your medicine.": [
+    "physician_1_1.ogg",
+    "physician_1_2.ogg"
+   ],
+   "Rounds, everyone!": [
+    "physician_2_1.ogg",
+    "physician_2_2.ogg"
+   ]
+  },
+  "prince": {
+   "Who am I tonight?": [
+    "prince_0_1.ogg",
+    "prince_0_2.ogg"
+   ],
+   "May I have this dance?": [
+    "prince_1_1.ogg",
+    "prince_1_2.ogg"
+   ],
+   "The clock strikes twelve!": [
+    "prince_2_1.ogg",
+    "prince_2_2.ogg"
+   ]
+  },
+  "gqueen": {
+   "Where am I now?": [
+    "gqueen_0_1.ogg",
+    "gqueen_0_2.ogg"
+   ],
+   "So many of you. One fairest.": [
+    "gqueen_1_1.ogg",
+    "gqueen_1_2.ogg"
+   ],
+   "Break!": [
+    "gqueen_2_1.ogg",
+    "gqueen_2_2.ogg"
+   ],
+   "Look at me. All of me.": [
+    "gqueen_3_1.ogg",
+    "gqueen_3_2.ogg"
+   ]
+  },
+  "gking": {
+   "Make way for the King!": [
+    "gking_0_1.ogg",
+    "gking_0_2.ogg"
+   ],
+   "By royal decree!": [
+    "gking_1_1.ogg",
+    "gking_1_2.ogg"
+   ],
+   "Heavy is the crown.": [
+    "gking_2_1.ogg",
+    "gking_2_2.ogg"
+   ],
+   "See what I have done.": [
+    "gking_3_1.ogg",
+    "gking_3_2.ogg"
+   ]
+  }
+ },
+ "tune": {
+  "sayFor": 1.8,
+  "gap": 5,
+  "basicGap": 20
+ }
+}

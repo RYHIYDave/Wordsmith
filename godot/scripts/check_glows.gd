@@ -608,3 +608,84 @@ func lairfetch(main, hero, dir: String) -> void:
 	h.unhurt = false
 	print("LAIRFETCH: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
+
+## THE BOSSES' CALLED LINES IN THEIR OWN VOICES (--only=voices; game/boss_calls.ts, engine/audio.ts speakBoss; tools/godot_voices.mjs):
+## every take a sound the Godot side can play; the Warden (floor 1, his moves), the Chained One (floor 3, his own script), the Rat
+## King (floor 12) and the King (floor 19, the act scripts) each begin a big move: its line over him and heard aloud; another
+## within 5 s neither shown nor heard; the King's charge, his basic blow, not again within 20 s.
+func voices(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var V: Dictionary = preload("res://scripts/monsters.gd").voices()
+	var files := 0
+	var bad_files: Array = []
+	for kind in V["voices"]:
+		for line in V["voices"][kind]:
+			for f in V["voices"][kind][line]:
+				files += 1
+				var st = load("res://assets/voices/" + str(f))
+				if not (st is AudioStream) or st.get_length() <= 0.2:
+					bad_files.append(f)
+	_line(files == 88 and bad_files.is_empty(), "%d bosses, %d takes of their lines, each a sound to play (%s)" % [V["voices"].size(), files, "all" if bad_files.is_empty() else str(bad_files)])
+	var said := func() -> Array:
+		return M._monsters.said_aloud.back() if not M._monsters.said_aloud.is_empty() else []
+	for place in ["floor1", "floor3", "floor12", "floor19"]:
+		M.way_depth = maxi(M.way_depth, int(place.substr(5)))
+		await M.go_to(place, "down")
+		await M._wait(0.8)
+		var b = M._d_boss()
+		if b == null:
+			_line(false, "%s: no boss" % place)
+			continue
+		var before: int = M._monsters.said_aloud.size()
+		var want := ""
+		h.world = M._free_near(b.world + Vector2(3.0, 0.0))
+		await M._wait(0.2)
+		if b.kind == "warden":
+			var i: int = b._moves.map(func(mv): return mv["id"]).find("bolts")
+			b._start(i, h, b.world.distance_to(h.world))
+			want = str(V["calls"]["warden"]["bolts"])
+		elif b.kind == "chained":
+			var i: int = b.h2.ACTS.map(func(a): return a["id"]).find("hook")
+			b.h2._start(b, i, h)
+			want = str(b.h2.CALLS["hook"])
+		else:
+			var A: Array = b.h2.acts()
+			var id := "ratking:words" if b.kind == "ratking" else "gking:charge"
+			var i: int = A.map(func(a): return a["id"]).find(id)
+			b.h2.start_act(b, A, i, h)
+			want = str(V["calls"][b.kind][id])
+		await M._wait(0.1)
+		var got: Array = said.call()
+		_line(M._monsters.said_aloud.size() == before + 1 and got == [b.kind, want] and b._said == want,
+			"%s: %s calls out \"%s\", over him (\"%s\") and aloud (%s)" % [place, b.kind, want, b._said, got])
+		await M._snap("%s/vo_%s.png" % [dir, place])
+		# (again within 5 s: nothing)
+		if b.kind == "warden":
+			var i: int = b._moves.map(func(mv): return mv["id"]).find("slam")
+			b._start(i, h, b.world.distance_to(h.world))
+		elif b.kind == "chained":
+			b.h2.act = null
+			b.h2._start(b, b.h2.ACTS.map(func(a): return a["id"]).find("whirl"), h)
+		else:
+			b.h2.act = {}
+			var A: Array = b.h2.acts()
+			var id2 := "ratking:roll" if b.kind == "ratking" else "gking:decree"
+			b.h2.start_act(b, A, A.map(func(a): return a["id"]).find(id2), h)
+		await M._wait(0.1)
+		_line(M._monsters.said_aloud.size() == before + 1, "%s: another of his moves within 5 s: not called (%d heard)" % [place, M._monsters.said_aloud.size() - before])
+		if b.kind == "gking":
+			# (6 s on, his charge again: his basic blow's line not within 20 s; another big move's is)
+			b._called_at -= 6.0
+			var A: Array = b.h2.acts()
+			b.h2.start_act(b, A, A.map(func(a): return a["id"]).find("gking:charge"), h)
+			await M._wait(0.1)
+			var n1: int = M._monsters.said_aloud.size()
+			b.h2.start_act(b, A, A.map(func(a): return a["id"]).find("gking:decree"), h)
+			await M._wait(0.1)
+			_line(n1 == before + 1 and M._monsters.said_aloud.size() == before + 2 and said.call()[1] == V["calls"]["gking"]["gking:decree"],
+				"the King, 6 s on: his charge (his basic blow) not called again within 20 s; his Decree is (\"%s\")" % [said.call()[1]])
+	h.unhurt = false
+	print("VOICES: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+

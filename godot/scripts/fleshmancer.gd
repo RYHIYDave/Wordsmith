@@ -286,7 +286,7 @@ func _start(m, i: int, hero) -> void:
 		_last_call = _clock
 		if i == 0:
 			_last_basic = _clock
-		m.say(CALLS[a["id"]], SAY_FOR)
+		m.call_line(CALLS[a["id"]], SAY_FOR)
 
 
 func _step_act(m, dt: float, hero) -> void:

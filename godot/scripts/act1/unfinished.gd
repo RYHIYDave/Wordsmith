@@ -194,7 +194,7 @@ func start(m, a: Dictionary, hero) -> void:
 	# (THE BOSSES CALL OUT THEIR BIG MOVES: the line over it)
 	if CALLS.has(a["id"]) and _clock - _last_call >= CALL_GAP:
 		_last_call = _clock
-		m.say(CALLS[a["id"]], SAY_FOR)
+		m.call_line(CALLS[a["id"]], SAY_FOR)
 
 
 func acting(m, a: Dictionary, t0: float, t1: float, _dt: float, hero) -> void:

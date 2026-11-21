@@ -358,6 +358,32 @@ var _voiced := {}
 
 
 ## A voice heard no oftener than every `gap` seconds (game.ts enemyRec).
+## THE BOSSES' CALLED LINES IN THEIR OWN VOICES (engine/audio.ts speakBoss, BOSS_VOICES: a mumble in a voice of his own, made in code
+## by the game; here the game's own voices' takes of every line, tools/godot_voices.mjs, assets/voices): what each boss's big moves
+## call out (BOSS_CALL_LINES), the takes of each line, how long a line stays up and how often (BOSS_CALLS).
+const VOICES_DIR := "res://assets/voices/"
+static var _voices = null
+
+
+static func voices() -> Dictionary:
+	if _voices == null:
+		_voices = JSON.parse_string(FileAccess.get_file_as_string(VOICES_DIR + "voices.json")) if FileAccess.file_exists(VOICES_DIR + "voices.json") else {"calls": {}, "voices": {}, "tune": {"sayFor": 1.8, "gap": 5.0, "basicGap": 20.0}}
+	return _voices
+
+
+## (the game's main.ts: a bossSay with his voice, speakBoss(kind, text)) A line said in a boss's own voice: one of its two takes.
+func speak(kind: String, text: String) -> void:
+	var takes: Array = voices()["voices"].get(kind, {}).get(text, [])
+	if takes.is_empty():
+		return
+	sfx.play_path(VOICES_DIR + str(takes.pick_random()))
+	said_aloud.append([kind, text])
+
+
+## (for the checks: each line said aloud, [kind, text])
+var said_aloud: Array = []
+
+
 func voice(name: String, gap: float, db: float) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	if now - float(_voiced.get(name, -1000.0)) < gap:

@@ -249,6 +249,9 @@ func start_act(m, A: Array, i: int, hero) -> void:
 	elif ATK.has(m.kind):
 		m.mgr.voice(ATK[m.kind], 0.25, linear_to_db(0.9 if m.boss else 0.6))
 	start(m, a, hero)
+	# (THE BOSSES CALL OUT THEIR BIG MOVES: bosses.ts startAct, bossCall; the Unfinished's and the Cantor's scripts keep their own)
+	if not get_script().get_script_constant_map().has("CALLS"):
+		m.call_out(str(a["id"]), i == 0)
 
 
 ## stepAct: its clock runs (chilled, slower until its blow), its pictures by it, and what it does at each moment is done.

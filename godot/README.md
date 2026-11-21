@@ -940,12 +940,22 @@ lights over the dark (town.gd `_ring_moments`):
   lair's edge (the camp, the glade) or 18 tiles of him, far beyond what he can see, and are in hand by the time he does; until
   then nothing of them is held or shown. `--only=lairfetch` (`check_glows.gd`): 4 checks, pictured.
 
+## The bosses' called lines in their own voices (the cloud chat, 21 Nov 2026)
+
+- **Heard as well as shown** (game/boss_calls.ts, his pick “Words + his own sound (Recommended)”; engine/audio.ts speakBoss,
+  BOSS_VOICES): as a boss begins one of his big moves his line comes up over him and is heard as a mumble in a voice of his own
+  (the Warden's jailer's bark, the Headsman's cold breath, the Chained One's insane growl, the Amalgamation's many voices, ... the
+  King's dying rasp). The game makes those voices in code as it plays; here they are the game's own voices' takes of every line,
+  two of each, made by the game's own synthesizer offline (`node tools/godot_voices.mjs`: `assets/voices`, 13 bosses, 44 lines,
+  88 takes, about 1 MB) and played as he calls out (`monsters.gd` speak, `monster.gd` call_line). The bosses that called out
+  in the Godot version without being heard are heard now (the Headsman, the Chained One, the Amalgamation, the Fleshmancer, the
+  Unfinished, the Cantor), and those that did not call out at all now do, by the game's rule (`monster.gd` call_out: never two
+  within 5 s, a basic blow's line not within 20 s): the Warden (his slam, his lockdown, his bolts), the Rat King, the Physician,
+  the Prince, the Queen and the King (`act1.gd` start_act). `--only=voices` (`check_glows.gd`): 10 checks.
+
 ## Not in it yet
 
-The bosses' spoken lines aloud (the Chained One and
-the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
-and blows; what a boss says is shown, not spoken), the
-wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them; uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+The wall's see-through for the monsters behind it; uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); a phone's own options (where an attack aims, the screen turned).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 

@@ -647,6 +647,8 @@ func _start(i: int, hero, dist: float) -> void:
 	_turn_to(hero.world - world, dist)
 	_set_list(MM.picture_of(art.name, mv["id"]), true)
 	mgr.used[mv["id"]] = mgr.used.get(mv["id"], 0) + 1
+	# (THE BOSSES CALL OUT THEIR BIG MOVES: the Warden's, the line over him in his own voice: game.ts startMove, bossCall)
+	call_out(str(mv["id"]), i == 0)
 	match mv["id"]:
 		"slam":
 			var at := minf(dist, float(def["range"]))
@@ -1743,6 +1745,38 @@ func _say_slip() -> void:
 
 ## Say a line over his head for so many seconds (game.ts bossIntro, render/fx.ts bossSay); `lift` game pixels over where he stands;
 ## `fallen`: said as he falls, and shown over him fallen (the Princess's whisper).
+## (THE BOSSES CALL OUT THEIR BIG MOVES, game/boss_calls.ts; main.ts bossSay with his voice) A line called out: over him, and
+## heard in his own voice (monsters.gd speak).
+func call_line(text: String, secs: float) -> void:
+	say(text, secs)
+	mgr.speak(kind, text)
+
+
+## bossCall: the line a boss calls out as he begins `move` (by its name in his rules; `basic`: it is his basic blow), if his kind has
+## one and he has not called out within BOSS_CALLS.gap (his basic blow's, within BOSS_CALLS.basicGap); called out, over him and
+## aloud. For the bosses whose own scripts do not keep their calls: the Warden's moves (startMove), and those of every boss of the
+## act scripts that has none of its own (act1.gd start_act: the Rat King, the Physician, the Prince, the Queen, the King).
+var _called_at := -1e9
+var _basic_at := -1e9
+
+
+func call_out(move: String, basic := false) -> void:
+	if not boss:
+		return
+	var V: Dictionary = mgr.voices()
+	var line = V["calls"].get(kind, {}).get(move)
+	if line == null:
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	var T: Dictionary = V["tune"]
+	if now - _called_at < float(T["gap"]) or (basic and now - _basic_at < float(T["basicGap"])):
+		return
+	_called_at = now
+	if basic:
+		_basic_at = now
+	call_line(str(line), float(T["sayFor"]))
+
+
 func say(text: String, secs: float, lift := SAY_LIFT, fallen := false) -> void:
 	_said = text
 	_said_t = secs
