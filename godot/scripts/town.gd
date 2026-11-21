@@ -278,13 +278,7 @@ func _process(dt: float) -> void:
 ## cyan, white for the one he is near enough to use; on a dark plate, in the small letters; one that would lie on another put up
 ## over it, eight at a time: the labels' own rule).
 func _draw_names() -> void:
-	var near := ""
-	var best := USE
-	for s in data["stations"]:
-		var d := Vector2(s["x"], s["y"]).distance_to(hero.world) if hero != null else INF
-		if d <= best:
-			best = d
-			near = str(s["kind"])
+	var near := station_near()
 	var labels: Array = []
 	for s in data["stations"]:
 		var k := str(s["kind"])
@@ -472,6 +466,25 @@ func _folk_tex(idx: int) -> Dictionary:
 
 # --- using things ---
 
+## The service within his reach, the nearest where several are (game.ts stationNear). THE GATE IS NOT ONE: his towns' ways are
+## walked (game.ts: "THE WAYS: the gate is walked through, not used"): the castle hall's rises as he comes and takes him out
+## through its doorway (below); the camp's, the city gate held, is the way he came in from floor 10 and leads nowhere back. Its
+## name is written over it all the same, never lit as the one in reach (render.ts: `near` is stationNear's).
+func station_near() -> String:
+	if hero == null:
+		return ""
+	var best := ""
+	var best_d := USE
+	for s in data["stations"]:
+		if str(s["kind"]) == "gate":
+			continue
+		var d := Vector2(s["x"], s["y"]).distance_to(hero.world)
+		if d < best_d:
+			best_d = d
+			best = str(s["kind"])
+	return best
+
+
 func _use() -> void:
 	prompt = ["", ""]
 	if not hero.alive:
@@ -479,13 +492,7 @@ func _use() -> void:
 	# (on the waypoint, the use button is the waypoint's: waypoint.gd)
 	if main._way != null and main._way.here():
 		return
-	var best := ""
-	var best_d := USE
-	for s in data["stations"]:
-		var d := Vector2(s["x"], s["y"]).distance_to(hero.world)
-		if d <= best_d:
-			best_d = d
-			best = s["kind"]
+	var best := station_near()
 	match best:
 		"wordsmith":
 			# (game.ts handInNear: the rune-stone; the Meldstone (MELD_HAND_IN); his ask for it (QUEST_TEXT.meldAskPrompt))
@@ -544,8 +551,6 @@ func _use() -> void:
 				prompt = ["E: " + main.quest1620.prompt_of(court), "court"]
 			else:
 				prompt = ["E: %s" % best.capitalize(), best]
-		"gate":
-			prompt = ["E: %s" % best.capitalize(), "later"]
 	if prompt[1] != "" and Input.is_action_just_pressed("interact"):
 		_do(prompt[1])
 
@@ -603,8 +608,6 @@ func _do(what: String) -> void:
 			main.quest1620.hand_in(main.quest1620.bird_due(), hero.world)
 		"court":
 			main.quest1620.hand_in(main.quest1620.court_due(), hero.world)
-		"later":
-			loot.say("Not in the Godot version yet.", Color(0.55, 0.6, 0.8))
 		"stash", "lexicon", "stranger":
 			main._inv.open_service(what)
 

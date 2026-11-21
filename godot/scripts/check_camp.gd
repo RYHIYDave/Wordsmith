@@ -71,7 +71,7 @@ func run(main, hero, dir: String) -> void:
 	var at := {}
 	for s in M.town.data["stations"]:
 		at[s["kind"]] = Vector2(s["x"], s["y"])
-	var want := {"wordsmith": "E: Wordsmith", "armourer": "E: Armourer", "mystic": "E: Mystic", "stash": "E: Stash", "lexicon": "E: Lexicon", "stranger": "E: Stranger", "gate": "E: Gate"}
+	var want := {"wordsmith": "E: Wordsmith", "armourer": "E: Armourer", "mystic": "E: Mystic", "stash": "E: Stash", "lexicon": "E: Lexicon", "stranger": "E: Stranger", "gate": ""}
 	var got := {}
 	for k in want:
 		if not at.has(k):
@@ -85,7 +85,14 @@ func run(main, hero, dir: String) -> void:
 	for k in want:
 		# (the mystic's prompt is her task's while one is due: her ask for the Queen's feather, act1/quest610.gd)
 		all = all and (got[k] == want[k] or (k == "mystic" and str(got[k]).begins_with("E: Mystic")))
-	_line(all, "its services, each where the art wrote its name, used as the town's: %s" % [got])
+	_line(all, "its services, each where the art wrote its name, used as the town's; its GATE none, walked and not used (game.ts stationNear), the city gate held: %s" % [got])
+	# (beside the gate, its name written but not lit as the one in reach, and E there does nothing: no words, no screen)
+	await _near(at["gate"])
+	var said = loot.msgs.back() if not loot.msgs.is_empty() else null
+	await M._key(KEY_E)
+	await M._wait(0.3)
+	_line(M.town.station_near() == "" and M.town.prompt[0] == "" and not M._inv.visible and (loot.msgs.back() if not loot.msgs.is_empty() else null) == said,
+		"beside the camp's GATE (%.1f, %.1f): nothing in reach (%s), no prompt, E does nothing" % [h.world.x, h.world.y, M.town.station_near()])
 	# --- the wordsmith: his half, his shelf drawn from the Fen's words (the game's for seed 1, from floor 10 with nine cleared)
 	await _near(at["wordsmith"])
 	await M._snap(dir + "/c03_the_wordsmith.png")

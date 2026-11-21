@@ -480,9 +480,11 @@ His pick, asked what to build next: “Town pieces still missing (Recommended)�
   people by the fire among it, its ground in 216 blocks loaded only near him), its layout the game's own makeCamp's
   (`npx tsx tools/godot_town.ts`), `town.gd` running it with `camp` on: its services as the town's (the same hand-ins, the
   wordsmith's half with his shelf drawn from the Fen's words), the kept Meldstone over its wordsmith's slab, its dusk, no music
-  and no loop (as the game). Its way on into the city (the barricaded street) says floor 11 is not in yet; its waypoint, which
-  in the game takes him on to the city's floor 11, takes him to the deepest floor the Godot version has until the city is in.
-  `--only=camp` (`check_camp.gd`): 8 steps, in from the Fen the way the game has it.
+  and no loop (as the game). Its way on into the city (the barricaded street) takes him down into floor 11; its waypoint, to
+  the city's floors he has reached. Its GATE is no service, as in the game (game.ts stationNear: "the gate is walked through,
+  not used"): the city gate held is the way he came in from the Fen and leads nowhere back, its name written over it and never
+  lit, E beside it doing nothing (in the castle hall too, whose gate rises as he comes and is walked out through: `town.gd`
+  station_near). `--only=camp` (`check_camp.gd`): 9 steps, in from the Fen the way the game has it.
 - **The town's other services** (his pick, asked what next: “Rest of the town (Recommended)”), each its half beside the gear
   screen, used at its place in town (`inventory.gd` THE TOWN'S OTHER SERVICES, `loot.gd`):
   - THE STRANGER (ui/trades.ts gambleSide; game.ts gambleKinds, gamblePrice, gamble): the fourteen kinds of piece he throws for a
@@ -819,7 +821,8 @@ look recorded from it: the sun through the windows, the motes, the braziers, the
   on over the place's dark, added; a light 7 or more across cuts a pool in the dark round it (2.6 times its reach, MONSTER_LIGHT_MIN);
   none while it is frozen. And the hero's own lights (a lit crystal, a feather) over the dark too, as the game draws them after it.
 - THE TOWN'S SERVICES' NAMES (render.ts STATION_NAME, NAME_LIFT): GATE, WORDSMITH, LEXICON, STASH, MYSTIC, ARMOURER, STRANGER over
-  each, in the town and the camp, on a dark plate in the small letters, white for the one he stands at.
+  each, in the town and the camp, on a dark plate in the small letters, white for the one he stands at (never the GATE's: it is
+  walked, not used).
 `--only=glows` (floor 2's cultists, pictured), `--only=townnames` (`check_glows.gd`).
 
 Held beside the game's own town, one more difference turned up, and is the game's now: THE FIRST LEVELS (defs.ts FIRST_LEVELS,
@@ -907,7 +910,7 @@ above), a phone's thrift with the side bosses' films (the Troll Chieftain's and 
 as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), the bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
 and blows; what a boss says is shown, not spoken), the
-Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them; in the town: the camp's GATE service; uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them; uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); a phone's own options (where an attack aims, the screen turned).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
