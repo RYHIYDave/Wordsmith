@@ -195,6 +195,8 @@ var curse_t := 0.0
 var curse_dps := 0.0
 ## THROWN (game.ts throwMonster, flyThrown): flung away from a place, so far in so long, {vx, vy, t}; a wall stops it
 var thrown := {}
+## (THE BRAWLER's uppercut, game.ts popUp: how high it is thrown up now, game pixels; heroes/brawler.gd sets it)
+var pop := 0.0
 var mirror_t := 0.0
 var surge_t := -1.0
 var stolen := 0
@@ -1732,6 +1734,8 @@ func _place() -> void:
 	# (one with rules of its own drawn up off the floor, or let down under its edge: a vulture overhead, a crawler under the lip)
 	if h2 != null and h2.has_method("lift"):
 		_lift += 2.0 * h2.lift(self)
+	# (thrown up by the Brawler's uppercut: render.ts, `sy -= fx.brawler.liftOf(m)`)
+	_lift += 2.0 * pop
 	# (one with rules of its own drawn later than its depth would have it, over the hero it has latched on to: render/act1_fx
 	# leech.ts `over`, so much added to its depth; where it is on the screen is kept, only its place among what stands moves)
 	if h2 != null and h2.has_method("over"):

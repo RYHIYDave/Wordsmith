@@ -68,6 +68,8 @@ func run(main, hero, d: String) -> void:
 		await _warlock()
 	elif h.cls == "tinkerer":
 		await _tinkerer()
+	elif h.cls == "brawler":
+		await _brawler()
 	# (every hero: what is drawn with him, the pool of light behind him and his scarf, feather or braids; and in town his own look)
 	await _looks()
 	print("HEROES: the %s, %d steps, %d as the game's%s" % [h.cls, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
@@ -579,6 +581,121 @@ func _tinkerer() -> void:
 	await _snap("tinkerer_golem_winds_down")
 	var gone: bool = await _run(2.5, func(): return K.golems.is_empty(), keep)
 	_line(winding and gone, "she falls: her Golem winds down where it stands (%s), and is gone (%s)" % [winding, gone])
+
+
+## THE BRAWLER (THE VETERAN): three taps fill three green globes and lock the combo, played in turn, jab, cross, hook, each striking
+## the one before him and driving it back, the globes going out after; a hold fills an orange globe, the round kick; a swipe and a
+## tap set the globe in green fire, the flying uppercut throwing the one before him up in the air, stunned as it comes down; a
+## swipe alone his dodging jump, nothing reaching him off the floor, the jump spent (another at once: "No jump"); R cancels a combo.
+func _brawler() -> void:
+	var K = h.kit
+	var home: Vector2 = h.world
+	var way := _open_way(home)
+	var pack := _pack(home, way)
+	if pack.size() < 3:
+		_line(false, "floor 2 has no three skeletons to set out")
+		return
+	var A = pack[0]
+	var put := func(m, at: Vector2) -> void:
+		m.world = at
+		m._place()
+		_hold(m)
+	var keep := func(): for m in pack: _hold(m)
+	for m in pack:
+		m.max_life = 1000.0
+		m.life = 1000.0
+	for m in pack.slice(1):
+		put.call(m, home + way * 12.0)
+	var press := func(what: String) -> void:
+		if what == "tap":
+			h.auto_attack = true
+		elif what == "hold":
+			h.auto_whirl = true
+		elif what == "swipe":
+			h.auto_lunge = h.world - way * 1.0
+		await M.get_tree().process_frame
+		await M.get_tree().process_frame
+	# THREE TAPS: jab, cross, hook
+	put.call(A, home + way * 1.6)
+	h._turn(way)
+	await _run(0.3, Callable(), keep)
+	var a0: float = A.life
+	var a_at: Vector2 = A.world
+	await press.call("tap")
+	await press.call("tap")
+	await press.call("tap")
+	var locked: bool = K.globes == ["punch", "punch", "punch"]
+	var seen := {}
+	var pics := {}
+	await _run(0.5, Callable(), keep)
+	await _snap("brawler_combo")
+	var played: bool = await _run(4.0, func(): return K.mv.is_empty() and K.queue.is_empty(), func():
+		for m in pack: _hold(m)
+		if not K.mv.is_empty():
+			seen[K.mv["id"]] = true
+			var p: Array = K.picture(h._side)
+			if not p.is_empty():
+				pics[p[0]] = true)
+	var out: bool = await _run(1.0, func(): return K.globes.is_empty(), keep)
+	_line(locked and played and seen.has("jab") and seen.has("cross") and seen.has("hook") and pics.has(58) and pics.has(59) and pics.has(60) and A.life < a0 and out,
+		"three taps: three green globes, locked (%s); played in turn, jab, cross, hook (%s), his pictures their own (%s); the one before him struck (%.0f to %.0f) and driven back (%.1f tiles); the globes out after" % [locked, seen.keys(), pics.keys(), a0, A.life, A.world.distance_to(a_at)])
+	# A HOLD: the round kick
+	h.world = home
+	h._place()
+	put.call(A, home + way * 1.6)
+	await _run(0.3, Callable(), keep)
+	a0 = A.life
+	a_at = A.world
+	await press.call("hold")
+	var kicked: bool = K.globes == ["kick"] and not K.mv.is_empty() and K.mv["id"] == "roundkick"
+	await _run(0.45, Callable(), keep)
+	await _snap("brawler_roundkick")
+	await _run(1.5, func(): return K.mv.is_empty(), keep)
+	_line(kicked and A.life < a0 and A.world.distance_to(a_at) > 0.5, "a hold: an orange globe, the round kick: struck (%.0f to %.0f), knocked back %.1f tiles" % [a0, A.life, A.world.distance_to(a_at)])
+	await _run(1.0, func(): return K.globes.is_empty(), keep)
+	# A SWIPE AND A TAP: the flying uppercut, thrown up
+	h.world = home
+	h._place()
+	put.call(A, home + way * 1.6)
+	await _run(0.3, Callable(), keep)
+	a0 = A.life
+	await press.call("swipe")
+	await press.call("tap")
+	var fire: bool = K.globes == ["punchFire"]
+	var upper: bool = not K.mv.is_empty() and K.mv["id"] == "uppercut"
+	var popped: bool = await _run(1.5, func(): return A.pop > 0.0, keep)
+	await _run(0.15)
+	await _snap("brawler_uppercut")
+	var top: float = A.pop
+	var down: bool = await _run(1.5, func(): return A.pop == 0.0 and K.up.is_empty())
+	_line(fire and upper and popped and down and A.stun_t > 0.5 and A.life < a0 and K.charges[2] == 0,
+		"a swipe and a tap: the globe in green fire, the flying uppercut: struck (%.0f to %.0f) and thrown up (%.0f game pixels), stunned as it came down (%.1f s); the jump spent" % [a0, A.life, top, A.stun_t])
+	await _run(1.6, func(): return K.mv.is_empty() and K.globes.is_empty(), keep)
+	# A SWIPE: his dodging jump; another at once: "No jump"
+	await _run(4.5, func(): return K.charges[2] >= 1, keep)
+	h.world = home
+	h._place()
+	await _run(0.2, Callable(), keep)
+	var start: Vector2 = h.world
+	await press.call("swipe")
+	var jumped: bool = not K.mv.is_empty() and K.mv["id"] == "dodge"
+	var safe: bool = await _run(1.0, func(): return h._invuln > 0.0 and not K.mv.is_empty() and float(K.mv["f"]) >= 13.0, keep)
+	await _snap("brawler_jump")
+	await press.call("swipe")
+	var denied: bool = K.globes.size() == 1
+	await _run(1.6, func(): return K.mv.is_empty(), keep)
+	_line(jumped and safe and denied and h.world.distance_to(start) > 0.5 and K.charges[2] == 0,
+		"a swipe: his dodging jump, %.1f tiles, nothing reaching him off the floor; another at once goes in as nothing (No jump)" % h.world.distance_to(start))
+	# R: the combo cancelled
+	await _run(1.0, func(): return K.globes.is_empty(), keep)
+	put.call(A, h.world + way * 1.6)
+	await press.call("tap")
+	await press.call("tap")
+	var two: int = K.globes.size()
+	h.auto_change = true
+	await M.get_tree().process_frame
+	await M.get_tree().process_frame
+	_line(two == 2 and K.globes.is_empty() and K.queue.is_empty() and K.mv.is_empty(), "R: his combo cancelled (%d globes in, then none)" % two)
 
 
 ## WHAT IS DRAWN WITH HIM (render.ts: drawAura, the tails): the pool of light behind him, his scarf (the Warrior), feather (the
