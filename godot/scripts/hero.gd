@@ -2137,12 +2137,18 @@ func talents_changed() -> void:
 ## its three in his moves' places (the words in them stay where they are), and he is drawn with what he picked (the bake's `axe`
 ## and `hammer` sets, in his town and anywhere else). Nothing changes while he keeps the one he has.
 func arm() -> void:
-	# (THE TINKERER: her Gun Arm's tesla coil grows with Intelligence, game.ts refresh `grows`)
-	var grows: Array = ["", "int" if cls == "tinkerer" and has("gunarm") else "", ""]
+	# (THE TINKERER: her Gun Arm's tesla coil grows with Intelligence; her Contraption by her pick, its bombs with Dexterity, its
+	# energy with Intelligence: game.ts refresh `grows`)
+	var grows: Array = ["", "", ""]
+	if cls == "tinkerer":
+		if has("gunarm"):
+			grows[1] = "int"
+		if has("contraptions"):
+			grows[0] = "int" if str(picks.get("contraptions", "")) == "energy" else "dex"
 	if grows != loadout.grows:
 		loadout.grows = grows
 		loadout.refresh()
-	if cls == "mage" or cls == "ranger":
+	if cls == "mage" or cls == "ranger" or cls == "tinkerer":
 		swap()
 		return
 	if cls != "warrior":
@@ -2333,6 +2339,10 @@ func swap() -> void:
 			hold = "wave" if tap == "orb" else "orb"
 		want[0] = tap
 		want[1] = hold
+	elif cls == "tinkerer":
+		# (her tree's CONTRAPTION: in her Vial Toss's place)
+		if has("contraptions"):
+			want[0] = "contraption"
 	elif cls == "ranger":
 		if has("snare"):
 			want[0] = "snare"

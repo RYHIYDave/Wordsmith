@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { paintWithoutCanvas } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
-import { shellFlightPiece, beamPiece } from '../src/art/golem_shots_fx';
+import { boltFrames, boltPiece, shellFlightPiece, beamPiece } from '../src/art/golem_shots_fx';
 import { GUN_GLOW, bolt, crackle } from '../src/dev/golem_gun_fx';
 import { Light } from '../src/dev/warlock_fx';
 
@@ -32,6 +32,14 @@ for (const [view, flip, dx, dy] of [['front', false, 6, 2], ['back', true, -2, -
   for (const k of [0, 1, 5, 10, 13, 16]) {
     const p = beamPiece(view, flip, dx, dy, k);
     keep({ kind: 'beam', view, flip, dx, dy, k }, p.px, p.ax, p.ay);
+  }
+}
+// (her tree's Contraption's energy bolt: from its firing to the last of its crackle and its ball's smoke)
+for (const [view, flip, dx, dy] of [['front', false, 5, 1], ['back', true, -2, -6], ['front', true, 0.5, 3]] as const) {
+  const { long } = boltFrames(view, flip, dx, dy);
+  for (const k of [0, 1, 2, 4, 8, 14, long - 1]) {
+    const p = boltPiece(view, flip, dx, dy, k);
+    keep({ kind: 'bolt', view, flip, dx, dy, k }, p.px, p.ax, p.ay);
   }
 }
 // (a tesla coil's zap, render/tinkerer_fx.ts zapFrames, its four frames)

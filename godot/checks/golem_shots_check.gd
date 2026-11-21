@@ -1,4 +1,4 @@
-## THE GOLEM'S SHOTS THAT RUN ANY WAY: the port's painter (scripts/heroes/golem_paint.gd) against the game's own pictures of them
+## THE GOLEM'S SHOTS THAT RUN ANY WAY, AND HER CONTRAPTION'S ENERGY BOLT: the port's painter (scripts/heroes/golem_paint.gd) against the game's own pictures of them
 ## (tools/godot_golem_shots.ts), pixel for pixel, and how long each takes to paint.
 ##   npx tsx tools/godot_golem_shots.ts <dir>
 ##   godot --headless --path godot -s res://checks/golem_shots_check.gd -- --dir=<dir>
@@ -15,6 +15,8 @@ func _init() -> void:
 	var cases: Array = JSON.parse_string(FileAccess.get_file_as_string(dir + "/shots.json"))
 	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/golem.json"))
 	var paint = Paint.new(d["charge"])
+	var tf: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/tinkerer_fx.json"))
+	paint.set_con(tf["con"], (tf["brew"] as Array).map(func(c): return Color(c)))
 	var bad := 0
 	var worst := {}
 	var zaps := {}
@@ -26,6 +28,8 @@ func _init() -> void:
 				got = paint.shell_flight(c["view"], c["flip"], c["dx"], c["dy"], int(c["k"]), int(c["n"]))
 			"beam":
 				got = paint.beam(c["view"], c["flip"], c["dx"], c["dy"], int(c["k"]))
+			"bolt":
+				got = paint.con_bolt(c["view"], c["flip"], c["dx"], c["dy"], int(c["k"]))
 			"zap":
 				var key := "%s,%s" % [c["x"], c["y"]]
 				if not zaps.has(key):

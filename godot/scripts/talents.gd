@@ -25,7 +25,7 @@ const PORTED := {
 	"warlock": ["hunger", "feast", "bloodlust", "branded", "hexchain", "phantomstep", "withering", "pyre", "blazingarm", "souldebt",
 		"lastrites", "terribleroar", "hellwave", "damnedsouls", "bounddemon"],
 	"tinkerer": ["bombsaway", "fortune", "clustervials", "tar", "madmixture", "alchemy", "thebigone", "lightningrod", "shrapnel",
-		"prospector", "overdrive", "markii", "growthserum", "gunarm"],
+		"prospector", "overdrive", "markii", "growthserum", "gunarm", "contraptions"],
 	"brawler": ["vstiffjab", "vviperjab", "vguardup", "vknockdown", "vlauncher", "vlightfeet", "vfirestarter", "vstoke", "vhangtime",
 		"vfullset", "vswitchkick", "vlonglegs", "vwallslam", "vaftershock", "vthunderknee"],
 }

@@ -1437,6 +1437,23 @@
    "verb": "RALLY",
    "windup": 0.3,
    "follow": 0.3
+  },
+  "contraption": {
+   "id": "contraption",
+   "name": "Contraption",
+   "kind": "contraption",
+   "icon": "contraption",
+   "dmg": 0.55,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 6,
+   "radius": 1.1,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Throw down a little mortar. It sets itself up and lobs your vials at whatever comes near. Up to three at once.",
+   "verb": "THROW A CONTRAPTION",
+   "windup": 0.22,
+   "follow": 0.34
   }
  },
  "grows": "str",

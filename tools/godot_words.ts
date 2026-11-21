@@ -74,7 +74,8 @@ const demonKit = [...DEMON_KIT];
 const warriorArms = [...WARRIOR_KITS.battleaxe, ...WARRIOR_KITS.warhammer];
 // (THE MAGE'S AND THE RANGER'S MOVES TO LEARN, game/swap_moves.ts: hers Ball, Spear and Beam, his Snare, Snipe and Rally, each in
 // the place of one of their own once their tree gives it)
-const swapMoves: Record<string, string[]> = { mage: ['ball', 'spear', 'beam'], ranger: ['snare', 'snipe', 'rally'] };
+// (and THE TINKERER'S CONTRAPTION in her Vial Toss's place, once her tree gives it: game.ts refresh)
+const swapMoves: Record<string, string[]> = { mage: ['ball', 'spear', 'beam'], ranger: ['snare', 'snipe', 'rally'], tinkerer: ['contraption'] };
 const allMoves = [...new Set([...CLASS_IDS.flatMap((c) => classes[c].moves), ...demonKit, ...warriorArms, ...Object.values(swapMoves).flat()])];
 const words = Object.fromEntries([...OURS, ...MADE].map((w) => [w, WORDS[w]]));
 // (THE PORT'S OWN WORDS FOR A MOVE: the Tinkerer's Golem only shoots, his word of 21 Nov 2026: “i think we should change the golem to

@@ -623,8 +623,13 @@ Serum (a vial bursting by it makes it twice as big and as strong, five seconds) 
 (below: her Golem only shoots): its cannon swapped for the tesla coil, no pick (“we can keep the tesla coil for now, but i feel
 like it will need to be changed in the future”): a zap every second at the nearest within 7 tiles, leaping on to two more, her
 hold its beam, her tap and hold growing with Intelligence (loadout `grows`). Lightning Rod and Prospector go off on its big shot
-in its ground pound's place, their cards worded so (talents.gd `OWN_WORDS`; the Gun Arm's and Shrapnel's too). Not yet: the
-Contraption. THE RANGER'S: Fleet, Windrunner, Keen Eye, Steady Aim, Quick Draw, Long Shot, Light Step, Hunter's Mark, Wide
+in its ground pound's place, their cards worded so (talents.gd `OWN_WORDS`; the Gun Arm's and Shrapnel's too). And the
+CONTRAPTION, in her Vial Toss's place (hero.gd swap; its bombs growing with Dexterity, its energy with Intelligence, loadout
+`grows`): thrown down where she aims, three at once (a fourth puts out the oldest once past its first shot), it springs open and
+lobs her little bombs (landed, a hop, then off) or fires bolts of energy at what comes near, her pick, her vials' talents working
+on both; drawn as the game draws it among the figures with its ring of the friend's cyan, its pictures baked
+(tools/godot_tinkerer.ts), its energy bolt painted as it comes (golem_paint.gd `con_bolt`, held against the game's, 21 pictures
+of the 71 none differing). THE RANGER'S: Fleet, Windrunner, Keen Eye, Steady Aim, Quick Draw, Long Shot, Light Step, Hunter's Mark, Wide
 Traps, Minefield, Split Shot, Hail, Ricochet (`piercing`) and Far Sight (heroes/ranger.gd, kit.gd's shots, hero.gd hit_monster).
 Venom (a poisoned one dying leaves a cloud of its poison) and his three moves to learn, Snare, Snipe and Rally (below). THE
 MAGE'S: Kindling (her fire leaves the
@@ -737,7 +742,7 @@ is hurt and falls:
   once: `assets/heroes/golem*`, `tinkerer_fx*`; what runs any way (the shell in flight, the beam, the tesla coil's zaps) painted
   as it comes by the game's own painter ported line for line, ahead of time off the screen's thread (`heroes/golem_paint.gd`;
   held against the game's pictures pixel for pixel: `npx tsx tools/godot_golem_shots.ts <dir>`, then `godot --headless --path
-  godot -s res://checks/golem_shots_check.gd -- --dir=<dir>`, 50 pictures, none differing).
+  godot -s res://checks/golem_shots_check.gd -- --dir=<dir>`, 71 pictures with her Contraption's bolt, none differing).
 - THE BRAWLER, THE VETERAN: his three globes and his combos (taps the jab, the cross, the hook, the spinning elbow; holds the round
   kick and the push kick; a swipe his dodging jump, or with a tap or a hold set in fire the flying uppercut, the flying knee, the
   spinning jump kicks; locked at three, R cancels), each move carried and aimed as the art has it, its blow reaching each in its
@@ -764,7 +769,7 @@ hero, who wakes in town; here he is back where the last save left him), the camp
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
 breaks, what stands behind raised ground cut off by it, menus (a new hero is picked on the class cards; there is no title menu to
 go BACK to), the title screen's music and the ring's moving light; the talents' own rules (the trees and their page are in:
-above; the Tinkerer's Contraption is not), the modes' rules for a fallen hero.
+above), the modes' rules for a fallen hero.
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made

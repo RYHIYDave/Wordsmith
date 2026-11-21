@@ -19,14 +19,16 @@ import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { Light, SMOKE, cloud } from '../src/dev/warlock_fx';
-import { BREW, CAP, VAPOUR, thud, vialBurst, vialSprite } from '../src/dev/contraption_fx';
+import { BREW, CAP, VAPOUR, lampRing, thud, vialBurst, vialSprite } from '../src/dev/contraption_fx';
 import { CHIP, SCORCH, blast, chips, scorch } from '../src/dev/blast_fx';
 import { HEART, STEAM, burstSteam, shock } from '../src/dev/golem_pound_fx';
 import { GUN_GLOW, IRON, impactBurst, muzzleFlash } from '../src/dev/golem_gun_fx';
 import { GEARS, SPARKS, gears, sparks } from '../src/dev/golem_down_fx';
 import { STUFF, crackStar, drawCrack } from '../src/dev/demon_fx';
-import { golemCharge, makeGolemArt } from '../src/art/tinkerer_art';
-import { BEAM_END_UP, BEAM_FRAMES, CHARGE_FX_LAST, golemChargeFx, golemShellBlastFx, golemShotAt } from '../src/art/golem_shots_fx';
+import { golemCharge, makeContraptionArt, makeGolemArt } from '../src/art/tinkerer_art';
+import { BOLT_FX, BOMB_FX, CBOLT, bombSprite, layShotAir, shotLayers } from '../src/dev/contraption_shots';
+import { CONTRAPTION_BALL } from '../src/art/golem_shots_points';
+import { BEAM_END_UP, BEAM_FRAMES, CHARGE_FX_LAST, contraptionBombBlastFx, golemChargeFx, golemShellBlastFx, golemShotAt } from '../src/art/golem_shots_fx';
 import { BEAM_FX, SHELL_FX } from '../src/dev/golem_charge_fx';
 import { CHARGE_SKID, GCHARGE, GCHARGE_BEAM, GCHARGE_SHELL } from '../src/dev/golem_moves';
 import { UNITS_PER_TILE } from '../src/art/moves3';
@@ -83,11 +85,47 @@ for (let k = 0; k < 16; k++) fx.set(`sparks:${k}`, piece(90, 80, 45, 60, 2, [GEA
   sparks(l, 45, 40, k, 7);
   gears(st, 45, 40, 60, k, 7, 1);
 }));
+// (brass sparks off a Contraption falling apart: its sparks without the Golem's gears)
+for (let k = 0; k < 16; k++) fx.set(`sparks0:${k}`, piece(90, 80, 45, 60, 2, [GEARS, SPARKS], ([st, l]) => {
+  void st;
+  sparks(l, 45, 40, k, 7);
+}));
 for (let i = 0; i < 6; i++) fx.set(`puff:${i}`, piece(40, 34, 20, 28, 1, [SMOKE], ([sm]) => cloud(sm, 20, 28, 18, 15, i * 0.17, 0.2, 31 + i)));
 // (ITS SMALL SHOT, render/tinkerer_fx.ts flashFrames: its cannon's flash out of its mouth, to the right or the left of the picture)
 for (const way of [1, -1]) for (let k = 0; k < 6; k++) fx.set(`flash${way}:${k}`, piece(60, 50, 30, 25, 1, [GUN_GLOW], ([l]) => muzzleFlash(l, 30, 25, way, -0.3, k, 4)));
 // (ITS BIG SHOT, art/golem_shots_fx.ts golemShellBlastFx: the shell's wide blast where it lands, its scorch on the floor and the
 // rest in the air, at each radius it is painted at (to the half tile, the game's radiusOf: from 1.5 at no charge to 2.5 at its full))
+// (HER TREE'S CONTRAPTION, render/tinkerer_fx.ts: its lamp's ring as it is lit; her little bomb tumbling, its fuse spitting; the
+// bomb going off where it lands, its scorch on the floor and the rest in the air, as approved; and the Contraption itself, loaded
+// with bombs or with energy, from in front and from behind: shut and tumbling as it is thrown, springing open, set up, its mortar
+// kicked by a shot, broken)
+for (let k = 0; k < 5; k++) fx.set(`lamp:${k}`, piece(30, 30, 15, 15, 1, [BREW], ([l]) => lampRing(l, 15, 15, k)));
+for (let i = 0; i < 8; i++) {
+  const ly = shotLayers();
+  bombSprite(ly, 10, 10, (i / 8) * Math.PI * 2, i % 2 === 0);
+  fx.set(`bomb:${i}`, layShotAir(20, 20, ly).sprite(10, 10, G));
+}
+{
+  const b = contraptionBombBlastFx();
+  for (let k = 0; k < BOMB_FX.long; k++) {
+    fx.set(`bombF:${k}`, b.floor[k]);
+    fx.set(`bombA:${k}`, b.air[k]);
+  }
+}
+const conClips: Record<string, { n: number; fps: number }> = {};
+for (const ammo of ['bombs', 'energy'] as const) {
+  const art = makeContraptionArt(ammo);
+  for (const view of ['front', 'back'] as const) {
+    const set = art[view];
+    set.tumble.forEach((sp, i) => fx.set(`con:${ammo}:${view}:tumble:${i}`, sp));
+    conClips.tumble = { n: set.tumble.length, fps: 0 };
+    fx.set(`con:${ammo}:${view}:stand:0`, set.stand[0]);
+    for (const [name, c] of [['open', set.open], ['shot', set.shot], ['broke', set.broke]] as const) {
+      conClips[name] = { n: c.frames.length, fps: c.fps };
+      c.frames.forEach((sp, i) => fx.set(`con:${ammo}:${view}:${name}:${i}`, sp));
+    }
+  }
+}
 const SHELL_RADII = [1.5, 2, 2.5];
 for (const r of SHELL_RADII) {
   const b = golemShellBlastFx(r);
@@ -281,4 +319,11 @@ writeFileSync('godot/assets/heroes/golem.json', JSON.stringify({
     beamFrames: BEAM_FRAMES, beamEndUp: BEAM_END_UP, muzzle, unitsPerTile: UNITS_PER_TILE, shellRadii: SHELL_RADII,
   },
 }));
-writeFileSync('godot/assets/heroes/tinkerer_fx.json', JSON.stringify({ pics: pack(fx, 'tinkerer_fx'), brew: BREW, gunGlow: GUN_GLOW }));
+writeFileSync('godot/assets/heroes/tinkerer_fx.json', JSON.stringify({
+  pics: pack(fx, 'tinkerer_fx'),
+  brew: BREW,
+  gunGlow: GUN_GLOW,
+  // (her tree's CONTRAPTION: its clips; its energy ball as it fires, as it is built (art/golem_shots_points.ts); the bolt's and
+  // the bomb's numbers)
+  con: { clips: conClips, ball: CONTRAPTION_BALL, CBOLT, BOLT_FX, BOMB_FX },
+}));

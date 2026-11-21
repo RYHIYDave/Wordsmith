@@ -22,6 +22,15 @@
 ##                  the tesla coil's beam, the Golem skidding back as it pours (heroes/golem_paint.gd paints these as they come);
 ##                  while it braces and charges, the ring and grit round it and the steam and light at it, frame by frame
 ##   teslaZap       her tree's TESLA COIL: a jag of her cyan lightning from the coil on its back to the nearest, and on
+##   HER TREE'S CONTRAPTION stands among the figures, loaded with her pick (bombs or energy), from in front or from behind by the way
+##     it faces, turned over as the game turns it: thrown, tumbling through the air and bouncing; springing open; set up, a ring of
+##     the friend's cyan round its foot (render.ts CON_SEEN); its mortar kicked by each shot; falling apart.
+##   contraption       a thud of dust where it comes down; its lamp's ring as it is lit
+##   vial (its own)    a puff of her brew's flash at its mouth; ITS LITTLE BOMB lobbed, tumbling, its fuse spitting, landed, a hop,
+##                     sitting till it goes off
+##   vialBurst (bomb)  her bomb going off where it sat, its scorch on the floor
+##   contraptionBolt   ITS ENERGY BOLT from its ball to what it strikes, crackling there (golem_paint.gd, painted as it comes)
+##   contraptionEnd    yellow sparks off its brass as it falls apart
 ##   blastJump      her bomb going off: its flash and fireball, chips flung, a scorch left glowing and cooling; puffs of its smoke
 ##                  along the way she flew
 ##   blastLand      a thud of dust where she comes down
@@ -73,6 +82,13 @@ var beams: Array = []
 var big_blasts: Array = []
 var zaps: Array = []
 var _later: Array = []
+## (HER TREE'S CONTRAPTION: its mouth's puffs {x, y, t}; its lamps {x, y, t}; its bolts, painted as they come; its sparks)
+var puffs: Array = []
+var lamps: Array = []
+var con_bolts: Array = []
+var con_sparks: Array = []
+var CON := {}
+var _con_nodes := {}
 ## (what runs any way is painted ahead off the screen's own thread, a frame at a time, as the game paints it: each shot's `done`
 ## frames under this lock; the tasks, waited for once done)
 var _mx := Mutex.new()
@@ -158,6 +174,8 @@ func _ready() -> void:
 		BREW.append(Color(c))
 	for c in f["gunGlow"]:
 		GUN.append(Color(c))
+	CON = f["con"]
+	paint.set_con(CON, BREW)
 	_fsheet = load("res://assets/heroes/tinkerer_fx-0.png")
 	air = _Air.new()
 	air.look = self
@@ -166,6 +184,10 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	for n in _con_nodes.values():
+		if is_instance_valid(n):
+			n.queue_free()
+	_con_nodes.clear()
 	for id in _tasks:
 		WorkerThreadPool.wait_for_task_completion(id)
 	_tasks.clear()
@@ -182,9 +204,36 @@ func _exit_tree() -> void:
 func on_event(e: Dictionary, _fx) -> void:
 	match str(e.get("t", "")):
 		"vial":
-			lobs.append({"x0": e["x0"], "y0": e["y0"], "x1": e["x1"], "y1": e["y1"], "t": 0.0, "flight": e["flight"], "hand": int(e.get("id", -1)) < 0,
-				"little": e.get("little", false), "big": e.get("big", false)})
+			var lob := {"x0": e["x0"], "y0": e["y0"], "x1": e["x1"], "y1": e["y1"], "t": 0.0, "flight": e["flight"], "hand": int(e.get("id", -1)) < 0,
+				"little": e.get("little", false), "big": e.get("big", false)}
+			# (her tree's CONTRAPTION, its pick BOMBS: a little bomb, going off a moment after it lands)
+			if e.has("bomb"):
+				lob["fuse"] = float(e["bomb"])
+			lobs.append(lob)
+			# (out of a Contraption's mortar: a little puff of her brew's flash at its mouth)
+			if int(e.get("id", -1)) >= 0:
+				puffs.append({"x": e["x0"], "y": e["y0"], "t": 0.0})
+		"contraption":
+			var cx: float = e["x"]
+			var cy: float = e["y"]
+			_later.append([_t + 12.0 / 30.0, func() -> void: thuds.append({"x": cx, "y": cy, "t": 0.0})])
+			_later.append([_t + 38.0 / 30.0, func() -> void: lamps.append({"x": cx, "y": cy, "t": 0.0})])
+		"contraptionEnd":
+			con_sparks.append({"x": e["x"], "y": e["y"], "t": 0.0})
+		"contraptionBolt":
+			var bdx := float(e["x1"]) - float(e["x0"])
+			var bdy := float(e["y1"]) - float(e["y0"])
+			var bf := _facing(bdx, bdy)
+			var cb := {"x": e["x0"], "y": e["y0"], "t": 0.0, "view": bf[0], "flip": bf[1], "dx": bdx, "dy": bdy, "kept": {}, "done": {}}
+			cb["n"] = paint.con_bolt_long(cb["view"], cb["flip"], bdx, bdy)
+			var pt = paint
+			_ahead(cb, int(cb["n"]), func(k: int) -> Dictionary: return pt.con_bolt(cb["view"], cb["flip"], cb["dx"], cb["dy"], k))
+			con_bolts.append(cb)
 		"vialBurst":
+			# (her tree's CONTRAPTION, its pick BOMBS: her bomb going off, as her blast jump's does)
+			if e.get("bomb", false):
+				big_blasts.append({"x": e["x"], "y": e["y"], "t": 0.0, "r": "", "kind": "bomb"})
+				return
 			# (her tree's: little ones small; The Big One's twice the size, a ring of her cyan racing out and a thud of dust; Mad
 			# Mixture's in its brew's colours)
 			bursts.append({"x": e["x"], "y": e["y"], "t": 0.0, "k": 0.6 if e.get("little", false) else (2.0 if e.get("big", false) else 1.0), "brew": str(e.get("brew", ""))})
@@ -287,8 +336,18 @@ func _process(dt: float) -> void:
 				list.remove_at(i)
 	for i in range(lobs.size() - 1, -1, -1):
 		lobs[i]["t"] = float(lobs[i]["t"]) + dt
-		if float(lobs[i]["t"]) >= float(lobs[i]["flight"]):
+		if float(lobs[i]["t"]) >= float(lobs[i]["flight"]) + float(lobs[i].get("fuse", 0.0)):
 			lobs.remove_at(i)
+	for pair in [[puffs, 6.0 / 30.0], [lamps, 5.0 / 30.0], [con_sparks, 16.0 / 30.0]]:
+		var list: Array = pair[0]
+		for i in range(list.size() - 1, -1, -1):
+			list[i]["t"] = float(list[i]["t"]) + dt
+			if float(list[i]["t"]) >= float(pair[1]):
+				list.remove_at(i)
+	for i in range(con_bolts.size() - 1, -1, -1):
+		con_bolts[i]["t"] = float(con_bolts[i]["t"]) + dt
+		if floori(float(con_bolts[i]["t"]) * 30.0) >= int(con_bolts[i]["n"]):
+			con_bolts.remove_at(i)
 	var launch_life := maxi(int(RK["launchN"]), ceili(float(RK["flight"])) + int(RK["puffLife"]) + 1)
 	for i in range(launches.size() - 1, -1, -1):
 		launches[i]["t"] = float(launches[i]["t"]) + dt
@@ -320,7 +379,8 @@ func _process(dt: float) -> void:
 			beams.remove_at(i)
 	for i in range(big_blasts.size() - 1, -1, -1):
 		big_blasts[i]["t"] = float(big_blasts[i]["t"]) + dt
-		if floori(float(big_blasts[i]["t"]) * 30.0) >= int(CH["shellFx"]["long"]):
+		var long: int = int(CON["BOMB_FX"]["long"]) if big_blasts[i].get("kind", "") == "bomb" else int(CH["shellFx"]["long"])
+		if floori(float(big_blasts[i]["t"]) * 30.0) >= long:
 			big_blasts.remove_at(i)
 	for id in _tasks.duplicate():
 		if WorkerThreadPool.is_task_completed(id):
@@ -446,6 +506,7 @@ func _place() -> void:
 			if is_instance_valid(_golem_nodes[id]):
 				_golem_nodes[id].queue_free()
 			_golem_nodes.erase(id)
+	_place_cons(holder)
 	# (its take-offs' flash, fire, dust and stone and its after-image, a hair behind the Golem there from in front and a hair before it
 	# from behind; its landings' dust and stone a hair before it)
 	var want: Array = []
@@ -581,7 +642,22 @@ func _draw() -> void:
 			var view := "back" if float(g["fx"]) + float(g["fy"]) < -0.2 else "front"
 			gpiece(self, "%s:%s:chFloor:%d" % [gun, view, f], roundf(_gx(g["x"], g["y"])) * 2.0, roundf(_gy(g["x"], g["y"])) * 2.0, float(g["fx"]) - float(g["fy"]) < 0.0)
 	for b in big_blasts:
-		_piece(self, "shell%sF:%d" % [b["r"], floori(float(b["t"]) * 30.0)], _gx(b["x"], b["y"]), _gy(b["x"], b["y"]))
+		_piece(self, "%sF:%d" % [_blast_key(b), floori(float(b["t"]) * 30.0)], _gx(b["x"], b["y"]), _gy(b["x"], b["y"]))
+	# (her tree's CONTRAPTION: a ring of the friend's cyan round each set up: render.ts CON_SEEN; its lamp's ring as it is lit)
+	if kit != null:
+		for c in kit.contraptions:
+			if float(c["broke"]) >= 0.0 or float(c["t"]) < 22.0 / 30.0:
+				continue
+			var k := minf(1.0, (float(c["t"]) - 22.0 / 30.0) / 0.2)
+			var cx := roundf(_gx(c["x"], c["y"]))
+			var cy := roundf(_gy(c["x"], c["y"]))
+			draw_set_transform(Vector2(cx, cy) * 2.0, 0.0, Vector2(0.5 * 22.6, 0.5 * 11.3) * 2.0)
+			draw_circle(Vector2.ZERO, 1.0, Color(0.133, 0.816, 0.878, 0.14 * k))
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			var n := maxi(16, roundi(0.46 * 44.0))
+			for j in n:
+				var a := float(j) / n * TAU
+				draw_rect(Rect2(roundf(cx + (cos(a) - sin(a)) * 16.0 * 0.46) * 2.0, roundf(cy + (cos(a) + sin(a)) * 8.0 * 0.46) * 2.0, 2.0, 2.0), Color(0.478, 0.957, 1.0, k))
 	# (where its rocket jumps took off, scorched and cracked, glowing; where they came down, cracked open; under a Golem crouched to
 	# take off, the light of its stacks' fire and grit hopping)
 	for l in launches:
@@ -635,6 +711,17 @@ func draw_air(c: CanvasItem) -> void:
 		_piece(c, "blast:%d" % _at(24, float(p["t"]) / LIFE["blast"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]))
 	# (her vials, lobbed high, tumbling)
 	for l in lobs:
+		if l.has("fuse"):
+			# (a little bomb: lobbed, then landed, a hop, and sitting till it goes off, its fuse spitting)
+			var bu := minf(1.0, float(l["t"]) / float(l["flight"]))
+			var bx := float(l["x0"]) + (float(l["x1"]) - float(l["x0"])) * bu
+			var by := float(l["y0"]) + (float(l["y1"]) - float(l["y0"])) * bu
+			var after := float(l["t"]) - float(l["flight"])
+			var hop_t := float(CON["BOMB_FX"]["hop"]) / 30.0
+			var bup := 10.0 * (1.0 - bu) + 4.0 * 30.0 * bu * (1.0 - bu) if after < 0.0 else (6.0 * sin(after / hop_t * PI) if after < hop_t else 0.0)
+			var fr := floori(float(l["t"]) * 18.0) % 8 if after < 0.0 else floori(float(l["t"]) * 10.0) % 2
+			_piece(c, "bomb:%d" % fr, _gx(bx, by), _gy(bx, by) - bup)
+			continue
 		var u := float(l["t"]) / float(l["flight"])
 		var x := float(l["x0"]) + (float(l["x1"]) - float(l["x0"])) * u
 		var y := float(l["y0"]) + (float(l["y1"]) - float(l["y0"])) * u
@@ -652,6 +739,18 @@ func draw_air(c: CanvasItem) -> void:
 		_piece(c, "impact:%d" % _at(10, float(p["t"]) / LIFE["impact"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]) - 12.0, 1.0, float(p.get("k", 1.0)))
 	for p in sparks:
 		_piece(c, "sparks:%d" % _at(16, float(p["t"]) / LIFE["sparks"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]))
+	for p in con_sparks:
+		_piece(c, "sparks0:%d" % _at(16, float(p["t"]) / LIFE["sparks"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]))
+	for p in lamps:
+		_piece(c, "lamp:%d" % _at(5, float(p["t"]) / (5.0 / 30.0)), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]) - 8.0)
+	# (a Contraption's mouth: a little puff of her brew's flash)
+	for p in puffs:
+		var k := float(p["t"]) / (6.0 / 30.0)
+		var col: Color = BREW[3 if k < 0.4 else 1]
+		col.a = 1.0 - k
+		var px := roundf(_gx(p["x"], p["y"]))
+		var py := roundf(_gy(p["x"], p["y"]) - 12.0)
+		c.draw_rect(Rect2((px - 1.0) * 2.0, (py - 1.0 - roundf(k * 4.0)) * 2.0, 6.0, 6.0), col)
 	_draw_shots(c)
 
 
@@ -812,4 +911,108 @@ func _draw_shots(c: CanvasItem) -> void:
 		var by := float(b["y"]) - float(b["uy"]) * back
 		_painted(c, _frame(b, k), _gx(bx, by), _gy(bx, by))
 	for b in big_blasts:
-		_piece(c, "shell%sA:%d" % [b["r"], floori(float(b["t"]) * 30.0)], _gx(b["x"], b["y"]), _gy(b["x"], b["y"]))
+		_piece(c, "%sA:%d" % [_blast_key(b), floori(float(b["t"]) * 30.0)], _gx(b["x"], b["y"]), _gy(b["x"], b["y"]))
+	# (her Contraption's bolts of energy, painted as they come)
+	for b in con_bolts:
+		_painted(c, _frame(b, floori(float(b["t"]) * 30.0)), _gx(b["x"], b["y"]), _gy(b["x"], b["y"]))
+
+
+# =====================================================================================================================
+# HER TREE'S CONTRAPTION (render.ts drawTinkerers)
+
+## A Contraption standing among the figures: its picture drawn by the look.
+class _Con extends Node2D:
+	var look
+	var c: Dictionary
+
+	func _draw() -> void:
+		look.draw_con(self, c)
+
+
+## (art/golem_shots_fx.ts radiusOf) Which of the big blasts' pictures: the shell's at its radius, or her bomb's.
+func _blast_key(b: Dictionary) -> String:
+	return "bomb" if b.get("kind", "") == "bomb" else "shell%s" % b["r"]
+
+
+func _place_cons(holder) -> void:
+	var seen := {}
+	for c in kit.contraptions:
+		var id: int = c["id"]
+		seen[id] = true
+		var n = _con_nodes.get(id)
+		if n == null or not is_instance_valid(n):
+			n = _Con.new()
+			n.look = self
+			holder.add_child(n)
+			_con_nodes[id] = n
+		n.c = c
+		var at := _con_at(c)
+		# (a hair nearer than a figure on its spot: render.ts, its depth x + y + 0.01)
+		n.position = Iso.to_screen(at.x, at.y) + Vector2(0, 0.16)
+		n.queue_redraw()
+	for id in _con_nodes.keys():
+		if not seen.has(id):
+			if is_instance_valid(_con_nodes[id]):
+				_con_nodes[id].queue_free()
+			_con_nodes.erase(id)
+
+
+## Where it is on the floor: flying from her hand to where it comes down, as it is thrown.
+func _con_at(c: Dictionary) -> Vector2:
+	var t: float = c["t"]
+	if float(c["broke"]) < 0.0 and t < 12.0 / 30.0:
+		var u := t / (12.0 / 30.0)
+		return Vector2(float(c["x0"]) + (float(c["x"]) - float(c["x0"])) * u, float(c["y0"]) + (float(c["y"]) - float(c["y0"])) * u)
+	return Vector2(c["x"], c["y"])
+
+
+## (render.ts drawTinkerers) A Contraption's picture for what it is doing: broken, falling apart; thrown, tumbling high and coming
+## down, a bounce; shut; springing open; its mortar kicked by a shot; set up.
+func draw_con(node: CanvasItem, c: Dictionary) -> void:
+	var view := "back" if float(c["fx"]) + float(c["fy"]) < -0.2 else "front"
+	var pre := "con:%s:%s:" % [kit.ammo(), view]
+	var clips: Dictionary = CON["clips"]
+	var t: float = c["t"]
+	var lift := 0.0
+	var key := ""
+	var LAND := 12.0 / 30.0
+	var SETTLE := 22.0 / 30.0
+	var OPEN0 := 24.0 / 30.0
+	var tumble: int = clips["tumble"]["n"]
+	var clip := func(name: String, s: float) -> String:
+		var cl: Dictionary = clips[name]
+		return "%s%s:%d" % [pre, name, clampi(floori(s * float(cl["fps"]) + 1e-6), 0, int(cl["n"]) - 1)]
+	if float(c["broke"]) >= 0.0:
+		key = clip.call("broke", float(c["broke"]))
+	elif t < LAND:
+		var u := t / LAND
+		lift = 14.0 + 26.0 * 4.0 * u * (1.0 - u) - 14.0 * u
+		key = "%stumble:%d" % [pre, floori(t * 24.0) % tumble]
+	elif t < SETTLE:
+		var u := (t - LAND) / (SETTLE - LAND)
+		lift = 9.0 * 4.0 * u * (1.0 - u)
+		key = "%stumble:%d" % [pre, (floori(t * 18.0) % 2) * 4]
+	elif t < OPEN0:
+		key = "%stumble:0" % pre
+	elif t < float(kit._C()["set"]):
+		key = clip.call("open", t - OPEN0)
+	elif float(c["shot_age"]) < float(clips["shot"]["n"]) / float(clips["shot"]["fps"]):
+		key = clip.call("shot", float(c["shot_age"]))
+	else:
+		key = "%sstand:0" % pre
+	var at := _con_at(c)
+	fpiece(node, key, 0.0, -lift * 2.0 - _lift(at.x, at.y) - 0.16, float(c["fx"]) - float(c["fy"]) < 0.0)
+
+
+## One of her effects' pieces, its anchor at (x, y) picture pixels on `c`, turned over about its anchor (flipSprite).
+func fpiece(c: CanvasItem, key: String, x: float, y: float, flip := false) -> void:
+	var p = _fpics.get(key)
+	if p == null or (p as Array).is_empty():
+		return
+	var src := Rect2(p[0], p[1], p[2], p[3])
+	if flip:
+		c.draw_set_transform(Vector2(x, y), 0.0, Vector2(-1, 1))
+		c.draw_texture_rect_region(_fsheet, Rect2(-float(p[4]), -float(p[5]), p[2], p[3]), src)
+		c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	else:
+		c.draw_texture_rect_region(_fsheet, Rect2(x - float(p[4]), y - float(p[5]), p[2], p[3]), src)

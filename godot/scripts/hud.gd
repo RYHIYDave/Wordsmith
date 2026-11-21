@@ -949,9 +949,9 @@ func _skills() -> Array:
 	# (THE WARRIOR'S BATTLE AXE AND WARHAMMER: their three on his buttons once his tree picks one: hero.gd arm)
 	if hero != null and hero.cls == "warrior" and of.has("warrior:" + str(hero.weapon)):
 		return of["warrior:" + str(hero.weapon)]
-	# (THE MAGE'S AND THE RANGER'S MOVES TO LEARN: whatever is in each place now, its own name and icon: hud.json `skillInfo`)
+	# (THE MAGE'S AND THE RANGER'S MOVES TO LEARN, THE TINKERER'S CONTRAPTION: whatever is in each place now, its own name and icon: hud.json `skillInfo`)
 	var info: Dictionary = _data.get("skillInfo", {})
-	if hero != null and not hero.loadout.form_moves.is_empty() and of.has(hero.cls) and hero.cls in ["mage", "ranger"]:
+	if hero != null and not hero.loadout.form_moves.is_empty() and of.has(hero.cls) and hero.cls in ["mage", "ranger", "tinkerer"]:
 		var out: Array = []
 		for i in 3:
 			var id: String = hero.loadout.id(i)

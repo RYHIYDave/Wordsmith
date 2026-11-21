@@ -57,7 +57,7 @@ classMoves['warlock:demon'] = DEMON_KIT;
 classMoves['warrior:battleaxe'] = WARRIOR_KITS.battleaxe;
 classMoves['warrior:warhammer'] = WARRIOR_KITS.warhammer;
 // (THE MAGE'S AND THE RANGER'S MOVES TO LEARN, game/swap_moves.ts: whatever is in each place, its name, icon and wait: `skillInfo`)
-const swapIds = ['ball', 'spear', 'beam', 'snare', 'snipe', 'rally'];
+const swapIds = ['ball', 'spear', 'beam', 'snare', 'snipe', 'rally', 'contraption'];
 const allIds = [...new Set([...ids, ...Object.values(classMoves).flat(), ...swapIds])];
 for (const id of allIds) {
   const icon = SKILLS[id as SkillId].icon;

@@ -849,9 +849,79 @@ func _tinkerer() -> void:
 	var card: String = Talents.of("tinkerer", "gunarm")["text"]
 	_line(kit.arm_of() == "tesla" and zapped and beamed and h.loadout.grows[1] == "int" and Talents.of("tinkerer", "gunarm")["pick"] == null and card.contains("tesla coil"),
 		"Gun Arm: its cannon swapped for the tesla coil (%s): its zap struck the one 3 tiles off (%.0f to %.0f), its beam struck it (%.0f to %.0f); her tap and hold grows with %s; its card: \"%s\"" % [kit.arm_of(), zl0, bl0, bl0, z1.life, h.loadout.grows[1], card])
+	# THE CONTRAPTION (her tap, in her Vial Toss's place), its pick BOMBS: thrown down, it sets up and lobs her little bombs at the
+	# one before it; a fourth thrown puts the oldest out of action; its pick ENERGY: bolts of energy
+	kit.golems = []
+	h.talents = ["bombsaway", "contraptions"]
+	h.picks["contraptions"] = "bombs"
+	h.talents_changed()
+	var tap_is: String = h.loadout.id(0)
+	var grows_b: String = h.loadout.grows[0]
+	var cf = _foe(5.0)
+	cf.seen = true
+	if cf.state == "sleep":
+		cf.state = "chase"
+	cf.max_life = maxf(cf.max_life, 100000.0)
+	cf.life = cf.max_life
+	cf.stun_for(30.0)
+	kit.contraptions.clear()
+	kit.vials.clear()
+	kit._throw_contraption(0, h.world, h.world + h.face * 2.5, 0.5)
+	await _run(0.2)
+	await _snap("tinkerer_contraption_thrown")
+	var con: Dictionary = kit.contraptions[0] if not kit.contraptions.is_empty() else {}
+	await _run(1.2)
+	await _snap("tinkerer_contraption_set")
+	var cl0: float = cf.life
+	var lobbed := false
+	for n in 60:
+		await _run(0.05)
+		if kit.vials.any(func(v): return v.get("bomb", false)):
+			lobbed = true
+			break
+	await _run(0.2)
+	await _snap("tinkerer_contraption_bomb")
+	var blown := false
+	for n in 40:
+		await _run(0.05)
+		if cf.life < cl0:
+			blown = true
+			break
+	await _run(0.1)
+	await _snap("tinkerer_contraption_blast")
+	_line(tap_is == "contraption" and grows_b == "dex" and not con.is_empty() and lobbed and blown,
+		"Contraption: in her tap's place (%s, growing with %s), thrown down it set up and lobbed a little bomb at the one before it, struck (%.0f to %.0f)" % [tap_is, grows_b, cl0, cf.life])
+	# (a fourth thrown puts the oldest out of action, now it is past its first shot)
+	for n in 3:
+		kit._throw_contraption(0, h.world, h.world + h.face * 2.0 + Vector2(-h.face.y, h.face.x) * (n - 1) * 1.2, 0.5)
+	var standing: int = kit.contraptions.filter(func(q): return float(q["broke"]) < 0.0).size()
+	_line(float(con.get("broke", -1.0)) >= 0.0 and standing == 3, "Contraption: a fourth thrown put the oldest out of action (falling apart: %s), three standing (%d)" % [float(con.get("broke", -1.0)) >= 0.0, standing])
+	await _run(0.3)
+	await _snap("tinkerer_contraption_breaks")
+	# (its pick ENERGY: bolts of energy at the nearest, growing with Intelligence)
+	h.picks["contraptions"] = "energy"
+	h.talents_changed()
+	var grows_e: String = h.loadout.grows[0]
+	kit.contraptions.clear()
+	kit.vials.clear()
+	cf.life = cf.max_life
+	kit._throw_contraption(0, h.world, h.world + h.face * 2.5, 0.5)
+	await _run(1.4)
+	var el0: float = cf.life
+	var bolted := false
+	for n in 60:
+		await _run(0.05)
+		if cf.life < el0:
+			bolted = true
+			break
+	await _snap("tinkerer_contraption_bolt")
+	_line(grows_e == "int" and bolted, "Contraption, its pick ENERGY (growing with %s): its bolt of energy struck the one before it (%.0f to %.0f)" % [grows_e, el0, cf.life])
 	h.talents = []
+	h.picks.erase("contraptions")
 	h.talents_changed()
 	kit.golems = []
+	kit.contraptions.clear()
+	kit.vials.clear()
 	for o in M._monsters.list:
 		if is_instance_valid(o) and not o.dead:
 			o.stun_t = 0.0

@@ -45,6 +45,11 @@ var land_t := -1.0
 var vials_thrown := 0
 var tars: Array = []
 var brewing := false
+## HER TREE'S CONTRAPTION (game.ts throwContraption, updateTinkerer, lobVial, contraptionBolt, boltStrikes; TINKER_TUNE.contraption):
+## her tap sets one down in her Vial Toss's place, three at once; set up, it lobs her little bombs or fires bolts of energy, her
+## pick, at what comes near. Each {id, x0, y0, x, y, t, next, shot_age, fx, fy, broke, echo, woke, skill, frac}.
+var contraptions: Array = []
+var _next_con := 0
 
 
 func _T() -> Dictionary:
@@ -124,6 +129,15 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 			for g in _up():
 				if g["act"] == "charge" and not g["did"]:
 					g["echo"] = each
+	elif kind == "contraption":
+		# (a Contraption thrown down where she aimed, no further than its range; "of Echoes", the newest one lobs a weaker shot
+		# with its first)
+		if echo:
+			var up := contraptions.filter(func(q): return float(q["broke"]) < 0.0)
+			if not up.is_empty():
+				up.back()["echo"] = each
+		else:
+			_throw_contraption(i, from, to, each)
 	if primary and float(r["echo"]) > 0.0:
 		var again := func() -> void: _deliver(i, from, to, float(h.loadout.r(i)["echo"]), false)
 		h._echo_of(i, kind, from, way, again)
@@ -161,7 +175,7 @@ func _vial_bursts(v: Dictionary) -> void:
 	if big:
 		rad *= float(T["bigOne"]["wide"])
 	var at := Vector2(v["x1"], v["y1"])
-	_say({"t": "vialBurst", "x": at.x, "y": at.y, "r": rad, "little": little, "big": big, "brew": brew})
+	_say({"t": "vialBurst", "x": at.x, "y": at.y, "r": rad, "little": little, "big": big, "brew": brew, "bomb": v.get("bomb", false)})
 	_sfx("shatter", 0.2 if little else 0.35)
 	if big:
 		_shake(4.0)
@@ -649,13 +663,19 @@ func _tesla_coil(g: Dictionary, gdt: float) -> void:
 
 ## (game.ts updateTinkerer) Her vials in the air, and her Golem.
 func _step_own(dt: float) -> void:
+	_step_contraptions(dt)
 	for k in range(vials.size() - 1, -1, -1):
 		var v: Dictionary = vials[k]
 		v["t"] = float(v["t"]) + dt
-		if float(v["t"]) < float(v["flight"]):
+		# (her Contraption's little bombs sit a moment where they land before they go off)
+		if float(v["t"]) < float(v["flight"]) + float(v.get("fuse", 0.0)):
 			continue
 		vials.remove_at(k)
 		_vial_bursts(v)
+	# (more out than she may have, her tree's Mark II undone: the second winds down)
+	var up := _up()
+	for k in range(golems_most(), up.size()):
+		_wind_down(up[k])
 	for g in golems.duplicate():
 		_step_golem(g, dt)
 	# (her Lightning Rod's decoys: each where its Golem is, ending as it winds down; each runs out: game.ts updateDecoys)
@@ -682,6 +702,9 @@ func _step_own(dt: float) -> void:
 func fallen(dt: float) -> void:
 	for g in _up():
 		_wind_down(g)
+	for c in contraptions:
+		_break_contraption(c)
+	_step_contraptions(dt)
 	for g in golems:
 		g["act_t"] = float(g["act_t"]) + dt
 
@@ -1025,6 +1048,7 @@ func _own_picture(side: int) -> Array:
 func _clear_own() -> void:
 	vials.clear()
 	tars.clear()
+	contraptions.clear()
 	land_t = -1.0
 
 
@@ -1039,3 +1063,213 @@ func _shrapnel(i: int, at: Vector2, frac: float, not_this) -> void:
 			continue
 		h.hit_monster(m, i, frac * float(S["share"]), hits >= 3)
 		hits += 1
+
+
+# =====================================================================================================================
+# HER TREE'S CONTRAPTION (game.ts throwContraption, updateTinkerer, lobVial, contraptionBolt, boltStrikes, breakContraption)
+
+func _C() -> Dictionary:
+	return TT["contraption"]
+
+
+## (game.ts contraptionAmmo) What her Contraptions fire, her pick: "bombs" or "energy".
+func ammo() -> String:
+	var p = h.picks.get("contraptions")
+	return "energy" if str(p) == "energy" else "bombs"
+
+
+## (game.ts throwContraption) Her Contraption thrown from `from` toward `to`: where it comes to rest. A fourth puts the oldest out
+## of action, but never one not yet past its first shot (with three such standing, nothing more is thrown: his words of 4 Nov
+## 2026, “After taking the passive for contraption, I don’t think the words are working as intended.”).
+func _throw_contraption(i: int, from: Vector2, to: Vector2, frac: float) -> void:
+	var C := _C()
+	var reach: float = _def(i)["range"]
+	var p := _reach_point(from + h.face * 2.0, reach) if to.distance_to(from) < 0.6 else _reach_point(to, reach)
+	var standing: Array = contraptions.filter(func(q): return float(q["broke"]) < 0.0)
+	var ready: float = float(C["set"]) + float(C["first"])
+	while standing.size() >= int(C["most"]):
+		if float(standing[0]["t"]) < ready:
+			return
+		_break_contraption(standing.pop_front())
+	_next_con += 1
+	var c := {"id": _next_con, "x0": from.x, "y0": from.y, "x": p.x, "y": p.y, "t": 0.0, "next": float(C["first"]), "shot_age": 9.0,
+		"fx": h.face.x, "fy": h.face.y, "broke": -1.0, "echo": 0.0, "woke": false, "skill": i, "frac": frac}
+	contraptions.append(c)
+	_say({"t": "contraption", "id": c["id"], "x0": from.x, "y0": from.y, "x": p.x, "y": p.y})
+	_sfx("trapSet", 0.6)
+
+
+## (game.ts breakContraption) Put out of action: it falls apart where it stands.
+func _break_contraption(c: Dictionary) -> void:
+	if float(c["broke"]) >= 0.0:
+		return
+	c["broke"] = 0.0
+	_say({"t": "contraptionEnd", "id": c["id"], "x": c["x"], "y": c["y"]})
+
+
+## (game.ts updateTinkerer) Her Contraptions, each step: set up, they fire; their time up (LASTING and FLEETING: longer or shorter),
+## they fall apart. Her tap's Swift and her Frenzied pace quicken their shots.
+func _step_contraptions(dt: float) -> void:
+	var C := _C()
+	for k in range(contraptions.size() - 1, -1, -1):
+		var c: Dictionary = contraptions[k]
+		c["t"] = float(c["t"]) + dt
+		c["shot_age"] = float(c["shot_age"]) + dt
+		if float(c["broke"]) >= 0.0:
+			c["broke"] = float(c["broke"]) + dt
+			if float(c["broke"]) >= float(C["broke"]):
+				contraptions.remove_at(k)
+			continue
+		var i: int = c["skill"]
+		var r: Dictionary = h.loadout.r(i)
+		if str(_def(i)["kind"]) != "contraption" or float(c["t"]) >= float(C["set"]) + float(C["life"]) * float(r["last"]) or not h.alive:
+			_break_contraption(c)
+			continue
+		if float(c["t"]) < float(C["set"]):
+			continue
+		c["next"] = float(c["next"]) - dt
+		if float(c["next"]) > 0.0:
+			continue
+		var energy := ammo() == "energy"
+		var shot: bool = _contraption_bolt(c, float(c["frac"])) if energy else _lob_vial(c, float(c["frac"]))
+		if shot and float(c["echo"]) > 0.0:
+			# ("of Echoes": with its first shot, a weaker one after it)
+			var share: float = c["echo"]
+			c["echo"] = 0.0
+			_after(0.2, func() -> void:
+				if float(c["broke"]) < 0.0:
+					if energy:
+						_contraption_bolt(c, share, true)
+					else:
+						_lob_vial(c, share, true))
+		var pace: float = (float(r["rate"]) if float(r["rate"]) > 0.0 else 1.0) * h.frenzy_pace() * float(r["pace"])
+		c["next"] = (float(C["boltEvery"] if energy else C["every"]) / pace) if shot else 0.2
+
+
+## What is near Contraption `c` for it to fire at (awake, seen, not shut in, in its sight), nearest first, within `reach`.
+func _near_con(c: Dictionary, reach: float) -> Array:
+	var at := Vector2(c["x"], c["y"])
+	var out: Array = []
+	if h.monsters == null:
+		return out
+	for m in h.monsters.list:
+		if not is_instance_valid(m) or m.dead or not m.seen or m.state == "sleep" or m.state == "rise" or h.monsters.shut_in(m):
+			continue
+		if m.world.distance_to(at) <= reach and h.monsters.sees(at, m.world):
+			out.append(m)
+	out.sort_custom(func(a, b): return a.world.distance_to(at) < b.world.distance_to(at))
+	return out
+
+
+## (game.ts lobVial, its pick BOMBS) A little bomb lobbed out of Contraption `c` at the nearest within its reach (as many as Twin
+## says, at as many), aimed where it is going; it goes off a moment after it lands. False, nothing near.
+func _lob_vial(c: Dictionary, frac: float, echo := false) -> bool:
+	var C := _C()
+	var near := _near_con(c, float(C["reach"]))
+	if near.is_empty():
+		return false
+	var count: int = int(h.loadout.r(int(c["skill"]))["count"])
+	for n in (1 if echo else count):
+		var m = near[mini(n, near.size() - 1)]
+		var lead := 0.35 if m.speed > 0.0 and m.state == "chase" else 0.0
+		var to: Vector2 = m.world + m.face * lead
+		var v := {"x0": c["x"], "y0": c["y"], "x1": to.x, "y1": to.y, "t": 0.0, "flight": float(C["bombFlight"]), "skill": c["skill"], "frac": frac,
+			"wake": not c["woke"] and not echo and n == 0, "bomb": true, "fuse": float(C["bombFuse"])}
+		if v["wake"]:
+			c["woke"] = true
+		_brew(v)
+		vials.append(v)
+		_say({"t": "vial", "id": c["id"], "x0": c["x"], "y0": c["y"], "x1": to.x, "y1": to.y, "flight": float(C["bombFlight"]), "n": n, "echo": echo, "big": v.get("big", false), "bomb": float(C["bombFuse"])})
+		var far := (to - Vector2(c["x"], c["y"])).length()
+		if far > 0.0:
+			c["fx"] = (to.x - float(c["x"])) / far
+			c["fy"] = (to.y - float(c["y"])) / far
+	c["shot_age"] = 0.0
+	_sfx("vial", 0.3 if echo else 0.5)
+	return true
+
+
+## (game.ts contraptionBolt, its pick ENERGY) A bolt of energy at the nearest awake within its reach (Twin: at as many). False,
+## nothing near.
+func _contraption_bolt(c: Dictionary, frac: float, echo := false) -> bool:
+	var C := _C()
+	var near := _near_con(c, float(C["boltReach"]))
+	if near.is_empty():
+		return false
+	var count: int = int(h.loadout.r(int(c["skill"]))["count"])
+	var i: int = c["skill"]
+	for n in (1 if echo else count):
+		var m = near[mini(n, near.size() - 1)]
+		var d: float = m.world.distance_to(Vector2(c["x"], c["y"]))
+		if d == 0.0:
+			d = 1.0
+		var flight: float = d / float(C["boltSpeed"])
+		c["fx"] = (m.world.x - float(c["x"])) / d
+		c["fy"] = (m.world.y - float(c["y"])) / d
+		_say({"t": "contraptionBolt", "id": c["id"], "x0": c["x"], "y0": c["y"], "x1": m.world.x, "y1": m.world.y, "flight": flight})
+		var second := n > 0
+		_after(flight, func() -> void:
+			if is_instance_valid(m) and not m.dead:
+				_bolt_strikes(m, i, frac * float(C["boltShare"]), second, false))
+	c["shot_age"] = 0.0
+	_sfx("zap", 0.25 if echo else 0.4)
+	return true
+
+
+## (game.ts boltStrikes) Her energy bolt striking `t`, and what her tree's vial talents do with it as with a vial (his words of 6
+## Nov 2026: “Why can’t energy do what the bombs do?”): Mad Mixture, The Big One, Tar, Growth Serum, Cluster Vials (it leaps on,
+## little ones), Alchemy.
+func _bolt_strikes(t, i: int, frac: float, second: bool, little: bool) -> void:
+	var T := _T()
+	var rad: float = float(_def(i)["radius"]) * float(h.loadout.r(i)["size"])
+	if little:
+		rad *= float(T["cluster"]["size"])
+	var big := false
+	if not little and h.has("thebigone"):
+		vials_thrown += 1
+		big = vials_thrown % int(T["bigOne"]["every"]) == 0
+	var brew := ""
+	if h.has("madmixture"):
+		brew = ["burn", "freeze", "poison"][randi() % 3]
+	var at: Vector2 = t.world
+	brewing = true
+	h.hit_monster(t, i, frac * float(T["cluster"]["share"]) if little else frac, second)
+	if big:
+		h._blast(i, at, rad * float(T["bigOne"]["wide"]), frac, "bomb", false, linear_to_db(0.8))
+		_shake(4.0)
+		_sfx("slam", 0.8)
+	brewing = false
+	var caught: Array = [t]
+	if big:
+		caught = []
+		for m in h.monsters.list:
+			if is_instance_valid(m) and not m.dead and not h.monsters.shut_in(m) and m.world.distance_to(at) <= rad * float(T["bigOne"]["wide"]) + m.r:
+				caught.append(m)
+	if brew != "":
+		_brew_on(caught, brew, i, frac)
+	if big:
+		for m in caught:
+			if is_instance_valid(m) and not m.dead:
+				m.throw_from(at, float(T["bigOne"]["far"]), 0.2)
+				m.stun_for(float(T["bigOne"]["down"]))
+	if not little and h.has("tar"):
+		var tr: float = rad * float(T["tar"]["size"])
+		tars.append({"x": at.x, "y": at.y, "r": tr, "t": 0.0})
+		_say({"t": "tar", "x": at.x, "y": at.y, "r": tr, "secs": T["tar"]["secs"]})
+	if h.has("growthserum"):
+		for g in _up():
+			if Vector2(g["x"], g["y"]).distance_to(at) <= rad + golem_body(g) + float(T["growth"]["near"]):
+				_grow(g)
+	if not little and h.has("clustervials"):
+		var K: Dictionary = T["cluster"]
+		var next: Array = []
+		for m in h.monsters.list:
+			if m != t and is_instance_valid(m) and not m.dead and not h.monsters.shut_in(m) and m.world.distance_to(at) <= float(K["far"]) + 1.5 and h.monsters.sees(at, m.world):
+				next.append(m)
+		next.sort_custom(func(a, b): return a.world.distance_to(at) < b.world.distance_to(at))
+		for m in next.slice(0, int(K["n"])):
+			var flight: float = m.world.distance_to(at) / float(_C()["boltSpeed"])
+			_say({"t": "contraptionBolt", "id": -1, "x0": at.x, "y0": at.y, "x1": m.world.x, "y1": m.world.y, "flight": flight})
+			_after(flight, func() -> void:
+				if is_instance_valid(m) and not m.dead:
+					_bolt_strikes(m, i, frac, true, true))

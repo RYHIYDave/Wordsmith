@@ -511,3 +511,243 @@ static func zap(x: float, y: float, up: float, to: Array) -> Array:
 		l.lay(data, GUN_GLOW)
 		out.append({"img": Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, data), "ax": -x0, "ay": -y0})
 	return out
+
+
+# ---- HER TREE'S CONTRAPTION: ITS ENERGY BOLT (art/golem_shots_fx.ts boltPiece; dev/contraption_shots.ts boltFx, boltSprite) ----
+
+## Her brew's cyan (dev/contraption_fx.ts BREW), and smoke (dev/warlock_fx.ts SMOKE): the bolt's light and its ball's smoke.
+const SMOKE := [Color("#141018"), Color("#28222e"), Color("#3e3646"), Color("#5a5066")]
+## The Contraption as the game draws it (art/tinkerer_art.ts CON_TURN): turned to throw down and to the right, and up and right.
+const SHOT_CON_TURN := {"front": 315.0, "back": 45.0}
+const BOLT_PAD := 64.0
+const BOLT_HIT_UP := 12.0
+## (assets/heroes/tinkerer_fx.json `con`: its ball as it fires, CBOLT, BOLT_FX; and her brew's cyan)
+var CON := {}
+var BREW: Array = []
+
+
+func set_con(con: Dictionary, brew: Array) -> void:
+	CON = con
+	BREW = brew
+
+
+## (dev/contraption_shots.ts hash)
+static func hash_shot(i: float) -> float:
+	return _frac(sin(i * 41.77 + 9.1) * 43758.5453)
+
+
+static func turn_by(p: Array, deg: float) -> Array:
+	var a := deg * PI / 180.0
+	return [float(p[0]) * cos(a) - float(p[1]) * sin(a), float(p[0]) * sin(a) + float(p[1]) * cos(a), float(p[2])]
+
+
+## (dev/golem_gun_fx.ts disc) A round of light at (x, y), `r` across: white at its heart, cyan to its edge (round the very point).
+static func disc_gun(l: Light, x: float, y: float, r: float, top := 3) -> void:
+	for yy in range(floori(y - r), ceili(y + r) + 1):
+		for xx in range(floori(x - r), ceili(x + r) + 1):
+			var d := _hyp(xx - x, yy - y) / maxf(0.5, r)
+			if d > 1.0:
+				continue
+			l.put_i(xx, yy, clampi(floori(top - d * top * 0.9 + 0.5), 0, top))
+
+
+## (dev/golem_gun_fx.ts impactBurst) Its shot landing: a white flash, cyan shards flying out and fading, sparks flung up and falling.
+static func impact_burst(l: Light, x: float, y: float, k: int, seed: float, big := 1.0) -> void:
+	if k < 0 or k > 16:
+		return
+	if k < 2:
+		disc_gun(l, x, y, (7.0 if k == 0 else 4.5) * big, 3)
+	var n := 12
+	for i in n:
+		var a := float(i) / n * PI * 2.0 + hash_gun(seed + i) * 0.4
+		var sp := (2.4 + 2.2 * hash_gun(seed * 5.0 + i)) * big
+		if k < 6:
+			var r0 := sp * k
+			var r1 := r0 + 4.0 + 3.0 * hash_gun(seed + i * 3.0)
+			line(l, x + cos(a) * r0, y + sin(a) * r0 * 0.8, x + cos(a) * r1, y + sin(a) * r1 * 0.8, 3 if k < 2 else (2 if k < 4 else 1), 2 if k < 3 else 1)
+		var vx := cos(a) * sp * 0.8
+		var vy := -1.8 - 2.2 * hash_gun(seed * 7.0 + i)
+		var sx := x + vx * k
+		var sy := y + vy * k + 0.22 * k * k
+		if k < 14 and hash_gun(seed * 11.0 + i) < 0.85 - k * 0.04:
+			l.put(sx, sy, 2 if k < 5 else 1)
+			l.put(sx + 1.0, sy, 2 if k < 5 else 1)
+
+
+## (dev/warlock_fx.ts cloud) A mass of black smoke, its foot at (cx, cy), `w` across and `h` high, rolling, torn ragged at its edges.
+static func cloud(sm: Light, cx: float, cy: float, w: float, h: float, t: float, thin: float, seed: float, light := 0) -> void:
+	if thin >= 1.0:
+		return
+	for y in range(floori(cy - h - 3.0), ceili(cy + 2.0) + 1):
+		for x in range(floori(cx - w / 2.0 - 4.0), ceili(cx + w / 2.0 + 4.0) + 1):
+			var ex := (x - cx) / (w / 2.0)
+			var ey := (y - (cy - h / 2.0)) / (h / 2.0)
+			var n := noise2(x * 0.22 + seed, (y + t * 30.0) * 0.2) * 0.65 + noise2(x * 0.6 - t * 3.0, y * 0.6 + seed) * 0.35
+			var v := 1.0 - _hyp(ex, ey) + (n - 0.5) * 0.9 - thin * 1.1
+			if v < 0.0:
+				continue
+			sm.put_i(x, y, mini(3, (0 if v > 0.45 else (1 if v > 0.25 else (2 if v > 0.1 or y > cy - h / 2.0 else 3))) + light))
+
+
+## (contraption_shots.ts onPicture) A unit on the picture: the way `w` (in the world) goes from `p`.
+static func on_picture(p: Array, w: Array, ax: float, ay: float) -> Array:
+	var a := S(p, ax, ay)
+	var b := S([float(p[0]) + float(w[0]) * 10.0, float(p[1]) + float(w[1]) * 10.0, float(p[2]) + float(w[2]) * 10.0], ax, ay)
+	var n := _hyp(b[0] - a[0], b[1] - a[1])
+	if n == 0.0:
+		n = 1.0
+	return [(b[0] - a[0]) / n, (b[1] - a[1]) / n]
+
+
+## (contraption_shots.ts boltSprite) The bolt at (x, y) flying the way (dx, dy): a spindle of light, little jags flicking off it.
+static func bolt_sprite(l: Light, x: float, y: float, dx: float, dy: float, seed: float) -> void:
+	var len := 9.0
+	var half := 3.4
+	var rx := floori(x + 0.5)
+	var ry := floori(y + 0.5)
+	for yy in range(-12, 13):
+		for xx in range(-12, 13):
+			var a := xx * dx + yy * dy
+			var s := -xx * dy + yy * dx
+			if absf(a) > len:
+				continue
+			var w := half * sqrt(1.0 - (a / len) * (a / len)) * (1.0 if a > 0.0 else 0.85)
+			var q := absf(s) / maxf(0.5, w)
+			if q > 1.0:
+				continue
+			l.put_i(rx + xx, ry + yy, 3 if q < 0.45 and absf(a) < len * 0.7 else (2 if q < 0.8 else 1))
+	for i in 2:
+		var at := (hash_shot(seed * 3.0 + i) - 0.5) * len
+		var side := 1.0 if i else -1.0
+		var x0 := x + dx * at - dy * half * side
+		var y0 := y + dy * at + dx * half * side
+		bolt(l, x0, y0, x0 - dx * (6.0 + 5.0 * hash_shot(seed + i)) - dy * 4.0 * side, y0 - dy * (6.0 + 5.0 * hash_shot(seed + i)) + dx * 4.0 * side, seed * 7.0 + i, 1)
+
+
+## (contraption_shots.ts boltFlight) Frames the bolt flies from its ball to what it hits.
+func bolt_flight(fired: Array, aim: Array) -> int:
+	var d := _hyp(float(aim[0]) - float(fired[0]), float(aim[1]) - float(fired[1])) / T
+	return maxi(1, roundi(d / float(CON["BOLT_FX"]["speed"]) * 30.0))
+
+
+## (art/golem_shots_fx.ts boltLine) The Contraption's ball as it fires and the way it points, drawn in `view` (turned over if `flip`);
+## and what it hits.
+func _bolt_line(view: String, flip: bool, dx: float, dy: float, up: float) -> Dictionary:
+	var turn: float = SHOT_CON_TURN[view]
+	var b := turn_by(CON["ball"]["p"], turn)
+	var w := turn_by(CON["ball"]["way"], turn)
+	return {"ball": mirror(b) if flip else b, "way": mirror(w) if flip else w, "hit": from_tiles(dx, dy, up * FX_GRAIN)}
+
+
+## (art/golem_shots_fx.ts boltFrames) How many frames its shot lasts.
+func con_bolt_long(view: String, flip: bool, dx: float, dy: float, up := BOLT_HIT_UP) -> int:
+	var L := _bolt_line(view, flip, dx, dy, up)
+	var C: Dictionary = CON["CBOLT"]
+	var n := bolt_flight(L["ball"], L["hit"])
+	return maxi(n + int(CON["BOLT_FX"]["crackle"]) + 2, int(C["end"]) - int(C["fire"]) + 8) + 1
+
+
+## (art/golem_shots_fx.ts boltPiece; contraption_shots.ts boltFx from its firing) THE ENERGY SHOT `k` frames after it fires, at
+## what is (dx, dy) tiles from the Contraption's floor point: its ball's flash, the bolt, its crackling hit, its ball spitting and
+## smoking. Anchored at that floor point; {} for nothing.
+func con_bolt(view: String, flip: bool, dx: float, dy: float, k: int, up := BOLT_HIT_UP) -> Dictionary:
+	if k < 0 or k >= con_bolt_long(view, flip, dx, dy, up):
+		return {}
+	var L := _bolt_line(view, flip, dx, dy, up)
+	var left := goes_left(L["ball"], L["hit"], flip)
+	var way: Array = mirror(L["way"]) if left else L["way"]
+	return _along_layers([L["ball"], L["hit"]], BOLT_PAD, left, [SMOKE, BREW], func(ls: Array, ax: float, ay: float, use: Array) -> void:
+		_bolt_fx(ls[0], ls[1], ax, ay, use[0], way, use[1], k, k / 30.0, 0.0))
+
+
+func _bolt_fx(sm: Light, l: Light, ax: float, ay: float, fired_w: Array, way: Array, aim_w: Array, k: int, t: float, seed: float) -> void:
+	var C: Dictionary = CON["CBOLT"]
+	var f := int(C["fire"]) + k
+	var ball := S(fired_w, ax, ay)
+	var fired := ball
+	var d0 := on_picture(fired_w, way, ax, ay)
+	var dx0: float = d0[0]
+	var dy0: float = d0[1]
+	if k < 3:
+		var big: float = [1.0, 0.7, 0.4][k]
+		disc_charge(l, fired[0] + dx0 * 2.0, fired[1] + dy0 * 2.0, 7.0 * big, 3)
+		for i in 7:
+			var a := atan2(dy0, dx0) + ((i / 6.0) * 2.0 - 1.0) * 1.1
+			var Ln := (8.0 + 10.0 * (1.0 - absf((i / 6.0) * 2.0 - 1.0))) * big
+			line(l, fired[0], fired[1], fired[0] + cos(a) * Ln, fired[1] + sin(a) * Ln, 2, 1)
+		if k < 2:
+			var R := 6.0 + k * 6.0
+			for i in 30:
+				var a := (i / 30.0) * PI * 2.0
+				l.put(fired[0] + dx0 * 4.0 + cos(a) * R * 0.4 * dx0 - sin(a) * R * dy0, fired[1] + dy0 * 4.0 + cos(a) * R * 0.4 * dy0 + sin(a) * R * dx0, 1 if k else 2)
+	# THE BOLT: straight and fast to what it is aimed at, smeared back along its way, a fading trail behind it
+	var n := bolt_flight(fired_w, aim_w)
+	var end := S(aim_w, ax, ay)
+	var ux: float = end[0] - fired[0]
+	var uy: float = end[1] - fired[1]
+	var ul := _hyp(ux, uy)
+	if ul == 0.0:
+		ul = 1.0
+	var dx := ux / ul
+	var dy := uy / ul
+	if k < n:
+		var u := minf(1.0, (k + 1.0) / (n + 0.5))
+		var x: float = fired[0] + ux * u
+		var y: float = fired[1] + uy * u
+		var u0 := maxf(0.0, (k - 1.0) / (n + 0.5))
+		line(l, fired[0] + ux * u0, fired[1] + uy * u0, x, y, 1, 3)
+		line(l, fired[0] + ux * (u0 + u) * 0.5, fired[1] + uy * (u0 + u) * 0.5, x, y, 2, 1)
+		for bl in [[0.55, 1], [0.3, 2]]:
+			var ub := maxf(0.0, u - float(bl[0]) / (n + 0.5))
+			disc_charge(l, fired[0] + ux * ub, fired[1] + uy * ub, 3.0, int(bl[1]))
+		bolt_sprite(l, x, y, dx, dy, 70.0 + k + seed)
+	# WHAT IT HITS: a flash, shards and sparks flung off it, and it crawls with lightning a while
+	var hh := k - n
+	if hh >= 0:
+		if hh < 2:
+			disc_charge(l, end[0], end[1], 8.0 if hh == 0 else 5.0, 3)
+		impact_burst(l, end[0], end[1], hh, 31.0 + seed, 1.2)
+		if hh < int(CON["BOLT_FX"]["crackle"]):
+			crackle(l, end[0], end[1] + 4.0, 16.0, 4 if hh < 6 else 2, 500.0 + hh * 3.0 + seed)
+		if hh < 4:
+			for i in 3:
+				bolt(l, end[0], end[1], end[0] + dx * (10.0 + 8.0 * hash_shot(hh + i)) + (hash_shot(hh * 3.0 + i) - 0.5) * 24.0, end[1] + 14.0 + (hash_shot(hh * 5.0 + i) - 0.5) * 10.0, 610.0 + hh * 9.0 + i + seed, 0 if hh < 2 else 1)
+	# (its ball spitting and smoking as it cools)
+	if k > 1 and k < 14 and k % 3 == 0:
+		crackle(l, ball[0], ball[1], 5.0, 1, 1200.0 + f + seed)
+	for j in 2:
+		var age := k - 2 - j * 5
+		if age < 0 or age > 16:
+			continue
+		var r := 1.4 + age * 0.22
+		cloud(sm, ball[0] + sin(age * 0.4 + j) * 2.0, ball[1] - 2.0 - age * 0.8, 2.0 * r, 1.6 * r, t + j, minf(1.0, 0.25 + age / 17.0), 9500.0 + j + seed)
+
+
+## (art/golem_shots_fx.ts along, its layers given: each a palette, laid in that order) As `_along`, `paint` given the lights.
+func _along_layers(pts: Array, pad: float, left: bool, pals: Array, paint: Callable) -> Dictionary:
+	var use: Array = pts.map(func(p): return mirror(p)) if left else pts
+	var xs: Array = []
+	var ys: Array = []
+	for p in use:
+		for q in [S(p), S([p[0], p[1], 0.0])]:
+			xs.append(q[0])
+			ys.append(q[1])
+	var x0 := _even(floorf(xs.min()) - pad - 1.0)
+	var y0 := _even(floorf(ys.min()) - pad - 1.0)
+	var x1 := ceili(xs.max()) + int(pad)
+	var y1 := ceili(ys.max()) + int(pad)
+	var w := _even(x1 - x0 + 2)
+	var h := _even(y1 - y0 + 2)
+	var ax := -x0
+	var ay := -y0
+	var ls: Array = pals.map(func(_p): return Light.new(w, h))
+	paint.call(ls, float(ax), float(ay), use)
+	var data := PackedByteArray()
+	data.resize(w * h * 4)
+	for i in ls.size():
+		ls[i].lay(data, pals[i])
+	var img := Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, data)
+	if left:
+		img.flip_x()
+		ax = w - 1 - ax
+	return {"img": img, "ax": ax, "ay": ay}
