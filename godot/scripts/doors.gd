@@ -148,6 +148,12 @@ func _process(dt: float) -> void:
 			var secs := DOOR_SWING if kind == "door" or kind == "worddoor" else (GATE_RISE if want == 1.0 else GATE_FALL)
 			d["open"] = move_toward(open, want, dt / secs)
 			_show(i)
+		# (the Headsman's yard's own gate, down: drawn by its own beat from the moment it fell, its slam shaking the screen a little:
+		# render.ts yardGateDropAt((game.time - d.fell) * 30); look.gd yard_gate_fall)
+		if kind == "bossgate" and want == 0.0 and d.has("fell") and look != null and look.has_yard_gate(i):
+			d["fell"] = float(d["fell"]) + dt
+			if look.yard_gate_fall(float(d["fell"])):
+				hero.shake()
 	_levers()
 	_locks()
 	# (ACT 1: out on the open ground he waits, as behind a gate still up, until the hero comes into his ground: meetOutdoorBoss)
@@ -239,6 +245,9 @@ func reset() -> void:
 func _show(i: int) -> void:
 	# (floor 5's temple door is shown by its own film: temple.gd)
 	if look != null and map.doors[i]["kind"] != "templedoor":
+		# (the yard's own gate falling is shown by its own beat: below, _process)
+		if int(map.doors[i]["want"]) == 0 and map.doors[i].has("fell") and look.has_yard_gate(i):
+			return
 		look.show_door(i, float(map.doors[i]["open"]))
 
 
@@ -367,6 +376,8 @@ func _well_inside(d: Dictionary, at: Vector2) -> bool:
 ## The gate falls: its doorway wall to whatever walks, flies, is shot or looks; anything standing in it put inside the hall.
 func _drop(d: Dictionary) -> void:
 	d["want"] = 0
+	# (game.ts dropGate: d.fell, the moment it began to fall; kept here as how long ago)
+	d["fell"] = 0.0
 	var tiles: Array = d["tiles"]
 	for t in tiles:
 		map.walk[int(t)] = 0
@@ -384,6 +395,7 @@ func _drop(d: Dictionary) -> void:
 
 func _raise(d: Dictionary) -> void:
 	d["want"] = 1
+	d.erase("fell")
 	for t in d["tiles"]:
 		map.walk[int(t)] = 1
 		map.shut[int(t)] = 0

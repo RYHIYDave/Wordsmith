@@ -902,6 +902,19 @@ lights over the dark (town.gd `_ring_moments`):
   ring flares; drawn in and faster as he writes; thrown out to the stones as the rune goes into the slab, and back.
 `--only=town` pictures them (37 to 41).
 
+## The Headsman's yard's own gate as it falls (the cloud chat, 21 Nov 2026)
+
+- **Its fall and slam** (art/yard_gate.ts, YARD_GATE on at his yes in the yard in play, 1 Nov 2026: “Yes, switch them on
+  (Recommended)”; render.ts standDoors): as the gate drops behind him it goes by its own beat, not the plain gate's 0.22 s
+  (YARD_GATE_DROP, 30 frames a second from the moment it falls): held juddering at the top, dropped in two frames, a hard
+  landing and a bounce off the floor, then down for good. As it lands the mark on its keystone (a block and the Headsman's axe
+  cut in the stone) catches alight, its fire's glow added over the dark, and its SLAM plays: dust thrown off the cobbles both
+  ways and rolling out low, sparks struck off the spikes (16 frames, the first lighting the floor), the screen shaking a little
+  while its first four show. Risen again once the Headsman is dead, it is the plain look's, its mark dark. Its pictures the
+  game's own painter's (`npx tsx tools/godot_yard_gate.ts`: `assets/looks/floor2_gate.*`), where the game puts them;
+  `look.gd` yard_gate_fall, `doors.gd`. (The other four floors' own gates, behind their switches in the game, are off there.)
+  `--only=yardgate` (`check_glows.gd`): 7 checks, its frames pictured.
+
 ## Not in it yet
 
 Frenzied on the prison's bosses' own scripts
@@ -910,7 +923,7 @@ above), a phone's thrift with the side bosses' films (the Troll Chieftain's and 
 as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), the bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
 and blows; what a boss says is shown, not spoken), the
-Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them; uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them; uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); a phone's own options (where an attack aims, the screen turned).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
@@ -928,7 +941,7 @@ pick); a phone's own options (where an attack aims, the screen turned).
 | `assets/words` | the words' tables and numbers, the made words' among them: `npx tsx tools/godot_words.ts` (`check` also writes check.json, not kept, for `checks/words_check.gd`) |
 | `assets/town` | the town a new game begins in, its pictures, floor 1's gate up: `npx tsx tools/godot_town.ts 1` |
 | `assets/camp` | the camp inside Vellum's gate, his town from floor 10 on (game/camp.ts makeCamp, as he comes in from the Fen): `npx tsx tools/godot_town.ts 1` too; its look `assets/looks/camp*`: `node tools/godot_record.mjs camp` |
-| `assets/looks` | floor 1 as THE KING'S TOMB, floor 2 as THE PRISON'S GROUNDS AT NIGHT and the town as THE CASTLE'S HALL, recorded from the game's own renderer and painters with its startup switches on (every picture, where, how deep, its light; the stairwell's opening film in `<place>_stair.png`; floor 2's skies and dark by where he is; the traps' and the waypoint's pictures): `npx tsx tools/godot_looks.ts town`, `... floor1`, `... floor2` (all the tools put the game's startup switches on first: tools/godot_switches.ts) |
+| `assets/looks` | floor 1 as THE KING'S TOMB, floor 2 as THE PRISON'S GROUNDS AT NIGHT and the town as THE CASTLE'S HALL, recorded from the game's own renderer and painters with its startup switches on (every picture, where, how deep, its light; the stairwell's opening film in `<place>_stair.png`; floor 2's skies and dark by where he is; the traps' and the waypoint's pictures): `npx tsx tools/godot_looks.ts town`, `... floor1`, `... floor2` (all the tools put the game's startup switches on first: tools/godot_switches.ts); the Headsman's yard's gate as it falls (its portcullis frame by frame, its arch with the mark alight, its slam), `floor2_gate.*`: `npx tsx tools/godot_yard_gate.ts` |
 | `assets/music` | the town's and the floors' tracks and the title theme from `assets/sound` made into `.ogg` (Godot does not play `.mp4`), each cut where the game loops it, and the game's table of them: `node tools/godot_music.mjs` (needs ffmpeg) |
 | `assets/words/melds3.json` | the ten melds' colours, beats and runes (render/melds3.ts): `npx tsx tools/godot_melds3.ts`; with `check`, the game's own painter on its moments, for `godot --headless --path godot -s res://checks/melds3_check.gd` (not kept) |
 | `assets/words/vmelds.json` | Volatile's five melds' and the eight's colours, times and runes (render/volatile3.ts, melds8.ts): `npx tsx tools/godot_vmelds.ts`; with `check`, the game's own painters on 42 scenes, for `godot --headless --path godot -s res://checks/vmelds_check.gd` (not kept) |

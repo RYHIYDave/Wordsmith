@@ -31,6 +31,7 @@
 extends Node2D
 
 const DIR := "res://assets/looks/"
+const Glow := preload("res://scripts/figure_glow.gd")
 const HH := 16.0  # picture pixels in half a tile's height: a depth of d sorts at y = d * 16
 const DARK_GRAIN := 4.0  # game pixels to a pixel of the dark's picture
 
@@ -78,6 +79,9 @@ var _anim: Array = []  # {node, frames, fps, t0, secs, dy}
 var _t := 0.0
 var _add: CanvasItemMaterial
 var _dark: Sprite2D
+## THE HEADSMAN'S YARD'S OWN GATE AS IT FALLS (art/yard_gate.ts, YARD_GATE; render.ts standDoors; its pictures and beat from
+## tools/godot_yard_gate.ts, assets/looks/floor2_gate.*): which of the doors it is, its frames, its sprites, its lights
+var _yg := {}
 var _hero: Node2D
 ## (the moves' lights in the dark this frame: where, picture pixels; how wide and how strong: spot)
 const SPOTS_MOST := 96
@@ -450,6 +454,7 @@ func _make_doors() -> void:
 			sprites.append(s)
 		_doors.append({"steps": steps, "sprites": sprites, "shown": -1})
 		show_door(_doors.size() - 1, float(d.get("open", 0.0)) if d.has("open") else (1.0 if d["kind"] == "bossgate" else 0.0))
+	_make_yard_gate()
 
 
 ## Show door `i` so far open (0 shut, 1 open), at the nearest of its steps (render.ts: the leaf's turn in SWING_STEPS).
@@ -459,6 +464,8 @@ func show_door(i: int, open: float) -> void:
 		return
 	if i < 0 or i >= _doors.size():
 		return
+	if not _yg.is_empty() and i == int(_yg["door"]) and _yg["f"] >= 0:
+		_yard_put_away()
 	var D: Dictionary = _doors[i]
 	var steps: Array = D["steps"]
 	if steps.is_empty():
@@ -480,6 +487,143 @@ func show_door(i: int, open: float) -> void:
 		_pic_on(s, p[0])
 		s.position = Vector2(at.x, dd * HH)
 		s.offset.y += at.y - dd * HH
+
+
+## THE HEADSMAN'S YARD'S OWN GATE (the art chat's, his yes in the yard in play, 1 Nov 2026: “Yes, switch them on (Recommended)”):
+## as it falls it goes by its own beat, not the plain gate's 0.22 s (art/yard_gate.ts YARD_GATE_DROP, 30 frames a second from the
+## moment it falls): held juddering at the top (the chains slipping and catching), dropped in two frames, a hard landing
+## (YARD_SLAM_AT) and a bounce off the floor, then down for good. As it lands the mark on its keystone, a block and the
+## Headsman's axe cut in the stone, catches alight (the enemy's pink: its glow added over the dark), and its SLAM plays (dust
+## thrown off the cobbles both ways and rolling out low, sparks struck off the spikes: 16 frames, its first ones lighting the
+## floor), the screen shaking a little while its first four show. Risen again, it is the plain look's (its mark dark).
+func _make_yard_gate() -> void:
+	if place != "floor2" or not FileAccess.file_exists(DIR + "floor2_gate.json"):
+		return
+	var g: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "floor2_gate.json"))
+	var door := -1
+	for j in data.get("doors", []).size():
+		if data["doors"][j]["kind"] == "bossgate":
+			door = j
+	if door < 0:
+		return
+	var tex: Texture2D = load(DIR + "floor2_gate.png")
+	var pics := {}
+	for p in g["pics"]:
+		pics[p["name"]] = {"rect": Rect2(p["x"], p["y"], p["w"], p["h"]), "anchor": Vector2(p["ax"], p["ay"]), "lights": p["lights"]}
+	var most := 0
+	for st in g["drop"]:
+		most = maxi(most, st.size())
+	var mk := func() -> Sprite2D:
+		var n := Sprite2D.new()
+		n.texture = tex
+		n.region_enabled = true
+		n.centered = false
+		n.visible = false
+		_stand(n)
+		return n
+	var bars: Array = []
+	for k in most:
+		bars.append(mk.call())
+	var arch: Array = []
+	for q in g["arch"]:
+		var n: Sprite2D = mk.call()
+		_yard_pic(n, pics, q, 0.001)
+		arch.append(n)
+	var slam: Sprite2D = mk.call()
+	var lights := Node2D.new()
+	lights.material = Glow.added()
+	lights.z_index = 51
+	add_child(lights)
+	_yg = {"door": door, "tune": g["tune"], "drop": g["drop"], "arch_at": g["arch"], "slam_at": g["slam"], "pics": pics,
+		"bars": bars, "arch": arch, "slam": slam, "lights": lights, "f": -1, "lit": false, "slam_f": -1}
+	lights.draw.connect(_draw_yard_lights)
+
+
+## (a picture of the gate's own put where [name, x, y, d] says, `lift` on its depth: the lit arch over the dark one it covers)
+func _yard_pic(n: Sprite2D, pics: Dictionary, q: Array, lift := 0.0) -> void:
+	var p: Dictionary = pics[q[0]]
+	var at := Vector2(float(q[1]), float(q[2])) * 2.0
+	var dd := float(q[3]) + lift
+	n.region_rect = p["rect"]
+	n.offset = -p["anchor"]
+	n.position = Vector2(at.x, dd * HH)
+	n.offset.y += at.y - dd * HH
+
+
+## Is door `i` the yard's own gate, and has it its own fall? (doors.gd: then it is shown by `yard_gate_fall`.)
+func has_yard_gate(i: int) -> bool:
+	return not _yg.is_empty() and i == int(_yg["door"])
+
+
+## The yard's gate `secs` after it began to fall (render.ts: yardGateDropAt((game.time - d.fell) * 30)): its portcullis at that
+## frame's raise, its mark alight from the landing on, its slam's frame while it plays. True on the frames its slam shakes the
+## screen (render.ts: `if (drop.slam < 4) fx.shake = Math.max(fx.shake, 2)`).
+func yard_gate_fall(secs: float) -> bool:
+	if _yg.is_empty():
+		return false
+	var T: Dictionary = _yg["tune"]
+	var f := maxi(0, floori(secs * float(T["fps"])))
+	var drop: Array = _yg["drop"]
+	var idx := mini(f, drop.size() - 1)
+	var s0 := f - int(T["slam_at"])
+	var sf := s0 if s0 >= 0 and s0 < int(T["slam_frames"]) else -1
+	var lit := s0 >= 0
+	if idx == _yg["f"] and sf == _yg["slam_f"] and lit == _yg["lit"]:
+		return sf >= 0 and sf < int(T["shake_frames"])
+	# (the look's own portcullis put away: the gate's own frames in its place)
+	var D: Dictionary = _doors[int(_yg["door"])]
+	for sp in D["sprites"]:
+		sp.visible = false
+	D["shown"] = -1
+	if idx != _yg["f"]:
+		var step: Array = drop[idx]
+		var bars: Array = _yg["bars"]
+		for j in bars.size():
+			var n: Sprite2D = bars[j]
+			n.visible = j < step.size()
+			if n.visible:
+				_yard_pic(n, _yg["pics"], step[j])
+	for n in _yg["arch"]:
+		n.visible = lit
+	var slam: Sprite2D = _yg["slam"]
+	slam.visible = sf >= 0
+	if sf >= 0:
+		_yard_pic(slam, _yg["pics"], _yg["slam_at"][sf])
+	_yg["f"] = idx
+	_yg["slam_f"] = sf
+	_yg["lit"] = lit
+	_yg["lights"].queue_redraw()
+	return sf >= 0 and sf < int(T["shake_frames"])
+
+
+## (risen again: the plain look's gate, its mark dark)
+func _yard_put_away() -> void:
+	for n in _yg["bars"]:
+		n.visible = false
+	for n in _yg["arch"]:
+		n.visible = false
+	_yg["slam"].visible = false
+	_yg["f"] = -1
+	_yg["slam_f"] = -1
+	_yg["lit"] = false
+	_yg["lights"].queue_redraw()
+
+
+## What the gate gives off, added over the dark (render.ts propLit, px.ts drawLights): the mark's fire while it is alight; the
+## slam's flash on its first frames.
+func _draw_yard_lights() -> void:
+	var L: Node2D = _yg["lights"]
+	var shown: Array = []
+	if _yg["lit"]:
+		shown.append_array(_yg["arch_at"])
+	if _yg["slam_f"] >= 0:
+		shown.append(_yg["slam_at"][_yg["slam_f"]])
+	for q in shown:
+		var p: Dictionary = _yg["pics"][q[0]]
+		for l in p["lights"]:
+			var at := (Vector2(float(q[1]), float(q[2])) + Vector2(float(l["x"]), float(l["y"]))) * 2.0
+			var r := float(l["r"]) * 2.0
+			L.draw_texture_rect(Glow.tex(), Rect2(at.x - r, at.y - r, r * 2.0, r * 2.0), false, Glow.tint(l))
 
 
 ## A chest opened: shown standing open (look's `props`).

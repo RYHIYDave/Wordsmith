@@ -358,3 +358,75 @@ func fxleft(main, hero, dir: String) -> void:
 	_line(slams.size() == 1, "the vault: its mark as wide as the slam, the slam's cracks, crater and ring of fire, what flies from it")
 	h.unhurt = false
 	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## THE HEADSMAN'S YARD'S OWN GATE AS IT FALLS (--only=yardgate; art/yard_gate.ts, render.ts standDoors; look.gd yard_gate_fall):
+## he walks into the yard, and its gate falls by its own beat behind him (held juddering, dropped, landed, a bounce), the mark on
+## its keystone alight from the landing on, its slam's dust and sparks; then its frames one by one, pictured; the Headsman dead,
+## it rises, its mark dark again.
+func yardgate(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	await M._wait(1.0)
+	var look = M.look
+	var gi := -1
+	for i in M.map.doors.size():
+		if M.map.doors[i]["kind"] == "bossgate":
+			gi = i
+	_line(gi >= 0 and look != null and look.has_yard_gate(gi), "floor 2's boss gate (%d) has its own fall: %s" % [gi, look != null and gi >= 0 and look.has_yard_gate(gi)])
+	if gi < 0 or look == null or not look.has_yard_gate(gi):
+		return
+	var d: Dictionary = M.map.doors[gi]
+	var mid := Vector2(d["middle"]["x"], d["middle"]["y"])
+	var plane := float(d["plane"])
+	var out := float(d["out"])
+	var along: bool = d["alongX"]
+	# (outside it, the gate up, its mark dark: then in, 3 tiles past it)
+	var outside := Vector2(mid.x, plane + out * 2.5) if along else Vector2(plane + out * 2.5, mid.y)
+	var inside := Vector2(mid.x, plane - out * 3.5) if along else Vector2(plane - out * 3.5, mid.y)
+	for m in M._monsters.list:
+		if is_instance_valid(m) and not m.boss:
+			m.queue_free()
+	M._monsters.list.assign(M._monsters.list.filter(func(m): return is_instance_valid(m) and m.boss))
+	h.world = M.loot.floor_near(outside)
+	await M._wait(0.8)
+	var yg: Dictionary = look._yg
+	await M._snap(dir + "/y01_up.png")
+	_line(int(d["want"]) == 1 and yg["f"] == -1 and not yg["lit"], "up as he comes: the look's own gate, its mark dark (want %d, its own frame %d)" % [int(d["want"]), yg["f"]])
+	h.world = M.loot.floor_near(inside)
+	await M._w_until(func(): return int(d["want"]) == 0, 3.0)
+	await M._wait(0.15)
+	var f1: int = yg["f"]
+	var lit1: bool = yg["lit"]
+	_line(int(d["want"]) == 0 and f1 >= 2 and f1 <= 10 and not lit1, "fallen behind him: held juddering at the top first (frame %d, its mark not yet alight)" % f1)
+	await M._w_until(func(): return yg["lit"], 1.0)
+	var sf: int = yg["slam_f"]
+	_line(yg["lit"] and sf >= 0 and sf < 6, "landed: its mark alight, its slam playing (its frame %d)" % sf)
+	await M._wait(1.0)
+	_line(yg["f"] == 18 and yg["lit"] and yg["slam_f"] == -1 and not yg["slam"].visible, "down for good: its last frame (%d), its mark alight, its slam over" % yg["f"])
+	# --- its beat, frame by frame, pictured (the doors held, the gate set to each frame)
+	M._doors.process_mode = Node.PROCESS_MODE_DISABLED
+	var raise: Array = yg["tune"]["raise"]
+	var shown: Array = []
+	for f in [3, 7, 10, 11, 12, 14, 17, 26]:
+		look.yard_gate_fall((float(f) + 0.5) / 30.0)
+		await M._wait(0.05)
+		await M._snap("%s/y02_frame_%02d.png" % [dir, f])
+		shown.append("%d: raise %d%s%s" % [f, int(raise[mini(f, raise.size() - 1)]), ", lit" if yg["lit"] else "", ", slam %d" % yg["slam_f"] if yg["slam_f"] >= 0 else ""])
+	var bars_up: int = yg["bars"].filter(func(b): return b.visible).size()
+	_line(shown.size() == 8, "its frames: %s (%d bars shown)" % [", ".join(shown), bars_up])
+	M._doors.process_mode = Node.PROCESS_MODE_INHERIT
+	look.yard_gate_fall(2.0)
+	# --- the Headsman dead: it rises, the look's own again
+	var boss = M._d_boss()
+	if boss != null:
+		boss.dead = true
+	await M._w_until(func(): return int(d["want"]) == 1, 3.0)
+	await M._wait(1.4)
+	await M._snap(dir + "/y03_risen.png")
+	var arch_on: int = yg["arch"].filter(func(a): return a.visible).size()
+	_line(int(d["want"]) == 1 and yg["f"] == -1 and not yg["lit"] and arch_on == 0 and float(d["open"]) == 1.0, "the Headsman dead: it rises, the look's own gate again, its mark dark (open %.2f)" % float(d["open"]))
+	h.unhurt = false
+	print("YARDGATE: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
