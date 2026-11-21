@@ -7,6 +7,11 @@
 ##                 the art paints it, sparksFx, at its size, in fog and the dull pink); its CROWN'S WEIGHT (rsh_w*).
 ##   rshadow:snare THE PRINCESS'S SNARE: its round marked, then the vines bursting up, holding, sinking (rsh_snare).
 ##   rshadow:masks THE PRINCE'S MASKS flung in a fan and bursting into fog (rsh_masks_*).
+##   rshade:line   THE RIME SHADE'S LINE: its mark, laid out toward him in the enemy's pink; the rime creeping down it, its crust on
+##                 the floor and its crystals standing up out of it among the figures (those farther from the eye than him behind
+##                 him, the nearer before him); painted as the game paints them, fifteen times a second (act3/rime_paint.gd).
+##   rshade:ice    FROZEN IN PLACE: the frost closing over his legs (its far half under him, its near half over him), and
+##                 shattering (rs_ice_*).
 extends RefCounted
 
 const M16 := preload("res://scripts/act3/marks16.gd")
@@ -14,6 +19,11 @@ const GW := preload("res://scripts/act3/garden_warn.gd")
 const GP := preload("res://scripts/act2/gp.gd")
 const GKM := preload("res://scripts/act3/gk_marks.gd")
 const RS := preload("res://scripts/act3/rshadow.gd")
+const RIME := preload("res://scripts/act3/rime_paint.gd")
+const Iso := preload("res://scripts/iso.gd")
+
+## (when the hero was last let go of a freeze, by the perils' clock: no line freezes him again within the grace)
+static var freed := {}
 
 const TILE3 := 39.191835884530846
 ## (art/royal_shadows.ts FOG, EYE (FLAME[1]), EYE_LIT (FLAME[2]))
@@ -50,6 +60,16 @@ static func step(P, p: Dictionary, dt: float) -> bool:
 				if hero.world.distance_to(Vector2(p["x"], p["y"])) <= float(RS.SNARE["r"]) and hero._act != "lunge":
 					P._hurt(p, float(p["dmg"]))
 					hero.chill(RS.SNARE["hold"], RS.SNARE["slow"])
+		"rshade:ice":
+			# (the ice round his feet goes with him while he is held)
+			if t < float(RIME.FROZEN_HOLD) and hero.held > 0.0:
+				p["x"] = hero.world.x
+				p["y"] = hero.world.y
+			if int(p["done"]) == 0 and t >= float(RIME.FROZEN_HOLD):
+				p["done"] = 1
+				freed[P.get_instance_id()] = P._clock
+		"rshade:line":
+			_rime_step(P, p, t)
 		"rshadow:masks":
 			# (each mask strikes where it passes him; the three of one throw once at most)
 			# (checked along the way each came since the last step: they are fast)
@@ -77,11 +97,163 @@ static func draw(P, p: Dictionary) -> void:
 	match name:
 		"rshadow:show":
 			_show(P, p)
+		"rshade:line":
+			_rime_ground(P, p)
 		"rshadow:snare":
 			var t: float = p["t"]
 			if t < 0.0:
 				var k := minf(1.0, 1.0 + t / (float(RS.SNARE["hit"]) - float(RS.SNARE["warn_end"])))
 				GW.fan(P, Vector2(p["x"], p["y"]), Vector2(1, 0), 1, -PI, PI, float(RS.SNARE["r"]) - 0.3, k, P._clock)
+
+
+## THE RIME SHADE'S LINE, a step: marked, not yet breathed out, gone if it is stopped first; its front reaching him, struck and frozen
+## in place (dodging through it, neither); the rime lying where its front has passed slowing him.
+static func _rime_step(P, p: Dictionary, t: float) -> void:
+	var hero = P.hero
+	if t < 0.0:
+		var m = p.get("src")
+		if m == null or not is_instance_valid(m) or m.dead or m.state != "act" or m.h2 == null or m.h2.act == null:
+			p["dur"] = t
+		return
+	var front := RIME.line_front(t)
+	var was: float = p["b"]
+	p["b"] = front
+	var r := _on_line(p, hero.world)
+	var hr := 0.3 * 0.5
+	if absf(r.y) > RIME.HALF + hr or not hero.alive:
+		return
+	var free: bool = hero._act != "lunge" and hero._invuln <= 0.0
+	if int(p["done"]) == 0 and free and r.x >= RIME.FROM - hr and r.x > was - hr and r.x <= front + hr:
+		p["done"] = 1
+		P._hurt(p, float(p["dmg"]), Vector2(p["x"], p["y"]))
+		var since: float = P._clock - float(freed.get(P.get_instance_id(), -1e9))
+		var icy := false
+		for q in P.list:
+			if str(q.get("a1", "")) == "rshade:ice" and float(q["t"]) < float(RIME.FROZEN_HOLD):
+				icy = true
+		if not icy and hero.held <= 0.0 and not (since >= 0.0 and since < 1.0):
+			hero.held = maxf(hero.held, RIME.FROZEN_HOLD)
+			hero._tell({"t": "text", "x": hero.world.x, "y": hero.world.y, "text": "Frozen", "color": "#ff8a80"})
+			var ice := p.duplicate()
+			for k in ice.keys():
+				if str(k).begins_with("fx_") or str(k).begins_with("rs_"):
+					ice.erase(k)
+			ice.merge({"a1": "rshade:ice", "x": hero.world.x, "y": hero.world.y, "t": 0.0, "hit": 0.0, "dur": float(RIME.FROZEN_HOLD) + 0.32 + 0.05, "done": 0, "b": 0.0, "c": 0.0, "d": 0.0}, true)
+			P.list.append(ice)
+			P.sfx.play("frost", linear_to_db(0.6))
+		return
+	# (the rime lying where its front has passed: it slows him)
+	if r.x < RIME.FROM or r.x > front:
+		return
+	var tr := RIME.reaches_at(clampf(r.x, RIME.FROM, RIME.FROM + RIME.LONG))
+	if tr < 0.0 or RIME.rime_left(t - tr) < 0.3:
+		return
+	hero.chill(0.12, 0.4)
+
+
+static func _on_line(p: Dictionary, at: Vector2) -> Vector2:
+	var d := at - Vector2(p["x"], p["y"])
+	return Vector2(d.x * float(p["fx"]) + d.y * float(p["fy"]), d.x * float(p["fy"]) - d.y * float(p["fx"]))
+
+
+## A line's picture of a part (`mark`, `floor`, `behind`, `before`, `all`), painted afresh when its stamp changes: [texture, box].
+static func _rime_pic(p: Dictionary, part: String, stamp: String, paint: Callable) -> ImageTexture:
+	var key := "rs_" + part
+	var had = p.get(key)
+	if had != null and str(had[0]) == stamp:
+		return had[1]
+	var b: Rect2i = p["rs_box"]
+	var d := RIME.blank(b)
+	paint.call(d, b)
+	var img := Image.create_from_data(b.size.x, b.size.y, false, Image.FORMAT_RGBA8, d)
+	var tex: ImageTexture = had[1] if had != null else null
+	if tex == null or tex.get_width() != b.size.x or tex.get_height() != b.size.y:
+		tex = ImageTexture.create_from_image(img)
+	else:
+		tex.update(img)
+	p[key] = [stamp, tex]
+	return tex
+
+
+## Where the top left of a line's box is on the screen (picture pixels), its floor point on a whole game pixel.
+static func _rime_tl(p: Dictionary) -> Vector2:
+	var g := GP.at(p["x"], p["y"])
+	var b: Rect2i = p["rs_box"]
+	return Vector2(GP.rnd(g.x), GP.rnd(g.y)) * 2.0 + Vector2(b.position.x - RIME.CAX, b.position.y - RIME.CAY)
+
+
+static func _rime_view(p: Dictionary) -> Array:
+	if not p.has("rs_view"):
+		var v := RIME.line_view(Vector2(p["fx"], p["fy"]))
+		p["rs_view"] = v
+		p["rs_box"] = RIME.line_box(v[0], v[1])
+	return p["rs_view"]
+
+
+## On the floor: its mark (from the breath's mark till the rime has crept to its end), and its crust.
+static func _rime_ground(P, p: Dictionary) -> void:
+	var t: float = p["t"]
+	if t >= RIME.GONE:
+		return
+	var v := _rime_view(p)
+	var back: bool = v[0]
+	var turn: float = v[1]
+	var stamp := str(floori(t * 15.0 + 1e-6))
+	var tl := _rime_tl(p)
+	var tq := floorf(t * 15.0 + 1e-6) / 15.0
+	if t < RIME.LONG / RIME.PACE + 0.1:
+		var tex := _rime_pic(p, "mark", stamp, func(d, b): RIME.paint_mark(d, b, tq + RIME.HIT, back, turn))
+		P.draw_texture(tex, tl)
+	if t < 0.0:
+		return
+	var crust := _rime_pic(p, "floor", stamp, func(d, b): RIME.paint_floor(d, b, tq, back, turn))
+	P.draw_texture(crust, tl)
+
+
+## Among what stands: its crystals (split about the hero near it), each part a picture at its own depth.
+static func _rime_stands(P, p: Dictionary) -> void:
+	var t: float = p["t"]
+	if t < 0.0 or t >= RIME.GONE or P.stands == null:
+		for k in ["fx_rs_behind", "fx_rs_before", "fx_rs_all"]:
+			_hide(p, k)
+		return
+	var v := _rime_view(p)
+	var back: bool = v[0]
+	var turn: float = v[1]
+	var stamp := str(floori(t * 15.0 + 1e-6))
+	var tq := floorf(t * 15.0 + 1e-6) / 15.0
+	var tl := _rime_tl(p)
+	var r := _on_line(p, P.hero.world)
+	var end := RIME.FROM + RIME.LONG
+	var f := Vector2(p["fx"], p["fy"])
+	var at0 := Vector2(p["x"], p["y"])
+	if absf(r.y) <= 1.6 and r.x >= RIME.FROM - 1.6 and r.x <= end + 1.6:
+		# (the hero near it: its crystals farther from the eye than him behind him, the nearer before him)
+		var at := clampf(r.x, RIME.FROM, end)
+		var w := at0 + f * at
+		for side in ["behind", "before"]:
+			var tex := _rime_pic(p, side, "%s:%.2f" % [stamp, at], func(d, b): RIME.paint_air(d, b, tq, back, turn, side, at))
+			_rime_sprite(P, p, "fx_rs_" + side, tex, tl, w.x + w.y + (0.02 if side == "before" else -0.02))
+		_hide(p, "fx_rs_all")
+		return
+	var all := _rime_pic(p, "all", stamp, func(d, b): RIME.paint_air(d, b, tq, back, turn, "all", 0.0))
+	var mid := at0 + f * (RIME.FROM + RIME.LONG / 2.0)
+	_rime_sprite(P, p, "fx_rs_all", all, tl, mid.x + mid.y)
+	_hide(p, "fx_rs_behind")
+	_hide(p, "fx_rs_before")
+
+
+static func _rime_sprite(P, p: Dictionary, key: String, tex: Texture2D, tl: Vector2, depth: float) -> void:
+	var s = p.get(key)
+	if s == null or not is_instance_valid(s):
+		s = Sprite2D.new()
+		s.centered = false
+		P.stands.add_child(s)
+		p[key] = s
+	s.visible = true
+	s.texture = tex
+	s.position = Vector2(tl.x, depth * 16.0)
+	s.offset = Vector2(0.0, tl.y - depth * 16.0)
 
 
 ## Through a royal shadow's act, on the floor: its warning; the King's shadow's line of sparks and its crown's floor.
@@ -292,6 +464,20 @@ static func stands(P, p: Dictionary) -> void:
 			if P.has_film("hs_grip_far"):
 				P._film_one(p, "fx_far", P._still("hs_grip_far", "stand", k), at, at.x + at.y - 0.04)
 				P._film_one(p, "fx_near", P._still("hs_grip_near", "stand", k), at, at.x + at.y + 0.04)
+		"rshade:line":
+			_rime_stands(P, p)
+		"rshade:ice":
+			# (round him: its far half behind him, its near half before him, as he is seen)
+			var k := floori(t * 30.0 + 1e-6)
+			var hf: Vector2 = P.hero.face
+			var view := "back" if hf.x + hf.y < -0.2 else "front"
+			if k < 0 or t > float(RIME.FROZEN_HOLD) + 0.32 or not P.has_film("rs_ice_%s_far" % view):
+				_hide(p, "fx_far")
+				_hide(p, "fx_near")
+				return
+			var at := Vector2(p["x"], p["y"])
+			P._film_one(p, "fx_far", P._still("rs_ice_%s_far" % view, "stand", k), at, at.x + at.y - 0.05)
+			P._film_one(p, "fx_near", P._still("rs_ice_%s_near" % view, "stand", k), at, at.x + at.y + 0.05)
 		"rshadow:show":
 			# (THE SHADOW CROWN in the air, over the figures, at the floor point under it)
 			var m = p.get("src")

@@ -148,6 +148,7 @@ import { RALLY_CANVAS as KK_RALLY_CANVAS, STANDING_CANVAS as KK_STANDING_CANVAS,
 import { GRIP_CANVAS as HS_GRIP_CANVAS, gripPainted as hsGrip } from '../src/art/hush_shapes';
 import { swoopCarry as hsSwoopCarry, swoopPace as hsSwoopPace } from '../src/art/hush_shapes_moves';
 import { MASKS_SHADOW_FLIGHT as RSH_FLIGHT, SHADOW_MASKS as RSH_MASKS, SHADOW_SNARE as RSH_SNARE, masksFx as rshMasks, snareFx as rshSnare, weightFx as rshWeight } from '../src/art/royal_shadows_fx';
+import { FROZEN_CANVAS as RS_FROZEN_CANVAS, frozenPainted as rsFrozen } from '../src/art/rime_shade_fx';
 import { BIRD as GK_BIRD, BIRD_CANVAS as GK_BIRD_CANVAS, DECREE_FX as GK_DECREE, FACE_CANVAS as GK_FACE_CANVAS, KN_CANVAS as GK_KN_CANVAS, WEIGHT_CANVAS as GK_WEIGHT_CANVAS, WEIGHT_FX as GK_WEIGHT, birdPainted as gkBird, facePainted as gkFace, knightPainted as gkKnight, weightPainted as gkWeight } from '../src/art/king_fx';
 import { BANNER_N, bannerSprite } from '../src/art/act1_figs/kknight';
 import { CLOUD_CANVAS as QN_CLOUD_CANVAS, CLOUD_FX as QN_CLOUD_FX, HALL_MIRROR_CANVAS, SHATTER_FX as QN_SHATTER_FX, TALK_CANVAS as QN_TALK_CANVAS, TALK_FX as QN_TALK_FX, cloudPainted as qnCloud, hallMirrorPainted, shardsAt as qnShardsAt, talkingMirrorPainted } from '../src/art/queen_fx';
@@ -781,6 +782,18 @@ for (const view of ['front', 'back'] as const) {
   }
 }
 
+// FLOOR 20'S RIME SHADE (godot/scripts/act3/marks20.gd; render/act1_fx/rshade.ts): its line is painted live there (rime_paint.gd)
+//   rs_ice_<view>_<half>  FROZEN IN PLACE, the frost closing over his legs and shattering, thirty frames a second (frozenPainted):
+//                         `far`, behind him, `near`, before him; seen from in front or behind as he is
+{
+  const n = Math.floor((0.8 + 0.32) * FPS) + 1;
+  for (const view of ['front', 'back'] as const) {
+    for (const half of ['far', 'near'] as const) {
+      films[`rs_ice_${view}_${half}`] = { fps: FPS, n, k0: 0, layers: { stand: Array.from({ length: n }, (_, k) => pic(toSprite(rsFrozen(k / FPS, view, half), null, RS_FROZEN_CANVAS.ax, RS_FROZEN_CANVAS.ay))) } };
+    }
+  }
+}
+
 // FLOOR 19'S BOSS, THE KING (godot/scripts/act3/gk_marks.gd; render/act1_fx/gking.ts, as the game paints them, each the first time it
 // is wanted):
 //   gk_kn_<view>          a knight of his Decree, each of the twelve frames of his march (knightPainted); layer `stand`
@@ -1143,7 +1156,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the city's)
   watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'], bookwarden: ['wb'],
   // (the High City's)
-  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['gq'], kknight: ['kk'], gking: ['gk'], hshape: ['hs'], rshadow: ['rsh'],
+  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['gq'], kknight: ['kk'], gking: ['gk'], hshape: ['hs'], rshadow: ['rsh'], rshade: ['rs'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

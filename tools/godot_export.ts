@@ -289,6 +289,10 @@ if (level.land) {
   const K19 = level.land.kind === 'keep' ? level.land.keep : null;
   const bird = level.props.find((p) => p.kind === 'piece' && p.name === 'the clockwork songbird, broken');
   const keep = K19 ? { portcullises: K19.portcullises.map((q) => ({ x: q.x, y: q.y, n: q.n, alongX: q.alongX })), bird: bird ? { x: bird.x, y: bird.y } : null } : null;
-  writeFileSync(`${OUT}/land.json`, JSON.stringify({ kind: level.land.kind, areas, lanes, ...(garden ? { garden } : {}), ...(masque ? { masque } : {}), ...(gallery ? { gallery } : {}), ...(keep ? { keep } : {}) }, null, 1));
+  // (FLOOR 20: the Quiet Tower's stair at the stairhead (its middle, where he stands coming back down), its top (middle, reach, the
+  // trapdoor's tile, where he stands coming up), where the two grounds part: act3/tower.gd)
+  const T20 = level.land.tower;
+  const tower = T20 ? { split: T20.split, stair: { x: T20.stair.x, y: T20.stair.y, back: { ...T20.stair.back } }, top: { cx: T20.top.cx, cy: T20.top.cy, r: T20.top.r, trap: { ...T20.top.trap }, arrive: { ...T20.top.arrive } } } : null;
+  writeFileSync(`${OUT}/land.json`, JSON.stringify({ kind: level.land.kind, areas, lanes, ...(garden ? { garden } : {}), ...(masque ? { masque } : {}), ...(gallery ? { gallery } : {}), ...(keep ? { keep } : {}), ...(tower ? { tower } : {}) }, null, 1));
   console.log(`land: ${level.land.kind}, ${areas.length} areas (${areas.map((a) => a.role).join(', ')}), ${lanes.length} lanes`);
 }

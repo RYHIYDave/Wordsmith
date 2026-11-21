@@ -155,6 +155,8 @@ var masque = null
 var gallery = null
 ## (THE HIGH CITY, FLOOR 19: the Keep's portcullises: act3/keep.gd)
 var keep = null
+## (FLOOR 20: the Quiet Tower's stair up to its top and its trapdoor down, shut while the Moth lives: act3/tower.gd)
+var tower = null
 var holds:
 	get:
 		return quest610.holds if quest610 != null else null
@@ -261,6 +263,9 @@ func _ready() -> void:
 	keep = preload("res://scripts/act3/keep.gd").new()
 	keep.main = self
 	add_child(keep)
+	tower = preload("res://scripts/act3/tower.gd").new()
+	tower.main = self
+	add_child(tower)
 
 	var shots := _arg("shots")
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
@@ -630,6 +635,8 @@ func _build(where: String, arrive: String) -> void:
 		gallery.enter(where)
 	if keep != null:
 		keep.enter(where)
+	if tower != null:
+		tower.enter(where)
 
 
 ## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.

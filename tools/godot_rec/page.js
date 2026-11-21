@@ -1155,6 +1155,17 @@
         const r = REC.variant(T0, W, H, [1], () => { p.state = 1; }, () => { p.state = ws; });
         if (r.err) { note[`clock${i}`] = r.err; return; }
         out[`clock${i}`] = { kind: 'clock', at: { x: p.x, y: p.y }, frames: [none(), r.frames[0]] };
+      } else if (p.name === 'the trapdoor to the top') {
+        // (THE HIGH CITY, FLOOR 20: the Quiet Tower's trapdoor, `trap`: open as it is laid, shut (its `variant` 0) behind him while the
+        // Moth lives: game/act2/tower_rules.ts)
+        const r = REC.variant(T0, W, H, [0], () => { p.variant = 0; }, () => { p.variant = was; });
+        if (r.err) { note.trap = r.err; return; }
+        out.trap = { kind: 'trap', at: { tx: p.tx, ty: p.ty }, frames: [none(), r.frames[0]] };
+      } else if (p.name === 'the last chapter on its lectern') {
+        // (FLOOR 20: the last chapter knocked from its lectern to the stones as the Moth comes down on it, `lectern`: its `variant` 1)
+        const r = REC.variant(T0, W, H, [1], () => { p.variant = 1; }, () => { p.variant = was; });
+        if (r.err) { note.lectern = r.err; return; }
+        out.lectern = { kind: 'lectern', at: { x: p.x, y: p.y }, frames: [none(), r.frames[0]] };
       } else if (p.name === 'the clockwork songbird, broken') {
         // (THE HIGH CITY, FLOOR 19: the King's broken songbird before his throne, `bird`: gone from the floor as he dies, winding
         // itself up and singing in its place: game/act1_rules/gking.ts died)

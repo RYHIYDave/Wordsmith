@@ -169,6 +169,8 @@ func run(main, hero, out: String) -> void:
 		await _ports()
 	if depth == 19 and (M._arg("kind") == "" or M._arg("kind").split(",").has("gking")):
 		await _gking()
+	if depth == 20 and (M._arg("kind") == "" or M._arg("kind").split(",").has("tower")):
+		await _tower()
 	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
 
 
@@ -469,6 +471,28 @@ func _common(kind: String) -> void:
 				"the rallying banner: driven in, its shockwave striking the hero (%d); while it stands those near it hit harder (x%.1f); he without it (%s); three blows cut it down" % [struck, rally, looked])
 		"rshadow":
 			await _rshadows()
+		"rshade":
+			h.world = M._spot_near(m.world, 4.5, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var marked: bool = await _run(5.0, func(): return not _a1("rshade:line", func(q): return float(q["t"]) >= -0.25).is_empty())
+			await _snap("rshade_line_marked")
+			var line: Dictionary = _a1("rshade:line")
+			await _run(1.5, func(): return float(line.get("t", -1.0)) >= 0.6)
+			await _snap("rshade_rime_creeps")
+			var froze: bool = await _run(2.0, func(): return not _a1("rshade:ice").is_empty())
+			var held: bool = h.held > 0.0
+			await _run(0.25)
+			await _snap("rshade_frozen")
+			_line(marked and froze and held and struck > 0, "the Rime Shade's breath: its line marked at him; the rime creeping down it; its front reaching him: struck (%d), FROZEN IN PLACE" % struck)
+			# (the rime lying where its front has passed slows him)
+			await _run(1.0, func(): return h.held <= 0.0)
+			var on: Vector2 = Vector2(line["x"], line["y"]) + Vector2(line["fx"], line["fy"]) * 1.5
+			h.world = on
+			await _run(0.3, Callable(), func(): h.world = on)
+			var slowed: bool = h._slow_t > 0.0 and h._slow_by >= 0.39
+			await _snap("rshade_rime_lies")
+			_line(slowed, "the rime lying where its front passed: standing in it he goes slower (by %.2f)" % h._slow_by)
 		"hshape":
 			# (in the open, 4.5 tiles off: it circles him, closing, and swoops)
 			h.world = M._spot_near(m.world, 4.5, h.world)
@@ -2176,4 +2200,52 @@ func _rshadows() -> void:
 				_line(braced and s1 > 0 and sent and struck > 0, "the shadow of the King: its charge and its line of sparks bursting (%d); its crown's weight following him, slammed down (%d)" % [s1, struck])
 		m.queue_free()
 		await M._wait(0.1)
+
+
+## FLOOR 20'S WAY UP AND DOWN (act3/tower.gd): up the stair at the stairhead onto the top, through the trapdoor; the trapdoor slamming
+## shut behind him as the Moth wakes to him; back down through it once open.
+func _tower() -> void:
+	var T = M.tower
+	if T == null or not T.on():
+		_line(false, "floor 20 has no tower")
+		return
+	var plan: Dictionary = T.plan
+	var stair := Vector2(plan["stair"]["x"], plan["stair"]["y"])
+	var arrive := Vector2(plan["top"]["arrive"]["x"], plan["top"]["arrive"]["y"])
+	var trap := Vector2(float(plan["top"]["trap"]["x"]) + 0.5, float(plan["top"]["trap"]["y"]) + 0.5)
+	h.world = M._spot_near(stair, 2.6, h.world)
+	await _run(0.3)
+	await _snap("tower_stairhead")
+	h.world = stair + (h.world - stair).normalized() * 1.5
+	var up: bool = await _run(3.0, func(): return h.world.distance_to(arrive) < 0.2 and not T._going)
+	await _run(0.2)
+	await _snap("tower_top")
+	_line(up and T.on_top(h.world), "up the tower's stair: the screen darkened, he comes up through the trapdoor onto the top, facing its middle")
+	# (the Moth awake to him, he off the trapdoor: it slams shut)
+	var moth = T._moth()
+	var slammed := false
+	if moth != null:
+		moth.mgr.wake(moth)
+		h.world = M._spot_near(trap, 2.5, h.world)
+		slammed = await _run(3.0, func(): return T.shut)
+		await _run(0.2)
+		await _snap("tower_trapdoor_shut")
+		# (shut: standing on it takes him nowhere)
+		h.world = trap
+		await _run(1.0)
+		var stayed: bool = T.on_top(h.world)
+		moth.waits = false
+		moth.hurt(moth.life + 1e6)
+		var opened: bool = await _run(9.0, func(): return not T.shut)
+		await _snap("tower_trapdoor_open")
+		_line(slammed and stayed and opened, "the trapdoor: slammed shut behind him as the Moth woke to him (standing on it takes him nowhere); open again once its death has played out")
+	else:
+		_line(false, "floor 20 has no Moth")
+	h.world = trap + Vector2(0.9, 0.0)
+	await _run(0.3)
+	h.world = trap
+	var down: bool = await _run(3.0, func(): return not T.on_top(h.world) and not T._going)
+	await _run(0.2)
+	await _snap("tower_back_down")
+	_line(down and h.world.distance_to(Vector2(plan["stair"]["back"]["x"], plan["stair"]["back"]["y"])) < 0.3, "down through the open trapdoor: back before the stair")
 

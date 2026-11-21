@@ -108,6 +108,7 @@ const BOSS_AI := {
 	"gking": preload("res://scripts/act3/gking.gd"),
 	# (floor 20's: the Hush in its own shapes)
 	"hshape": preload("res://scripts/act3/hshape.gd"), "rshadow": preload("res://scripts/act3/rshadow.gd"),
+	"rshade": preload("res://scripts/act3/rshade.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
