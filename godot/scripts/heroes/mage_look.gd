@@ -213,6 +213,9 @@ func _gy(x: float, y: float) -> float:
 func _draw() -> void:
 	if kit == null:
 		return
+	# (HER TREE'S AURA, on the floor round her while it is on: render/swap_fx.ts drawAura)
+	if kit.has_method("aura_now"):
+		_aura(kit.aura_now())
 	var P: Dictionary = L.P
 	for p in kit.shots:
 		if p.get("look", "") != "wave":
@@ -274,3 +277,101 @@ func _wild_wave(p: Dictionary, tones: Array, jx: float, jy: float) -> void:
 			var al := 0.32 * fade * born if ripple else fade * (1.0 if back < 3 else (0.85 if back < 6 else 0.55))
 			var up := (2 + roundi(5.0 * mid * born)) if back == 1 else ((1 + roundi(2.0 * mid * born)) if back == 2 else (1 if back == 3 else 0))
 			draw_rect(Rect2(sx * 2.0, (sy - up) * 2.0, 4.0, 4.0 if back <= 2 else 2.0), Color(col, al))
+
+
+# --- HER AURA (render/swap_fx.ts drawAura), in game pixels ---
+
+const TalentsData := preload("res://scripts/talents.gd")
+
+
+func _dot(x: float, y: float, c: Color, w := 1.0, hh := 1.0) -> void:
+	draw_rect(Rect2(roundf(x) * 2.0, roundf(y) * 2.0, w * 2.0, hh * 2.0), c)
+
+
+## A ring on the floor of `r` tiles about `c`, every `gap`th pixel of it, turned by `turn`.
+func _floor_ring(c: Vector2, r: float, col: Color, gap: int, turn: float) -> void:
+	var n := maxi(24, roundi(r * 64.0))
+	for k in n:
+		if gap > 1 and k % gap != 0:
+			continue
+		var a := float(k) / n * TAU + turn
+		var p := c + Vector2(cos(a), sin(a)) * r
+		_dot(_gx(p.x, p.y), _gy(p.x, p.y), col)
+
+
+static func _seed(k: float) -> float:
+	return absf(fmod(sin(k * 12.9898) * 43758.5453, 1.0))
+
+
+## Its floor breathing in its kind's colour, a flash going out to its edge as it comes on, its edge with its light turning round
+## it and a rim of the friend's cyan just inside; FIRE's tongues of flame round its edge and embers rising, LIGHTNING's bright runs
+## and crackle off its edge, FROST's shards of ice standing round it, snow drifting down and stars of frost turning on its edge.
+func _aura(a: Dictionary) -> void:
+	if a.is_empty():
+		return
+	TalentsData.ready_up()
+	var hp: Vector2 = kit.h.world
+	var tones: Array = TalentsData.D["spellTones"].get(a["kind"], TalentsData.D["spellTones"]["phys"])
+	var T: Array = tones.map(func(c): return Color(c))
+	var cy: Array = TalentsData.D["cyan"]
+	var C1 := Color(cy[2])
+	var t := _t
+	var grow := minf(1.0, float(a["t"]) / 0.3)
+	var r: float = float(a["r"]) * (0.3 + 0.7 * grow)
+	var at := func(ang: float, rr: float) -> Vector2:
+		var p := hp + Vector2(cos(ang), sin(ang)) * rr
+		return Vector2(_gx(p.x, p.y), _gy(p.x, p.y))
+	var floor_pts := PackedVector2Array()
+	for k in 48:
+		floor_pts.append((at.call(float(k) / 48.0 * TAU, r) as Vector2) * 2.0)
+	draw_colored_polygon(floor_pts, Color(T[1], 0.16 + 0.06 * sin(t * 4.0)))
+	if float(a["t"]) < 0.35:
+		_floor_ring(hp, r * 1.05, Color(T[3], 1.0 - float(a["t"]) / 0.35), 1, 0.0)
+	_floor_ring(hp, r + 0.05, T[0], 1, 0.0)
+	_floor_ring(hp, r, T[1], 1, 0.0)
+	_floor_ring(hp, r - 0.05, T[2], 2, t * 0.8)
+	_floor_ring(hp, r - 0.18, C1, 3, -t * 0.5)
+	match str(a["kind"]):
+		"fire":
+			for k in 18:
+				var p: Vector2 = at.call(float(k) / 18.0 * TAU + t * 0.4, r)
+				var tall := 4 + roundi(3.0 * (0.5 + 0.5 * sin(t * 11.0 + k * 1.9)))
+				for j in tall:
+					var w := 1.0 if j < tall * 0.4 else 0.0
+					_dot(p.x - w, p.y - j, T[1] if j < 2 else (T[2] if j < tall - 2 else T[3]), 1.0 + 2.0 * w, 1.0)
+			for k in 30:
+				var ph := fmod(t * 0.7 + _seed(k), 1.0)
+				var p0: Vector2 = at.call(k * 2.39996, r * sqrt(_seed(k + 40)) * 0.92)
+				_dot(p0.x + sin(t * 3.0 + k) * 2.0, p0.y - ph * 28.0, Color(T[3] if ph < 0.3 else (T[2] if ph < 0.7 else T[1]), 1.0 - ph * 0.6), 2.0, 2.0)
+		"lightning":
+			var stp := floori(t * 16.0)
+			for k in 3:
+				var a0 := _seed(stp * 3 + k) * TAU
+				for q in 10:
+					var p: Vector2 = at.call(a0 + q * 0.05, r)
+					_dot(p.x, p.y - 1.0, T[3], 2.0, 2.0)
+			for k in 7:
+				var ang := _seed(stp * 7 + k) * TAU
+				var p: Vector2 = at.call(ang, r)
+				for q in 5:
+					var np := Vector2(p.x + (4.0 if _seed(stp + k * 5 + q) > 0.5 else -4.0), p.y - 3.0 - _seed(stp * 3 + k + q) * 4.0)
+					draw_line(p.round() * 2.0 + Vector2.ONE, np.round() * 2.0 + Vector2.ONE, T[2], 4.0)
+					draw_line(p.round() * 2.0 + Vector2.ONE, np.round() * 2.0 + Vector2.ONE, T[3], 2.0)
+					p = np
+		_:
+			for k in 16:
+				var p: Vector2 = at.call(float(k) / 16.0 * TAU, r)
+				var tall := 3 + (k % 3) * 2
+				for j in tall:
+					_dot(p.x - (1.0 if j < tall - 2 else 0.0), p.y - j, T[3] if j == tall - 1 else (T[2] if j % 2 else T[1]), 2.0 if j < tall - 2 else 1.0, 1.0)
+			for k in 26:
+				var ph := fmod(t * 0.35 + _seed(k), 1.0)
+				var p0: Vector2 = at.call(k * 2.39996, r * sqrt(_seed(k + 40)) * 0.9)
+				_dot(p0.x + sin(t * 2.0 + k) * 3.0, p0.y - (1.0 - ph) * 26.0, T[3] if ph < 0.5 else T[2], 2.0, 2.0)
+			for k in 8:
+				var p: Vector2 = at.call(float(k) / 8.0 * TAU + t * 0.3, r)
+				var X := roundf(p.x)
+				var Y := roundf(p.y) - 2.0
+				_dot(X - 3.0, Y, T[2], 7.0, 1.0)
+				_dot(X, Y - 3.0, T[2], 1.0, 7.0)
+				_dot(X - 1.0, Y - 1.0, T[3], 3.0, 3.0)

@@ -189,6 +189,9 @@ func forget() -> void:
 ## strikes, Wildfire's burning, Contagion's poison, Hailstorm's chill: melds.gd arc)
 func arcs(m: Monster, n: int, dmg: float, skill := -1, meld := "") -> int:
 	var chain: Dictionary = Words.data()["arcChain"]
+	# (THE MAGE'S TREE: Forking, lightning arcs to two more enemies)
+	if hero != null and is_instance_valid(hero) and hero.has("forking"):
+		n += int(preload("res://scripts/talents.gd").D["tune"]["forking"])
 	var from := m.world
 	var near: Array = []
 	for o in list:
@@ -199,6 +202,7 @@ func arcs(m: Monster, n: int, dmg: float, skill := -1, meld := "") -> int:
 		near.resize(n)
 	for o in near:
 		_tell(_melded({"t": "arc", "x0": from.x, "y0": from.y, "x1": o.world.x, "y1": o.world.y}, meld))
+		o.shock_t = float(preload("res://scripts/talents.gd").D["tune"]["shockSecs"])
 		o.damage(dmg, "lightning", false, false, [], false, false, skill)
 		if meld != "" and hero != null and is_instance_valid(hero):
 			hero.melds.arc(o, m, skill, dmg, near)

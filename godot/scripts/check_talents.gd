@@ -95,6 +95,8 @@ func run(main, hero, d: String) -> void:
 	await _tinkerer()
 	# THE RANGER'S TALENTS
 	await _ranger()
+	# THE MAGE'S TALENTS
+	await _mage()
 	# THE PAGE, for each class
 	var inv = M._inv
 	for cls in ["warrior", "ranger", "mage", "warlock", "tinkerer", "brawler"]:
@@ -535,3 +537,118 @@ func _ranger() -> void:
 	kit.shots.clear()
 	h.talents = []
 	h.talents_changed()
+
+
+func _mage() -> void:
+	M.set_class("mage", true)
+	M.loot.level = 50
+	h.life = h.max_life
+	h.face = Vector2(1, 0)
+	# (her look, as a place built with her in it has it)
+	var kl = load("res://scripts/heroes/mage_look.gd").new()
+	kl.kit = h.kit
+	kl.loot = M.loot
+	M._place.add_child(kl)
+	M._place.move_child(kl, M.fx.get_index() + 1)
+	h.kit.look = kl
+	await _run(0.3)
+	var kit = h.kit
+	var T: Dictionary = Talents.D["tune"]
+	var m = _foe(1.5)
+	var o = null
+	for q in M._monsters.list:
+		if is_instance_valid(q) and q != m and not q.dead and not q.boss and q.state != "rise":
+			o = q
+			break
+	if m == null or o == null:
+		_line(false, "two monsters wanted to try the Mage's talents on")
+		return
+	o.world = m.world + Vector2(0, 0.8)
+	o.life = o.max_life
+	# (a way from her with clear floor for four and a half tiles, for what slides and what is struck)
+	var way := Vector2(1, 0)
+	for k in 16:
+		var u := Vector2(cos(k * TAU / 16.0), sin(k * TAU / 16.0))
+		var clear := true
+		for d in range(1, 10):
+			var p: Vector2 = h.world + u * d * 0.5
+			clear = clear and M.map.fits(p.x, p.y, 0.45)
+		if clear:
+			way = u
+			break
+	h.face = way
+	m.world = h.world + way * 1.2
+	m.face = way
+	o.world = m.world + way * 1.4
+	o.face = way
+	# Kindling: her fire leaves the ground burning where it hits
+	h.talents = ["kindling"]
+	var burns0: int = h.wakes.list.filter(func(z): return z["kind"] == "burn").size()
+	var r0: Dictionary = h.loadout.r(0)
+	var was_el = r0["element"]
+	r0["element"] = "fire"
+	h.hit_monster(m, 0, 0.01, false)
+	r0["element"] = was_el
+	var burns1: int = h.wakes.list.filter(func(z): return z["kind"] == "burn").size()
+	_line(burns1 == burns0 + 1, "Kindling: her fire hit leaves the ground burning (%d patch to %d)" % [burns0, burns1])
+	# Shatter: frozen ones take twice as much
+	h.talents = ["bittercold", "deepfreeze", "frostwarp", "rime", "shatter"]
+	m.frozen_t = 1.0
+	var k_frozen: float = h._talent_hit_mult(m)
+	m.frozen_t = 0.0
+	_line(k_frozen == float(T["shatter"]), "Shatter: a frozen one takes x%.0f" % k_frozen)
+	# Deep Freeze: a frozen one struck slides away, freezing what it touches
+	h.talents = ["bittercold", "deepfreeze"]
+	o.frozen_t = 0.0
+	o.freeze_immune = 0.0
+	m.world = h.world + way * 1.2
+	o.world = m.world + way * 1.4
+	m.frozen_t = 1.0
+	m.life = m.max_life
+	h.hit_monster(m, 0, 0.001, false)
+	await _run(0.5)
+	_line(o.frozen_t > 0.0, "Deep Freeze: struck frozen, it slid away and froze the one it met (%.1f s)" % o.frozen_t)
+	# Bitter Cold: what strikes her is chilled
+	o.chill_t = 0.0
+	var kept: bool = h.unhurt
+	h.unhurt = true
+	h._invuln = 0.0
+	h.hurt_by(5.0, "phys", [], {}, o)
+	h.unhurt = kept
+	_line(o.chill_t > 1.9 and o.chill >= 0.5, "Bitter Cold: what strikes her is chilled to half its pace for two seconds (%.1f s)" % o.chill_t)
+	# Overload: a shocked one dying passes its shock to the three nearest
+	h.talents = ["charged", "forking", "stormwarp", "overload"]
+	o.world = m.world + Vector2(0, 1.0)
+	o.shock_t = 0.0
+	m.shock_t = 1.5
+	kit.on_kill(m)
+	_line(o.shock_t > 0.0, "Overload: a shocked one dying passes its shock on (%.1f s)" % o.shock_t)
+	# Charged: a charge gathered walking; her next hit lets it go, a bolt leaping between them
+	kit.charge = 1.0
+	o.life = o.max_life
+	var life_o: float = o.life
+	m.life = m.max_life
+	h.hit_monster(m, 0, 0.001, false)
+	_line(kit.charge == 0.0 and o.life < life_o, "Charged: the charge goes off with her hit, leaping to the one beside (%.0f to %.0f)" % [life_o, o.life])
+	# The Aura: her tap turns it on round her; FROST shields her and chills those in it
+	h.talents = ["bittercold", "deepfreeze", "aura"]
+	h.picks = {"aura": "frost"}
+	kit.aura = {"on": 0.0, "wait": 0.0, "tick": 0.0, "shield_back": 0.0}
+	h.shield = 0.0
+	h.auto_change = true
+	o.chill_t = 0.0
+	o.state = "chase"
+	o.world = h.world + Vector2(1.5, 0)
+	await _run(0.6)
+	var on: Dictionary = kit.aura_now()
+	await _snap("mage_frost_aura")
+	_line(not on.is_empty() and on["kind"] == "frost" and h.shield > 0.0 and o.chill_t > 0.0, "the Aura, frost: on round her (%s), a shield (%.0f), the one in it chilled" % [on.get("kind", "off"), h.shield])
+	kit.aura = {"on": 0.0, "wait": 0.0, "tick": 0.0, "shield_back": 0.0}
+	h.picks = {"aura": "fire"}
+	h.auto_change = true
+	await _run(0.4)
+	await _snap("mage_fire_aura")
+	kit.aura = {"on": 0.0, "wait": 0.0, "tick": 0.0, "shield_back": 0.0}
+	h.picks = {}
+	h.talents = []
+	h.shield = 0.0

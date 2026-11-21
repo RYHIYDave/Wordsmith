@@ -26,6 +26,7 @@ func _init(hero) -> void:
 
 func _step_own(dt: float) -> void:
 	_step_orbs(dt)
+	_step_tree(dt)
 
 
 # =====================================================================================================================
@@ -152,6 +153,8 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 	h.phase_in(0.22)
 	h._invuln = maxf(h._invuln, 0.3)
 	_say({"t": "burst", "x": land.x, "y": land.y, "r": 0.8, "el": "frost", "style": "warp"})
+	# (HER TREE: Frost Warp, Flame Warp; Storm Warp where she arrives)
+	_talent_warp(x0, land)
 	var rad: float = float(def["radius"]) * float(r["size"])
 	h._wake(2, x0, rad, float(r["count_dmg"]))
 	for k in int(r["count"]):
@@ -179,3 +182,280 @@ func step(dt: float, way: Vector2, hooked: bool) -> bool:
 
 func _clear_own() -> void:
 	orbs.clear()
+	aura = {"on": 0.0, "wait": 0.0, "tick": 0.0, "shield_back": 0.0}
+	charge = 0.0
+
+
+# =====================================================================================================================
+# HER TREE (game/talents.ts MAGE2, TALENTS2's remade cards; game.ts talentWarp, updateTalents, releaseCharge, spreadFire, talentKill,
+# passShock, rimeShatter, stepAura; TALENT_TUNE, SWAP_TUNE.aura)
+
+## (Charged: the charge she has gathered walking, 0 to 1, and its sparks' clock; Stormcaller's clock; her Aura: its seconds on, its
+## wait, the time to its next bite, the time to Lasting's shield coming back; where she was a moment ago)
+var charge := 0.0
+var _spark_t := 0.0
+var _storm_t := 0.0
+var aura := {"on": 0.0, "wait": 0.0, "tick": 0.0, "shield_back": 0.0}
+var _was_at := Vector2.INF
+
+
+func _TT() -> Dictionary:
+	return Talents.D["tune"]
+
+
+func _step_tree(dt: float) -> void:
+	var walked: float = 0.0 if _was_at == Vector2.INF else h.world.distance_to(_was_at)
+	_was_at = h.world
+	var town: bool = h.in_town
+	# (Charged: a charge gathered as she moves; full, it sparks round her)
+	if h.has("charged") and not town:
+		var C: Dictionary = _TT()["charged2"]
+		if charge < 1.0:
+			charge = minf(1.0, charge + walked / float(C["full"]))
+			_spark_t = 0.0
+		else:
+			_spark_t -= dt
+			if _spark_t <= 0.0:
+				_spark_t = float(C["spark"])
+				h._tell({"t": "spark", "x": h.world.x, "y": h.world.y, "el": "lightning", "n": 3})
+	# (Stormcaller: every two seconds, lightning strikes an enemy near her)
+	if h.has("stormcaller") and not town and h.monsters != null:
+		_storm_t -= dt
+		if _storm_t <= 0.0:
+			var T: Dictionary = _TT()["stormcaller"]
+			var best = null
+			var bd: float = T["reach"]
+			for m in h.monsters.list:
+				if not is_instance_valid(m) or m.dead or m.state == "sleep" or h.monsters.shut_in(m):
+					continue
+				var dd: float = m.world.distance_to(h.world)
+				if dd < bd and h.monsters.sees(h.world, m.world):
+					bd = dd
+					best = m
+			if best != null:
+				h._tell({"t": "arc", "x0": best.world.x, "y0": best.world.y, "x1": best.world.x, "y1": best.world.y, "sky": true})
+				h.sfx.play("thunder", linear_to_db(0.5))
+				best.shock_t = float(_TT()["shockSecs"])
+				best.damage(h.talent_hit("lightning", float(T["share"])), "lightning", false, false, [], false, false, -1)
+				_storm_t = float(T["every"])
+			else:
+				_storm_t = 0.3
+	# (Searing: fire spreads from a burning enemy to any it touches)
+	if h.has("searing") and h.monsters != null:
+		var touch: float = _TT()["searing2"]["touch"]
+		var burning: Array = h.monsters.list.filter(func(m): return is_instance_valid(m) and not m.dead and m.burn_t > 0.0)
+		for b in burning:
+			for o in h.monsters.list:
+				if not is_instance_valid(o) or o == b or o.dead or o.burn_t > 0.0 or h.monsters.shut_in(o):
+					continue
+				if o.world.distance_to(b.world) > b.r + o.r + touch:
+					continue
+				h._tell({"t": "ignite", "x": o.world.x, "y": o.world.y})
+				o.burn_dps = b.burn_dps
+				o.burn_t = 3.0
+				o.last_skill = b.last_skill
+	# (Hearth: standing in fire she made, nothing burns her; her mana's part is the mana mode's, which this port has not)
+	if h.has("fuel") and h.wakes != null and h.burn_t > 0.0:
+		for z in h.wakes.list:
+			if z["kind"] == "burn" and h.world.distance_to(Vector2(z["x"], z["y"])) <= float(z["r"]):
+				h.burn_t = 0.0
+				break
+	_step_aura(dt, town)
+
+
+## (Charged) Her next hit lets the charge go: a bolt from the one struck, leaping between up to five.
+func release_charge(m, at: Vector2) -> void:
+	if charge < 1.0 or not h.has("charged") or h.monsters == null:
+		return
+	var C: Dictionary = _TT()["charged2"]
+	charge = 0.0
+	var hit: float = h.talent_hit("lightning", float(C["share"]))
+	var done: Array = [m]
+	var p := at
+	h._tell({"t": "arc", "x0": at.x, "y0": at.y, "x1": at.x, "y1": at.y, "sky": true})
+	if not m.dead:
+		m.shock_t = float(_TT()["shockSecs"])
+		m.damage(hit, "lightning", false, false, [], false, false, -1)
+	for n in range(1, int(C["n"])):
+		var best = null
+		var bd: float = C["reach"]
+		for o in h.monsters.list:
+			if not is_instance_valid(o) or o.dead or done.has(o) or h.monsters.shut_in(o):
+				continue
+			var dd: float = o.world.distance_to(p)
+			if dd < bd:
+				bd = dd
+				best = o
+		if best == null:
+			break
+		done.append(best)
+		h._tell({"t": "arc", "x0": p.x, "y0": p.y, "x1": best.world.x, "y1": best.world.y})
+		p = best.world
+		best.shock_t = float(_TT()["shockSecs"])
+		best.damage(hit, "lightning", false, false, [], false, false, -1)
+	h.sfx.play("thunder", linear_to_db(0.6))
+
+
+## (game.ts talentWarp) Her Warp from `x0` to `x1`, with her talents: Frost Warp's burst of cold where she leaves; Flame Warp's fire
+## along the way; Storm Warp's lightning where she arrives.
+func _talent_warp(x0: Vector2, x1: Vector2) -> void:
+	var T := _TT()
+	if h.has("frostwarp") and h.monsters != null:
+		var rr: float = T["frostWarp"]["r"]
+		_say({"t": "burst", "x": x0.x, "y": x0.y, "r": rr, "el": "frost", "style": "nova"})
+		h.sfx.play("frost", linear_to_db(0.8))
+		for m in h.monsters.list:
+			if is_instance_valid(m) and not m.dead and not m.boss and not h.monsters.shut_in(m) and m.world.distance_to(x0) <= rr + m.r:
+				m.freeze_now()
+	if h.has("flamewarp") and h.wakes != null:
+		var F: Dictionary = T["flameWarp"]
+		var len := x0.distance_to(x1)
+		var d := 0.0
+		while d <= len + 0.01:
+			var at := x0 + (x1 - x0) * (d / maxf(0.01, len))
+			h.wakes.add_patch(-1, "burn", at, float(F["r"]), float(F["secs"]), h.talent_hit("fire", float(F["share"])), "fire")
+			d += float(F["every"])
+	if h.has("stormwarp") and h.monsters != null:
+		var S: Dictionary = T["stormWarp"]
+		var near: Array = h.monsters.list.filter(func(m): return is_instance_valid(m) and not m.dead and not h.monsters.shut_in(m) and m.world.distance_to(x1) <= float(S["reach"]))
+		near.sort_custom(func(a, b): return a.world.distance_to(x1) < b.world.distance_to(x1))
+		for m in near.slice(0, int(S["n"])):
+			h._tell({"t": "arc", "x0": m.world.x, "y0": m.world.y, "x1": m.world.x, "y1": m.world.y, "sky": true})
+			m.shock_t = float(T["shockSecs"])
+			m.damage(h.talent_hit("lightning", float(S["share"])), "lightning", false, false, [], false, false, 2)
+		if not near.is_empty():
+			h.sfx.play("thunder", linear_to_db(0.7))
+
+
+## A kill of hers (game.ts talentKill): Overload's shock passed on; Rime's ice shattering; Inferno's blast; Shatter's burst of cold.
+func on_kill(m) -> void:
+	var T := _TT()
+	var at: Vector2 = m.world
+	if h.has("overload") and m.shock_t > 0.0:
+		var O: Dictionary = T["overload2"]
+		var near: Array = h.monsters.list.filter(func(o): return is_instance_valid(o) and not o.dead and o != m and not h.monsters.shut_in(o) and o.world.distance_to(at) <= float(O["reach"]))
+		near.sort_custom(func(a, b): return a.world.distance_to(at) < b.world.distance_to(at))
+		near = near.slice(0, int(O["n"]))
+		var jolt: float = h.talent_hit("lightning", float(O["share"]))
+		for o in near:
+			h._tell({"t": "arc", "x0": at.x, "y0": at.y, "x1": o.world.x, "y1": o.world.y})
+			o.shock_t = float(T["shockSecs"])
+		for o in near:
+			o.damage(jolt, "lightning", false, false, [], false, false, -1)
+		if not near.is_empty():
+			h.sfx.play("zap", linear_to_db(0.6))
+	if h.has("rime") and h.wakes != null:
+		for k in h.wakes.list.size():
+			var z: Dictionary = h.wakes.list[k]
+			if z["kind"] == "ice" and at.distance_to(Vector2(z["x"], z["y"])) <= float(z["r"]) + m.r * 0.5:
+				h.wakes.list.remove_at(k)
+				h.wakes.queue_redraw()
+				_say({"t": "burst", "x": z["x"], "y": z["y"], "r": z["r"], "el": "frost", "style": "nova"})
+				h.sfx.play("shatter", linear_to_db(0.8))
+				for o in h.monsters.list:
+					if is_instance_valid(o) and not o.dead and o != m and not h.monsters.shut_in(o) and o.world.distance_to(Vector2(z["x"], z["y"])) <= float(z["r"]) + o.r * 0.5:
+						o.freeze_now()
+				break
+	if h.has("inferno") and m.burn_t > 0.0:
+		var boom := maxf(1.0, roundf(m.max_life * float(T["inferno"])))
+		var br: float = T["burstR"]
+		_after(0.1, func() -> void:
+			_say({"t": "burst", "x": at.x, "y": at.y, "r": br, "el": "fire", "style": "blast"})
+			h.sfx.play("explode", linear_to_db(0.6))
+			for o in h.monsters.list:
+				if not is_instance_valid(o) or o.dead or h.monsters.shut_in(o) or o.world.distance_to(at) > br + o.r:
+					continue
+				o.damage(boom, "fire", false, false, [], false, false, -1)
+				if o.dead:
+					continue
+				if o.burn_t <= 0.0:
+					h._tell({"t": "ignite", "x": o.world.x, "y": o.world.y})
+				o.burn_dps = maxf(o.burn_dps if o.burn_t > 0.0 else 0.0, boom / 3.0)
+				o.burn_t = 3.0)
+	if h.has("shatter") and m.frozen_t > 0.0:
+		var br2: float = T["burstR"]
+		_say({"t": "burst", "x": at.x, "y": at.y, "r": br2, "el": "frost", "style": "shock"})
+		for o in h.monsters.list:
+			if not is_instance_valid(o) or o.dead or o == m or h.monsters.shut_in(o) or o.world.distance_to(at) > br2 + o.r:
+				continue
+			o.chill = maxf(o.chill if o.chill_t > 0.0 else 0.0, float(T["shatterChill"]))
+			o.chill_t = 2.5
+
+
+## (THE MAGE'S AURA, game.ts stepAura; SWAP_TUNE.aura) Her tap on herself (R) turns it on round her, six seconds, then a wait of ten
+## (Lasting Aura: on at once and for good). FIRE burns every enemy in it; LIGHTNING a bolt to each every 0.8 s; FROST shields her
+## (a quarter of her life while it is on; Lasting: back a wait after it breaks) and chills each to half its pace.
+func aura_kind() -> String:
+	if not h.has("aura"):
+		return ""
+	var p = h.picks.get("aura")
+	return str(p) if p in ["fire", "lightning", "frost"] else "fire"
+
+
+func _step_aura(dt: float, town: bool) -> void:
+	var A: Dictionary = Talents.D["swapTune"]["aura"]
+	var kind := aura_kind()
+	var asked: bool = Input.is_action_just_pressed("change") or h.get("auto_change") == true
+	if kind != "" and h.get("auto_change") == true:
+		h.auto_change = false
+	if kind == "" or town or not h.alive:
+		aura["on"] = 0.0
+		return
+	var lasting: bool = h.has("lasting")
+	if float(aura["wait"]) > 0.0:
+		aura["wait"] = maxf(0.0, float(aura["wait"]) - dt)
+	if float(aura["on"]) <= 0.0 and (lasting or (asked and float(aura["wait"]) <= 0.0)):
+		aura["on"] = float(A["secs"])
+		aura["tick"] = 0.0
+		h.sfx.play("explode" if kind == "fire" else ("thunder" if kind == "lightning" else "frost"), linear_to_db(0.5))
+		h._tell({"t": "spark", "x": h.world.x, "y": h.world.y, "el": kind, "n": 10})
+		if kind == "frost":
+			_aura_shield()
+	if float(aura["on"]) <= 0.0:
+		return
+	if lasting:
+		aura["on"] = float(A["secs"])
+	else:
+		aura["on"] = float(aura["on"]) - dt
+		if float(aura["on"]) <= 0.0:
+			aura["on"] = 0.0
+			aura["wait"] = float(A["wait"])
+			return
+	if kind == "frost" and lasting and h.shield <= 0.0:
+		aura["shield_back"] = float(aura["shield_back"]) - dt
+		if float(aura["shield_back"]) <= 0.0:
+			_aura_shield()
+	aura["tick"] = float(aura["tick"]) - dt
+	if float(aura["tick"]) > 0.0:
+		return
+	aura["tick"] = float(A["every"]) if kind == "lightning" else 0.5
+	if h.monsters == null:
+		return
+	for m in h.monsters.list:
+		if not is_instance_valid(m) or m.dead or m.state == "sleep" or h.monsters.shut_in(m) or m.world.distance_to(h.world) > float(A["r"]) + m.r:
+			continue
+		if kind == "fire":
+			m.damage(h.talent_hit("fire", float(A["burn"]) * 0.5), "fire", false, false, [], false, true, -1)
+		elif kind == "lightning":
+			h._tell({"t": "arc", "x0": h.world.x, "y0": h.world.y, "x1": m.world.x, "y1": m.world.y})
+			m.shock_t = float(_TT()["shockSecs"])
+			m.damage(h.talent_hit("lightning", float(A["bolt"])), "lightning", false, false, [], false, false, -1)
+		else:
+			m.chill = maxf(m.chill if m.chill_t > 0.0 else 0.0, float(A["chill"]))
+			m.chill_t = maxf(m.chill_t, 0.7)
+
+
+func _aura_shield() -> void:
+	var A: Dictionary = Talents.D["swapTune"]["aura"]
+	h.shield = maxf(h.shield, roundf(h.max_life * float(A["shield"])))
+	h.shield_t = maxf(h.shield_t, 1e6 if h.has("lasting") else float(A["secs"]))
+	aura["shield_back"] = float(A["wait"])
+
+
+## (game.ts auraNow) What is round her now, for the picture: {kind, r, t}; empty, nothing.
+func aura_now() -> Dictionary:
+	var kind := aura_kind()
+	if kind == "" or float(aura["on"]) <= 0.0:
+		return {}
+	var A: Dictionary = Talents.D["swapTune"]["aura"]
+	return {"kind": kind, "r": float(A["r"]), "t": float(A["secs"]) - float(aura["on"])}

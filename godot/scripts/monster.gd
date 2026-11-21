@@ -199,6 +199,8 @@ var thrown := {}
 var pop := 0.0
 ## (THE SKILL TREES REMADE: Giant Slayer's cracks in its guard: 3% more from everything each, ten at most: game.ts m.cracks)
 var cracks := 0
+## (THE SKILL TREES: shocked by a lightning hit, so long: what the Mage's Overload works on: game.ts m.shockT)
+var shock_t := 0.0
 var mirror_t := 0.0
 var surge_t := -1.0
 var stolen := 0
@@ -1387,6 +1389,8 @@ func slow() -> float:
 ## What has been done to it runs down (game.ts updateMonsters, for one awake). True if it does nothing this step: frozen,
 ## or stunned or staggered (what it was winding up was broken off as that began).
 func _afflicted(dt: float) -> bool:
+	if shock_t > 0.0:
+		shock_t = maxf(0.0, shock_t - dt)
 	# (WORDMELDING: game.ts updateMonsters)
 	if scald_cd > 0.0:
 		scald_cd = maxf(0.0, scald_cd - dt)
@@ -1444,12 +1448,28 @@ func _afflicted(dt: float) -> bool:
 
 
 ## (game.ts throwMonster) Flung away from `from`, `far` tiles in `secs`: never a boss, nor one shut in a room he is not in.
-func throw_from(from: Vector2, far: float, secs := 0.2) -> void:
+func throw_from(from: Vector2, far: float, secs := 0.2, ice := false) -> void:
 	if dead or boss or mgr.shut_in(self):
 		return
 	var d := world - from
 	var dir := d / d.length() if d.length() >= 0.01 else (-face if face.length() > 0.01 else Vector2(1, 0))
 	thrown = {"vx": dir.x * far / secs, "vy": dir.y * far / secs, "t": secs}
+	# (THE MAGE'S TREE REMADE: Deep Freeze, a frozen one sliding freezes what it touches)
+	if ice:
+		thrown["ice"] = true
+
+
+## (game.ts freezeMonster) Frozen where it stands (never a boss), as a second chilling hit freezes it.
+func freeze_now() -> void:
+	if dead or boss:
+		return
+	frozen_t = maxf(frozen_t, 0.6 if elite else 1.1)
+	freeze_immune = 4.0
+	chill = maxf(chill if chill_t > 0.0 else 0.0, 0.3)
+	chill_t = 2.5
+	if state == "charge":
+		_end_charge()
+	_tell({"t": "freeze", "x": world.x, "y": world.y})
 
 
 ## (game.ts flyThrown) A thrown one goes on its way; stopped by a wall, it stops.
@@ -1465,6 +1485,10 @@ func _fly(dt: float) -> void:
 	if mgr.clear(world.x, world.y + sy, rr, fly):
 		world.y += sy
 	thrown["t"] = float(thrown["t"]) - dt
+	if thrown.get("ice", false):
+		for o in mgr.list:
+			if is_instance_valid(o) and o != self and not o.dead and not o.boss and o.frozen_t <= 0.0 and not mgr.shut_in(o) and o.world.distance_to(world) <= o.r + r:
+				o.freeze_now()
 	var meant := Vector2(thrown["vx"], thrown["vy"]).length() * k
 	if float(thrown["t"]) <= 0.0 or (meant > 0.01 and world.distance_to(x0) < meant * 0.3):
 		thrown = {}

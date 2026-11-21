@@ -500,6 +500,7 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	var r: Dictionary = loadout.r(i)
 	var el: String = r["element"]
 	var base := base_for(el)
+	var was_frozen_t: float = m.frozen_t
 	# (FERVOR, melds.gd: its kills burning hotter a while)
 	var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(el) + melds.fervor_pct(el) + might) / 100.0)
 	# (THE SKILL TREES: what the talents make of a hit: game.ts talentHitMult)
@@ -555,6 +556,17 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 		var B: Dictionary = Talents.D["tune"]["honedEdge2"]
 		last.bleed_monster(m, dmg * float(B["share"]) / float(B["secs"]), float(B["secs"]))
 	m.damage(dmg, el, crit, not quiet and front.has("power"), front, false, false, i)
+	# (THE SKILL TREES: a lightning hit leaves it shocked, which Overload works on; Kindling, his fire leaves the ground burning
+	# where it hits; Deep Freeze, a frozen one struck slides away, freezing what it meets; Charged, the charge goes off)
+	if el == "lightning" or int(r["arcs"]) > 0:
+		m.shock_t = float(Talents.D["tune"]["shockSecs"])
+	if el == "fire" and has("kindling"):
+		_kindle(at)
+	if was_frozen_t > 0.0 and not m.dead and not m.boss and has("deepfreeze"):
+		var DF: Dictionary = Talents.D["tune"]["deepFreeze2"]
+		m.throw_from(world, float(DF["far"]), float(DF["secs"]), true)
+	if not quiet and kit != null and kit.has_method("release_charge"):
+		kit.release_charge(m, at)
 	# (THE SKILL TREES REMADE: Giant Slayer, each hit on an elite or a boss cracks its guard: it takes more from everything)
 	if not m.dead and (m.elite or m.boss) and has("giantslayer"):
 		m.cracks = mini(int(Talents.D["tune"]["giantSlayer2"]["most"]), m.cracks + 1)
@@ -1498,6 +1510,11 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 			_tell({"t": "cullBlow", "id": src.id, "x": src.world.x, "y": src.world.y})
 	# (THE SKILL TREES REMADE: Bulwark, the more close round him the less each blow; Thick Skin, below half his life, less)
 	dmg *= _talent_guard()
+	# (THE MAGE'S TREE REMADE: Bitter Cold, what strikes her is chilled)
+	if src != null and is_instance_valid(src) and not src.dead and has("bittercold"):
+		var BC: Dictionary = Talents.D["tune"]["bitterCold2"]
+		src.chill = maxf(src.chill if src.chill_t > 0.0 else 0.0, float(BC["slow"]))
+		src.chill_t = maxf(src.chill_t, float(BC["secs"]))
 	# (THE VETERAN'S TREE: Guard Up, between his blows his fists are up: heroes/brawler.gd)
 	if kit != null and kit.has_method("guard_k"):
 		dmg *= kit.guard_k(by)
@@ -2066,6 +2083,9 @@ func _talent_hit_mult(m) -> float:
 	var X: Dictionary = Talents.D["warriorTune"]["executioner"]
 	if has("executioner") and m.life < m.max_life * float(X["under"]):
 		k *= float(X["mult"])
+	# (THE MAGE'S TREE: Shatter, frozen enemies take twice as much)
+	if has("shatter") and m.frozen_t > 0.0:
+		k *= float(Talents.D["tune"]["shatter"])
 	# (THE TINKERER's tree: Fortune, she hits harder the more gold she carries: 1% of her gold, as a percent)
 	if has("fortune") and monsters != null and monsters.loot != null:
 		k *= 1.0 + float(monsters.loot.gold) * float(Talents.D["tinkerTalents"]["fortune"])
@@ -2137,3 +2157,23 @@ func _lunge_through() -> void:
 		hit_monster(m, 2, float(r["count_dmg"]) * float(D["share"]), hit.size() > 1)
 	if before == 0 and not hit.is_empty():
 		_landed_on(2)
+
+
+## (game.ts talentHit) A hit a talent makes by itself: `share` of his weapon's hit, of element `el`.
+func talent_hit(el: String, share: float) -> float:
+	var b := base_for(el)
+	return maxf(1.0, roundf((float(b[0]) + float(b[1])) / 2.0 * share * (1.0 + (float(stats["dmg_pct"]) + _el_pct(el)) / 100.0)))
+
+
+## (Kindling) His fire leaves the ground burning where it hits, two seconds; never two such patches closer than `apart`.
+func _kindle(at: Vector2) -> void:
+	if wakes == null or not is_instance_valid(wakes):
+		return
+	var K: Dictionary = Talents.D["tune"]["kindling2"]
+	for z in wakes.list:
+		if z.get("from", "") == "kindling" and Vector2(z["x"], z["y"]).distance_to(at) < float(K["apart"]):
+			return
+	var before: int = wakes.list.size()
+	wakes.add_patch(-1, "burn", at, float(K["r"]), float(K["secs"]), talent_hit("fire", float(K["share"])), "fire")
+	if wakes.list.size() > before:
+		wakes.list.back()["from"] = "kindling"

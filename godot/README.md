@@ -615,8 +615,12 @@ in their brew's colours, baked by tools/godot_tinkerer.ts), Alchemy, The Big One
 tinkerer_look.gd: the tar puddles, the big vial's ring, the little vials). Not yet: the Contraption, the Gun Arm, Mark II and
 Growth Serum. THE RANGER'S: Fleet, Windrunner, Keen Eye, Steady Aim, Quick Draw, Long Shot, Light Step, Hunter's Mark, Wide
 Traps, Minefield, Split Shot, Hail, Ricochet (`piercing`) and Far Sight (heroes/ranger.gd, kit.gd's shots, hero.gd hit_monster).
-Not yet: Venom (its cloud), and his three moves to learn (Snare, Snipe, Rally). The Mage's tree is not brought over yet (her
-burning ground, charge, ice and Aura, and her three moves to learn).
+Not yet: Venom (its cloud), and his three moves to learn (Snare, Snipe, Rally). THE MAGE'S: Kindling (her fire leaves the
+ground burning), Searing, Flame Warp, Hearth (`fuel`: in her own fire nothing burns her), Inferno, Charged (a charge gathered
+walking, let go by her next hit as a leaping bolt), Forking, Storm Warp, Overload, Stormcaller, Bitter Cold, Deep Freeze (a frozen
+one struck slides, freezing what it meets), Frost Warp, Rime, Shatter, her AURA (R, a tap on herself: fire, lightning or frost,
+picked on its stone; six seconds, then ten to wait; drawn as render/swap_fx.ts draws it) and Lasting Aura (heroes/mage.gd,
+mage_look.gd; monsters now keep a shock, monster.gd `shock_t`). Not yet: her three moves to learn (Ball, Beam, Spear).
 
 ## The shadows under the figures, and the named ones' rings (the cloud chat, 21 Nov 2026)
 
