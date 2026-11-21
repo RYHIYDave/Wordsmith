@@ -35,7 +35,7 @@
 //       two chains, then its leaves, over `secs`), crank_set and furnace (floor 3's forge crank with its gear set in; the
 //       crank turned, the furnace and the fire in the hall's way going out, over `secs` at `fps`; a frame's `hl` and `hw`:
 //       the place's holes in the dark and glows that are not there in it), stair<j> (the stairwell breaking open at each of its places),
-//       exit, cave, shaft (floor 3's door, floor 4's cave, floor 5's cage, as they open), onward (floors 6 to 10: the way on
+//       exit, cave, shaft (floor 3's door, floor 4's cave, floor 5's cage, as they open), onward (floors 6 to 16: the way on
 //       from shut, through its film, to open), way (the waypoint awake: its loop,
 //       12 frames at `fps`), warp (the column of light of a warp on it, 12 frames at `fps`). Each
 //       { kind, (secs), steps: [which frame each step shows], frames: [{ hg: [the ground's things that are gone, by their
@@ -204,7 +204,8 @@ if (!args.includes('--still') && hold === null) {
   const layout = fs.existsSync(layoutFile) ? JSON.parse(fs.readFileSync(layoutFile, 'utf8')) : null;
   // (the lengths of the films, as the game has them: game/ways.ts; game/temple_door.ts TEMPLE_TIMES; game/quests15.ts CRANK_TIMES)
   // (and the descent's way on, floors 6 to 10: game/ways.ts ONWARD secs)
-  const onward = { 6: 112 / 30, 7: 120 / 30, 8: 124 / 30, 9: 126 / 30, 10: 130 / 30 }[depth] ?? 0;
+  // (game/ways.ts ONWARD secs: the descent's ways on, the city's grate and doors, the Swan Gardens' gate: GARDEN_GATE.secs)
+  const onward = { 6: 112 / 30, 7: 120 / 30, 8: 124 / 30, 9: 126 / 30, 10: 130 / 30, 11: 104 / 30, 12: 116 / 30, 13: 120 / 30, 14: 110 / 30, 15: 130 / 30, 16: 18 / 30 }[depth] ?? 0;
   const consts = { altarGoes: true, stair: 3.5, exit: layout?.ways?.exit?.secs ?? 3, cave: 126 / 30, shaft: 129 / 30, onward, temple: { chain: 1.5, second: 1.1, swingAt: 2.9, swing: 1.6 }, crank: { turn: 1.2, furnaceOut: 1.6, fireOut: 1.5 } };
   const ts = Date.now();
   const base = await page.evaluate(({ T0, W, H }) => window.__rec.statesBegin(T0, W, H), { T0, ...size });

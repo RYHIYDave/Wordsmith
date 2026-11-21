@@ -1238,7 +1238,7 @@
         if (r.err) note.shaft = r.err;
         else out.shaft = { kind: 'shaft', secs: consts.shaft, frames: r.frames };
       }
-      // (THE DESCENT'S WAY ON, floors 6 to 10: shut while the boss lives; its film from the moment he dies; then open, as
+      // (THE WAY ON THE ART CHAT PAINTED, floors 6 to 16: shut while the boss lives; its film from the moment he dies; then open, as
       // render/dress.ts onwardNow draws it)
       if (Wy.onward && Wy.a1 && consts.onward) {
         const on = Wy.onward;

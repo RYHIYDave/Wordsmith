@@ -136,6 +136,7 @@ import { shrineBellFrames } from '../src/art/floor11';
 import { CLIP_CANVAS, clippingsPainted } from '../src/art/action_f16_gardener';
 import { HORSE_N, MIST_N, horseSprite, mistSprite } from '../src/art/act1_figs/groom';
 import { FLIGHT_CANVAS, JAV, STUCK_CANVAS, javAt, javFly, spearFlying, spearStuck } from '../src/art/action_f16_guard';
+import { SWAN_FRAMES as PR_SWAN, snareFrame, snareShots, swanThing, vowFrame, vowShots } from '../src/art/act1_figs/princess';
 import { BOULDER, HAMMER, SMASH_CANVAS, smashPainted } from '../src/art/action_f6_golem';
 import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, RING_CANVAS as CH_RING_CANVAS, STATIC_CANVAS, blazePainted, makeFlyingPotArt, potShadowPainted, ringPainted as chRing, staticPainted } from '../src/art/action_f6_cult';
 import { markRing } from '../src/art/action_f6_fx';
@@ -604,6 +605,24 @@ for (const view of ['front', 'back'] as const) {
   }
 }
 
+// FLOOR 16'S BOSS, THE PRINCESS (godot/scripts/act3/pr_marks.gd): her things as the game paints them ahead (art/films.ts
+// things:princess; art/act1_figs/princess.ts): her snare's cage, every frame of it that is painted (snareShots), in its two halves,
+// behind whoever is inside it and before him (pr_snare_far, pr_snare_near: snareFrameAt picks the frame); her Vow's ring of silence,
+// every frame painted (pr_vow, on the floor: vowFrameAt); her swans in the air and diving, from in front and from behind
+// (pr_fly_<view>, pr_dive_<view>: swanThing).
+{
+  const n = snareShots().length;
+  const halves = Array.from({ length: n }, (_, i) => snareFrame(i));
+  films.pr_snare_far = { fps: 0, n, k0: 0, layers: { stand: halves.map((h) => pic(h[0])) } };
+  films.pr_snare_near = { fps: 0, n, k0: 0, layers: { stand: halves.map((h) => pic(h[1])) } };
+  const nv = vowShots().length;
+  films.pr_vow = { fps: 0, n: nv, k0: 0, layers: { floor: Array.from({ length: nv }, (_, i) => pic(vowFrame(i))) } };
+  for (const view of ['front', 'back'] as const) {
+    films[`pr_fly_${view}`] = { fps: PR_SWAN.fps, n: PR_SWAN.fly, k0: 0, layers: { stand: Array.from({ length: PR_SWAN.fly }, (_, i) => pic(swanThing('fly', view, i))) } };
+    films[`pr_dive_${view}`] = { fps: PR_SWAN.fps, n: PR_SWAN.dive, k0: 0, layers: { stand: Array.from({ length: PR_SWAN.dive }, (_, i) => pic(swanThing('dive', view, i))) } };
+  }
+}
+
 // floors 6 to 8's common monsters, as the game starts with their new moves on (render/act1_fx/qgolem.ts, firepot.ts, chanter.ts,
 // devil.ts, scorpion.ts: each painted afresh a frame at a time by the art's own painter, render/act1_fx/live.ts)
 {
@@ -943,7 +962,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the city's)
   watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'], bookwarden: ['wb'],
   // (the High City's)
-  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'],
+  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

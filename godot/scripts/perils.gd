@@ -184,6 +184,14 @@ func clear() -> void:
 	list = keep
 
 
+## A blow of the hero's that reaches `rad` round `at` (game.ts breakProps, bosses.floorBlow): what a kind of its own has lying on the
+## floor there takes it too (the Princess's snare: act3/pr_marks.gd).
+func floor_blow(at: Vector2, rad: float) -> void:
+	for p in list:
+		if p["kind"] == "a1" and str(p.get("a1", "")).begins_with("princess:"):
+			PRM.floor_blow(self, p, at, rad)
+
+
 func drop(src: Object, kinds := ["warn", "lane", "aim"]) -> void:
 	for p in list:
 		if p.get("src") == src and p["kind"] in kinds:
@@ -3068,6 +3076,7 @@ func _spots_of(p: Dictionary) -> void:
 # scripts/act1/marks.gd.
 
 const A1M := preload("res://scripts/act1/marks.gd")
+const PRM := preload("res://scripts/act3/pr_marks.gd")
 
 
 ## The picture of a film's layer that is a set of stills (its `fps` 0: one picked by the mark's own clock), by its number.

@@ -138,6 +138,8 @@ func run(main, hero, out: String) -> void:
 		await _physician()
 	elif depth == 15:
 		await _censor()
+	elif depth == 16 and (M._arg("kind") == "" or M._arg("kind").split(",").has("princess")):
+		await _princess()
 	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
 
 
@@ -1183,3 +1185,137 @@ func _censor() -> void:
 	await _run(1.2)
 	await _snap("censor_falls")
 	_line(boss.dead and book and had > 0 and CER.inked_count(map) == 0, "the Censor struck dead: his ink dried away (%d tiles of it), the book of stolen words burst, its words flying home" % had)
+
+
+## FLOOR 16'S BOSS, THE PRINCESS (act3/princess.gd, pr_marks.gd): met, her swans circling her; her glide about him; the lash; the
+## snare, holding him in, broken by three of his blows; the Eleven; the Vow, his words dark; her steed at her second phase, its leaps
+## round her arena and at him; in her third, struck down on her steed: it fades, and she falls, her swans flying off, her whisper.
+func _princess() -> void:
+	var PR = load("res://scripts/act3/princess.gd")
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "princess":
+			boss = o
+	if boss == null:
+		_line(false, "floor 16 has no Princess")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(8.0, func(): return boss.state != "sleep" and not boss.waits)
+	var swans: bool = await _run(1.0, func(): return not _a1("princess:swans").is_empty())
+	await _run(0.5)
+	await _snap("princess_met")
+	_line(met and swans, "the Princess met in her pavilion: %s, %.0f life (%s); her garden's swans circling her (%d: %s)" % [boss.title, boss.max_life, boss.state, boss.h2.swans(), swans])
+	# HER GLIDE: darting about him between her moves
+	_ready_only(boss, -1)
+	# (the ground she covers, dart after dart, and how many darts)
+	var went := [0.0, 0, boss.world, false]
+	var log_glide := func() -> void:
+		went[0] += boss.world.distance_to(went[2])
+		went[2] = boss.world
+		var going: bool = int(boss.h2.a1.get("gk", 0)) == 1
+		if going and not went[3]:
+			went[1] += 1
+		went[3] = going
+	await _run(3.0, Callable(), log_glide)
+	await _snap("princess_glides")
+	_line(went[0] > 3.0 and went[1] >= 2, "her glide: hovering, darting about him: %d darts, %.1f tiles covered in 3 s, %.1f from him" % [went[1], went[0], boss.world.distance_to(h.world)])
+	# THE LASH
+	await _run(2.0, func(): return boss.h2.act == null and int(boss.h2.a1.get("gk", 0)) == 0)
+	struck = 0
+	h.world = M._spot_near(boss.world + boss.face * 3.0, 0.0, h.world)
+	_ready_only(boss, 0)
+	var lashing: bool = await _run(4.0, func(): return _is_act(boss, "princess:lash") and float(boss.h2.act["t"]) >= 0.6)
+	var wedge: bool = not _a1("princess:warn").is_empty()
+	await _snap("princess_lash_wedge")
+	await _run(0.25)
+	await _snap("princess_lash_whips")
+	await _run(1.2, func(): return boss.h2.act == null)
+	_line(lashing and wedge and struck > 0, "the lash: the wedge it will sweep marked in pink; the vine whipped a quarter turn round her front, 7.5 tiles long; the hero struck (%d)" % struck)
+	# THE SNARE: held in; broken by three blows
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	_ready_only(boss, 1)
+	var ringed: bool = await _run(5.0, func(): return not _a1("princess:snare", func(p): return float(p["t"]) < 0.0).is_empty())
+	await _snap("princess_snare_ringed")
+	var held: bool = await _run(1.5, func(): return bool(_a1("princess:snare").get("held", false)))
+	await _run(0.4)
+	await _snap("princess_snare_holds")
+	var sn: Dictionary = _a1("princess:snare")
+	var kept := false
+	if not sn.is_empty():
+		var c := Vector2(sn["x"], sn["y"])
+		h.world = c + Vector2(4.0, 0.0)
+		await _run(0.4)
+		kept = h.world.distance_to(c) <= float(PR.SNARE["r"])
+	_line(ringed and held and kept and struck > 0, "the vine snare: where he stood ringed in pink; the thicket burst up round him, struck (%d), HELD IN (walked out, kept %.1f from its middle)" % [struck, h.world.distance_to(Vector2(sn.get("x", 0.0), sn.get("y", 0.0)))])
+	_ready_only(boss, -1)
+	var lives: Array = []
+	if not sn.is_empty():
+		for k in 3:
+			h._break_props(0, Vector2(sn["x"], sn["y"]), 1.0)
+			lives.append(int(sn["life"]))
+			await _run(0.25)
+			if k == 0:
+				await _snap("princess_snare_struck")
+	await _run(0.3)
+	await _snap("princess_snare_bursts")
+	_line(lives == [2, 1, 0] and float(sn.get("broken", -1.0)) >= 0.0 and not bool(sn.get("held", true)), "three blows on it, its life %s: it bursts apart and lets him go" % str(lives))
+	await _run(1.0)
+	# THE ELEVEN
+	struck = 0
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	_ready_only(boss, 2)
+	var marked: bool = await _run(5.0, func(): return not _a1("princess:eleven").is_empty())
+	await _run(0.35)
+	await _snap("princess_eleven_feathers")
+	var dived: bool = await _run(2.0, func(): return float(_a1("princess:eleven").get("t", -1.0)) >= 0.15)
+	await _snap("princess_eleven_swans_dive")
+	var n_lines: int = (_a1("princess:eleven").get("lines", []) as Array).size()
+	await _run(1.2)
+	_line(marked and dived and n_lines >= 5 and struck > 0, "the Eleven: %d lines marked by falling feathers, the middle through him; her swans diving along them; struck (%d)" % [n_lines, struck])
+	# THE VOW
+	struck = 0
+	h.hush_t = 0.0
+	h.world = M._spot_near(boss.world, 2.0, h.world)
+	_ready_only(boss, 3)
+	var vowed: bool = await _run(5.0, func(): return not _a1("princess:vow").is_empty())
+	var hushed: bool = await _run(0.5, func(): return h.hush_t > 0.0)
+	await _run(0.2)
+	await _snap("princess_vow")
+	_line(vowed and hushed and struck > 0, "the Vow: a ring of silence burst out round her, struck (%d); his words dark in it (HUSHED %s)" % [struck, hushed])
+	await _run(3.5)
+	# HER STEED, as her second phase comes
+	struck = 0
+	_ready_only(boss, -1)
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	boss.life = boss.max_life * 0.6
+	var formed: bool = await _run(4.0, func(): return boss.h2.riding())
+	await _run(1.0)
+	await _snap("princess_steed_forms")
+	var lapped: bool = await _run(12.0, func(): return int(boss.h2.a1.get("rn", 0)) >= 8)
+	var at_you: bool = await _run(3.0, func(): return _is_act(boss, "princess:leap") and int(boss.h2.act.get("a", 0)) == 1 and float(boss.h2.act["t"]) >= 0.45)
+	await _snap("princess_leaps_at_him")
+	var faded: bool = await _run(12.0, func(): return not boss.h2.riding())
+	_line(formed and lapped and at_you and faded and struck > 0 and boss.h2.phase_in() == 2,
+		"her second phase: the spectral steed formed under her; eight leaps round her arena, seven at him, where its hooves come down ringed; struck (%d); it fades" % struck)
+	# HER THIRD: on her steed again, struck down on it: it fades first, and she falls
+	_ready_only(boss, -1)
+	boss.life = boss.max_life * 0.3
+	var again: bool = await _run(4.0, func(): return boss.h2.riding() and int(boss.h2.a1.get("rn", 0)) >= 1)
+	boss.hurt(boss.life + 1000.0)
+	var floored: bool = boss.life >= 1.0 and not boss.dead
+	var falls: bool = await _run(4.0, func(): return boss.dead)
+	await _run(0.4)
+	await _snap("princess_falls")
+	var flying: bool = not _a1("princess:fall").is_empty()
+	var whispered: bool = await _run(2.0, func(): return boss._said == PR.WHISPER and boss._said_t > 0.0)
+	await _run(0.3)
+	await _snap("princess_whispers")
+	_line(again and floored and falls and flying and whispered, "her third phase: on her steed again; struck down on it, held at 1 life (%s), the steed fades and she falls; her swans fly off; she whispers \"%s\"" % [floored, boss._said])
+

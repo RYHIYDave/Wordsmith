@@ -94,6 +94,8 @@ const BOSS_AI := {
 	# gardeners, the grooms, the palace guard)
 	"swan": preload("res://scripts/act3/swan.gd"), "gardener": preload("res://scripts/act3/gardener.gd"),
 	"groom": preload("res://scripts/act3/groom.gd"), "pguard": preload("res://scripts/act3/pguard.gd"),
+	# (and its boss, the Princess)
+	"princess": preload("res://scripts/act3/princess.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -238,6 +240,8 @@ var waits := false
 var title := ""
 var _said := ""
 var _said_t := 0.0
+var _said_lift := SAY_LIFT
+var _said_fallen := false
 var _said_secs := 0.0
 var _not_yet := 0.0
 var _not_yet_t := 0.0
@@ -359,6 +363,9 @@ func step(dt: float, hero) -> void:
 	if dead:
 		_dead_for += dt
 		_anim_t += dt
+		if _said_t > 0.0:
+			_said_t = maxf(0.0, _said_t - dt)
+			queue_redraw()
 		if _dead_for > BODY_LIES - BODY_FADES:
 			modulate.a = clampf((BODY_LIES - _dead_for) / BODY_FADES, 0.0, 1.0)
 		if _dead_for >= BODY_LIES:
@@ -1449,7 +1456,7 @@ func _say_slip() -> void:
 	var t := _said_secs - _said_t
 	var a := minf(1.0, t / 0.15) if t < _said_secs - 0.4 else maxf(0.0, (_said_secs - t) / 0.4)
 	var w := PF.width(_said) + 10.0
-	var y := -SAY_LIFT - roundf(minf(1.0, t / 0.12) * 4.0)
+	var y := -_said_lift - roundf(minf(1.0, t / 0.12) * 4.0)
 	var foot := y + 1.0 + 10.0
 	var ink := Color(SAY_INK, 0.8 * a)
 	draw_rect(Rect2(-floorf(w / 2.0), y - 3.0, w, 14.0), ink)
@@ -1459,11 +1466,14 @@ func _say_slip() -> void:
 	PF.draw(self, _said, 0, y, Color(SAY_GOLD, a), {"align": "center", "shadow": Color(SAY_INK, a)})
 
 
-## Say a line over his head for so many seconds (game.ts bossIntro, render/fx.ts bossSay).
-func say(text: String, secs: float) -> void:
+## Say a line over his head for so many seconds (game.ts bossIntro, render/fx.ts bossSay); `lift` game pixels over where he stands;
+## `fallen`: said as he falls, and shown over him fallen (the Princess's whisper).
+func say(text: String, secs: float, lift := SAY_LIFT, fallen := false) -> void:
 	_said = text
 	_said_t = secs
 	_said_secs = secs
+	_said_lift = lift
+	_said_fallen = fallen
 	queue_redraw()
 
 
@@ -1593,7 +1603,7 @@ func _show() -> void:
 ## Its life over its head for a while after it is struck (game.ts barT).
 func _draw() -> void:
 	var top := _sprite.offset.y * _sprite.scale.y - 10.0 - _lift
-	if (_said_t > 0.0 or _not_yet > 0.0) and not dead:
+	if (_said_t > 0.0 or _not_yet > 0.0) and (not dead or _said_fallen):
 		# (in the game's letters, in game pixels: render/fx.ts)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))
 		if _said_t > 0.0:

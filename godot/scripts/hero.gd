@@ -655,6 +655,9 @@ func _break_props(i: int, at: Vector2, rad: float) -> void:
 		bells.struck(at, rad)
 	if doors != null and is_instance_valid(doors):
 		doors.unseal({"front": loadout.wfronts(i), "behind": loadout.wbehinds(i)}, at, rad)
+	# (what a kind of its own has lying on the floor there takes his blow too: the Princess's snare, game.ts floorBlow)
+	if monsters != null and is_instance_valid(monsters) and monsters.perils != null:
+		monsters.perils.floor_blow(at, rad)
 
 
 ## WHAT MOVE `i` LEAVES where it struck (game.ts wake, leavePatches): the ground of an element behind it, no smaller than a
