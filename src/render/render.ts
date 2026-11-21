@@ -143,6 +143,8 @@ import { PRISON_GATE, prisonGateDropAt, prisonGateSlam } from '../art/prison_gat
 import { CHAPEL_GATE, chapelGateDropAt, chapelGateSlam } from '../art/chapel_gate';
 import { LAIR_GATE, lairGateDropAt, lairGateSlam } from '../art/lair_gate';
 import { EXIT_LABELS, exitLabels } from '../game/exit_labels';
+import { BELL_MARK, bellLabels, bellLight, drawBellRings } from './bell_mark';
+import { HALL_LOOK } from '../game/act1_dress';
 import type { Stage } from './dress';
 import { floorLook, lookStairSteps, lookStairs, lookWaySteps, lookWays } from '../art/floors';
 import { QUEST_MARKS } from '../game/quest_marks';
@@ -2413,7 +2415,11 @@ export class Renderer {
         if (r > 0 && ART_TWEAKS.cast) this.shadow(g, Math.round(sx + r * 22), Math.round(sy + r * 6), r * 1.3, SHADOW * 0.85);
         if (a.lies(p) || ((p.kind === 'barrel' || p.kind === 'urn') && p.state === 1)) {
           const sp = a.sprite(p, t);
+          // (HALL_LOOK: a stronghold hall's processional way, the court's pale flagstones laid half sunk into the hall's dim)
+          const sunk = p.kind === 'piece' && p.name === "the court's flagstones";
+          if (sunk) g.globalAlpha = 0.5;
           if (sp) g.drawImage(sp.img, Math.round(sx) - sp.ax, Math.round(sy) - sp.ay, sp.w, sp.h);
+          if (sunk) g.globalAlpha = 1;
           continue;
         }
         if (p.kind === 'piece' || p.kind === 'barrel' || p.kind === 'urn') continue;
@@ -2774,6 +2780,8 @@ export class Renderer {
     if ((pass < 0 || pass === 1) && !this.skip.has('fx')) fx.drawGround(g, cam);
     // (THE VETERAN's that lie on the floor: the push kick's cone, the crescents' traces, rings, dust behind him: render/veteran_fx.ts)
     if ((pass < 0 || pass === 1) && !this.skip.has('fx')) this.vetFx.drawGround(g, cam, game);
+    // (THE MUFFLED BELL MADE EASIER TO SEE, behind BELL_MARK: rings of the friend's cyan going out over the floor round it while it is gagged: render/bell_mark.ts)
+    if ((pass < 0 || pass === 1) && !this.skip.has('fx') && game.level.bells) drawBellRings(g, cam, game.level, t);
     // (QUESTS610, PILLARS: the cult's obelisks round the Drowned Eye's ring, burning or put out: render/pillars.ts)
     if ((pass < 0 || pass === 1) && L.pillars) drawPillars(g, cam, L.pillars, game.time);
 
@@ -3819,6 +3827,13 @@ export class Renderer {
         // (ENDLESS MODE, NO STORY: none on an endless level: game.ts storyHere)
         if (w && game.storyHere && game.turnInFor() && L.explored[Math.floor(w.y) * f.w + Math.floor(w.x)]) this.questMarks.push({ x: wx(cam, w.x, w.y), y: wy(cam, w.x, w.y) - WAY_MARK_LIFT });
       }
+    }
+    // (THE MUFFLED BELL MADE EASIER TO SEE, behind BELL_MARK: its name over it while it is gagged, and what it is for: render/bell_mark.ts)
+    if (BELL_MARK.on && L.bells && L.bells.phase === 'asleep' && L.bells.muffled >= 0) {
+      const bp = L.props[L.bells.muffled];
+      const bsp = bp ? this.act1.sprite(bp, t) : null;
+      const near = Math.hypot(L.bells.plan.muffled.x - h.x, L.bells.plan.muffled.y - h.y) < 3;
+      for (const l of bellLabels(L, cam, bsp ? bsp.ay : 30, near)) this.labels.push(l);
     }
     // (EXIT_LABELS: a floor's way out, once its boss has fallen and it has opened, carries its name as they do: game/exit_labels.ts)
     if (EXIT_LABELS.on) {
@@ -5557,6 +5572,9 @@ export class Renderer {
     }
     // (the town's gate lights the floor before it)
     if (L.town && !isCamp(L) && !L.rim) spot(wx(cam, TOWN.gate.x, TOWN.gate.y), wy(cam, TOWN.gate.x, TOWN.gate.y) - 14, 84 + Math.sin(t * 3) * 3, 0.9);
+    // (THE MUFFLED BELL MADE EASIER TO SEE, behind BELL_MARK: its own light while it is gagged)
+    const bl = L.bells ? bellLight(L, cam, t) : null;
+    if (bl) spot(bl.x, bl.y, bl.r, bl.a);
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx]) continue;
       if (p.kind === 'brazier') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 14, 62 + Math.sin(t * 9 + p.variant) * 3, 0.9);
@@ -5565,6 +5583,8 @@ export class Renderer {
       else if (p.kind === 'forge') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 6, 60 + Math.sin(t * 9) * 3, 0.9);
       else if (p.kind === 'tentTable') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 18, 56, 0.8);
       else if (p.kind === 'runeSlab') spot(wx(cam, p.x, p.y) + 8, wy(cam, p.x, p.y) - 12, 64 + Math.sin(t * 2) * 3, 0.75);
+      // (HALL_LOOK: a stronghold's ring of magic lights its hall, its glow breathing: game/act1_dress.ts)
+      else if (HALL_LOOK.on && p.kind === 'piece' && p.name === "the cult's ring of magic") spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 6, 120 + Math.sin(t * 2) * 6, 0.7);
     }
     for (const p of game.projectiles) if (p.look !== 'dart') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? (WILD.on ? 52 : 34) : WILD.on && p.look === 'arrow' ? 40 : 26, 0.8);
     // What a monster's own fire lights: the floor round a cultist's flame (and far more of it as

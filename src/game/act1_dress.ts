@@ -438,6 +438,27 @@ export const HOLD = {
   hanging: "the cult's hanging",
 };
 
+/**
+ * THE STRONGHOLDS' HALLS GIVEN MORE TO THEM (behind HALL_LOOK, off until his yes to the game's pictures of it). The owner, 21 Nov
+ * 2026 (to the Godot cloud chat): “The strongholds need a little work as well.  I like the outside, but the inside in uninspired”.
+ * So, `on`: the hall is the cult's sanctum, dressed with the set's own pieces that stand about its camps and courts (each with his
+ * yes as shown, art/act1_camp.ts, art/act1_cult.ts, art/floor6.ts): A PROCESSIONAL WAY of the court's flagstones from its door up to
+ * the ring, worn where it is trodden most; the cult's BANNERS and SKULL STANDARDS along its back wall, OFFERING BOWLS behind the
+ * obelisk; BRAZIERS along its sides as well as in its corners; its CAPTIVES' CAGES, WEAPON RACKS, WAR DRUM, CAULDRON and STORES
+ * along its side walls; A COLD FIRE AND BEDROLLS where its keepers sleep; and A THING OR TWO OF THE FLOOR'S OWN in its near corners
+ * (the Quarry's cut blocks, the Ledge's cairns, ...). Everything that stands keeps to the walls: the middle, where the waves rise
+ * and the fight is, is as open as it was.
+ */
+export const HALL_LOOK = { on: false };
+/** (HALL_LOOK) Each floor's own things that belong indoors, three at most, stood in its hall's near corners: no tree, no rock of the open. */
+const HALL_OWN: Readonly<Record<number, readonly string[]>> = {
+  6: ['stacked blocks', 'cut block', 'block marked to split'],
+  7: ["the cult's feather standard", "the cult's perch", 'cairn'],
+  8: ["the cult's great horn", "a frame of the cult's bells", 'singing stones'],
+  9: ["the hunter's drying rack", 'siege ladders', 'stump'],
+  10: ['a broken column', "a sunken statue's head", 'fallen column drums'],
+};
+
 /** How many of a floor's things stand in an open area: one for this many of its tiles, at most `most`. */
 const THING_EVERY = 26;
 const THINGS_MOST = 7;
@@ -450,6 +471,9 @@ const LYING_EVERY = 30;
  * `ring` of its things in a circle round it, `r` tiles out. On: his yes to the game's pictures of it, 17 Oct, 19:42 (16:42 his time): “Everything looks good”.
  */
 export const DRESS_EDGES = { on: true, fewer: 1.6, from: 0.5, to: 0.86, ring: 5, r: 3.2 };
+
+/** (HALL_LOOK) The middle column of a hall, as its threshold is laid. */
+const mid0 = (r: { x: number; w: number }): number => Math.floor(r.x + r.w / 2);
 
 export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | null {
   const n = act1Floor(depth);
@@ -567,6 +591,46 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     put(HOLD.brazier, r.x + r.w - 2, r.y + 1, true, 2);
     put(HOLD.brazier, r.x + 1, r.y + r.h - 3, true, 1);
     put(HOLD.brazier, r.x + r.w - 2, r.y + r.h - 3, true, 3);
+    // (HALL_LOOK: the cult's sanctum, everything that stands against its walls)
+    if (HALL_LOOK.on) {
+      const at = (dx: number, dy: number): [number, number] => [r.x + dx, r.y + dy];
+      const stand = (name: string, dx: number, dy: number, variant = 0, solid = true): void => {
+        const [x, y] = at(dx, dy);
+        if (x < r.x || y < r.y || x >= r.x + r.w || y >= r.y + r.h || taken[y * W + x] || !whole(x, y)) return;
+        put(name, x, y, solid, variant);
+      };
+      // THE PROCESSIONAL WAY: the court's flagstones from the door (the hallway's columns) up to the ring, worn at its two ends
+      const cols = q.way ? Array.from({ length: q.way.w }, (_, k) => q.way!.x + k) : [mid0(r) - 1, mid0(r)];
+      const top = cy + 3;
+      // (laid as pieces that lie on the floor, at their tiles' corners as the floor's tiles are: the hall's floor is drawn in its own
+      // pass, render.ts, and its lying pieces with it)
+      for (const tx of cols) for (let ty = top; ty < r.y + r.h; ty++) if (whole(tx, ty) && !taken[ty * W + tx]) put(HOLD.court, tx, ty, false, ty === top || ty === r.y + r.h - 1 ? 2 : (tx + ty) % 2, { x: tx, y: ty });
+      // its back wall: the cult's banners either side, its skull standards in its corners, offering bowls behind the obelisk
+      stand(HOLD.banner, 3, 0, 0);
+      stand(HOLD.banner, r.w - 4, 0, 2);
+      stand('the skull standard', 0, 0);
+      stand('the skull standard', r.w - 1, 0);
+      stand('offering bowl', cx - r.x - 2, 1);
+      stand('offering bowl', cx - r.x + 2, 1);
+      // its sides: braziers half way along as well as in the corners; the cages and racks, the drum, the cauldron, the stores
+      stand(HOLD.brazier, 0, Math.floor(r.h / 2), 1);
+      stand(HOLD.brazier, r.w - 1, Math.floor(r.h / 2), 3);
+      stand("the captives' cage", 0, 2, 0);
+      stand('weapon rack', 0, Math.floor(r.h / 2) + 2);
+      stand('supply crates', 0, r.h - 3);
+      stand("the cult's cauldron", r.w - 1, 2, 1);
+      stand('war drum', r.w - 1, Math.floor(r.h / 2) + 2);
+      stand('sacks of grain', r.w - 1, r.h - 3);
+      // where its keepers sleep: a cold fire and bedrolls, lying (walked over)
+      stand('a cold fire', 2, r.h - 2, 0, false);
+      stand('bedroll', 1, r.h - 1, 0, false);
+      stand('bedroll', 3, r.h - 1, 1, false);
+      // a thing or two of the floor's own in its near corners
+      const own = HALL_OWN[n] ?? [];
+      if (own.length) stand(own[0], 0, r.h - 1);
+      if (own.length > 1) stand(own[1], r.w - 1, r.h - 1);
+      if (own.length > 2) stand(own[2], r.w - 2, r.h - 1);
+    }
     // (the way out: the threshold at the middle of its near side, the court's worn flagstones: Game's strongholds)
     const mid = Math.floor(r.x + r.w / 2);
     // (HOLD_HALLWAY: at the far end of its hallway, across it)

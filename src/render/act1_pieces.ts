@@ -422,7 +422,8 @@ export class Act1Pieces {
   lies(p: PropInst): boolean {
     if (p.kind !== 'piece' || !p.name) return false;
     const pc = this.piece(p.name);
-    return pc?.kind === 'on the floor' && p.name !== 'rope rail' && p.name !== 'cattails';
+    // (HALL_LOOK: a stronghold hall's processional way, the court's flagstones laid as pieces: game/act1_dress.ts)
+    return (pc?.kind === 'on the floor' || pc?.kind === 'floor tile') && p.name !== 'rope rail' && p.name !== 'cattails';
   }
 
   /** Its soft shadow's reach (tiles), or 0. */
