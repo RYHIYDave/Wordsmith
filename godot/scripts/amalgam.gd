@@ -111,8 +111,9 @@ func step(m, dt: float, hero) -> void:
 		# (its mites' and its beasts' pictures brought in now, not in the middle of the fight)
 		for def in [MITE_DEF, BEAST_DEF]:
 			figure_of(m.mgr, def["kind"])
+	# (FRENZIED, on him, hurrying him, and Withering slowing him: game.ts updateMonsters, `m.cd -= mdt * rage * wither`; bosses.ts step, his acts' waits by `rage`, his pace by it)
 	for k in cds.size():
-		cds[k] -= dt
+		cds[k] -= dt * m.frenzy()
 	# (put back to sleep in the middle of an act, as when the hero falls: the act is broken off)
 	if act != null and m.state != "act":
 		act = null
@@ -120,7 +121,7 @@ func step(m, dt: float, hero) -> void:
 	if act != null:
 		_step_act(m, dt, hero)
 		return
-	m._cd -= dt
+	m._cd -= dt * m.rage()
 	m.state = "chase"
 	var to: Vector2 = hero.world - m.world
 	var dist := to.length()
@@ -575,7 +576,7 @@ class Kit:
 	## frame (an act is ready); it stops there too if there is no way on, or stopping would leave it as near him as it likes to stand.
 	static func carry(ai, G: Dictionary, m, dt: float, to: Vector2, dist: float, los: bool, stop: bool) -> void:
 		# (chilled, slower by the chill's share: bosses.ts step, `slow`; monster.gd slow)
-		var sp: float = m.speed * m.slow()
+		var sp: float = m.speed * m.slow() * m.rage()
 		var v: Vector2 = to / dist if dist < 2.5 and los and dist > 0.01 else m.mgr.flow_dir(m.world)
 		if ai.mode != "halt" and v != Vector2.ZERO:
 			m.face = v
@@ -648,7 +649,7 @@ class Beast extends RefCounted:
 		if act != "":
 			_step_act(m, dt, hero)
 			return
-		m._cd -= dt
+		m._cd -= dt * m.rage()
 		m.state = "chase"
 		var to: Vector2 = hero.world - m.world
 		var dist := to.length()
@@ -759,7 +760,7 @@ class Mite extends RefCounted:
 			m._set_list("die", true)
 			m.queue_redraw()
 			return
-		m._cd -= dt
+		m._cd -= dt * m.rage()
 		var to: Vector2 = hero.world - m.world
 		var dist := to.length()
 		var def: Dictionary = m.def
@@ -807,7 +808,7 @@ class Mite extends RefCounted:
 			if dist > 0.01:
 				m.face = to / dist
 			return
-		var step: Vector2 = way * m.speed * m.slow() * dt
+		var step: Vector2 = way * m.speed * m.slow() * m.rage() * dt
 		var rr := minf(m.r, 0.42)
 		if m.mgr.clear(m.world.x + step.x, m.world.y, rr):
 			m.world.x += step.x

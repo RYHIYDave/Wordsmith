@@ -6,6 +6,8 @@ extends RefCounted
 
 const BakedHero := preload("res://scripts/baked_hero.gd")
 
+const Words := preload("res://scripts/words.gd")
+
 var M
 var h
 var n := 0
@@ -429,4 +431,63 @@ func yardgate(main, hero, dir: String) -> void:
 	_line(int(d["want"]) == 1 and yg["f"] == -1 and not yg["lit"] and arch_on == 0 and float(d["open"]) == 1.0, "the Headsman dead: it rises, the look's own gate again, its mark dark (open %.2f)" % float(d["open"]))
 	h.unhurt = false
 	print("YARDGATE: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## FRENZIED ON THE PRISON'S BOSSES (--only=bossrage; game.ts updateMonsters `rage`, game/bosses.ts step): each of floors 2 to 5's
+## that fights by its own script (the Headsman; the Chained One and the Stoker; the Amalgamation and the mini fleshmancers; the
+## Fleshmancer and the keybearers), given Frenzied and brought to half its life, runs down its wait and its acts' waits faster
+## by the game's rage (1 + FRENZY.monster x a half); the Fleshmancer, hurt, by his hurry on top; without it, at its plain pace.
+func bossrage(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var fm: float = Words.data()["frenzy"]["monster"]
+	var kinds := {"floor2": ["headsman"], "floor3": ["chained", "stoker"], "floor4": ["amalgam", "minifm"], "floor5": ["fleshmancer", "minifm", "keyblade", "keyflame"]}
+	var dt := 0.1
+	for place in kinds:
+		M.way_depth = maxi(M.way_depth, int(place.substr(5)))
+		await M.go_to(place, "down")
+		await M._wait(0.8)
+		for kind in kinds[place]:
+			var m = null
+			for q in M._monsters.list:
+				if is_instance_valid(q) and not q.dead and q.kind == kind:
+					m = q
+					break
+			if m == null or m.h2 == null:
+				_line(false, "%s: no %s with its own script" % [place, kind])
+				continue
+			var ai = m.h2
+			# (its own acts' waits begun, nothing under way, nothing ready: one step of it, its waits measured)
+			var res := []
+			# (the Fleshmancer at three tenths of his life, under his hurry's line; the rest at half)
+			var share := 0.3 if kind == "fleshmancer" else 0.5
+			for frenzied in [false, true]:
+				m.words = ["frenzied"] if frenzied else []
+				m.half = []
+				m.life = m.max_life * share
+				m.curse_t = 0.0
+				if ai.get("cds") != null and (ai.cds as Array).is_empty():
+					ai.step(m, 0.0, h)
+				if ai.get("act") != null:
+					ai.act = null
+				m.state = "chase"
+				m._cd = 100.0
+				var has_cds: bool = ai.get("cds") != null and not (ai.cds as Array).is_empty()
+				if has_cds:
+					for k in ai.cds.size():
+						ai.cds[k] = 100.0
+				ai.step(m, dt, h)
+				res.append([(100.0 - m._cd) / dt, (100.0 - float(ai.cds[0])) / dt if has_cds else -1.0])
+			var want := 1.0 + fm * (1.0 - share)
+			var hurry := 1.0
+			if kind == "fleshmancer":
+				hurry = float(ai.HURRY["by"]) if share < float(ai.HURRY["at"]) else 1.0
+			var ok: bool = absf(res[0][0] - hurry) < 1e-3 and absf(res[1][0] - want * hurry) < 1e-3
+			if res[0][1] >= 0.0:
+				ok = ok and absf(res[0][1] - hurry) < 1e-3 and absf(res[1][1] - want * hurry) < 1e-3
+			_line(ok, "%s's %s at %d%% of its life: its wait run down x%.3f, its acts' x%.3f; Frenzied, x%.3f and x%.3f (the game: x%.3f%s)" % [place, kind, roundi(share * 100.0), res[0][0], res[0][1], res[1][0], res[1][1], want * hurry, (", his hurry x%.2f in it" % hurry) if hurry != 1.0 else ""])
+			m.words = []
+	h.unhurt = false
+	print("BOSSRAGE: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 

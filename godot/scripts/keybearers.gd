@@ -192,8 +192,9 @@ class Bearer extends RefCounted:
 		if cds.is_empty():
 			for a in acts:
 				cds.append(float(a["first"]) * randf_range(0.7, 1.2))
+		# (FRENZIED, on him, hurrying him, and Withering slowing him: game.ts updateMonsters, `m.cd -= mdt * rage * wither`; bosses.ts step, his acts' waits by `rage`, his pace by it)
 		for k in cds.size():
-			cds[k] -= dt
+			cds[k] -= dt * m.frenzy()
 		# (struck, he reels from the blow, not from what burns or poisons him: monster.gd struck_t)
 		_struck = m.struck_t
 		# (put to sleep in the middle of a move, as the hero fell, and woken again: the move is broken off)
@@ -203,7 +204,7 @@ class Bearer extends RefCounted:
 		if act != null:
 			_step_act(m, acts, dt, hero)
 			return
-		m._cd -= dt
+		m._cd -= dt * m.rage()
 		m.state = "chase"
 		var to: Vector2 = hero.world - m.world
 		var dist := to.length()
@@ -225,7 +226,7 @@ class Bearer extends RefCounted:
 			return
 		# CARRIED OVER THE FLOOR AT HIS PACE, from the first moment of setting off to the last of stopping
 		# (chilled, slower by the chill's share: bosses.ts step, `slow`; monster.gd slow)
-		var sp: float = m.speed * m.slow()
+		var sp: float = m.speed * m.slow() * m.rage()
 		var v := Vector2.ZERO
 		if dist > 0.01:
 			v = to / dist if dist < 2.5 and los else m.mgr.flow_dir(m.world)

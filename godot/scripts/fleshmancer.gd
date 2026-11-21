@@ -159,9 +159,11 @@ func _step(m, dt: float, hero) -> void:
 	if cds.is_empty():
 		for a in ACTS:
 			cds.append(float(a["first"]) * randf_range(0.7, 1.2))
-	# (hurt, he casts again sooner)
-	var hurry: float = HURRY["by"] if m.life < m.max_life * HURRY["at"] else 1.0
-	m._cd -= dt * hurry
+	# (hurt, he casts again sooner; FRENZIED, on him, hurrying him the more he is hurt, and Withering slowing him: bosses.ts step,
+	# `hurry = rage * (hurt ? FLESHMANCER.hurry : 1)`, his wait run down by rage and wither and by what the hurry adds to rage)
+	var rage: float = m.frenzy()
+	var hurry: float = rage * (HURRY["by"] if m.life < m.max_life * HURRY["at"] else 1.0)
+	m._cd -= dt * m.rage() + dt * (hurry - rage)
 	for k in cds.size():
 		cds[k] -= dt * hurry
 	if act != null:
@@ -189,7 +191,7 @@ func _step(m, dt: float, hero) -> void:
 		return
 	# CARRIED OVER THE FLOOR AT HIS PACE, from the first moment of setting off to the last of stopping
 	# (chilled, slower by the chill's share: bosses.ts step, `slow`; monster.gd slow)
-	var sp: float = m.speed * m.slow()
+	var sp: float = m.speed * m.slow() * m.rage()
 	var v: Vector2 = to / dist if dist < 2.5 and los and dist > 0.01 else m.mgr.flow_dir(m.world)
 	if mode != "halt" and v != Vector2.ZERO:
 		m.face = v

@@ -915,10 +915,18 @@ lights over the dark (town.gd `_ring_moments`):
   `look.gd` yard_gate_fall, `doors.gd`. (The other four floors' own gates, behind their switches in the game, are off there.)
   `--only=yardgate` (`check_glows.gd`): 7 checks, its frames pictured.
 
+## Frenzied on the prison's bosses (the cloud chat, 21 Nov 2026)
+
+- **Frenzied on the prison's bosses** (game.ts updateMonsters `rage`, game/bosses.ts step): those of floors 2 to 5 that fight
+  by scripts of their own (the Headsman, the Chained One, the Stoker, the Amalgamation, its bone beasts and mites, the mini
+  fleshmancers, the Fleshmancer, the two keybearers) carry Frenzied as every other monster does: the more hurt, the sooner they
+  act again and the quicker they go (their wait and pace by its rage, their acts' own waits by it too, the Fleshmancer's by his
+  hurry on top once below half his life); and the Warlock's Withering slows them as it does the rest (`monster.gd` frenzy,
+  rage). `--only=bossrage` (`check_glows.gd`): 9 checks, each at half its life (the Fleshmancer at three tenths).
+
 ## Not in it yet
 
-Frenzied on the prison's bosses' own scripts
-(the mini fleshmancer's), the trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
+The trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
 above), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched
 as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), the bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices

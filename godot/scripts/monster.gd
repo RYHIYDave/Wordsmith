@@ -1172,10 +1172,16 @@ func rage() -> float:
 	var wither := 1.0
 	if curse_t > 0.0 and mgr != null and mgr.hero != null and mgr.hero.cls == "warlock" and mgr.hero.has("withering"):
 		wither = float(preload("res://scripts/talents.gd").D["warlockTalents"]["withering"]["pace"])
+	return wither * frenzy()
+
+
+## FRENZIED, on it, alone (game.ts updateMonsters `rage`: 1, or more the more it is hurt), without Withering's slowing: what hurries
+## a boss's acts' own waits (game/bosses.ts step: `m.moveCd[k] -= dt * hurry`, hurry its rage).
+func frenzy() -> float:
 	var share := word_share("frenzied")
 	if share <= 0.0:
-		return wither
-	return wither * (1.0 + float(Words.data()["frenzy"]["monster"]) * share * (1.0 - maxf(0.0, life) / max_life))
+		return 1.0
+	return 1.0 + float(Words.data()["frenzy"]["monster"]) * share * (1.0 - maxf(0.0, life) / max_life)
 
 
 ## VAST, on it (game.ts addWarn, monsterAttack): how many times as wide its warned blows and as far its own blow's reach are.

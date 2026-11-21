@@ -47,9 +47,10 @@ func step(m, dt: float, hero) -> void:
 	if cds.is_empty():
 		for a in ACTS:
 			cds.append(float(a["first"]) * randf_range(0.7, 1.2))
-	m._cd -= dt
+	# (FRENZIED, on him, hurrying him, and Withering slowing him: game.ts updateMonsters, `m.cd -= mdt * rage * wither`; bosses.ts step, his acts' waits by `rage`, his pace by it)
+	m._cd -= dt * m.rage()
 	for k in cds.size():
-		cds[k] -= dt
+		cds[k] -= dt * m.frenzy()
 	# (stunned or staggered in the middle of an act, or put to sleep in it and woken again: the act is broken off, bosses.ts
 	# breakOff; monster.gd break_off)
 	if act != null and m.state != "act":
@@ -77,7 +78,7 @@ func step(m, dt: float, hero) -> void:
 		return
 	# CARRIED OVER THE FLOOR AT HIS PACE, from the first moment of setting off to the last of stopping
 	# (chilled, slower by the chill's share: bosses.ts step, `slow`; monster.gd slow)
-	var sp: float = m.speed * m.slow()
+	var sp: float = m.speed * m.slow() * m.rage()
 	var v: Vector2 = to / dist if dist < 2.5 and los and dist > 0.01 else m.mgr.flow_dir(m.world)
 	if mode != "halt" and v != Vector2.ZERO:
 		m.face = v
