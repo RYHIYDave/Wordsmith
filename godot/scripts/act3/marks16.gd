@@ -164,7 +164,10 @@ static func stands(P, p: Dictionary) -> void:
 				if P.has_film(name):
 					var n: int = P._fx["films"][name]["n"]
 					var k := clampi(floori(t / float(p["hit"]) * n), 0, n - 1)
-					var x := at - f * (float(p["c"]) * (1.0 - float(k) / maxf(1.0, n - 1)))
+					# (how far along its line it is: javAt, the table pg_along_<who>_<d>, its height in its picture)
+					var along: Array = P._fx["tables"].get("pg_along_%s_%d" % [who, d], [])
+					var j: float = float(along[k]) * float(p["c"]) / float(d) if k < along.size() else float(p["c"]) * float(k) / maxf(1.0, n - 1)
+					var x := at - f * (float(p["c"]) - j)
 					P._film_one(p, "fx_fly", P._still(name, "stand", k), x, x.x + x.y, flip)
 				return
 			_hide(p, "fx_fly")
@@ -174,7 +177,7 @@ static func stands(P, p: Dictionary) -> void:
 				var n2: int = P._fx["films"][sname]["n"]
 				P._film_one(p, "fx_stuck", P._still(sname, "stand", mini(floori(minf(u, float(JAV["quiver"]) + 0.05) * 30.0), n2 - 1)), at, at.x + at.y, flip)
 			for side in ["behind", "before"]:
-				var cn: String = "gd_clip_" + side
+				var cn: String = "pg_clip_" + side
 				if u < 1.5 and P.has_film(cn):
 					P._film_one(p, "fx_turf_" + side, P._still(cn, "stand", floori(u * 30.0)), at, at.x + at.y + (0.05 if side == "before" else -0.05), false)
 				else:

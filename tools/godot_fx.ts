@@ -133,6 +133,9 @@ import { SPILL_FRAMES, WHIRL_FRAMES } from '../src/art/meld_drops';
 import { makeIconArt } from '../src/art/icons';
 import { clapperSprite, pageSprite, rollSprite } from '../src/art/quest1115';
 import { shrineBellFrames } from '../src/art/floor11';
+import { CLIP_CANVAS, clippingsPainted } from '../src/art/action_f16_gardener';
+import { HORSE_N, MIST_N, horseSprite, mistSprite } from '../src/art/act1_figs/groom';
+import { FLIGHT_CANVAS, JAV, STUCK_CANVAS, javAt, javFly, spearFlying, spearStuck } from '../src/art/action_f16_guard';
 import { BOULDER, HAMMER, SMASH_CANVAS, smashPainted } from '../src/art/action_f6_golem';
 import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, RING_CANVAS as CH_RING_CANVAS, STATIC_CANVAS, blazePainted, makeFlyingPotArt, potShadowPainted, ringPainted as chRing, staticPainted } from '../src/art/action_f6_cult';
 import { markRing } from '../src/art/action_f6_fx';
@@ -568,6 +571,39 @@ for (const view of ['front', 'back'] as const) {
   stills('q11_bell', shrineBellFrames());
 }
 
+// FLOOR 16, THE SWAN GARDENS (godot/scripts/act3/marks16.gd), as the game starts with its new moves on: THE SHEAR LUNGE's spray of cut
+// grass where the blades snap shut, behind and before what stands (gd_clip_behind, gd_clip_before: render/act1_fx/gardener.ts,
+// art/action_f16_gardener.ts clippingsPainted, as big as the game draws it, 0.75) and the turf a stuck partisan throws up (on the
+// floor, pg_turf, and in the air, whole size: pg_clip_behind, pg_clip_before); LOOSE THE HORSE, galloping seen from in front and from
+// behind (gr_horse_front, gr_horse_back: art/act1_figs/groom.ts horseSprite) and the mist at its line's ends (gr_mist); THE PALACE
+// GUARD's partisan and javelin in flight, for each whole tile it may be thrown, its height in the picture (pg_fly_<who>_<view>_<d>:
+// art/action_f16_guard.ts spearFlying; how far along its line it is each frame, the table pg_along_<who>_<d>, javAt) and stuck,
+// quivering then still (pg_stuck_<who>_<view>: spearStuck).
+{
+  const C = CLIP_CANVAS;
+  for (const side of ['behind', 'before'] as const) {
+    film(`gd_clip_${side}`, 1.8, { stand: (k) => toSprite(clippingsPainted(k / FPS, 'air', side, 0.75), null, C.ax, C.ay) });
+    film(`pg_clip_${side}`, 1.5, { stand: (k) => toSprite(clippingsPainted(k / FPS, 'air', side, 1), null, C.ax, C.ay) });
+  }
+  film('pg_turf', 1.85, { floor: (k) => toSprite(clippingsPainted(k / FPS, 'floor', 'all', 1), null, C.ax, C.ay) });
+  const still = (name: string, list: Sprite[]): void => {
+    films[name] = { fps: FPS, n: list.length, k0: 0, layers: { stand: list.map((sp) => pic(sp)) } };
+  };
+  for (const view of ['front', 'back'] as const) still(`gr_horse_${view}`, Array.from({ length: HORSE_N }, (_, i) => horseSprite(i, view)));
+  still('gr_mist', Array.from({ length: MIST_N }, (_, i) => mistSprite(i)));
+  for (const who of ['partisan', 'sword'] as const) {
+    for (let d = 1; d <= 8; d++) {
+      const long = javFly(d);
+      const n = Math.max(1, Math.ceil(long * FPS));
+      tables[`pg_along_${who}_${d}`] = Array.from({ length: n }, (_, k) => javAt(who, (k / n) * long, d).x);
+      for (const view of ['front', 'back'] as const) {
+        still(`pg_fly_${who}_${view}_${d}`, Array.from({ length: n }, (_, k) => toSprite(spearFlying(who, (k / n) * long, d, view), null, FLIGHT_CANVAS.ax, FLIGHT_CANVAS.ay)));
+      }
+    }
+    for (const view of ['front', 'back'] as const) still(`pg_stuck_${who}_${view}`, Array.from({ length: Math.ceil((JAV.quiver + 0.05) * FPS) + 1 }, (_, k) => toSprite(spearStuck(who, k / FPS, view), null, STUCK_CANVAS.ax, STUCK_CANVAS.ay)));
+  }
+}
+
 // floors 6 to 8's common monsters, as the game starts with their new moves on (render/act1_fx/qgolem.ts, firepot.ts, chanter.ts,
 // devil.ts, scorpion.ts: each painted afresh a frame at a time by the art's own painter, render/act1_fx/live.ts)
 {
@@ -906,6 +942,8 @@ const KIND_SETS: Record<string, string[]> = {
   unfinished: ['uf'], queen: ['qn'],
   // (the city's)
   watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'], bookwarden: ['wb'],
+  // (the High City's)
+  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

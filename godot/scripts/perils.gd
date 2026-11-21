@@ -319,11 +319,16 @@ func _film_free(p: Dictionary) -> void:
 	if live != null:
 		_fm_tasks.append_array(live.over())
 		p.erase("fm_live")
-	for key: String in ["fx_behind", "fx_before", "fx_stand", "fx_rise", "fx_air"]:
-		var s = p.get(key)
-		if s != null and is_instance_valid(s):
-			s.queue_free()
-		p.erase(key)
+	# (every picture of its own it stood among the figures: fx_behind, fx_before, fx_stand, fx_rise, fx_air, and the others a kind's
+	# marks name for themselves, the horse and its mist, the partisan in flight and stuck)
+	for key in p.keys():
+		if not (key is String and key.begins_with("fx_")):
+			continue
+		var s = p[key]
+		if s is Object:
+			if is_instance_valid(s):
+				s.queue_free()
+			p.erase(key)
 
 
 ## A picture among what stands, set to one of the films' pictures (-1: hidden): its floor point over `at`, `high` game pixels

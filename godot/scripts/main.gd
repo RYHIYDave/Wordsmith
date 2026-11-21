@@ -728,9 +728,12 @@ func say_way(kind: String, open: bool) -> void:
 			loot.say("The door behind his hall stands open. The way down.", gold)
 		"cave":
 			loot.say("A cave behind the wall. The way down.", gold)
-		"onward":
-			# (game.ts wayOpenLine, MSG.good: from the Fen, the way home)
-			loot.say(ways.HOME_OPEN if map.depth >= 10 else ways.ON_OPEN, Color("#8af078"))
+		"onward", "plain":
+			# (game.ts wayOpenLine, MSG.good: from the Fen on, the way home; THE HIGH CITY: the way on, from its last floor the way home)
+			if map.depth >= 16:
+				loot.say("The way home is open." if not has_floor(map.depth + 1) else ways.ON_OPEN, Color("#8af078"))
+			else:
+				loot.say(ways.HOME_OPEN if map.depth >= 10 else ways.ON_OPEN, Color("#8af078"))
 
 
 ## A place's name as the game writes it top left (defs.ts floorTitle: "Prison Level 2").
@@ -1986,6 +1989,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "descent":
 		await _descent_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "cityways":
+		await _cityways_shots(hero, dir)
 		get_tree().quit()
 		return
 	# (LASTING'S, FLEETING'S AND VAST'S LOOKS, each side at work at its beats: check_looks10.gd)
@@ -5177,6 +5184,89 @@ func _d_kill(m: Monster) -> void:
 		m.hurt(1e9)
 		await _wait(0.2)
 		t += 0.2
+
+
+## SHOT MODE, THE WAYS ON THROUGH THE CITY AND THE HIGH CITY (--only=cityways [--floor=N]): on each of floors 11 to 20 (from N), its
+## bosses struck dead, its way on waking (floors 11 to 16 the art's own, a grate, a door, a gate; 17 to 20 a waypoint's dais, its
+## column flaring), its line (game.ts wayOpenLine), walked into: on to the next floor; from the fifteenth and the twentieth, home.
+## A picture and a line at each step, and the sum: CITYWAYS.
+func _cityways_shots(h: Hero, dir: String) -> void:
+	loot.level = 30
+	loot.ring_lit = true
+	loot.derive()
+	loot.taught = true
+	way_depth = 20
+	var first := int(_arg("floor")) if _arg("floor") != "" else 11
+	await go_to("floor%d" % first, "down")
+	var last := int(_arg("to")) if _arg("to") != "" else 20
+	for n in range(first, last + 1):
+		if place != "floor%d" % n:
+			await go_to("floor%d" % n, "down")
+		await _wait(1.3)
+		h.life = h.max_life
+		var bosses: Array = []
+		for m in _monsters.list:
+			if is_instance_valid(m) and m.boss and not m.dead:
+				bosses.append(m)
+		if bosses.is_empty() or ways == null:
+			await _d_step(dir, "c%d_no_boss" % n, false, "floor %d has no boss or no way on" % n)
+			continue
+		var kind: String = ways.way_kind()
+		h.world = _free_near(bosses[0].world + Vector2(2.5, 2.5))
+		await _wait(0.5)
+		await _d_step(dir, "c%d_boss" % n, ways.state == "" and kind == ("onward" if n <= 16 else "plain"),
+			"%s: %s; its way on (%s) shut while they live" % [place_title(), ", ".join(bosses.map(func(m): return m.title)), kind])
+		# (every one of them: one that splits, or has a twin, leaves more to strike down)
+		for round in 4:
+			var left: Array = []
+			for m in _monsters.list:
+				if is_instance_valid(m) and m.boss and not m.dead:
+					left.append(m)
+			if left.is_empty():
+				break
+			for m in left:
+				await _d_kill(m)
+			await _wait(0.6)
+		h.life = h.max_life
+		var want: String = ways.HOME_OPEN if n < 16 else ("The way home is open." if n >= 20 else ways.ON_OPEN)
+		await _w_until(func(): return ways.state == "open", 6.0)
+		await _wait(0.3)
+		var line: String = _wu_said(want)
+		var at := Vector2.ZERO
+		if kind == "onward":
+			var takes: Array = ways.onward_tiles("takes")
+			var i0: int = takes[takes.size() / 2] if not takes.is_empty() else -1
+			at = Vector2(i0 % map.w + 0.5, i0 / map.w + 0.5) if i0 >= 0 else Vector2(-1, -1)
+		else:
+			var on: Dictionary = map.ways["onward"]
+			at = Vector2(float(on["x"]), float(on["y"]))
+		# (he stands back from it, on his side of it, to see it open)
+		var stand := h.world
+		var best := INF
+		for ty in range(floori(at.y) - 4, floori(at.y) + 5):
+			for tx in range(floori(at.x) - 4, floori(at.x) + 5):
+				var p := Vector2(tx + 0.5, ty + 0.5)
+				var d := p.distance_to(at)
+				if d >= 2.0 and d <= 3.5 and map.walkable(tx, ty) and p.distance_to(h.world) < best:
+					best = p.distance_to(h.world)
+					stand = p
+		h.world = stand
+		await _wait(0.4)
+		await _d_step(dir, "c%d_way_open" % n, ways.state == "open" and line != "" and at.x >= 0.0 and map.walkable(floori(at.x), floori(at.y)),
+			"its way on %s after %.2f s: \"%s\"; its way in (%.1f, %.1f) walkable (%s)" % [ways.state, ways._t, line, at.x, at.y, map.walkable(floori(at.x), floori(at.y))])
+		h.life = h.max_life
+		var was := place
+		var level := str(map.title.get("level", ""))
+		h.world = at
+		await _w_until(func(): return place != was and not _going, 4.0)
+		await _wait(0.4)
+		var to := "floor%d" % (n + 1) if n != 15 and n < 20 else home_place()
+		var cleared := ""
+		if n == 15 or n == 20:
+			cleared = _wu_said("%s cleared." % level)
+		await _d_step(dir, "c%d_taken" % n, place == to and (cleared != "" or (n != 15 and n != 20)),
+			"walked into: on to %s (%s)%s" % [place, place_title(), (" \"%s\"" % cleared) if cleared != "" else ""])
+	print("CITYWAYS: %d of %d steps as the game has them%s" % [_d_n - _d_bad.size(), _d_n, ("; not: " + ", ".join(_d_bad)) if not _d_bad.is_empty() else ""])
 
 
 ## SHOT MODE, INTO THE DESCENT AND THROUGH IT (--only=descent): a hero the armourer has rewarded (the furnace out), in town: the

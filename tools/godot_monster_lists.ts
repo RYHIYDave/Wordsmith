@@ -9,6 +9,7 @@ import { makeBestiary } from '../src/art/bestiary';
 import type { AnimSet } from '../src/art/actor_types';
 import { heroSides } from '../src/art/sides';
 import { bakedFigures, bakeName } from '../src/render/monsters_bake_list';
+import { act1Looks } from '../src/art/act1_figs/index';
 import { ALL_OF_IT, useAllOfIt } from '../src/game/all_of_it';
 import { ENEMY_MOVES, useEnemyMoves } from '../src/game/enemy_moves';
 import { FLOOR_LOOKS, useFloorLooks } from '../src/game/floor_looks';
@@ -42,7 +43,9 @@ function listsOf(set: AnimSet): List[] {
 const all: Record<string, { sides: number; lists: { name: string; fps: number }[] }> = {};
 let ok = 0;
 const wrong: string[] = [];
-for (const figure of bakedFigures()) {
+// (and the kinds' other looks the release does not bake, baked for Godot by tools/godot_bake_figures.mjs: the palace guard's)
+const baked = bakedFigures();
+for (const figure of [...baked, ...act1Looks().filter((f) => !baked.includes(f as never))] as typeof baked) {
   const name = bakeName(figure);
   const file = `${dir}/${name}.json`;
   if (!existsSync(file)) continue;

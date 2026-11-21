@@ -124,6 +124,9 @@ func run(main, hero, out: String) -> void:
 		m.rise(1e9)
 	await M._wait(0.1)
 	for k in COMMON.get(depth, []):
+		# (`--kind=K`: that kind's steps alone)
+		if M._arg("kind") != "" and not M._arg("kind").split(",").has(k):
+			continue
 		await _common(k)
 	if depth == 11:
 		await _crier()
@@ -141,9 +144,9 @@ func run(main, hero, out: String) -> void:
 ## The kinds of each floor with rules of their own; its common ones fought alone (the boss apart).
 const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"], 12: ["rat", "dredger", "scribe", "hushed", "ratking"],
 	13: ["fieldhand", "carter", "hushed", "scraper", "quill"], 14: ["patient", "orderly", "hushed", "physician"],
-	15: ["inkling", "bookwarden", "scribe", "hushed", "censor"]}
+	15: ["inkling", "bookwarden", "scribe", "hushed", "censor"], 16: ["swan", "gardener", "groom", "pguard"]}
 const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"], 13: ["fieldhand", "carter"], 14: ["patient", "orderly"],
-	15: ["inkling", "bookwarden"]}
+	15: ["inkling", "bookwarden"], 16: ["swan", "gardener", "groom", "pguard"]}
 
 
 var chosen := {}
@@ -169,6 +172,97 @@ func _common(kind: String) -> void:
 		return
 	struck = 0
 	match kind:
+		"swan":
+			h.world = M._spot_near(m.world + m.face * 1.0, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var bit: bool = await _run(6.0, func(): return _is_act(m, "swan:bite") and float(m.h2.act["t"]) >= 0.35)
+			var warned: bool = not _a1("swan:warn").is_empty()
+			await _snap("swan_bites")
+			await _run(1.0)
+			_line(bit and warned and struck > 0, "the swan: its bite, the strip marked in pink through its wind-up (%s), the hero bitten (%d)" % [warned, struck])
+			# (its charge: from 3.5 tiles off, it rushes him, quicker)
+			_ready_only(m, -1)
+			await _run(0.8, func(): return m.h2.act == null)
+			h.world = M._spot_near(m.world, 3.5, h.world)
+			m.h2.a1["cd"] = 0.0
+			var v: float = m.speed
+			var charged: bool = await _run(2.0, func(): return float(m.h2.a1.get("ch", 0.0)) > 0.0)
+			_line(charged and m.speed > v * 1.5, "its charge: seen 3.5 tiles off, its waddle quickened (%.2f to %.2f)" % [v, m.speed])
+		"gardener":
+			# (a way across the lawn clear for him to be flung along and stumble on: the hero 2.6 tiles along it)
+			var GA = load("res://scripts/act3/gardener.gd")
+			# (the way to where he stands, on a tile's middle, clear: the game lunges only so)
+			for k in 32:
+				var u := Vector2(cos(k * TAU / 32.0), sin(k * TAU / 32.0))
+				var at: Vector2 = M._spot_near(m.world + u * 2.6, 0.0, h.world)
+				if at.distance_to(m.world) <= 3.4 and GA.clear_lunge(m, (at - m.world).normalized()):
+					h.world = at
+					break
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var from: Vector2 = m.world
+			var crouched: bool = await _run(6.0, func(): return _is_act(m, "gardener:lunge") and float(m.h2.act["t"]) >= 0.8)
+			var warned: bool = not _a1("gardener:warn").is_empty()
+			await _snap("gardener_crouches")
+			var snapped: bool = await _run(2.0, func(): return not _a1("gardener:clip").is_empty())
+			await _run(0.15)
+			await _snap("gardener_snaps")
+			await _run(2.5, func(): return m.h2.act == null)
+			var moved: float = m.world.distance_to(from)
+			_line(crouched and warned and snapped and struck > 0 and moved > 2.5, "the gardener's shear lunge: crouched, its lane marked (%s); flung, the blades snapped shut, cut grass (%s); the hero struck (%d); he stumbled on %.2f tiles" % [warned, snapped, struck, moved])
+		"groom":
+			h.world = M._spot_near(m.world + m.face * 4.0, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var whistled: bool = await _run(6.0, func(): return not _a1("groom:horse").is_empty())
+			var line: Dictionary = _a1("groom:horse")
+			var came: bool = await _run(2.0, func(): return float(line.get("t", -1.0)) >= 0.15)
+			await _snap("groom_horse")
+			await _run(1.5)
+			_line(whistled and came and struck > 0, "the groom whistles: its line marked across the garden (%.1f tiles), the horse galloping down it out of the mist, the hero run down (%d)" % [float(line.get("a", 0.0)), struck])
+		"pguard":
+			h.world = M._spot_near(m.world + m.face * 1.4, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var thrust: bool = await _run(6.0, func(): return _is_act(m, "pguard:thrust") and float(m.h2.act["t"]) >= 0.5)
+			var warned: bool = not _a1("pguard:warn").is_empty()
+			await _snap("pguard_thrusts")
+			await _run(1.5, func(): return m.h2.act == null)
+			_line(thrust and warned and struck > 0, "the palace guard (%s): his thrust along its marked line, the hero struck (%d)" % ["the partisan" if m.form == 0 else "the sword", struck])
+			# THE JAVELIN: the partisan guard's (or the sword guard's) hurled at him, sticking; the partisan wrenched out again (a sword
+			# guard is then made the partisan guard, that both are seen)
+			var PG = load("res://scripts/act3/pguard.gd")
+			for turn in (2 if m.form != 0 else 1):
+				if turn == 1:
+					PG._form(m, 0)
+					await _run(0.8, func(): return m.h2.act == null)
+				struck = 0
+				var form0: int = m.form
+				var who: String = "partisan" if form0 == 0 else "javelin"
+				var mine := func(p): return int(p["b"]) == (0 if form0 == 0 else 1)
+				h.world = M._spot_near(m.world, 4.5, h.world)
+				m.face = (h.world - m.world).normalized()
+				_ready_only(m, 1 if form0 == 0 else 2)
+				var thrown: bool = await _run(6.0, func(): return not _a1("pguard:jav", mine).is_empty())
+				await _run(0.25)
+				await _snap("pguard_%s_flies" % who)
+				var stuck: bool = await _run(2.0, func(): return int(_a1("pguard:jav", mine).get("done", 0)) == 1)
+				await _run(0.3)
+				await _snap("pguard_%s_sticks" % who)
+				await _run(2.5, func(): return m.h2.act == null)
+				var after: int = m.form
+				_line(thrown and stuck and struck > 0 and after == (2 if form0 == 0 else 3) and m.art.name == ("pguard_2" if form0 == 0 else "pguard_3"),
+					"his %s hurled at him, its fall marked round him, sticking: the hero struck (%d); his look now %d (%s)" % [who, struck, after, m.art.name])
+				if form0 == 0:
+					# (he marches to it and wrenches it out, the hero kept off)
+					_ready_only(m, -1)
+					h.world = M._spot_near(m.world, 8.0, h.world)
+					var pulled: bool = await _run(14.0, func(): return _is_act(m, "pguard:pullout"))
+					await _run(0.9)
+					await _snap("pguard_pulls_it_out")
+					var back: bool = await _run(3.0, func(): return m.form == 0)
+					_line(pulled and back and _a1("pguard:jav", mine).is_empty(), "he marches to his partisan and wrenches it out of the turf (%s): the partisan guard again (%d)" % [pulled, m.form])
 		"hushed":
 			h.world = M._spot_near(m.world, 0.9, h.world)
 			_ready_only(m, 0)

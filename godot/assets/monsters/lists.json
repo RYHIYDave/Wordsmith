@@ -2097,7 +2097,7 @@
   "lists": [
    {
     "name": "idle",
-    "fps": 10
+    "fps": 6
    },
    {
     "name": "walk",
@@ -2116,11 +2116,11 @@
     "fps": 30
    },
    {
-    "name": "redact",
+    "name": "strike",
     "fps": 30
    },
    {
-    "name": "strike",
+    "name": "redact",
     "fps": 30
    },
    {
@@ -3951,6 +3951,60 @@
    },
    {
     "name": "form",
+    "fps": 30
+   }
+  ]
+ },
+ "pguard_2": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "pullOut",
+    "fps": 30
+   }
+  ]
+ },
+ "pguard_3": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 10
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
     "fps": 30
    }
   ]

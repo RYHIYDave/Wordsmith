@@ -1248,6 +1248,20 @@
         if (r.err) note.onward = r.err;
         else out.onward = { kind: 'onward', secs: consts.onward, frames: r.frames };
       }
+      if (Wy.onward && !Wy.a1) {
+        // THE WAY ON WHERE NO ONE PAINTED IT (the High City's, floors 17 to 20: game.ts kill, updateWays; render.ts drawWays,
+        // standWays): awake, a waypoint's own dais and motes where it stands, 12 frames at 10 a second (`onway`); as it wakes, the
+        // column of light flaring over it, 12 frames at 20 a second (`onwarp`)
+        const on = Wy.onward;
+        const was = { awake: on.awake, warpAt: on.warpAt };
+        const back = () => { on.awake = was.awake; on.warpAt = was.warpAt; };
+        const r = REC.variant(T0, W, H, [...Array(12).keys()], () => { on.awake = true; on.warpAt = null; }, back, (k) => k * 3);
+        if (r.err) note.onway = r.err;
+        else out.onway = { kind: 'way', fps: 10, at: { x: on.x, y: on.y }, frames: r.frames };
+        const r2 = REC.variant(T0, W, H, [...Array(12).keys()], (k) => { on.awake = true; on.warpAt = REC.time0 - k / 20; }, back);
+        if (r2.err) note.onwarp = r2.err;
+        else out.onwarp = { kind: 'warp', fps: 20, at: { x: on.x, y: on.y }, frames: r2.frames };
+      }
       if (Wy.way) {
         // THE WAYPOINT: awake, its dais's loop and the motes over it, 12 frames at 10 a second; and a warp on it, the column of
         // light, 12 frames at 20 a second (render.ts standWays; art/crypt_ways.ts)

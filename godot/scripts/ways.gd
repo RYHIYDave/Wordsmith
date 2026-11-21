@@ -37,6 +37,15 @@ const ONWARD := {
 	8: {"secs": 124.0 / 30.0, "takes": [[0, 0], [1, 0], [2, 0]], "thrown": []},
 	9: {"secs": 126.0 / 30.0, "takes": [[0, 0], [1, 0], [2, 0], [3, 0]], "thrown": []},
 	10: {"secs": 130.0 / 30.0, "takes": [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]], "thrown": []},
+	# (THE CITY: the Crier's grate; the Rat King's outfall, the postern, the stitched door, the great doors: a door's way in shut
+	# till it opens, `shut_takes`)
+	11: {"secs": 104.0 / 30.0, "takes": [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]], "thrown": []},
+	12: {"secs": 116.0 / 30.0, "takes": [[0, 0]], "thrown": [[-1, -1]], "shut_takes": true},
+	13: {"secs": 120.0 / 30.0, "takes": [[1, 0]], "thrown": [], "shut_takes": true},
+	14: {"secs": 110.0 / 30.0, "takes": [[0, 0]], "thrown": [], "shut_takes": true},
+	15: {"secs": 130.0 / 30.0, "takes": [[0, 0]], "thrown": [], "shut_takes": true},
+	# (THE HIGH CITY, FLOOR 16: the Swan Gardens' gate on up the hill, swung open as the Princess falls: GARDEN_GATE.secs)
+	16: {"secs": 18.0 / 30.0, "takes": [[0, 0]], "thrown": [], "shut_takes": true},
 }
 ## (game.ts wayOpenLine)
 const ON_OPEN := "The way on is open."
@@ -116,7 +125,16 @@ func _open() -> void:
 		"onward":
 			# (game.ts kill: the way on wakes, Ways.onward awake, its film from now)
 			_secs = float(ONWARD.get(int(_w["a1"]["floor"]), {}).get("secs", 4.0))
-	if sfx != null and kind != "onward":
+		"plain":
+			# (game.ts kill: awake at once, its column flaring over its dais as it wakes, its loop after: the look's states
+			# `onwarp`, `onway`; render.ts drawWays, standWays)
+			_secs = 0.0
+			if look != null:
+				look.play_variant("onwarp")
+				look.play_variant("onway", 0.0, true)
+			if sfx != null:
+				sfx.play("power", linear_to_db(0.8))
+	if sfx != null and kind != "onward" and kind != "plain":
 		sfx.play("thunder", -8.0)
 	main.say_way(kind, false)
 	_show()
@@ -126,6 +144,9 @@ func _open() -> void:
 func way_kind() -> String:
 	if _w.get("a1") != null and _w.get("onward") != null:
 		return "onward"
+	# (THE HIGH CITY, floors 17 to 20: a way on no one painted: a waypoint's dais where it stands, awake as he falls, walked into)
+	if _w.get("onward") != null:
+		return "plain"
 	if _w.get("shaft") != null:
 		return "shaft"
 	if _w.get("exit") != null:
@@ -213,6 +234,15 @@ func _opened() -> void:
 			for i in onward_tiles("thrown"):
 				if not taken.has(i):
 					map.walk[i] = 0
+			# (a door's way in, shut till now, walked into: but not where a solid prop stands)
+			if ONWARD.get(int(_w["a1"]["floor"]), {}).get("shut_takes", false):
+				var held := {}
+				for p in map.props:
+					if p.get("solid", false):
+						held[int(p["ty"]) * map.w + int(p["tx"])] = true
+				for i in onward_tiles("takes"):
+					if not held.has(i):
+						map.walk[i] = 1
 	main.say_way(way_kind(), true)
 
 
@@ -273,6 +303,10 @@ func _taken() -> bool:
 			return floori(h.x) == int(sh["x"]) and floori(h.y) == int(sh["y"])
 		"onward":
 			return onward_tiles("takes").has(floori(h.y) * map.w + floori(h.x))
+		"plain":
+			# (game.ts updateWays: walking into its light, within WAY_USE of it)
+			var on: Dictionary = _w["onward"]
+			return h.distance_to(Vector2(float(on["x"]), float(on["y"]))) < 1.0
 	return false
 
 
@@ -287,7 +321,7 @@ func _go() -> void:
 			main.unbar_due = true
 		main.loot.say("%s cleared" % str(map.title.get("level", "")), good)
 		main.go_to("town", "cage")
-	elif way_kind() == "onward" and (n == 10 or n == 15 or not main.has_floor(n + 1)):
+	elif (way_kind() == "onward" or way_kind() == "plain") and (n == 10 or n == 15 or not main.has_floor(n + 1)):
 		# (game.ts takeWay 'on' from the Fen: the siege broken, in through the gate; from the fifteenth, the Great Library, home too
 		# (HIGH_CITY, on as the game starts): the stolen words flying home, the High City's gates shut)
 		var line := "%s cleared." % str(map.title.get("level", ""))
