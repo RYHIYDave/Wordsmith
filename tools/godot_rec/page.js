@@ -1120,7 +1120,8 @@
     // [1, 2, 1, 3] at four a second), hanging still]. A frame by the clock is taken at a moment of the recording that shows it.
     if (L.bells) {
       const Bl = L.bells;
-      const at = (want) => { for (let s = 0; s < 90; s++) if (want(REC.time0 + s / 30)) return s; return 0; };
+      // (the clock the pieces are drawn by is the drawing's own, `t`: T0 and a thirtieth of a second a sample)
+      const at = (want) => { for (let s = 0; s < 90; s++) if (want(T0 + s / 30)) return s; return 0; };
       const small = [0, 0, at((t) => Math.floor(t * 3) % 2 === 0), at((t) => Math.floor(t * 3) % 2 === 1), 0];
       Bl.props.forEach((k, j) => {
         if (k < 0) return;
