@@ -40,9 +40,9 @@ const art = makeHeroArt3();
 const one = (c: Clip | undefined): Record<string, unknown> | null =>
   c ? { fps: c.fps, hit: c.hit ?? null, loop: c.loop ?? null, tail: c.tail ?? null, n: c.frames.length } : null;
 const out: Record<string, unknown> = {};
-for (const cls of Object.keys(CLASSES) as ClassId[]) {
-  const a = art.of(cls, { ...lookOfPlace('dungeon'), vet: cls === 'brawler' });
-  const s = heroSides(a)[0] as AnimSet & { idleFps?: number; walkFps?: number };
+// (a set of pictures' times: its stand's and walk's pace, and each of its lists the bake numbers; attack2Walk, 125 to 128, after the
+// rest, as art/heroes3.ts bakeLists has them)
+const timesOf = (s: AnimSet & { idleFps?: number; walkFps?: number }): Record<string, unknown> => {
   const c = s.clips;
   const lists: Record<string, unknown> = {
     14: one(c?.attack),
@@ -64,14 +64,22 @@ for (const cls of Object.keys(CLASSES) as ClassId[]) {
   (c?.heavyWalk ?? []).forEach((w, k) => (lists[35 + k] = one(w)));
   (c?.reelWalk ?? []).forEach((w, k) => (lists[48 + k] = one(w)));
   (c?.lurchWalk ?? []).forEach((w, k) => (lists[52 + k] = one(w)));
+  (c?.attack2Walk ?? []).forEach((w, k) => (lists[125 + k] = one(w)));
+  return { idleFps: s.idleFps ?? 2, walkFps: s.walkFps ?? 8, walkStride: s.walkStride ?? null, startAt: s.startAt ?? 0, start: one(s.start), stops: (s.stops ?? []).map((x) => one(x)), lists };
+};
+for (const cls of Object.keys(CLASSES) as ClassId[]) {
+  const a = art.of(cls, { ...lookOfPlace('dungeon'), vet: cls === 'brawler' });
+  const s = heroSides(a)[0] as AnimSet & { idleFps?: number; walkFps?: number };
   // (ON HIS CLASS CARD, ui/panels.ts drawTitle: his front, in town dress, the weapon on his back (art/heroes.ts lookOfPlace('card'));
   // standing, running on the spot by the clock, coming to a stand, what he does left standing (idleA, idleB), making ready: the
   // cards bake's lists 0, 2, 6 to 13, 113, 114 and 115)
   const card = heroSides(art.of(cls, { ...lookOfPlace('card'), vet: cls === 'brawler' && VETERAN.on }))[0] as AnimSet & { idleFps?: number; walkFps?: number };
   const cc = card.clips;
   const cardOut = { idleFps: card.idleFps ?? 2, walkFps: card.walkFps ?? 8, idle: card.idle.length, walk: card.walk.length, stops: (card.stops ?? []).map((x) => one(x)), idleA: one(cc?.idleA), idleB: one(cc?.idleB), ready: one(cc?.ready) };
-  out[cls] = { idleFps: s.idleFps ?? 2, walkFps: s.walkFps ?? 8, walkStride: s.walkStride ?? null, startAt: s.startAt ?? 0, start: one(s.start), stops: (s.stops ?? []).map((x) => one(x)), lists, card: cardOut };
+  out[cls] = { ...timesOf(s), card: cardOut };
 }
+// (THE WARLOCK AS THE DEMON, art/heroes.ts lookOfPlace('demon'): its own pictures, two sides, its rakes, Damning, its burning out)
+out['warlock:demon'] = timesOf(heroSides(art.of('warlock', { ...lookOfPlace('demon') }))[0] as AnimSet & { idleFps?: number; walkFps?: number });
 // (THE SCARF, THE FEATHER, THE BRAIDS: engine/tails.ts, each kind as art/heroes.ts HERO_TAILS has it)
 out.tails = HERO_TAILS;
 // (THE CLASS CARDS, ui/panels.ts drawTitle with CARDS3: the classes in their order, each card's name, words and numbers, the
@@ -105,7 +113,7 @@ out.palette = P;
 out.ramps = ELEMENT_RAMP;
 out.crackle = CRACKLE;
 writeFileSync('godot/assets/heroes/clips.json', JSON.stringify(out, null, 1));
-for (const [cls, v] of Object.entries(out).filter(([k]) => k in CLASSES)) {
+for (const [cls, v] of Object.entries(out).filter(([k]) => k in CLASSES || k === 'warlock:demon')) {
   const L = (v as { lists: Record<string, { fps: number; hit: number | null; n: number } | null> }).lists;
   console.log(cls, Object.entries(L).filter(([, x]) => x).map(([k, x]) => `${k}:${x!.n}@${x!.fps}${x!.hit !== null ? 'h' + x!.hit.toFixed(2) : ''}`).join(' '));
 }

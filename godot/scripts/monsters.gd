@@ -267,9 +267,39 @@ func _dots(dt: float) -> void:
 			var moved: bool = m.bleed_at != Vector2.INF and m.world.distance_to(m.bleed_at) > 0.15
 			m.bleed_at = m.world
 			m.damage(maxf(1.0, roundf(m.bleed_dps * 0.5 * ((m.bleed_move if m.bleed_move > 0.0 else 1.0) if moved else 1.0))), "phys", false, false, [], false, true, m.last_skill)
+		# (THE WARLOCK: his hellfire, and the curse's smoulder)
+		if not m.dead and m.hell_t > 0.0 and m.hell_dps > 0.0:
+			m.damage(maxf(1.0, roundf(m.hell_dps * 0.5)), "fire", false, false, [], false, true, m.last_skill)
+		if not m.dead and m.curse_t > 0.0 and m.curse_dps > 0.0:
+			m.damage(maxf(1.0, roundf(m.curse_dps * 0.5)), "phys", false, false, [], false, true, m.last_skill)
 	# (and what burns and poisons the hero, on the same clock)
 	if hero != null and is_instance_valid(hero):
 		hero.dots()
+
+
+## (THE WARLOCK, game.ts spreadBurns) A cursed one has died: every burn on it leaps to each enemy within 3.5 tiles, and burns there as
+## on it (a stronger one taking the place of a weaker; the longer time kept).
+func spread_burns(d) -> void:
+	var to: Array = []
+	for m in list:
+		if not is_instance_valid(m) or m == d or m.dead or shut_in(m) or m.world.distance_to(d.world) > 3.5 + m.r:
+			continue
+		to.append({"id": m.id, "x": m.world.x, "y": m.world.y})
+		for pair in [["hell_t", "hell_dps"], ["curse_t", "curse_dps"], ["burn_t", "burn_dps"], ["poison_t", "poison_dps"], ["bleed_t", "bleed_dps"]]:
+			var t: float = d.get(pair[0])
+			var dps: float = d.get(pair[1])
+			if t <= 0.0 or dps <= 0.0:
+				continue
+			var have: float = m.get(pair[0])
+			var have_dps: float = m.get(pair[1])
+			m.set(pair[0], maxf(t, have))
+			if have <= 0.0 or dps > have_dps:
+				m.set(pair[1], dps)
+		if m.last_skill < 0:
+			m.last_skill = d.last_skill
+	if not to.is_empty():
+		_tell({"t": "spread", "x": d.world.x, "y": d.world.y, "to": to})
+		sfx.play("fire", linear_to_db(0.7))
 
 
 func _tell(e: Dictionary) -> void:

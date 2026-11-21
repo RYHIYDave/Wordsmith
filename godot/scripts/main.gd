@@ -354,6 +354,10 @@ func set_class(c: String, fresh: bool) -> void:
 	# (in his town, the camp and the rim, his weapon on his back: render.ts, the heroes' art `town: game.level.town`; the bake's
 	# `town` key, art/heroes3.ts; anywhere else, the dungeon's)
 	hero.arts = {"dungeon": BakedHero.new(HERO_DIR, c), "town": BakedHero.new(HERO_DIR, c, "town")}
+	# (THE WARLOCK: his arm blazing while his pact is full, and the demon: the bake's `blaze` and `demon` keys)
+	if c == "warlock":
+		hero.arts["blaze"] = BakedHero.new(HERO_DIR, c, "blaze")
+		hero.arts["demon"] = BakedHero.new(HERO_DIR, c, "demon")
 	hero.art = hero.arts["town" if is_home(place) else "dungeon"]
 	hero.loadout.cls = c
 	hero.loadout.refresh()
@@ -374,6 +378,7 @@ func _build(where: String, arrive: String) -> void:
 	if _place != null:
 		_place.free()
 	place = where
+	hero.in_town = is_home(where)
 	if not hero.arts.is_empty():
 		hero.art = hero.arts["town" if is_home(where) else "dungeon"]
 	_place = Node2D.new()
@@ -909,6 +914,8 @@ func _inputs() -> void:
 		"move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN],
 		"move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT],
 		"attack": [KEY_J], "whirl": [KEY_K], "lunge": [KEY_SPACE], "potion": [KEY_Q], "interact": [KEY_E, KEY_F],
+		# (THE WARLOCK: his pact full, R changes him into the demon: main.ts, `input.pressed('KeyR')`)
+		"change": [KEY_R],
 	}
 	var sticks := {
 		"move_up": [JOY_AXIS_LEFT_Y, -1.0], "move_down": [JOY_AXIS_LEFT_Y, 1.0],

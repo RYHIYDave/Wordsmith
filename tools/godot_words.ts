@@ -17,6 +17,7 @@
 // the other, and with each other word it may share its side with, and a sample of three.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { gameSwitches } from './godot_switches';
+import { DEMON_KIT } from '../src/game/warlock';
 import { readFileSync } from 'node:fs';
 import { ARC_CHAIN, ATTR_GIVES, ATTR_SPLIT, BIND, BLEED, CLASSES, HYBRID_LESS, CULL, FIRST_WORD, FLEETING, FRENZY, GUARD, HEAVY, HEX, HUSH_LEAVES, LASTING, LEECH, MIRRORING, MOVE_OPENS, PIERCE, PLUNDER, PRECISE, PULL, REAP, SKILLS, SLOT_OPENS, SPLIT, STILL, SURGE, TUNE, VAST, WORDS, skillsFor, wordsAt } from '../src/game/defs';
 import { MANA_AS_CDR } from '../src/game/items';
@@ -65,7 +66,9 @@ const moves = skillsFor('warrior', 'greatsword');
 // words.ts resolveSkill), his starting attributes and weapon)
 const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
 const classes = Object.fromEntries(CLASS_IDS.map((c) => [c, { name: CLASSES[c].name, blurb: CLASSES[c].blurb, primary: CLASSES[c].primary, two: CLASSES[c].grows ?? null, attrs: CLASSES[c].attrs, starts: CLASSES[c].starts, moves: skillsFor(c, CLASSES[c].starts) }]));
-const allMoves = [...new Set(CLASS_IDS.flatMap((c) => classes[c].moves))];
+// (THE WARLOCK'S DEMON, game/warlock.ts DEMON_KIT: its three in the places of his, his words in them, as the demon)
+const demonKit = [...DEMON_KIT];
+const allMoves = [...new Set([...CLASS_IDS.flatMap((c) => classes[c].moves), ...demonKit])];
 const words = Object.fromEntries([...OURS, ...MADE].map((w) => [w, WORDS[w]]));
 const skills = Object.fromEntries(allMoves.map((id) => [id, SKILLS[id]]));
 writeFileSync(`${OUT}/words.json`, JSON.stringify({
@@ -78,6 +81,7 @@ writeFileSync(`${OUT}/words.json`, JSON.stringify({
   skills,
   grows: CLASSES.warrior.primary,
   classes,
+  demonKit,
   hybridLess: HYBRID_LESS,
   // (the numbers the words' rules read)
   heavy: HEAVY,
@@ -231,7 +235,7 @@ if (process.argv[2] === 'check') {
   // against one word a sample (every 29th); the words melding makes alone, against nothing
   for (const c of CLASS_IDS) {
     if (c === 'warrior') continue;
-    for (const id of classes[c].moves) {
+    for (const id of c === 'warlock' ? [...classes[c].moves, ...demonKit] : classes[c].moves) {
       for (const d of heroes) {
         const first = d === heroes[0];
         let n = 0;

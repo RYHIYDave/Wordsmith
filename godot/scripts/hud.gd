@@ -928,6 +928,9 @@ func _rule(x0: float, x1: float, y: float, c: Color, tip: Color) -> void:
 ## His three moves as the bar shows them: his class's own (hud.json skillsOf; tools/godot_hud.ts), the Warrior's where there is none.
 func _skills() -> Array:
 	var of: Dictionary = _data.get("skillsOf", {})
+	# (THE WARLOCK AS THE DEMON: its three on his buttons)
+	if hero != null and hero.kit != null and hero.kit.get("form") == "demon" and of.has(hero.cls + ":demon"):
+		return of[hero.cls + ":demon"]
 	if hero != null and of.has(hero.cls):
 		return of[hero.cls]
 	return _data["skills"]

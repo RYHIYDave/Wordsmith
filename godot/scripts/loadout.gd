@@ -123,15 +123,21 @@ func any() -> bool:
 
 
 ## MOVE `i` WITH ITS WORDS (words.gd resolve; the game's Resolved), as his numbers stand; hushed, as if none were in it.
-## His move in place i, its id (game/defs.ts skillsFor: his class's three).
+## (THE WARLOCK AS THE DEMON, game/warlock.ts DEMON_KIT: its three in the places of his, his words in them; empty, his class's own)
+var form_moves: Array = []
+
+
+## His move in place i, its id (game/defs.ts skillsFor: his class's three; the demon's while he is it).
 func id(i: int) -> String:
+	if not form_moves.is_empty():
+		return str(form_moves[i])
 	return str(Words.data()["classes"][cls]["moves"][i])
 
 
 func r(i: int) -> Dictionary:
 	if _r[i] == null:
 		var none := func(_w): return null
-		_r[i] = Words.resolve(Words.data()["classes"][cls]["moves"][i], front[i].map(none) if hushed else front[i], behind[i].map(none) if hushed else behind[i], _d, cls)
+		_r[i] = Words.resolve(id(i), front[i].map(none) if hushed else front[i], behind[i].map(none) if hushed else behind[i], _d, cls)
 	return _r[i]
 
 

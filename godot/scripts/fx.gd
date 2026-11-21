@@ -954,6 +954,11 @@ func _handle(e: Dictionary) -> void:
 				rifts.append({"x": e["x"], "y": e["y"], "t": -float(e.get("delay", 0.0)), "out": float(e["secs"]), "dur": float(e["secs"]) + 0.4, "r": float(e["r"]), "seed": randi() % 1000000})
 		"spark":
 			spray(e["x"], e["y"], int(e.get("n", 10)), _ramp(str(e.get("el", "phys"))), 2.4, 60.0, 10.0)
+		"spread":
+			# (THE WARLOCK: a cursed one's burns leaping to those near it: heroes/warlock_look.gd)
+			var hw = hero()
+			if hw != null and hw.get("kit") != null and hw.kit.look != null and is_instance_valid(hw.kit.look) and hw.kit.look.has_method("spread"):
+				hw.kit.look.spread(e)
 		"wave":
 			# (THE MAGE: the staff is swung: a breath of light leaves it the way the wave goes; big and wild, let go with a blast)
 			var cs := L.MIRROR if e.get("echo", false) else _magic(str(e["el"]))

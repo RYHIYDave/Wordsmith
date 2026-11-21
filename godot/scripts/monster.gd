@@ -187,6 +187,14 @@ var bleed_t := 0.0
 var bleed_dps := 0.0
 var bleed_move := 0.0
 var bleed_at := Vector2.INF
+## (THE WARLOCK, game/warlock.ts: his HELLFIRE on it (his bolt's), `hell_dps` a second for `hell_t`; his CURSE's smoulder, `curse_dps`
+## for `curse_t`: a cursed one dying spreads every burn on it to those near it, monsters.gd spread_burns)
+var hell_t := 0.0
+var hell_dps := 0.0
+var curse_t := 0.0
+var curse_dps := 0.0
+## THROWN (game.ts throwMonster, flyThrown): flung away from a place, so far in so long, {vx, vy, t}; a wall stops it
+var thrown := {}
 var mirror_t := 0.0
 var surge_t := -1.0
 var stolen := 0
@@ -432,6 +440,9 @@ func step(dt: float, hero) -> void:
 	if _raised_t >= 0.0:
 		_raised_t += dt
 	struck_t += dt
+	# (thrown: it goes on its way, whatever else it is doing: game.ts updateMonsters, flyThrown)
+	if not thrown.is_empty():
+		_fly(real)
 	# (BOSS_INTRO: until his gate has fallen and his line is said, the boss stands and looks at the hero)
 	if waits:
 		var d0: float = hero.world.distance_to(world)
@@ -1372,6 +1383,11 @@ func _afflicted(dt: float) -> bool:
 			bleed_move = 0.0
 	if mirror_t > 0.0:
 		mirror_t = maxf(0.0, mirror_t - dt)
+	# (THE WARLOCK: his hellfire and the curse run out)
+	if hell_t > 0.0:
+		hell_t = maxf(0.0, hell_t - dt)
+	if curse_t > 0.0:
+		curse_t = maxf(0.0, curse_t - dt)
 	if frozen_t <= 0.0 and stun_t <= 0.0:
 		_surge(dt)
 	if burn_t > 0.0:
@@ -1402,6 +1418,34 @@ func _afflicted(dt: float) -> bool:
 		_set_list("idle")
 		return true
 	return false
+
+
+## (game.ts throwMonster) Flung away from `from`, `far` tiles in `secs`: never a boss, nor one shut in a room he is not in.
+func throw_from(from: Vector2, far: float, secs := 0.2) -> void:
+	if dead or boss or mgr.shut_in(self):
+		return
+	var d := world - from
+	var dir := d / d.length() if d.length() >= 0.01 else (-face if face.length() > 0.01 else Vector2(1, 0))
+	thrown = {"vx": dir.x * far / secs, "vy": dir.y * far / secs, "t": secs}
+
+
+## (game.ts flyThrown) A thrown one goes on its way; stopped by a wall, it stops.
+func _fly(dt: float) -> void:
+	var k := minf(dt, maxf(0.0, float(thrown["t"])))
+	var x0 := world
+	var rr := minf(r, 0.42)
+	var fly := kind == "bat"
+	var sx := float(thrown["vx"]) * k
+	var sy := float(thrown["vy"]) * k
+	if mgr.clear(world.x + sx, world.y, rr, fly):
+		world.x += sx
+	if mgr.clear(world.x, world.y + sy, rr, fly):
+		world.y += sy
+	thrown["t"] = float(thrown["t"]) - dt
+	var meant := Vector2(thrown["vx"], thrown["vy"]).length() * k
+	if float(thrown["t"]) <= 0.0 or (meant > 0.01 and world.distance_to(x0) < meant * 0.3):
+		thrown = {}
+	_place()
 
 
 ## FLAME in front (game.ts hitMonster, `r.ignite`): it burns `dps` a second for 3 s (`secs`: LASTING longer, FLEETING shorter);
@@ -1551,6 +1595,11 @@ func _rise_again() -> void:
 
 
 func clear_afflictions() -> void:
+	hell_t = 0.0
+	hell_dps = 0.0
+	curse_t = 0.0
+	curse_dps = 0.0
+	thrown = {}
 	bleed_t = 0.0
 	bleed_dps = 0.0
 	bleed_move = 0.0
@@ -1634,6 +1683,9 @@ func _die() -> void:
 	# goes off after a short warning, of its element and none of its words (a minion, of its leader's Volatile, at half))
 	if mgr.hero != null and is_instance_valid(mgr.hero) and mgr.hero.has_method("killed"):
 		mgr.hero.killed(self)
+	# (THE WARLOCK: a cursed one dying spreads every burn on it to those near it: game.ts kill, spreadBurns)
+	if curse_t > 0.0:
+		mgr.spread_burns(self)
 	clear_afflictions()
 	var blast := word_share("volatile")
 	if blast > 0.0:

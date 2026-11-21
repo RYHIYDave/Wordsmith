@@ -64,6 +64,8 @@ func run(main, hero, d: String) -> void:
 		await _ranger()
 	elif h.cls == "mage":
 		await _mage()
+	elif h.cls == "warlock":
+		await _warlock()
 	# (every hero: what is drawn with him, the pool of light behind him and his scarf, feather or braids; and in town his own look)
 	await _looks()
 	print("HEROES: the %s, %d steps, %d as the game's%s" % [h.cls, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
@@ -299,6 +301,151 @@ func _mage() -> void:
 	# HER CRYSTAL: where it burns in her frame, told to the effects (fx_wild_mage.gd charge)
 	var held: bool = h.fx != null and not h.fx.wild_mage.held.is_empty()
 	_line(held, "her crystal told to her effects each frame, where it burns in her picture and how hot (%s)" % (str(h.fx.wild_mage.held.get("heat", "-")) if held else "none"))
+
+
+## THE WARLOCK: his bolt (his hellfire on what it hits), his Curse (all near struck and cursed), a cursed one dying (its burns leaping
+## to those near), his Smoke Step (through one, nothing reaching him, cursing it), his pact filled and his change (his arm blazing,
+## then 2.4 s of the change, the demon roaring out, throwing back what is near), the demon's three (its rakes cursing, Damning paying
+## out every burn and throwing, its smoke step bursting out), and its burning out.
+func _warlock() -> void:
+	var K = h.kit
+	var home: Vector2 = h.world
+	var way := _open_way(home)
+	var side := Vector2(-way.y, way.x)
+	var pack := _pack(home, way)
+	if pack.size() < 3:
+		_line(false, "floor 2 has no three skeletons to set out")
+		return
+	var A = pack[0]
+	var B = pack[1]
+	var C = pack[2]
+	var put := func(m, at: Vector2) -> void:
+		m.world = at
+		m._place()
+		_hold(m)
+	var keep := func(): for m in pack: _hold(m)
+	for m in pack:
+		m.max_life = 1000.0
+		m.life = 1000.0
+	# HELLFIRE BOLT: at the one before him; it burns in his hellfire; his pact fills
+	put.call(A, home + way * 5.0)
+	put.call(B, home + way * 6.0 + side * 1.5)
+	put.call(C, home + way * 6.0 - side * 1.5)
+	h._turn(way)
+	await _run(0.4, Callable(), keep)
+	var a0: float = A.life
+	h.auto_attack = true
+	var flew: bool = await _run(1.0, func(): return not K.shots.is_empty(), keep)
+	var look_ok: bool = flew and K.shots[0].get("look", "") == "hellbolt"
+	await _run(0.1, Callable(), keep)
+	await _snap("warlock_bolt")
+	var burning: bool = await _run(1.0, func(): return A.hell_t > 0.0, keep)
+	var after_hit: float = A.life
+	await _run(1.1, Callable(), keep)
+	_line(look_ok and burning and A.hell_dps > 0.0 and A.life < after_hit and K.pact >= 1.0,
+		"Hellfire Bolt: his bolt flies (%s) and strikes (%.0f to %.0f); it burns in his hellfire (%.1f a second, %.1f s left), and goes on burning (to %.0f); his pact %.0f of 30" % [look_ok, a0, after_hit, A.hell_dps, A.hell_t, A.life, K.pact])
+	# CURSE: every one within 4.5 tiles struck and cursed
+	put.call(A, home + way * 2.0)
+	put.call(B, home + way * 3.0 + side * 1.0)
+	put.call(C, home + way * 9.0)
+	await _run(0.3, Callable(), keep)
+	var b0: float = B.life
+	h.auto_whirl = true
+	var cursed: bool = await _run(1.2, func(): return A.curse_t > 0.0 and B.curse_t > 0.0, keep)
+	await _run(0.15, Callable(), keep)
+	await _snap("warlock_curse")
+	_line(cursed and B.life < b0 and C.curse_t <= 0.0 and K.charges[1] == 0,
+		"Curse: the two within reach struck (%.0f to %.0f) and cursed (%.1f s, %.1f a second), the one 9 tiles off not; its wait begun" % [b0, B.life, B.curse_t, B.curse_dps])
+	# A CURSED ONE DIES: its burns leap to those near it
+	put.call(C, A.world + side * 2.0)
+	C.hell_t = 0.0
+	C.curse_t = 0.0
+	A.hell_t = 4.0
+	A.hell_dps = 6.0
+	await _run(0.1, Callable(), keep)
+	A.damage(A.life + 10.0, "phys")
+	var leapt: bool = await _run(0.5, func(): return C.hell_t > 0.0 and C.curse_t > 0.0, keep)
+	await _run(0.2, Callable(), keep)
+	await _snap("warlock_spread")
+	_line(A.dead and leapt, "a cursed one dying: its hellfire and its curse leap to the one 2 tiles from it (burning %.1f s, cursed %.1f s)" % [C.hell_t, C.curse_t])
+	# SMOKE STEP: through B, nothing reaching him, cursing it
+	var live: Array = pack.filter(func(m): return not m.dead)
+	B.curse_t = 0.0
+	put.call(B, home + way * 2.0)
+	h.world = home
+	h._place()
+	await _run(0.3, Callable(), keep)
+	b0 = B.life
+	var start: Vector2 = h.world
+	h.auto_lunge = home + way * 4.5
+	var went: bool = await _run(0.2, func(): return not K.move.is_empty(), keep)
+	var safe: bool = h._invuln > 0.0
+	await _run(0.1, Callable(), keep)
+	await _snap("warlock_smoke")
+	await _run(0.4, Callable(), keep)
+	_line(went and safe and h.world.distance_to(start) > 3.5 and B.life < b0 and B.curse_t > 0.0 and K.charges[2] == 0,
+		"Smoke Step: %.1f tiles as smoke, nothing reaching him; the one he passed through struck (%.0f to %.0f) and cursed; its charge spent" % [h.world.distance_to(start), b0, B.life])
+	# THE PACT FULL: his arm blazes; R: the change, then the demon roars out
+	K.pact = 30.0
+	await _run(0.2, Callable(), keep)
+	var blaze: bool = K.look_key() == "blaze" and h.art == h.arts["blaze"]
+	await _snap("warlock_blazing")
+	put.call(B, h.world + way * 1.5)
+	put.call(C, h.world + way * 6.0)
+	h.auto_change = true
+	var changing: bool = await _run(0.3, func(): return not K.change.is_empty(), keep)
+	await _run(1.0, Callable(), keep)
+	var pic: Array = K.picture(h._side)
+	var untouched: bool = h._invuln > 0.0
+	await _snap("warlock_changing")
+	var b_at: Vector2 = B.world
+	var formed: bool = await _run(2.0, func(): return K.form == "demon", keep)
+	await _run(0.3)
+	await _snap("warlock_demon")
+	_line(blaze and changing and not pic.is_empty() and int(pic[0]) == 56 and untouched and formed and h.loadout.id(0) == "rake" and h.art == h.arts["demon"] and B.world.distance_to(b_at) > 0.5 and K.pact >= 29.0,
+		"his pact full, his arm blazes (%s); R: he changes (his change's pictures, %s; nothing reaching him), and the demon roars out, throwing back the one beside him (%.1f tiles); its three: %s, %s, %s" % [blaze, pic, B.world.distance_to(b_at), h.loadout.r(0)["name"], h.loadout.r(1)["name"], h.loadout.r(2)["name"]])
+	# THE DEMON: its rakes curse; Damning pays out every burn and throws
+	for m in pack:
+		if not m.dead:
+			m.curse_t = 0.0
+			m.hell_t = 0.0
+	put.call(B, h.world + h.face * 1.4)
+	await _run(0.2, Callable(), keep)
+	b0 = B.life
+	h.auto_attack = true
+	var raked: bool = await _run(1.0, func(): return B.curse_t > 0.0, func():
+		h.auto_attack = true
+		for m in pack: _hold(m))
+	await _snap("warlock_rake")
+	h.auto_attack = false
+	await _run(0.5, Callable(), keep)
+	_line(raked and B.life < b0, "the demon's Claw Rake: struck (%.0f to %.0f) and cursed" % [b0, B.life])
+	B.hell_t = 4.0
+	B.hell_dps = 10.0
+	var b1: float = B.life
+	var b_was: Vector2 = B.world
+	h.auto_whirl = true
+	var erupted: bool = await _run(1.2, func(): return B.hell_t <= 0.0 and B.curse_t <= 0.0, keep)
+	await _run(0.15)
+	await _snap("warlock_damning")
+	_line(erupted and B.life < b1 - 40.0 and B.world.distance_to(b_was) > 0.5,
+		"Damning: under the cursed and burning one the ground erupts: struck, every burn paid out at once (%.0f to %.0f), and thrown (%.1f tiles)" % [b1, B.life, B.world.distance_to(b_was)])
+	# THE DEMON'S SMOKE STEP: bursts out where it stops
+	await _run(4.5, func(): return K.charges[2] >= 1, keep)
+	put.call(B, h.world + h.face * 2.0)
+	var landed_near: Vector2 = h.world + h.face * 4.5
+	b0 = B.life
+	h.auto_lunge = landed_near
+	await _run(0.6, Callable(), keep)
+	await _snap("warlock_demonstep")
+	_line(B.life < b0 and B.curse_t > 0.0, "the demon's Smoke Step: raking and cursing the one it tore through (%.0f to %.0f), bursting out where it stopped" % [b0, B.life])
+	# BURNING OUT: its pact dry, the demon burns out and he is a man again
+	K.pact = 0.5
+	var out: bool = await _run(1.0, func(): return not K.change.is_empty() and K.change["to"] == "man", keep)
+	var back: bool = await _run(3.0, func(): return K.form == "man", keep)
+	await _run(0.2)
+	await _snap("warlock_man_again")
+	_line(out and back and h.loadout.id(0) == "hellbolt" and K.pact == 0.0, "its pact run dry, the demon burns out (2 s) and he is a man again (%s)" % h.loadout.r(0)["name"])
 
 
 ## WHAT IS DRAWN WITH HIM (render.ts: drawAura, the tails): the pool of light behind him, his scarf (the Warrior), feather (the

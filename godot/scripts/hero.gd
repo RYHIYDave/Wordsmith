@@ -142,6 +142,8 @@ var map: FloorMap
 var art: BakedHero
 ## (his pictures for each kind of place: "dungeon", and "town", his weapon on his back; main.gd set_class, _build)
 var arts := {}
+## (whether he stands in his town: its pictures his, whatever his kit would show; main.gd _build)
+var in_town := false
 var sfx: Sfx
 var monsters  # monsters.gd
 ## (what the fight shows of his blows and words: the rules tell it with fx.event, fx.gd draws it; null where a place has none)
@@ -245,6 +247,8 @@ var auto_dir := Vector2.ZERO
 var auto_attack := false
 var auto_whirl := false
 var auto_lunge := Vector2.INF
+## (a check's hand on the Warlock's change: heroes/warlock.gd)
+var auto_change := false
 var unhurt := false
 
 var _knock := Vector2.ZERO
@@ -276,6 +280,8 @@ var _phased: Node2D
 const PHASE_OUT := 0.2
 var _was := {}
 var _ghost: Node2D
+## (his picture mirrored: a hero painted from two sides, facing left)
+var _flip := false
 var _cam: Camera2D
 ## (how high the ground he stands on lifts him on the screen, picture pixels: floor_map.gd lift_at)
 var _lift := 0.0
@@ -542,6 +548,10 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 			_tell({"t": "vastSplash", "x": at.x, "y": at.y, "r": reach, "ids": ids, "el": el})
 	# (WORDMELDING, THE EIGHT ACROSS THE GROUPS: Shiver, a critical hit freezes; Sunder; Cauterize and Fervor, a kill: melds.gd)
 	melds.struck8(m, i, crit, was_burning)
+	# (THE WARLOCK, game.ts warlockHit: his bolt sets it burning in his hellfire; the curse, the smoke steps and the rakes curse it;
+	# and every hit feeds his pact: heroes/warlock.gd on_hit)
+	if kit != null and kit.has_method("on_hit"):
+		kit.on_hit(m, i, dmg)
 	# POISON in front: each hit adds a dose of `poison` of the hit a second (and what his gear adds to a hit that poisons, over
 	# the poison's time: items.ts POISON_DMG, which loot.gd does not give yet); LASTING and FLEETING as for burning; BLIGHT in
 	# front, its poison biting harder the lower the enemy's life
@@ -782,9 +792,10 @@ func _wake(i: int, at: Vector2, rad: float, frac: float) -> void:
 ## ONE MELEE HIT of move `i` from `from` the way `way` (game.ts strike): the best one before him, nearest and most in front,
 ## is hit; a move whose words give it a splash strikes every other one round that one, quietly, for the splash's share; then
 ## what the move leaves, round what it struck. A swing that meets nothing still leaves its wake where the blade passed.
-func _strike(i: int, from: Vector2, way: Vector2, frac: float, n := 0, echo := false) -> void:
+func _strike(i: int, from: Vector2, way: Vector2, frac: float, n := 0, echo := false, base := -1.0) -> void:
 	var r: Dictionary = loadout.r(i)
-	var reach: float = STRIKE["reach"] * float(r["size"])
+	# (`base`: the move's own reach, a demon's rake's: defs.ts SKILLS range; the Warrior's Strike's otherwise)
+	var reach: float = (base if base >= 0.0 else STRIKE["reach"]) * float(r["size"])
 	var front: Array = loadout.wfronts(i)
 	_tell({"t": "swing", "x": from.x, "y": from.y, "dx": way.x, "dy": way.y, "reach": reach, "el": r["element"], "words": front, "n": n, "echo": echo})
 	var best = monsters.strike_target(from, way, reach) if monsters != null else null
@@ -1759,18 +1770,29 @@ func _place() -> void:
 func _show() -> void:
 	# (a whirlwind is seen from the front for as long as it goes round: the picture turns him itself, figure.ts `spins`)
 	var side := BakedHero.SIDES.find("front") if _act == "whirl" else _side
-	var n := art.count(side, _list)
-	# (any other class: his kit picks the picture, as the game's figure.ts does for him)
+	_flip = false
+	# (any other class: his kit picks his look (the Warlock: his arm blazing, the demon) and the picture, as the game's figure.ts does)
 	if kit != null:
+		if kit.has_method("look_key") and not in_town:
+			var key: String = kit.look_key()
+			if arts.has(key):
+				art = arts[key]
+		# (a hero painted from two sides only: the back while he faces away up the screen, else the front; mirrored facing left)
+		if art.sides() == 2:
+			var across := face.x - face.y
+			var toward := face.x + face.y
+			side = 1 if toward < -0.2 else 0
+			_flip = across < 0.0
 		var own: Array = kit.picture(side)
 		if not own.is_empty() and art.count(side, own[0]) > 0:
 			var g := art.frame(side, own[0], clampi(own[1], 0, art.count(side, own[0]) - 1))
 			_sprite.texture = g["tex"]
 			_sprite.offset = g["offset"]
-			_sprite.scale = Vector2.ONE * float(g["scale"])
+			_sprite.scale = Vector2(-1.0 if _flip else 1.0, 1.0) * float(g["scale"])
 			_sprite.self_modulate = Color(2.0, 0.7, 0.7) if _flash > 0.0 else Color.WHITE
 			_with(g, side)
 			return
+	var n := art.count(side, _list)
 	if n == 0:
 		return
 	var i := 0
@@ -1808,11 +1830,17 @@ func _with(f: Dictionary, side: int) -> void:
 	var au = p.get("aura")
 	_aura.visible = au != null and _sprite.modulate.a >= 1.0 and visible and _coming <= 0.0
 	if _aura.visible:
-		_aura.position = Vector2((float(au["x"]) - ax) * 2.0, (float(au["y"]) - ay) * 2.0 - _lift)
+		_aura.position = Vector2((float(au["x"]) - ax) * 2.0 * (-1.0 if _flip else 1.0), (float(au["y"]) - ay) * 2.0 - _lift)
 		_aura.scale = Vector2.ONE * float(au["r"]) * 4.0 / 64.0
 		_aura.modulate = Glow.tint(au)
-	var way := -1.0 if BakedHero.SIDES[side] in ["frontL", "sideL", "backL"] else 1.0
-	tails.step(_tails_dt, p.get("tails", []), ax, ay, way, position.x / 2.0, (position.y - _lift) / 2.0)
+	var way := -1.0 if BakedHero.SIDES[side] in ["frontL", "sideL", "backL"] or _flip else 1.0
+	var roots: Array = p.get("tails", [])
+	if _flip and not roots.is_empty():
+		# (mirrored: where the frame fixes them, mirrored about his anchor, as flipSprite mirrors them)
+		var w := float(p["w"])
+		roots = roots.map(func(r): var q: Dictionary = r.duplicate(); q["x"] = w - float(r["x"]); return q)
+		ax = w - ax
+	tails.step(_tails_dt, roots, ax, ay, way, position.x / 2.0, (position.y - _lift) / 2.0)
 	_tails_dt = 0.0
 	tails.refresh()
 	_tails_back.queue_redraw()
@@ -1904,6 +1932,9 @@ func _draw() -> void:
 		return
 	var fighting: bool = monsters != null and monsters.nearest(world, 9.0) != null
 	if not fighting and life >= max_life - 0.01:
+		# (the Warlock's pact: always while it is full, he is the demon, or he changes: render.ts)
+		if kit != null and kit.has_method("draw_over"):
+			kit.draw_over(self, -104.0 - _lift, 0.0)
 		return
 	var w := 44.0
 	var top := -104.0 - _lift
@@ -1918,6 +1949,8 @@ func _draw() -> void:
 		edge = Color("#fff060")
 	draw_rect(Rect2(-w / 2 - 1, top - 1, w + 2, 7), edge)
 	draw_rect(Rect2(-w / 2, top, w * clampf(life / max_life, 0.0, 1.0), 5), Color(0.86, 0.16, 0.24))
+	if kit != null and kit.has_method("draw_over"):
+		kit.draw_over(self, top, 1.0)
 
 
 ## (main.gd _picked: he has just warped in where the run begins)

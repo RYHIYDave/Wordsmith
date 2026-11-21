@@ -16,6 +16,8 @@ import { crc32, deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
+import { DEMON_KIT } from '../src/game/warlock';
+import type { SkillId } from '../src/game/defs';
 import { CLASSES, FLOOR_NAMES, SKILLS, WORDS, floorTitle, growsWith, skillsFor } from '../src/game/defs';
 import type { ClassId } from '../src/game/types';
 import { makeStoneArt } from '../src/art/quest3';
@@ -47,10 +49,12 @@ const W = CLASSES.warrior;
 const ids = [W.tap, W.hold, W.evade] as const;
 // (EVERY HERO'S: each class's three, as defs.ts skillsFor gives them with the weapon he starts with; and the key each is made with,
 // ui/guide.ts: LEFT CLICK, RIGHT CLICK or HOLD RIGHT CLICK)
-const classMoves = Object.fromEntries((Object.keys(CLASSES) as ClassId[]).map((c) => [c, skillsFor(c, CLASSES[c].starts)]));
+const classMoves: Record<string, readonly string[]> = Object.fromEntries((Object.keys(CLASSES) as ClassId[]).map((c) => [c, skillsFor(c, CLASSES[c].starts)]));
+// (THE WARLOCK AS THE DEMON, game/warlock.ts DEMON_KIT: its three on his buttons while he is it)
+classMoves['warlock:demon'] = DEMON_KIT;
 const allIds = [...new Set([...ids, ...Object.values(classMoves).flat()])];
 for (const id of allIds) {
-  const icon = SKILLS[id].icon;
+  const icon = SKILLS[id as SkillId].icon;
   pics.set(`ability:${icon}`, (icons.ability as Record<string, Sprite>)[icon]);
 }
 // (floor 5: one of the temple door's keys, lying: shown top left for each he holds, and faint for each he lacks: ui/hud.ts;
@@ -108,7 +112,7 @@ writeFileSync(`${OUT}/hud.json`, JSON.stringify({
   words: Object.fromEntries(Object.keys(WORDS).map((w) => [w, { front: wordForm(w as keyof typeof WORDS, 'front'), behind: wordForm(w as keyof typeof WORDS, 'behind'), name: WORDS[w as keyof typeof WORDS].name, grows: growsWith(w as keyof typeof WORDS) }])),
   element_ramp: ELEMENT_RAMP,
   skills: ids.map((id) => ({ id, name: SKILLS[id].name, icon: SKILLS[id].icon, cooldown: SKILLS[id].cooldown, channel: SKILLS[id].channel ?? 0 })),
-  skillsOf: Object.fromEntries(Object.entries(classMoves).map(([c, m]) => [c, m.map((id, slot) => ({ id, name: SKILLS[id].name, icon: SKILLS[id].icon, cooldown: SKILLS[id].cooldown, channel: SKILLS[id].channel ?? 0, key: slot === 0 ? 'LEFT CLICK' : SKILLS[id].channel ? 'HOLD RIGHT CLICK' : 'RIGHT CLICK' }))])),
+  skillsOf: Object.fromEntries(Object.entries(classMoves).map(([c, m]) => [c, m.map((id, slot) => ({ id, name: SKILLS[id as SkillId].name, icon: SKILLS[id as SkillId].icon, cooldown: SKILLS[id as SkillId].cooldown, channel: SKILLS[id as SkillId].channel ?? 0, key: slot === 0 ? 'LEFT CLICK' : SKILLS[id as SkillId].channel ? 'HOLD RIGHT CLICK' : 'RIGHT CLICK' }))])),
   sizes: { slot_w: 11, slot_h: 12, piece_gap: 3 },
   // (the place's name, top left: Game.floorLevel; in town, "Town")
   places: { town: 'Town', ...Object.fromEntries([1, 2, 3, 4, 5].map((d) => [`floor${d}`, FLOOR_NAMES.on ? floorTitle(d).level : `Dungeon ${d}`])) },

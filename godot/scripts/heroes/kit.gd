@@ -14,6 +14,7 @@ const Words := preload("res://scripts/words.gd")
 var h  # hero.gd
 var cls := ""
 var C := {}  # assets/heroes/clips.json: his pictures' times; T the moves' numbers
+var clips := {}  # (all of clips.json: a look of his own, the Warlock's demon, has its own times there)
 var T := {}
 var walked_way := Vector2.ZERO
 
@@ -32,6 +33,10 @@ var move := {}
 var shots: Array = []
 var look  # heroes/<class>_look.gd, in the place he is in
 var _later: Array = []
+## (a melee quick attack's combo: which swing (1, the second), how long a next may follow as the second; and its small step forward)
+var combo := 0
+var combo_t := 0.0
+var swing_step := {}
 var _clock := 0.0
 var _anim_t := 0.0
 
@@ -40,6 +45,7 @@ func _init(hero, c := "") -> void:
 	h = hero
 	cls = c if c != "" else str(hero.cls)
 	var all: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/clips.json"))
+	clips = all
 	C = all[cls]
 	T = {"tune": all["tune"]}
 	for k in ["rangerArrow", "volleySeen", "trackAim", "palette", "ramps", "crackle"]:
@@ -51,7 +57,7 @@ func _init(hero, c := "") -> void:
 
 
 func _def(i: int) -> Dictionary:
-	return Words.data()["skills"][Words.data()["classes"][cls]["moves"][i]]
+	return Words.data()["skills"][h.loadout.id(i)]
 
 
 ## (game.ts after) `fn` a while from now, while he is in this place.
@@ -64,9 +70,27 @@ func _after(t: float, fn: Callable) -> void:
 
 ## A step of him; true while what he does is all he does (his own move: a roll, a jump).
 func step(dt: float, way: Vector2, hooked: bool) -> bool:
+	_tick(dt)
+	return _act(dt, way, hooked)
+
+
+## (game.ts updateHero, its first part) What runs down whatever he is doing: his swing's wait, his attack, what was put off, his
+## moves' waits and charges, what he has sent flying and laid.
+func _tick(dt: float) -> void:
 	_clock += dt
 	_anim_t += dt
 	swing_t = maxf(0.0, swing_t - dt)
+	combo_t = maxf(0.0, combo_t - dt)
+	if not swing_step.is_empty():
+		var k := minf(dt, float(swing_step["left"]))
+		swing_step["left"] = float(swing_step["left"]) - dt
+		var mv: Vector2 = swing_step["v"] * (k / float(swing_step["t"]))
+		if h._clear(h.world.x + mv.x, h.world.y):
+			h.world.x += mv.x
+		if h._clear(h.world.x, h.world.y + mv.y):
+			h.world.y += mv.y
+		if float(swing_step["left"]) <= 0.0:
+			swing_step = {}
 	if not attack.is_empty():
 		attack["age"] = float(attack["age"]) + dt
 		attack["t"] = maxf(0.0, float(attack["t"]) - dt)
@@ -89,6 +113,10 @@ func step(dt: float, way: Vector2, hooked: bool) -> bool:
 				cd[i] = float(h.loadout.r(i)["cooldown"]) if charges[i] < max_charges[i] else 0.0
 	_step_shots(dt)
 	_step_own(dt)
+
+
+## (game.ts updateHero, the rest) His own move going on; a dodge asked for; the wind-up running out; the hold; the tap.
+func _act(dt: float, way: Vector2, hooked: bool) -> bool:
 	if not move.is_empty():
 		_move_step(dt)
 		return true
@@ -204,6 +232,14 @@ func _use_basic(at: Vector2) -> void:
 	_face(at)
 	# (a fast weapon's wind-up is never more than two fifths of the time between its blows)
 	var wind := minf(float(_def(0)["windup"]), 0.4 / rate)
+	# (A TWO-HIT COMBO, defs.ts COMBO: a melee quick attack's second swing if this one comes soon enough after a first, else the first;
+	# and a small step forward with either: game.ts useBasic)
+	if str(_def(0)["kind"]) == "melee":
+		combo = 1 if combo == 0 and combo_t > 0.0 else 0
+		combo_t = 1.0 / rate + float(T["tune"]["comboWindow"])
+		swing_step = {"v": h.face * float(T["tune"]["swingStep"]), "t": float(T["tune"]["swingStepTime"]), "left": float(T["tune"]["swingStepTime"])}
+	else:
+		combo = 0
 	_begin(0, at, wind)
 
 
@@ -222,11 +258,11 @@ func _begin(i: int, at: Vector2, wind: float) -> void:
 	# (his voice, now and then, as he attacks: game.ts begin, engine/audio.ts heroVoice)
 	h.sfx.voice(h.cls, "attack")
 	var def := _def(i)
-	attack = {"skill": i, "age": 0.0, "wind": wind, "t": wind + float(def["follow"])}
+	attack = {"skill": i, "age": 0.0, "wind": wind, "t": wind + float(def["follow"]), "second": i == 0 and combo == 1}
 	_anim_t = 0.0
 	windup = {"skill": i, "tx": at.x, "ty": at.y, "t": wind}
 	# (the bow drawn for a shot or a volley)
-	if wind > 0.05 and (str(Words.data()["classes"][cls]["moves"][i]) == "shot" or def["kind"] == "volley"):
+	if wind > 0.05 and (h.loadout.id(i) == "shot" or def["kind"] == "volley"):
 		h.sfx.play("bowDraw", linear_to_db(0.5))
 	# (TRACK_AIM: a quick attack pressed at an enemy follows it through the wind-up)
 	if i == 0 and h.monsters != null:
@@ -464,12 +500,14 @@ func picture(side: int) -> Array:
 	var way := _way_of()
 	if not attack.is_empty():
 		var s: int = attack["skill"]
-		var list := 14 if s == 0 else 20
+		# (a combo's second swing: its own pictures, made walking too: figure.ts attackSkill 2, clips.attack2, attack2Walk)
+		var second: bool = attack.get("second", false) and L.has("19")
+		var list := (19 if second else 14) if s == 0 else 20
 		if way >= 0:
-			list = (15 if s == 0 else 35) + way
+			list = ((125 if second else 15) if s == 0 else 35) + way
 		var c = L.get(str(list))
 		if c == null:
-			list = 14 if s == 0 else 20
+			list = (19 if second else 14) if s == 0 else 20
 			c = L.get(str(list))
 		if c != null:
 			return [list, mini(int(c["n"]) - 1, attack_frame(c, float(attack["age"]), float(attack["wind"])))]
@@ -506,4 +544,5 @@ func clear() -> void:
 	attack = {}
 	queued = {}
 	move = {}
+	swing_step = {}
 	_clear_own()
