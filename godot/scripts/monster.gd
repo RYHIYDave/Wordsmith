@@ -143,6 +143,14 @@ var r := 0.32
 ## size: game.ts splitMonster)
 var split := false
 var look := 1.0
+## (THE CITY'S WORDS in his moves: HEXING's curse on it (it takes `hex_more` more, for `hex_t`); STILLING, its time slowed by
+## `still_k` for `still_t`; BINDING, held where it stands for `bind_t`, and not held again for `bind_again`: hero.gd, city_words.gd)
+var hex_t := 0.0
+var hex_more := 0.0
+var still_t := 0.0
+var still_k := 0.0
+var bind_t := 0.0
+var bind_again := 0.0
 var life := 1.0
 var max_life := 1.0
 var dmg_min := 1.0
@@ -327,8 +335,17 @@ func step(dt: float, hero) -> void:
 			queue_free()
 		_show()
 		return
+	# (THE CITY'S WORDS: what the hero's words did to it runs out, on the clock; and STILLING, its time slowed by a hit or in a bubble:
+	# it moves, attacks and is drawn slower, by `dt` from here on; what is done to it, burning, chill, stun and the rest, runs out as
+	# ever: `real`)
+	var real := dt
+	hex_t = maxf(0.0, hex_t - dt)
+	still_t = maxf(0.0, still_t - dt)
+	bind_t = maxf(0.0, bind_t - dt)
+	bind_again = maxf(0.0, bind_again - dt)
+	dt *= time_of()
 	_anim_t += dt
-	_flash = maxf(0.0, _flash - dt)
+	_flash = maxf(0.0, _flash - real)
 	_bar = maxf(0.0, _bar - dt)
 	_said_t = maxf(0.0, _said_t - dt)
 	_not_yet = maxf(0.0, _not_yet - dt)
@@ -349,7 +366,7 @@ func step(dt: float, hero) -> void:
 		queue_redraw()
 		return
 	# (awake, what the hero's words have done to it runs down; frozen, stunned or staggered, it does nothing: _afflicted)
-	if state != "sleep" and state != "rise" and _afflicted(dt):
+	if state != "sleep" and state != "rise" and _afflicted(real):
 		_place()
 		_show()
 		queue_redraw()
@@ -1107,6 +1124,9 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 		dmg *= 1.0 + sunder
 		if not dot and not poison and sunder_t > 0.0:
 			_tell({"t": "meld8", "id": "sunder", "what": "hit", "on": id})
+	# (THE CITY'S WORDS: HEXING, cursed, it takes more from everything)
+	if hex_t > 0.0 and hex_more > 0.0:
+		dmg = maxf(1.0, roundf(dmg * (1.0 + hex_more)))
 	# (one of the cult near a chanter that lives and is awake takes less: its ward, act1.gd warded)
 	dmg = Act1.warded(mgr, self, dmg)
 	# (WORDMELDING, BLIGHT behind: a poisoned enemy it has touched takes more from everything)
@@ -1159,6 +1179,21 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 		mgr.hurt_tick = (mgr.hurt_tick + 1) % 6
 		if crit or dmg >= max_life * 0.25 or mgr.hurt_tick == 0:
 			mgr.voice(VOICE[kind] + "_hurt", 0.7, -4.4)
+
+
+## STILLING (game.ts timeOf): how fast its time runs now: slowed by a Stilling hit, and in a bubble (a boss half as much).
+func time_of() -> float:
+	var S: Dictionary = Words.data().get("city", {}).get("still", {"boss": 0.5})
+	var b: float = float(S["boss"]) if boss else 1.0
+	var k := 1.0
+	if still_t > 0.0:
+		k *= 1.0 - still_k * b
+	var hero = mgr.hero if mgr != null else null
+	if hero != null and is_instance_valid(hero) and hero.wakes != null and is_instance_valid(hero.wakes) and not hero.wakes.list.is_empty():
+		var z = hero.wakes.patch_at("bubble", world)
+		if z != null:
+			k *= 1.0 - float(z["dmg"]) * b
+	return k
 
 
 ## SPLITTING (game.ts splitMonster): two of its kind where it fell, each at half its life, of no words, drawn smaller; awake and

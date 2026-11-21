@@ -106,6 +106,14 @@ var melds:
 		if _melds == null:
 			_melds = Melds.new(self)
 		return _melds
+## (THE CITY'S FIVE WORDS in his moves: their drag, copies, shards, holds and snares: city_words.gd)
+const CityWords := preload("res://scripts/city_words.gd")
+var _city = null
+var city:
+	get:
+		if _city == null:
+			_city = CityWords.new(self)
+		return _city
 
 ## (each move's share of the weapon's damage and its wait are the words' to change: loadout.r(i) `dmg_mult`, `cooldown`.
 ## `wake`, defs.ts TUNE.channelWake: how often the Whirlwind leaves what the words behind it leave, as it goes on)
@@ -439,7 +447,13 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 		_tell(Melds.tag(r, {"t": "arc", "x0": at.x, "y0": at.y, "x1": at.x, "y1": at.y, "sky": true}))
 	if spent:
 		_tell({"t": "markSpent", "id": m.id, "x": at.x, "y": at.y, "dx": at.x - world.x, "dy": at.y - world.y})
+	# (THE CITY'S WORDS: a cursed one struck, its curse flares)
+	if not quiet and m.hex_t > 0.0:
+		_tell({"t": "hexFlare", "id": m.id})
 	m.damage(dmg, el, crit, not quiet and front.has("power"), front, false, false, i)
+	# (THE CITY'S WORDS: SPLITTING in front, its first hit each use breaks into copies that fly on: city_words.gd)
+	if float(r["split"]) > 0.0 and not quiet:
+		city.split_first(m, i, frac, at)
 	# VAST behind: each hit, not a splash's, splashes a share of itself onto every other enemy near what it hit
 	if r["vast"] > 0.0 and not quiet:
 		var reach: float = Words.data()["vast"]["splashR"]
@@ -472,6 +486,25 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 			_marked[i] = uses[i]
 			m.mark_t = float(Words.data()["precise"]["markTime"])
 			_tell({"t": "markOn", "id": m.id, "x": at.x, "y": at.y, "secs": m.mark_t})
+		# THE CITY'S WORDS (Version 23.8): HEXING in front curses what it hits; STILLING in front slows it in time; BINDING in front
+		# holds it in place
+		var CW: Dictionary = CityWords.C()
+		if float(r["hex"]) > 0.0:
+			var fresh: bool = m.hex_t < 0.5
+			m.hex_more = maxf(m.hex_more if m.hex_t > 0.0 else 0.0, float(r["hex"]))
+			m.hex_t = CW["hex"]["secs"]
+			if fresh:
+				_tell({"t": "hexOn", "id": m.id, "x": at.x, "y": at.y, "secs": m.hex_t})
+		if float(r["still"]) > 0.0:
+			var fresh: bool = m.still_t < 0.5
+			m.still_k = maxf(m.still_k if m.still_t > 0.0 else 0.0, float(r["still"]))
+			m.still_t = CW["still"]["secs"]
+			if fresh:
+				_tell({"t": "stillOn", "id": m.id, "x": at.x, "y": at.y, "secs": m.still_t})
+		if float(r["bind"]) > 0.0:
+			var held_for: float = city.bind_monster(m, r["bind"])
+			if held_for > 0.0:
+				_tell({"t": "bind", "id": m.id, "secs": held_for})
 		# HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too (its chance, 50% at most: none yet here)
 		var heavy: Dictionary = Words.data()["heavy"]
 		if r["stun"] > 0.0:
@@ -640,6 +673,19 @@ func _wake(i: int, at: Vector2, rad: float, frac: float) -> void:
 	# GUARDING behind: a ward circle (game.ts leavePatches, addPatch 'ward')
 	if r["ward"] > 0.0:
 		wakes.add_ward(i, at, maxf(1.5, rad), float(Words.data()["guard"]["wardTime"]) * float(r["last"]), r["ward"])
+	# THE CITY'S WORDS BEHIND (game.ts leavePatches): Pulling's vortex, Hexing's circle, Stilling's bubble; Splitting's shards; Binding's
+	# snare
+	var CW: Dictionary = CityWords.C()
+	if float(r["vortex"]) > 0.0:
+		wakes.add_zone("vortex", i, at, maxf(1.5, rad), float(r["vortex"]) * float(r["last"]), 0.0)
+	if float(r["hex_circle"]) > 0.0:
+		wakes.add_zone("hex", i, at, maxf(1.5, rad), float(CW["hex"]["circle"]) * float(r["last"]), r["hex_circle"])
+	if float(r["bubble"]) > 0.0:
+		wakes.add_zone("bubble", i, at, maxf(1.5, rad), float(CW["still"]["bubble"]) * float(r["last"]), r["bubble"])
+	if float(r["shards"]) > 0.0:
+		city.throw_shards(i, at, frac)
+	if float(r["snare"]) > 0.0:
+		city.lay_snare(i, at, r["snare"])
 
 
 ## ONE MELEE HIT of move `i` from `from` the way `way` (game.ts strike): the best one before him, nearest and most in front,
@@ -675,6 +721,8 @@ func _strike(i: int, from: Vector2, way: Vector2, frac: float, n := 0, echo := f
 				continue
 			if o.world.distance_to(at) <= rad + o.r:
 				hit_monster(o, i, frac * float(r["splash_dmg"]), true)
+	# (THE CITY'S WORDS: PULLING in front drags what it hit, and round it, toward where it struck)
+	city.pull_in(i, at, float(r["splash"]) * float(r["size"]) if float(r["splash"]) > 0.0 else 0.0, true)
 	_wake(i, at, 1.0, frac)
 
 
@@ -699,6 +747,8 @@ func _blast(i: int, at: Vector2, rad: float, frac: float, style: String, leaves:
 			if m.world.distance_to(at) <= rad + m.r and not monsters.shut_in(m):
 				hit_monster(m, i, frac, hits >= 3)
 				hits += 1
+	# (THE CITY'S WORDS: PULLING in front drags what is within the area toward its middle)
+	city.pull_in(i, at, rad, false)
 	if hits > 0:
 		_landed_on(i)
 		# (what it struck sounds by the blow's element)
@@ -741,6 +791,7 @@ func _process(dt: float) -> void:
 	_run_later(dt)
 	# (WORDMELDING: Implode's bursts to come, Fervor's time: melds.gd)
 	melds.step(dt)
+	city.step(dt)
 	_cam.offset = Vector2(0, -24 - _lift) + lean + (Vector2(randf_range(-3, 3), randf_range(-3, 3)) if _shake > 0.0 else Vector2.ZERO)
 	if _kick > 0.3:
 		_cam.offset += Vector2(roundf(randf_range(-_kick, _kick)), roundf(randf_range(-_kick, _kick) * 0.6)) * 2.0
@@ -1231,6 +1282,11 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 				ward = maxf(ward, float(z["dmg"]))
 	if ward > 0.0:
 		dmg *= 1.0 - ward
+	# (THE CITY'S WORDS: HEXING behind, a blow from one standing in a hex circle is weaker)
+	if wakes != null and is_instance_valid(wakes):
+		var hexed = wakes.patch_at("hex", by)
+		if hexed != null:
+			dmg *= 1.0 - float(hexed["dmg"])
 	# (THE CITY'S WORDS: HEXING on a monster, a hero cursed by it takes more)
 	if hex_t > 0.0 and hex_more > 0.0:
 		dmg *= 1.0 + hex_more

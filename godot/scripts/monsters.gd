@@ -101,11 +101,19 @@ func _process(dt: float) -> void:
 		_flow_in = FLOW_EVERY
 		_make_flow()
 	var standing: Array[Monster] = []
+	# (BINDING: what is held stands where it stood, whatever its own steps, a charge or a leap would have done; it strikes still)
+	var pins: Array = []
+	for m in list:
+		if is_instance_valid(m) and not m.dead and m.bind_t > 0.0:
+			pins.append([m, m.world])
 	for m in list:
 		if is_instance_valid(m):
 			m.step(dt, hero)
 			standing.append(m)
 	list = standing
+	for q in pins:
+		if is_instance_valid(q[0]):
+			q[0].world = q[1]
 	speaks.clear()
 	for m in list:
 		if not m.dead and m.seen and m.rarity == "blue" and not speaks.has(m.pack_id):
@@ -590,8 +598,14 @@ func called(w: Monster) -> int:
 
 func _fly(dt: float) -> void:
 	var keep: Array = []
+	var bubbles: bool = hero != null and hero.wakes != null and is_instance_valid(hero.wakes) and not hero.wakes.list.is_empty()
 	for a in _arrows:
 		var step: float = a["speed"] * dt
+		# (THE CITY'S WORDS: STILLING behind, a shot in a bubble crawls: game.ts updateProjectiles)
+		if bubbles:
+			var z = hero.wakes.patch_at("bubble", a["pos"])
+			if z != null:
+				step *= 1.0 - float(z["dmg"])
 		a["pos"] += a["dir"] * step
 		a["left"] -= step
 		var p: Vector2 = a["pos"]

@@ -39,7 +39,8 @@ mkdirSync(OUT, { recursive: true });
 const PRISON: WordId[] = [...PRISON_WORD_IDS, FURNACE_WORD.warrior];
 // (floors 6 to 10's: what may be found on any of them, not already among the prison's, in the game's order)
 const WILDS: WordId[] = WORD_IDS.filter((w) => !PRISON.includes(w) && [6, 7, 8, 9, 10].some((d) => wordsAt(d).includes(w)));
-const OURS: WordId[] = [...PRISON, ...WILDS];
+// (THE CITY'S FIVE, found from floor 11 down: types.ts DEEP_WORD_IDS)
+const OURS: WordId[] = [...PRISON, ...WILDS, ...DEEP_WORD_IDS.filter((w) => !WILDS.includes(w) && !PRISON.includes(w))];
 // (WORDMELDING: the words melding makes, in the order the game keeps a hero's words in: melds.ts wordIds)
 const MADE: WordId[] = wordIds().filter((w) => !WORD_IDS.includes(w));
 // (game.ts's own seconds for "of Echoes", kept in it unexported: read out of its source, not copied by hand)

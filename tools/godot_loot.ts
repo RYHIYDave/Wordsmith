@@ -63,7 +63,8 @@ useMeldLooks(icons);
 // (the words a Warrior can come by on floors 1 to 5: the prison's six and Heavy, the armourer's reward; and floors 6 to 10's, the
 // rest of what may be found there, in the game's order: tools/godot_words.ts)
 const PRISON: WordId[] = [...PRISON_WORD_IDS, FURNACE_WORD.warrior];
-const OURS: WordId[] = [...PRISON, ...WORD_IDS.filter((w) => !PRISON.includes(w) && [6, 7, 8, 9, 10].some((d) => wordsAt(d).includes(w)))];
+// (and the city's five, found from floor 11 down: types.ts DEEP_WORD_IDS)
+const OURS: WordId[] = [...PRISON, ...WORD_IDS.filter((w) => !PRISON.includes(w) && [6, 7, 8, 9, 10, 11].some((d) => wordsAt(d).includes(w)))];
 // (WORDMELDING: the words melding makes, in the game's order: tools/godot_words.ts)
 const MADE: WordId[] = wordIds().filter((w) => !WORD_IDS.includes(w));
 
@@ -293,7 +294,7 @@ for (const w of [...OURS, ...MADE]) {
 // (stats that count as one property on a piece: items.ts statGroup; only those that are not their own)
 const groups: Record<string, string> = {};
 for (const k of Object.keys(STAT_INFO)) if (statGroup(k as StatKey) !== k) groups[k] = statGroup(k as StatKey);
-const FLOORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const FLOORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 const words = {
   // (the order the game lists the words a hero holds in, types.ts WORD_IDS; and each word's own colour, art/icons.ts WORD_COLOR)
   // (WORDMELDING: the words melding makes after them, in the game's order, melds.ts wordIds; and their own colours as the game

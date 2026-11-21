@@ -340,6 +340,9 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 		"frenzy": false, "frenzy_feed": false, "shield": 0.0, "ward": 0.0, "last": 1.0, "pace": 1.0, "boost": 1.0, "vast": 0.0, "wide": 1.0,
 		# (WORDMELDING)
 		"meld": meld, "meld_behind": meld_behind, "pull": 0.0, "vortex": 0.0,
+		# (THE CITY'S WORDS: in front, Splitting's copies, Hexing's curse, Stilling's slow, Binding's hold; behind, Splitting's shards,
+		# Hexing's circle, Stilling's bubble, Binding's snare)
+		"split": 0.0, "hex": 0.0, "still": 0.0, "bind": 0.0, "shards": 0.0, "hex_circle": 0.0, "bubble": 0.0, "snare": 0.0,
 	}
 	var frenzy: Dictionary = D["frenzy"]
 	var guard: Dictionary = D["guard"]
@@ -448,12 +451,34 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 	if has.call(front, "guarding"):
 		r["shield"] = minf(0.2, float(guard["shield"]) + 0.001 * grows_by.call(front, "guarding"))
 		lines.append("Guarding: each use gives you a shield of %s of your life for %s s." % [_pct(r["shield"] * 100.0), _num(guard["shieldTime"])])
-	# (PULLING, a city word, here only for the meld it is part of, Implode: its numbers and its line, as resolveSkill has them; its drag
-	# and its vortex are not in the fight)
+	# THE CITY'S WORDS IN FRONT (Version 23.8; his doc "Wordsmith: The New Words": the numbers its starting points, each growing a
+	# little with its attribute, a tenth of a percent a point, a two-hundredth of a tile for Pulling's drag)
+	var C: Dictionary = D.get("city", {"pull": D["pull"]})
 	if has.call(front, "pulling"):
 		var PU: Dictionary = D["pull"]
-		r["pull"] = minf(float(PU["most"]), float(PU["far"]) + 0.005 * grows_by.call(front, "pulling"))
+		var k: float = rk.call(front, "pulling")
+		r["pull"] = minf(float(PU["most"]) * k, float(PU["far"]) * k + 0.005 * grows_by.call(front, "pulling"))
 		lines.append("Pulling: drags the enemies it hits up to %s tiles toward where it struck." % _fixed1(r["pull"]))
+	if has.call(front, "splitting"):
+		var SP: Dictionary = C["split"]
+		var k: float = rk.call(front, "splitting")
+		r["split"] = minf(float(SP["most"]) * k, float(SP["share"]) * k + 0.001 * grows_by.call(front, "splitting"))
+		lines.append("Splitting: its first hit breaks into %d copies of %s that fly on to other enemies." % [int(SP["copies"]), _pct(r["split"] * 100.0)])
+	if has.call(front, "hexing"):
+		var HX: Dictionary = C["hex"]
+		var k: float = rk.call(front, "hexing")
+		r["hex"] = minf(float(HX["most"]) * k, float(HX["more"]) * k + 0.001 * grows_by.call(front, "hexing"))
+		lines.append("Hexing: curses what it hits for %s s: it takes %s more damage from everything." % [_num(HX["secs"]), _pct(r["hex"] * 100.0)])
+	if has.call(front, "stilling"):
+		var SL: Dictionary = C["still"]
+		var k: float = rk.call(front, "stilling")
+		r["still"] = minf(float(SL["most"]), float(SL["slower"]) * k + 0.001 * grows_by.call(front, "stilling"))
+		lines.append("Stilling: what it hits is slowed in time for %s s: it moves, attacks and shoots %s slower." % [_num(SL["secs"]), _pct(r["still"] * 100.0)])
+	if has.call(front, "binding"):
+		var BD: Dictionary = C["bind"]
+		var k: float = rk.call(front, "binding")
+		r["bind"] = minf(float(BD["most"]) * k, float(BD["secs"]) * k + 0.004 * grows_by.call(front, "binding"))
+		lines.append("Binding: holds what it hits in place for %s s (an elite half as long, a boss not at all)." % _num(roundf(r["bind"] * 10.0) / 10.0))
 
 	# ----- behind: the wake -----
 	var softer := false
@@ -519,9 +544,30 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 	if has.call(behind, "guarding"):
 		r["ward"] = minf(0.5, float(guard["ward"]) + 0.002 * grows_by.call(behind, "guarding"))
 		lines.append("of Warding: leaves a ward circle for %s s; inside it you take %s less damage." % [_num(guard["wardTime"]), _pct(r["ward"] * 100.0)])
+	# THE CITY'S WORDS BEHIND (Version 23.8)
 	if has.call(behind, "pulling"):
-		r["vortex"] = float(D["pull"]["vortex"])
+		r["vortex"] = float(D["pull"]["vortex"]) * rk.call(behind, "pulling")
 		lines.append("of the Vortex: leaves a vortex for %s s that keeps drawing enemies in to its middle." % _num(roundf(r["vortex"] * 10.0) / 10.0))
+	if has.call(behind, "splitting"):
+		var SP: Dictionary = C["split"]
+		var k: float = rk.call(behind, "splitting")
+		r["shards"] = minf(float(SP["shardMost"]) * k, float(SP["shardShare"]) * k + 0.001 * grows_by.call(behind, "splitting"))
+		lines.append("of Shards: where it ends, %d shards of %s fly out in every direction." % [int(SP["shards"]), _pct(r["shards"] * 100.0)])
+	if has.call(behind, "hexing"):
+		var HX: Dictionary = C["hex"]
+		var k: float = rk.call(behind, "hexing")
+		r["hex_circle"] = minf(float(HX["weakest"]), float(HX["weaker"]) * k + 0.001 * grows_by.call(behind, "hexing"))
+		lines.append("of Hexes: leaves a hex circle for %s s; enemies inside deal %s less damage." % [_num(HX["circle"]), _pct(r["hex_circle"] * 100.0)])
+	if has.call(behind, "stilling"):
+		var SL: Dictionary = C["still"]
+		var k: float = rk.call(behind, "stilling")
+		r["bubble"] = minf(float(SL["crawlMost"]), float(SL["crawl"]) * k + 0.001 * grows_by.call(behind, "stilling"))
+		lines.append("of Stillness: leaves a bubble for %s s where enemies and their shots are %s slower." % [_num(SL["bubble"]), _pct(r["bubble"] * 100.0)])
+	if has.call(behind, "binding"):
+		var BD: Dictionary = C["bind"]
+		var k: float = rk.call(behind, "binding")
+		r["snare"] = minf(float(BD["snareMost"]) * k, float(BD["snareSecs"]) * k + 0.004 * grows_by.call(behind, "binding"))
+		lines.append("of the Snare: leaves a snare; the next enemy to cross it is held in place for %s s." % _num(roundf(r["snare"] * 10.0) / 10.0))
 	if has.call(behind, "vast"):
 		var V: Dictionary = D["vast"]
 		r["vast"] = minf(float(V["splashMost"]), float(V["splash"]) + 0.001 * grows_by.call(behind, "vast"))

@@ -15,7 +15,12 @@
   "guarding",
   "lasting",
   "fleeting",
-  "vast"
+  "vast",
+  "pulling",
+  "splitting",
+  "hexing",
+  "stilling",
+  "binding"
  ],
  "words": {
   "power": {
@@ -225,6 +230,71 @@
    "frontText": "A much bigger area, a little less damage.",
    "behindText": "Each hit splashes onto the enemies near what it hits.",
    "monsterText": "Its attacks reach wider."
+  },
+  "pulling": {
+   "id": "pulling",
+   "kind": "shape",
+   "name": "Pulling",
+   "front": "Pulling",
+   "behind": "of the Vortex",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the drawing in. Everything comes to it.",
+   "frontText": "Drags the enemies it hits toward where it struck.",
+   "behindText": "Leaves a vortex that keeps drawing enemies in.",
+   "monsterText": "Its blows drag you toward it."
+  },
+  "splitting": {
+   "id": "splitting",
+   "kind": "shape",
+   "name": "Splitting",
+   "front": "Splitting",
+   "behind": "of Shards",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of the breaking apart. One becomes many.",
+   "frontText": "Breaks into three smaller copies that fly on to other enemies.",
+   "behindText": "Where it ends, shards fly out in every direction.",
+   "monsterText": "Splits in two when it dies."
+  },
+  "hexing": {
+   "id": "hexing",
+   "kind": "shape",
+   "name": "Hexing",
+   "front": "Hexing",
+   "behind": "of Hexes",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the curse. What it marks is undone.",
+   "frontText": "Curses what it hits: it takes more damage from everything.",
+   "behindText": "Leaves a hex circle: enemies inside deal less damage.",
+   "monsterText": "Its blows curse you: you take more damage."
+  },
+  "stilling": {
+   "id": "stilling",
+   "kind": "shape",
+   "name": "Stilling",
+   "front": "Stilling",
+   "behind": "of Stillness",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the held breath. Time slows for it.",
+   "frontText": "What it hits is slowed in time.",
+   "behindText": "Leaves a bubble where enemies and their shots crawl.",
+   "monsterText": "Its blows slow your cooldowns."
+  },
+  "binding": {
+   "id": "binding",
+   "kind": "shape",
+   "name": "Binding",
+   "front": "Binding",
+   "behind": "of the Snare",
+   "attr": "str",
+   "element": null,
+   "about": "The word of the knot. What it holds stays held.",
+   "frontText": "Holds the enemies it hits in place.",
+   "behindText": "Leaves a snare for the next enemy to cross.",
+   "monsterText": "Its blows root you to the spot."
   },
   "eruption": {
    "id": "eruption",
@@ -1454,6 +1524,39 @@
    "gear": [
     "Weapon, gloves, ring, amulet: Area of Effect or Strength.",
     "Off hand, helm, chest, belt, boots: Armour or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "pulling": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "splitting": {
+   "gear": [
+    "At the bench: one piece made two, its properties shared between them."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "hexing": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "stilling": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "binding": {
+   "gear": [
+    "At the bench: a second piece of the same kind bound into the first, four properties in all."
    ],
    "note": "Both at once, each a little weaker than its word alone."
   },

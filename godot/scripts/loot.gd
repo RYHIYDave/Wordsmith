@@ -886,6 +886,9 @@ func burn_problem(w: String, where) -> String:
 		return "No spare word"
 	if int(it["rarity"]) == 3:
 		return "A unique piece takes no word"
+	# (SPLITTING and BINDING change a piece at the bench rather than burn into it, items.ts ITEM_WORDS: not yet in the Godot version)
+	if w == "splitting" or w == "binding":
+		return "This word changes a piece; not yet here"
 	if room(it) <= 0:
 		return "That piece is full"
 	if burn_options(w, it).is_empty():

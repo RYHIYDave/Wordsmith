@@ -2307,7 +2307,7 @@ func _words_shots(h: Hero, dir: String) -> void:
 	_w_frame = frames / 30.0
 	# (the first seven's cases; floors 6 to 10's nine have their own, at the end: check_words610.gd. `--cases=610`: theirs alone;
 	# `--cases=610:<word>`, one word's)
-	var words: Array = Hero.Words.ids().filter(func(w): return not Hero.Words.data()["wilds"].has(w))
+	var words: Array = Hero.Words.ids().filter(func(w): return not Hero.Words.data()["wilds"].has(w) and not Hero.Words.data().get("city", {}).get("ids", []).has(w))
 	if _arg("cases").begins_with("610"):
 		words = []
 	# (WORDMELDING: `--cases=meld`, the words melding makes alone; `--cases=meld:<word>,<word>`, those: check_melds.gd)

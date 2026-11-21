@@ -153,6 +153,54 @@ func add_ward(skill: int, at: Vector2, rad: float, dur: float, share: float) -> 
 	_tell({"t": "zone", "kind": "ward", "x": at.x, "y": at.y, "r": rad, "el": "phys", "dur": dur})
 
 
+## THE CITY'S WORDS behind move `skill` (game.ts addPatch 'vortex', 'hex', 'bubble'): PULLING's vortex (it keeps drawing what is in it
+## in to its middle, 0.9 tiles a second, an elite half as fast, a boss not at all), HEXING's circle (enemies in it deal `share` less:
+## hero.gd hurt_by), STILLING's bubble (enemies and their shots in it `share` slower: monster.gd time_of), `rad` round `at` for `dur`.
+## Laid again where one lies, that one lasts as long again from now, as strong as the stronger.
+func add_zone(kind: String, skill: int, at: Vector2, rad: float, dur: float, share: float) -> void:
+	var o = _again(kind, at, rad, 0.6)
+	if o != null:
+		o["dur"] = dur
+		o["dmg"] = maxf(float(o["dmg"]), share)
+		_tell({"t": "zone", "kind": kind, "x": o["x"], "y": o["y"], "r": o["r"], "el": "phys", "dur": dur})
+		return
+	if not _room() or not _on_floor(at):
+		return
+	list.append({"kind": kind, "x": at.x, "y": at.y, "r": rad, "t": 0.0, "dur": dur, "element": "phys", "dmg": share, "slow": 0.0, "tick": 0.0, "skill": skill})
+	_tell({"t": "zone", "kind": kind, "x": at.x, "y": at.y, "r": rad, "el": "phys", "dur": dur})
+
+
+## BINDING behind move `skill` (game.ts addSnare): a snare at `at`, lying BIND.snareLife seconds, for the next enemy to cross it (held
+## `secs`). Laid again where one lies, that one lies as long again from now. What stands on it as it is laid is let be until it steps
+## off.
+func add_snare(skill: int, at: Vector2, secs: float) -> void:
+	var B: Dictionary = Words.data()["city"]["bind"]
+	for o in list:
+		if o["kind"] == "snare" and Vector2(o["x"], o["y"]).distance_to(at) < 0.6:
+			o["t"] = 0.0
+			o["dmg"] = maxf(float(o["dmg"]), secs)
+			return
+	if not _room() or not _on_floor(at):
+		return
+	var on_it: Array = []
+	if monsters != null:
+		for m in monsters.list:
+			if is_instance_valid(m) and not m.dead and m.world.distance_to(at) <= float(B["reach"]) + m.r * 0.5:
+				on_it.append(m.id)
+	list.append({"kind": "snare", "x": at.x, "y": at.y, "r": B["reach"], "t": 0.0, "dur": B["snareLife"], "element": "phys", "dmg": secs, "slow": 0.0,
+		"tick": 0.0, "skill": skill, "words": ["binding"], "on_it": on_it})
+	_tell({"t": "zone", "kind": "snare", "x": at.x, "y": at.y, "r": B["reach"], "el": "phys", "dur": B["snareLife"]})
+
+
+## patchAt: the strongest of the hero's patches of `kind` that `at` is inside, or null.
+func patch_at(kind: String, at: Vector2):
+	var best = null
+	for z in list:
+		if z["kind"] == kind and Vector2(z["x"], z["y"]).distance_to(at) <= float(z["r"]) and (best == null or float(z["dmg"]) > float(best["dmg"])):
+			best = z
+	return best
+
+
 ## HEAVY behind move `skill` (addPatch 'cracks'): cracked ground `rad` round `at` for `dur` seconds. Laid again where some
 ## lies, that lasts as long again from now.
 func add_cracks(skill: int, at: Vector2, rad: float, dur: float) -> void:
@@ -214,8 +262,15 @@ func _process(dt: float) -> void:
 		if z["kind"] == "cracks":
 			_crack(z)
 			continue
-		# (a ward does its work in hero.gd hurt_by, for as long as it lasts; a rune waits, and goes off)
-		if z["kind"] == "ward":
+		# (a ward does its work in hero.gd hurt_by, for as long as it lasts; so do Hexing's circle, there, and Stilling's bubble, in the
+		# monsters' time: monster.gd time_of; a rune waits, and goes off)
+		if z["kind"] == "ward" or z["kind"] == "hex" or z["kind"] == "bubble":
+			continue
+		if z["kind"] == "vortex":
+			_vortex(z, dt)
+			continue
+		if z["kind"] == "snare":
+			_snare(z)
 			continue
 		if z["kind"] == "rune":
 			# (VOLATILE'S MELDS: Shatter's rune freezes what is in it, part way through its wait)
@@ -233,6 +288,52 @@ func _process(dt: float) -> void:
 			_bite(z)
 	list = list.filter(func(z): return z["t"] < z["dur"])
 	queue_redraw()
+
+
+## (THE CITY'S WORDS: Pulling behind) The vortex keeps drawing what is in it in to its middle; a boss stands firm, and one making an
+## act of its own.
+func _vortex(z: Dictionary, dt: float) -> void:
+	if monsters == null:
+		return
+	var P: Dictionary = Words.data()["pull"]
+	var mid := Vector2(z["x"], z["y"])
+	for m in monsters.list:
+		if not is_instance_valid(m) or m.dead or m.boss or m.state == "sleep" or m.state == "act" or monsters.shut_in(m):
+			continue
+		var d: float = m.world.distance_to(mid)
+		if d > float(z["r"]) + m.r * 0.5 or d <= float(P["middle"]):
+			continue
+		var step := minf(d - float(P["middle"]), float(P["pace"]) * (0.5 if m.elite else 1.0) * dt)
+		var rr := minf(m.r, 0.42)
+		var s: Vector2 = (mid - m.world) / d * step
+		var fly: bool = m.kind == "bat"
+		if monsters.clear(m.world.x + s.x, m.world.y, rr, fly):
+			m.world.x += s.x
+		if monsters.clear(m.world.x, m.world.y + s.y, rr, fly):
+			m.world.y += s.y
+
+
+## (THE CITY'S WORDS: Binding behind) The first enemy to come onto the snare is held, and the snare is spent (bats fly over it; a boss,
+## or one held not long since, crosses it as if it were not there).
+func _snare(z: Dictionary) -> void:
+	if monsters == null or monsters.hero == null:
+		return
+	var at := Vector2(z["x"], z["y"])
+	var on := func(o) -> bool: return o.world.distance_to(at) <= float(z["r"]) + o.r * 0.5
+	var kept: Array = []
+	for id in z["on_it"]:
+		for o in monsters.list:
+			if is_instance_valid(o) and o.id == id and not o.dead and on.call(o):
+				kept.append(id)
+	z["on_it"] = kept
+	for o in monsters.list:
+		if not is_instance_valid(o) or o.dead or o.state == "sleep" or o.kind == "bat" or o.boss or o.bind_again > 0.0 or not on.call(o) or z["on_it"].has(o.id):
+			continue
+		var held: float = monsters.hero.city.bind_monster(o, z["dmg"])
+		if held > 0.0:
+			_tell({"t": "snareSprung", "id": o.id, "x": at.x, "y": at.y, "secs": held})
+			z["dur"] = z["t"]
+		return
 
 
 ## Cracked ground: what walks onto it awake is staggered; a bat flies over it.
