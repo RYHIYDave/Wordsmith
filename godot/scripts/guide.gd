@@ -67,7 +67,7 @@ func banner(seen := true) -> Dictionary:
 
 ## The first dungeon's own prompts. (None for a test hero: the game's forTrial makes its Game without a guide.)
 func _lesson() -> Dictionary:
-	if int(main.get("trial")) > 0:
+	if int(main.get("trial")) > 0 or main.get("practice") == true:
 		return {}
 	var hero = main.hero
 	var loot = main.loot

@@ -17,6 +17,10 @@
 ## Ranger: the game begun again with a test hero on floor 6, the game's own (level, gear, words: assets/loot/trials.json), told so,
 ## never saved; fallen, he wakes in town a test hero still, from what was kept in memory; the pause panel's "Leave": the game begun
 ## again with no test hero.
+## THE PRACTICE ROOM (--only=practice, in three runs of the game): OPTIONS, PRACTICE ROOM: the class cards with no mode, BACK to the
+## options; the Mage: the game begun again in the arena with the game's practice hero (level 10, every word slot open, every word),
+## told so; a pack comes up out of its rifts and fights; struck down, he is UP AGAIN at once; what he kills gives no experience;
+## three or fewer left, the next pack comes; "Leave": the game begun again with no practice room.
 ## A line a thing; then the sum, TITLE.
 extends RefCounted
 
@@ -120,7 +124,7 @@ func run(main, hero, d: String) -> void:
 	# OPTIONS
 	await _press(ts, "options")
 	await _snap("options")
-	_line(ts.page == "options" and _ids(ts) == ["mute", "guide", "back"], "OPTIONS: %s" % ", ".join(ts._items().map(func(m): return m[1])))
+	_line(ts.page == "options" and _ids(ts) == ["mute", "guide", "practice", "floors", "back"], "OPTIONS: %s" % ", ".join(ts._items().map(func(m): return m[1])))
 	var taught0: bool = loot.taught
 	await _press(ts, "guide")
 	var flipped: bool = loot.taught != taught0
@@ -333,5 +337,84 @@ func trial_run(main, hero, d: String) -> void:
 		3:
 			_line(M.trial == 0 and M.trial_file.is_empty(), "Leave: the game begun again, no test hero")
 			print("TITLE TRIAL: done")
+			M.get_tree().quit()
+
+
+## THE PRACTICE ROOM, as it is played: the game begun again between the steps.
+func practice_check(main, hero, d: String) -> void:
+	M = main
+	h = hero
+	dir = d
+	shot = 30 + stage * 3
+	n = 80 + stage * 10
+	await _frames(10)
+	match stage:
+		0:
+			var ts = M.title_up(M.place)
+			ts.pointer = Vector2(-50, -50)
+			await _frames(3)
+			await _press(ts, "options")
+			await _snap("options_all")
+			_line(ts._items().map(func(m): return m[0]) == ["mute", "guide", "practice", "floors", "back"], "OPTIONS: %s" % ", ".join(ts._items().map(func(m): return m[1])))
+			await _press(ts, "practice")
+			await M._wait(0.3)
+			var cc = ts.cards
+			_line(cc != null and cc.no_mode and ts.practice, "PRACTICE ROOM: the class cards, with no mode")
+			cc.press_at((cc._layout()["back"] as Rect2).get_center())
+			await _frames(3)
+			_line(ts.cards == null and ts.page == "options", "their BACK: the options again")
+			await _press(ts, "practice")
+			await M._wait(0.3)
+			cc = ts.cards
+			cc.press_at(_card(cc, "mage"))
+			await _frames(3)
+			stage = 1
+			cc.press_at(_confirm(cc))
+		1:
+			var L = M.hero.loadout
+			var all: Array = preload("res://scripts/words.gd").socket_count(999)
+			var told: bool = M.loot.msgs.any(func(m): return str(m["text"]).begins_with("Practice room. Every word is yours"))
+			_line(M.practice and M.place == "practice" and M.hero.cls == "mage" and M.loot.level == 10 and L.front[0].size() == int(all[0]) and L.behind[0].size() == int(all[1]) and M.loot.words.size() >= 28 and told and not M.saving,
+				"the game begun again in the arena with the practice hero: a Mage, level 10, every slot open (%d in front, %d behind), %d words; told so; not saved" % [L.front[0].size(), L.behind[0].size(), M.loot.words.size()])
+			var pr = null
+			for c in M._place.get_children():
+				if c.get_script() == preload("res://scripts/practice.gd"):
+					pr = c
+			var t := 0.0
+			while t < 4.0 and (pr == null or pr._risers.is_empty() or float(pr._risers[0]["t"]) < 0.5):
+				await M.get_tree().process_frame
+				t += 1.0 / 60.0
+			await _snap("practice_pack_rising")
+			_line(pr != null and not pr._risers.is_empty(), "%.1f s in: a pack of %d coming up out of its rifts, %.1f to %.1f tiles from him" % [t, pr._risers.size() if pr != null else 0,
+				pr._risers.map(func(r): return r["at"].distance_to(M.hero.world)).min() if pr != null and not pr._risers.is_empty() else 0.0, pr._risers.map(func(r): return r["at"].distance_to(M.hero.world)).max() if pr != null and not pr._risers.is_empty() else 0.0])
+			t = 0.0
+			while t < 4.0 and not pr._risers.is_empty():
+				await M.get_tree().process_frame
+				t += 1.0 / 60.0
+			await M._wait(0.8)
+			await _snap("practice_fight")
+			var live: Array = M._monsters.list.filter(func(m): return is_instance_valid(m) and not m.dead)
+			_line(live.size() == 6 and live.all(func(m): return m.state != "sleep"), "the pack up, all six awake and coming: %s" % ", ".join(live.map(func(m): return m.kind)))
+			M.hero.unhurt = false
+			M.hero.life = 0.0
+			M.hero._fall()
+			await _frames(2)
+			_line(M.hero.alive and M.hero.life == M.hero.max_life and M.hero._invuln > 1.0, "struck down: UP AGAIN at once, his life full (%d), a moment untouchable" % M.hero.life)
+			var xp0: float = M.loot.xp
+			var lv0: int = M.loot.level
+			for m in live.slice(0, 4):
+				m.damage(float(m.life) + 1000.0)
+			await M._wait(0.3)
+			_line(M.loot.xp == xp0 and M.loot.level == lv0, "four of them killed: no experience (%s)" % M.loot.xp)
+			t = 0.0
+			while t < 5.0 and pr._risers.is_empty():
+				await M.get_tree().process_frame
+				t += 1.0 / 60.0
+			_line(not pr._risers.is_empty(), "two left: %.1f s later the next pack comes" % t)
+			stage = 2
+			M._mini._press("quit")
+		2:
+			_line(not M.practice and M.place != "practice", "\"Leave\": the game begun again, no practice room")
+			print("TITLE PRACTICE: done")
 			M.get_tree().quit()
 

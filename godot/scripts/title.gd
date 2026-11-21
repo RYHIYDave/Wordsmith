@@ -51,6 +51,8 @@ var mode := "normal"
 var confirm := {}
 ## THE LEVEL SELECT: the floor a test hero is picked for (0: none)
 var trial := 0
+## THE PRACTICE ROOM: its hero being picked
+var practice := false
 ## (ui/panels.ts FLOOR_ROWS: the floors' rows, each a part of the way down; as many floors as are built)
 const FLOOR_ROWS := [["THE PRISON", 1, 5], ["DOWN THE MOUNTAIN", 6, 10], ["THE CITY OF VELLUM", 11, 15], ["THE HIGH CITY", 16, 20]]
 var lex_open := false
@@ -162,6 +164,7 @@ func _items() -> Array:
 		return [
 			["mute", "SOUND: OFF" if AudioServer.is_bus_mute(0) else "SOUND: ON", "", false, false],
 			["guide", "PROMPTS: OFF" if main != null and main.loot.taught else "PROMPTS: ON", "", false, false],
+			["practice", "PRACTICE ROOM", "", false, false],
 			["floors", "LEVEL SELECT", "", false, false],
 			["back", "BACK", "", false, false],
 		]
@@ -262,6 +265,8 @@ func _pressed(id: String) -> void:
 			page = "options"
 		"floors":
 			page = "floors"
+		"practice":
+			open_cards(0, true)
 		"back":
 			page = "menu"
 		"mute":
@@ -278,16 +283,17 @@ func _class_name(c: String) -> String:
 
 
 ## NEW GAME: the class cards, over the picture put back into the dark. (`floor`: a test hero's, for the level select)
-func open_cards(floor := 0) -> void:
+func open_cards(floor := 0, room := false) -> void:
 	page = "class"
 	trial = floor
+	practice = room
 	confirm = {}
 	cards = Cards.new()
 	cards.main = main
 	cards.sfx = sfx
 	cards.over_pic = true
 	cards.mode = mode
-	cards.no_mode = trial > 0
+	cards.no_mode = trial > 0 or practice
 	cards.gate = _gate
 	if pointer != null:
 		cards.pointer = pointer
@@ -303,14 +309,15 @@ func _cards_back() -> void:
 	mode = cards.mode
 	cards.queue_free()
 	cards = null
-	page = "floors" if trial > 0 else "menu"
+	page = "floors" if trial > 0 else ("options" if practice else "menu")
 	trial = 0
+	practice = false
 	confirm = {}
 
 
 ## (main.ts pickClass: a hero saved, the first CONFIRM only warns; pressed again within 5 s, the new hero begins)
 func _gate(cls: String) -> bool:
-	if trial == 0 and saved_cls != "" and not (not confirm.is_empty() and confirm["cls"] == cls and t - float(confirm["t"]) < 5.0):
+	if trial == 0 and not practice and saved_cls != "" and not (not confirm.is_empty() and confirm["cls"] == cls and t - float(confirm["t"]) < 5.0):
 		confirm = {"cls": cls, "t": t}
 		_click()
 		return false

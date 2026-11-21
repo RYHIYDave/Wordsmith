@@ -502,7 +502,7 @@ func _pause(W: float, H: float) -> void:
 	_button(px + 6, by, bw, bh, "Resume", false, true)
 	_button(px + 8 + bw, by, bw, bh, "Sound off" if AudioServer.is_bus_mute(0) else "Sound on")
 	# (ui/panels.ts drawPause, its third: "End run" gives a hero of one's own up; a test hero's "Leave" leaves the save as it was)
-	_button(px + 10 + bw * 2, by, bw, bh, "Leave" if main.trial > 0 else "End run", false, false, T["bad"])
+	_button(px + 10 + bw * 2, by, bw, bh, "Leave" if main.trial > 0 or main.practice else "End run", false, false, T["bad"])
 
 
 ## (ui/panels.ts drawDeath) A FALLEN HERO'S SCREEN: YOU FELL (a Normal hero, who wakes in town) or YOU DIED (a Hardcore hero, lost),

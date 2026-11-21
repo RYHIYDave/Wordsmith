@@ -102,6 +102,8 @@ const BACK_AFTER := 2.5
 const Loadout := preload("res://scripts/loadout.gd")
 ## (WORDMELDING: the melded words' twists in the fight, and what their looks read: melds.gd)
 const Melds := preload("res://scripts/melds.gd")
+## (THE PRACTICE ROOM: nothing there can kill him: main.gd, practice.gd)
+var practice := false
 var _melds = null
 var melds:
 	get:
@@ -1767,8 +1769,14 @@ func dots() -> void:
 			_fall()
 
 
-## He falls.
+## He falls. (In THE PRACTICE ROOM he does not: game.ts die, "The practice room only knocks the wind out of you": up again at
+## once, his life full, a moment untouchable.)
 func _fall() -> void:
+	if practice:
+		life = max_life
+		_invuln = maxf(_invuln, 1.5)
+		_tell({"t": "text", "x": world.x, "y": world.y, "text": "UP AGAIN", "color": "#ffe070"})
+		return
 	life = 0.0
 	alive = false
 	sfx.voice(cls, "death")

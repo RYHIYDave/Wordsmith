@@ -297,8 +297,14 @@
     return { state: p.state, asked: p.asked ? p.asked.size : 0, made: p.films ? p.films.size : 0, failed: p.stats ? p.stats.failed : [], films: p.stats ? Object.keys(p.stats.films) : [] };
   };
 
-  /** Go to a floor (0: stay in town). */
-  REC.enter = (depth) => {
+  /** Go to a floor (0: stay in town; -1 the camp; -2 the practice room, a Warrior's, for the seed). */
+  REC.enter = (depth, seed) => {
+    if (depth === -2) {
+      // (THE PRACTICE ROOM, the start screen's: game.ts forPractice, its arena: main.ts startPractice)
+      d.practice('warrior', seed);
+      const p = d.game();
+      return { town: false, depth: p.depth, w: p.level.floor.w, h: p.level.floor.h };
+    }
     const g = d.game();
     if (depth > 0) {
       g.depth = depth;

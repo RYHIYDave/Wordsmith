@@ -11,6 +11,8 @@ const FLOOR := 1
 const WALL := 2
 const PIT := 3
 
+## THE PRACTICE ROOM'S arena (game/level.ts ARENA): its bounds and its middle, where its packs may come (null elsewhere)
+var practice = null
 var depth := 1
 var map_seed := 0
 var w := 0
@@ -124,6 +126,7 @@ func _init(path: String) -> void:
 	jar = data.get("jar")
 	captain_jar = data.get("captainJar")
 	captain = data.get("captain")
+	practice = data.get("practice")
 	shut.resize(w * h)
 	pier.resize(w * h)
 	for d in doors:

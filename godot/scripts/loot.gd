@@ -388,7 +388,10 @@ func give_word(w: String) -> void:
 
 ## A monster has fallen (monster.gd _die): his experience, and what it leaves (game.ts dropLoot).
 func on_kill(m) -> void:
-	gain_xp(m.xp)
+	# (THE PRACTICE ROOM: no experience, and nothing to collect but the odd life orb: game.ts gainXp, dropLoot)
+	var practising: bool = main != null and main.get("practice") == true
+	if not practising:
+		gain_xp(m.xp)
 	hero.heal_flat(hero.stats["life_on_kill"])
 	kills += 1
 	if kills % KILLS_A_POTION == 0 and potions < POTIONS:
@@ -413,6 +416,10 @@ func on_kill(m) -> void:
 	if main != null and main.get("quest1620") != null:
 		main.quest1620.killed(m)
 	if m.summoned:
+		return
+	if practising:
+		if randf() < float(_tune["dropOrb"]):
+			_orb(at)
 		return
 	# (FLOOR 13'S DOUBLE BOSS: the first of the pair to fall leaves part of a boss's hoard, the last the whole of it; the other
 	# fights on alone: game.ts kill)

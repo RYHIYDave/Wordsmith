@@ -13,6 +13,8 @@ const Words := preload("res://scripts/words.gd")
 
 ## (his level, and whether the wordsmith's ring is lit: what opens the slots)
 ## His class (main.gd set_class): whose three moves these are, and what they grow with.
+## (THE PRACTICE ROOM: every slot open: practice.gd)
+var practice := false
 var cls := "warrior"
 var level := 1
 var ring := false
@@ -30,9 +32,10 @@ var hushed := false
 func set_level(lv: int, lit: bool) -> void:
 	level = lv
 	ring = lit
-	var n: Array = Words.socket_count(lv) if lit else [0, 0]
+	# (THE PRACTICE ROOM is for trying every combination: every slot open there, whatever the level: game.ts slots, moveOpen)
+	var n: Array = Words.socket_count(999 if practice else lv) if lit or practice else [0, 0]
 	for i in 3:
-		var open: bool = lit and Words.move_open(i, lv)
+		var open: bool = practice or (lit and Words.move_open(i, lv))
 		while front[i].size() < (int(n[0]) if open else 0):
 			front[i].append(null)
 		while behind[i].size() < (int(n[1]) if open else 0):

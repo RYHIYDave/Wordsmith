@@ -124,6 +124,9 @@ static var new_hero := {}
 ## wakes him in town from `trial_file`, kept in memory as the game began again, never from the save; his Lexicon and stash his own.
 var trial := 0
 static var trial_file := {}
+## THE PRACTICE ROOM (game.ts forPractice, practice): a seasoned throwaway hero in the arena, packs coming on and on; nothing there
+## can kill him, nothing drops but life orbs, nothing is saved (practice.gd)
+var practice := false
 var hero_mode := "normal"
 ## NORMAL OR HARDCORE (game/modes.ts; game.ts die, wakes, wakeSave, losses; main.ts wake; ui/panels.ts drawDeath, wakeLine): his
 ## rulebook's “Every hero is made in one of two modes, picked at the start and kept for life.” A NORMAL hero who falls in a dungeon
@@ -311,7 +314,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -320,7 +323,10 @@ func _ready() -> void:
 	var tf := trial_file.duplicate()
 	trial_file = {}
 	trial = int(fresh.get("trial", tf.get("trial", 0)))
-	if trial > 0:
+	practice = fresh.get("practice", false) == true
+	hero.practice = practice
+	hero.loadout.practice = practice
+	if trial > 0 or practice:
 		saving = false
 	if saving and _arg("only") != "save_write" and not (_arg("only") == "fall_live" and preload("res://scripts/check_fall.gd").stage == 0) \
 			and not (_arg("only") == "title_live" and preload("res://scripts/check_title.gd").stage == 0):
@@ -343,7 +349,11 @@ func _ready() -> void:
 		first = "floor%d" % trial
 	elif trial == 1:
 		first = "floor1"
-	if trial > 0 and tf.is_empty():
+	elif practice:
+		_restored = practice_run(str(fresh["cls"]))
+		Save.restore_run(self, _restored)
+		first = "practice"
+	if (trial > 0 or practice) and tf.is_empty():
 		# (a test hero is not taught: the game's forTrial has no lessons, its Game made without a guide)
 		loot.taught = true
 	# (HIS CLASS: the saved hero's, or for a check the one asked for (--cls=ranger); a new game's the Warrior until the hero choice)
@@ -382,6 +392,10 @@ func _ready() -> void:
 		_warp_in()
 		if saving:
 			Save.write(self)
+		if practice:
+			# (game.ts beginPractice: what he is told)
+			loot.say("Nothing here can kill you, and nothing is saved.", Color("#f0e8ff"))
+			loot.say("Practice room. Every word is yours: open the INVENTORY.", Color("#7af8f0"))
 		if trial > 0:
 			# (game.ts readyFor: what he is told)
 			loot.say("Test hero, level %d. Not saved. Your words are in the INVENTORY." % loot.level if trial >= 2 else "Test hero. Not saved.", Color("#7af8f0"))
@@ -413,7 +427,7 @@ func title_up(first: String) -> Node:
 	sfx.process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().paused = true
 	ts.resumed.connect(_resume)
-	ts.picked.connect(func(c: String, m: String) -> void: _title_picked(c, m, first, ts.trial))
+	ts.picked.connect(func(c: String, m: String) -> void: _title_picked(c, m, first, ts.trial, ts.practice))
 	return ts
 
 
@@ -434,7 +448,13 @@ func _resume() -> void:
 
 ## A new hero picked on the start screen's class cards (main.ts pickClass, newRun): with no hero saved, the run begins here; over a
 ## saved one, the save keeps the Lexicon and the stash and drops his run, and the game begins again from it with the new hero.
-func _title_picked(c: String, m: String, first: String, floor := 0) -> void:
+func _title_picked(c: String, m: String, first: String, floor := 0, room := false) -> void:
+	if room:
+		# (THE PRACTICE ROOM: the game begun again with the practice hero in the arena; never saved)
+		new_hero = {"cls": c, "practice": true}
+		get_tree().paused = false
+		get_tree().reload_current_scene()
+		return
 	if floor > 0:
 		# (THE LEVEL SELECT: the game begun again with the test hero made ready for the floor picked, straight to it; never saved)
 		new_hero = {"cls": c, "trial": floor}
@@ -468,10 +488,19 @@ func trial_run(c: String, d: int) -> Dictionary:
 		"bag": [], "words": h.get("words", {}), "gold": 0, "depth": d, "cleared": d - 1, "way": d, "ring": true}
 
 
+## THE PRACTICE ROOM'S HERO for a class (game.ts forPractice, beginPractice: made by the game itself, assets/loot/trials.json
+## `practice`), as a run to be put back: level 10, the ring lit, his gear, one of every other weapon in his bag, six of every word.
+func practice_run(c: String) -> Dictionary:
+	var P: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/loot/trials.json"))["practice"]
+	var h: Dictionary = P.get(c, P["warrior"])
+	return {"cls": c, "mode": "normal", "level": h.get("level", 10), "xp": 0, "points": 0, "attrs": h.get("attrs", {}), "gear": h.get("gear", {}),
+		"bag": (h.get("bag", []) as Array).filter(func(it): return it is Dictionary), "words": h.get("words", {}), "gold": 0, "depth": 4, "cleared": 0, "way": 1, "ring": true}
+
+
 ## THE PAUSE PANEL'S THIRD BUTTON (main.ts: "End run", or for a test hero "Leave"): back to the start screen. A hero of one's own is
 ## given up (main.ts clearSave: the run gone from the save, the Lexicon and the stash kept); a test hero leaves the save as it was.
 func end_run() -> void:
-	if saving and trial == 0:
+	if saving and trial == 0 and not practice:
 		Save.write(self, null)
 	trial_file = {}
 	new_hero = {}
@@ -757,6 +786,16 @@ func _build(where: String, arrive: String) -> void:
 	_place.move_child(shadows, fx.get_index() + 1)
 	if not is_home(where):
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)
+	# (THE PRACTICE ROOM: its packs coming on and on, up out of rifts: practice.gd)
+	if where == "practice":
+		var pr := preload("res://scripts/practice.gd").new()
+		pr.main = self
+		pr.hero = hero
+		pr.monsters = monsters
+		pr.map = map
+		pr.stands = stands
+		pr.flats = flats
+		_place.add_child(pr)
 	# (the films of what this floor's kinds mark and throw up: fetched now, behind the game; the other floors' let go)
 	var kinds := {}
 	for m in monsters.list:
@@ -854,7 +893,8 @@ func _build(where: String, arrive: String) -> void:
 		way_depth = maxi(way_depth, map.depth)
 	# (FLOOR_NAMES: the floor's own name across the screen as he comes into it, its level under it: ui/cards.ts drawFloorCard;
 	# gone with the floor if he leaves it while it is still up)
-	if not is_home(where) and _hud != null:
+	# (none in the practice room: game.ts, FLOOR_NAMES `!this.practice`)
+	if not is_home(where) and _hud != null and not practice:
 		_hud.floor_card_for(where)
 	elif _hud != null:
 		_hud.floor_card = {}
@@ -2222,6 +2262,9 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "trial":
 		await preload("res://scripts/check_title.gd").new().trial_run(self, hero, dir)
+		return
+	if _arg("only") == "practice":
+		await preload("res://scripts/check_title.gd").new().practice_check(self, hero, dir)
 		return
 	if _arg("only") == "title":
 		await preload("res://scripts/check_title.gd").new().run(self, hero, dir)

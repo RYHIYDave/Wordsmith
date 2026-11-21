@@ -5,7 +5,7 @@
 // as the game draws it, whatever floor it is: no second copy of the renderer's rules is kept here.
 //
 //   node tools/godot_record.mjs <place> [--seed 1] [--samples 120] [--page dist/godot_rec.html]
-//     <place>: town, or a floor's number (1 to 20).
+//     <place>: town, camp, practice (the start screen's practice room: game.ts forPractice), or a floor's number (1 to 20).
 //   The page is the game as it is in the working tree: node tools/build_to.mjs dist/godot_rec.html (made if it is not there).
 //
 // Written to godot/assets/looks/, for P = town or floor<N>:
@@ -52,11 +52,12 @@ const opt = (name, def) => { const i = args.indexOf('--' + name); return i >= 0 
 const place = args.find((a) => !a.startsWith('--') && args[args.indexOf(a) - 1]?.startsWith('--') !== true) ?? args[0];
 if (!place) { console.error('which place? town, camp, or a floor number'); process.exit(1); }
 // (camp: THE CAMP INSIDE VELLUM'S GATE, his town from floor 10 on: game/camp.ts; depth -1 here)
-const depth = place === 'town' ? 0 : place === 'camp' ? -1 : Number(place);
-if (place !== 'town' && place !== 'camp' && !(depth >= 1 && depth <= 20)) { console.error(`not a place: ${place}`); process.exit(1); }
+// (practice: THE PRACTICE ROOM, the start screen's: game.ts forPractice, makeArena; depth -2 here)
+const depth = place === 'town' ? 0 : place === 'camp' ? -1 : place === 'practice' ? -2 : Number(place);
+if (place !== 'town' && place !== 'camp' && place !== 'practice' && !(depth >= 1 && depth <= 20)) { console.error(`not a place: ${place}`); process.exit(1); }
 // (--hold n: a stronghold's hall on floors 6 to 10, as it is drawn from in it: floor<N>_hold<n>, REC.hall)
 const hold = opt('hold', null) === null ? null : Number(opt('hold', '0'));
-const name = depth === 0 ? 'town' : depth === -1 ? 'camp' : hold !== null ? `floor${depth}_hold${hold}` : `floor${depth}`;
+const name = depth === 0 ? 'town' : depth === -1 ? 'camp' : depth === -2 ? 'practice' : hold !== null ? `floor${depth}_hold${hold}` : `floor${depth}`;
 const seed = Number(opt('seed', '1'));
 const N = Number(opt('samples', '120'));
 const pageFile = path.resolve(ROOT, opt('page', 'dist/godot_rec.html'));
@@ -90,7 +91,7 @@ await page.evaluate((s) => window.__rec.begin('warrior', s), seed);
 // them, which here would come and go between the frames; the Godot side groups them its own way, below)
 await page.evaluate(() => { if (window.__dbg.topsCache) window.__dbg.topsCache.on = false; });
 await settled();
-const where = await page.evaluate((dp) => window.__rec.enter(dp), depth);
+const where = await page.evaluate(([dp, s]) => window.__rec.enter(dp, s), [depth, seed]);
 await settled();
 // (the films the side painter makes: waited for, so that the place is recorded with them and not with what stands in for them)
 const painted = async (what) => {
