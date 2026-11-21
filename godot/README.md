@@ -586,6 +586,13 @@ through them in their own opening pictures.
   Quiet Tower and singing in the Moth's fight), the whole court, the captain's voice. In the saved game. `--only=quests1620`
   (`check_quest1620.gd`): 21 steps.
 
+## The shadows under the figures (the cloud chat, 21 Nov 2026)
+
+`scripts/shadows.gd`, as the game's render.ts `shadow`: one soft black oval (mage_look.gd `blot`) on the floor under every
+monster in sight (its `r` x 0.75 tiles round, at 0.7) and under the hero (0.36 round), smaller and fainter the higher he is off
+the floor (the Warrior's Lunge, 9 pixels at its middle; the Veteran as high as his frame lifts him, brawler.gd `lift_now`). Over
+the floor and its marks, under everything that stands. (The Golem's and the Mage's orbs' are their own looks'.)
+
 ## The other heroes (the cloud chat, 21 Nov 2026)
 
 His pick, asked what to build next: “The other heroes (Recommended)”. Every hero of the game is in it now, each by the game's own
@@ -637,7 +644,7 @@ hero, who wakes in town; here he is back where the last save left him), the camp
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
 breaks, what stands behind raised ground cut off by it, menus (a new hero is picked on the class cards; there is no title menu to
 go BACK to), the title screen's music and the ring's moving light; the heroes' skill trees and talents (the Tinkerer's Golem has its
-cannon arm, as he picked it), the modes' rules for a fallen hero, and the soft shadows under the hero and the monsters (render.ts shadow: here drawn only under the Golem and the Mage's orbs).
+cannon arm, as he picked it), the modes' rules for a fallen hero.
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made

@@ -33,6 +33,7 @@ const Temple := preload("res://scripts/temple.gd")
 const Furnace := preload("res://scripts/furnace.gd")
 const Fx := preload("res://scripts/fx.gd")
 const Wakes := preload("res://scripts/wakes.gd")
+const Shadows := preload("res://scripts/shadows.gd")
 const Town := preload("res://scripts/town.gd")
 ## THE SAVED GAME (save.gd: main.ts writeSave, readSave; game.ts save, restore)
 const Save := preload("res://scripts/save.gd")
@@ -533,6 +534,13 @@ func _build(where: String, arrive: String) -> void:
 	_place.move_child(wakes, perils.get_index())
 	hero.wakes = wakes
 	_place.add_child(monsters)
+	# (the soft shadow under every figure, the hero's and each monster's: shadows.gd. Over the floor and its marks, under what
+	# stands)
+	var shadows := Shadows.new()
+	shadows.hero = hero
+	shadows.monsters = monsters
+	_place.add_child(shadows)
+	_place.move_child(shadows, fx.get_index() + 1)
 	if not is_home(where):
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)
 	# (the films of what this floor's kinds mark and throw up: fetched now, behind the game; the other floors' let go)

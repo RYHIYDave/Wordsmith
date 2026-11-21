@@ -56,6 +56,17 @@ func _init(hero) -> void:
 	MOVES = V["moves"]
 
 
+## How high off the floor his lowest foot is now, game pixels (veteran_fx.ts liftOf: vetLiftAt of the frame he is in; 0 out of
+## a move): the shadow under him shrinks and fades by it (shadows.gd).
+func lift_now() -> float:
+	if mv.is_empty():
+		return 0.0
+	var L: Array = MOVES[mv["id"]]["lift"]
+	if L.is_empty():
+		return 0.0
+	return float(L[clampi(floori(float(mv["f"])), 0, L.size() - 1)])
+
+
 func _sfx(name: String, vol: float) -> void:
 	h.sfx.play(name, linear_to_db(vol))
 
