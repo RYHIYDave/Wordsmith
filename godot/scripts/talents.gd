@@ -17,7 +17,8 @@ static var D := {}
 const PORTED := {
 	"warrior": ["greatsword", "sweepingcut", "drilledleap", "footwork", "thickskin", "shieldwall", "secondwind", "bulwark",
 		"honededge", "giantslayer", "resolute", "executioner", "mastertop", "unbreakable"],
-	"ranger": [],
+	"ranger": ["fleet", "windrunner", "keeneye", "steadyaim", "quickdraw", "longshot", "lightstep", "huntersmark", "widetraps",
+		"minefield", "splitshot", "hail", "piercing", "farsight"],
 	"mage": [],
 	"warlock": ["hunger", "feast", "bloodlust", "branded", "hexchain", "phantomstep", "withering", "pyre", "blazingarm", "souldebt",
 		"lastrites"],

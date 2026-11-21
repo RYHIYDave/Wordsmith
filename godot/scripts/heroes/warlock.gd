@@ -39,7 +39,6 @@ var pact := 0.0
 ## "blaze" his Blazing Arm's burst: game.ts warlockBy)
 var lust := 0
 var _by := ""
-const Talents := preload("res://scripts/talents.gd")
 
 
 func _T() -> Dictionary:

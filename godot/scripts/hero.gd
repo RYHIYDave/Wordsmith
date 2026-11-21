@@ -489,7 +489,7 @@ func avg_hit(i: int, frac: float) -> float:
 ## Prismheart, Thunder, the Rot Axe, the melds, the Warlock, Splitting, Giant Slayer, Kindling, Deep Freeze, Blight, Hexing,
 ## Stilling, the Warhammer's stuns and staggers, Rend, Widowfall, Binding, Bleeding, Culling, Forking, the shock that Overload
 ## works on, Charged.)
-func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
+func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	# (what is shut in a room is out of reach; one still crawling up out of the ground is only a picture)
 	if not is_instance_valid(m) or m.dead or m.state == "rise" or monsters.shut_in(m):
 		return
@@ -504,7 +504,10 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 	var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(el) + melds.fervor_pct(el) + might) / 100.0)
 	# (THE SKILL TREES: what the talents make of a hit: game.ts talentHitMult)
 	dmg *= _talent_hit_mult(m)
-	var crit: bool = randf() * 100.0 < stats["crit_chance"]
+	var crit: bool = randf() * 100.0 < stats["crit_chance"] or sure
+	# (THE SKILL TREES REMADE: Keen Eye, the first arrow at an enemy that has not noticed him a certain critical)
+	if m.state == "sleep" and has("keeneye") and str(Words.skill(loadout.id(i)).get("kind", "")) in ["projectile", "volley"]:
+		crit = true
 	# (THE SKILL TREES: Master Stroke, every fourth hit landed on its own target a certain critical)
 	if not quiet and has("mastertop"):
 		_strokes += 1
@@ -517,7 +520,8 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 		crit = true
 		m.mark_t = 0.0
 	if crit:
-		dmg *= 1.0 + stats["crit_mult"] / 100.0
+		# (THE SKILL TREES: Hunter's Mark, Precise's mark makes a triple critical)
+		dmg *= 1.0 + stats["crit_mult"] / 100.0 * (float(Talents.D["tune"]["huntersMark"]) if spent and has("huntersmark") else 1.0)
 	# (WORDMELDING: Avalanche behind, a hit on a chilled enemy hits harder: melds.gd)
 	dmg = melds.avalanche(m, r, dmg, quiet)
 	dmg = maxf(1.0, roundf(dmg))
@@ -2039,6 +2043,8 @@ func readiness() -> Dictionary:
 func talents_changed() -> void:
 	if loadout != null:
 		loadout.refresh()
+	if kit != null and kit.has_method("talents_changed"):
+		kit.talents_changed()
 
 
 ## Whether talent `id` is his (game.ts has).

@@ -613,7 +613,10 @@ Bound Demon (their own figures). THE TINKERER'S: Bombs Away, Fortune, Cluster Vi
 in their brew's colours, baked by tools/godot_tinkerer.ts), Alchemy, The Big One, Lightning Rod (the decoys: monsters.gd
 `decoys`, monster.gd _drawn_to_decoy, as game.ts drawnToDecoy), Shrapnel, Prospector and Overdrive (heroes/tinkerer.gd,
 tinkerer_look.gd: the tar puddles, the big vial's ring, the little vials). Not yet: the Contraption, the Gun Arm, Mark II and
-Growth Serum.
+Growth Serum. THE RANGER'S: Fleet, Windrunner, Keen Eye, Steady Aim, Quick Draw, Long Shot, Light Step, Hunter's Mark, Wide
+Traps, Minefield, Split Shot, Hail, Ricochet (`piercing`) and Far Sight (heroes/ranger.gd, kit.gd's shots, hero.gd hit_monster).
+Not yet: Venom (its cloud), and his three moves to learn (Snare, Snipe, Rally). The Mage's tree is not brought over yet (her
+burning ground, charge, ice and Aura, and her three moves to learn).
 
 ## The shadows under the figures, and the named ones' rings (the cloud chat, 21 Nov 2026)
 

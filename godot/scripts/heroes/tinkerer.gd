@@ -36,7 +36,6 @@ var land_t := -1.0
 var vials_thrown := 0
 var tars: Array = []
 var brewing := false
-const Talents := preload("res://scripts/talents.gd")
 
 
 func _T() -> Dictionary:

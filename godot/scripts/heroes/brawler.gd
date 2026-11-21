@@ -50,7 +50,6 @@ const HERO_R := 0.3
 
 ## (THE VETERAN'S TREE: Fire Starter, landed from his dodge jump: his next tap or hold comes out in fire)
 var fire_ready := false
-const Talents := preload("res://scripts/talents.gd")
 
 
 ## THE VETERAN'S TREE (game/talents.ts VETERAN_TREE; game.ts, his moves; veteran.ts VET_TALENTS): `id` his, and its numbers.

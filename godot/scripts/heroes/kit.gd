@@ -10,6 +10,8 @@ extends RefCounted
 
 const Iso := preload("res://scripts/iso.gd")
 const Words := preload("res://scripts/words.gd")
+## (THE SKILL TREES: talents.gd, its numbers for every class's tree)
+const Talents := preload("res://scripts/talents.gd")
 
 var h  # hero.gd
 var cls := ""
@@ -171,6 +173,9 @@ func _move_step(_dt: float) -> void:
 
 ## How his walk is slowed now: an attack slows him for a moment from when it is begun (game.ts updateHero).
 func walk_slow() -> float:
+	# (THE RANGER'S TREE: Fleet, he shoots on the run: loosing an arrow no longer slows him)
+	if h.has("fleet") and not attack.is_empty() and str(_def(int(attack.get("skill", 0)))["kind"]) in ["projectile", "volley"]:
+		return 1.0
 	if not attack.is_empty() and float(attack["age"]) < float(T["tune"]["attackSlowTime"]):
 		return float(T["tune"]["attackSlow"])
 	return 1.0
@@ -385,6 +390,19 @@ func _step_shots(dt: float) -> void:
 			travel -= stp
 			var n := Vector2(float(p["x"]) + v.x / sp * stp, float(p["y"]) + v.y / sp * stp)
 			if not h._clear(n.x, n.y):
+				# (THE RANGER'S TREE REMADE: Ricochet, his arrow bounces off the wall once, and flies on)
+				if p.get("look", "") == "arrow" and not p.get("bounced", false) and h.has("piercing"):
+					p["bounced"] = true
+					var bx: bool = not h._clear(n.x, float(p["y"]))
+					var by: bool = not h._clear(float(p["x"]), n.y)
+					var corner: bool = not bx and not by
+					if bx or corner:
+						p["vx"] = -float(p["vx"])
+					if by or corner:
+						p["vy"] = -float(p["vy"])
+					v = Vector2(p["vx"], p["vy"])
+					h._tell({"t": "spark", "x": p["x"], "y": p["y"], "el": p["element"], "n": 4})
+					continue
 				# (what the hero shoots may meet a sealed door, and open it)
 				if h.doors != null:
 					h.doors.unseal({"front": h.loadout.wfronts(int(p["skill"])), "behind": h.loadout.wbehinds(int(p["skill"]))}, n, 0.1)
@@ -425,9 +443,17 @@ func _shot_hit(p: Dictionary, m) -> void:
 	var i: int = p["skill"]
 	var r: Dictionary = h.loadout.r(i)
 	var at: Vector2 = m.world
-	if p.get("look", "") == "arrow":
+	var arrow: bool = p.get("look", "") == "arrow"
+	if arrow:
 		h.sfx.play("arrowHit", linear_to_db(0.5))
-	h.hit_monster(m, i, float(p["dmg"]), false)
+	# (THE RANGER'S TREE REMADE: Far Sight, an arrow flown past eight tiles a certain critical)
+	var far: bool = arrow and float(p.get("flown", 0.0)) > float(Talents.D["tune"]["farSight2"]["at"]) and h.has("farsight")
+	h.hit_monster(m, i, float(p["dmg"]), false, far)
+	# (Long Shot, the arrow knocks back what it hits; Split Shot, one that kills splits into three, flying on)
+	if arrow and not m.dead and h.has("longshot"):
+		m.throw_from(m.world - Vector2(p["vx"], p["vy"]).normalized(), float(Talents.D["tune"]["longShot2"]["far"]))
+	if arrow and m.dead and not p.get("split", false) and h.has("splitshot"):
+		_split_arrow(p, m)
 	# (what goes through several is still one blow)
 	if not p.get("mighted", false):
 		p["mighted"] = true
@@ -548,3 +574,21 @@ func clear() -> void:
 	move = {}
 	swing_step = {}
 	_clear_own()
+
+
+# --- THE RANGER'S TREE, on any hero's arrows (game.ts splitArrow) ---
+
+
+## (Split Shot) An arrow that killed `m` splits into three where it fell, flying on in a fan; they split no more.
+func _split_arrow(p: Dictionary, m) -> void:
+	var S: Dictionary = Talents.D["tune"]["splitShot2"]
+	var base := atan2(float(p["vy"]), float(p["vx"]))
+	var sp := Vector2(p["vx"], p["vy"]).length()
+	var n: int = S["n"]
+	for k in n:
+		var a := base + (k - (n - 1) / 2.0) * float(S["fan"])
+		var u := Vector2(cos(a), sin(a))
+		var at: Vector2 = m.world + u * (m.r + 0.15)
+		shots.append({"x": at.x, "y": at.y, "vx": u.x * sp, "vy": u.y * sp, "r": p["r"], "dist": float(S["far"]), "dmg": p["dmg"], "element": p["element"],
+			"pierce": false, "hit": [m], "volley": true, "skill": p["skill"], "trail": 0.0, "words": p["words"], "age": 0.0, "n": 0,
+			"flown": float(p.get("flown", 0.0)), "look": "arrow", "split": true, "mighted": true, "left": true})

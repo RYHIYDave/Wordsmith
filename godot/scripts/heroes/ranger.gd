@@ -23,11 +23,40 @@ var _next_volley := 0
 
 func _init(hero) -> void:
 	super(hero, "ranger")
+	# (THE RANGER'S TREE: Light Step, his roll holds three charges)
+	if h.has("lightstep"):
+		max_charges[2] = int(Talents.D["tune"]["lightStep"]["charges"])
+		charges[2] = max_charges[2]
+
+
+## (his tree, on a change of his talents: Light Step's charges, three; two without)
+func talents_changed() -> void:
+	var most: int = int(Talents.D["tune"]["lightStep"]["charges"]) if h.has("lightstep") else 2
+	if most != max_charges[2]:
+		max_charges[2] = most
+		charges[2] = mini(charges[2], most)
+
+
+## (Steady Aim: how long he has stood still; Quick Draw: his arrows loosed)
+var still_t := 0.0
+var _draws := 0
+var quick_n := 0
+var _was := Vector2.INF
 
 
 func _step_own(dt: float) -> void:
+	# (Steady Aim: how long he has stood still, not moving nor rolling: game.ts stillT)
+	still_t = 0.0 if (_was != Vector2.INF and h.world.distance_to(_was) > 0.001) or not move.is_empty() else still_t + dt
+	_was = h.world
 	_step_volleys(dt)
 	_step_traps(dt)
+
+
+## A kill of his (game.ts talentKill): Windrunner, a roll back.
+func on_kill(_m) -> void:
+	if h.has("windrunner") and charges[2] < max_charges[2]:
+		charges[2] += 1
+		cd[2] = float(h.loadout.r(2)["cooldown"]) if charges[2] < max_charges[2] else 0.0
 
 
 # =====================================================================================================================
@@ -47,16 +76,30 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 		h._time_word_sound(i)
 	if def["kind"] == "projectile":
 		var base := atan2(way.y, way.x)
+		# (THE RANGER'S TREE REMADE: Steady Aim, a second stood still and the next arrow goes through every enemy in its line)
+		var steady: bool = primary and h.has("steadyaim") and still_t >= float(Talents.D["tune"]["steadyAim2"]["still"])
+		if steady:
+			still_t = 0.0
+		var loose := func(at: Vector2, hit: Array) -> void:
+			var n: int = r["count"]
+			for k in n:
+				var a := base + (0.0 if n == 1 else (k - (n - 1) / 2.0) * 0.16)
+				var u := Vector2(cos(a), sin(a))
+				shots.append({"x": at.x + u.x * 0.4, "y": at.y + u.y * 0.4, "vx": u.x * float(r["proj_speed"]), "vy": u.y * float(r["proj_speed"]),
+					"r": minf(0.6, float(def["radius"]) * float(r["size"]) * (1.5 if float(r["splash"]) >= 1.5 else 1.0)), "dist": float(def["range"]),
+					"dmg": each, "element": r["element"], "pierce": bool(r["pierce"]) or steady, "hit": hit, "volley": n > 1, "skill": i, "trail": 0.0,
+					"words": words, "age": 0.0, "n": k, "flown": 0.0, "look": "arrow"})
 		# (the shots of one use keep one list of who they have hit between them: an enemy before the bow takes one of a Twin pair)
-		var hit: Array = []
-		var n: int = r["count"]
-		for k in n:
-			var a := base + (0.0 if n == 1 else (k - (n - 1) / 2.0) * 0.16)
-			var u := Vector2(cos(a), sin(a))
-			shots.append({"x": from.x + u.x * 0.4, "y": from.y + u.y * 0.4, "vx": u.x * float(r["proj_speed"]), "vy": u.y * float(r["proj_speed"]),
-				"r": minf(0.6, float(def["radius"]) * float(r["size"]) * (1.5 if float(r["splash"]) >= 1.5 else 1.0)), "dist": float(def["range"]),
-				"dmg": each, "element": r["element"], "pierce": bool(r["pierce"]), "hit": hit, "volley": n > 1, "skill": i, "trail": 0.0,
-				"words": words, "age": 0.0, "n": k, "flown": 0.0, "look": "arrow"})
+		loose.call(from, [])
+		# (THE RANGER'S TREE REMADE: Quick Draw, every fifth arrow fires twice: the second a moment after, from where he is then)
+		if primary and h.has("quickdraw"):
+			_draws += 1
+			var Q: Dictionary = Talents.D["tune"]["quickDraw2"]
+			if _draws % int(Q["every"]) == 0:
+				_after(float(Q["gap"]), func() -> void:
+					if h.alive and h.loadout.id(i) == "shot":
+						quick_n += 1
+						loose.call(h.world, []))
 	elif def["kind"] == "volley":
 		# (up from the bow, and a moment later coming down round where it was aimed: as near there as he can see, within reach)
 		var p := _reach_point(to, float(def["range"]))
@@ -64,9 +107,17 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 		h.sfx.play("volley", linear_to_db(0.5 if echo else 0.9))
 		_say({"t": "volleyUp", "x": from.x, "y": from.y, "tx": p.x, "ty": p.y, "r": rad, "el": r["element"], "words": words, "echo": echo})
 		_next_volley += 1
-		volleys.append({"id": _next_volley, "x": p.x, "y": p.y, "r": rad, "t": -float(T["tune"]["volleyDelay"]), "n": 0,
+		var vl := {"id": _next_volley, "x": p.x, "y": p.y, "r": rad, "t": -float(T["tune"]["volleyDelay"]), "n": 0,
 			"total": maxi(1, roundi(float(T["tune"]["volleyLife"]) / float(T["tune"]["volleyEvery"]))), "told": 0, "next": 0.0,
-			"skill": i, "frac": each, "count": r["count"], "element": r["element"], "echo": echo, "wake": primary})
+			"skill": i, "frac": each, "count": r["count"], "element": r["element"], "echo": echo, "wake": primary}
+		# (THE RANGER'S TREE REMADE: Hail, the rain follows the enemy it was aimed at)
+		if h.has("hail") and h.monsters != null:
+			var bd: float = Talents.D["tune"]["hail2"]["pick"]
+			for m in h.monsters.list:
+				if is_instance_valid(m) and not m.dead and not h.monsters.shut_in(m) and m.world.distance_to(p) < bd:
+					bd = m.world.distance_to(p)
+					vl["follow"] = m
+		volleys.append(vl)
 	# ("of Echoes": the move made again a moment later, weaker, from where it was made)
 	if primary and float(r["echo"]) > 0.0:
 		var again := func() -> void: _deliver(i, from, to, float(h.loadout.r(i)["echo"]), false)
@@ -106,6 +157,13 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 	h._invuln = maxf(h._invuln, 0.06)
 	# (his trap where the roll began; Twin, a second where it ends; "of Echoes", a weaker one a moment later)
 	_lay_trap(2, x0, float(r["count_dmg"]))
+	# (THE RANGER'S TREE: Minefield, two more in a fan behind where the roll began)
+	if h.has("minefield"):
+		var MF: Dictionary = Talents.D["tune"]["minefield"]
+		for a in [-0.7, 0.7]:
+			var b := x0 + Vector2(-dir.x * cos(a) - dir.y * sin(a), -dir.y * cos(a) + dir.x * sin(a)) * float(MF["spread"])
+			if h._clear(b.x, b.y):
+				_lay_trap(2, b, float(r["count_dmg"]))
 	if int(r["count"]) > 1 and end.distance_to(x0) > 1.0:
 		_lay_trap(2, end, float(r["count_dmg"]))
 	if float(r["echo"]) > 0.0:
@@ -127,7 +185,7 @@ func _move_step(dt: float) -> void:
 func _lay_trap(i: int, at: Vector2, frac: float) -> void:
 	var r: Dictionary = h.loadout.r(i)
 	traps.append({"x": at.x, "y": at.y, "arm": float(T["tune"]["trapArm"]), "life": float(T["tune"]["trapLife"]), "skill": i, "frac": frac, "element": r["element"]})
-	while traps.size() > int(T["tune"]["trapMax"]) * int(r["count"]):
+	while traps.size() > int(T["tune"]["trapMax"]) * int(r["count"]) * (int(Talents.D["tune"]["minefield"]["n"]) if h.has("minefield") else 1):
 		traps.pop_front()
 	h.sfx.play("trapSet")
 	_say({"t": "trapSet", "x": at.x, "y": at.y, "el": r["element"]})
@@ -153,7 +211,22 @@ func _step_traps(dt: float) -> void:
 			h.sfx.play("trapBoom")
 			h.kick(2.0)
 			var rad: float = float(_def(int(t["skill"]))["radius"]) * float(h.loadout.r(int(t["skill"]))["size"])
-			h._blast(int(t["skill"]), Vector2(t["x"], t["y"]), rad, float(t["frac"]), "blast", true, -4.0)
+			var tat := Vector2(t["x"], t["y"])
+			# (THE RANGER'S TREE REMADE: Wide Traps, what is near is pulled in, and then it bursts)
+			if h.has("widetraps"):
+				var W: Dictionary = Talents.D["tune"]["wideTraps2"]
+				for m in h.monsters.list:
+					if not is_instance_valid(m) or m.dead:
+						continue
+					var dd: float = m.world.distance_to(tat)
+					if dd > rad + float(W["reach"]) + m.r or dd <= float(W["to"]):
+						continue
+					m.throw_from(tat, -(dd - float(W["to"])), float(W["secs"]))
+				var sk: int = t["skill"]
+				var fr: float = t["frac"]
+				_after(float(W["secs"]), func() -> void: h._blast(sk, tat, rad, fr, "blast", true, -4.0))
+			else:
+				h._blast(int(t["skill"]), tat, rad, float(t["frac"]), "blast", true, -4.0)
 		elif float(t["life"]) <= 0.0:
 			traps.remove_at(i)
 
@@ -182,6 +255,18 @@ func _step_volleys(dt: float) -> void:
 		var words: Array = h.loadout.wfronts(i)
 		var reach: float = float(T["tune"]["volleyHit"]) * float(r["size"])
 		var every: float = T["tune"]["volleyEvery"]
+		# (Hail: the rain goes after the enemy it was aimed at)
+		var fm = v.get("follow")
+		if fm != null:
+			if not is_instance_valid(fm) or fm.dead:
+				v.erase("follow")
+			else:
+				var dd: float = fm.world.distance_to(Vector2(v["x"], v["y"]))
+				var go := minf(dd, float(Talents.D["tune"]["hail2"]["speed"]) * dt)
+				if dd > 0.01:
+					var u: Vector2 = (fm.world - Vector2(v["x"], v["y"])) / dd
+					v["x"] = float(v["x"]) + u.x * go
+					v["y"] = float(v["y"]) + u.y * go
 		# (each arrow told a moment ahead, so that it is seen coming down before it lands)
 		while int(v["told"]) < int(v["total"]) and float(v["t"]) >= int(v["told"]) * every - float(T["volleySeen"]):
 			for c in int(v["count"]):

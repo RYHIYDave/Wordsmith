@@ -306,6 +306,7 @@ func _ready() -> void:
 			for k in _restored["picks"]:
 				if hero.talents.has(k):
 					hero.picks[k] = str(_restored["picks"][k])
+		hero.talents_changed()
 	_build(first, "start")
 	if not _restored.is_empty():
 		Save.restore_bought(self, _restored)

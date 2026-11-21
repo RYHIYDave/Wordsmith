@@ -93,6 +93,8 @@ func run(main, hero, d: String) -> void:
 	await _warlock()
 	# THE TINKERER'S TALENTS
 	await _tinkerer()
+	# THE RANGER'S TALENTS
+	await _ranger()
 	# THE PAGE, for each class
 	var inv = M._inv
 	for cls in ["warrior", "ranger", "mage", "warlock", "tinkerer", "brawler"]:
@@ -455,3 +457,81 @@ func _tinkerer() -> void:
 	h.monsters.decoys.clear()
 	kit.golems = []
 	h.talents = []
+
+
+func _ranger() -> void:
+	M.set_class("ranger", true)
+	M.loot.level = 50
+	h.life = h.max_life
+	h.face = Vector2(1, 0)
+	await _run(0.3)
+	var kit = h.kit
+	var T: Dictionary = Talents.D["tune"]
+	var m = _foe(2.0)
+	if m == null:
+		_line(false, "no monster to try the Ranger's talents on")
+		return
+	# Light Step and Windrunner: three rolls held; a kill gives one back
+	h.talents = ["fleet", "windrunner", "steadyaim", "quickdraw", "longshot", "lightstep"]
+	h.talents_changed()
+	var most: int = kit.max_charges[2]
+	kit.charges[2] = 1
+	kit.on_kill(m)
+	_line(most == 3 and kit.charges[2] == 2, "Light Step: his roll holds %d charges; Windrunner: a kill gives one back (1 to %d)" % [most, kit.charges[2]])
+	# Fleet: loosing an arrow no longer slows him
+	kit.attack = {"skill": 0, "age": 0.0, "wind": 0.1, "t": 0.5}
+	var fleet: float = kit.walk_slow()
+	h.talents = []
+	var slowed: float = kit.walk_slow()
+	kit.attack = {}
+	_line(fleet == 1.0 and slowed < 1.0, "Fleet: shooting he walks at %.0f%%, %.0f%% without it" % [fleet * 100.0, slowed * 100.0])
+	# Keen Eye and Hunter's Mark: a sleeping one's first arrow a certain critical; a spent mark a triple one
+	h.talents = ["keeneye", "steadyaim", "fleet", "quickdraw", "longshot", "lightstep", "huntersmark"]
+	h.stats["crit_chance"] = 0.0
+	m.life = m.max_life
+	m.state = "sleep"
+	var before: float = m.life
+	h.hit_monster(m, 0, 0.02, false)
+	var keen: bool = M.fx.last.get("hit", {}).get("crit", false) if M.fx != null else false
+	m.state = "chase"
+	h.stats["crit_chance"] = 5.0
+	_line(keen, "Keen Eye: his arrow at one that has not noticed him a certain critical (%.0f to %.0f)" % [before, m.life])
+	# Steady Aim: a second stood still, his next arrow goes through every enemy in its line
+	kit.still_t = 1.5
+	kit.shots.clear()
+	kit._deliver(0, h.world, h.world + h.face * 4.0, 1.0, true)
+	var pierce: bool = not kit.shots.is_empty() and bool(kit.shots[0]["pierce"])
+	_line(pierce and kit.still_t == 0.0, "Steady Aim: stood still a second, his next arrow goes through all in its line")
+	# Quick Draw: every fifth arrow fires twice
+	kit.shots.clear()
+	kit._draws = 0
+	kit.quick_n = 0
+	for n in 4:
+		kit._deliver(0, h.world, h.world + h.face * 4.0, 1.0, true)
+	await _run(0.2)
+	var after4: int = kit.quick_n
+	kit._deliver(0, h.world, h.world + h.face * 4.0, 1.0, true)
+	await _run(0.2)
+	_line(after4 == 0 and kit.quick_n == 1, "Quick Draw: four arrows loosed once each (%d again), the fifth loosed again a moment after (%d)" % [after4, kit.quick_n])
+	kit.shots.clear()
+	# Minefield: each roll lays three traps in a fan
+	h.talents = ["fleet", "windrunner", "steadyaim", "quickdraw", "longshot", "lightstep", "huntersmark", "widetraps", "minefield"]
+	h.talents_changed()
+	kit.traps.clear()
+	kit.charges[2] = 3
+	kit._use_evasive(h.world + Vector2(2, 0), Vector2(1, 0))
+	await _run(0.4)
+	_line(kit.traps.size() == 3, "Minefield: a roll lays three traps in a fan (%d)" % kit.traps.size())
+	kit.traps.clear()
+	# Split Shot: an arrow that kills splits into three that fly on
+	h.talents = ["fleet", "windrunner", "steadyaim", "quickdraw", "longshot", "lightstep", "huntersmark", "splitshot"]
+	m = _foe(2.0)
+	m.life = 1.0
+	kit.shots.clear()
+	var p := {"x": h.world.x, "y": h.world.y, "vx": 10.0, "vy": 0.0, "r": 0.3, "dist": 8.0, "dmg": 50.0, "element": "phys", "pierce": false, "hit": [], "volley": false,
+		"skill": 0, "trail": 0.0, "words": [], "age": 0.0, "n": 0, "flown": 0.0, "look": "arrow"}
+	kit._shot_hit(p, m)
+	_line(m.dead and kit.shots.size() == int(T["splitShot2"]["n"]), "Split Shot: the arrow that killed it splits into %d, flying on" % kit.shots.size())
+	kit.shots.clear()
+	h.talents = []
+	h.talents_changed()
