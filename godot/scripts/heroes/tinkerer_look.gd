@@ -53,6 +53,10 @@ var sparks: Array = []
 var trails: Array = []
 var launches: Array = []
 var lands: Array = []
+## (her tree's: The Big One's rings of her cyan; her puddles of tar ({x, y, r, t, life}), each painted once at its size)
+var rings: Array = []
+var tars: Array = []
+var _tar_pics := {}
 
 ## How long each lasts (seconds: tinkerer_fx.ts LIFE).
 const LIFE := {"burst": 18.0 / 30.0, "thud": 14.0 / 30.0, "blast": 24.0 / 30.0, "scorch": 40.0 / 30.0 * 2.0, "pound": 24.0 / 30.0, "arrive": 18.0 / 30.0, "impact": 10.0 / 30.0, "sparks": 16.0 / 30.0, "trail": 0.9}
@@ -131,9 +135,24 @@ func _exit_tree() -> void:
 func on_event(e: Dictionary, _fx) -> void:
 	match str(e.get("t", "")):
 		"vial":
-			lobs.append({"x0": e["x0"], "y0": e["y0"], "x1": e["x1"], "y1": e["y1"], "t": 0.0, "flight": e["flight"], "hand": int(e.get("id", -1)) < 0})
+			lobs.append({"x0": e["x0"], "y0": e["y0"], "x1": e["x1"], "y1": e["y1"], "t": 0.0, "flight": e["flight"], "hand": int(e.get("id", -1)) < 0,
+				"little": e.get("little", false), "big": e.get("big", false)})
 		"vialBurst":
-			bursts.append({"x": e["x"], "y": e["y"], "t": 0.0})
+			# (her tree's: little ones small; The Big One's twice the size, a ring of her cyan racing out and a thud of dust; Mad
+			# Mixture's in its brew's colours)
+			bursts.append({"x": e["x"], "y": e["y"], "t": 0.0, "k": 0.6 if e.get("little", false) else (2.0 if e.get("big", false) else 1.0), "brew": str(e.get("brew", ""))})
+			if e.get("big", false):
+				rings.append({"x": e["x"], "y": e["y"], "t": 0.0, "r": float(e["r"])})
+				thuds.append({"x": e["x"], "y": e["y"], "t": 0.0})
+		"tar":
+			tars.append({"x": e["x"], "y": e["y"], "t": 0.0, "r": float(e["r"]), "life": float(e["secs"])})
+		"decoyStruck":
+			# (an enemy's blow on the Golem, a lightning rod: shards off its iron)
+			if e.get("golem", false):
+				impacts.append({"x": e["x"], "y": e["y"], "t": 0.0, "k": 0.8})
+		"shrapnel":
+			impacts.append({"x": e["x"], "y": e["y"], "t": 0.0, "k": 2.2})
+			thuds.append({"x": e["x"], "y": e["y"], "t": 0.0})
 		"bombsAway":
 			var r = e.get("rocket")
 			if r != null:
@@ -164,8 +183,12 @@ func on_event(e: Dictionary, _fx) -> void:
 
 func _process(dt: float) -> void:
 	_t += dt
+	for i in range(tars.size() - 1, -1, -1):
+		tars[i]["t"] = float(tars[i]["t"]) + dt
+		if float(tars[i]["t"]) >= float(tars[i]["life"]):
+			tars.remove_at(i)
 	for pair in [[bursts, LIFE["burst"]], [thuds, LIFE["thud"]], [blasts, LIFE["blast"]], [scorches, LIFE["scorch"]], [pounds, LIFE["pound"]],
-			[arrives, LIFE["arrive"]], [impacts, LIFE["impact"]], [sparks, LIFE["sparks"]], [trails, LIFE["trail"]]]:
+			[arrives, LIFE["arrive"]], [impacts, LIFE["impact"]], [sparks, LIFE["sparks"]], [trails, LIFE["trail"]], [rings, 0.3]]:
 		var list: Array = pair[0]
 		for i in range(list.size() - 1, -1, -1):
 			list[i]["t"] = float(list[i]["t"]) + dt
@@ -392,6 +415,25 @@ func _draw() -> void:
 		var cx := _gx(x, y) * 2.0
 		var cy := _gy(x, y) * 2.0
 		draw_texture_rect(MageLook.blot(), Rect2(cx - w, cy - hh, w * 2.0, hh * 2.0), false, Color(1, 1, 1, clampf(minf(1.0, SHADOW * 1.2) * float(rk["a"]), 0.0, 1.0)))
+	# (her tree's TAR: its puddles, coming in a moment and drying up over the last half second)
+	for p in tars:
+		var ta := clampf(minf(float(p["t"]) / 0.12, (float(p["life"]) - float(p["t"])) / 0.5), 0.0, 1.0) * 0.92
+		var tex: Texture2D = _tar_pic(float(p["r"]))
+		var sz := tex.get_size()
+		draw_texture(tex, Vector2(roundf(_gx(p["x"], p["y"])) * 2.0 - floorf(sz.x / 2.0), roundf(_gy(p["x"], p["y"])) * 2.0 - floorf(sz.y / 2.0)), Color(1, 1, 1, ta))
+	# (THE BIG ONE: a ring of her cyan racing out to its burst's edge)
+	for p in rings:
+		var k := float(p["t"]) / 0.3
+		var u := 1.0 - pow(1.0 - k, 2.0)
+		var col := Color(BREW[2] if k < 0.4 else BREW[1]) if BREW.size() > 2 else Color("#7af4ff")
+		col.a = maxf(0.0, 1.0 - k)
+		var cx := roundf(_gx(p["x"], p["y"])) * 2.0
+		var cy := roundf(_gy(p["x"], p["y"])) * 2.0
+		var pts := PackedVector2Array()
+		for j in 49:
+			var a := j / 48.0 * TAU
+			pts.append(Vector2(cx + cos(a) * maxf(1.0, float(p["r"]) * 22.6 * u) * 2.0, cy + sin(a) * maxf(1.0, float(p["r"]) * 11.3 * u) * 2.0))
+		draw_polyline(pts, col, 4.0)
 	for s in scorches:
 		var a := maxf(0.0, minf(1.0, 1.5 - (float(s["t"]) / LIFE["scorch"]) * 1.5))
 		_piece(self, "scorch:%d" % _at(8, minf(0.99, float(s["t"]) / (SCORCH_N / 30.0))), _gx(s["x"], s["y"]), _gy(s["x"], s["y"]), a)
@@ -455,15 +497,49 @@ func draw_air(c: CanvasItem) -> void:
 		var u := float(l["t"]) / float(l["flight"])
 		var x := float(l["x0"]) + (float(l["x1"]) - float(l["x0"])) * u
 		var y := float(l["y0"]) + (float(l["y1"]) - float(l["y0"])) * u
-		var up := (30.0 if l["hand"] else 10.0) * (1.0 - u) + 4.0 * 30.0 * u * (1.0 - u)
-		_piece(c, "vial:%d" % (floori(float(l["t"]) * 18.0) % 8), _gx(x, y), _gy(x, y) - up)
+		var little: bool = l.get("little", false)
+		var up := (4.0 + 4.0 * 14.0 * u * (1.0 - u)) if little else (30.0 if l["hand"] else 10.0) * (1.0 - u) + 4.0 * 30.0 * u * (1.0 - u)
+		_piece(c, "vial:%d" % (floori(float(l["t"]) * 18.0) % 8), _gx(x, y), _gy(x, y) - up, 1.0, 0.6 if little else (1.8 if l.get("big", false) else 1.0))
 	for p in bursts:
-		_piece(c, "burst:%d" % _at(18, float(p["t"]) / LIFE["burst"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]))
+		var bk: String = "burst-%s" % p["brew"] if str(p.get("brew", "")) != "" else "burst"
+		_piece(c, "%s:%d" % [bk, _at(18, float(p["t"]) / LIFE["burst"])], _gx(p["x"], p["y"]), _gy(p["x"], p["y"]), 1.0, float(p.get("k", 1.0)))
 	for p in pounds:
 		_piece(c, "poundA:%d" % _at(24, float(p["t"]) / LIFE["pound"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]))
 	for p in arrives:
 		_piece(c, "arrive:%d" % _at(18, float(p["t"]) / LIFE["arrive"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]))
 	for p in impacts:
-		_piece(c, "impact:%d" % _at(10, float(p["t"]) / LIFE["impact"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]) - 12.0)
+		_piece(c, "impact:%d" % _at(10, float(p["t"]) / LIFE["impact"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]) - 12.0, 1.0, float(p.get("k", 1.0)))
 	for p in sparks:
 		_piece(c, "sparks:%d" % _at(16, float(p["t"]) / LIFE["sparks"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]))
+
+
+## (render/tinkerer_fx.ts tarPuddle) A puddle of her tar `r` tiles across its middle, painted once: black and glossy, its edge uneven
+## as a splash runs, its rim a little lighter, its gloss a thin crescent of light toward the top left (picture pixels).
+const TAR := ["#08060a", "#120d18", "#1e1626", "#3a3448"]
+
+
+func _tar_pic(r: float) -> Texture2D:
+	var key := roundi(r * 10.0)
+	if _tar_pics.has(key):
+		return _tar_pics[key]
+	var rr := key / 10.0
+	var rx := rr * 45.0
+	var ry := rr * 22.6
+	var w := ceili(rx * 2.4) + 6
+	var hh := ceili(ry * 2.4) + 6
+	var img := Image.create(w, hh, false, Image.FORMAT_RGBA8)
+	for yy in range(-ceili(ry * 1.2), ceili(ry * 1.2) + 1):
+		for xx in range(-ceili(rx * 1.2), ceili(rx * 1.2) + 1):
+			var a := atan2(yy / ry, xx / rx)
+			var d := Vector2(xx / rx, yy / ry).length() / (1.0 + 0.1 * sin(a * 3.0 + rr * 7.0) + 0.07 * sin(a * 5.0 + 1.3))
+			if d > 1.0:
+				continue
+			var sheen := Vector2(xx / rx + 0.28, yy / ry + 0.32).length()
+			var k := 3 if sheen > 0.42 and sheen < 0.5 and xx < 0 and yy < 0 else (2 if d > 0.9 else (1 if d > 0.6 else 0))
+			var px := roundi(w / 2.0 + xx)
+			var py := roundi(hh / 2.0 + yy)
+			if px >= 0 and py >= 0 and px < w and py < hh:
+				img.set_pixel(px, py, Color(TAR[k]))
+	var tex := ImageTexture.create_from_image(img)
+	_tar_pics[key] = tex
+	return tex

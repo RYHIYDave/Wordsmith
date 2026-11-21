@@ -30,6 +30,27 @@ var _deny := 0.0
 var _next_golem := 0
 ## (her coming down after her blast jump: her picture's own `land`, until she does anything but stand: figure.ts sinceLand)
 var land_t := -1.0
+## HER TREE (game/talents.ts TINKERER_TREE; game.ts brewVial, vialBursts, clusterOf, brewOn, blastLands, golemPounds, shrapnel,
+## overdrive, digGold; TINKER_TUNE.talents): her vials thrown (The Big One's count); her puddles of tar ({x, y, r, t}); whether a
+## vial of hers is bursting now (Alchemy: what it kills drops gold).
+var vials_thrown := 0
+var tars: Array = []
+var brewing := false
+const Talents := preload("res://scripts/talents.gd")
+
+
+func _T() -> Dictionary:
+	return Talents.D["tinkerTalents"]
+
+
+## (game.ts brewVial) What her tree puts in a vial leaving her hand: The Big One, every fifth a big one; Mad Mixture, a brew.
+func _brew(v: Dictionary) -> void:
+	if h.has("thebigone"):
+		vials_thrown += 1
+		if vials_thrown % int(_T()["bigOne"]["every"]) == 0:
+			v["big"] = true
+	if h.has("madmixture"):
+		v["brew"] = ["burn", "freeze", "poison"][randi() % 3]
 
 
 func _init(hero) -> void:
@@ -110,20 +131,107 @@ func _toss_vial(i: int, from: Vector2, to: Vector2, frac: float, n: int, echo: b
 	var side := 0.0 if n == 0 else (1.0 if n % 2 == 1 else -1.0) * ceilf(n / 2.0) * float(T["twin"])
 	var x1 := p.x - ((p.y - from.y) / far) * side
 	var y1 := p.y + ((p.x - from.x) / far) * side
-	vials.append({"x0": from.x, "y0": from.y, "x1": x1, "y1": y1, "t": 0.0, "flight": float(T["flight"]), "skill": i, "frac": frac, "wake": n == 0 and not echo})
-	_say({"t": "vial", "id": -1, "x0": from.x, "y0": from.y, "x1": x1, "y1": y1, "flight": float(T["flight"]), "n": n, "echo": echo})
+	var v := {"x0": from.x, "y0": from.y, "x1": x1, "y1": y1, "t": 0.0, "flight": float(T["flight"]), "skill": i, "frac": frac, "wake": n == 0 and not echo}
+	_brew(v)
+	vials.append(v)
+	_say({"t": "vial", "id": -1, "x0": from.x, "y0": from.y, "x1": x1, "y1": y1, "flight": float(T["flight"]), "n": n, "echo": echo, "big": v.get("big", false)})
 	if n == 0:
 		_sfx("vial", 0.3 if echo else 0.5)
 
 
 ## (game.ts vialBursts) A vial of hers bursting where it comes down, hurting all within the move's radius.
 func _vial_bursts(v: Dictionary) -> void:
+	var T := _T()
 	var i: int = v["skill"]
 	var rad: float = float(_def(i)["radius"]) * float(h.loadout.r(i)["size"])
+	var little: bool = v.get("little", false)
+	var big: bool = v.get("big", false)
+	var brew: String = v.get("brew", "")
+	# (CLUSTER VIALS: a little one bursts smaller; THE BIG ONE, three times as wide)
+	if little:
+		rad *= float(T["cluster"]["size"])
+	if big:
+		rad *= float(T["bigOne"]["wide"])
 	var at := Vector2(v["x1"], v["y1"])
-	_say({"t": "vialBurst", "x": at.x, "y": at.y, "r": rad})
-	_sfx("shatter", 0.35)
+	_say({"t": "vialBurst", "x": at.x, "y": at.y, "r": rad, "little": little, "big": big, "brew": brew})
+	_sfx("shatter", 0.2 if little else 0.35)
+	if big:
+		_shake(4.0)
+		_sfx("slam", 0.8)
+	# (what it bursts on, for what her tree does to them after)
+	var caught: Array = []
+	if brew != "" or big:
+		for m in h.monsters.list:
+			if is_instance_valid(m) and not m.dead and not h.monsters.shut_in(m) and m.world.distance_to(at) <= rad + m.r:
+				caught.append(m)
+	# (ALCHEMY: what it kills drops gold)
+	brewing = true
 	h._blast(i, at, rad, float(v["frac"]), "vial", bool(v["wake"]), linear_to_db(0.8))
+	brewing = false
+	# (MAD MIXTURE: its brew on top of its own words, on what it burst on)
+	if brew != "":
+		_brew_on(caught, brew, i, float(v["frac"]))
+	# (THE BIG ONE: everything it burst on knocked down)
+	if big:
+		for m in caught:
+			if is_instance_valid(m) and not m.dead:
+				m.throw_from(at, float(T["bigOne"]["far"]), 0.2)
+				m.stun_for(float(T["bigOne"]["down"]))
+	# (TAR: a puddle of it left where it burst)
+	if not little and h.has("tar"):
+		var tr: float = rad * float(T["tar"]["size"])
+		tars.append({"x": at.x, "y": at.y, "r": tr, "t": 0.0})
+		_say({"t": "tar", "x": at.x, "y": at.y, "r": tr, "secs": T["tar"]["secs"]})
+	# (CLUSTER VIALS: it bursts into three little ones that bounce out and burst again)
+	if not little and h.has("clustervials"):
+		_cluster_of(v)
+
+
+## (Cluster Vials) Vial `v`, bursting, breaks into little ones that bounce out round it (a wall stops one short).
+func _cluster_of(v: Dictionary) -> void:
+	var K: Dictionary = _T()["cluster"]
+	var a0 := randf() * TAU
+	var c := Vector2(v["x1"], v["y1"])
+	for n in int(K["n"]):
+		var a := a0 + float(n) / float(K["n"]) * TAU
+		var far: float = K["far"]
+		while far > 0.0 and not _open(c + Vector2(cos(a), sin(a)) * far):
+			far = maxf(0.0, far - 0.25)
+		var e := c + Vector2(cos(a), sin(a)) * far
+		var l := {"x0": c.x, "y0": c.y, "x1": e.x, "y1": e.y, "t": 0.0, "flight": float(K["flight"]), "skill": v["skill"], "frac": float(v["frac"]) * float(K["share"]), "wake": false, "little": true}
+		if v.get("brew", "") != "":
+			l["brew"] = v["brew"]
+		vials.append(l)
+		_say({"t": "vial", "id": -1, "x0": c.x, "y0": c.y, "x1": e.x, "y1": e.y, "flight": float(K["flight"]), "n": n, "little": true})
+
+
+## (Mad Mixture) A vial's brew on those it burst on: burning, freezing (a chill: on one chilled already, frozen) or poisoning.
+func _brew_on(ms: Array, brew: String, i: int, frac: float) -> void:
+	var X: Dictionary = _T()["mixture"]
+	var r: Dictionary = h.loadout.r(i)
+	var base: Array = h.base_for(r["element"])
+	var hit: float = (float(base[0]) + float(base[1])) / 2.0 * float(r["dmg_mult"]) * frac
+	for m in ms:
+		if not is_instance_valid(m) or m.dead:
+			continue
+		match brew:
+			"burn":
+				m.set_alight(hit * float(X["burn"]) / 3.0, 3.0)
+			"freeze":
+				m.chill_by(float(X["chill"]))
+			_:
+				var secs: float = Words.data()["poison"]["time"]
+				m.dose(hit * float(X["poison"]) / secs, secs)
+
+
+## (Tar) What walks in a puddle of hers moves at a crawl: this share of its speed (1 in none). A bat flies over it.
+func tar_k(m) -> float:
+	if m.kind == "bat":
+		return 1.0
+	for p in tars:
+		if m.world.distance_to(Vector2(p["x"], p["y"])) <= float(p["r"]) + m.r * 0.5:
+			return float(_T()["tar"]["crawl"])
+	return 1.0
 
 
 # =====================================================================================================================
@@ -187,6 +295,19 @@ func _move_step(dt: float) -> void:
 		# (her coming down: a thud of dust where she lands)
 		_say({"t": "blastLand", "x": h.world.x, "y": h.world.y})
 		land_t = 0.0
+		# (her tree's BOMBS AWAY: a second bomb goes off where she lands)
+		if h.has("bombsaway"):
+			var B: Dictionary = _T()["bombsAway"]
+			var r2: Dictionary = h.loadout.r(2)
+			var rad: float = float(_def(2)["radius"]) * float(r2["size"]) * float(B["size"])
+			var x1: Vector2 = h.world
+			_say({"t": "bombsAway", "x": x1.x, "y": x1.y, "r": rad})
+			_shake(3.0)
+			_sfx("slam", 0.9)
+			h._blast(2, x1, rad, float(r2["count_dmg"]) * float(B["share"]), "bomb", false, linear_to_db(0.8))
+			for m in h.monsters.list:
+				if is_instance_valid(m) and not m.dead and m.world.distance_to(x1) <= rad + m.r:
+					m.throw_from(x1, float(TT["blast"]["throw"]), 0.25)
 
 
 # =====================================================================================================================
@@ -246,6 +367,7 @@ func _whistle(i: int, to: Vector2, frac: float, count: int) -> void:
 		_shake(2.0)
 		_sfx("whistle", 0.7)
 		_sfx("slam", 0.6)
+		_overdrive()
 		return
 	var jumped: Array = []
 	if bool(CB["on"]):
@@ -268,6 +390,17 @@ func _whistle(i: int, to: Vector2, frac: float, count: int) -> void:
 			_after(float(GT["pound"]["long"]) * k, func() -> void:
 				if g["act"] != "down" and golems.has(g):
 					_pounds(i, Vector2(g["x"], g["y"]), frac, k, false, g))
+	_overdrive()
+
+
+## (Overdrive) Her whistle sends her Golems into overdrive: they move and strike twice as fast for five seconds.
+func _overdrive() -> void:
+	if not h.has("overdrive"):
+		return
+	for g in _up():
+		if float(g.get("over_t", 0.0)) <= 0.0:
+			_say({"t": "overdrive", "x": g["x"], "y": g["y"]})
+		g["over_t"] = float(_T()["overdrive"]["secs"])
 
 
 ## (game.ts holdJump) Golem `g` rocket-jumps onto `to`, if it is far enough off and there is floor to come down on.
@@ -313,6 +446,26 @@ func _pounds(i: int, at: Vector2, frac: float, n: int, echo: bool, _g = null, la
 		for m in h.monsters.list:
 			if is_instance_valid(m) and not m.dead and m.world.distance_to(at) <= rad + m.r:
 				m.throw_from(at, 1.2, 0.2)
+	# (LIGHTNING ROD: for a while after its ground pound, every enemy near the Golem goes after it instead of her)
+	if _g != null and size >= 1.0 and h.has("lightningrod") and h.monsters != null:
+		var R: Dictionary = _T()["rod"]
+		var dd = null
+		for q in h.monsters.decoys:
+			if q.get("golem") == _g:
+				dd = q
+		if dd != null:
+			dd["t"] = float(R["secs"])
+		else:
+			h.monsters.decoys.append({"x": _g["x"], "y": _g["y"], "t": float(R["secs"]), "r": float(R["near"]), "size": 0.5, "golem": _g})
+	# (PROSPECTOR: a ground pound, not its combo's slam, digs up a handful of gold, between them about one gold drop)
+	if size >= 1.0 and h.has("prospector") and h.monsters != null and h.monsters.loot != null:
+		var piles: int = _T()["prospector"]["n"]
+		var all := randi_range(3, 8)
+		var p: Vector2 = at if _open(at) or _g == null else Vector2(_g["x"], _g["y"])
+		for k in piles:
+			var share := floori(all / float(piles)) + (1 if k < all % piles else 0)
+			if share > 0:
+				h.monsters.loot._gold(p, share)
 
 
 ## (game.ts updateTinkerer) Her vials in the air, and her Golem.
@@ -326,6 +479,24 @@ func _step_own(dt: float) -> void:
 		_vial_bursts(v)
 	for g in golems.duplicate():
 		_step_golem(g, dt)
+	# (her Lightning Rod's decoys: each where its Golem is, ending as it winds down; each runs out: game.ts updateDecoys)
+	if h.monsters != null:
+		for k in range(h.monsters.decoys.size() - 1, -1, -1):
+			var d: Dictionary = h.monsters.decoys[k]
+			d["t"] = float(d["t"]) - dt
+			var g = d.get("golem")
+			if g != null and (g["act"] == "down" or not golems.has(g)):
+				d["t"] = 0.0
+			elif g != null:
+				d["x"] = g["x"]
+				d["y"] = g["y"]
+			if float(d["t"]) <= 0.0:
+				h.monsters.decoys.remove_at(k)
+	# (her tree's TAR: its puddles dry up)
+	for k in range(tars.size() - 1, -1, -1):
+		tars[k]["t"] = float(tars[k]["t"]) + dt
+		if float(tars[k]["t"]) >= float(_T()["tar"]["secs"]):
+			tars.remove_at(k)
 
 
 ## She has fallen (hero.gd steps no kit then): her Golems wind down where they stand, and lie there.
@@ -338,7 +509,10 @@ func fallen(dt: float) -> void:
 
 ## (game.ts stepGolem) Her Golem `g`, each step.
 func _step_golem(g: Dictionary, dt: float) -> void:
-	var gdt := dt
+	# (her tree's OVERDRIVE: it moves and strikes twice as fast, its time `gdt`)
+	var over: float = g.get("over_t", 0.0)
+	var gdt := dt * (float(_T()["overdrive"]["fast"]) if over > 0.0 and g["act"] != "down" else 1.0)
+	g["over_t"] = maxf(0.0, over - dt)
 	g["act_t"] = float(g["act_t"]) + gdt
 	g["punch_cd"] = maxf(0.0, float(g["punch_cd"]) - gdt)
 	g["jump_cd"] = maxf(0.0, float(g["jump_cd"]) - gdt)
@@ -376,6 +550,9 @@ func _step_golem(g: Dictionary, dt: float) -> void:
 				_say({"t": "golemPunch", "x": m.world.x, "y": m.world.y, "dx": g["fx"], "dy": g["fy"]})
 				_sfx("golemPunch", 0.8)
 				h.hit_monster(m, int(g["skill"]), _golem_frac(g) * float(GT["punch"]["share"]), false)
+				# (her tree's SHRAPNEL, its cannon off: its punch bursts where it lands, striking everything near)
+				if h.has("shrapnel"):
+					_shrapnel(int(g["skill"]), m.world, _golem_frac(g) * float(GT["punch"]["share"]), m)
 				if not m.dead:
 					m.throw_from(at, 0.8, 0.15)
 		if float(g["act_t"]) >= float(blow["long"]):
@@ -681,4 +858,18 @@ func _own_picture(side: int) -> Array:
 
 func _clear_own() -> void:
 	vials.clear()
+	tars.clear()
 	land_t = -1.0
+
+
+## (Shrapnel) A burst where the Golem's blow lands: everything near struck for a share of it (game.ts shrapnel).
+func _shrapnel(i: int, at: Vector2, frac: float, not_this) -> void:
+	var S: Dictionary = _T()["shrapnel"]
+	_say({"t": "shrapnel", "x": at.x, "y": at.y, "r": S["r"]})
+	_sfx("hit", 0.5)
+	var hits := 0
+	for m in h.monsters.list:
+		if not is_instance_valid(m) or m.dead or m == not_this or h.monsters.shut_in(m) or m.world.distance_to(at) > float(S["r"]) + m.r:
+			continue
+		h.hit_monster(m, i, frac * float(S["share"]), hits >= 3)
+		hits += 1

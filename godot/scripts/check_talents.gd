@@ -91,6 +91,8 @@ func run(main, hero, d: String) -> void:
 	await _veteran()
 	# THE WARLOCK'S TALENTS
 	await _warlock()
+	# THE TINKERER'S TALENTS
+	await _tinkerer()
 	# THE PAGE, for each class
 	var inv = M._inv
 	for cls in ["warrior", "ranger", "mage", "warlock", "tinkerer", "brawler"]:
@@ -361,4 +363,82 @@ func _warlock() -> void:
 	kit.lust = 0
 	kit.pact = 0.0
 	h.life = h.max_life
+	h.talents = []
+
+
+func _tinkerer() -> void:
+	M.set_class("tinkerer", true)
+	M.loot.level = 50
+	h.life = h.max_life
+	h.face = Vector2(1, 0)
+	# (her look, as a place built with her in it has it: main.gd _build)
+	var kl = load("res://scripts/heroes/tinkerer_look.gd").new()
+	kl.kit = h.kit
+	kl.loot = M.loot
+	M._place.add_child(kl)
+	M._place.move_child(kl, M.fx.get_index() + 1)
+	h.kit.look = kl
+	await _run(0.3)
+	var kit = h.kit
+	var T: Dictionary = Talents.D["tinkerTalents"]
+	var m = _foe(1.5)
+	if m == null:
+		_line(false, "no monster to try the Tinkerer's talents on")
+		return
+	# Fortune: 1% of her gold, as a percent
+	h.talents = ["bombsaway", "fortune"]
+	var gold0: int = M.loot.gold
+	M.loot.gold = 1000
+	var k: float = h._talent_hit_mult(m)
+	M.loot.gold = gold0
+	_line(absf(k - 1.1) < 0.001, "Fortune: with 1,000 gold she hits x%.2f" % k)
+	# The Big One and Mad Mixture: every fifth vial a big one; each a brew
+	h.talents = ["bombsaway", "clustervials", "tar", "madmixture", "alchemy", "thebigone"]
+	kit.vials_thrown = 0
+	var bigs := []
+	var brews := {}
+	for n in 10:
+		var v := {}
+		kit._brew(v)
+		bigs.append(v.get("big", false))
+		brews[v.get("brew", "")] = true
+	_line(bigs == [false, false, false, false, true, false, false, false, false, true] and not brews.has(""), "The Big One: the 5th and 10th vials big (%s); Mad Mixture: each a brew (%s)" % [bigs, brews.keys()])
+	# Tar and Cluster Vials: a vial bursting leaves a puddle and breaks into three little ones
+	kit.tars.clear()
+	kit.vials.clear()
+	var at: Vector2 = m.world
+	kit._vial_bursts({"x0": h.world.x, "y0": h.world.y, "x1": at.x, "y1": at.y, "t": 0.0, "flight": 0.5, "skill": 0, "frac": 0.01, "wake": false})
+	var littles: int = kit.vials.filter(func(v): return v.get("little", false)).size()
+	m.world = at
+	var crawl: float = kit.tar_k(m)
+	_line(kit.tars.size() == 1 and littles == int(T["cluster"]["n"]) and absf(crawl - float(T["tar"]["crawl"])) < 0.001,
+		"Tar: a puddle where it burst, what walks in it at %.0f%% of its pace; Cluster Vials: %d little ones bouncing out" % [crawl * 100.0, littles])
+	h.talents = ["bombsaway", "clustervials", "tar", "madmixture", "alchemy", "thebigone"]
+	await _run(0.45)
+	await _snap("tinkerer_tar_and_little_vials")
+	kit.vials.clear()
+	await _run(0.2)
+	# Alchemy: what her vials kill always drops gold
+	var drops0: int = M.loot._drops.size()
+	var foe = _foe(1.5)
+	kit.brewing = true
+	var golds := 0
+	for n in 4:
+		var before: int = M.loot._drops.filter(func(d): return d.get("kind") == "gold").size()
+		M.loot.on_kill(foe)
+		golds += 1 if M.loot._drops.filter(func(d): return d.get("kind") == "gold").size() > before else 0
+	kit.brewing = false
+	_line(golds == 4, "Alchemy: each of four kills by her vials dropped gold (%d of 4)" % golds)
+	# Lightning Rod: the Golem's pound makes it a decoy; a monster near it goes after it
+	h.talents = ["bombsaway", "lightningrod"]
+	var g := {"x": h.world.x + 2.0, "y": h.world.y, "act": "stand", "skill": 1}
+	kit.golems = [g]
+	h.monsters.decoys.clear()
+	kit._pounds(1, Vector2(g["x"], g["y"]), 0.01, 0, false, g)
+	var foe2 = _foe(1.5)
+	foe2.world = Vector2(g["x"], g["y"]) + Vector2(0, 2.0)
+	var d = h.monsters.decoy_for(foe2)
+	_line(h.monsters.decoys.size() == 1 and d != null, "Lightning Rod: its ground pound makes it a decoy for %.0f s, what is within %.0f tiles goes after it" % [float(T["rod"]["secs"]), float(T["rod"]["near"])])
+	h.monsters.decoys.clear()
+	kit.golems = []
 	h.talents = []

@@ -439,7 +439,9 @@ func on_kill(m) -> void:
 		if randf() < 0.75:
 			_item(at, 1)
 	else:
-		if randf() < 0.25:
+		# (THE TINKERER's tree: Alchemy, what her vials kill always drops gold: game.ts dropLoot, `brewing`)
+		var alchemy: bool = hero.kit != null and hero.kit.get("brewing") == true and hero.has("alchemy")
+		if randf() < 0.25 or alchemy:
 			_gold(at, randi_range(3, 8))
 		if randf() < 0.04:
 			_item(at, 0)

@@ -20,7 +20,8 @@ const PORTED := {
 	"ranger": [],
 	"mage": [],
 	"warlock": ["hunger", "feast", "bloodlust", "branded", "hexchain", "withering", "pyre", "blazingarm", "souldebt", "lastrites"],
-	"tinkerer": [],
+	"tinkerer": ["bombsaway", "fortune", "clustervials", "tar", "madmixture", "alchemy", "thebigone", "lightningrod", "shrapnel",
+		"prospector", "overdrive"],
 	"brawler": ["vstiffjab", "vviperjab", "vguardup", "vknockdown", "vlauncher", "vlightfeet", "vfirestarter", "vstoke", "vhangtime",
 		"vfullset", "vswitchkick", "vlonglegs", "vwallslam", "vaftershock", "vthunderknee"],
 }

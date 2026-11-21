@@ -29,6 +29,7 @@ import { makeGolemArt } from '../src/art/tinkerer_art';
 import { LAND_N, LAUNCH_N, PUFF_LIFE, ROCKET, ROCKET_ARC, RUN_STRIDE, golemLandFx, golemLaunchFx, golemRocketFrames, golemRocketFx, golemRunFrames, rocketPuffFx, rocketTrail } from '../src/art/golem_rocket_fx';
 import { TINKER_TUNE, COMBO_TUNE, GOLEM_COMBO, GOLEM_CANNON, golemBlow } from '../src/game/tinkerer';
 import { GOLEM_R } from '../src/game/game';
+import { P } from '../src/art/palette';
 
 paintWithoutCanvas();
 gameSwitches();
@@ -46,6 +47,13 @@ function piece(w: number, h: number, ax: number, ay: number, lights: number, ram
 const fx = new Map<string, Sprite>();
 for (let i = 0; i < 8; i++) fx.set(`vial:${i}`, piece(16, 16, 8, 8, 2, [CAP, BREW], ([cap, brew]) => vialSprite(brew, cap, 8, 8, (i / 8) * Math.PI * 2)));
 for (let k = 0; k < 18; k++) fx.set(`burst:${k}`, piece(84, 64, 42, 46, 2, [VAPOUR, BREW], ([va, l]) => vialBurst(l, va, 42, 40, 46, k, k / 30, 5)));
+// (her tree's MAD MIXTURE: a vial's burst in its brew's colours, burning, freezing, poisoning: render/tinkerer_fx.ts BREWS)
+const BREWS: Record<string, readonly [readonly string[], readonly string[]]> = {
+  burn: [[P.fr1, P.fr2, P.fr3, P.fr4], [P.fr2, P.fr3, P.fr4, P.fr6]],
+  freeze: [[P.bu1, P.bu2, P.bu3, P.bu4], [P.bu2, P.bu3, P.bu4, P.bu5]],
+  poison: [[P.vn1, P.vn2, P.vn2, P.vn3], [P.vn2, P.vn3, P.vn4, P.vn5]],
+};
+for (const b of Object.keys(BREWS)) for (let k = 0; k < 18; k++) fx.set(`burst-${b}:${k}`, piece(84, 64, 42, 46, 2, BREWS[b], ([va, l]) => vialBurst(l, va, 42, 40, 46, k, k / 30, 5)));
 for (let k = 0; k < 14; k++) fx.set(`thud:${k}`, piece(60, 30, 30, 22, 1, [SMOKE], ([sm]) => thud(sm, 30, 22, k, 3, 1)));
 for (let k = 0; k < 24; k++) fx.set(`blast:${k}`, piece(120, 120, 60, 96, 3, [CHIP, SMOKE, BREW], ([st, sm, l]) => {
   blast(l, sm, 60, 96, k, k / 30, 7);

@@ -40,6 +40,22 @@ var perils: Perils
 ## (what the fight shows of a blow and of a word: fx.gd; the rules tell it with fx.event)
 var fx
 var loot  # loot.gd
+## THE DECOYS (game.ts decoys, decoyFor; state.ts Decoy): {x, y, t, r, size, golem}: for `t` seconds every monster within `r` of one
+## goes after it in place of the hero (monster.gd _drawn_to_decoy). The Tinkerer's Lightning Rod (her Golem, heroes/tinkerer.gd)
+## puts them; whoever puts one steps it.
+var decoys: Array = []
+
+
+## The decoy monster `m` goes after (the nearest of those whose reach it is within), or null: it goes after the hero.
+func decoy_for(m):
+	var best = null
+	var bd := INF
+	for d in decoys:
+		var dist: float = m.world.distance_to(Vector2(d["x"], d["y"]))
+		if float(d["t"]) > 0.0 and dist <= float(d["r"]) + m.r and dist < bd:
+			best = d
+			bd = dist
+	return best
 ## (the game itself, main.gd: what of a floor's own a kind's rules reach for, the Masque's clock)
 var main = null
 var list: Array[Monster] = []

@@ -2060,6 +2060,9 @@ func _talent_hit_mult(m) -> float:
 	var X: Dictionary = Talents.D["warriorTune"]["executioner"]
 	if has("executioner") and m.life < m.max_life * float(X["under"]):
 		k *= float(X["mult"])
+	# (THE TINKERER's tree: Fortune, she hits harder the more gold she carries: 1% of her gold, as a percent)
+	if has("fortune") and monsters != null and monsters.loot != null:
+		k *= 1.0 + float(monsters.loot.gold) * float(Talents.D["tinkerTalents"]["fortune"])
 	return k
 
 

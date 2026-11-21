@@ -481,6 +481,14 @@ func step(dt: float, hero) -> void:
 	var los: bool = sees and not mgr.hero_hidden()
 	var reach := _reach()
 	var moved := false
+	# (A MONSTER DRAWN BY A DECOY: within one's reach, it goes after it in place of the hero: game.ts drawnToDecoy)
+	if (state == "chase" or _decoy_swing) and not mgr.decoys.is_empty() and _drawn_to_decoy(dt, reach):
+		_place()
+		_show()
+		queue_redraw()
+		return
+	if _decoy_swing and mgr.decoys.is_empty():
+		_decoy_swing = false
 	match state:
 		"rise":
 			_t -= dt
@@ -1084,7 +1092,11 @@ func _go(dt: float, to: Vector2, dist: float, sees: bool) -> bool:
 		way = (way + Vector2(-way.y, way.x) * sin(_weave) * 0.6).normalized()
 	face = way
 	# (chilled, it walks slower by the chill's share: game.ts updateMonsters, `slow`; FRENZIED, faster the more it is hurt)
-	var step := way * speed * slow() * rage() * nettle_k * dt
+	# (THE TINKERER's tree: Tar, what walks in her tar is slowed to a crawl: heroes/tinkerer.gd tar_k)
+	var tar := 1.0
+	if mgr != null and mgr.hero != null and mgr.hero.kit != null and mgr.hero.kit.has_method("tar_k"):
+		tar = mgr.hero.kit.tar_k(self)
+	var step := way * speed * slow() * rage() * nettle_k * tar * dt
 	# (game.ts: a monster walks with a body no bigger than 0.42 round, so that a big one gets through a doorway)
 	var rr := minf(r, 0.42)
 	var fly := kind == "bat"
@@ -1947,3 +1959,55 @@ class _Over extends Node2D:
 
 	func _draw() -> void:
 		m._draw_over(self)
+
+
+## (game.ts drawnToDecoy) Within a live decoy's reach, it takes the decoy's spot in place of the hero's: it walks to it, and when its
+## blow is ready it swings at it (a ranged one goes up to it and bashes it), the blow doing nothing. Whether it did (its step is
+## then over). One already winding up a blow at the hero goes on with it.
+var _decoy_swing := false
+
+
+func _drawn_to_decoy(dt: float, reach: float) -> bool:
+	if _decoy_swing and state != "windup":
+		_decoy_swing = false
+	var swinging := _decoy_swing
+	if not swinging and state != "chase":
+		return false
+	var d = mgr.decoy_for(self)
+	if d == null:
+		if swinging:
+			_decoy_swing = false
+			state = "chase"
+			_set_list("idle")
+		return false
+	var to: Vector2 = Vector2(d["x"], d["y"]) - world
+	var dist := to.length()
+	if dist > 0.01:
+		face = to / dist
+	if swinging:
+		_t -= dt * (0.6 + 0.4 * slow())
+		if _t <= 0.0:
+			_decoy_swing = false
+			state = "recover"
+			_t = RECOVER
+			_cd = float(def["cooldown"]) * randf_range(0.9, 1.2)
+			var e := {"t": "decoyStruck", "x": d["x"], "y": d["y"], "golem": d.get("golem") != null}
+			if mgr.hero.kit != null:
+				mgr.hero.kit._say(e)
+			else:
+				_tell(e)
+			mgr.sfx.play("swing", linear_to_db(0.4))
+		return true
+	var r2: float = (minf(1.2, reach) if def["ranged"] else reach) + float(d["size"])
+	if dist <= r2 + 0.2 and _cd <= 0.0:
+		state = "windup"
+		_t = float(def["windup"])
+		_move = -1
+		_set_list("attack", true)
+		_decoy_swing = true
+		return true
+	if dist > r2 * 0.8:
+		_go(dt, to, dist, true)
+	else:
+		_set_list("idle")
+	return true

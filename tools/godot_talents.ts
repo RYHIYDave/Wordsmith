@@ -33,6 +33,7 @@ import {
 import type { ClassId } from '../src/game/types';
 import { VET_TALENTS } from '../src/game/veteran';
 import { WARLOCK_TUNE } from '../src/game/warlock';
+import { TINKER_TUNE } from '../src/game/tinkerer';
 
 gameSwitches();
 
@@ -80,6 +81,7 @@ writeFileSync(
     warriorTune: WARRIOR_TUNE,
     vetTalents: VET_TALENTS,
     warlockTalents: WARLOCK_TUNE.talents,
+    tinkerTalents: TINKER_TUNE.talents,
     weapons: { picks: ['greatsword', 'battleaxe', 'warhammer'], kits: WARRIOR_KITS, paths: { axe: 'battleaxe', gsword: 'greatsword', hammer: 'warhammer' } },
     trees,
     words,
