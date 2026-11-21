@@ -1506,6 +1506,8 @@ func _surge(dt: float) -> void:
 		return
 	var by := blow()
 	by["sound"] = "surge_foe"
+	# (whose surge it is: its wave is drawn from it, render/words7.ts tickW7's `src`)
+	by["src"] = id
 	mgr.perils.warn(world.x, world.y, S["monsterRadius"], S["monsterWarn"], (dmg_min + dmg_max) / 2.0 * float(S["monsterDmg"]) * sk, null, by)
 	h.last.rec("surge_warn")
 
@@ -1725,6 +1727,9 @@ func _show() -> void:
 		_sprite.offset = Vector2(f["offset"].x, -above)
 		_sprite.self_modulate = Color.WHITE.lerp(Color("#160a1c"), 0.85 * (1.0 - up))
 		_sprite.self_modulate.a = minf(1.0, 0.35 + up)
+	# (THE LAST WORDS' LOOKS, render/words7.ts lookW7: its own picture changed by a word: tinted, held, cut in two)
+	if mgr.fx != null and mgr.fx.get("w7") != null:
+		mgr.fx.w7.look_on(self, _sprite)
 
 
 ## Its life over its head for a while after it is struck (game.ts barT).

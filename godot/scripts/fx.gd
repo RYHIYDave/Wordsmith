@@ -70,6 +70,9 @@ var w610: Words610
 ## (LASTING'S, FLEETING'S AND VAST'S OWN LOOKS, render/words10.ts: fx_words10.gd, handed on from its own lines below, each marked w10)
 const Words10 := preload("res://scripts/fx_words10.gd")
 var w10: Words10
+## (THE SEVEN LAST WORDS' OWN LOOKS, render/words7.ts: fx_words7.gd, handed on from its own lines below, each marked w7)
+const Words7 := preload("res://scripts/fx_words7.gd")
+var w7: Words7
 ## (THE TEN MELDED WORDS' OWN LOOKS, render/melds3.ts: fx_melds3.gd, handed on from its own lines below, each marked m3)
 const Melds3 := preload("res://scripts/fx_melds3.gd")
 var m3: Melds3
@@ -233,6 +236,8 @@ func _init() -> void:
 	w610.fx = self
 	w10 = Words10.new()
 	w10.fx = self
+	w7 = Words7.new()
+	w7.fx = self
 	m3 = Melds3.new()
 	m3.fx = self
 	v3 = Volatile3.new()
@@ -270,6 +275,7 @@ func _exit_tree() -> void:
 	w610.clear()
 	city3.clear()
 	w10.clear()
+	w7.clear()
 	m3.clear()
 	v3.clear()
 	m8.clear()
@@ -301,10 +307,13 @@ func event(e: Dictionary) -> void:
 	m8.handle(e)
 	# (m3, v3, m8: a melded word's own bolts, blasts and patches are its look's, not the effects': fx.ts handle, meldOwnsEvent,
 	# ownsEventV3; Implode's burst and Forking's arc are melds8.ts's)
-	if not (Melds3.owns_event(e) or Volatile3.owns_event(e) or _m8_owns(e)):
+	# (w7: the seven last words' events are their looks' own: fx.ts handle, ownsEventW7; their zones too: ownsZoneW7)
+	if not (Melds3.owns_event(e) or Volatile3.owns_event(e) or _m8_owns(e) or Words7.owns_event(e)):
 		_handle(e)
 	# (w10: what the rules said happened, as render/words10.ts eventsW10 reads it)
 	w10.event(e)
+	# (w7: as render/words7.ts eventsW7 reads it)
+	w7.event(e)
 	_redraw()
 
 
@@ -358,6 +367,8 @@ func _late(_dt: float) -> void:
 	figures.follow()
 	# (w10: his after-images, where he now is)
 	w10.follow()
+	# (w7: his reflection in glass, the rules' spirits, where they now are: render/words7.ts heroW7, spiritsW7)
+	w7.follow()
 	# (m3: he is drawn fainter while Scald's steam hides him: render.ts heroAlphaM3)
 	m3.follow()
 	if timing:
@@ -428,6 +439,7 @@ func clear() -> void:
 	w610.clear()
 	city3.clear()
 	w10.clear()
+	w7.clear()
 	m3.clear()
 	v3.clear()
 	m8.clear()
@@ -1510,6 +1522,12 @@ func update(dt: float, real: float) -> void:
 	figures.tick(dt)
 	w610.update(dt)
 	w10.update(dt)
+	# (w7: render.ts tickW7; and the sounds of moments only its pictures know, main.ts soundsW7)
+	w7.update(dt)
+	var h7 = hero()
+	for snd in w7.take_sounds():
+		if h7 != null:
+			h7.last.rec(snd)
 	# (m3: the melded words' looks age, and what they do all the time: render.ts tickM3)
 	m3.update(dt)
 	# (v3: Volatile's five melds' looks age, what they read of the rules first: render.ts tickV3; m8: the eight's, fx.ts update)
@@ -1543,6 +1561,8 @@ func _spots() -> void:
 	city3.lights(wakes.list if wakes != null and is_instance_valid(wakes) else [])
 	ground.lights()
 	w10.lights()
+	# (w7: render.ts lightsW7)
+	w7.lights()
 	# (m3: render.ts lightsM3)
 	m3.lights()
 	# (v3: render.ts lightsV3)
@@ -1643,7 +1663,7 @@ static func pline(c: CanvasItem, x0f: float, y0f: float, x1f: float, y1f: float,
 
 ## Whether anything is alive to be drawn; the layers are drawn again while there is, and once more after.
 func _alive() -> bool:
-	return pn > 0 or not rifts.is_empty() or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or city3.alive() or w10.alive() or m3.alive() or v3.alive() or m8.alive()
+	return pn > 0 or not rifts.is_empty() or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or city3.alive() or w10.alive() or w7.alive() or m3.alive() or v3.alive() or m8.alive()
 
 
 func _redraw() -> void:
@@ -1769,6 +1789,8 @@ func _paint_ground(c: CanvasItem) -> void:
 	m8.draw_ground(c)
 	w610.draw_floor(c)
 	w10.draw_floor(c)
+	# (w7: render.ts floorW7)
+	w7.draw_floor(c)
 	# (ARRIVALS: the rifts of the enemies coming in, under every figure: render/arrivals.ts drawRift)
 	for f: Dictionary in rifts:
 		_rift(c, f)
@@ -1913,6 +1935,8 @@ func _paint_air(c: CanvasItem) -> void:
 	m8.draw_air(c)
 	# (w10: Lasting's, Fleeting's and Vast's, over the figures and the dark: render/words10.ts airW10, before fx.drawAir)
 	w10.draw_air(c)
+	# (w7: the seven last words', over the figures and the dark: render.ts airW7)
+	w7.draw_air(c)
 	for q: Dictionary in whirls:
 		# A whirlwind's turn: two crescents, opposite each other, going round the hero. Each is thin at its tail and thick
 		# at its leading edge, which is white. They go round with the clock and not from where each began, so one turn runs

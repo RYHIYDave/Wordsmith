@@ -264,6 +264,9 @@ func _in_his_moves() -> void:
 	await M._w_strike(h)
 	await M._wait(0.2)
 	await _snap("culling_front")
+	# (and a moment on: it lies cut in two, its halves come to rest: render/words7.ts fallenW7)
+	await M._wait(0.6)
+	await _snap("culling_front_halves")
 	_line(P[0].dead and _seen("culled") > seen_cull, "CULLING in front: struck to under %d%% of its life, it dies outright" % roundi(float(r["cull"]) * 100.0))
 	# REAPING in front: a kill takes time off his waits
 	var P1 = P[1]
@@ -330,6 +333,9 @@ func _in_his_moves() -> void:
 		await M._w_strike(h, o.world - way * 1.2)
 		await M._wait(0.3)
 		await _snap("reaping_behind")
+		# (and once it has risen: the little grey Shade fighting for him, render/words7.ts spiritsW7)
+		await M._wait(0.7)
+		await _snap("reaping_spirit")
 		_line(h.last.spirits.size() >= 1, "REAPING behind: a kill rises as a spirit fighting for him (%d)" % h.last.spirits.size())
 	alive = P.filter(func(o): return is_instance_valid(o) and not o.dead)
 	if not alive.is_empty():
@@ -344,6 +350,12 @@ func _in_his_moves() -> void:
 	await M._w_strike(h)
 	await M._wait(0.2)
 	var laid: bool = h.last.zones.any(func(z): return z["kind"] == "mirror")
+	# (stepped off it, the pane rises where he stood: render/words7.ts paneUp; his reflection in it)
+	var stood: Vector2 = h.world
+	h.world = M._spot_near(stood + Vector2(1.6, -1.6), 0.0, stood)
+	await M._wait(0.5)
+	await _snap("mirroring_pane")
+	h.world = stood
 	var casts := _seen("mirrorCast")
 	M._w_set(h, 0, "front", [])
 	await M._w_strike(h)
