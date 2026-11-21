@@ -136,6 +136,7 @@ func _rung() -> void:
 	var tough_ok := true
 	var knocked := true
 	var won_said := ""
+	var raised: Array = []
 	var clap := 0
 	var lying := 0
 	for i in nb:
@@ -157,6 +158,8 @@ func _rung() -> void:
 		B.ids = B.ids.filter(func(m): return is_instance_valid(m))
 		if i == 0:
 			await _snap("before_the_first_bell")
+		if i == nb - 1:
+			raised = B.ids.filter(func(m): return is_instance_valid(m) and not m.dead)
 		B.struck(at, 1.0)
 		await _run(0.2)
 		# (the moment it is won, before he picks anything up: the clapper lying, the line said)
@@ -182,13 +185,18 @@ func _rung() -> void:
 	_line(tough_ok, "each bell but the last calls a tough one, a yellow pack's leader of the floor's guard kind, tougher each time, with what comes with it (%s)" % [str(B.D["tough"].map(func(g): return "%s %d + %d" % [g[0]["name"], int(g[0]["maxLife"]), g.size() - 1]))])
 	_line(knocked, "the ring knocks back what is near the bell")
 	var risen_alive := 0
+	var others: Array = []
 	await _run(0.3)
-	for m in M._monsters.list:
+	for m in raised:
 		if is_instance_valid(m) and not m.dead and m.state != "dead":
 			risen_alive += 1
+	# (what is up that the Hush did not raise: the halves a Splitting one breaks into as it dies, as in the game)
+	for m in M._monsters.list:
+		if is_instance_valid(m) and not m.dead and not raised.has(m):
+			others.append(m.title)
 	await _snap("every_bell_peals")
 	_line(B.phase == "won" and lying >= nb + 1 and risen_alive == 0 and clap == 1 and won_said != "",
-		"all %d rung in time: won (%s), the Hush shattered with all it raised (%d left up), the loot burst out of the last bell (%d things lying), the clapper with it (%d); '%s'" % [nb, B.phase, risen_alive, lying, clap, won_said])
+		"all %d rung in time: won (%s), the Hush shattered with all it raised (%d of %d left up; up besides: %s), the loot burst out of the last bell (%d things lying), the clapper with it (%d); '%s'" % [nb, B.phase, risen_alive, raised.size(), others, lying, clap, won_said])
 	await _run(4.3)
 	await _snap("hanging_still")
 	_line(B.states.all(func(s): return s == 3) and B.muffled == 3, "four seconds on, the bells ring out and hang still (%s, the Muffled Bell %d)" % [B.states, B.muffled])

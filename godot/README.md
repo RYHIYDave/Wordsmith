@@ -539,14 +539,15 @@ home to the camp, the camp's waypoint to the city's floors he has reached.
   brought (hung in the camp's bell, floor 11's shrine bell, ringing; his pick of three fully modded rares, gloves, boots and a
   helm, rolled by the game itself: one taken, the others go back, laid out again until then). In the saved game. The armourer
   lays them out nearest the hero first, as the game does, so one may lie within his reach and be his at once.
-  `--only=quests1115` (`check_quest1115.gd`).
+  `--only=quests1115` (`check_quest1115.gd`): 19 steps.
 - THE BELLS, each city floor's event (`scripts/act2/bells.gd`; game/bells.ts, Game's "ACT 2: THE BELLS"): the Muffled Bell struck,
   the Hush pours out over its fixed ground and every bell wakes, 15 s on the clock a bell; the Hush raising the floor's own round
   him in it, more and more; each bell rung by a blow, knocking back what is near, chipping the Hush back, calling its tough one
   (the game's own yellow pack's leader); all rung, the Hush shatters with what it raised and the loot bursts out of the last bell
   (the clapper with it the first time); the clock run out, it lifts. Seen: the bells by their states (recorded from the game:
   `bell<k>`, `muffled`), the Hush's grey veil with its wall of mist, the arrows at the screen's edge, the clock across the top,
-  its ground and the bells on the maps. `--only=bells --floor=N` (`check_bells.gd`).
+  its ground and the bells on the maps. A Splitting one struck down with the Hush breaks in two as it dies, as in the game.
+  `--only=bells --floor=N` (`check_bells.gd`): 9 steps, on floors 11 and 14.
 
 ## Not in it yet
 
