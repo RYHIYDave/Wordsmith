@@ -17,6 +17,11 @@
 ##   golemPound     the floor cracked in a star round its fist, its heart's cyan in the cracks, a ring of steam and dust racing
 ##                  out; steam bursting up
 ##   golemDown      sparks and gears as it winds down
+##   golemShot      ITS SMALL SHOT: its cannon's flash, the shot streaking in the friend's cyan from its muzzle, its hit bursting
+##   golemCharged   ITS BIG SHOT: the shell out of its mouth, its trail, and its blast where it lands (its scorch on the floor);
+##                  the tesla coil's beam, the Golem skidding back as it pours (heroes/golem_paint.gd paints these as they come);
+##                  while it braces and charges, the ring and grit round it and the steam and light at it, frame by frame
+##   teslaZap       her tree's TESLA COIL: a jag of her cyan lightning from the coil on its back to the nearest, and on
 ##   blastJump      her bomb going off: its flash and fireball, chips flung, a scorch left glowing and cooling; puffs of its smoke
 ##                  along the way she flew
 ##   blastLand      a thud of dust where she comes down
@@ -25,13 +30,18 @@ extends Node2D
 const Iso := preload("res://scripts/iso.gd")
 const Glow := preload("res://scripts/figure_glow.gd")
 const MageLook := preload("res://scripts/heroes/mage_look.gd")
+const Paint := preload("res://scripts/heroes/golem_paint.gd")
 
 var kit
 var loot
 var air: Node2D
 var _t := 0.0
-var _gsheet: Texture2D
+var _gsheets: Array = []
 var _gpics := {}
+## (its big shot: the art's frames and numbers; the painter of what runs any way)
+var CH := {}
+var paint
+var GUN: Array = []
 var _fsheet: Texture2D
 var _fpics := {}
 var _clips := {}
@@ -53,6 +63,20 @@ var sparks: Array = []
 var trails: Array = []
 var launches: Array = []
 var lands: Array = []
+## (ITS SHOTS: the small shot's streak {x0, y0, x1, y1, t, flight, way} and flash {x, y, t, way}; the shell in flight and the beam,
+## each {x, y, t, ..., kept: frames painted}; the shell's blasts {x, y, r, t}; the coil's zaps {x, y, t, frames}; what comes later
+## [at, Callable])
+var shots: Array = []
+var flashes: Array = []
+var flights: Array = []
+var beams: Array = []
+var big_blasts: Array = []
+var zaps: Array = []
+var _later: Array = []
+## (what runs any way is painted ahead off the screen's own thread, a frame at a time, as the game paints it: each shot's `done`
+## frames under this lock; the tasks, waited for once done)
+var _mx := Mutex.new()
+var _tasks: Array = []
 ## (her tree's: The Big One's rings of her cyan; her puddles of tar ({x, y, r, t, life}), each painted once at its size)
 var rings: Array = []
 var tars: Array = []
@@ -109,11 +133,21 @@ func _ready() -> void:
 	_trail = d["trail"]
 	RK = d["rocket"]
 	_stride = float(d["runStride"])
-	_gsheet = load("res://assets/heroes/golem-0.png")
+	var most := 0
+	for k in _gpics:
+		var q: Array = _gpics[k]
+		if q.size() > 6:
+			most = maxi(most, int(q[6]))
+	for n in most + 1:
+		_gsheets.append(load("res://assets/heroes/golem-%d.png" % n))
+	CH = d["charge"]
+	paint = Paint.new(CH)
 	var f: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/tinkerer_fx.json"))
 	_fpics = f["pics"]
 	for c in f["brew"]:
 		BREW.append(Color(c))
+	for c in f["gunGlow"]:
+		GUN.append(Color(c))
 	_fsheet = load("res://assets/heroes/tinkerer_fx-0.png")
 	air = _Air.new()
 	air.look = self
@@ -122,6 +156,9 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	for id in _tasks:
+		WorkerThreadPool.wait_for_task_completion(id)
+	_tasks.clear()
 	for n in _golem_nodes.values():
 		if is_instance_valid(n):
 			n.queue_free()
@@ -157,7 +194,8 @@ func on_event(e: Dictionary, _fx) -> void:
 			var r = e.get("rocket")
 			if r != null:
 				launches.append({"x": e["x"], "y": e["y"], "back": float(r["fx"]) + float(r["fy"]) < -0.2, "flip": float(r["fx"]) - float(r["fy"]) < 0.0,
-					"dx": float(r["x1"]) - float(r["x0"]), "dy": float(r["y1"]) - float(r["y0"]), "flight": float(r["flight"]), "t": 0.0})
+					"dx": float(r["x1"]) - float(r["x0"]), "dy": float(r["y1"]) - float(r["y0"]), "flight": float(r["flight"]), "t": 0.0,
+					"gun": "tesla:" if str(r.get("gun", "cannon")) == "tesla" else ""})
 			else:
 				blasts.append({"x": e["x"], "y": e["y"], "t": 0.0})
 				scorches.append({"x": e["x"], "y": e["y"], "t": 0.0})
@@ -169,10 +207,53 @@ func on_event(e: Dictionary, _fx) -> void:
 				arrives.append({"x": e["x"], "y": e["y"], "t": 0.0})
 		"golemPunch":
 			impacts.append({"x": e["x"], "y": e["y"], "t": 0.0})
+		# (her tree's GROWTH SERUM: steam and dust as it grows, its picture grown: tinkerer_fx.ts, render.ts drawTinkerers)
+		"golemGrow":
+			arrives.append({"x": e["x"], "y": e["y"], "t": 0.0})
 		"golemPound":
 			pounds.append({"x": e["x"], "y": e["y"], "t": 0.0})
 		"golemDown":
 			sparks.append({"x": e["x"], "y": e["y"], "t": 0.0})
+		# (ITS SMALL SHOT: its cannon's flash, the shot streaking, its hit bursting as it lands)
+		"golemShot":
+			var way := 1 if (float(e["x1"]) - float(e["y1"])) - (float(e["x0"]) - float(e["y0"])) >= 0.0 else -1
+			shots.append({"x0": e["x0"], "y0": e["y0"], "x1": e["x1"], "y1": e["y1"], "t": 0.0, "flight": maxf(0.05, float(e["flight"])), "way": way})
+			flashes.append({"x": e["x0"], "y": e["y0"], "t": 0.0, "way": way})
+			var hx: float = e["x1"]
+			var hy: float = e["y1"]
+			_later.append([_t + float(e["flight"]), func() -> void: impacts.append({"x": hx, "y": hy, "t": 0.0, "k": 1.4})])
+		# (ITS BIG SHOT: the shell out of its mouth and its trail, its blast where it lands as it lands; or the beam from the coil's
+		# ball, laid with the Golem as it is pushed back while it pours)
+		"golemCharged":
+			var dx := float(e["x1"]) - float(e["x0"])
+			var dy := float(e["y1"]) - float(e["y0"])
+			var face := _facing(dx, dy)
+			if str(e["kind"]) == "shell":
+				var fl := {"x": e["x0"], "y": e["y0"], "t": 0.0, "view": face[0], "flip": face[1], "dx": dx, "dy": dy, "n": Paint.shell_n(float(e["flight"])), "kept": {}, "done": {}}
+				var pt = paint
+				_ahead(fl, int(fl["n"]) + 4, func(k: int) -> Dictionary: return pt.shell_flight(fl["view"], fl["flip"], fl["dx"], fl["dy"], k, fl["n"]))
+				flights.append(fl)
+				var bx: float = e["x1"]
+				var by: float = e["y1"]
+				var key := _radius_key(float(e["r"]))
+				_later.append([_t + float(e["flight"]), func() -> void: big_blasts.append({"x": bx, "y": by, "t": 0.0, "r": key})])
+			else:
+				var len := Vector2(dx, dy).length()
+				if len == 0.0:
+					len = 1.0
+				var bm := {"x": e["x0"], "y": e["y0"], "t": 0.0, "view": face[0], "flip": face[1], "dx": dx, "dy": dy, "ux": dx / len, "uy": dy / len, "kept": {}, "done": {}}
+				var pt = paint
+				_ahead(bm, int(CH["beamFrames"]), func(k: int) -> Dictionary: return pt.beam(bm["view"], bm["flip"], bm["dx"], bm["dy"], k))
+				beams.append(bm)
+		# (her tree's TESLA COIL: its zap, painted as it comes, laid at the Golem's foot)
+		"teslaZap":
+			var zp := {"x": e["x"], "y": e["y"], "t": 0.0, "kept": {}, "done": {}}
+			var zx: float = e["x"]
+			var zy: float = e["y"]
+			var up: float = Paint.COIL_UP * (2.0 if e.get("grown", false) else 1.0)
+			var to: Array = e["to"]
+			_ahead(zp, 1, func(_k: int) -> Dictionary: return {"all": Paint.zap(zx, zy, up, to)})
+			zaps.append(zp)
 		"blastJump":
 			blasts.append({"x": e["x0"], "y": e["y0"], "t": 0.0})
 			scorches.append({"x": e["x0"], "y": e["y0"], "t": 0.0})
@@ -207,6 +288,38 @@ func _process(dt: float) -> void:
 		lands[i]["t"] = float(lands[i]["t"]) + dt
 		if floori(float(lands[i]["t"]) * 30.0) >= int(RK["landN"]):
 			lands.remove_at(i)
+	# (ITS SHOTS: the small shot's streak while it flies; its flash; the shell in flight and the beam by their frames; the blasts; the
+	# zaps; what was to come, as it comes)
+	for i in range(shots.size() - 1, -1, -1):
+		shots[i]["t"] = float(shots[i]["t"]) + dt
+		if float(shots[i]["t"]) >= float(shots[i]["flight"]):
+			shots.remove_at(i)
+	for pair in [[flashes, 6.0 / 30.0], [zaps, Paint.ZAP_N / 30.0]]:
+		var list: Array = pair[0]
+		for i in range(list.size() - 1, -1, -1):
+			list[i]["t"] = float(list[i]["t"]) + dt
+			if float(list[i]["t"]) >= float(pair[1]):
+				list.remove_at(i)
+	for i in range(flights.size() - 1, -1, -1):
+		flights[i]["t"] = float(flights[i]["t"]) + dt
+		if floori(float(flights[i]["t"]) * 30.0) >= int(flights[i]["n"]) + 4:
+			flights.remove_at(i)
+	for i in range(beams.size() - 1, -1, -1):
+		beams[i]["t"] = float(beams[i]["t"]) + dt
+		if floori(float(beams[i]["t"]) * 30.0) >= int(CH["beamFrames"]):
+			beams.remove_at(i)
+	for i in range(big_blasts.size() - 1, -1, -1):
+		big_blasts[i]["t"] = float(big_blasts[i]["t"]) + dt
+		if floori(float(big_blasts[i]["t"]) * 30.0) >= int(CH["shellFx"]["long"]):
+			big_blasts.remove_at(i)
+	for id in _tasks.duplicate():
+		if WorkerThreadPool.is_task_completed(id):
+			WorkerThreadPool.wait_for_task_completion(id)
+			_tasks.erase(id)
+	var due := _later.filter(func(q): return _t >= float(q[0]))
+	_later = _later.filter(func(q): return _t < float(q[0]))
+	for q in due:
+		q[1].call()
 	if kit != null and kit.h != null and not kit.h.alive:
 		kit.fallen(dt)
 	_place()
@@ -244,13 +357,14 @@ func gpiece(c: CanvasItem, key: String, x: float, y: float, flip := false, a := 
 	if p == null or (p as Array).is_empty():
 		return
 	var src := Rect2(p[0], p[1], p[2], p[3])
+	var sheet: Texture2D = _gsheets[int(p[6]) if (p as Array).size() > 6 else 0]
 	if flip:
 		# (mirrored about its anchor, as flipSprite turns a picture over)
 		c.draw_set_transform(Vector2(x, y), 0.0, Vector2(-1, 1))
-		c.draw_texture_rect_region(_gsheet, Rect2(-float(p[4]), -float(p[5]), p[2], p[3]), src, Color(1, 1, 1, a))
+		c.draw_texture_rect_region(sheet, Rect2(-float(p[4]), -float(p[5]), p[2], p[3]), src, Color(1, 1, 1, a))
 		c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	else:
-		c.draw_texture_rect_region(_gsheet, Rect2(x - float(p[4]), y - float(p[5]), p[2], p[3]), src, Color(1, 1, 1, a))
+		c.draw_texture_rect_region(sheet, Rect2(x - float(p[4]), y - float(p[5]), p[2], p[3]), src, Color(1, 1, 1, a))
 
 
 func _at(n: int, k: float) -> int:
@@ -306,8 +420,9 @@ func _place() -> void:
 		n.g = g
 		var x: float = g["x"]
 		var y: float = g["y"]
-		# (a hair nearer than a figure on its spot: render.ts, its depth x + y + 0.02)
+		# (a hair nearer than a figure on its spot: render.ts, its depth x + y + 0.02; her tree's GROWTH SERUM, drawn grown)
 		n.position = Iso.to_screen(x, y) + Vector2(0, 0.32)
+		n.scale = Vector2.ONE * kit.golem_grow(g)
 		var drop := _drop(g)
 		var flip: bool = float(g["fx"]) - float(g["fy"]) < 0.0
 		n.aura.visible = not _aura.is_empty()
@@ -327,7 +442,7 @@ func _place() -> void:
 	for l in launches:
 		var k := floori(float(l["t"]) * 30.0)
 		if k < int(RK["launchN"]):
-			want.append([l, "%s:launchAir:%d" % ["back" if l["back"] else "front", k], 0.02 + (0.005 if l["back"] else -0.005)])
+			want.append([l, "%s%s:launchAir:%d" % [l.get("gun", ""), "back" if l["back"] else "front", k], 0.02 + (0.005 if l["back"] else -0.005)])
 	for l in lands:
 		var k := floori(float(l["t"]) * 30.0)
 		if k < int(RK["landN"]):
@@ -372,20 +487,25 @@ func draw_golem(c: CanvasItem, g: Dictionary) -> void:
 	var flip: bool = float(g["fx"]) - float(g["fy"]) < 0.0
 	var act: String = g["act"]
 	var t: float = g["act_t"]
-	var key := "%s:idle:0" % view
+	# (her tree's GUN ARM: the Golem with the tesla coil in its cannon's place)
+	var gun: String = kit.arm_of()
+	var tag := "tesla:" if gun == "tesla" else ""
+	var key := "%s%s:idle:0" % [tag, view]
 	var rocket := act == "jump"
 	var rf := _rf(g)
 	if act == "walk":
 		# (ITS RUN, the art chat's gallop, by the floor it covers: RUN_STRIDE tiles a round, so that its fist and feet grip)
-		key = "%s:run:%d" % [view, floori(float(g["walked"]) / _stride * GRUN_ROUND) % GRUN_ROUND]
+		key = "%s%s:run:%d" % [tag, view, floori(float(g["walked"]) / _stride * GRUN_ROUND) % GRUN_ROUND]
 	elif rocket:
-		key = "%s:rocket:%d" % [view, rf]
-	elif act == "punch":
-		key = "%s:punch:%d" % [view, _clip_frame("punch", t)]
-	elif act == "pound" and t >= 0.0:
-		key = "%s:pound:%d" % [view, _clip_frame("pound", t)]
+		key = "%s%s:rocket:%d" % [tag, view, rf]
+	elif act == "cannon":
+		# (ITS SMALL SHOT: its cannon brought down and fired)
+		key = "%s:shot:%d" % [view, _clip_frame("shot", t)]
+	elif act == "charge":
+		# (ITS BIG SHOT: the wind-up, the loop round and round while she holds, then on from the shot)
+		key = "%s:%s:charge:%d" % [gun, view, mini(charge_at(g), int(CH["frames"][gun]) - 1)]
 	elif act == "down":
-		key = "%s:down:%d" % [view, _clip_frame("down", t)]
+		key = "%s%s:down:%d" % [tag, view, _clip_frame("down", t)]
 	var y := -_drop(g) * 2.0 - _lift(float(g["x"]), float(g["y"])) - 0.32
 	if rocket:
 		gpiece(c, "%s:atBehind:%d" % [view, rf], 0.0, y, flip)
@@ -409,7 +529,7 @@ func _draw() -> void:
 		elif g["act"] == "jump":
 			var come := 1.0 - 0.6 * (rocket_up(_rf(g) - float(RK["blast"])) / float(RK["high"]))
 			rk = {"r": 0.6 + 0.4 * come, "a": come}
-		var r: float = GOLEM_SHADOW * float(rk["r"])
+		var r: float = GOLEM_SHADOW * float(rk["r"]) * kit.golem_grow(g)
 		var w := r * 22.6 * 1.5 * 2.0
 		var hh := r * 11.3 * 1.5 * 2.0
 		var cx := _gx(x, y) * 2.0
@@ -441,12 +561,23 @@ func _draw() -> void:
 		_piece(self, "poundF:%d" % _at(24, float(p["t"]) / LIFE["pound"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]))
 	for p in thuds:
 		_piece(self, "thud:%d" % _at(14, float(p["t"]) / LIFE["thud"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]))
+	# (the ring and grit round a charging Golem; the shell's scorch and cracks where it burst)
+	for g in kit.golems:
+		if g["act"] != "charge":
+			continue
+		var f := charge_at(g)
+		var gun: String = kit.arm_of()
+		if f >= 0 and f <= int(CH["fxLast"][gun]):
+			var view := "back" if float(g["fx"]) + float(g["fy"]) < -0.2 else "front"
+			gpiece(self, "%s:%s:chFloor:%d" % [gun, view, f], roundf(_gx(g["x"], g["y"])) * 2.0, roundf(_gy(g["x"], g["y"])) * 2.0, float(g["fx"]) - float(g["fy"]) < 0.0)
+	for b in big_blasts:
+		_piece(self, "shell%sF:%d" % [b["r"], floori(float(b["t"]) * 30.0)], _gx(b["x"], b["y"]), _gy(b["x"], b["y"]))
 	# (where its rocket jumps took off, scorched and cracked, glowing; where they came down, cracked open; under a Golem crouched to
 	# take off, the light of its stacks' fire and grit hopping)
 	for l in launches:
 		var k := floori(float(l["t"]) * 30.0)
 		if k < int(RK["launchN"]):
-			gpiece(self, "%s:launchFloor:%d" % ["back" if l["back"] else "front", k], roundf(_gx(l["x"], l["y"])) * 2.0, roundf(_gy(l["x"], l["y"])) * 2.0, l["flip"])
+			gpiece(self, "%s%s:launchFloor:%d" % [l.get("gun", ""), "back" if l["back"] else "front", k], roundf(_gx(l["x"], l["y"])) * 2.0, roundf(_gy(l["x"], l["y"])) * 2.0, l["flip"])
 	for l in lands:
 		var k := floori(float(l["t"]) * 30.0)
 		if k < int(RK["landN"]):
@@ -511,6 +642,7 @@ func draw_air(c: CanvasItem) -> void:
 		_piece(c, "impact:%d" % _at(10, float(p["t"]) / LIFE["impact"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]) - 12.0, 1.0, float(p.get("k", 1.0)))
 	for p in sparks:
 		_piece(c, "sparks:%d" % _at(16, float(p["t"]) / LIFE["sparks"]), _gx(p["x"], p["y"]), _gy(p["x"], p["y"]))
+	_draw_shots(c)
 
 
 ## (render/tinkerer_fx.ts tarPuddle) A puddle of her tar `r` tiles across its middle, painted once: black and glossy, its edge uneven
@@ -543,3 +675,131 @@ func _tar_pic(r: float) -> Texture2D:
 	var tex := ImageTexture.create_from_image(img)
 	_tar_pics[key] = tex
 	return tex
+
+
+# =====================================================================================================================
+# ITS SHOTS (render/tinkerer_fx.ts drawAir, its gun's; render.ts chargeAt)
+
+## (render/tinkerer_fx.ts facing) Which way a shot runs on the picture: from behind or in front, and whether turned over.
+func _facing(dx: float, dy: float) -> Array:
+	var len := Vector2(dx, dy).length()
+	if len == 0.0:
+		len = 1.0
+	return ["back" if (dx + dy) / len < -0.2 else "front", (dx - dy) / len < 0.0]
+
+
+## (art/golem_shots_fx.ts radiusOf) The shell's blast as it is painted: to the half tile, as approved at the most; its pictures' name.
+func _radius_key(r: float) -> String:
+	var rr := maxf(0.5, minf(float(CH["shellFx"]["blast"]), floorf(r * 2.0 + 0.5) / 2.0))
+	var best: float = CH["shellRadii"][0]
+	for q in CH["shellRadii"]:
+		if absf(float(q) - rr) < absf(best - rr):
+			best = float(q)
+	return ("%d" % int(best)) if best == floorf(best) else ("%.1f" % best)
+
+
+## (dev/golem_moves.ts chargeFrame, render.ts chargeAt) The frame of its big shot a Golem shows: the wind-up, the loop round and
+## round while she holds, then on from the shot.
+func charge_at(g: Dictionary) -> int:
+	var C: Dictionary = CH["C"]
+	var held := 1e9 if float(g["held"]) < 0.0 else maxf(float(kit.GT["charge"]["build"]), float(g["held"])) * 30.0
+	var t := floori(float(g["act_t"]) * 30.0)
+	var hh := maxf(float(C["loop"]), roundf(held))
+	if t < int(C["loop"]):
+		return t
+	if t < hh:
+		return int(C["loop"]) + (t - int(C["loop"])) % int(C["round"])
+	return int(C["fire"]) + int(t - hh)
+
+
+## A piece painted as it came ({tex, ax, ay}), its anchor at (x, y) game pixels of the screen.
+func _painted(c: CanvasItem, q: Dictionary, x: float, y: float) -> void:
+	if q.is_empty():
+		return
+	c.draw_texture(q["tex"], Vector2(roundf(x) * 2.0 - roundf(float(q["ax"])), roundf(y) * 2.0 - roundf(float(q["ay"]))))
+
+
+## A shot's `n` frames painted ahead, in order, off the screen's own thread, by `make` (frame -> {img, ax, ay} or {}).
+func _ahead(s: Dictionary, n: int, make: Callable) -> void:
+	var mx := _mx
+	var done: Dictionary = s["done"]
+	_tasks.append(WorkerThreadPool.add_task(func() -> void:
+		for k in n:
+			var p: Dictionary = make.call(k)
+			mx.lock()
+			done[k] = p
+			mx.unlock()))
+
+
+## Frame `k` of a shot running any way as it is drawn: painted ahead (heroes/golem_paint.gd), made a picture the first time it is
+## drawn and kept; not yet painted, the last one that is (or none).
+func _frame(s: Dictionary, k: int) -> Dictionary:
+	var kept: Dictionary = s["kept"]
+	if kept.has(k):
+		return kept[k]
+	_mx.lock()
+	var p = s["done"].get(k)
+	_mx.unlock()
+	if p == null:
+		for j in range(k - 1, -1, -1):
+			if kept.has(j):
+				return kept[j]
+		return {}
+	kept[k] = {} if (p as Dictionary).is_empty() else {"tex": ImageTexture.create_from_image(p["img"]), "ax": p["ax"], "ay": p["ay"]}
+	return kept[k]
+
+
+## Its small shots streaking from its muzzle up by its shoulder, their flashes; the coil's zaps; then, laid as the art chat's film
+## lays them, the shell's first two frames, everything at a Golem charging, the shell in flight, the beam, the blasts.
+func _draw_shots(c: CanvasItem) -> void:
+	for s in shots:
+		var u := float(s["t"]) / float(s["flight"])
+		var x0 := _gx(s["x0"], s["y0"]) + float(s["way"]) * 8.0
+		var y0 := _gy(s["x0"], s["y0"]) - 34.0
+		var x1 := _gx(s["x1"], s["y1"])
+		var y1 := _gy(s["x1"], s["y1"]) - 12.0
+		var hx := roundf(x0 + (x1 - x0) * u)
+		var hy := roundf(y0 + (y1 - y0) * u)
+		var tx := roundf(x0 + (x1 - x0) * maxf(0.0, u - 0.25))
+		var ty := roundf(y0 + (y1 - y0) * maxf(0.0, u - 0.25))
+		c.draw_line(Vector2(tx, ty) * 2.0, Vector2(hx, hy) * 2.0, GUN[1], 4.0)
+		c.draw_rect(Rect2((hx - 1.0) * 2.0, (hy - 1.0) * 2.0, 6.0, 6.0), GUN[3])
+	for f in flashes:
+		_piece(c, "flash%d:%d" % [int(f["way"]), _at(6, float(f["t"]) / (6.0 / 30.0))], _gx(f["x"], f["y"]), _gy(f["x"], f["y"]) - 34.0)
+	for z in zaps:
+		# (its four frames painted together, ahead)
+		var kept: Dictionary = z["kept"]
+		if kept.is_empty():
+			_mx.lock()
+			var all = z["done"].get(0)
+			_mx.unlock()
+			if all == null:
+				continue
+			for j in (all["all"] as Array).size():
+				var q: Dictionary = all["all"][j]
+				kept[j] = {"tex": ImageTexture.create_from_image(q["img"]), "ax": q["ax"], "ay": q["ay"]}
+		_painted(c, kept[_at(Paint.ZAP_N, float(z["t"]) / (Paint.ZAP_N / 30.0))], _gx(z["x"], z["y"]), _gy(z["x"], z["y"]))
+	for f in flights:
+		var k := floori(float(f["t"]) * 30.0)
+		if k < 2:
+			_painted(c, _frame(f, k), _gx(f["x"], f["y"]), _gy(f["x"], f["y"]))
+	for g in kit.golems:
+		if g["act"] != "charge":
+			continue
+		var fr := charge_at(g)
+		var gun: String = kit.arm_of()
+		if fr >= 0 and fr <= int(CH["fxLast"][gun]):
+			var view := "back" if float(g["fx"]) + float(g["fy"]) < -0.2 else "front"
+			gpiece(c, "%s:%s:chAir:%d" % [gun, view, fr], roundf(_gx(g["x"], g["y"])) * 2.0, roundf(_gy(g["x"], g["y"])) * 2.0, float(g["fx"]) - float(g["fy"]) < 0.0)
+	for f in flights:
+		var k := floori(float(f["t"]) * 30.0)
+		if k >= 2:
+			_painted(c, _frame(f, k), _gx(f["x"], f["y"]), _gy(f["x"], f["y"]))
+	for b in beams:
+		var k := floori(float(b["t"]) * 30.0)
+		var back: float = paint.skid("beam", mini(k, int(CH["beamFrames"])))
+		var bx := float(b["x"]) - float(b["ux"]) * back
+		var by := float(b["y"]) - float(b["uy"]) * back
+		_painted(c, _frame(b, k), _gx(bx, by), _gy(bx, by))
+	for b in big_blasts:
+		_piece(c, "shell%sA:%d" % [b["r"], floori(float(b["t"]) * 30.0)], _gx(b["x"], b["y"]), _gy(b["x"], b["y"]))

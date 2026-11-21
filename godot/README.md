@@ -618,8 +618,13 @@ its kills the demon's for Hunger, Feast, Bloodlust and the souls; the pact runs 
 Rites going off round it; drawn with the demon's own pictures among the figures, warlock_look.gd `_place_bound`). THE TINKERER'S: Bombs Away, Fortune, Cluster Vials, Tar, Mad Mixture (her vials' bursts
 in their brew's colours, baked by tools/godot_tinkerer.ts), Alchemy, The Big One, Lightning Rod (the decoys: monsters.gd
 `decoys`, monster.gd _drawn_to_decoy, as game.ts drawnToDecoy), Shrapnel, Prospector and Overdrive (heroes/tinkerer.gd,
-tinkerer_look.gd: the tar puddles, the big vial's ring, the little vials). Not yet: the Contraption, the Gun Arm, Mark II and
-Growth Serum. THE RANGER'S: Fleet, Windrunner, Keen Eye, Steady Aim, Quick Draw, Long Shot, Light Step, Hunter's Mark, Wide
+tinkerer_look.gd: the tar puddles, the big vial's ring, the little vials), Mark II (a second Golem at her other side), Growth
+Serum (a vial bursting by it makes it twice as big and as strong, five seconds) and the GUN ARM, by his word of 21 Nov 2026
+(below: her Golem only shoots): its cannon swapped for the tesla coil, no pick (“we can keep the tesla coil for now, but i feel
+like it will need to be changed in the future”): a zap every second at the nearest within 7 tiles, leaping on to two more, her
+hold its beam, her tap and hold growing with Intelligence (loadout `grows`). Lightning Rod and Prospector go off on its big shot
+in its ground pound's place, their cards worded so (talents.gd `OWN_WORDS`; the Gun Arm's and Shrapnel's too). Not yet: the
+Contraption. THE RANGER'S: Fleet, Windrunner, Keen Eye, Steady Aim, Quick Draw, Long Shot, Light Step, Hunter's Mark, Wide
 Traps, Minefield, Split Shot, Hail, Ricochet (`piercing`) and Far Sight (heroes/ranger.gd, kit.gd's shots, hero.gd hit_monster).
 Venom (a poisoned one dying leaves a cloud of its poison) and his three moves to learn, Snare, Snipe and Rally (below). THE
 MAGE'S: Kindling (her fire leaves the
@@ -714,10 +719,22 @@ is hurt and falls:
 - THE WARLOCK: his hellfire bolt and its burn, his Curse and the burns leaping from a cursed one dying, his Smoke Step, his pact
   filling over his head and the change (R), the demon's Claw Rake, Damning and Smoke Step, its burning out; his pictures kept in
   packs read as the game reads them (the demon's): `assets/heroes/warlock_fx.*`.
-- THE TINKERER: her Vial Toss; her Golem (whistled out, dropping in; running at what is awake near her and fighting it with its
-  combo, uppercut, uppercut, slam; her next whistle rocket-jumps it onto where she aims, landing as its pound; left behind,
-  whistled up beside her again; winding down as she falls); her Blast Jump. The Golem's pictures (its run, its rocket jump and
-  everything at it, its take-offs and landings, its trail) and her effects, baked once: `assets/heroes/golem*`, `tinkerer_fx*`.
+- THE TINKERER: her Vial Toss; her Golem; her Blast Jump. HER GOLEM ONLY SHOOTS, by his word of 21 Nov 2026 (“i think we should
+  change the golem to be ranged, small shots, then big shot on the whistle.”; asked, the big shot in place of its pound and its
+  jump, “Replace them (Recommended)”; and THIS IS TO BE THE MAIN GAME: “the godot is going to be the main game so once thats done
+  we wont need the browser version.”, so the change is made here, not in the browser game): whistled out, it drops in and goes
+  with her; it stands off and fires its cannon's small shot at what is awake near her, from any way off within 8 tiles, never
+  closing on it (the game's gun arm's cannon act, a shot about as often as it punched: tinkerer.gd `SHOT_WAIT`, his to change);
+  her next whistle, held, braces it and charges its BIG SHOT where she points, fired as she lets go (the game's charged shot, its
+  shell 2.5 tiles round at its full, the Golem thrown back by it; Twin, a second; "of Echoes", a weaker one after); far behind,
+  it still rocket-jumps to catch up; left behind, whistled up beside her again; winding down as she falls. ITS LOOK IS TO CHANGE,
+  his pick (“fist to a big gun, but id like him to have 1 wheel instead of legs”): until he has seen it and said yes, it keeps
+  the game's look with its cannon arm. The Golem's pictures (its run, its small shot, its charge, its rocket jump and everything
+  at them, its take-offs and landings, its trail; the tesla coil's set) and her effects (its flash, the shell's blast), baked
+  once: `assets/heroes/golem*`, `tinkerer_fx*`; what runs any way (the shell in flight, the beam, the tesla coil's zaps) painted
+  as it comes by the game's own painter ported line for line, ahead of time off the screen's thread (`heroes/golem_paint.gd`;
+  held against the game's pictures pixel for pixel: `npx tsx tools/godot_golem_shots.ts <dir>`, then `godot --headless --path
+  godot -s res://checks/golem_shots_check.gd -- --dir=<dir>`, 50 pictures, none differing).
 - THE BRAWLER, THE VETERAN: his three globes and his combos (taps the jab, the cross, the hook, the spinning elbow; holds the round
   kick and the push kick; a swipe his dodging jump, or with a tap or a hold set in fire the flying uppercut, the flying knee, the
   spinning jump kicks; locked at three, R cancels), each move carried and aimed as the art has it, its blow reaching each in its
@@ -743,8 +760,8 @@ swirling round the ring and its column of light, a fallen hero's end (the game e
 hero, who wakes in town; here he is back where the last save left him), the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
 breaks, what stands behind raised ground cut off by it, menus (a new hero is picked on the class cards; there is no title menu to
-go BACK to), the title screen's music and the ring's moving light; the talents' own rules (the trees and their page are in: above; the Tinkerer's Golem has its
-cannon arm, as he picked it), the modes' rules for a fallen hero.
+go BACK to), the title screen's music and the ring's moving light; the talents' own rules (the trees and their page are in:
+above; the Tinkerer's Contraption is not), the modes' rules for a fallen hero.
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made

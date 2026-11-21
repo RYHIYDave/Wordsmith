@@ -453,9 +453,9 @@ func _warlock() -> void:
 
 
 ## THE TINKERER: her Vial Toss (lobbed to where she aims, bursting where it comes down, hurting what stands within its reach and not
-## what is further), her Golem (whistled out beside her, dropping in; running at what is awake near her and fighting it with its
-## combo, uppercut, uppercut, slam; her next whistle rocket-jumps it onto where she aims, landing as its pound; left far behind,
-## whistled up beside her again; winding down), her Blast Jump (her bomb going off at her feet, hurting and throwing what is by her,
+## what is further), her Golem (whistled out beside her, dropping in; standing off and firing its cannon at what is awake near her,
+## never closing on it; her next whistle, held, braces it and charges its big shot, its shell fired as she lets go, the Golem thrown
+## back; left far behind, whistled up beside her again; winding down), her Blast Jump (her bomb going off at her feet, hurting and throwing what is by her,
 ## she riding it 4 tiles and more, nothing reaching her; her leap's and her landing's pictures).
 func _tinkerer() -> void:
 	var K = h.kit
@@ -508,44 +508,49 @@ func _tinkerer() -> void:
 	var g: Dictionary = K.golems[0] if out else {}
 	var beside: bool = out and Vector2(g["x"], g["y"]).distance_to(h.world) < 2.0 and g["act"] == "arrive"
 	_line(out and beside, "her whistle: her Golem dropped in beside her (%.1f tiles from her)" % (Vector2(g["x"], g["y"]).distance_to(h.world) if out else -1.0))
-	# ITS COMBO: it runs at them, uppercut, uppercut, SLAM
+	# ITS SMALL SHOTS (his word of 21 Nov 2026: it only shoots): it stands off and fires its cannon at them, never closing to punch
 	var acts := {}
-	var punched := [false]
 	var lives := [A.life, B.life]
-	var fought: bool = await _run(8.0, func(): return acts.has("pound") and acts.has("punch"), func():
+	var near := [1e9]
+	var fired: bool = await _run(6.0, func(): return acts.has("cannon") and (A.life < lives[0] or B.life < lives[1]), func():
 		for m in pack: _hold(m)
 		acts[g["act"]] = true
-		if g["act"] == "punch" and not punched[0] and float(g["act_t"]) > 0.55:
-			punched[0] = true)
-	await _run(0.5, Callable(), keep)
-	await _snap("tinkerer_golem_slam")
-	_line(fought and acts.has("walk") and (A.life < lives[0] or B.life < lives[1]),
-		"her Golem ran at them (%s) and fought them with its combo, uppercut and slam (%s): struck (%.0f to %.0f, %.0f to %.0f)" % [acts.has("walk"), acts.keys(), lives[0], A.life, lives[1], B.life])
-	# ITS ROCKET JUMP: her whistle again, aimed at the one far off: it blasts off, flies, and lands as its pound
+		near[0] = minf(near[0], minf(A.world.distance_to(Vector2(g["x"], g["y"])), B.world.distance_to(Vector2(g["x"], g["y"])))))
+	await _run(0.1, Callable(), keep)
+	var shot_seen: bool = await _run(6.0, func(): return g["act"] == "cannon" and float(g["act_t"]) >= 0.55, keep)
+	await _snap("tinkerer_golem_shot")
+	_line(fired and shot_seen and not acts.has("punch") and not acts.has("pound") and near[0] > 2.0,
+		"her Golem stood off and fired its cannon at them (%s), never closing on them (%.1f tiles at the nearest): struck (%.0f to %.0f, %.0f to %.0f)" % [acts.keys(), near[0], lives[0], A.life, lives[1], B.life])
+	# ITS BIG SHOT: her whistle again, held: it braces and charges, and fires its shell as she lets go, thrown back by it
 	await _run(5.5, func(): return K.charges[1] >= 1, keep)
-	var far_at: Vector2 = h.world - way * 1.0
-	for st in range(9, 3, -1):
-		var p: Vector2 = Vector2(g["x"], g["y"]) - way * st
-		if K._open(p) and h.monsters.sees(Vector2(g["x"], g["y"]), p):
-			far_at = p
-			break
-	put.call(C, far_at)
-	put.call(A, home + way * 12.0)
-	put.call(B, home + way * 12.0 + side * 1.0)
-	await _run(0.2, Callable(), keep)
-	var g_from := Vector2(g["x"], g["y"])
-	c0 = C.life
-	K._use_skill(1, C.world)
-	var jumped: bool = await _run(1.0, func(): return g["act"] == "jump", keep)
+	put.call(A, home + way * 14.0 + side * 3.0)
+	put.call(B, home + way * 14.0 + side * 4.0)
+	# (it out in the open before her, the one it fires at 6 tiles on)
+	g["x"] = (home + way * 2.0).x
+	g["y"] = (home + way * 2.0).y
+	var aim_at: Vector2 = home + way * 8.0
+	put.call(C, aim_at)
 	await _run(0.3, Callable(), keep)
-	await _snap("tinkerer_rocket_crouch")
-	var flying: bool = await _run(1.0, func(): return g["act"] == "jump" and float(g["act_t"]) * 30.0 > 22.0, keep)
-	await _snap("tinkerer_rocket_flight")
-	var landed: bool = await _run(1.5, func(): return g["act"] != "jump", keep)
-	await _snap("tinkerer_rocket_landed")
+	c0 = C.life
+	var g_from := Vector2(g["x"], g["y"])
+	K.hold_auto = true
+	K._use_skill(1, C.world)
+	var braced: bool = await _run(1.0, func(): return g["act"] == "charge", keep)
+	await _run(1.2, Callable(), keep)
+	await _snap("tinkerer_golem_charging")
+	K.hold_auto = false
+	var shot: bool = await _run(1.0, func(): return bool(g["did"]), keep)
+	var held: float = g["held"]
+	var full: bool = held >= float(K.GT["charge"]["build"]) - 0.05
+	await _run(0.12, Callable(), keep)
+	await _snap("tinkerer_golem_shell")
+	var hit: bool = await _run(1.5, func(): return C.life < c0, keep)
+	await _run(0.1, Callable(), keep)
+	await _snap("tinkerer_golem_shell_blast")
+	await _run(1.2, func(): return g["act"] != "charge", keep)
 	var g_to := Vector2(g["x"], g["y"])
-	_line(jumped and flying and landed and g_from.distance_to(g_to) > 2.0 and C.life < c0,
-		"her whistle again: her Golem rocket-jumped %.1f tiles onto where she aimed, its landing its fist slam (the one there %.0f to %.0f)" % [g_from.distance_to(g_to), c0, C.life])
+	_line(braced and shot and full and hit and g_from.distance_to(g_to) > 0.5,
+		"her whistle again, held: her Golem braced and charged (held %.1f s), and fired its shell as she let go: the one 6 tiles off struck (%.0f to %.0f), the Golem thrown back %.1f tiles" % [held, c0, C.life, g_from.distance_to(g_to)])
 	# HER BLAST JUMP: her bomb at her feet, the one by her struck and thrown; she rides it, nothing reaching her
 	for m in pack:
 		if not m.dead:

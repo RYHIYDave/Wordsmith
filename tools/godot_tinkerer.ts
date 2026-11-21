@@ -22,10 +22,14 @@ import { Light, SMOKE, cloud } from '../src/dev/warlock_fx';
 import { BREW, CAP, VAPOUR, thud, vialBurst, vialSprite } from '../src/dev/contraption_fx';
 import { CHIP, SCORCH, blast, chips, scorch } from '../src/dev/blast_fx';
 import { HEART, STEAM, burstSteam, shock } from '../src/dev/golem_pound_fx';
-import { GUN_GLOW, IRON, impactBurst } from '../src/dev/golem_gun_fx';
+import { GUN_GLOW, IRON, impactBurst, muzzleFlash } from '../src/dev/golem_gun_fx';
 import { GEARS, SPARKS, gears, sparks } from '../src/dev/golem_down_fx';
 import { STUFF, crackStar, drawCrack } from '../src/dev/demon_fx';
-import { makeGolemArt } from '../src/art/tinkerer_art';
+import { golemCharge, makeGolemArt } from '../src/art/tinkerer_art';
+import { BEAM_END_UP, BEAM_FRAMES, CHARGE_FX_LAST, golemChargeFx, golemShellBlastFx, golemShotAt } from '../src/art/golem_shots_fx';
+import { BEAM_FX, SHELL_FX } from '../src/dev/golem_charge_fx';
+import { CHARGE_SKID, GCHARGE, GCHARGE_BEAM, GCHARGE_SHELL } from '../src/dev/golem_moves';
+import { UNITS_PER_TILE } from '../src/art/moves3';
 import { LAND_N, LAUNCH_N, PUFF_LIFE, ROCKET, ROCKET_ARC, RUN_STRIDE, golemLandFx, golemLaunchFx, golemRocketFrames, golemRocketFx, golemRunFrames, rocketPuffFx, rocketTrail } from '../src/art/golem_rocket_fx';
 import { TINKER_TUNE, COMBO_TUNE, GOLEM_COMBO, GOLEM_CANNON, golemBlow } from '../src/game/tinkerer';
 import { GOLEM_R } from '../src/game/game';
@@ -80,6 +84,18 @@ for (let k = 0; k < 16; k++) fx.set(`sparks:${k}`, piece(90, 80, 45, 60, 2, [GEA
   gears(st, 45, 40, 60, k, 7, 1);
 }));
 for (let i = 0; i < 6; i++) fx.set(`puff:${i}`, piece(40, 34, 20, 28, 1, [SMOKE], ([sm]) => cloud(sm, 20, 28, 18, 15, i * 0.17, 0.2, 31 + i)));
+// (ITS SMALL SHOT, render/tinkerer_fx.ts flashFrames: its cannon's flash out of its mouth, to the right or the left of the picture)
+for (const way of [1, -1]) for (let k = 0; k < 6; k++) fx.set(`flash${way}:${k}`, piece(60, 50, 30, 25, 1, [GUN_GLOW], ([l]) => muzzleFlash(l, 30, 25, way, -0.3, k, 4)));
+// (ITS BIG SHOT, art/golem_shots_fx.ts golemShellBlastFx: the shell's wide blast where it lands, its scorch on the floor and the
+// rest in the air, at each radius it is painted at (to the half tile, the game's radiusOf: from 1.5 at no charge to 2.5 at its full))
+const SHELL_RADII = [1.5, 2, 2.5];
+for (const r of SHELL_RADII) {
+  const b = golemShellBlastFx(r);
+  for (let k = 0; k < SHELL_FX.long; k++) {
+    fx.set(`shell${r}F:${k}`, b.floor[k]);
+    fx.set(`shell${r}A:${k}`, b.air[k]);
+  }
+}
 
 // ---- THE GOLEM ----
 const golem = new Map<string, Sprite>();
@@ -114,6 +130,47 @@ for (const view of VIEWS) {
     golem.set(`${view}:landFloor:${k}`, down.floor[k]);
     golem.set(`${view}:landAir:${k}`, down.air[k]);
   }
+}
+// (ITS SMALL SHOT: its cannon brought down and fired, art/tinkerer_art.ts golemSet attack2)
+for (const view of VIEWS) {
+  const c = art[view].clips!.attack2!;
+  clips.shot = { n: c.frames.length, fps: c.fps, hit: c.hit ?? null };
+  c.frames.forEach((s, i) => golem.set(`${view}:shot:${i}`, s));
+}
+// (ITS BIG SHOT, frame by frame from her whistle (dev/golem_moves.ts chargeFrame says which): the cannon's shell, the tesla coil's
+// beam; and everything at it as it braces, charges and fires, on the floor under it and in the air over it)
+const charge: Record<string, number> = {};
+for (const gun of ['cannon', 'tesla'] as const) for (const view of VIEWS) {
+  const frames = golemCharge(view, gun);
+  charge[gun] = frames.length;
+  frames.forEach((s, i) => golem.set(`${gun}:${view}:charge:${i}`, s));
+  const L = golemChargeFx(view, gun);
+  for (let f = 0; f <= CHARGE_FX_LAST[gun]; f++) {
+    golem.set(`${gun}:${view}:chFloor:${f}`, L.floor[f]);
+    golem.set(`${gun}:${view}:chAir:${f}`, L.air[f]);
+  }
+}
+// (HER TREE'S GUN ARM: the Golem with the tesla coil in its cannon's place, standing, running, rocket-jumping and winding down)
+const tesla = makeGolemArt('tesla');
+for (const view of VIEWS) {
+  golem.set(`tesla:${view}:idle:0`, tesla[view].idle[0]);
+  tesla[view].clips!.fall!.frames.forEach((s, i) => golem.set(`tesla:${view}:down:${i}`, s));
+  golemRunFrames(view, 'tesla').forEach((s, i) => golem.set(`tesla:${view}:run:${i}`, s));
+  golemRocketFrames(view, 'tesla').forEach((s, i) => golem.set(`tesla:${view}:rocket:${i}`, s));
+  const off = golemLaunchFx(view, 'tesla');
+  for (let k = 0; k < LAUNCH_N; k++) {
+    golem.set(`tesla:${view}:launchFloor:${k}`, off.floor[k]);
+    golem.set(`tesla:${view}:launchAir:${k}`, off.air[k]);
+  }
+}
+// (WHERE ITS GUN'S MOUTH IS, art/golem_shots_fx.ts golemPoints, from its floor point, as the picture is not turned over: the
+// cannon's as it fires its shell; the coil's each frame of its beam)
+// (as the painter reads them: in the figures' own measure, the world's x and y along the floor and z up, golemShotAt's muzzle)
+const muzzle: Record<string, number[][]> = {};
+const mouth = (gun: 'cannon' | 'tesla', f: number, view: 'front' | 'back'): number[] => [...golemShotAt(gun, f, view, () => [0, 0]).muzzle];
+for (const view of VIEWS) {
+  muzzle[`cannon:${view}`] = [mouth('cannon', GCHARGE.fire, view)];
+  muzzle[`tesla:${view}`] = Array.from({ length: BEAM_FRAMES + 1 }, (_, k) => mouth('tesla', GCHARGE.fire + k, view));
 }
 rocketPuffFx().forEach((list, v) => list.forEach((s, age) => golem.set(`puff${v}:${age}`, s)));
 // (ITS TRAIL: the puffs born at each frame b of its flight, for each view, turned over or not: where they are (tiles from where it
@@ -218,5 +275,10 @@ writeFileSync('godot/assets/heroes/golem.json', JSON.stringify({
   radius: GOLEM_R,
   rocket: { ...ROCKET, high: ROCKET_ARC.high, top: ROCKET_ARC.top, launchN: LAUNCH_N, landN: LAND_N, puffLife: PUFF_LIFE },
   runStride: RUN_STRIDE,
+  // (ITS BIG SHOT: the art's frames, the shell's and the beam's numbers, where its gun's mouth is: art/golem_shots_fx.ts)
+  charge: {
+    frames: charge, fxLast: CHARGE_FX_LAST, C: GCHARGE, shell: GCHARGE_SHELL, beam: GCHARGE_BEAM, skid: CHARGE_SKID, shellFx: SHELL_FX, beamFx: BEAM_FX,
+    beamFrames: BEAM_FRAMES, beamEndUp: BEAM_END_UP, muzzle, unitsPerTile: UNITS_PER_TILE, shellRadii: SHELL_RADII,
+  },
 }));
 writeFileSync('godot/assets/heroes/tinkerer_fx.json', JSON.stringify({ pics: pack(fx, 'tinkerer_fx'), brew: BREW, gunGlow: GUN_GLOW }));

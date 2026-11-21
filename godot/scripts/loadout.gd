@@ -134,10 +134,16 @@ func id(i: int) -> String:
 	return str(Words.data()["classes"][cls]["moves"][i])
 
 
+## (game.ts refresh `grows`) What each move grows with where her tree says other than his class: "" for his class's own; "dex" or
+## "int" (THE TINKERER: her Gun Arm's tesla coil, Intelligence; her Contraption, its pick's).
+var grows: Array = ["", "", ""]
+
+
 func r(i: int) -> Dictionary:
 	if _r[i] == null:
 		var none := func(_w): return null
-		_r[i] = Words.resolve(id(i), front[i].map(none) if hushed else front[i], behind[i].map(none) if hushed else behind[i], _d, cls)
+		var by: String = cls if str(grows[i]) == "" else str(grows[i])
+		_r[i] = Words.resolve(id(i), front[i].map(none) if hushed else front[i], behind[i].map(none) if hushed else behind[i], _d, by)
 	return _r[i]
 
 

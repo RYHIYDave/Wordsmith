@@ -77,7 +77,13 @@ const warriorArms = [...WARRIOR_KITS.battleaxe, ...WARRIOR_KITS.warhammer];
 const swapMoves: Record<string, string[]> = { mage: ['ball', 'spear', 'beam'], ranger: ['snare', 'snipe', 'rally'] };
 const allMoves = [...new Set([...CLASS_IDS.flatMap((c) => classes[c].moves), ...demonKit, ...warriorArms, ...Object.values(swapMoves).flat()])];
 const words = Object.fromEntries([...OURS, ...MADE].map((w) => [w, WORDS[w]]));
-const skills = Object.fromEntries(allMoves.map((id) => [id, SKILLS[id]]));
+// (THE PORT'S OWN WORDS FOR A MOVE: the Tinkerer's Golem only shoots, his word of 21 Nov 2026: “i think we should change the golem to
+// be ranged, small shots, then big shot on the whistle.”; asked, the big shot in place of its pound and its jump, “Replace them
+// (Recommended)”)
+const PORT_DESC: Record<string, string> = {
+  golem: 'Whistle your Golem out: it follows you and shoots its cannon at what it fights. Whistle again and hold: it charges its big shot, fired as you let go.',
+};
+const skills = Object.fromEntries(allMoves.map((id) => [id, PORT_DESC[id] ? { ...SKILLS[id], desc: PORT_DESC[id] } : SKILLS[id]]));
 writeFileSync(`${OUT}/words.json`, JSON.stringify({
   // (the words a Warrior can come by on floors 1 to 5, in the game's order; each as defs.ts WORDS has it)
   ids: OURS,
@@ -189,7 +195,7 @@ if (process.argv[2] === 'check') {
   const rows: unknown[] = [];
   const row = (id: string, d: Pick<Derived, 'str' | 'dex' | 'int' | 'area' | 'aps' | 'cdr'>, front: (WordId | null)[], behind: (WordId | null)[], cls: ClassId = 'warrior'): void => {
     const r = resolveSkill(SKILLS[id as keyof typeof SKILLS], front, behind, cls, d as Derived, 'cooldown');
-    rows.push({ id, cls, d, front, behind, r: { name: r.name, projSpeed: r.projSpeed, element: r.element, dmgMult: r.dmgMult, size: r.size, rate: r.rate, cooldown: r.cooldown, splash: r.splash, splashDmg: r.splashDmg, pierce: r.pierce, ignite: r.ignite, chill: r.chill, arcs: r.arcs, arcDmg: r.arcDmg, poison: r.poison, stun: r.stun, might: r.might, haste: r.haste, zone: r.zone, cloud: r.cloud, cracks: r.cracks, lines: r.lines,
+    rows.push({ id, cls, d, front, behind, r: { name: r.name, projSpeed: r.projSpeed, element: r.element, dmgMult: r.dmgMult, size: r.size, rate: r.rate, cooldown: r.cooldown, splash: r.splash, splashDmg: r.splashDmg, pierce: r.pierce, ignite: r.ignite, chill: r.chill, arcs: r.arcs, arcDmg: r.arcDmg, poison: r.poison, stun: r.stun, might: r.might, haste: r.haste, zone: r.zone, cloud: r.cloud, cracks: r.cracks, lines: PORT_DESC[id] && r.lines[0] === SKILLS[id as keyof typeof SKILLS].desc ? [PORT_DESC[id], ...r.lines.slice(1)] : r.lines,
       // (floors 6 to 10's words)
       count: r.count, countDmg: r.countDmg, echo: r.echo, leech: r.leech, orbChance: r.orbChance, volatile: r.volatile, rune: r.rune, precise: r.precise, mark: r.mark,
       frenzy: r.frenzy, frenzyFeed: r.frenzyFeed, shield: r.shield, ward: r.ward, last: r.last, pace: r.pace, boost: r.boost, vast: r.vast, wide: r.wide,

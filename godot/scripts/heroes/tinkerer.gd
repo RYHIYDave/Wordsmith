@@ -4,27 +4,36 @@
 ##     TINKER_TUNE.toss.flight and bursts where it comes down, hurting all within the move's radius. Aimed at an enemy for her, it
 ##     goes where the enemy will be as it comes down (lock.ts placedAim). Twin, a second beside it; "of Echoes", a weaker one after.
 ##   HER GOLEM (her tap and hold): her first whistles it out beside her (it drops in); from then on it is always with her. It runs
-##     after her (faster than she runs), goes for what is awake near her, and fights it with its combo, uppercut, uppercut, SLAM
-##     (GOLEM_COMBO); far from where it is going, it rocket-jumps there (GOLEM_ROCKET: crouched half a second, its stacks swung
-##     down and flaring, the blast, the flight, its landing its fist slam). Each whistle after rocket-jumps it onto where she aims,
-##     landing as its ground pound (nearer than COMBO_TUNE.jumpFrom, it pounds where it stands). It cannot be broken: monsters do
-##     not fight it. Left far behind (a way taken), it is whistled up beside her again; it winds down where it stands when she falls.
+##     after her (faster than she runs) and goes for what is awake near her. IT ONLY SHOOTS, by his word of 21 Nov 2026 (“i think
+##     we should change the golem to be ranged, small shots, then big shot on the whistle.”; asked whether the big shot takes the
+##     place of its pound and its jump, his pick “Replace them (Recommended)”): it stands off and fires its cannon's small shot at
+##     what it fights (game.ts, the gun arm's cannon act, from any way off within its reach; a shot about as often as it punched),
+##     or with her tree's GUN ARM its tesla coil zaps it; each whistle after the first braces it and charges its BIG SHOT at where
+##     she points, fired as she lets go (game.ts stepCharge, chargedShot: the cannon's shell, the coil's beam; Twin, a second; "of
+##     Echoes", a weaker one after). Far from where it is going, it rocket-jumps there (GOLEM_ROCKET: crouched half a second, its
+##     stacks swung down and flaring, the blast, the flight, its landing its fist slam). It cannot be broken: monsters do not fight
+##     it. Left far behind (a way taken), it is whistled up beside her again; it winds down where it stands when she falls.
 ##   HER BLAST JUMP (her swipe): a bomb at her feet goes off, what is by her hurt and blown away, and she rides the blast to a spot,
 ##     nothing hurting her in the air (Twin, a second bomb a moment later where she was; "of Echoes", a weaker one after).
-## The Golem's hits are hers, made with her tap and hold's words. Her skill tree (the Contraption, the gun arm, Mark II, her vials'
-## talents) is not in the port yet: her Golem has its cannon arm, as he picked it, and fights with its fists (GOLEM_CANNON off).
+## The Golem's hits are hers, made with her tap and hold's words. HER TREE in the port: her vials' talents, Mark II (two Golems),
+## Growth Serum, Overdrive, Shrapnel, Lightning Rod and Prospector (on its big shot, as its pound was), and the GUN ARM, his word of
+## 21 Nov 2026 (“we can keep the tesla coil for now, but i feel like it will need to be changed in the future”): its cannon swapped
+## for the tesla coil.
 extends "res://scripts/heroes/kit.gd"
+
+## (his word, 21 Nov 2026: the Golem only shoots) Its small shot's wait after each: the punch's, so that it fires about as often as
+## it punched and hits about as hard (the game's cannon waited TINKER_TUNE.golem.cannon.wait, 3 s, beside its fists). His to change.
+const SHOT_WAIT := 0.5
 
 ## (assets/heroes/golem.json: tools/godot_tinkerer.ts, her tune and its rocket jump's frames, as the game has them)
 var G := {}
 var TT := {}
 var GT := {}
-var CB := {}
 var RK := {}
 ## Her vials in the air: {x0, y0, x1, y1, t, flight, skill, frac, wake}.
 var vials: Array = []
-## Her Golems (one): {x, y, fx, fy, act, act_t, did, target, ax, ay, punch_cd, jump_cd, walked, skill, seat, combo, combo_t, jx, jy,
-## twin}. `act`: arrive, stand, walk, punch, pound, jump, down.
+## Her Golems (one; two with Mark II): {id, x, y, fx, fy, act, act_t, did, target, ax, ay, cannon_cd, jump_cd, walked, skill, seat,
+## jx, jy, grow_t, over_t, zap_t, held, ch_frac, skid, twin, echo}. `act`: arrive, stand, walk, cannon, charge, jump, down.
 var golems: Array = []
 var _deny := 0.0
 var _next_golem := 0
@@ -57,7 +66,6 @@ func _init(hero) -> void:
 	G = JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/golem.json"))
 	TT = G["tune"]
 	GT = TT["golem"]
-	CB = G["combo"]
 	RK = G["rocket"]
 
 
@@ -108,13 +116,14 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 		for k in (1 if echo else int(r["count"])):
 			_toss_vial(i, from, to, each, k, echo)
 	elif kind == "golem":
-		# (the first whistle brings her Golem out; each after rocket-jumps it, or sets it on to pound. Twin, a second pound; "of
-		# Echoes", a weaker one after that)
+		# (the first whistle brings her Golem out; each after has it charge its big shot. Twin, a second shot after the first; "of
+		# Echoes", a weaker one after that: each Golem charging keeps it for when it fires)
 		if not echo:
 			_whistle(i, to, each, int(r["count"]))
 		else:
 			for g in _up():
-				_after(float(GT["pound"]["long"]), func() -> void: _pounds(i, Vector2(g["x"], g["y"]), each, 0, true, g))
+				if g["act"] == "charge" and not g["did"]:
+					g["echo"] = each
 	if primary and float(r["echo"]) > 0.0:
 		var again := func() -> void: _deliver(i, from, to, float(h.loadout.r(i)["echo"]), false)
 		h._echo_of(i, kind, from, way, again)
@@ -181,6 +190,11 @@ func _vial_bursts(v: Dictionary) -> void:
 		var tr: float = rad * float(T["tar"]["size"])
 		tars.append({"x": at.x, "y": at.y, "r": tr, "t": 0.0})
 		_say({"t": "tar", "x": at.x, "y": at.y, "r": tr, "secs": T["tar"]["secs"]})
+	# (GROWTH SERUM: bursting by her Golem, it makes it grow)
+	if h.has("growthserum"):
+		for g in _up():
+			if Vector2(g["x"], g["y"]).distance_to(at) <= rad + golem_body(g) + float(T["growth"]["near"]):
+				_grow(g)
 	# (CLUSTER VIALS: it bursts into three little ones that bounce out and burst again)
 	if not little and h.has("clustervials"):
 		_cluster_of(v)
@@ -349,47 +363,89 @@ func _turn_golem(g: Dictionary, to: Vector2) -> void:
 		g["fy"] = d.y / d.length()
 
 
-## (game.ts whistle) Her tap and hold: her Golem whistled out beside her; or, out already, it rocket-jumps onto where she points
-## (GOLEM_COMBO), or nearer than that pounds the floor before it; Twin, a second pound after.
+## (game.ts whistle) Her tap and hold: her Golem whistled out beside her; or, out already (his word: it only shoots), each braces
+## and charges its big shot at where she points, firing as she lets go (one charging or firing already goes on with it: a held
+## button asks again and again). Twin, a second shot after the first.
 func _whistle(i: int, to: Vector2, frac: float, count: int) -> void:
 	var up := _up()
-	if up.is_empty():
+	# (all she may have out: one; two with her tree's MARK II, the second at her other side)
+	if up.size() < golems_most():
+		# (the first place free: at her one side, at her other, behind her)
 		var seat := 0
+		while up.any(func(q): return int(q["seat"]) == seat):
+			seat += 1
 		var s := _golem_spot(seat, 0.6)
 		var p: Vector2 = s if _open(s) else h.world
 		# (one winding down is gone as a new one comes)
 		golems = up
 		_next_golem += 1
 		golems.append({"id": _next_golem, "x": p.x, "y": p.y, "fx": h.face.x, "fy": h.face.y, "act": "arrive", "act_t": 0.0, "did": false, "target": null, "ax": p.x, "ay": p.y,
-			"punch_cd": 0.0, "jump_cd": 0.0, "walked": 0.0, "skill": i, "seat": seat, "combo": 0, "combo_t": 0.0, "jx": p.x, "jy": p.y, "twin": 0})
+			"cannon_cd": 0.0, "jump_cd": 0.0, "walked": 0.0, "skill": i, "seat": seat, "jx": p.x, "jy": p.y, "twin": 0, "echo": 0.0, "grow_t": 0.0, "over_t": 0.0,
+			"zap_t": float(_T()["tesla"]["every"]), "held": -1.0, "ch_frac": frac, "skid": 0.0})
+		golems.sort_custom(func(a, b): return int(a["seat"]) < int(b["seat"]))
 		_say({"t": "golemArrive", "x": p.x, "y": p.y})
 		_shake(2.0)
 		_sfx("whistle", 0.7)
 		_sfx("slam", 0.6)
 		_overdrive()
 		return
-	var jumped: Array = []
-	if bool(CB["on"]):
-		for g in up:
-			if g["act"] != "jump" and _hold_jump(g, i, to, count):
-				jumped.append(g)
 	for g in up:
-		if jumped.has(g) or (bool(CB["on"]) and g["act"] == "jump"):
+		if g["act"] == "charge":
 			continue
-		g["combo"] = 0
 		var d: Vector2 = to - Vector2(g["x"], g["y"])
 		if d.length() > 0.3:
 			g["fx"] = d.x / d.length()
 			g["fy"] = d.y / d.length()
-		g["act"] = "pound"
-		g["act_t"] = -float(GT["pound"]["lead"])
+		g["act"] = "charge"
+		g["act_t"] = 0.0
 		g["did"] = false
 		g["skill"] = i
-		for k in range(1, count):
-			_after(float(GT["pound"]["long"]) * k, func() -> void:
-				if g["act"] != "down" and golems.has(g):
-					_pounds(i, Vector2(g["x"], g["y"]), frac, k, false, g))
+		g["ax"] = to.x
+		g["ay"] = to.y
+		g["held"] = -1.0
+		g["ch_frac"] = frac
+		g["skid"] = 0.0
+		g["twin"] = count
+		g["echo"] = 0.0
+		_say({"t": "golemCharge", "x": g["x"], "y": g["y"]})
+	_sfx("slam", 0.4)
 	_overdrive()
+
+
+## (game.ts armOf) The arm on her Golem: its cannon; with her tree's GUN ARM, the tesla coil (his word of 21 Nov 2026: the node
+## swaps the cannon for the coil, no pick).
+func arm_of() -> String:
+	return "tesla" if h.has("gunarm") else "cannon"
+
+## (game.ts golemsMost) How many Golems she may have out at once: one; two with her tree's MARK II.
+func golems_most() -> int:
+	return int(_T()["markII"]) if h.has("markii") else 1
+
+
+## (GROWTH SERUM, game.ts growGolem) Golem `g` grows, twice as big and twice as strong, for a while.
+func _grow(g: Dictionary) -> void:
+	if float(g.get("grow_t", 0.0)) <= 0.0:
+		_say({"t": "golemGrow", "x": g["x"], "y": g["y"]})
+	g["grow_t"] = float(_T()["growth"]["secs"])
+
+
+## (game.ts golemBody) How far Golem `g`'s body reaches from its middle (grown, twice as far).
+func golem_body(g) -> float:
+	return 0.5 * (float(_T()["growth"]["big"]) if g != null and float(g.get("grow_t", 0.0)) > 0.0 else 1.0)
+
+
+## (game.ts golemMight) How many times as strong Golem `g` is (grown, twice).
+func golem_might(g) -> float:
+	return float(_T()["growth"]["strong"]) if g != null and float(g.get("grow_t", 0.0)) > 0.0 else 1.0
+
+
+## (render.ts drawTinkerers) How big Golem `g` is drawn: twice grown, growing and shrinking back over a quarter of a second.
+func golem_grow(g: Dictionary) -> float:
+	var GS: Dictionary = _T()["growth"]
+	var gt: float = g.get("grow_t", 0.0)
+	if gt <= 0.0:
+		return 1.0
+	return 1.0 + (float(GS["big"]) - 1.0) * clampf(minf((float(GS["secs"]) - gt) / 0.25, gt / 0.25), 0.0, 1.0)
 
 
 ## (Overdrive) Her whistle sends her Golems into overdrive: they move and strike twice as fast for five seconds.
@@ -402,70 +458,194 @@ func _overdrive() -> void:
 		g["over_t"] = float(_T()["overdrive"]["secs"])
 
 
-## (game.ts holdJump) Golem `g` rocket-jumps onto `to`, if it is far enough off and there is floor to come down on.
-func _hold_jump(g: Dictionary, i: int, to: Vector2, count: int) -> bool:
-	var at := Vector2(g["x"], g["y"])
-	var d := at.distance_to(to)
-	if d < float(CB["jumpFrom"]):
-		return false
-	var u := (to - at) / d
-	var go := minf(float(GT["jump"]["most"]), d)
-	var l := at + u * go
-	var k := 0
-	while k < 12 and not _open(l):
-		l -= u * 0.4
-		k += 1
-	if not _open(l) or l.distance_to(at) < float(CB["jumpFrom"]) * 0.6:
-		return false
-	g["fx"] = u.x
-	g["fy"] = u.y
-	g["jx"] = at.x
-	g["jy"] = at.y
-	g["ax"] = l.x
-	g["ay"] = l.y
-	g["act"] = "jump"
-	g["act_t"] = 0.0
-	g["did"] = false
-	g["skill"] = i
-	g["twin"] = count
-	g["combo"] = 0
-	return true
-
-
-## (game.ts golemPounds) A Golem's ground pound landing at `at`: everything within the move's radius (`size` of it: its combo's
-## slam) struck and thrown. `landing`: its rocket jump's slam, its crater and dust its landing's own pictures.
-func _pounds(i: int, at: Vector2, frac: float, n: int, echo: bool, _g = null, landing := false, size := 1.0) -> void:
-	var rad: float = float(_def(i)["radius"]) * float(h.loadout.r(i)["size"]) * size
-	if not landing:
-		_say({"t": "golemPound", "x": at.x, "y": at.y, "r": rad, "n": n, "echo": echo})
+## (game.ts golemPounds) Its rocket jump's landing at `at`, its fist slam: everything within the move's radius struck and thrown.
+## (Its ground pound on her whistle is gone, his word: its big shot in its place.)
+func _pounds(i: int, at: Vector2, frac: float, n: int, echo: bool, _g = null) -> void:
+	var rad: float = float(_def(i)["radius"]) * float(h.loadout.r(i)["size"])
 	_shake(2.5 if n > 0 or echo else 5.0)
 	_sfx("slam", 0.6 if n > 0 or echo else 1.0)
-	h._blast(i, at, rad, frac, "pound", n == 0 and not echo, linear_to_db(0.8), n, echo)
+	# (GROWTH SERUM: grown, it strikes twice as hard)
+	h._blast(i, at, rad, frac * (golem_might(_g) if _g != null else 1.0), "pound", n == 0 and not echo, linear_to_db(0.8), n, echo)
 	if h.monsters != null:
 		for m in h.monsters.list:
 			if is_instance_valid(m) and not m.dead and m.world.distance_to(at) <= rad + m.r:
 				m.throw_from(at, 1.2, 0.2)
-	# (LIGHTNING ROD: for a while after its ground pound, every enemy near the Golem goes after it instead of her)
-	if _g != null and size >= 1.0 and h.has("lightningrod") and h.monsters != null:
-		var R: Dictionary = _T()["rod"]
-		var dd = null
-		for q in h.monsters.decoys:
-			if q.get("golem") == _g:
-				dd = q
-		if dd != null:
-			dd["t"] = float(R["secs"])
-		else:
-			h.monsters.decoys.append({"x": _g["x"], "y": _g["y"], "t": float(R["secs"]), "r": float(R["near"]), "size": 0.5, "golem": _g})
-	# (PROSPECTOR: a ground pound, not its combo's slam, digs up a handful of gold, between them about one gold drop)
-	if size >= 1.0 and h.has("prospector") and h.monsters != null and h.monsters.loot != null:
-		var piles: int = _T()["prospector"]["n"]
-		var all := randi_range(3, 8)
-		var p: Vector2 = at if _open(at) or _g == null else Vector2(_g["x"], _g["y"])
-		for k in piles:
-			var share := floori(all / float(piles)) + (1 if k < all % piles else 0)
-			if share > 0:
-				h.monsters.loot._gold(p, share)
 
+
+## (game.ts stepCharge, HER TREE'S GUN ARM in the game; every Golem's in the port) Golem `g` charging its big shot, each step.
+## Braced and charging while she holds (its aim on where she points), held at its full; let go, it fires once braced (the
+## cannon's shell, the tesla coil's beam), as strong as she held it, thrown back by its own shot; then it winds down.
+func _step_charge(g: Dictionary, gdt: float) -> void:
+	var C: Dictionary = GT["charge"]
+	var kind := "beam" if arm_of() == "tesla" else "shell"
+	if float(g["held"]) < 0.0:
+		# (still held: its aim follows her finger)
+		var hold := _holding()
+		if hold:
+			var at := _aim(99.0)
+			var d := at.distance_to(Vector2(g["x"], g["y"]))
+			if d > 0.3:
+				g["ax"] = at.x
+				g["ay"] = at.y
+				g["fx"] = (at.x - float(g["x"])) / d
+				g["fy"] = (at.y - float(g["y"])) / d
+		if not hold or float(g["act_t"]) >= float(C["most"]):
+			g["held"] = minf(float(g["act_t"]), float(C["most"]))
+		return
+	var fire_t := maxf(float(C["build"]), float(g["held"]))
+	var power := minf(1.0, float(g["held"]) / float(C["build"]))
+	if not g["did"] and float(g["act_t"]) >= fire_t:
+		g["did"] = true
+		_charged_shot(g, kind, power, float(g["ch_frac"]))
+		# (Twin: a second shot a moment after; "of Echoes": a weaker one after those)
+		var aim := Vector2(g["ax"], g["ay"])
+		for k in range(1, maxi(1, int(g["twin"]))):
+			_after(0.22 * k, func() -> void:
+				if g["act"] != "down" and golems.has(g):
+					_charged_shot(g, kind, power, float(g["ch_frac"]), aim))
+		var echo: float = g.get("echo", 0.0)
+		if echo > 0.0:
+			_after(0.22 * maxi(1, int(g["twin"])), func() -> void:
+				if g["act"] != "down" and golems.has(g):
+					_charged_shot(g, kind, power, echo, aim))
+	# (thrown back by its own shot, easing to a stop: the art's chargeSkid)
+	if g["did"]:
+		var k := minf(1.0, (float(g["act_t"]) - fire_t) / ((12.0 if kind == "shell" else 18.0) / 30.0))
+		var want: float = float(C["skid"][kind]) * (1.0 - pow(1.0 - k, 3.0) if kind == "shell" else 1.0 - pow(1.0 - k, 2.0))
+		var stp: float = want - float(g["skid"])
+		if stp > 0.0:
+			var was := Vector2(g["x"], g["y"])
+			var now: Vector2 = h.map.slide(was, 0.45, Vector2(-float(g["fx"]), -float(g["fy"])) * stp)
+			g["x"] = now.x
+			g["y"] = now.y
+			var moved := now.distance_to(was)
+			g["skid"] = float(g["skid"]) + moved + (stp if moved < stp * 0.5 else 0.0)
+	if float(g["act_t"]) >= fire_t + float(C["shellEnd" if kind == "shell" else "beamEnd"]):
+		g["held"] = -1.0
+		g["skid"] = 0.0
+		_golem_idle(g)
+
+
+## (game.ts chargedShot) Golem `g` fires its big shot (`power` 0 to 1: how long she held it), `frac` of her tap and hold's hit; at
+## `aim` (where it aimed as it fired, for Twin's and the echo's; else where it aims now).
+func _charged_shot(g: Dictionary, kind: String, power: float, frac: float, aim = null) -> void:
+	var C: Dictionary = GT["charge"]
+	var might: float = frac * golem_might(g) * (float(C["least"]) + (1.0 - float(C["least"])) * power)
+	var i: int = g["skill"]
+	var at := Vector2(g["x"], g["y"])
+	_shake(3.0 + 3.0 * power)
+	if kind == "shell":
+		var to: Vector2 = aim if aim != null else Vector2(g["ax"], g["ay"])
+		var flight: float = at.distance_to(to) / float(C["speed"])
+		var r: float = float(C["blast"]) * (float(C["blastLeast"]) + (1.0 - float(C["blastLeast"])) * power)
+		_say({"t": "golemCharged", "kind": kind, "x0": at.x, "y0": at.y, "x1": to.x, "y1": to.y, "flight": flight, "r": r, "power": power})
+		_sfx("explode", 0.6)
+		_after(flight, func() -> void:
+			_sfx("explode", 0.9)
+			h._blast(i, to, r, might * float(C["shell"]), "bomb", true, linear_to_db(0.8))
+			if h.has("shrapnel"):
+				_shrapnel(i, to, might * float(C["shell"]), null)
+			_prospect(to, g))
+		_rod(g)
+		return
+	# (the beam: everything along it before it, once, out to its length or the wall)
+	var f := Vector2(g["fx"], g["fy"])
+	if aim != null and (aim as Vector2).distance_to(at) > 0.3:
+		f = ((aim as Vector2) - at).normalized()
+	var len := 0.6
+	while len < float(C["beam"]):
+		if not _open(at + f * len):
+			break
+		len += 0.1
+	var end := at + f * len
+	_say({"t": "golemCharged", "kind": kind, "x0": at.x, "y0": at.y, "x1": end.x, "y1": end.y, "flight": 0.0, "r": float(C["wide"]) / 2.0, "power": power})
+	_sfx("zap", 1.0)
+	var hits := 0
+	for m in h.monsters.list:
+		if not is_instance_valid(m) or m.dead or h.monsters.shut_in(m):
+			continue
+		var d: Vector2 = m.world - at
+		var along := d.dot(f)
+		var side := absf(-d.x * f.y + d.y * f.x)
+		if along < 0.0 or along > len + m.r or side > float(C["wide"]) / 2.0 + m.r:
+			continue
+		h.hit_monster(m, i, might * float(C["beamShare"]), hits >= 4)
+		hits += 1
+	_prospect(end, g)
+	_rod(g)
+
+
+## (LIGHTNING ROD, his word: after its big shot, as it was after its ground pound) For a while every enemy near the Golem goes after
+## it instead of her.
+func _rod(g: Dictionary) -> void:
+	if not h.has("lightningrod") or h.monsters == null:
+		return
+	var R: Dictionary = _T()["rod"]
+	for q in h.monsters.decoys:
+		if q.get("golem") == g:
+			q["t"] = float(R["secs"])
+			return
+	h.monsters.decoys.append({"x": g["x"], "y": g["y"], "t": float(R["secs"]), "r": float(R["near"]), "size": golem_body(g), "golem": g})
+
+
+## (PROSPECTOR, his word: its big shot, as its ground pound did) A handful of gold dug up where it lands, between them about one
+## gold drop.
+func _prospect(at: Vector2, g: Dictionary) -> void:
+	if not h.has("prospector") or h.monsters == null or h.monsters.loot == null:
+		return
+	var piles: int = _T()["prospector"]["n"]
+	var all := randi_range(3, 8)
+	var p: Vector2 = at if _open(at) else Vector2(g["x"], g["y"])
+	for k in piles:
+		var share := floori(all / float(piles)) + (1 if k < all % piles else 0)
+		if share > 0:
+			h.monsters.loot._gold(p, share)
+
+
+## (game.ts teslaCoil, HER TREE'S GUN ARM) The tesla coil on Golem `g`'s back: every second it zaps the enemy nearest it (awake,
+## seen), the spark leaping on to two more, each the nearest to the last; lightning, its hit a share of the Golem's.
+func _tesla_coil(g: Dictionary, gdt: float) -> void:
+	var Z: Dictionary = _T()["tesla"]
+	g["zap_t"] = float(g["zap_t"]) - gdt
+	if float(g["zap_t"]) > 0.0 or h.monsters == null:
+		return
+	var hit: Array = []
+	var from := Vector2(g["x"], g["y"])
+	var reach: float = GT["zapFar"]
+	for n in int(Z["leaps"]) + 1:
+		var best = null
+		var bd := reach
+		for m in h.monsters.list:
+			if not is_instance_valid(m) or m.dead or not m.seen or m.state == "sleep" or m.state == "rise" or h.monsters.shut_in(m) or hit.has(m):
+				continue
+			var d: float = m.world.distance_to(from)
+			if d <= bd and h.monsters.sees(from, m.world):
+				bd = d
+				best = m
+		if best == null:
+			break
+		hit.append(best)
+		from = best.world
+		reach = Z["jump"]
+	# (nothing near: it looks again shortly)
+	if hit.is_empty():
+		g["zap_t"] = 0.2
+		return
+	g["zap_t"] = float(Z["every"])
+	var e := {"t": "teslaZap", "x": g["x"], "y": g["y"], "to": hit.map(func(m): return {"x": m.world.x, "y": m.world.y})}
+	if float(g.get("grow_t", 0.0)) > 0.0:
+		e["grown"] = true
+	_say(e)
+	_sfx("zap", 0.4)
+	# (a zap of lightning, her hit as the Golem's shots share it, and as her talents make it; not her words)
+	var i: int = g["skill"]
+	var r: Dictionary = h.loadout.r(i)
+	var frac: float = _golem_frac(g) * golem_might(g) * float(Z["share"])
+	var base: Array = h.base_for("lightning")
+	for m in hit:
+		var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (float(h.stats["dmg_pct"]) + float(h.stats.get("light_pct", 0.0)) + h.might) / 100.0)
+		dmg *= h._talent_hit_mult(m)
+		m.damage(maxf(1.0, roundf(dmg)), "lightning", false, false, [], false, false, i)
 
 ## (game.ts updateTinkerer) Her vials in the air, and her Golem.
 func _step_own(dt: float) -> void:
@@ -508,12 +688,13 @@ func fallen(dt: float) -> void:
 
 ## (game.ts stepGolem) Her Golem `g`, each step.
 func _step_golem(g: Dictionary, dt: float) -> void:
-	# (her tree's OVERDRIVE: it moves and strikes twice as fast, its time `gdt`)
+	# (her tree's OVERDRIVE: it moves and strikes twice as fast, its time `gdt`; and GROWTH SERUM runs out)
 	var over: float = g.get("over_t", 0.0)
 	var gdt := dt * (float(_T()["overdrive"]["fast"]) if over > 0.0 and g["act"] != "down" else 1.0)
 	g["over_t"] = maxf(0.0, over - dt)
+	g["grow_t"] = maxf(0.0, float(g.get("grow_t", 0.0)) - dt)
 	g["act_t"] = float(g["act_t"]) + gdt
-	g["punch_cd"] = maxf(0.0, float(g["punch_cd"]) - gdt)
+	g["cannon_cd"] = maxf(0.0, float(g["cannon_cd"]) - gdt)
 	g["jump_cd"] = maxf(0.0, float(g["jump_cd"]) - gdt)
 	var at := Vector2(g["x"], g["y"])
 	if g["act"] == "down":
@@ -529,54 +710,48 @@ func _step_golem(g: Dictionary, dt: float) -> void:
 		g["y"] = p.y
 		g["act"] = "arrive"
 		g["act_t"] = 0.0
+		g["held"] = -1.0
 		_say({"t": "golemArrive", "x": p.x, "y": p.y})
 		return
 	if g["act"] == "arrive":
 		if float(g["act_t"]) >= float(GT["arrive"]):
 			_golem_idle(g)
 		return
+	# (her tree's GUN ARM: its tesla coil zaps the enemy nearest it every second, from range)
+	var arm := arm_of()
+	if arm == "tesla" and g["act"] != "charge":
+		_tesla_coil(g, gdt)
+	if g["act"] == "charge":
+		_step_charge(g, gdt)
+		return
 	if g["act"] == "jump":
 		_step_rocket(g, gdt)
 		return
-	var reach: float = GT["punch"]["reach"]
-	if g["act"] == "punch":
-		# (its uppercut: golemBlow)
-		var blow: Dictionary = G["blow"]
-		if not g["did"] and float(g["act_t"]) >= float(blow["hit"]):
+	var C: Dictionary = GT["cannon"]
+	if g["act"] == "cannon":
+		# (ITS SMALL SHOT: its cannon brought down and fired at what it fights, the shot flying CANNON.speed tiles a second)
+		if not g["did"] and float(g["act_t"]) >= float(C["hit"]):
 			g["did"] = true
+			_sfx("cannon", 0.8)
 			var m = g["target"]
-			if m != null and is_instance_valid(m) and not m.dead and m.world.distance_to(at) <= reach + m.r + 0.6:
-				_say({"t": "golemPunch", "x": m.world.x, "y": m.world.y, "dx": g["fx"], "dy": g["fy"]})
-				_sfx("golemPunch", 0.8)
-				h.hit_monster(m, int(g["skill"]), _golem_frac(g) * float(GT["punch"]["share"]), false)
-				# (her tree's SHRAPNEL, its cannon off: its punch bursts where it lands, striking everything near)
+			var live: bool = m != null and is_instance_valid(m) and not m.dead
+			var to: Vector2 = m.world if live else Vector2(g["ax"], g["ay"])
+			var flight: float = at.distance_to(to) / float(C["speed"])
+			_say({"t": "golemShot", "x0": at.x, "y0": at.y, "x1": to.x, "y1": to.y, "flight": flight})
+			_shake(1.5)
+			_sfx("slam", 0.5)
+			var frac: float = _golem_frac(g) * golem_might(g) * float(C["share"])
+			var i: int = g["skill"]
+			_after(flight, func() -> void:
+				var t = m if m != null and is_instance_valid(m) and not m.dead else null
+				var l: Vector2 = t.world if t != null else to
+				if t != null:
+					h.hit_monster(t, i, frac, false)
+				# (her tree's SHRAPNEL: the shot bursts where it lands, striking everything near)
 				if h.has("shrapnel"):
-					_shrapnel(int(g["skill"]), m.world, _golem_frac(g) * float(GT["punch"]["share"]), m)
-				if not m.dead:
-					m.throw_from(at, 0.8, 0.15)
-		if float(g["act_t"]) >= float(blow["long"]):
-			# (GOLEM_COMBO: the next of its combo comes quick)
-			g["combo"] = int(g["combo"]) + 1
-			g["combo_t"] = 0.0
-			g["punch_cd"] = float(CB["between"])
-			_golem_idle(g)
-		return
-	if g["act"] == "pound":
-		# (GOLEM_COMBO: the slam that ends its combo, its pound's blow in a smaller ring)
-		var slam := int(g["combo"]) >= 2
-		if not g["did"] and float(g["act_t"]) >= float(GT["pound"]["hit"]):
-			g["did"] = true
-			# (the fist comes down a pace before it)
-			var fist := at + Vector2(g["fx"], g["fy"]) * 0.9
-			if slam:
-				_pounds(int(g["skill"]), fist, _golem_frac(g) * float(CB["slam"]["share"]), 0, false, g, false, float(CB["slam"]["size"]))
-			else:
-				_pounds(int(g["skill"]), fist, _golem_frac(g), 0, false, g)
-		if float(g["act_t"]) >= float(GT["pound"]["long"]):
-			if slam:
-				g["combo"] = 0
-				g["combo_t"] = 0.0
-				g["punch_cd"] = float(GT["punch"]["wait"])
+					_shrapnel(i, l, frac, t))
+		if float(g["act_t"]) >= float(C["long"]):
+			g["cannon_cd"] = SHOT_WAIT
 			_golem_idle(g)
 		return
 	# STANDING OR WALKING: what to go for, if anything (awake, near her, seen by it)
@@ -592,27 +767,28 @@ func _step_golem(g: Dictionary, dt: float) -> void:
 			if d < bd and h.monsters.sees(at, m.world):
 				bd = d
 				best = m
-	# (GOLEM_COMBO: a combo let lie starts again)
-	g["combo_t"] = float(g["combo_t"]) + gdt
-	if float(g["combo_t"]) > float(CB["lapse"]):
-		g["combo"] = 0
-	if best != null and bd <= reach and float(g["punch_cd"]) <= 0.0:
+	# (its cannon: what it fights within its reach, from any way off (his word: it only shoots))
+	if arm == "cannon" and best != null and bd <= float(C["far"]) and float(g["cannon_cd"]) <= 0.0:
 		_turn_golem(g, best.world)
-		g["act"] = "pound" if int(g["combo"]) >= 2 else "punch"
+		g["act"] = "cannon"
 		g["act_t"] = 0.0
 		g["did"] = false
 		g["target"] = best
+		g["ax"] = best.world.x
+		g["ay"] = best.world.y
 		return
-	# (where it goes: up to what it fights; else to her side, a little behind her)
+	# (where it goes: it stands off and fires, going no nearer what it fights than its arm reaches; else to her side, a little
+	# behind her: Mark II's second at her other side)
 	var goal: Vector2
 	var stop: float
-	if best != null and bd > reach * 0.8:
-		goal = best.world
-		stop = reach * 0.7 + best.r
-	elif best != null:
+	var far: float = (float(C["far"]) if arm == "cannon" else float(GT["zapFar"])) - 0.5
+	if best != null and bd <= far:
 		_turn_golem(g, best.world)
 		goal = at
 		stop = 1.0
+	elif best != null:
+		goal = best.world
+		stop = far * 0.85 + best.r
 	else:
 		var side := 1.0 if int(g["seat"]) == 0 else -1.0
 		goal = Vector2(h.world.x - h.face.x * 0.8 - h.face.y * float(GT["near"]) * side, h.world.y - h.face.y * 0.8 + h.face.x * float(GT["near"]) * side)
@@ -637,7 +813,6 @@ func _step_golem(g: Dictionary, dt: float) -> void:
 			g["act"] = "jump"
 			g["act_t"] = 0.0
 			g["did"] = false
-			g["twin"] = 0
 			return
 	if d > stop:
 		var stp := minf(d - stop, float(GT["speed"]) * gdt)
@@ -664,7 +839,6 @@ func _step_golem(g: Dictionary, dt: float) -> void:
 		g["act"] = "stand"
 		g["act_t"] = 0.0
 
-
 ## (game.ts stepRocket, GOLEM_ROCKET) Its rocket jump by its frames (30 a second from deciding to jump): held where it stands,
 ## crouched, until ROCKET.blast; the blast there, and it is carried through the air ROCKET.flight frames to where it comes down; its
 ## landing at ROCKET.land, its fist slam; it stands up again until ROCKET.end.
@@ -677,7 +851,7 @@ func _step_rocket(g: Dictionary, gdt: float) -> void:
 	var p := x0.lerp(to, u)
 	g["x"] = p.x
 	g["y"] = p.y
-	var rocket := {"x0": x0.x, "y0": x0.y, "x1": to.x, "y1": to.y, "fx": g["fx"], "fy": g["fy"], "gun": "cannon", "flight": float(RK["flight"])}
+	var rocket := {"x0": x0.x, "y0": x0.y, "x1": to.x, "y1": to.y, "fx": g["fx"], "fy": g["fy"], "gun": arm_of(), "flight": float(RK["flight"])}
 	if was < float(RK["blast"]) and f >= float(RK["blast"]):
 		_say({"t": "bombsAway", "x": x0.x, "y": x0.y, "r": 1, "rocket": rocket})
 		_shake(1.5)
@@ -685,15 +859,8 @@ func _step_rocket(g: Dictionary, gdt: float) -> void:
 	if was < float(RK["land"]) and f >= float(RK["land"]):
 		_say({"t": "golemArrive", "x": p.x, "y": p.y, "rocket": rocket})
 		# (ITS FIST SLAM: it lands as its ground pound strikes)
-		_pounds(int(g["skill"]), p, _golem_frac(g), 0, false, g, true)
+		_pounds(int(g["skill"]), p, _golem_frac(g), 0, false, g)
 		g["jump_cd"] = float(GT["jump"]["wait"])
-		# (her hold's jump: Twin, a second pound where it came down)
-		var i: int = g["skill"]
-		for k in range(1, maxi(1, int(g["twin"]))):
-			_after(float(GT["pound"]["long"]) * k, func() -> void:
-				if g["act"] != "down" and golems.has(g):
-					_pounds(i, p, _golem_frac(g), k, false, g))
-		g["twin"] = 0
 	if f >= float(RK["end"]):
 		_golem_idle(g)
 

@@ -778,19 +778,83 @@ func _tinkerer() -> void:
 		golds += 1 if M.loot._drops.filter(func(d): return d.get("kind") == "gold").size() > before else 0
 	kit.brewing = false
 	_line(golds == 4, "Alchemy: each of four kills by her vials dropped gold (%d of 4)" % golds)
-	# Lightning Rod: the Golem's pound makes it a decoy; a monster near it goes after it
-	h.talents = ["bombsaway", "lightningrod"]
-	var g := {"x": h.world.x + 2.0, "y": h.world.y, "act": "stand", "skill": 1}
+	# Mark II: she whistles out a second Golem, at her other side (on open ground, the floor's monsters away)
+	_open_ground()
+	h.talents = ["bombsaway", "markii"]
+	kit.golems = []
+	kit._whistle(1, h.world + Vector2(3, 0), 0.01, 1)
+	kit._whistle(1, h.world + Vector2(3, 0), 0.01, 1)
+	var seats: Array = kit.golems.map(func(q): return int(q["seat"]))
+	_line(seats == [0, 1] and kit.golems.size() == 2, "Mark II: two Golems whistled out, at her one side and her other (seats %s)" % [seats])
+	var g: Dictionary = kit.golems[0]
 	kit.golems = [g]
+	g["act"] = "stand"
+	g["x"] = h.world.x + 2.0
+	g["y"] = h.world.y
+	# Growth Serum: a vial bursting by her Golem makes it grow, twice as big and twice as strong
+	h.talents = ["bombsaway", "growthserum"]
+	kit._vial_bursts({"x0": h.world.x, "y0": h.world.y, "x1": float(g["x"]) + 0.5, "y1": float(g["y"]), "t": 0.0, "flight": 0.5, "skill": 0, "frac": 0.01, "wake": false})
+	await _run(0.3)
+	await _snap("tinkerer_growth_serum")
+	_line(float(g["grow_t"]) > 0.0 and kit.golem_might(g) == float(T["growth"]["strong"]) and absf(kit.golem_body(g) - 0.5 * float(T["growth"]["big"])) < 1e-6 and kit.golem_grow(g) > 1.5,
+		"Growth Serum: a vial bursting by it made it grow, x%.0f as strong, its body %.1f tiles round, drawn x%.1f" % [kit.golem_might(g), kit.golem_body(g), kit.golem_grow(g)])
+	g["grow_t"] = 0.0
+	# Lightning Rod and Prospector, on its big shot (his word: it only shoots, the big shot in its ground pound's place)
+	h.talents = ["bombsaway", "lightningrod", "prospector"]
 	h.monsters.decoys.clear()
-	kit._pounds(1, Vector2(g["x"], g["y"]), 0.01, 0, false, g)
 	var foe2 = _foe(1.5)
 	foe2.world = Vector2(g["x"], g["y"]) + Vector2(0, 2.0)
+	var piles0: int = M.loot._drops.filter(func(q): return q.get("kind") == "gold").size()
+	var coin0: int = M.loot.gold
+	g["ax"] = float(g["x"]) + 4.0
+	g["ay"] = float(g["y"])
+	kit._charged_shot(g, "shell", 1.0, 0.01)
 	var d = h.monsters.decoy_for(foe2)
-	_line(h.monsters.decoys.size() == 1 and d != null, "Lightning Rod: its ground pound makes it a decoy for %.0f s, what is within %.0f tiles goes after it" % [float(T["rod"]["secs"]), float(T["rod"]["near"])])
+	# (counted as it bursts, before she can walk over them: its flight is 4 tiles at 20 a second)
+	var piles := [0]
+	for n in 12:
+		await _run(0.04)
+		piles[0] = maxi(piles[0], M.loot._drops.filter(func(q): return q.get("kind") == "gold").size() - piles0 + (1 if M.loot.gold > coin0 else 0))
+	_line(h.monsters.decoys.size() == 1 and d != null and piles[0] > 0,
+		"Lightning Rod: its big shot makes it a decoy for %.0f s, what is within %.0f tiles goes after it; Prospector: its shell dug up %d piles of gold where it burst" % [float(T["rod"]["secs"]), float(T["rod"]["near"]), piles[0]])
 	h.monsters.decoys.clear()
-	kit.golems = []
+	# Gun Arm (his word: the cannon swapped for the tesla coil): it zaps the nearest every second, leaping on; its hold a beam;
+	# her tap and hold grows with Intelligence
+	h.talents = ["bombsaway", "lightningrod", "gunarm"]
+	h.talents_changed()
+	var z1 = _foe(1.5)
+	z1.world = Vector2(g["x"], g["y"]) + Vector2(3.0, 0.0)
+	z1.seen = true
+	if z1.state == "sleep":
+		z1.state = "chase"
+	z1.stun_for(5.0)
+	var zl0: float = z1.life
+	g["zap_t"] = 0.0
+	kit._tesla_coil(g, 0.05)
+	var zapped: bool = z1.life < zl0
+	await _run(0.06)
+	await _snap("tinkerer_tesla_zap")
+	var bl0: float = z1.life
+	g["fx"] = 1.0
+	g["fy"] = 0.0
+	kit._charged_shot(g, "beam", 1.0, 0.01)
+	var beamed: bool = z1.life < bl0
+	g["act"] = "charge"
+	g["act_t"] = 1.1
+	g["held"] = 1.0
+	g["did"] = true
+	await _run(0.15)
+	await _snap("tinkerer_tesla_beam")
+	g["act"] = "stand"
+	var card: String = Talents.of("tinkerer", "gunarm")["text"]
+	_line(kit.arm_of() == "tesla" and zapped and beamed and h.loadout.grows[1] == "int" and Talents.of("tinkerer", "gunarm")["pick"] == null and card.contains("tesla coil"),
+		"Gun Arm: its cannon swapped for the tesla coil (%s): its zap struck the one 3 tiles off (%.0f to %.0f), its beam struck it (%.0f to %.0f); her tap and hold grows with %s; its card: \"%s\"" % [kit.arm_of(), zl0, bl0, bl0, z1.life, h.loadout.grows[1], card])
 	h.talents = []
+	h.talents_changed()
+	kit.golems = []
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead:
+			o.stun_t = 0.0
 
 
 func _ranger() -> void:

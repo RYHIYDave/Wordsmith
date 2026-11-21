@@ -25,7 +25,7 @@ const PORTED := {
 	"warlock": ["hunger", "feast", "bloodlust", "branded", "hexchain", "phantomstep", "withering", "pyre", "blazingarm", "souldebt",
 		"lastrites", "terribleroar", "hellwave", "damnedsouls", "bounddemon"],
 	"tinkerer": ["bombsaway", "fortune", "clustervials", "tar", "madmixture", "alchemy", "thebigone", "lightningrod", "shrapnel",
-		"prospector", "overdrive"],
+		"prospector", "overdrive", "markii", "growthserum", "gunarm"],
 	"brawler": ["vstiffjab", "vviperjab", "vguardup", "vknockdown", "vlauncher", "vlightfeet", "vfirestarter", "vstoke", "vhangtime",
 		"vfullset", "vswitchkick", "vlonglegs", "vwallslam", "vaftershock", "vthunderknee"],
 }
@@ -34,6 +34,29 @@ const PORTED := {
 static func ready_up() -> void:
 	if D.is_empty():
 		D = JSON.parse_string(FileAccess.get_file_as_string(PATH))
+		_own_words()
+
+
+## THE CARDS THIS PORT WORDS ITS OWN WAY (his word of 21 Nov 2026: the Tinkerer's Golem only shoots, small shots, its big shot on
+## her whistle in place of its ground pound; the Gun Arm swaps its cannon for the tesla coil, no pick: “we can keep the tesla coil
+## for now, but i feel like it will need to be changed in the future”).
+const OWN_WORDS := {
+	"tinkerer": {
+		"gunarm": "Her Golem's cannon is swapped for a tesla coil (Int): every second it zaps the enemy nearest it, leaping on to two more. Her hold charges a beam.",
+		"lightningrod": "For three seconds after its big shot, every enemy near the Golem goes after it instead of her.",
+		"shrapnel": "The Golem's shots burst where they land, striking everything near.",
+		"prospector": "Every big shot of the Golem's digs up a handful of gold where it lands.",
+	},
+}
+
+
+static func _own_words() -> void:
+	for cls in OWN_WORDS:
+		for t in D["trees"][cls]["talents"]:
+			if OWN_WORDS[cls].has(t["id"]):
+				t["text"] = OWN_WORDS[cls][t["id"]]
+				if t["id"] == "gunarm":
+					t["pick"] = null
 
 
 static func tree(cls: String) -> Dictionary:

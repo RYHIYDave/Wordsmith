@@ -2137,6 +2137,11 @@ func talents_changed() -> void:
 ## its three in his moves' places (the words in them stay where they are), and he is drawn with what he picked (the bake's `axe`
 ## and `hammer` sets, in his town and anywhere else). Nothing changes while he keeps the one he has.
 func arm() -> void:
+	# (THE TINKERER: her Gun Arm's tesla coil grows with Intelligence, game.ts refresh `grows`)
+	var grows: Array = ["", "int" if cls == "tinkerer" and has("gunarm") else "", ""]
+	if grows != loadout.grows:
+		loadout.grows = grows
+		loadout.refresh()
 	if cls == "mage" or cls == "ranger":
 		swap()
 		return

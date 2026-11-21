@@ -1092,7 +1092,7 @@
    "radius": 2.4,
    "speed": 0,
    "sockets": true,
-   "desc": "Whistle your Golem out: it follows you, punches what is near and shoots its cannon at what is far. Whistle again, and it ground pounds.",
+   "desc": "Whistle your Golem out: it follows you and shoots its cannon at what it fights. Whistle again and hold: it charges its big shot, fired as you let go.",
    "verb": "WHISTLE",
    "windup": 0.28,
    "follow": 0.5

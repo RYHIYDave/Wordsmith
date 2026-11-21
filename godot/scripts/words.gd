@@ -307,10 +307,12 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 			break
 	# (what the move grows with: the class's own attribute (the Warrior's Strength, the Ranger's Dexterity, ...); a class of two, the
 	# Warlock, their sum less HYBRID_LESS)
-	var CL: Dictionary = D["classes"][cls]
-	var attr: String = CL["primary"]
+	# (`cls` may name an attribute in place of a class: what her tree picks for the Tinkerer's arms grows with it, game.ts refresh)
+	var lone: bool = cls in ["str", "dex", "int"]
+	var CL: Dictionary = {} if lone else D["classes"][cls]
+	var attr: String = cls if lone else str(CL["primary"])
 	var prim: float = d[attr]
-	if CL["two"] != null:
+	if not lone and CL["two"] != null:
 		prim = maxf(0.0, float(d[CL["two"][0]]) + float(d[CL["two"][1]]) - float(D["hybridLess"]))
 	# (HOW MUCH A WORD HERE GROWS, defs.ts ATTR_SPLIT: by the attribute of the melded word it is a part of, on that side; fire, frost
 	# and lightning set alone, by the move's own attribute; any other word by its own)
