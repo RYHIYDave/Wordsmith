@@ -19,7 +19,7 @@ const PORTED := {
 		"honededge", "giantslayer", "resolute", "executioner", "mastertop", "unbreakable"],
 	"ranger": [],
 	"mage": [],
-	"warlock": [],
+	"warlock": ["hunger", "feast", "bloodlust", "branded", "hexchain", "withering", "pyre", "blazingarm", "souldebt", "lastrites"],
 	"tinkerer": [],
 	"brawler": ["vstiffjab", "vviperjab", "vguardup", "vknockdown", "vlauncher", "vlightfeet", "vfirestarter", "vstoke", "vhangtime",
 		"vfullset", "vswitchkick", "vlonglegs", "vwallslam", "vaftershock", "vthunderknee"],

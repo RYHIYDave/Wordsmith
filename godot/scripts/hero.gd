@@ -386,6 +386,9 @@ func rate() -> float:
 	var r := maxf(0.3, float(loadout.r(0)["rate"])) * frenzy_pace()
 	if chill_t > 0.0:
 		r *= 1.0 - chill_k * 0.5
+	# (THE WARLOCK's tree: Bloodlust, the demon's rakes quicker for every kill: heroes/warlock.gd)
+	if kit != null and kit.has_method("rate_k"):
+		r *= kit.rate_k()
 	return r
 
 
@@ -672,6 +675,9 @@ func _boons(i: int) -> void:
 ## stack more and the frenzy held longer (to three times its hold); VOLATILE in front, it explodes; LEECH behind, now and then
 ## a life orb. (monster.gd _die calls this as it falls.)
 func killed(m) -> void:
+	# (a hero's own kit's kills: the Warlock's tree, game.ts warlockKill)
+	if kit != null and kit.has_method("on_kill"):
+		kit.on_kill(m)
 	# (THE SKILL TREES REMADE: Footwork, every kill makes the Lunge ready again at once: game.ts talentKill, readyAgain('leap'))
 	if has("footwork") and cls == "warrior":
 		_lunge_cd = 0.0

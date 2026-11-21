@@ -35,6 +35,15 @@ const W := {
 ## "man" or "demon"; his pact (0 to 30); the change he is in the middle of ({to, t, dur}, empty when none)
 var form := "man"
 var pact := 0.0
+## (HIS TREE: Bloodlust, the demon's kills since it came out; what a hit of his came by: "" his own, "chain" a Hex Chain's leap,
+## "blaze" his Blazing Arm's burst: game.ts warlockBy)
+var lust := 0
+var _by := ""
+const Talents := preload("res://scripts/talents.gd")
+
+
+func _T() -> Dictionary:
+	return Talents.D["warlockTalents"]
 var change := {}
 var _deny := 0.0
 
@@ -210,10 +219,20 @@ func _damning_all(i: int, at: Vector2, rad: float, frac: float, n := 0, echo := 
 ## his pact, filled by his hits as a man, a little put back by the demon's.
 func on_hit(m, i: int, dmg: float) -> void:
 	var id: String = h.loadout.id(i)
-	if not m.dead and id == "hellbolt":
+	var bolt := id == "hellbolt"
+	var was_cursed: bool = m.curse_t > 0.0
+	if not m.dead and bolt:
 		_hell_on(m, dmg)
 	if not m.dead and id in ["curse", "smokestep", "rake", "demonstep"]:
 		_curse_one(m, dmg)
+	# (HIS TREE: Branded, every Hellfire Bolt curses what it hits)
+	if not m.dead and bolt and h.has("branded"):
+		_curse_one(m, dmg)
+	# (HIS TREE: Hex Chain, a bolt on one cursed leaps on to the next; Blazing Arm, with his pact full his bolt bursts)
+	if bolt and _by == "" and was_cursed and h.has("hexchain"):
+		_hex_chain(m, i)
+	if bolt and (_by == "" or _by == "chain") and form != "demon" and pact >= float(W["pact"]["full"]) and h.has("blazingarm"):
+		_blaze(m, i, dmg)
 	var full: float = W["pact"]["full"]
 	var was := pact
 	if form == "demon":
@@ -424,6 +443,7 @@ func _step_change(dt: float) -> void:
 	change = {}
 	_anim_t = 0.0
 	if to == "demon":
+		lust = 0
 		_become("demon")
 		pact = W["pact"]["full"]
 		var R: float = W["change"]["roar"]
@@ -435,6 +455,11 @@ func _step_change(dt: float) -> void:
 				if is_instance_valid(m) and not m.dead and m.world.distance_to(h.world) <= R + m.r:
 					m.throw_from(h.world, 1.5, 0.25)
 	else:
+		# (HIS TREE: Last Rites, as the demon burns out, Damning goes off by itself round him)
+		if form == "demon" and h.has("lastrites"):
+			var r1: Dictionary = h.loadout.r(1)
+			_damning_all(1, h.world, float(Words.skill("damning")["radius"]) * float(r1["size"]), float(r1["count_dmg"]))
+		lust = 0
 		_become("man")
 		pact = 0.0
 
@@ -505,3 +530,97 @@ func readiness() -> Dictionary:
 
 func _clear_own() -> void:
 	pass
+
+
+# =====================================================================================================================
+# HIS TREE (game/talents.ts WARLOCK_TREE; game.ts warlockHit, warlockKill, hexChain, blaze, pyre, lastRites; WARLOCK_TUNE.talents)
+
+## (Hex Chain) A bolt on one cursed leaps on to the next cursed one near it, up to three times, burning each.
+func _hex_chain(from, i: int) -> void:
+	var T: Dictionary = _T()["hexChain"]
+	var hit: Array = [from]
+	var at = from
+	for k in int(T["leaps"]):
+		var best = null
+		var bd: float = T["reach"]
+		for q in h.monsters.list:
+			if not is_instance_valid(q) or q.dead or hit.has(q) or q.curse_t <= 0.0 or h.monsters.shut_in(q):
+				continue
+			var d: float = q.world.distance_to(at.world) - q.r
+			if d < bd:
+				bd = d
+				best = q
+		if best == null:
+			return
+		hit.append(best)
+		var to = best
+		var x0: Vector2 = at.world
+		h._after(float(T["gap"]) * (k + 1), func() -> void:
+			if not is_instance_valid(to) or to.dead or h.loadout.id(i) != "hellbolt":
+				return
+			_say({"t": "hexLeap", "x0": x0.x, "y0": x0.y, "x1": to.world.x, "y1": to.world.y})
+			h.sfx.play("fire", linear_to_db(0.4))
+			_by = "chain"
+			h.hit_monster(to, i, float(T["share"]), true)
+			_by = "")
+		at = best
+
+
+## (Blazing Arm) With his pact full, his bolt bursts: all near cursed and struck.
+func _blaze(m, i: int, dmg: float) -> void:
+	var T: Dictionary = _T()["blazing"]
+	_say({"t": "blaze", "x": m.world.x, "y": m.world.y, "r": T["r"]})
+	h.sfx.play("fire", linear_to_db(0.7))
+	var was := _by
+	_by = "blaze"
+	var n := 0
+	for o in h.monsters.list:
+		if not is_instance_valid(o) or o == m or o.dead or h.monsters.shut_in(o) or o.world.distance_to(m.world) > float(T["r"]) + o.r:
+			continue
+		h.hit_monster(o, i, float(T["share"]), n >= 3)
+		n += 1
+		if not o.dead:
+			_curse_one(o, dmg)
+	_by = was
+
+
+## A kill of his (game.ts warlockKill): the demon's (Hunger, Feast, Bloodlust); a cursed one's (Soul Debt, Pyre).
+func on_kill(m) -> void:
+	var T := _T()
+	var P: Dictionary = W["pact"]
+	if form == "demon":
+		if h.has("hunger"):
+			pact = minf(float(P["full"]), pact + float(T["hunger"]["secs"]) * (float(P["full"]) / float(P["demonSecs"])))
+		if h.has("feast"):
+			var n: float = h.max_life * float(T["feast"]["share"])
+			h.heal_flat(n)
+			_say({"t": "heal", "amount": roundi(n)})
+		if h.has("bloodlust"):
+			lust += 1
+	if m.curse_t > 0.0:
+		if h.has("souldebt"):
+			pact = minf(float(P["full"]), pact + float(P["full"]) * float(T["soulDebt"]["share"]))
+		if h.has("pyre"):
+			var at: Vector2 = m.world
+			h._after(0.05, func() -> void: _pyre(at))
+
+
+## (Pyre) A cursed one bursts in his hellfire as it dies: everything near struck, as his Curse strikes.
+func _pyre(at: Vector2) -> void:
+	var T: Dictionary = _T()["pyre"]
+	_say({"t": "pyre", "x": at.x, "y": at.y, "r": T["r"]})
+	h.sfx.play("fire", linear_to_db(0.6))
+	var n := 0
+	for o in h.monsters.list:
+		if not is_instance_valid(o) or o.dead or h.monsters.shut_in(o) or o.world.distance_to(at) > float(T["r"]) + o.r:
+			continue
+		h.hit_monster(o, 1, float(T["share"]), n >= 3)
+		n += 1
+
+
+## (Bloodlust) Every kill the demon makes its rakes the quicker, up to twice as quick, till it burns out.
+func rate_k() -> float:
+	if form == "demon" and h.has("bloodlust"):
+		var B: Dictionary = _T()["bloodlust"]
+		return minf(float(B["most"]), 1.0 + lust * float(B["each"]))
+	return 1.0

@@ -605,7 +605,10 @@ cracked, 3% more a crack, ten at most), Resolute, Executioner, Master Stroke and
 Whirlwind talent (his Whirlwind is his from the start here, at his pick of 14 Nov 2026) and the battle axe's and the warhammer's
 paths (their own moves). THE VETERAN'S, ALL FIFTEEN: Stiff Jab, Viper Jab, Guard Up, Knockdown, Launcher; Light on His Feet, Fire
 Starter, Stoke, Hang Time, The Full Set; Switch Kick, Long Legs, Wall Slam, Aftershock, Thunder Knee (heroes/brawler.gd, by game.ts
-vetHit and its neighbours, VET_TALENTS' numbers).
+vetHit and its neighbours, VET_TALENTS' numbers). THE WARLOCK'S: Hunger, Feast, Bloodlust (the demon's kills), Branded, Hex
+Chain, Withering, Pyre, Blazing Arm, Soul Debt and Last Rites (heroes/warlock.gd: game.ts warlockHit, warlockKill, hexChain,
+blaze, pyre, lastRites; WARLOCK_TUNE.talents). Not yet: Terrible Roar (the roar's runners), Hellwave, Damned Souls, Phantom Step
+and the Bound Demon (their own figures).
 
 ## The shadows under the figures, and the named ones' rings (the cloud chat, 21 Nov 2026)
 

@@ -89,6 +89,8 @@ func run(main, hero, d: String) -> void:
 	await _warrior()
 	# THE VETERAN'S TALENTS
 	await _veteran()
+	# THE WARLOCK'S TALENTS
+	await _warlock()
 	# THE PAGE, for each class
 	var inv = M._inv
 	for cls in ["warrior", "ranger", "mage", "warlock", "tinkerer", "brawler"]:
@@ -291,4 +293,72 @@ func _veteran() -> void:
 	var no_legs: float = kit._reach(m, o, a, left, o + a * far, 0.3, 0.0)
 	var legs: float = kit._reach(m, o, a, left, o + a * far, 0.3, float(T["longLegs"]["more"]))
 	_line(no_legs < 0.0 and legs >= 0.0, "Long Legs: a round kick reaches one %.1f tiles off with them (frame %.1f), not without (%.1f)" % [far, legs, no_legs])
+	h.talents = []
+
+
+func _warlock() -> void:
+	M.set_class("warlock", true)
+	M.loot.level = 50
+	h.life = h.max_life
+	h.face = Vector2(1, 0)
+	await _run(0.3)
+	var kit = h.kit
+	var T: Dictionary = Talents.D["warlockTalents"]
+	var m = _foe(1.0)
+	var o = null
+	for q in M._monsters.list:
+		if is_instance_valid(q) and q != m and not q.dead and not q.boss and q.state != "rise":
+			o = q
+			break
+	if m == null or o == null:
+		_line(false, "two monsters wanted to try the Warlock's talents on")
+		return
+	o.world = m.world + Vector2(0, 0.8)
+	o.life = o.max_life
+	# Branded: his bolt curses what it hits
+	h.talents = ["branded"]
+	m.curse_t = 0.0
+	kit.pact = 0.0
+	h.hit_monster(m, 0, 0.1, false)
+	_line(m.curse_t > 0.0, "Branded: his Hellfire Bolt curses what it hits (%.1f s)" % m.curse_t)
+	# Blazing Arm: with his pact full, his bolt bursts, cursing and striking all near it
+	h.talents = ["branded", "hexchain", "blazingarm"]
+	o.curse_t = 0.0
+	var before: float = o.life
+	kit.pact = float(kit.W["pact"]["full"])
+	m.curse_t = 0.0
+	h.hit_monster(m, 0, 0.1, false)
+	_line(o.curse_t > 0.0 and o.life < before, "Blazing Arm: his pact full, the bolt bursts: the one beside it cursed (%.1f s) and struck (%.0f to %.0f)" % [o.curse_t, before, o.life])
+	kit.pact = 0.0
+	# Withering: cursed, they move and strike at half speed
+	h.talents = ["branded", "hexchain", "blazingarm", "withering"]
+	o.curse_t = 3.0
+	var slowed: float = o.rage()
+	o.curse_t = 0.0
+	var whole: float = o.rage()
+	_line(absf(slowed - whole * float(T["withering"]["pace"])) < 0.001, "Withering: a cursed one's pace %.2f, %.2f uncursed" % [slowed, whole])
+	# Soul Debt and Pyre: a cursed one dying fills a tenth of his pact, and bursts in hellfire
+	h.talents = ["branded", "hexchain", "blazingarm", "withering", "pyre", "souldebt"]
+	kit.pact = 0.0
+	m.curse_t = 3.0
+	before = o.life
+	kit.on_kill(m)
+	var filled: float = kit.pact
+	await _run(0.2)
+	_line(absf(filled - float(kit.W["pact"]["full"]) * float(T["soulDebt"]["share"])) < 0.01 and o.life < before, "Soul Debt: a cursed one's death fills a tenth of his pact (%.1f of %.0f); Pyre: it bursts, the one beside struck (%.0f to %.0f)" % [filled, kit.W["pact"]["full"], before, o.life])
+	# The demon's kills: Hunger, Feast, Bloodlust
+	h.talents = ["hunger", "feast", "bloodlust"]
+	kit.form = "demon"
+	kit.pact = 10.0
+	kit.lust = 0
+	h.life = h.max_life * 0.5
+	var life0: float = h.life
+	m.curse_t = 0.0
+	kit.on_kill(m)
+	var rk: float = kit.rate_k()
+	_line(kit.pact > 10.0 and h.life > life0 and kit.lust == 1 and rk > 1.0, "the demon's kill: Hunger puts back pact (10 to %.1f), Feast heals him (%.0f to %.0f), Bloodlust quickens its rakes (x%.2f)" % [kit.pact, life0, h.life, rk])
+	kit.form = "man"
+	kit.lust = 0
+	kit.pact = 0.0
+	h.life = h.max_life
 	h.talents = []

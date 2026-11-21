@@ -1139,10 +1139,14 @@ func word_share(w: String) -> float:
 ## FRENZIED, on it (game.ts updateMonsters `rage`): the more it is hurt, the faster it moves and the sooner it attacks again, up
 ## to half again as fast near death (a minion's, of its leader's Frenzied, at half); 1 for one without the word.
 func rage() -> float:
+	# (THE WARLOCK's tree: Withering, cursed it moves and strikes at half speed: game.ts updateMonsters `wither`)
+	var wither := 1.0
+	if curse_t > 0.0 and mgr != null and mgr.hero != null and mgr.hero.cls == "warlock" and mgr.hero.has("withering"):
+		wither = float(preload("res://scripts/talents.gd").D["warlockTalents"]["withering"]["pace"])
 	var share := word_share("frenzied")
 	if share <= 0.0:
-		return 1.0
-	return 1.0 + float(Words.data()["frenzy"]["monster"]) * share * (1.0 - maxf(0.0, life) / max_life)
+		return wither
+	return wither * (1.0 + float(Words.data()["frenzy"]["monster"]) * share * (1.0 - maxf(0.0, life) / max_life))
 
 
 ## VAST, on it (game.ts addWarn, monsterAttack): how many times as wide its warned blows and as far its own blow's reach are.
