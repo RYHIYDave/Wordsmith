@@ -7,6 +7,7 @@ extends RefCounted
 const BakedHero := preload("res://scripts/baked_hero.gd")
 
 const Words := preload("res://scripts/words.gd")
+const Iso := preload("res://scripts/iso.gd")
 
 var M
 var h
@@ -814,4 +815,166 @@ func behind(main, hero, dir: String) -> void:
 		_line(mn > 0 and mn2 == 0, "a %s behind it cut off by %d block(s); on open floor whole (%d)" % [mon.kind, mn, mn2])
 	h.unhurt = false
 	print("BEHIND: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## TOUCH, FOR A PHONE (--only=touch; touch.gd): fingers on the screen, as a phone gives them. The left thumb's stick walks him at full
+## speed; a tap on the right strikes at the one the aim help locks onto (its gold ring); a hold whirls while it is held; a swipe
+## lunges the way it goes; the pause button and the ATTACKS switch in the pause panel, pressed; in town a touch on a service
+## walks him to it and uses it; the flask, pressed, drinks. Pictured.
+func touch(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var T = M._touch
+	T.set_mode("auto")
+	var vp: Viewport = M.get_viewport()
+	var win := func(p: Vector2) -> Vector2:
+		return vp.get_final_transform() * (p * 2.0)
+	var finger := func(i: int, p: Vector2, down: bool) -> void:
+		var e := InputEventScreenTouch.new()
+		e.index = i
+		e.pressed = down
+		e.position = win.call(p)
+		Input.parse_input_event(e)
+	var drag := func(i: int, p: Vector2) -> void:
+		var e := InputEventScreenDrag.new()
+		e.index = i
+		e.position = win.call(p)
+		Input.parse_input_event(e)
+	M.way_depth = maxi(M.way_depth, 2)
+	# (his Lunge open: moves open by level)
+	h.practice = true
+	await M.go_to("floor2", "down")
+	await M._wait(1.0)
+	for m in M._monsters.list:
+		if is_instance_valid(m):
+			m.process_mode = Node.PROCESS_MODE_DISABLED
+	# THE STICK: down on the left, pushed right
+	var was: Vector2 = h.world
+	finger.call(0, Vector2(70, 200), true)
+	await M._wait(0.05)
+	drag.call(0, Vector2(100, 200))
+	await M._wait(0.6)
+	var went: Vector2 = h.world - was
+	var screen_way := Iso.to_screen(went.x, went.y)
+	await M._snap(dir + "/t01_the_stick.png")
+	_line(T.on and T.stick["active"] and h.auto_dir.distance_to(Vector2(1, 0)) < 0.01 and went.length() > 0.5 and screen_way.x > absf(screen_way.y) * 2.0,
+		"the left thumb's stick, pushed right: he walks right on the screen at full speed (%.2f tiles in 0.6 s)" % went.length())
+	finger.call(0, Vector2(100, 200), false)
+	await M._wait(0.2)
+	# A TAP on the right: the quick attack at the one locked onto (a monster set before him, awake)
+	var mon = null
+	for m in M._monsters.list:
+		if is_instance_valid(m) and not m.dead and not m.boss:
+			mon = m
+			break
+	mon.world = M._free_near(h.world + h.face * 1.4)
+	mon.seen = true
+	mon.state = "chase"
+	mon.process_mode = Node.PROCESS_MODE_DISABLED
+	await M._wait(0.2)
+	finger.call(1, Vector2(380, 150), true)
+	await M._wait(0.05)
+	finger.call(1, Vector2(380, 150), false)
+	await M._wait(0.12)
+	var struck: bool = h._act == "strike" or (h.kit != null and not h.kit.attack.is_empty())
+	await M._snap(dir + "/t02_a_tap.png")
+	_line(T.lock == mon and str(T.asked[0]) == "quick" and struck, "a tap on the right: the quick attack, at the %s the aim help is locked onto (its ring)" % mon.kind)
+	await M._wait(0.6)
+	# A HOLD: the slow attack, kept going while held
+	finger.call(1, Vector2(380, 150), true)
+	await M._wait(0.45)
+	var whirling: bool = h._act == "whirl"
+	await M._snap(dir + "/t03_a_hold.png")
+	finger.call(1, Vector2(380, 150), false)
+	await M._wait(0.6)
+	_line(whirling and h._act != "whirl", "a hold: the Whirlwind while held (%s), over once let go (%s)" % [whirling, h._act])
+	# A SWIPE: the lunge, the way it goes (from open floor, 5 tiles of it to the right on the screen)
+	await M._wait(0.5)
+	var rw := Vector2(1, -1).normalized()
+	for i in M.map.w * M.map.h:
+		var c := Vector2(i % M.map.w + 0.5, i / M.map.w + 0.5)
+		var ok := true
+		for k in 6:
+			var q: Vector2 = c + rw * float(k)
+			if not M.map.walkable(floori(q.x), floori(q.y)):
+				ok = false
+				break
+		if ok and c.distance_to(h.world) < 30.0:
+			h.world = c
+			break
+	await M._wait(0.3)
+	was = h.world
+	finger.call(1, Vector2(330, 150), true)
+	await M._wait(0.03)
+	drag.call(1, Vector2(360, 150))
+	await M._wait(0.03)
+	drag.call(1, Vector2(390, 150))
+	finger.call(1, Vector2(390, 150), false)
+	var lunged := false
+	for k in 12:
+		await M._wait(0.02)
+		lunged = lunged or h._act == "lunge"
+	await M._wait(0.5)
+	went = h.world - was
+	screen_way = Iso.to_screen(went.x, went.y)
+	var asked_at: Vector2 = T.asked[1] if T.asked.size() > 1 and T.asked[1] is Vector2 else Vector2.ZERO
+	var meant := Iso.to_screen(asked_at.x - was.x, asked_at.y - was.y)
+	_line(str(T.asked[0]) == "evade" and lunged and meant.x > absf(meant.y), "a swipe to the right: the Lunge, toward a point right of him on the screen (%.1f tiles gone)" % went.length())
+	# THE PAUSE BUTTON, and the ATTACKS switch in its panel
+	var W := floorf(M._mini.size.x / 2.0)
+	finger.call(2, Vector2(W - 11, M._mini.MH + 13), true)
+	await M._wait(0.05)
+	finger.call(2, Vector2(W - 11, M._mini.MH + 13), false)
+	await M._wait(0.2)
+	var paused: bool = M._mini.open == "pause"
+	var aim_hit := Rect2()
+	for hh in M._mini._hits:
+		if hh[1] == "aim":
+			aim_hit = hh[0]
+	await M._snap(dir + "/t04_the_pause_panel.png")
+	var before: String = T.mode
+	finger.call(2, aim_hit.get_center(), true)
+	await M._wait(0.05)
+	finger.call(2, aim_hit.get_center(), false)
+	await M._wait(0.2)
+	_line(paused and aim_hit.size.x > 0.0 and before == "auto" and T.mode == "tap" and T.label() == "ATTACKS: WHERE YOU TAP",
+		"the pause button pressed: the panel, with ATTACKS: AUTO AIM on a phone; pressed, %s" % T.label())
+	T.mode = "auto"
+	M._mini.show_panel("")
+	await M._wait(0.3)
+	# THE FLASK, pressed: he drinks
+	h.life = h.max_life * 0.4
+	var pots: int = M.loot.potions
+	var fl: Rect2 = M._hud._flask
+	finger.call(3, fl.get_center(), true)
+	await M._wait(0.05)
+	finger.call(3, fl.get_center(), false)
+	await M._wait(0.3)
+	_line(fl.size.x == 26.0 and M.loot.potions == pots - 1, "the flask, drawn larger for a finger (%d), pressed: he drinks (%d left of %d)" % [int(fl.size.x), M.loot.potions, pots])
+	# IN TOWN: a touch on a service walks him there and uses it
+	await M.go_to("town", "start")
+	await M._wait(1.0)
+	var st: Dictionary = {}
+	for s0 in M.town.data["stations"]:
+		if str(s0["kind"]) == "armourer":
+			st = s0
+	var sw := Vector2(float(st["x"]), float(st["y"]))
+	var cam: Camera2D = vp.get_camera_2d()
+	var tl: Vector2 = cam.get_screen_center_position() - vp.get_visible_rect().size / 2.0
+	var sp: Vector2 = (Iso.to_screen(sw.x, sw.y) - tl) / 2.0 - Vector2(0, 20)
+	finger.call(0, sp, true)
+	await M._wait(0.05)
+	finger.call(0, sp, false)
+	await M._wait(0.2)
+	var walking: bool = not T.errand.is_empty()
+	await M._w_until(func(): return T.errand.is_empty(), 10.0)
+	await M._wait(0.5)
+	await M._snap(dir + "/t05_the_armourer.png")
+	_line(walking and str(T.asked[0]) == "used" and str(T.asked[1]) == "armourer" and M._inv.visible, "in town, a touch on the armourer: he walks there and uses him (his shelves open: %s)" % M._inv.visible)
+	if M._inv.visible:
+		M._inv.toggle()
+	T.set_mode("auto")
+	h.unhurt = false
+	print("TOUCH: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 

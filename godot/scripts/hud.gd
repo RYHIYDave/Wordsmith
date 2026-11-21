@@ -65,6 +65,8 @@ var _over: Control
 var _wipe_job := {}
 var _flourishes: Array = []
 var _inv_button := Rect2()
+## (the flask's slot, game pixels: pressed, it drinks)
+var _flask := Rect2()
 ## (THE SKILL TREES: NEW TALENT, while a point waits to be spent: hud.ts; pressed, the gear screen on TALENTS)
 var _talent_button := Rect2()
 const Talents := preload("res://scripts/talents.gd")
@@ -123,8 +125,33 @@ func _process(dt: float) -> void:
 ## A press on the INVENTORY button opens the gear screen; a press on an attack's plate or the Lunge's button, out of a
 ## fight, opens it at that move's line of word slots (hud.ts: "Pressing one opens the Words screen"; in a fight a press
 ## there is an attack). The game is held from then, so the press is not a blow as well.
+## (TOUCH, touch.gd) Whether he is playing with fingers: the HUD says TAP, HOLD and SWIPE, and the flask is larger.
+func _touching() -> bool:
+	return main != null and main._touch != null and main._touch.on
+
+
+## (TOUCH, touch.gd) Whether a touch here is a press of the HUD's own things (main.ts isUi, ui.claim): the INVENTORY and TALENTS
+## buttons, the flask, a move's plate or the Lunge's button out of a fight.
+func claims(p: Vector2) -> bool:
+	if _inv_button.has_point(p) or _talent_button.has_point(p) or _flask.has_point(p):
+		return true
+	if main != null and not main._in_fight():
+		for r in _plates:
+			if r.has_point(p):
+				return true
+		if _lunge.has_point(p):
+			return true
+	return false
+
+
 func _input(e: InputEvent) -> void:
 	if not (e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT):
+		return
+	# (THE FLASK: a press of it drinks, as Q does: hud.ts `potion (tap or Q)`)
+	if main != null and hero != null and hero.alive and not get_tree().paused and _flask.has_point(e.position / 2.0):
+		Input.action_press("potion")
+		get_tree().create_timer(0.05).timeout.connect(func(): Input.action_release("potion"))
+		get_viewport().set_input_as_handled()
 		return
 	if main == null or hero == null or not hero.alive or get_tree().paused or main._inv == null:
 		return
@@ -349,17 +376,21 @@ func _draw() -> void:
 		_globe(W - 20, gy, 14, hero.mana / maxf(1.0, hero.max_mana), T["mana"], T["manaHi"], T["edgeHi"])
 		_text("%d" % floori(hero.mana), W - 20, gy - 3, P["white"], {"align": "center", "font": "small", "shadow": ink})
 
-	# ---- the flask (Q) ----
-	var ps := 20.0
+	# ---- the flask (Q, or a press of it) ----
+	# (on touch everything a finger must hit is drawn larger: hud.ts `const ps = touch ? 26 : 20`)
+	var ps := 26.0 if main != null and main._touch != null and main._touch.on else 20.0
 	var px := 37.0
 	var py := H - ps - 1
+	_flask = Rect2(px, py, ps, ps)
 	var potions: int = loot.potions if loot != null else 0
 	_slot(px, py, ps, "potion", T["edgeHi"] if potions > 0 else T["edge"])
 	if potions <= 0:
 		_rect(px + 1, py + 1, ps - 2, ps - 2, Color(P["black"], 0.65))
 	_text("%d" % potions, px + ps - 2, py + ps - 7, P["white"], {"align": "right", "font": "small", "shadow": ink})
-	_text("Q", px + 2, py + 2, T["dim"], {"font": "small", "shadow": ink})
-	_text("LV %d" % (loot.level if loot != null else 1), px, py - 7, T["accent"], {"font": "small", "shadow": ink})
+	# (with a finger, no key on it, and no level over it: hud.ts `if (pd || !touch)`, `if (!touch)`)
+	if not _touching():
+		_text("Q", px + 2, py + 2, T["dim"], {"font": "small", "shadow": ink})
+		_text("LV %d" % (loot.level if loot != null else 1), px, py - 7, T["accent"], {"font": "small", "shadow": ink})
 
 	# ---- the Lunge: beside where the mana would be, as the flask is beside the life ----
 	var ready: Dictionary = hero.readiness()
@@ -493,7 +524,7 @@ func _draw() -> void:
 	_text(place, 4, 3, T["accent"] if practising else T["text"], {"shadow": ink})
 	_pic("gold", 4, 14)
 	_text("%d" % (loot.gold if loot != null else 0), 4 + _pic_size("gold").x + 2, 14, T["gold"], {"font": "small", "shadow": ink})
-	var inv_label := "INVENTORY (I)"
+	var inv_label := "INVENTORY" if _touching() else "INVENTORY (I)"
 	var iw := _width(inv_label, "small") + 10
 	_button(lx, btn_y, iw, btn_h, inv_label, true, spare > 0, spare > 0 and int(floorf(_t * 2.0)) % 2 == 0)
 	_inv_button = Rect2(lx, btn_y, iw, btn_h)
@@ -726,7 +757,7 @@ func _draw_dodge(ex: float, py: float, ps: float, ready: Dictionary, skills: Arr
 		_rect(ex + 1, py + 1, ps - 2, ceilf((ps - 2) * lunge_cover), Color(P["black"], 0.72))
 	if ready.has("max") and int(ready["max"][2]) > 1:
 		_text(str(int(ready["have"][2])), ex + ps - 2, py + ps - 7, P["white"], {"align": "right", "font": "small", "shadow": ink})
-	_text("SPACE", ex + floorf(ps / 2.0), py - 7, T["accent"] if point == 2 else T["dim"], {"align": "center", "font": "small", "shadow": ink})
+	_text("SWIPE" if _touching() else "SPACE", ex + floorf(ps / 2.0), py - 7, T["accent"] if point == 2 else T["dim"], {"align": "center", "font": "small", "shadow": ink})
 	# (its name with its words, in the small letters over its button, once it has any)
 	var lunge_named: bool = not hero.loadout.fronts(2).is_empty() or not hero.loadout.behinds(2).is_empty()
 	if lunge_named:
@@ -768,7 +799,8 @@ func _draw_plate(s: int, r: Rect2, pieces: Array, keys: Array, ready: Dictionary
 	if ready.has("max") and int(ready["max"][s]) > 1:
 		_text(str(int(ready["have"][s])), r.position.x + 18, iy + 13, P["white"], {"align": "right", "font": "small", "shadow": ink})
 	_draw_phrase(pieces[s], r.position.x + 20 + PAD, r.position.y, PH, pulse)
-	_text(keys[s], r.position.x + 1, r.position.y - 6, T["dim"], {"font": "small", "shadow": ink})
+	# (with a finger: TAP and HOLD over the plates, hud.ts `gestures`)
+	_text(keys[s] if not _touching() else ["TAP", "HOLD"][s], r.position.x + 1, r.position.y - 6, T["dim"], {"font": "small", "shadow": ink})
 	if asked:
 		_arrow(r.position.x + floorf(r.size.x / 2.0), r.position.y - 8, T["accent"])
 

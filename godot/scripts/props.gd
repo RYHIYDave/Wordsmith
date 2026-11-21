@@ -32,7 +32,8 @@ func strike(at: Vector2, rad: float) -> void:
 	if map == null:
 		return
 	for p in map.props:
-		if int(p["state"]) != 0 or (p["kind"] != "barrel" and p["kind"] != "urn"):
+		# (the town's things have no state: nothing of them breaks)
+		if int(p.get("state", 1)) != 0 or (p["kind"] != "barrel" and p["kind"] != "urn"):
 			continue
 		var where := Vector2(p["x"], p["y"])
 		if where.distance_to(at) > rad + 0.4:

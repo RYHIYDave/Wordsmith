@@ -109,6 +109,15 @@ func show_panel(what: String) -> void:
 		_resume_at = Engine.get_process_frames()
 
 
+## (TOUCH, touch.gd) Whether a touch here is a press of the small map (it opens the large one) or of the pause button.
+func claims(p: Vector2) -> bool:
+	var W := floorf(size.x / 2.0)
+	var mw := minf(66.0, floorf(W * 0.2))
+	if main != null and not main.is_home(main.place) and Rect2(W - mw - 4, 4, mw, MH).has_point(p):
+		return true
+	return Rect2(W - 14 - 4, MH + 7, 14, 12).has_point(p)
+
+
 func _input(e: InputEvent) -> void:
 	if not (e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT):
 		return
@@ -150,6 +159,9 @@ func _press(what: String) -> void:
 			main.end_run()
 		"limit":
 			main.flip_limit()
+		"aim":
+			if main._touch != null:
+				main._touch.flip_aim()
 
 
 # --- the game's drawing kit (ui/ui.ts), in game pixels, as hud.gd has it ---
@@ -470,7 +482,7 @@ func _large(W: float, H: float) -> void:
 		_rect(lx, ly + 1, 3, 3, it[0])
 		lx += 5
 		lx += _text(it[1], lx, ly, T["text"], {"font": "small", "shadow": ink}) + 7
-	_text("click or M to close", floorf(W / 2.0), ly - 9, T["dim"], {"align": "center", "font": "small", "shadow": ink})
+	_text("tap to close" if main._touch != null and main._touch.on else "click or M to close", floorf(W / 2.0), ly - 9, T["dim"], {"align": "center", "font": "small", "shadow": ink})
 
 
 ## panels.ts drawPause: the game held; the controls as a short table; RESUME and the sound.
@@ -483,7 +495,9 @@ func _pause(W: float, H: float) -> void:
 		val_w = maxf(val_w, PF.width(r[1], "small"))
 	key_w += 8
 	var pw := minf(W - 8, 250.0)
-	var ph := minf(H - 6, 18 + HELP.size() * 7 + 8 + bh + 3 + bh + 6)
+	# (on a phone, how the attacks are aimed, over the cooldowns' switch: ui/panels.ts drawPause, `opt.aim` with a finger only)
+	var touch: bool = main._touch != null and main._touch.on
+	var ph := minf(H - 6, 18 + HELP.size() * 7 + 8 + bh + 3 + bh + 6 + (bh + 3 if touch else 0))
 	var px := floorf((W - pw) / 2.0)
 	var py := maxf(3.0, floorf((H - ph) / 2.0))
 	var bw := floorf((pw - 16) / 3.0)
@@ -504,6 +518,10 @@ func _pause(W: float, H: float) -> void:
 		y += 7
 	_hits = [[Rect2(px + 6, by, bw, bh), "resume"], [Rect2(px + 8 + bw, by, bw, bh), "sound"], [Rect2(px + 10 + bw * 2, by, bw, bh), "quit"], [Rect2(px + 6, ly, pw - 12, bh), "limit"]]
 	_button(px + 6, ly, pw - 12, bh, "ABILITIES: MANA" if main.loot.limit == "mana" else "ABILITIES: COOLDOWNS")
+	if touch:
+		var ay := ly - bh - 3
+		_hits.append([Rect2(px + 6, ay, pw - 12, bh), "aim"])
+		_button(px + 6, ay, pw - 12, bh, main._touch.label())
 	_button(px + 6, by, bw, bh, "Resume", false, true)
 	_button(px + 8 + bw, by, bw, bh, "Sound off" if AudioServer.is_bus_mute(0) else "Sound on")
 	# (ui/panels.ts drawPause, its third: "End run" gives a hero of one's own up; a test hero's "Leave" leaves the save as it was)

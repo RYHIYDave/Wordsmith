@@ -970,10 +970,28 @@ lights over the dark (town.gd `_ring_moments`):
   is laid). `hide_clip.gd`: the blocks' outlines and a shader that leaves out what falls inside them. `--only=behind`
   (`check_glows.gd`): 5 checks on floor 4, pictured.
 
+## Touch play, for a phone (the cloud chat, 21 Nov 2026)
+
+- **Played with fingers, as the game is** (engine/input.ts; main.ts, its touch controls; game/lock.ts; `touch.gd`): no buttons for
+  the moves. THE LEFT THUMB is a stick wherever it lands on the left 40% of the screen, at full speed past its small still
+  middle (his words of 8 Oct: the same speed wherever the thumb is); THE RIGHT THUMB taps for the quick attack, holds for the
+  slow one (kept going while held), swipes for the evasive move. WHERE THE ATTACKS GO, his pick of the game's four, switched in
+  the pause panel and kept with the device: ATTACKS: AUTO AIM (the aim help locks onto the nearest awake and in sight within 10
+  tiles, kept till 12.5 or 0.8 s out of sight, given up only for one 1.5 tiles nearer; a blade first for one it can reach; a
+  volley and a vial where it is going), WHERE YOU TAP, THE WAY YOU FACE, ONE HAND. A touch on a service in town, a waypoint
+  or the fallen wordsmith walks him there (round what stands in the way) and uses it; the screen's own things (INVENTORY, the
+  flask, a move's plate, the small map, the pause button) and every screen of the game's are pressed as a mouse's. As the game
+  draws them: the gold ring of dots round the one locked onto, the stick's ring of dots and its knob, the reticle on what a tap
+  picked, the ring closing over the thumb as a press becomes a hold; and the screen's words a phone's (LEFT THUMB to MOVE, TAP,
+  HOLD, SWIPE, INVENTORY, the flask larger and without its key). The app is held sideways and turns with the phone either way
+  (the game's own way on a phone held upright, turned for him: `window/handheld/orientation`). `--only=touch`
+  (`check_glows.gd`): 7 checks, real touches, pictured.
+
 ## Not in it yet
 
 Uniques, magic find; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
-pick); a phone's own options (where an attack aims, the screen turned).
+pick); playing UPRIGHT (the game laid out for a phone held upright, its PLAY UPRIGHT switch: the Godot screen is laid out for one
+held sideways only); the first dungeon's ghosts of the gesture each prompt asks for on a phone.
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made

@@ -152,7 +152,7 @@ func _act(dt: float, way: Vector2, hooked: bool) -> bool:
 		_update_channel(dt)
 	if (Input.is_action_just_pressed("whirl") or h.auto_whirl) and channel.is_empty():
 		h.auto_whirl = false
-		var at := _aim(float(_def(1)["range"]), str(_def(1)["kind"]))
+		var at := _aim(float(_def(1)["range"]), str(_def(1)["kind"]), 1)
 		_use_skill(1, at)
 	elif not queued.is_empty():
 		queued["t"] = float(queued["t"]) - dt
@@ -169,7 +169,7 @@ func _act(dt: float, way: Vector2, hooked: bool) -> bool:
 		# last moment of it)
 		var busy: bool = not windup.is_empty() or not channel.is_empty() or (not attack.is_empty() and int(attack["skill"]) != 0 and float(attack["t"]) > float(T["tune"]["attackCut"]))
 		if swing_t <= 0.0 and not busy:
-			_use_basic(_aim(float(_def(0)["range"]), str(_def(0)["kind"])))
+			_use_basic(_aim(float(_def(0)["range"]), str(_def(0)["kind"]), 0))
 	return false
 
 
@@ -203,7 +203,12 @@ func turns_to_walk() -> bool:
 
 ## Where he aims: where the pointer is while a button is held, else the nearest enemy awake within `reach` (game/lock.ts placedAim:
 ## a volley put where it is going, that it walks into the rain), else before him.
-func _aim(reach: float, kind := "") -> Vector2:
+func _aim(reach: float, kind := "", which := -1) -> Vector2:
+	# (on a phone: where the aim help, the thumb or his facing put the move `which`: touch.gd; -2: the aim help's own)
+	if which >= 0 and h.touch_aim.has(which):
+		return h.touch_aim[which]
+	if which == -1 and h.touch_aim.has(0):
+		return h.touch_aim[0]
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 		return Iso.to_world(h.get_global_mouse_position())
 	if h.monsters != null:
@@ -390,7 +395,7 @@ func _update_channel(dt: float) -> void:
 	var hold := _holding()
 	if def["kind"] == "snipe":
 		if hold:
-			var at := _aim(float(def["range"]))
+			var at := _aim(float(def["range"]), "", i)
 			ch["tx"] = at.x
 			ch["ty"] = at.y
 		_face(Vector2(ch["tx"], ch["ty"]))
@@ -410,7 +415,7 @@ func _update_channel(dt: float) -> void:
 		_end_channel(true)
 		return
 	if hold:
-		var at := _aim(float(def["range"]))
+		var at := _aim(float(def["range"]), "", i)
 		ch["tx"] = at.x
 		ch["ty"] = at.y
 	_face(Vector2(ch["tx"], ch["ty"]))

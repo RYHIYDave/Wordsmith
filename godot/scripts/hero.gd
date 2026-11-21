@@ -268,6 +268,8 @@ var auto_dir := Vector2.ZERO
 var auto_attack := false
 var auto_whirl := false
 var auto_lunge := Vector2.INF
+## (TOUCH, touch.gd) Where the touch's aim puts each move: 0 the quick, 1 the slow (floor tiles); empty with a mouse or keys.
+var touch_aim := {}
 ## (a check's hand on the Warlock's change: heroes/warlock.gd)
 var auto_change := false
 var unhurt := false
@@ -1467,6 +1469,12 @@ func _fly(dt: float) -> void:
 
 ## A blow made from the keys goes at the nearest monster awake close by; with the mouse, where it points.
 func _aim_at_foe() -> void:
+	# (on a phone: where the aim help, the thumb or his facing put it: touch.gd)
+	if touch_aim.has(0):
+		var tt: Vector2 = touch_aim[0] - world
+		if tt.length() > 0.01:
+			_turn(tt.normalized())
+		return
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 		var to := Iso.to_world(get_global_mouse_position()) - world
 		if to.length() > 0.01:

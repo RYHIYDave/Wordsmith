@@ -158,6 +158,8 @@ var came_in_gate := false
 var _hud
 var _loot: Loot
 var _inv
+## (TOUCH, for a phone: touch.gd)
+var _touch = null
 ## (the small map top right, the large one and the pause panel: minimap.gd)
 var _mini
 var _veil: ColorRect
@@ -271,6 +273,11 @@ func _ready() -> void:
 	mini.hud = hud
 	layer.add_child(mini)
 	_mini = mini
+	# (TOUCH, for a phone: the stick, the thumb's taps, holds and swipes; touches on the screen's own things as presses)
+	if _touch == null:
+		_touch = preload("res://scripts/touch.gd").new()
+		_touch.main = self
+		add_child(_touch)
 	var inv := Inventory.new()
 	inv.loot = loot
 	inv.hero = hero
@@ -317,7 +324,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -2301,6 +2308,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "fxleft":
 		await preload("res://scripts/check_glows.gd").new().fxleft(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "touch":
+		await preload("res://scripts/check_glows.gd").new().touch(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "behind":

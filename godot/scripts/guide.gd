@@ -26,6 +26,8 @@ const STEPS := 3.0
 const SIGHT := 9.0
 ## (ui/guide.ts pressName, with a mouse: what makes the quick attack, the slow one, the evasive move)
 const PRESS := ["LEFT CLICK", "HOLD RIGHT CLICK", "SPACE"]
+## (ui/guide.ts pressName, with a finger)
+const TOUCH_PRESS := ["TAP", "TAP + HOLD", "SWIPE"]
 
 var main  # main.gd
 var use_t := 0.0
@@ -78,7 +80,7 @@ func _lesson() -> Dictionary:
 		var f: Array = L.fronts(at)
 		var says: String = Words.word(f[0])["frontText"] if not f.is_empty() else Words.word(L.behinds(at)[0])["behindText"]
 		point = at
-		return {"caption": "WORDSMITHING", "text": "%s: %s" % [PRESS[at], str(L.r(at)["name"]).to_upper()], "sub": says}
+		return {"caption": "WORDSMITHING", "text": "%s: %s" % [(TOUCH_PRESS if _touch() else PRESS)[at], str(L.r(at)["name"]).to_upper()], "sub": says}
 	if loot.lesson():
 		var held: String = loot.first_spare()
 		var strike: String = str(Words.skill(main.hero.loadout.id(0))["name"]).to_upper()
@@ -87,27 +89,27 @@ func _lesson() -> Dictionary:
 			if main._in_fight():
 				return {"caption": "WORDSMITHING", "text": "You hold a word: %s" % name, "sub": "When the fight is over, it goes on %s." % strike}
 			point = 0
-			return {"caption": "WORDSMITHING", "text": "Put %s on %s" % [name, strike], "sub": "Click %s at the bottom of the screen." % strike}
+			return {"caption": "WORDSMITHING", "text": "Put %s on %s" % [name, strike], "sub": ("Tap %s at the bottom of the screen." if _touch() else "Click %s at the bottom of the screen.") % strike}
 		var lying: String = _word_near(hero.world)
 		if lying != "":
 			return {"caption": "WORDSMITHING", "text": "A power word: %s" % str(Words.word(lying)["name"]).to_upper(), "sub": "Walk over it to take it."}
 	if loot.quest != "":
 		if loot.prompt_t > 0.0:
 			if town:
-				return {"caption": "WORDSMITHING", "text": "Bring the MASTER RUNE-STONE to the wordsmith", "sub": "He stands in the ring of stones. Go up to him and press E."}
+				return {"caption": "WORDSMITHING", "text": "Bring the MASTER RUNE-STONE to the wordsmith", "sub": "He stands in the ring of stones. Tap him." if _touch() else "He stands in the ring of stones. Go up to him and press E."}
 			return {"caption": "WORDSMITHING", "text": "You carry the MASTER RUNE-STONE", "sub": "Take it to the wordsmith in town."}
 		return {}
 	if town and not loot.ring_lit:
 		if hero.walked < STEPS:
-			return {"caption": "HOW TO PLAY", "text": "W A S D to MOVE", "sub": ""}
+			return {"caption": "HOW TO PLAY", "text": "LEFT THUMB to MOVE" if _touch() else "W A S D to MOVE", "sub": "Put your thumb down anywhere on the left and push." if _touch() else ""}
 		if loot.quest_given:
 			return {"caption": "WORDSMITHING", "text": "Take the STAIRS down", "sub": "Find the fallen wordsmith, and bring back the stone."}
-		return {"caption": "WORDSMITHING", "text": "Talk to the WORDSMITH", "sub": "He stands in the ring of stones. Go up to him and press E."}
+		return {"caption": "WORDSMITHING", "text": "Talk to the WORDSMITH", "sub": "He stands in the ring of stones. Tap him." if _touch() else "He stands in the ring of stones. Go up to him and press E."}
 	var b = loot._body
 	if not town and b != null and not b["searched"] and b["node"] != null and hero.world.distance_to(b["at"]) < SIGHT and main.sees(hero.world, b["at"]):
-		return {"caption": "WORDSMITHING", "text": "Someone fell here", "sub": "Walk up to the body to search it."}
+		return {"caption": "WORDSMITHING", "text": "Someone fell here", "sub": "Walk up to the body to search it, or tap it." if _touch() else "Walk up to the body to search it."}
 	if hero.walked < STEPS:
-		return {"caption": "HOW TO PLAY", "text": "W A S D to MOVE", "sub": ""}
+		return {"caption": "HOW TO PLAY", "text": "LEFT THUMB to MOVE" if _touch() else "W A S D to MOVE", "sub": "Put your thumb down anywhere on the left and push." if _touch() else ""}
 	return {}
 
 
@@ -199,3 +201,9 @@ func _speak_step() -> void:
 	var kept: bool = not _speak.is_empty() and _speak["who"] == "knight-captain" and main.quest1620 != null and main.quest1620.captain_jar == "got" and not main.is_home(main.place)
 	if not _speak.is_empty() and (_speak["t"] <= 0.0 or (not due.has(_speak["who"]) and not kept)):
 		_speak = {}
+
+
+## (ui/guide.ts: `touch`) Whether he is playing with fingers.
+func _touch() -> bool:
+	return main != null and main._touch != null and main._touch.on
+
