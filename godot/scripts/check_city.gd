@@ -117,6 +117,15 @@ func run(main, hero, out: String) -> void:
 					m = o
 		if m != null:
 			chosen[k] = m
+		# (FLOOR 20: a shadow of each of the four royals kept, each its own: `rshadow_f<form>`)
+		if k == "rshadow":
+			for f in 4:
+				var best = null
+				for o in M._monsters.list:
+					if is_instance_valid(o) and not o.dead and o.kind == k and int(o.form) == f and not o.elite and not o.champion and (best == null or o.world.distance_to(h.world) < best.world.distance_to(h.world)):
+						best = o
+				if best != null:
+					chosen["rshadow_f%d" % f] = best
 	# (a dancer's partner kept with it: the pair's throw is theirs together)
 	var also: Array = []
 	var dn = chosen.get("dancer")
@@ -167,10 +176,11 @@ func run(main, hero, out: String) -> void:
 const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"], 12: ["rat", "dredger", "scribe", "hushed", "ratking"],
 	13: ["fieldhand", "carter", "hushed", "scraper", "quill"], 14: ["patient", "orderly", "hushed", "physician"],
 	15: ["inkling", "bookwarden", "scribe", "hushed", "censor"], 16: ["swan", "gardener", "groom", "pguard"],
-	17: ["dancer", "footman", "order", "prince"], 18: ["lady", "reflection", "qguard", "gqueen"], 19: ["xbow", "order", "kknight", "gking"]}
+	17: ["dancer", "footman", "order", "prince"], 18: ["lady", "reflection", "qguard", "gqueen"], 19: ["xbow", "order", "kknight", "gking"],
+	20: ["hshape", "rshadow", "rshade", "order", "moth"]}
 const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"], 13: ["fieldhand", "carter"], 14: ["patient", "orderly"],
 	15: ["inkling", "bookwarden"], 16: ["swan", "gardener", "groom", "pguard"], 17: ["dancer", "footman", "order"],
-	18: ["lady", "reflection", "qguard"], 19: ["xbow", "order", "kknight"]}
+	18: ["lady", "reflection", "qguard"], 19: ["xbow", "order", "kknight"], 20: ["hshape", "rshadow", "rshade", "order"]}
 
 
 var chosen := {}
@@ -457,6 +467,36 @@ func _common(kind: String) -> void:
 			await _snap("kknight_banner_cut_down")
 			_line(planted and struck > 0 and rally > 1.2 and looked == "kknight_1" and cut and M._wu_said("The banner is cut down") != "",
 				"the rallying banner: driven in, its shockwave striking the hero (%d); while it stands those near it hit harder (x%.1f); he without it (%s); three blows cut it down" % [struck, rally, looked])
+		"rshadow":
+			await _rshadows()
+		"hshape":
+			# (in the open, 4.5 tiles off: it circles him, closing, and swoops)
+			h.world = M._spot_near(m.world, 4.5, h.world)
+			_ready_only(m, -1)
+			var circled: bool = await _run(6.0, func(): return m.h2.act != null and str(m.h2._id()).begins_with("hshape:glide"))
+			await _run(1.0)
+			await _snap("hshape_circles")
+			var swooped: bool = await _run(14.0, func(): return _is_act(m, "hshape:swoopL") or _is_act(m, "hshape:swoopR"))
+			await _run(0.45, func(): return m.h2.act != null and float(m.h2.act["t"]) >= 0.45)
+			var warned: bool = not _a1("hshape:warn").is_empty()
+			await _snap("hshape_swoop_marked")
+			var gripped: bool = await _run(1.0, func(): return not _a1("hshape:grip").is_empty())
+			await _run(0.1)
+			await _snap("hshape_grips")
+			var hushed: bool = h.hush_t > 0.0
+			await _run(1.5, func(): return m.h2.act == null)
+			_line(circled and swooped and warned and gripped and struck > 0 and hushed, "the Hush in its own shape: round him on its ring, closing; its swoop, the round marked (%s); its grip: the hero struck (%d), held and HUSHED" % [warned, struck])
+			# (too close in to circle: it grips as before)
+			struck = 0
+			h.hush_t = 0.0
+			await _run(1.0, func(): return m.h2.act == null)
+			h.world = M._spot_near(m.world + m.face * 1.4, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var grip: bool = await _run(4.0, func(): return _is_act(m, "hshape:grip") and float(m.h2.act["t"]) >= 0.5)
+			await _snap("hshape_grip_close")
+			await _run(1.0)
+			_line(grip and struck > 0, "close in, it grips as before: the hero struck (%d)" % struck)
 		"hushed":
 			h.world = M._spot_near(m.world, 0.9, h.world)
 			_ready_only(m, 0)
@@ -2034,4 +2074,106 @@ func _gking() -> void:
 	var bird: Dictionary = _a1("gking:bird")
 	var gone_broken: bool = M.look != null and M.look._shown.has("bird")
 	_line(fell and unwinding and not bird.is_empty() and gone_broken and _a1("gking:fog").is_empty(), "the King dies: the Hush unwinds into nothing, the fog lifts; the broken songbird before his throne winds itself up and sings")
+
+
+## One kept monster let go into the fight alone (the floor's marks cleared; he well off it as it is let go).
+func _alone_m(m):
+	if m == null or not is_instance_valid(m):
+		return null
+	P.clear()
+	h.world = M._spot_near(m.world, 8.0, h.world)
+	m._t = 0.0
+	await M._wait(0.1)
+	return m
+
+
+## FLOOR 20'S SHADOWS OF THE FOUR ROYALS (act3/rshadow.gd): each its royal's basic and its one big move.
+func _rshadows() -> void:
+	var names := ["the Princess", "the Prince", "the Queen", "the King"]
+	for f in 4:
+		var m = await _alone_m(chosen.get("rshadow_f%d" % f))
+		if m == null:
+			_line(false, "no shadow of %s on the floor" % names[f])
+			continue
+		struck = 0
+		match f:
+			0:
+				h.world = M._spot_near(m.world + m.face * 3.0, 0.0, h.world)
+				m.face = (h.world - m.world).normalized()
+				_ready_only(m, 0)
+				var lash: bool = await _run(5.0, func(): return _is_act(m, "rshadow:lash") and float(m.h2.act["t"]) >= 0.6)
+				await _snap("rshadow_princess_lash")
+				await _run(1.5, func(): return m.h2.act == null)
+				var s1 := struck
+				struck = 0
+				h.world = M._spot_near(m.world, 4.0, h.world)
+				_ready_only(m, 4)
+				var snared: bool = await _run(6.0, func(): return not _a1("rshadow:snare", func(q): return float(q["t"]) >= 0.15).is_empty())
+				await _snap("rshadow_princess_snare")
+				var held: bool = h._slow_t > 0.0
+				await _run(1.5, func(): return m.h2.act == null)
+				_line(lash and s1 > 0 and snared and struck > 0 and held, "the shadow of the Princess: its lash (%d); its snare bursting up round him, holding him (%d)" % [s1, struck])
+			1:
+				h.world = M._spot_near(m.world + m.face * 2.0, 0.0, h.world)
+				m.face = (h.world - m.world).normalized()
+				_ready_only(m, 1)
+				var thrust: bool = await _run(5.0, func(): return _is_act(m, "rshadow:thrust") and float(m.h2.act["t"]) >= 0.6)
+				await _snap("rshadow_prince_thrust")
+				await _run(2.0, func(): return m.h2.act == null)
+				var s1 := struck
+				struck = 0
+				# (on one of the four ways its picture faces, 4 tiles off: its masks fly along that way and either side of it)
+				for w in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]:
+					var at: Vector2 = m.world + w * 4.0
+					if M.map.walkable(floori(at.x), floori(at.y)) and M._monsters.sees(m.world, at):
+						h.world = Vector2(floorf(at.x) + 0.5, floorf(at.y) + 0.5)
+						break
+				_ready_only(m, 5)
+				var flung: bool = await _run(6.0, func(): return not _a1("rshadow:masks", func(q): return float(q["t"]) >= 0.15).is_empty())
+				await _snap("rshadow_prince_masks")
+				await _run(1.5, func(): return m.h2.act == null)
+				_line(thrust and s1 > 0 and flung and struck > 0, "the shadow of the Prince: its thrust (%d); three masks flung in a fan: the hero struck (%d)" % [s1, struck])
+			2:
+				h.world = M._spot_near(m.world + m.face * 1.6, 0.0, h.world)
+				m.face = (h.world - m.world).normalized()
+				_ready_only(m, 2)
+				var comb: bool = await _run(5.0, func(): return _is_act(m, "rshadow:comb") and float(m.h2.act["t"]) >= 0.6)
+				await _snap("rshadow_queen_comb")
+				await _run(1.5, func(): return m.h2.act == null)
+				var s1 := struck
+				struck = 0
+				h.world = M._spot_near(m.world, 5.0, h.world)
+				_ready_only(m, 6)
+				var into: bool = await _run(6.0, func(): return _is_act(m, "rshadow:blinkIn"))
+				var out: bool = await _run(3.0, func(): return _is_act(m, "rshadow:blinkOut"))
+				var behind: float = m.world.distance_to(h.world)
+				# (out of it 2.45 tiles behind him: its stab reaches 1.77, so he steps back into it)
+				h.world = h.world.lerp(m.world, 0.5)
+				await _run(0.25)
+				await _snap("rshadow_queen_blinks_out")
+				await _run(1.5, func(): return m.h2.act == null)
+				_line(comb and s1 > 0 and into and out and behind < 2.7 and struck > 0, "the shadow of the Queen: its comb (%d); into her hand mirror, out of it behind him (%.2f tiles), stabbing as he steps back into it (%d)" % [s1, behind, struck])
+			3:
+				h.world = M._spot_near(m.world + m.face * 4.0, 0.0, h.world)
+				m.face = (h.world - m.world).normalized()
+				_ready_only(m, 3)
+				var braced: bool = await _run(5.0, func(): return _is_act(m, "rshadow:charge") and float(m.h2.act["t"]) >= 0.6)
+				await _snap("rshadow_king_charge_way")
+				await _run(1.6, func(): return _is_act(m, "rshadow:charge") and float(m.h2.act["t"]) >= 2.05)
+				await _snap("rshadow_king_sparks_held")
+				await _run(0.5, func(): return _is_act(m, "rshadow:charge") and float(m.h2.act["t"]) >= 2.5)
+				await _snap("rshadow_king_sparks_burst")
+				await _run(1.0, func(): return m.h2.act == null)
+				var s1 := struck
+				struck = 0
+				h.world = M._spot_near(m.world, 4.0, h.world)
+				_ready_only(m, 7)
+				var sent: bool = await _run(6.0, func(): return _is_act(m, "rshadow:weight") and float(m.h2.act["t"]) >= 2.4)
+				await _snap("rshadow_king_crown_follows")
+				await _run(2.0, func(): return _is_act(m, "rshadow:weight") and float(m.h2.act["t"]) >= 4.15)
+				await _snap("rshadow_king_crown_slams")
+				await _run(2.0, func(): return m.h2.act == null)
+				_line(braced and s1 > 0 and sent and struck > 0, "the shadow of the King: its charge and its line of sparks bursting (%d); its crown's weight following him, slammed down (%d)" % [s1, struck])
+		m.queue_free()
+		await M._wait(0.1)
 

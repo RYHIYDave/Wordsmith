@@ -145,6 +145,9 @@ import { DANCE_CANVAS as PC_DANCE_CANVAS, DANCE_FX as PC_DANCE_FX, MASKS_FX as P
 import { TILE3 as T3 } from '../src/art/new_mobs3';
 import { FLASH_CANVAS as LD_FLASH_CANVAS, FLASH_FX as LD_FLASH_FX, flashPainted as ldFlash } from '../src/art/gallery_ladies_fx';
 import { RALLY_CANVAS as KK_RALLY_CANVAS, STANDING_CANVAS as KK_STANDING_CANVAS, bannerPainted, rallyPainted } from '../src/art/action_f16_knight';
+import { GRIP_CANVAS as HS_GRIP_CANVAS, gripPainted as hsGrip } from '../src/art/hush_shapes';
+import { swoopCarry as hsSwoopCarry, swoopPace as hsSwoopPace } from '../src/art/hush_shapes_moves';
+import { MASKS_SHADOW_FLIGHT as RSH_FLIGHT, SHADOW_MASKS as RSH_MASKS, SHADOW_SNARE as RSH_SNARE, masksFx as rshMasks, snareFx as rshSnare, weightFx as rshWeight } from '../src/art/royal_shadows_fx';
 import { BIRD as GK_BIRD, BIRD_CANVAS as GK_BIRD_CANVAS, DECREE_FX as GK_DECREE, FACE_CANVAS as GK_FACE_CANVAS, KN_CANVAS as GK_KN_CANVAS, WEIGHT_CANVAS as GK_WEIGHT_CANVAS, WEIGHT_FX as GK_WEIGHT, birdPainted as gkBird, facePainted as gkFace, knightPainted as gkKnight, weightPainted as gkWeight } from '../src/art/king_fx';
 import { BANNER_N, bannerSprite } from '../src/art/act1_figs/kknight';
 import { CLOUD_CANVAS as QN_CLOUD_CANVAS, CLOUD_FX as QN_CLOUD_FX, HALL_MIRROR_CANVAS, SHATTER_FX as QN_SHATTER_FX, TALK_CANVAS as QN_TALK_CANVAS, TALK_FX as QN_TALK_FX, cloudPainted as qnCloud, hallMirrorPainted, shardsAt as qnShardsAt, talkingMirrorPainted } from '../src/art/queen_fx';
@@ -745,6 +748,39 @@ for (const view of ['front', 'back'] as const) {
   films.kk_splinters = { fps: FPS, n: 30, k0: 0, layers: { stand: Array.from({ length: 30 }, (_, k) => pic(toSprite(rallyPainted(2.0 + k / FPS, 'air', k / FPS), null, KK_RALLY_CANVAS.ax, KK_RALLY_CANVAS.ay))) } };
 }
 
+// FLOOR 20'S HUSH IN ITS OWN SHAPES (godot/scripts/act3/marks20.gd; render/act1_fx/hshape.ts):
+//   hs_grip_<half>  THE GRIP'S COILS round whoever it caught, thirty frames a second for 0.8 s (gripPainted): `far`, its half
+//                   behind him, `near`, its half before him; layer `stand`
+//   tables.hs       its swoop as the game carries it (art/hush_shapes_moves.ts swoopCarry, swoopPace): `carry`, [round, inward]
+//                   tiles every 1/200 s through its last turn; `pace`, tiles a second along its ring every 1/100 s of the swoop
+{
+  for (const half of ['far', 'near'] as const) {
+    films[`hs_grip_${half}`] = { fps: FPS, n: 24, k0: 0, layers: { stand: Array.from({ length: 24 }, (_, k) => pic(toSprite(hsGrip(k / FPS, 'front', half), null, HS_GRIP_CANVAS.ax, HS_GRIP_CANVAS.ay))) } };
+  }
+  tables.hs = {
+    carry: Array.from({ length: 73 }, (_, i) => { const c = hsSwoopCarry(i / 200); return [+c.round.toFixed(5), +c.inward.toFixed(5)]; }),
+    pace: Array.from({ length: 171 }, (_, i) => +hsSwoopPace(i / 100).toFixed(4)),
+  };
+}
+
+// FLOOR 20'S SHADOWS OF THE FOUR ROYALS (godot/scripts/act3/marks20.gd; render/act1_fx/rshadow.ts), thirty frames a second:
+//   rsh_snare               THE PRINCESS'S SNARE, its vines bursting up round where he stood, holding, sinking (snareFx)
+//   rsh_masks_<view>        THE PRINCE'S MASKS, three flung in a fan along the way its picture faces and bursting (masksFx)
+//   rsh_w<part>_<view>      THE KING'S CROWN'S WEIGHT from its sending (weightFx): `floor`, its shadow, ring and slam (layer
+//                           `floor`); `crown`, the shadow crown in the air (layer `stand`)
+{
+  const fr = (f: { px: Px; ax: number; ay: number }): number => pic(toSprite({ px: f.px, lights: [] }, null, f.ax, f.ay));
+  const ns = Math.floor(RSH_SNARE.long * FPS) + 1;
+  films.rsh_snare = { fps: FPS, n: ns, k0: 0, layers: { stand: Array.from({ length: ns }, (_, k) => fr(rshSnare(k / FPS, 'front'))) } };
+  const nm = Math.floor((RSH_FLIGHT + RSH_MASKS.burst) * FPS) + 1;
+  const nw = Math.ceil(GK_WEIGHT.long * FPS);
+  for (const view of ['front', 'back'] as const) {
+    films[`rsh_masks_${view}`] = { fps: FPS, n: nm, k0: 0, layers: { stand: Array.from({ length: nm }, (_, k) => fr(rshMasks(k / FPS, view))) } };
+    films[`rsh_wfloor_${view}`] = { fps: FPS, n: nw, k0: 0, layers: { floor: Array.from({ length: nw }, (_, k) => fr(rshWeight(k / FPS, view, 'floor'))) } };
+    films[`rsh_wcrown_${view}`] = { fps: FPS, n: nw, k0: 0, layers: { stand: Array.from({ length: nw }, (_, k) => fr(rshWeight(k / FPS, view, 'crown'))) } };
+  }
+}
+
 // FLOOR 19'S BOSS, THE KING (godot/scripts/act3/gk_marks.gd; render/act1_fx/gking.ts, as the game paints them, each the first time it
 // is wanted):
 //   gk_kn_<view>          a knight of his Decree, each of the twelve frames of his march (knightPainted); layer `stand`
@@ -1107,7 +1143,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the city's)
   watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'], bookwarden: ['wb'],
   // (the High City's)
-  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['gq'], kknight: ['kk'], gking: ['gk'],
+  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['gq'], kknight: ['kk'], gking: ['gk'], hshape: ['hs'], rshadow: ['rsh'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);
