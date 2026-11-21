@@ -92,6 +92,14 @@ export const ACT_SOUND: Record<string, string> = {
 export const ENEMY_GAPS = { aggro: 1.2, hurt: 0.7, atk: 0.25, bossHurt: 2.5 } as const;
 /** A hurt is heard on a big hit only: a critical, a blow of this share of its life or more, or one in `one` of the others. */
 export const HURT_BIG = { share: 0.25, one: 6 } as const;
+/**
+ * THE ENEMIES' GRUNT AND DEATH CRY A THIRD AS OFTEN, BY A COUNT (the sound chat's fourteenth batch, 14 Nov 2026, at his word “there
+ * is a lot of repetition in the audio” and his picks “Enemies' grunts” and “Rarer, and more takes (Recommended)”; heard on try-out 19,
+ * “All good, hand over (Recommended)”): where a family's grunt would be heard it is on that family's 1st, 4th, 7th … time; its 1st,
+ * 4th, 7th … death cries out, its others die with the plain sound of one with no voice. A count, not the dice, so the sounds take
+ * nothing from the game's chances. Champions always cry; the bosses and the cry on seeing him are as they were.
+ */
+export const ENEMY_KEEP = { hurt: 3, death: 3 } as const;
 
 /**
  * The Swamp Colossus's own sounds, played at his fight's beats (game/act1_rules/colossus.ts `sounds`; his ward's, his pillars' and his

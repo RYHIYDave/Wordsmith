@@ -629,6 +629,123 @@ as it is, no new file.
 
 Wired in by the main chat for 25.3.20 (14 Nov 2026): engine/audio.ts MUSIC_PLACES f6 to f10, game/level_music.ts musicPlace (floors 1 to 10).
 
+## Fourteenth batch: less repetition, the level music a minute round and the voices rarer with more takes (the sound chat, 14 Nov 2026)
+
+His words, 14 Nov 2026, 17:38 Eastern: “there is a lot of repetition in the audio”. His picks:
+- Which sounds: “The level music (Recommended), Enemy or hero voices, Background sounds”.
+- The music: “About a minute each (Recommended)”.
+- Which voices: “Hero grunting when hit (Recommended), Hero attack shouts, Enemies' grunts”.
+- The voices' fix: “Rarer, and more takes (Recommended)”.
+- The backgrounds: “Not sure, fix both (Recommended)”. That means every steady loop a minute round, and the sounds that come now and then half as often.
+
+Shown on try-out 19 (Wordsmith Less Repetition, https://claude.ai/artifact/MvdD5txzr3bJjSeF2rCPK8). By 19:55 Eastern his answer was “All good, hand over (Recommended)”.
+
+There are 183 files and no name clashes with any earlier batch. Two parts follow, the music and the voices, each saying what to change in the code. The third part, the backgrounds, is withdrawn (see it below, and the fifteenth batch).
+
+### 1. The level music, about a minute round (21 files)
+
+These replace the tenth batch's music (`music_*.mp4`, which fix/music-mp3 made into `music_*.mp3`) and the thirteenth batch's music (`music_f6_*.mp3` … `music_f10_*.mp3`). They are the same songs, cut two or three times longer. The new files are named `music_<place>_<walk|fight>_long.mp3`, so they can't be mixed up with the old ones of the same place. Once these are in, the old files can go.
+
+The format matches the thirteenth batch's:
+- MP3, 48 kHz stereo, libmp3lame VBR q1.
+- Each file is one loop, then its first 2 s again (a guard).
+- Play it as now: `loop = true`, `loopStart = 0`, `loopEnd` = its loop length below.
+
+What was checked, in Chromium's own decode:
+- Each file is exactly the loop plus the guard long, and lies at 0 to the sample.
+- Every join, looped, is a smaller step than the loop's own 99th percentile.
+- No join shows a click in its high frequencies.
+- Safari's decode is not checked (as with fix/music-mp3).
+
+Loudness is as before: the town -20 LUFS, the walks -19, the fights -17.
+
+The whole of `MUSIC_PLACES`, floors 1 to 10 and the town. The loop lengths are in seconds, to the sample at 48 kHz:
+
+```ts
+export const MUSIC_PLACES = {
+  town: { walk: { file: 'music_town_walk_long.mp3', loop: 64.625187 } },
+  f1: { walk: { file: 'music_f1_walk_long.mp3', loop: 55.280896 }, fight: { file: 'music_f1_fight_long.mp3', loop: 74.410604, fightIn: 0.011 } },
+  f2: { walk: { file: 'music_f2_walk_long.mp3', loop: 66.6235 }, fight: { file: 'music_f2_fight_long.mp3', loop: 55.3835, fightIn: 1.761 } },
+  f3: { walk: { file: 'music_f3_walk_long.mp3', loop: 58.127958 }, fight: { file: 'music_f3_fight_long.mp3', loop: 45.001542, fightIn: 0.475 } },
+  f4: { walk: { file: 'music_f4_walk_long.mp3', loop: 68.324396 }, fight: { file: 'music_f4_fight_long.mp3', loop: 59.766937, fightIn: 1.787 } },
+  f5: { walk: { file: 'music_f5_walk_long.mp3', loop: 51.906312 }, fight: { file: 'music_f5_fight_long.mp3', loop: 74.751188, fightIn: 2.113 } },
+  f6: { walk: { file: 'music_f6_walk_long.mp3', loop: 57.725875 }, fight: { file: 'music_f6_fight_long.mp3', loop: 51.857, fightIn: 0.561 } },
+  f7: { walk: { file: 'music_f7_walk_long.mp3', loop: 58.971354 }, fight: { file: 'music_f7_fight_long.mp3', loop: 52.955208, fightIn: 1.057 } },
+  f8: { walk: { file: 'music_f8_walk_long.mp3', loop: 49.029896 }, fight: { file: 'music_f8_fight_long.mp3', loop: 50.097604, fightIn: 0.63 } },
+  f9: { walk: { file: 'music_f9_walk_long.mp3', loop: 55.822708 }, fight: { file: 'music_f9_fight_long.mp3', loop: 60.199, fightIn: 0.859 } },
+  f10: { walk: { file: 'music_f10_walk_long.mp3', loop: 72.051375 }, fight: { file: 'music_f10_fight_long.mp3', loop: 51.061563, fightIn: 1.206 } },
+};
+```
+
+Where each loop comes from in his songs:
+
+| Place | Walk (was) | Fight (was) |
+|---|---|---|
+| The town, “Prison Town” | 0:56 to 2:01 (36.9 s) | |
+| Floor 1, “Warden's Quarters” | 0:37 to 1:33 (21.1 s) | 1:33 to 2:48 (34.3 s) |
+| Floor 2, “Headman's Yard” | 0:20 to 1:26 (24.0 s) | 1:27 to 2:22 (27.6 s) |
+| Floor 3, “Chained One's Furnace” | 0:17 to 1:15 (29.4 s) | 0:43 to 1:28 (30.0 s) |
+| Floor 4, “Ossuary” | 0:21 to 1:30 (29.9 s) | 2:21 to 3:21 (35.1 s) |
+| Floor 5, “Fleshmancer's Temple” | 0:55 to 1:47 (27.9 s) | 2:25 to 3:40 (31.4 s) |
+| Floor 6, “Quarry” | 0:37 to 1:34 (26.7 s) | 2:33 to 3:25 (25.8 s) |
+| Floor 7, “Carrion Queen's Eyrie” | 0:34 to 1:33 (27.7 s) | 2:33 to 3:25 (26.4 s) |
+| Floor 8, “Level 8” | 0:41 to 1:30 (29.2 s) | 1:58 to 2:48 (39.1 s) |
+| Floor 9, “Hollow Stag” | 0:30 to 1:26 (27.7 s) | 2:14 to 3:14 (33.7 s) |
+| Floor 10, “Sunken Eye” | 0:34 to 1:46 (36.1 s) | 2:35 to 3:26 (35.7 s) |
+
+Each loop's end was found by matching the music, as before. Floor 1's walk starts after the song's intro, so the bass doesn't drop out at the join. The walk and fight switch is as built; try-out 19 plays it as try-outs 15 and 18 did.
+
+**Memory.** Decoded, a floor's walk and fight together now take about 40 to 51 MB (stereo, 32-bit, 48 kHz). They took 20 to 27 MB before. The town's walk takes about 26 MB. Let a floor's music go as the floor is left, as now.
+
+### 2. The voices: a third as often, and more takes (162 files)
+
+**The new takes:**
+- **Enemies:** every one of the 23 `VOICE` families (game/sound_families.ts) gets takes 3 and 4 of its cry on seeing him, its grunt and its death: `<family>_aggro_3.mp3`, `_aggro_4`, `_hurt_3`, `_hurt_4`, `_death_3`, `_death_4`. That is 138 files.
+  - For 17 families, these were recorded with the second batch's prompts and not used.
+  - For the six silent families (hound, order, hshape, hushed, watch, rshade), they are new recordings of the third batch's prompts.
+  - They are finished as takes 1 and 2 were, and are as loud.
+- **Heroes:** each of the six gets a new shout and a new grunt, two takes each, in his own voice: `<hero>_attack_c_1.mp3`, `_attack_c_2`, `<hero>_hurt_c_1.mp3`, `_hurt_c_2`. That is 24 files.
+  - Each take is its loudest moment, at most 1 s, levelled as his others.
+
+All of them are MP3, 48 kHz mono, 128 kbps, as before.
+
+**What to change:**
+
+1. **Take counts.** `sfxNamed`, `warmNamed` and `warmAlso` take `[1, 2]` for every name. For the 69 names `<family>_aggro`, `<family>_hurt` and `<family>_death` of the `VOICE` families, use takes 1 to 4. A helper such as `takesOf(name)` would do it: 4 for those, 2 for the rest.
+2. **The heroes' cries.** In `CRIES`:
+   - `attack` adds `'attack_c_1', 'attack_c_2'` (6 takes).
+   - `grunt` adds `'hurt_c_1', 'hurt_c_2'` (4 takes).
+   - `line` and `death` stay as they are.
+3. **No take twice in a row.** In `playTake`, where a sound has 3 or more takes, pick at random among those ready other than the one this key played last. Sounds with 2 takes stay as they are, since 2 would only alternate.
+4. **The hero's shout and grunt, a third as often.** Add `keep: 3` to `VOICE_TUNE`. Where the rules as they are would play a shout or a grunt, it plays one time in `keep` (`Math.random() * VOICE_TUNE.keep < 1`). Set `cried.attack` and `cried.grunt` either way, so each gap counts from the one passed over too. That way he is heard a third as often however fast he attacks or is hit. His lines (“That stung”) and his death cry stay as they are.
+5. **The enemies' grunt and death, a third as often, by a count** (not the dice, as with `HURT_BIG`, so the sounds take nothing from the game's chances):
+   - Add `ENEMY_KEEP = { hurt: 3, death: 3 }` in sound_families.ts, and a count per family and kind in game.ts (a `Map` keyed `<family>_hurt` and `<family>_death`).
+   - **Hurt:** where `enemyRec` would play `<family>_hurt` (it is past `ENEMY_GAPS.hurt`), it plays on that family's 1st, 4th, 7th … time. `heard` is set either way.
+   - **Death:** a family's 1st, 4th, 7th … death cries with `<family>_death`. Its others die with the plain sound of an enemy with no voice: `this.sfx('monsterDie', 0.7)`.
+   - Champions always cry. Bosses stay as they are.
+   - The cry on seeing him (`_aggro`) stays as it is: it is already once for a family at a time, so a pack waking is one cry.
+
+**What it comes to.** On try-out 19 the same 30-second fight was played with the rules as they are and as they would be. He fights wolves, then skeletons, then rats, with the same swings, hits and kills:
+
+| | Before | After |
+|---|---|---|
+| Hero grunts | 14 | 5 |
+| Hero shouts | 1 | 0 |
+| Enemy grunts | 8 | 3 |
+| Death cries | 8 | 4 |
+
+### 3. The backgrounds: WITHDRAWN (15 Nov 2026)
+
+His word the next day: “The only constant sound I want in levels or towns is the music.  Everything else is sound effects.” So
+this part is withdrawn whole: no loops, and the 31 minute-long loop files are gone from this page. What replaces it is the
+fifteenth batch (`README_fifteenth_batch.md`, on this page): every loop off, the now-and-then sounds as the only background.
+
+### Cost
+
+The 36 new takes for the six silent families cost 612 credits. The heroes' 24 short lines were made in their own voices. The music is cut from his songs.
+
+IN THE GAME in 25.3.22 (21 Nov 2026), parts 1 and 2 (part 3 withdrawn): engine/audio.ts MUSIC_PLACES, FOUR_TAKE_FAMILIES, TAKES, CRIES, VOICE_TUNE.keep and playTake; game/sound_families.ts ENEMY_KEEP and game.ts keptCry. The tenth and thirteenth batches' 21 music files are gone from this folder.
+
 ## Fifteenth batch: no constant sound but the music (the sound chat, 15 Nov 2026)
 
 His words, 15 Nov 2026, Eastern:

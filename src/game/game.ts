@@ -112,7 +112,7 @@ import { GOLEM_ROCKET, ROCKET, rocketAlong } from '../art/golem_rocket_fx';
 import type { Brew, Decoy, GolemRocketAt, Risen, Tar } from './state';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 import { leadPoint } from './lock';
-import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_SOUNDS, HURT_BIG, VOICE, bossSound } from './sound_families';
+import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_KEEP, ENEMY_SOUNDS, HURT_BIG, VOICE, bossSound } from './sound_families';
 import { BOSS_CALLS, bossCall } from './boss_calls';
 import { LEVEL_DEFS, LEVEL_UNIQUES, UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, finalUniques, levelChance, levelPoolFor, rolledTune, uniqueDef, urollOf, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
 import type { BendCtx, UniqueDef } from './uniques';
@@ -4481,13 +4481,22 @@ export class Game {
   private hurtTick = 0;
   /** When each enemy sound was last heard (its name), so that a pack or a flurry of blows is not a din. */
   private heard = new Map<string, number>();
-  /** An enemy sound, if it has not been heard within `gap` seconds. */
-  private enemyRec(name: string, gap: number, vol: number, or?: Sfx): boolean {
+  /** An enemy sound, if it has not been heard within `gap` seconds; one time in `keep` (by a count per name: ENEMY_KEEP) where given. */
+  private enemyRec(name: string, gap: number, vol: number, or?: Sfx, keep = 1): boolean {
     const last = this.heard.get(name);
     if (last !== undefined && this.time - last < gap) return false;
     this.heard.set(name, this.time);
+    if (keep > 1 && !this.keptCry(name, keep)) return false;
     this.rec(name, vol, or);
     return true;
+  }
+  /** (THE FOURTEENTH BATCH) How many times each family's grunt and death would have been heard (`<family>_hurt`, `<family>_death`). */
+  private cryCount = new Map<string, number>();
+  /** Whether this one is heard: the 1st, (keep+1)th, (2·keep+1)th … of its name (ENEMY_KEEP). */
+  private keptCry(name: string, keep: number): boolean {
+    const n = this.cryCount.get(name) ?? 0;
+    this.cryCount.set(name, n + 1);
+    return n % keep === 0;
   }
 
   /**
@@ -11481,7 +11490,7 @@ export class Game {
       this.hurtTick = (this.hurtTick + 1) % HURT_BIG.one;
       const big = crit || dmg >= m.maxLife * HURT_BIG.share || this.hurtTick === 0;
       if (b && (crit || dmg >= m.maxLife * 0.04)) this.enemyRec(b, ENEMY_GAPS.bossHurt, 0.9);
-      else if (v && big) this.enemyRec(`${v}_hurt`, ENEMY_GAPS.hurt, 0.6);
+      else if (v && big) this.enemyRec(`${v}_hurt`, ENEMY_GAPS.hurt, 0.6, undefined, m.champion ? 1 : ENEMY_KEEP.hurt);
     }
     // (ACT 1: one whose rules hold its life up is kept there: a boss with another life bar to come, or one who must first be where his death was drawn)
     if (r1 && r1.lifeFloor) {
@@ -11528,7 +11537,9 @@ export class Game {
     if (dieB === 'none') {
       // (his death is his fight's own sound, begun as he is killed: the Swamp Colossus's, game/act1_rules/colossus.ts `died`)
     } else if (dieB) this.rec(dieB, 1, 'explode');
-    else if (dieV) this.rec(`${dieV}_death`, m.champion ? 0.9 : 0.7, m.champion ? 'explode' : 'monsterDie');
+    else if (dieV && (m.champion || this.keptCry(`${dieV}_death`, ENEMY_KEEP.death))) this.rec(`${dieV}_death`, m.champion ? 0.9 : 0.7, m.champion ? 'explode' : 'monsterDie');
+    // (THE FOURTEENTH BATCH: the others of a family die with the plain sound of one with no voice, ENEMY_KEEP)
+    else if (dieV) this.sfx('monsterDie', 0.7);
     else this.sfx(m.boss || m.champion ? 'explode' : 'monsterDie', m.boss ? 1 : 0.7);
     if (m.champion) this.emit({ t: 'shake', amount: 4 });
     const st = h.d.stats;

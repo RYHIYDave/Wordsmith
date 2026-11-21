@@ -22,7 +22,7 @@ export default async function (page, snap) {
     }
     return route.fulfill({ status: 200, contentType: 'audio/wav', body: b });
   });
-  if (!fs.existsSync(path.join('assets', 'sound', 'music_town_walk.mp3'))) console.log('  !! the music files are not in assets/sound');
+  if (!fs.existsSync(path.join('assets', 'sound', 'music_town_walk_long.mp3'))) console.log('  !! the music files are not in assets/sound');
   const hands = await makeHands(page);
   await page.waitForTimeout(300);
   await hands.press('button:NEW GAME');
@@ -39,13 +39,13 @@ export default async function (page, snap) {
   const near = (v, to) => v !== null && Math.abs(v - to) < 0.05;
   const t = await music();
   log('town', show(t));
-  check('the town: its walk, at its loudness', t.place === 'town' && near(t.walk, VOL) && t.fight === null && t.held.includes('music_town_walk.mp3'));
+  check('the town: its walk, at its loudness', t.place === 'town' && near(t.walk, VOL) && t.fight === null && t.held.includes('music_town_walk_long.mp3'));
   // floor 1
   await page.evaluate(() => { const g = window.__dbg.game(); g.depth = 1; g.cleared = 0; g.enterDungeon('gate'); for (const m of g.monsters) { m.state = 'sleep'; } });
   await page.waitForTimeout(5000);
   const f1 = await music();
   log('floor 1, walking', show(f1));
-  check("floor 1: its walk; its fight's come; the town's let go of", f1.place === 'f1' && near(f1.walk, VOL) && f1.fight === null && f1.held.includes('music_f1_walk.mp3') && f1.held.includes('music_f1_fight.mp3') && !f1.held.includes('music_town_walk.mp3'));
+  check("floor 1: its walk; its fight's come; the town's let go of", f1.place === 'f1' && near(f1.walk, VOL) && f1.fight === null && f1.held.includes('music_f1_walk_long.mp3') && f1.held.includes('music_f1_fight_long.mp3') && !f1.held.includes('music_town_walk_long.mp3'));
   // a fight: an enemy woken beside him (he is kept alive)
   const woke = await page.evaluate(() => {
     const g = window.__dbg.game();
@@ -81,7 +81,7 @@ export default async function (page, snap) {
   await page.waitForTimeout(5000);
   const f3 = await music();
   log('floor 3, walking', show(f3));
-  check("floor 3: its walk; floor 1's let go of", f3.place === 'f3' && near(f3.walk, VOL) && f3.held.includes('music_f3_walk.mp3') && !f3.held.some((f) => f.startsWith('music_f1_')));
+  check("floor 3: its walk; floor 1's let go of", f3.place === 'f3' && near(f3.walk, VOL) && f3.held.includes('music_f3_walk_long.mp3') && !f3.held.some((f) => f.startsWith('music_f1_')));
   await page.evaluate(() => clearInterval(window.__keep));
   const d = await page.evaluate(() => window.__dbg.soundsDetail());
   log('music failed', d.failed.filter((f) => f.startsWith('music_')));
