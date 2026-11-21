@@ -168,7 +168,8 @@ writeFileSync(`${OUT}/words.json`, JSON.stringify({
   last: { ids: LAST_WORD_IDS, from: LAST_WORDS_FROM, pierce: PIERCE, bleed: BLEED, reap: REAP, cull: CULL, surge: SURGE, plunder: PLUNDER, mirroring: MIRRORING, hushLeaves: [...HUSH_LEAVES], gold: [TUNE.goldMin, TUNE.goldMax] },
   // (each word's page as the wordsmith's half reads it, under the word just made and under a word of his picked to buy,
   // ui/lexicon.ts wordPage: what it becomes on gear, in the Lexicon's words, and the note under it)
-  page: Object.fromEntries([...OURS, ...MADE].map((w) => [w, { gear: gearLines(w, 'cooldown'), note: gearNote(w) }])),
+  // (and, ABILITIES: MANA, its gear lines as they read when mana is the limit, where they differ: `gearMana`)
+  page: Object.fromEntries([...OURS, ...MADE].map((w) => [w, { gear: gearLines(w, 'cooldown'), note: gearNote(w), ...(JSON.stringify(gearLines(w, 'mana')) !== JSON.stringify(gearLines(w, 'cooldown')) ? { gearMana: gearLines(w, 'mana') } : {}) }])),
   // (THE LEXICON's five pages by what the words do, ui/lexicon28.ts LEX_PAGES ('groups', his pick of 9 Nov 2026), and how many
   // words there are in all, types.ts WORD_IDS: "N OF 28 FOUND")
   lexPages: LEX_PAGES.map((p) => ({ name: p.name, words: [...p.words] })),

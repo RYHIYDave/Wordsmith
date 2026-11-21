@@ -2391,7 +2391,12 @@
     "Boots: Movement Speed or Dexterity.",
     "Off hand, helm, chest, belt: Cooldown Recovery or Dexterity."
    ],
-   "note": "Both at once, each a little weaker than its word alone."
+   "note": "Both at once, each a little weaker than its word alone.",
+   "gearMana": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Dexterity.",
+    "Boots: Movement Speed or Dexterity.",
+    "Off hand, helm, chest, belt: Mana Cost or Dexterity."
+   ]
   },
   "heavy": {
    "gear": [
@@ -2419,7 +2424,11 @@
     "Weapon, gloves, ring, amulet: Area of Effect or Intelligence.",
     "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
    ],
-   "note": "Both at once, each a little weaker than its word alone."
+   "note": "Both at once, each a little weaker than its word alone.",
+   "gearMana": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Max Mana or Intelligence."
+   ]
   },
   "precise": {
    "gear": [
@@ -2454,7 +2463,11 @@
     "Weapon, gloves, ring, amulet: Cooldown Recovery or Dexterity.",
     "Off hand, helm, chest, belt, boots: Cooldown Recovery or Dexterity."
    ],
-   "note": "Both at once, each a little weaker than its word alone."
+   "note": "Both at once, each a little weaker than its word alone.",
+   "gearMana": [
+    "Weapon, gloves, ring, amulet: Mana Cost or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Mana Cost or Dexterity."
+   ]
   },
   "vast": {
    "gear": [
@@ -2488,7 +2501,11 @@
     "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence.",
     "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
    ],
-   "note": "Both at once, each a little weaker than its word alone."
+   "note": "Both at once, each a little weaker than its word alone.",
+   "gearMana": [
+    "Weapon, gloves, ring, amulet: Mana Cost or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Mana Cost or Intelligence."
+   ]
   },
   "binding": {
    "gear": [
@@ -2515,7 +2532,11 @@
     "Weapon, gloves, ring, amulet: Life on Kill or Intelligence.",
     "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
    ],
-   "note": "Both at once, each a little weaker than its word alone."
+   "note": "Both at once, each a little weaker than its word alone.",
+   "gearMana": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Mana Cost or Intelligence."
+   ]
   },
   "culling": {
    "gear": [
@@ -2529,7 +2550,11 @@
     "Weapon, gloves, ring, amulet: Area of Effect or Intelligence.",
     "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
    ],
-   "note": "Both at once, each a little weaker than its word alone."
+   "note": "Both at once, each a little weaker than its word alone.",
+   "gearMana": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Mana Regen or Intelligence."
+   ]
   },
   "plundering": {
    "gear": [
@@ -2641,7 +2666,12 @@
     "Off hand, helm, chest, belt, boots: Armour and Cooldown Recovery, or Armour and Intelligence, or Strength and Cooldown Recovery, or Strength and Intelligence.",
     "Amulet: Physical Damage and Area of Effect, or Physical Damage and Intelligence, or Strength and Area of Effect, or Strength and Intelligence."
    ],
-   "note": "Both at once, each a little weaker than its word alone."
+   "note": "Both at once, each a little weaker than its word alone.",
+   "gearMana": [
+    "Weapon, gloves, ring: Physical Damage and Area of Effect, or Physical Damage and Intelligence, or Added Damage and Area of Effect, or Added Damage and Intelligence, or Strength and Area of Effect, or Strength and Intelligence.",
+    "Off hand, helm, chest, belt, boots: Armour and Max Mana, or Armour and Intelligence, or Strength and Max Mana, or Strength and Intelligence.",
+    "Amulet: Physical Damage and Area of Effect, or Physical Damage and Intelligence, or Strength and Area of Effect, or Strength and Intelligence."
+   ]
   },
   "powderkeg": {
    "gear": [
@@ -2650,7 +2680,13 @@
     "Gloves, ring: Fire Damage and Area of Effect, or Fire Damage and Intelligence, or Added Fire Damage and Area of Effect, or Added Fire Damage and Intelligence, or Fire Resistance and Area of Effect, or Fire Resistance and Intelligence.",
     "Amulet: Fire Damage and Area of Effect, or Fire Damage and Intelligence, or Fire Resistance and Area of Effect, or Fire Resistance and Intelligence."
    ],
-   "note": "Both at once, each a little weaker than its word alone."
+   "note": "Both at once, each a little weaker than its word alone.",
+   "gearMana": [
+    "Weapon: Fire Damage and Area of Effect, or Fire Damage and Intelligence, or Added Fire Damage and Area of Effect, or Added Fire Damage and Intelligence.",
+    "Off hand, helm, chest, belt, boots: Fire Resistance and Max Mana, or Fire Resistance and Intelligence.",
+    "Gloves, ring: Fire Damage and Area of Effect, or Fire Damage and Intelligence, or Added Fire Damage and Area of Effect, or Added Fire Damage and Intelligence, or Fire Resistance and Area of Effect, or Fire Resistance and Intelligence.",
+    "Amulet: Fire Damage and Area of Effect, or Fire Damage and Intelligence, or Fire Resistance and Area of Effect, or Fire Resistance and Intelligence."
+   ]
   },
   "shatter": {
    "gear": [
@@ -2659,7 +2695,13 @@
     "Gloves, ring: Frost Damage and Area of Effect, or Frost Damage and Intelligence, or Added Frost Damage and Area of Effect, or Added Frost Damage and Intelligence, or Frost Resistance and Area of Effect, or Frost Resistance and Intelligence.",
     "Amulet: Frost Damage and Area of Effect, or Frost Damage and Intelligence, or Frost Resistance and Area of Effect, or Frost Resistance and Intelligence."
    ],
-   "note": "Both at once, each a little weaker than its word alone."
+   "note": "Both at once, each a little weaker than its word alone.",
+   "gearMana": [
+    "Weapon: Frost Damage and Area of Effect, or Frost Damage and Intelligence, or Added Frost Damage and Area of Effect, or Added Frost Damage and Intelligence.",
+    "Off hand, helm, chest, belt, boots: Frost Resistance and Max Mana, or Frost Resistance and Intelligence.",
+    "Gloves, ring: Frost Damage and Area of Effect, or Frost Damage and Intelligence, or Added Frost Damage and Area of Effect, or Added Frost Damage and Intelligence, or Frost Resistance and Area of Effect, or Frost Resistance and Intelligence.",
+    "Amulet: Frost Damage and Area of Effect, or Frost Damage and Intelligence, or Frost Resistance and Area of Effect, or Frost Resistance and Intelligence."
+   ]
   },
   "chainreaction": {
    "gear": [
@@ -2668,7 +2710,13 @@
     "Gloves, ring: Lightning Damage and Area of Effect, or Lightning Damage and Intelligence, or Added Lightning Damage and Area of Effect, or Added Lightning Damage and Intelligence, or Lightning Resistance and Area of Effect, or Lightning Resistance and Intelligence.",
     "Amulet: Lightning Damage and Area of Effect, or Lightning Damage and Intelligence, or Lightning Resistance and Area of Effect, or Lightning Resistance and Intelligence."
    ],
-   "note": "Both at once, each a little weaker than its word alone."
+   "note": "Both at once, each a little weaker than its word alone.",
+   "gearMana": [
+    "Weapon: Lightning Damage and Area of Effect, or Lightning Damage and Intelligence, or Added Lightning Damage and Area of Effect, or Added Lightning Damage and Intelligence.",
+    "Off hand, helm, chest, belt, boots: Lightning Resistance and Max Mana, or Lightning Resistance and Intelligence.",
+    "Gloves, ring: Lightning Damage and Area of Effect, or Lightning Damage and Intelligence, or Added Lightning Damage and Area of Effect, or Added Lightning Damage and Intelligence, or Lightning Resistance and Area of Effect, or Lightning Resistance and Intelligence.",
+    "Amulet: Lightning Damage and Area of Effect, or Lightning Damage and Intelligence, or Lightning Resistance and Area of Effect, or Lightning Resistance and Intelligence."
+   ]
   },
   "rupture": {
    "gear": [
@@ -2677,7 +2725,13 @@
     "Gloves, ring: Poison Damage and Area of Effect, or Poison Damage and Intelligence, or Added Poison Damage and Area of Effect, or Added Poison Damage and Intelligence, or Poison Resistance and Area of Effect, or Poison Resistance and Intelligence.",
     "Amulet: Poison Damage and Area of Effect, or Poison Damage and Intelligence, or Poison Resistance and Area of Effect, or Poison Resistance and Intelligence."
    ],
-   "note": "Both at once, each a little weaker than its word alone."
+   "note": "Both at once, each a little weaker than its word alone.",
+   "gearMana": [
+    "Weapon: Poison Damage and Area of Effect, or Poison Damage and Intelligence, or Added Poison Damage and Area of Effect, or Added Poison Damage and Intelligence.",
+    "Off hand, helm, chest, belt, boots: Poison Resistance and Max Mana, or Poison Resistance and Intelligence.",
+    "Gloves, ring: Poison Damage and Area of Effect, or Poison Damage and Intelligence, or Added Poison Damage and Area of Effect, or Added Poison Damage and Intelligence, or Poison Resistance and Area of Effect, or Poison Resistance and Intelligence.",
+    "Amulet: Poison Damage and Area of Effect, or Poison Damage and Intelligence, or Poison Resistance and Area of Effect, or Poison Resistance and Intelligence."
+   ]
   },
   "siphon": {
    "gear": [
@@ -2746,7 +2800,11 @@
     "Weapon, gloves, amulet, ring: Pickup Reach and Area of Effect, or Pickup Reach and Intelligence.",
     "Off hand, helm, chest, belt, boots: Pickup Reach and Cooldown Recovery, or Pickup Reach and Intelligence."
    ],
-   "note": "Both at once, each a little weaker than its word alone."
+   "note": "Both at once, each a little weaker than its word alone.",
+   "gearMana": [
+    "Weapon, gloves, amulet, ring: Pickup Reach and Area of Effect, or Pickup Reach and Intelligence.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach and Max Mana, or Pickup Reach and Intelligence."
+   ]
   },
   "power2": {
    "gear": [

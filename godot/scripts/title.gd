@@ -709,7 +709,7 @@ func _word_page(ci: CanvasItem, w: String, x: float, y0: float, pw: float, ph: f
 	if not k.get("gear", false):
 		gear_rows.append(line.call(unknown, false))
 	else:
-		for g in page["gear"]:
+		for g in (page["gearMana"] if main.loot.limit == "mana" and page.has("gearMana") else page["gear"]):
 			gear_rows.append(line.call(str(g), true))
 		if meld and str(page.get("note", "")) != "":
 			gear_rows.append(line.call(str(page["note"]), true))

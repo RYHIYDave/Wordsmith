@@ -1416,7 +1416,7 @@ func _piece_rows(rows: Array, w: String, where, asking: bool, inner: float) -> v
 	var opts: Array = loot.burn_options(w, it)
 	var could: Array = []
 	for o in opts:
-		could.append(o["range"])
+		could.append(o["rangeMana"] if loot.limit == "mana" and o.has("rangeMana") else o["range"])
 	_lines(rows, "It could become:  %s" % "   or   ".join(could), Color.WHITE, SMALL, inner)
 	if asking:
 		_lines(rows, "Which one, and how strong, is rolled. The word is used up." if opts.size() > 1 else "How strong is rolled. The word is used up.", DIM, SMALL, inner)
@@ -1451,13 +1451,13 @@ func _draw_flash() -> void:
 
 func _card(it: Dictionary, at: Vector2) -> void:
 	var rows: Array = [[it["name"], loot.RARITY_COLOR[int(it["rarity"])], 13], [it["kind"], DIM, 10]]
-	for l in it["implicit"]:
+	for l in loot.lines_of(it, "implicit"):
 		rows.append([l, TEXT, 11])
-	for l in it["lines"]:
+	for l in loot.lines_of(it):
 		rows.append([l, MAGIC, 11])
 	# (the words burned into it, each line under its word's name and in its colour: ui/panels.ts itemCard)
 	for im in it.get("imbues", []):
-		for l in im["lines"]:
+		for l in loot.lines_of(im):
 			rows.append(["%s: %s" % [Words.word(im["word"])["name"], l], loot.word_color(im["word"]), 11])
 	# (how many more words it will take: "All items have room for 4 mods")
 	if int(it["rarity"]) != 3:
@@ -2112,7 +2112,7 @@ func _ws_page(w: String, x: float, y: float, pw: float, end: float) -> void:
 	y += 11.0 * K
 	var unknown := "Undiscovered."
 	var page: Dictionary = Words.data()["page"][w]
-	var gear: String = (" ".join(PackedStringArray(page["gear"])) + " " + str(page["note"])) if k["gear"] else unknown
+	var gear: String = (" ".join(PackedStringArray(page["gearMana"] if loot.limit == "mana" and page.has("gearMana") else page["gear"])) + " " + str(page["note"])) if k["gear"] else unknown
 	var parts: Array = [
 		[0.0, [[str(wd["about"]), Color.WHITE, NORMAL, 0.0]]],
 		[4.0 * K, [["ON AN ATTACK", PICK, SMALL, 0.0],

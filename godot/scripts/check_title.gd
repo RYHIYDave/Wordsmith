@@ -487,6 +487,18 @@ func mana_check(main, hero, d: String) -> void:
 	_line(not row.is_empty(), "the pause panel: ABILITIES: MANA over its three buttons")
 	M._mini.show_panel("")
 	await _frames(3)
+	# (the gear's wording under the limit: a piece with Max Mana built in, and SWIFT's page in the Lexicon)
+	var items: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/loot/items.json"))
+	var piece = null
+	for it in items["pools"]["1"]:
+		if it.get("implicitMana") is Array:
+			piece = it
+			break
+	var page: Dictionary = preload("res://scripts/words.gd").data()["page"]["swift"]
+	var said_mana: Array = loot.lines_of(piece, "implicit")
+	var gear_mana: Array = page["gearMana"]
+	_line(piece != null and str(said_mana[0]).ends_with("Max Mana") and str(gear_mana.back()).contains("Mana Cost"),
+		"a %s reads \"%s\" (with cooldowns, \"%s\"); SWIFT on gear: \"%s\"" % [piece["name"], said_mana[0], piece["implicit"][0], gear_mana.back()])
 	# (a Ranger: his roll one charge while mana is the limit, two with cooldowns)
 	M.set_class("ranger", true)
 	await _frames(3)

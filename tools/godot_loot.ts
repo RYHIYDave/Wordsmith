@@ -119,6 +119,9 @@ function worth(it: Item): number[] {
 
 // (every kind of piece at every level a piece here has, one of each kept: what a word becomes on it is told once for them all)
 const kinds = new Map<string, Item>();
+// (ABILITIES: MANA, the start screen's switch: a piece's lines as they read when mana is the limit (items.ts statView: its Max Mana
+// and Mana Regen as themselves, not as cooldown recovery; its cooldown recovery as less Mana Cost), kept only where they differ)
+const ifMana = (cd: string[], mana: string[]): string[] | undefined => (JSON.stringify(cd) === JSON.stringify(mana) ? undefined : mana);
 const plain = (it: Item): Record<string, unknown> => {
   const mods = itemMods(it);
   if (!kinds.has(`${it.slot}:${it.ilvl}`)) kinds.set(`${it.slot}:${it.ilvl}`, it);
@@ -128,6 +131,8 @@ const plain = (it: Item): Record<string, unknown> => {
     mods: mods.map((m) => [m.stat, m.value]),
     implicit: modLines(it.implicit, 'cooldown'),
     lines: modLines(it.affixes.flatMap((a) => a.mods), 'cooldown'),
+    implicitMana: ifMana(modLines(it.implicit, 'cooldown'), modLines(it.implicit, 'mana')),
+    linesMana: ifMana(modLines(it.affixes.flatMap((a) => a.mods), 'cooldown'), modLines(it.affixes.flatMap((a) => a.mods), 'mana')),
     // (the properties it was found with: how many of its four places they take (items.ts itemRoom), and which they are, so
     // that no word gives it one of them again (items.ts carried))
     affixes: it.affixes.length,
@@ -136,7 +141,7 @@ const plain = (it: Item): Record<string, unknown> => {
     worth: worth(it),
     // (SPLITTING AND BINDING, items.ts splitItem, bindItems: each property it was found with, its mods and its lines; what is built
     // into its base; its price before its colour, its properties and its words, itemValue)
-    props: it.affixes.map((a) => ({ mods: a.mods.map((m) => [m.stat, m.value]), lines: modLines(a.mods, 'cooldown') })),
+    props: it.affixes.map((a) => ({ mods: a.mods.map((m) => [m.stat, m.value]), lines: modLines(a.mods, 'cooldown'), linesMana: ifMana(modLines(a.mods, 'cooldown'), modLines(a.mods, 'mana')) })),
     imods: it.implicit.map((m) => [m.stat, m.value]),
     vbase: itemValue(it) / (VALUE.rarity[it.rarity] * (1 + VALUE.affix * it.affixes.length) * VALUE.imbued ** it.imbues.length),
   };
@@ -158,7 +163,7 @@ function becomes(word: WordId, like: Item): unknown[] {
   // (WORDMELDING: a melded word's pairs, each on its own: `twoPart`)
   if (imbueOptions(word, bare.slot, bare.ilvl).some((o) => o.also)) return imbueOptions(word, bare.slot, bare.ilvl).map((o) => twoPart(word, bare, o));
   return imbueOptions(word, bare.slot, bare.ilvl).map((o, k) => {
-    const made = new Map<string, [number, [StatKey, number][], string[]]>();
+    const made = new Map<string, [number, [StatKey, number][], string[], string[]?]>();
     const roll = (draw: Partial<RNG>): void => {
       const im = imbueItem(structuredClone(bare), word, draw as RNG, k);
       if (!im) throw new Error(`${word} would not burn into a bare ${bare.slot} of level ${bare.ilvl}`);
@@ -166,7 +171,10 @@ function becomes(word: WordId, like: Item): unknown[] {
       const key = JSON.stringify(mods);
       const was = made.get(key);
       if (was) was[0]++;
-      else made.set(key, [1, mods, imbueLines(im, 'cooldown')]);
+      else {
+        const mana = ifMana(imbueLines(im, 'cooldown'), imbueLines(im, 'mana'));
+        made.set(key, mana ? [1, mods, imbueLines(im, 'cooldown'), mana] : [1, mods, imbueLines(im, 'cooldown')]);
+      }
     };
     if (flatPair(o.stat)) {
       const N = 400;
@@ -176,7 +184,7 @@ function becomes(word: WordId, like: Item): unknown[] {
       imbueItem(structuredClone(bare), word, { int: (a: number, b: number) => { ends = [a, b]; return a; } } as RNG, k);
       for (let v = ends[0]; v <= ends[1]; v++) roll({ int: () => v });
     }
-    return { stat: o.stat, kind: o.kind, range: rangeText(o, 'cooldown'), rolls: [...made.values()] };
+    return { stat: o.stat, kind: o.kind, range: rangeText(o, 'cooldown'), ...(rangeText(o, 'mana') !== rangeText(o, 'cooldown') ? { rangeMana: rangeText(o, 'mana') } : {}), rolls: [...made.values()] };
   });
 }
 
@@ -216,19 +224,24 @@ function twoPart(word: WordId, bare: Item, o: ImbueOption): unknown {
   };
   const first = flatPair(o.stat) ? 2 : 1;
   const tally = (vals: number[][], cut: (im: Imbue) => Imbue['mods'], whole: boolean): unknown[] => {
-    const out = new Map<string, [number, [StatKey, number][], string[]]>();
+    const out = new Map<string, [number, [StatKey, number][], string[], string[]?]>();
     for (const v of vals) {
       const im = made(v);
       const mods = cut(im);
       const key = JSON.stringify(mods.map((m) => [m.stat, m.value]));
       const was = out.get(key);
       if (was) was[0]++;
-      else out.set(key, [1, mods.map((m): [StatKey, number] => [m.stat, m.value]), whole ? imbueLines(im, 'cooldown') : modLines(mods, 'cooldown')]);
+      else {
+        const cd = whole ? imbueLines(im, 'cooldown') : modLines(mods, 'cooldown');
+        const mana = ifMana(cd, whole ? imbueLines(im, 'mana') : modLines(mods, 'mana'));
+        out.set(key, mana ? [1, mods.map((m): [StatKey, number] => [m.stat, m.value]), cd, mana] : [1, mods.map((m): [StatKey, number] => [m.stat, m.value]), cd]);
+      }
     }
     return [...out.values()];
   };
   const range = rangeText(o, 'cooldown');
-  if (calls.length === 1) return { stat: o.stat, also: o.also ? o.also.stat : null, kind: o.kind, range, rolls: tally(span(calls[0]).map((v) => [v]), (im) => im.mods, true) };
+  const rangeMana = rangeText(o, 'mana') !== range ? { rangeMana: rangeText(o, 'mana') } : {};
+  if (calls.length === 1) return { stat: o.stat, also: o.also ? o.also.stat : null, kind: o.kind, range, ...rangeMana, rolls: tally(span(calls[0]).map((v) => [v]), (im) => im.mods, true) };
   if (calls.length !== 2) throw new Error(`${word}: ${calls.length} draws`);
   for (const a of [calls[0][1], calls[0][2]]) for (const b of [calls[1][1], calls[1][2]]) {
     const im = made([a, b]);
@@ -237,7 +250,7 @@ function twoPart(word: WordId, bare: Item, o: ImbueOption): unknown {
     if (whole !== parts) throw new Error(`${word} on a ${bare.slot}: '${whole}' is not '${parts}'`);
   }
   return {
-    stat: o.stat, also: o.also!.stat, kind: o.kind, range,
+    stat: o.stat, also: o.also!.stat, kind: o.kind, range, ...rangeMana,
     rolls: tally(span(calls[0]).map((v) => [v, calls[1][1]]), (im) => im.mods.slice(0, first), false),
     alsoRolls: tally(span(calls[1]).map((v) => [calls[0][1], v]), (im) => im.mods.slice(first), false),
   };

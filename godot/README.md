@@ -778,7 +778,8 @@ game's own, `assets/music/music_title.ogg`: from its start once, then round betw
 - THE MENU along the foot: CONTINUE where a hero is saved (pink, blinking; his line over it, "Warrior, level 3, dungeon 2"),
   NEW GAME (pink where there is no hero), LEXICON, OPTIONS; Enter continues. CONTINUE takes him on from his town, "Welcome back.
   The gate leads to dungeon N."
-- OPTIONS: SOUND, PROMPTS (whether a new hero is shown how to play), BACK.
+- OPTIONS: SOUND, ABILITIES (cooldowns or mana, below), PROMPTS (whether a new hero is shown how to play), PRACTICE ROOM,
+  LEVEL SELECT, BACK; a line over them says what the abilities' switch means.
 - THE LEXICON over the menu (ui/lexicon.ts drawLexicon): its five pages' tabs, each page's words (or "? ? ?"), the open word's page,
   the words kept for the next hero.
 - NEW GAME: the class cards over the living picture put back into the dark, BACK (or Escape) to the menu. A hero saved, CONFIRM
@@ -787,6 +788,27 @@ game's own, `assets/music/music_title.ogg`: from its start once, then round betw
 - Not as a fallen Normal hero wakes in town (he carries straight on), as the game has it.
 `--only=title` (`check_title.gd`) checks it all, pictured; `--only=title_live` the real way of it, the game saving and begun again
 between the steps.
+
+The rest of the options, his pick: “Rest of Options (Recommended)”:
+- THE LEVEL SELECT (defs.ts LEVEL_SELECT, his: “Test hero, any floor”; game.ts forTrial): the floors' page, a row for each part of
+  the way down (1 to 20); a floor and a class make the game's own test hero for it (his level there, those levels' points spent, the
+  ring lit, a full set of magic gear for the floor, every word that can be found down to it: made by the game, `assets/loot/trials.json`
+  from `npx tsx tools/godot_loot.ts`), set down on that floor, told "Test hero, level N. Not saved.", untaught, never saved; fallen,
+  he wakes in town a test hero still, from what was kept in memory. `--only=trial`.
+- THE PRACTICE ROOM (game.ts forPractice): the game's practice hero of the class (level 10, the ring lit, gear, one of every other
+  weapon, six of every word) in the arena (its look recorded from the game, `node tools/godot_record.mjs practice`; its layout and its
+  packs made by the game, `npx tsx tools/godot_practice.ts`), every word slot open; packs of six keep coming up out of rifts (a brute
+  leading every third, an elite with a word every other); struck down he is UP AGAIN; no experience, nothing drops but life orbs; never
+  saved; its name in cyan at the top left. `--only=practice` (`scripts/practice.gd`).
+- ABILITIES: COOLDOWNS or MANA (main.ts flipLimit, defs.ts MANA_MODE), on the options and the pause panel, kept with the Lexicon:
+  with mana, each move that waits costs its listed mana x1.4 (the evasive move 6), less what would have shortened its wait (Swift
+  cheaper, Heavy dearer), and needs only a moment between uses; refused without the mana to begin it ("No mana"); one held goes on
+  while there is mana, paid as it goes; a roll one charge; mana from a base, Intelligence and gear, back 1.3x as fast; its globe on
+  the HUD, a line under the bar over his head, "N MANA" on the moves; and every piece, every word burned into one and the Lexicon's
+  gear lines read as the game words them then (Max Mana, Mana Regen, Mana Cost: `...Mana` in the loot and words exports).
+  `--only=mana`.
+- THE PAUSE PANEL: ABILITIES over its three buttons, and its third, "End run" (the run given up, the Lexicon and the stash kept: the
+  start screen next) or, for a test hero or the practice room, "Leave".
 
 ## Not in it yet
 
@@ -803,9 +825,8 @@ Headsman's gate's own fall and slam, the wall's see-through for the monsters beh
 stone floating from him to the slab, the letters
 swirling round the ring and its column of light, the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
-breaks, what stands behind raised ground cut off by it, the start screen's options the game has besides SOUND and PROMPTS
-(ABILITIES: cooldowns or mana, the PRACTICE ROOM, the LEVEL SELECT's test hero on any floor); the Warrior's Whirlwind talent (his
-Whirlwind is his from the start, at his pick).
+breaks, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+pick); a phone's own options (where an attack aims, the screen turned).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made

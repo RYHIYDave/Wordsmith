@@ -120,6 +120,14 @@ var taught := false
 var limit := "cooldown"
 
 
+## A piece's lines (`key`: "implicit", "lines"), or a word's on it, as they read under the limit: with mana, its Max Mana and Mana
+## Regen as themselves and its cooldown recovery as less Mana Cost (items.ts statView, modLines; tools/godot_loot.ts `...Mana`).
+func lines_of(it: Dictionary, key := "lines") -> Array:
+	if limit == "mana" and it.get(key + "Mana") is Array:
+		return it[key + "Mana"]
+	return it.get(key, [])
+
+
 ## The switch turned: his moves made again under the other limit, his mana full.
 func set_limit(l: String) -> void:
 	limit = "mana" if l == "mana" else "cooldown"
@@ -1023,14 +1031,18 @@ func burn(w: String, where) -> String:
 	# (WORDMELDING: a melded word's second property, rolled on its own: tools/godot_loot.ts twoPart)
 	if o.has("alsoRolls"):
 		var two: Array = _roll_of(o["alsoRolls"])
-		got = [got[0], got[1] + two[1], got[2] + two[2]]
+		got = [got[0], got[1] + two[1], got[2] + two[2], (got[3] if got.size() > 3 else got[2]) + (two[3] if two.size() > 3 else two[2])]
 	var stats: Array = []
 	for m in got[1]:
 		stats.append(m[0])
 	it["mods"] = it["mods"] + got[1]
 	if not it.has("imbues"):
 		it["imbues"] = []
-	it["imbues"].append({"word": w, "lines": got[2], "stats": stats, "mods": got[1]})
+	# (and how they read with mana the limit, where that differs)
+	var im := {"word": w, "lines": got[2], "stats": stats, "mods": got[1]}
+	if got.size() > 3 and got[3] != got[2]:
+		im["linesMana"] = got[3]
+	it["imbues"].append(im)
 	var n: int = int(it.get("affixes", 0)) + it["imbues"].size()
 	it["rarity"] = maxi(int(it["rarity"]), 2 if n >= 3 else (1 if n >= 1 else 0))
 	# (its price with that many words in it, as the game counts it, items.ts itemValue: a fifth more for each word, and its
@@ -1048,7 +1060,7 @@ func burn(w: String, where) -> String:
 	if where is String:
 		derive()
 	sfx.play("imbue")
-	burned = {"word": w, "item": it["name"], "text": ", ".join(got[2])}
+	burned = {"word": w, "item": it["name"], "text": ", ".join(lines_of(im))}
 	# (WORDMELDING: what a made word becomes on gear is known from now on: game.ts learn(word, 'gear'))
 	if Words.made().has(w):
 		_know(w)["gear"] = true
@@ -1105,9 +1117,11 @@ func _with_props(it: Dictionary, props: Array) -> Dictionary:
 	var mods: Array = it.get("imods", []).duplicate(true)
 	var has: Array = []
 	var lines: Array = []
+	var lines_mana: Array = []
 	for a in affs:
 		mods.append_array(a["mods"])
 		lines.append_array(a["lines"])
+		lines_mana.append_array(a["linesMana"] if a.get("linesMana") is Array else a["lines"])
 		for m in a["mods"]:
 			has.append(m[0])
 	for im in ims:
@@ -1115,6 +1129,9 @@ func _with_props(it: Dictionary, props: Array) -> Dictionary:
 	out["mods"] = mods
 	out["has"] = has
 	out["lines"] = lines
+	out.erase("linesMana")
+	if lines_mana != lines:
+		out["linesMana"] = lines_mana
 	if int(out["rarity"]) != 3:
 		var n := affs.size() + ims.size()
 		out["rarity"] = 2 if n >= 3 else (1 if n >= 1 else 0)
@@ -1230,7 +1247,7 @@ func bind_pieces(into, other) -> String:
 	sfx.play("imbue")
 	var lines: Array = []
 	for p in keep:
-		lines.append_array(p["a"]["lines"] if p.has("a") else p["i"]["lines"])
+		lines.append_array(lines_of(p["a"]) if p.has("a") else lines_of(p["i"]))
 	burned = {"word": "binding", "item": made["name"], "text": ", ".join(lines)}
 	return ""
 
