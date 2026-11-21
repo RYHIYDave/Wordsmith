@@ -31,6 +31,10 @@ export default async function (page, snap) {
       await page.evaluate(() => { const g = window.__dbg.game(); const q = g.level.land.holds[0]; g.hero.x = q.entry.x; g.hero.y = q.entry.y; });
       await page.waitForTimeout(1500);
       await snap('3_new_from_the_door');
+      // (from its back, by the obelisk: the idols and the cages, the hangings on the back walls)
+      await page.evaluate(() => { const g = window.__dbg.game(); const r = g.level.land.holds[0].inside; g.hero.x = r.x + 4.5; g.hero.y = r.y + 2.5; g.hero.fx = 0.7; g.hero.fy = 0.7; });
+      await page.waitForTimeout(1500);
+      await snap('4_new_at_the_back');
     }
   }
 }
