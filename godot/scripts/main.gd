@@ -389,6 +389,9 @@ func _build(where: String, arrive: String) -> void:
 		hero.get_parent().remove_child(hero)
 	if _place != null:
 		_place.free()
+	# (THE SKILL TREES: Unbreakable once in each dungeon: game.ts enterDungeon, from his town or the camp into a floor)
+	if is_home(place) and not is_home(where):
+		hero.unbroken = false
 	place = where
 	hero.in_town = is_home(where)
 	if not hero.arts.is_empty():

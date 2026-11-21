@@ -597,7 +597,13 @@ a saved list made safe. `scripts/talents_page.gd` (ui/talents.ts): the inventory
 its faint picture behind (the weapons, the arrow, the claw, the gear, the globes), the points over it, a stone pressed read on
 its card over the game's half with TAKE (1 POINT), UNDO for gold, a pick of two; and on the HUD, NEW TALENT while a point waits.
 `--only=talents` (check_talents.gd) checks the rules and pictures the six trees. IN THE PORT, a talent whose rules are not
-brought over yet says so on its card and cannot be taken (talents.gd `PORTED`): for now only the Warrior's greatsword.
+brought over yet says so on its card and cannot be taken (talents.gd `PORTED`). THE WARRIOR'S, IN: the greatsword; Sweeping
+Cut (every enemy in the swing's arc struck), Drilled Lunge (every enemy passed struck), Footwork (a kill readies the Lunge);
+IRON's Thick Skin, Shieldwall (the shield breaking bursts, throwing back and stunning), Second Wind (a flask throws back what is
+near, a second untouchable), Bulwark; the joins Honed Edge (a critical bleeds), Giant Slayer (an elite's or a boss's guard
+cracked, 3% more a crack, ten at most), Resolute, Executioner, Master Stroke and Unbreakable (once a dungeon). Not yet: the
+Whirlwind talent (his Whirlwind is his from the start here, at his pick of 14 Nov 2026) and the battle axe's and the warhammer's
+paths (their own moves).
 
 ## The shadows under the figures, and the named ones' rings (the cloud chat, 21 Nov 2026)
 

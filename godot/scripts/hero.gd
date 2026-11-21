@@ -499,7 +499,15 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 	var base := base_for(el)
 	# (FERVOR, melds.gd: its kills burning hotter a while)
 	var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(el) + melds.fervor_pct(el) + might) / 100.0)
+	# (THE SKILL TREES: what the talents make of a hit: game.ts talentHitMult)
+	dmg *= _talent_hit_mult(m)
 	var crit: bool = randf() * 100.0 < stats["crit_chance"]
+	# (THE SKILL TREES: Master Stroke, every fourth hit landed on its own target a certain critical)
+	if not quiet and has("mastertop"):
+		_strokes += 1
+		if _strokes >= int(Talents.D["tune"]["masterStroke"]["every"]):
+			_strokes = 0
+			crit = true
 	# PRECISE behind: his next hit on a marked enemy is a certain critical, and spends the mark
 	var spent: bool = m.mark_t > 0.0
 	if spent:
@@ -535,7 +543,14 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 	# (THE CITY'S WORDS: a cursed one struck, its curse flares)
 	if not quiet and m.hex_t > 0.0:
 		_tell({"t": "hexFlare", "id": m.id, "m": m})
+	# (THE SKILL TREES REMADE: Honed Edge, a critical hit makes it bleed half the hit again over three seconds)
+	if crit and has("honededge"):
+		var B: Dictionary = Talents.D["tune"]["honedEdge2"]
+		last.bleed_monster(m, dmg * float(B["share"]) / float(B["secs"]), float(B["secs"]))
 	m.damage(dmg, el, crit, not quiet and front.has("power"), front, false, false, i)
+	# (THE SKILL TREES REMADE: Giant Slayer, each hit on an elite or a boss cracks its guard: it takes more from everything)
+	if not m.dead and (m.elite or m.boss) and has("giantslayer"):
+		m.cracks = mini(int(Talents.D["tune"]["giantSlayer2"]["most"]), m.cracks + 1)
 	# (THE CITY'S WORDS: SPLITTING in front, its first hit each use breaks into copies that fly on: city_words.gd)
 	if float(r["split"]) > 0.0 and not quiet:
 		city.split_first(m, i, frac, at)
@@ -657,6 +672,9 @@ func _boons(i: int) -> void:
 ## stack more and the frenzy held longer (to three times its hold); VOLATILE in front, it explodes; LEECH behind, now and then
 ## a life orb. (monster.gd _die calls this as it falls.)
 func killed(m) -> void:
+	# (THE SKILL TREES REMADE: Footwork, every kill makes the Lunge ready again at once: game.ts talentKill, readyAgain('leap'))
+	if has("footwork") and cls == "warrior":
+		_lunge_cd = 0.0
 	var i: int = m.last_skill
 	if i < 0 or i > 2:
 		return
@@ -810,10 +828,27 @@ func _strike(i: int, from: Vector2, way: Vector2, frac: float, n := 0, echo := f
 			_wake(i, past, 1.0, frac)
 		return
 	var at: Vector2 = best.world
+	# (THE SKILL TREES REMADE: Sweeping Cut, the swing cleaves: every enemy in its arc, as the game gathers it, struck as hard)
+	var arc: Array = []
+	if has("sweepingcut"):
+		for o in monsters.list:
+			if not is_instance_valid(o) or o.dead or o == best or monsters.shut_in(o):
+				continue
+			var d: Vector2 = o.world - from
+			var dist := d.length()
+			if dist > reach + o.r:
+				continue
+			var dot := d.dot(way) / dist if dist > 0.01 else 1.0
+			if dot < 0.35 and dist > 0.9 + o.r:
+				continue
+			arc.append(o)
 	hit_monster(best, i, frac, false)
 	# (THE LAST WORDS: PIERCING in front, the blow goes on through the first, to every enemy in a line behind it)
 	if float(r["through"]) > 0.0:
 		last.pierce_on(i, best, at, way, frac * float(r["through"]))
+	for o in arc:
+		if is_instance_valid(o) and not o.dead:
+			hit_monster(o, i, frac, true)
 	_landed_on(i)
 	if front.has("power"):
 		sfx.play("power", -6.0)
@@ -944,9 +979,9 @@ func _process(dt: float) -> void:
 		if shield_t <= 0.0:
 			shield_t = 0.0
 			shield = 0.0
-	# (what the monsters' words left on him runs down: game.ts updateHero)
+	# (what the monsters' words left on him runs down: game.ts updateHero; THE SKILL TREES REMADE: Resolute, nothing slows him)
 	if chill_t > 0.0:
-		chill_t -= dt
+		chill_t = 0.0 if has("resolute") else chill_t - dt
 	# (ACT 2, THE HUSH: his words come back as it runs out: game.ts update)
 	if hush_t > 0.0:
 		hush_t = maxf(0.0, hush_t - dt)
@@ -1271,6 +1306,9 @@ func _fly(dt: float) -> void:
 	_invuln = maxf(_invuln, LUNGE["invuln"])
 	var k := clampf(_act_t / _lunge["dur"], 0.0, 1.0)
 	world = _lunge["from"].lerp(_lunge["to"], k)
+	# (THE SKILL TREES REMADE: Drilled Lunge, every enemy he passes on the way struck: game.ts lungeThrough)
+	if has("drilledleap"):
+		_lunge_through()
 	if k >= 1.0:
 		# (landing, game.ts land: a blow all round the point a tile before him, as its words make it, which leaves there what
 		# the words behind it leave; then his landing, if he stands)
@@ -1324,7 +1362,8 @@ func _end_act() -> void:
 
 ## Knocked `dist` tiles the way `way` (a unit vector on the floor).
 func knock(way: Vector2, dist: float) -> void:
-	if _act == "lunge":
+	# (THE SKILL TREES REMADE: Resolute, nothing knocks him back, nor drags him: game.ts knockHero, pullHero)
+	if _act == "lunge" or has("resolute"):
 		return
 	_knock = way * dist
 	_knock_t = 0.12
@@ -1336,6 +1375,9 @@ func shake() -> void:
 
 ## Slowed for `secs` by `by` (a share of his pace): the Shade's rime while he stands in it (game/action_f2.ts).
 func chill(secs: float, by: float) -> void:
+	# (THE SKILL TREES REMADE: Resolute, nothing slows him)
+	if has("resolute"):
+		return
 	_slow_by = maxf(_slow_by if _slow_t > 0.0 else 0.0, by)
 	_slow_t = maxf(_slow_t, secs)
 
@@ -1444,6 +1486,8 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 		dmg *= 1.0 + float(LW["cull"]["harder"]) * float(k.call("culling"))
 		if src != null and is_instance_valid(src):
 			_tell({"t": "cullBlow", "id": src.id, "x": src.world.x, "y": src.world.y})
+	# (THE SKILL TREES REMADE: Bulwark, the more close round him the less each blow; Thick Skin, below half his life, less)
+	dmg *= _talent_guard()
 	dmg = maxf(1.0, roundf(dmg))
 	# HEAVY, on a monster: its blow knocks him back a step (game.ts knockHero)
 	var knocked := 0.0
@@ -1466,6 +1510,9 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 		if shield <= 0.0:
 			shield = 0.0
 			shield_t = 0.0
+			# (THE SKILL TREES REMADE: Shieldwall, the shield breaking bursts outward)
+			if has("shieldwall"):
+				_shield_burst()
 	if soaked > 0.0 or ward > 0.0:
 		_tell({"t": "guarded", "x": world.x, "y": world.y, "fromX": by.x, "fromY": by.y})
 	if dmg <= 0.0:
@@ -1513,6 +1560,15 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 		src.life += healed
 		_tell({"t": "text", "x": src.world.x, "y": src.world.y, "text": "heals", "color": "#ff8a80"})
 	last_blow = {"raw": raw, "el": el, "words": words, "half": hw, "parts": each, "shocked": shocked, "dmg": dmg, "knock": knocked, "soaked": soaked, "ward": ward, "longer": longer, "lasts": lasts, "healed": healed}
+	# (THE SKILL TREES: Unbreakable, once in each dungeon a killing blow leaves him at 1 life, shielded)
+	if life <= 0.0 and has("unbreakable") and not unbroken:
+		unbroken = true
+		life = 1.0
+		var secs: float = Talents.D["tune"]["unbreakable"]["secs"]
+		_invuln = maxf(_invuln, secs)
+		_tell({"t": "shield", "x": world.x, "y": world.y, "secs": secs})
+		_tell({"t": "text", "x": world.x, "y": world.y, "text": "Unbreakable", "color": "#7af8f0"})
+		sfx.play("power", linear_to_db(0.9))
 	if life <= 0.0:
 		_fall()
 
@@ -1542,7 +1598,7 @@ func _city_words(k: Callable, by: Vector2) -> void:
 			_tell({"t": "text", "x": world.x, "y": world.y, "text": "Slowed", "color": FOE})
 		still_k = maxf(still_k if still_t > 0.0 else 0.0, float(C["still"]["cooldowns"]) * float(k.call("stilling")))
 		still_t = C["still"]["monsterSecs"]
-	if k.call("binding") > 0.0 and root_again <= 0.0:
+	if k.call("binding") > 0.0 and root_again <= 0.0 and not has("resolute"):
 		var secs := float(C["bind"]["rootSecs"]) * float(k.call("binding"))
 		root_t = secs
 		root_again = secs + float(C["bind"]["rootAgain"])
@@ -1979,3 +2035,87 @@ func talents_changed() -> void:
 ## Whether talent `id` is his (game.ts has).
 func has(id: String) -> bool:
 	return talents.has(id)
+
+
+# --- THE SKILL TREES: the Warrior's talents' rules (game/talents.ts; game.ts, under TALENTS and TALENTS2) ---
+
+const Talents := preload("res://scripts/talents.gd")
+## (Master Stroke: his hits landed since the last certain critical; Unbreakable: spent in this dungeon)
+var _strokes := 0
+var unbroken := false
+
+
+## What the talents make of his hit on `m` (game.ts talentHitMult): Executioner, double on one under a quarter of its life.
+func _talent_hit_mult(m) -> float:
+	var k := 1.0
+	var X: Dictionary = Talents.D["warriorTune"]["executioner"]
+	if has("executioner") and m.life < m.max_life * float(X["under"]):
+		k *= float(X["mult"])
+	return k
+
+
+## What the talents take off a blow on him (game.ts hurtHero): Bulwark, 6% less for each awake one close round him, 30% at most;
+## Thick Skin, below half his life, 30% less.
+func _talent_guard() -> float:
+	var k := 1.0
+	var T: Dictionary = Talents.D["tune"]
+	if has("bulwark") and monsters != null:
+		var B: Dictionary = T["bulwark2"]
+		var n := 0
+		for m in monsters.list:
+			if is_instance_valid(m) and not m.dead and m.state != "sleep" and m.world.distance_to(world) <= m.r + RADIUS + float(B["near"]):
+				n += 1
+		k *= 1.0 - minf(float(B["most"]), float(B["each"]) * n)
+	if has("thickskin") and life < max_life * float(T["thickSkin2"]["below"]):
+		k *= 1.0 - float(T["thickSkin2"]["less"])
+	return k
+
+
+## (Shieldwall) His shield, broken, bursts outward: everything near thrown back and stunned (game.ts shieldBurst).
+func _shield_burst() -> void:
+	var S: Dictionary = Talents.D["tune"]["shieldwall2"]
+	_tell({"t": "burst", "x": world.x, "y": world.y, "r": S["r"], "el": "phys", "style": "shock"})
+	kick(3.0)
+	sfx.play("slam", linear_to_db(0.7))
+	_throw_near(float(S["r"]), float(S["far"]), float(S["secs"]))
+
+
+## (Second Wind) A flask drunk: what is near thrown back, and nothing hurts him for a second (game.ts drinkPotion).
+func second_wind() -> void:
+	if not has("secondwind"):
+		return
+	var W: Dictionary = Talents.D["tune"]["secondWind2"]
+	_invuln = maxf(_invuln, float(W["secs"]))
+	_tell({"t": "shield", "x": world.x, "y": world.y, "secs": W["secs"]})
+	_tell({"t": "burst", "x": world.x, "y": world.y, "r": W["r"], "el": "phys", "style": "shock"})
+	_throw_near(float(W["r"]), float(W["far"]), 0.0)
+
+
+## Everything within `rad` of him thrown `far` back from him (game.ts throwMonster), stunned `stun` seconds first if any.
+func _throw_near(rad: float, far: float, stun: float) -> void:
+	if monsters == null:
+		return
+	for m in monsters.list:
+		if not is_instance_valid(m) or m.dead or monsters.shut_in(m) or m.world.distance_to(world) > rad + m.r:
+			continue
+		if stun > 0.0:
+			m.stun_for(stun)
+		m.throw_from(world, far)
+
+
+## (Drilled Lunge) Every enemy he passes in the air struck once, for its share of the Lunge (game.ts lungeThrough).
+func _lunge_through() -> void:
+	var D: Dictionary = Talents.D["tune"]["drilledLunge"]
+	var hit: Array = _lunge.get("hit", [])
+	_lunge["hit"] = hit
+	var before := hit.size()
+	var r: Dictionary = loadout.r(2)
+	for m in monsters.list:
+		if not is_instance_valid(m) or m.dead or hit.has(m.id) or monsters.shut_in(m):
+			continue
+		if m.world.distance_to(world) > m.r + RADIUS + float(D["reach"]):
+			continue
+		hit.append(m.id)
+		hit_monster(m, 2, float(r["count_dmg"]) * float(D["share"]), hit.size() > 1)
+	if before == 0 and not hit.is_empty():
+		_landed_on(2)

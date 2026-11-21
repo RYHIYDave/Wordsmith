@@ -11,9 +11,12 @@ const PATH := "res://assets/talents.json"
 static var D := {}
 
 ## The talents whose rules this port has (by class): the rest are shown and read, marked NOT IN THE PORT YET, and cannot be
-## taken. (The greatsword is the Warrior's weapon as he starts: taking it changes nothing but opens his tree.)
+## taken. (The greatsword is the Warrior's weapon as he starts: taking it changes nothing but opens his tree. His Whirlwind is
+## his from the start in this port, at his pick of 14 Nov 2026, so the Whirlwind talent waits; and the battle axe's and the
+## warhammer's moves are not here yet.)
 const PORTED := {
-	"warrior": ["greatsword"],
+	"warrior": ["greatsword", "sweepingcut", "drilledleap", "footwork", "thickskin", "shieldwall", "secondwind", "bulwark",
+		"honededge", "giantslayer", "resolute", "executioner", "mastertop", "unbreakable"],
 	"ranger": [],
 	"mage": [],
 	"warlock": [],

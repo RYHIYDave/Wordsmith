@@ -85,6 +85,8 @@ func run(main, hero, d: String) -> void:
 	var cl := Talents.clean("warrior", 7, ["greatsword", "greatsword", "kindling", "sweepingcut"])
 	_line(u1 == "Undo the ones after it first" and u2 == "" and cl == ["greatsword"],
 		"the greatsword not undone while Sweeping Cut hangs on it ('%s'), Sweeping Cut undone (''); a save's list made safe at level 7: %s" % [u1, cl])
+	# THE WARRIOR'S TALENTS IN PLAY (game.ts, TALENTS2's rules)
+	await _warrior()
 	# THE PAGE, for each class
 	var inv = M._inv
 	for cls in ["warrior", "ranger", "mage", "warlock", "tinkerer", "brawler"]:
@@ -121,3 +123,116 @@ func run(main, hero, d: String) -> void:
 	if inv.visible:
 		inv.toggle()
 	print("TALENTS DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " %s" % [bad]])
+
+
+## A monster of the floor brought before him, awake, whole and ordinary (or an elite), `d` tiles the way he faces.
+func _foe(d: float, elite := false):
+	var mm = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and not o.boss and o.state != "rise" and (mm == null or (o.world.distance_to(h.world) < mm.world.distance_to(h.world))):
+			mm = o
+	if mm == null:
+		return null
+	mm.world = h.world + h.face * d
+	mm.life = mm.max_life
+	mm.elite = elite
+	mm.cracks = 0
+	mm.stun_t = 0.0 if mm.get("stun_t") != null else 0.0
+	return mm
+
+
+func _warrior() -> void:
+	M.set_class("warrior", true)
+	M.loot.level = 50
+	h.life = h.max_life
+	h.face = Vector2(1, 0)
+	await _run(0.2)
+	# Executioner, and the guard of Thick Skin and Bulwark
+	var m = _foe(1.0)
+	if m == null:
+		_line(false, "no monster on the floor to try the Warrior's talents on")
+		return
+	h.talents = ["greatsword"]
+	m.life = m.max_life * 0.2
+	var k0: float = h._talent_hit_mult(m)
+	h.talents = ["greatsword", "sweepingcut", "drilledleap", "footwork", "executioner"]
+	var k1: float = h._talent_hit_mult(m)
+	m.life = m.max_life * 0.5
+	var k2: float = h._talent_hit_mult(m)
+	_line(k0 == 1.0 and k1 == 2.0 and k2 == 1.0, "Executioner: double on one under a quarter of its life (%.1f), not over it (%.1f), nothing without it (%.1f)" % [k1, k2, k0])
+	h.talents = ["greatsword", "thickskin", "shieldwall", "secondwind", "bulwark"]
+	h.life = h.max_life * 0.4
+	var g_low: float = h._talent_guard()
+	h.life = h.max_life
+	var g_high: float = h._talent_guard()
+	_line(absf(g_low - 0.7 * g_high) < 0.001 and g_high <= 1.0 and g_high >= 0.7, "Thick Skin: below half his life 30%% less (%.2f of %.2f); Bulwark: %.0f%% less for those close round him now" % [g_low, g_high, (1.0 - g_high) * 100.0])
+	# Master Stroke: every fourth hit landed a certain critical
+	h.talents = ["greatsword", "sweepingcut", "drilledleap", "footwork", "mastertop"]
+	h._strokes = 0
+	h.stats["crit_chance"] = 0.0
+	var crits := []
+	for n in 8:
+		m.life = m.max_life
+		var before: int = h._strokes
+		h.hit_monster(m, 0, 0.01, false)
+		crits.append(before == 3)
+	_line(crits == [false, false, false, true, false, false, false, true] and h._strokes == 0, "Master Stroke: his 4th and 8th hits certain criticals, the count begun again (%s)" % [crits])
+	# Honed Edge: a critical bleeds
+	h.talents = ["greatsword", "sweepingcut", "drilledleap", "honededge"]
+	m.life = m.max_life
+	m.bleed_t = 0.0
+	h.stats["crit_chance"] = 100.0
+	h.hit_monster(m, 0, 0.5, false)
+	h.stats["crit_chance"] = 5.0
+	_line(m.bleed_t > 2.9 and m.bleed_dps > 0.0, "Honed Edge: a critical hit makes it bleed half the hit again over 3 s (%.1f a second for %.1f s)" % [m.bleed_dps, m.bleed_t])
+	# Giant Slayer: an elite's cracks, more from everything
+	h.talents = ["greatsword", "sweepingcut", "drilledleap", "giantslayer"]
+	m = _foe(1.0, true)
+	for n in 12:
+		m.life = m.max_life
+		h.hit_monster(m, 0, 0.01, false)
+	_line(m.cracks == 10, "Giant Slayer: each hit on an elite cracks its guard, ten at most (%d)" % m.cracks)
+	m.elite = false
+	m.cracks = 0
+	# Resolute: not knocked back, not slowed
+	h.talents = ["greatsword", "thickskin", "shieldwall", "secondwind", "bulwark", "resolute"]
+	h._knock_t = 0.0
+	h.knock(Vector2(1, 0), 2.0)
+	h.chill(2.0, 0.5)
+	_line(h._knock_t == 0.0 and h._slow_t <= 0.0, "Resolute: a blow's knock does nothing, nor a chill (%.2f, %.2f)" % [h._knock_t, h._slow_t])
+	# Unbreakable: once in a dungeon, a killing blow leaves him at 1 life
+	h.talents = ["greatsword", "thickskin", "shieldwall", "secondwind", "bulwark", "unbreakable"]
+	h.unbroken = false
+	h._invuln = 0.0
+	var kept: bool = h.unhurt
+	h.unhurt = false
+	h.stats["block_chance"] = 0.0
+	h.shield = 0.0
+	h.life = 5.0
+	h.hurt(9999.0, true)
+	var first: bool = h.alive and h.life == 1.0
+	var said := "after the first: alive %s, life %.1f, shielded %.1f s" % [h.alive, h.life, h._invuln]
+	h._invuln = 0.0
+	h.hurt(9999.0, true)
+	var second: bool = not h.alive
+	said += "; after the second: alive %s" % h.alive
+	h.alive = true
+	h.unhurt = kept
+	h.life = h.max_life
+	_line(first and second, "Unbreakable: the first killing blow leaves him at 1 life, shielded; the second in the same dungeon kills him (%s)" % said)
+	h._invuln = 0.0
+	# Second Wind: a flask throws back what is near, and nothing hurts him for a second
+	m = _foe(1.0)
+	var was: Vector2 = m.world
+	M.loot.potions = 3
+	h.life = h.max_life * 0.5
+	M.loot.drink()
+	await _run(0.4)
+	_line(h._invuln > 0.0 or m.world.distance_to(h.world) > was.distance_to(h.world) + 0.5, "Second Wind: a flask drunk, the one near thrown back (%.1f tiles to %.1f) and nothing hurts him a second" % [was.distance_to(h.world), m.world.distance_to(h.world)])
+	# Footwork: a kill makes the Lunge ready again
+	h.talents = ["greatsword", "sweepingcut", "drilledleap", "footwork"]
+	h._lunge_cd = 3.0
+	m = _foe(1.0)
+	h.killed(m)
+	_line(h._lunge_cd == 0.0, "Footwork: a kill makes the Lunge ready again at once")
+	h.talents = []

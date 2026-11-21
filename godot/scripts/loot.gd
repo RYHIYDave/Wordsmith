@@ -821,6 +821,8 @@ func drink() -> void:
 	potions -= 1
 	hero.heal(POTION_HEAL)
 	sfx.play("potion", -4.0)
+	# (THE SKILL TREES REMADE: Second Wind, a flask throws back what is near, and nothing hurts him for a second)
+	hero.second_wind()
 
 
 # --- levels ---

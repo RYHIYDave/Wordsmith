@@ -197,6 +197,8 @@ var curse_dps := 0.0
 var thrown := {}
 ## (THE BRAWLER's uppercut, game.ts popUp: how high it is thrown up now, game pixels; heroes/brawler.gd sets it)
 var pop := 0.0
+## (THE SKILL TREES REMADE: Giant Slayer's cracks in its guard: 3% more from everything each, ten at most: game.ts m.cracks)
+var cracks := 0
 var mirror_t := 0.0
 var surge_t := -1.0
 var stolen := 0
@@ -1245,6 +1247,9 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 	# (THE CITY'S WORDS: HEXING, cursed, it takes more from everything)
 	if hex_t > 0.0 and hex_more > 0.0:
 		dmg = maxf(1.0, roundf(dmg * (1.0 + hex_more)))
+	# (THE SKILL TREES REMADE: Giant Slayer's cracks in its guard: more from everything)
+	if cracks > 0:
+		dmg = maxf(1.0, roundf(dmg * (1.0 + 0.03 * cracks)))
 	# (one of the cult near a chanter that lives and is awake takes less: its ward, act1.gd warded)
 	dmg = Act1.warded(mgr, self, dmg)
 	# (WORDMELDING, BLIGHT behind: a poisoned enemy it has touched takes more from everything)
