@@ -16,7 +16,10 @@ import { GRID } from '../../art/skeleton';
 import { TILE3 } from '../../art/new_mobs3';
 import { drawSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
-import { FM_FIRE, FM_HEAP, FM_PIT, FM_RINGS, FM_RISE, FM_SHARDS } from '../../game/fm_action';
+import { FM2, FM_DEATH_FX, FM_FIRE, FM_HEAP, FM_PIT, FM_RINGS, FM_RISE, FM_SHARDS } from '../../game/fm_action';
+import { FLESH2 } from '../../art/fm2_switch';
+import { FM_END, deathHands, drawCircle, drawDeathFloor, drawDeathPillar, drawPowerMotes } from '../../art/fm2_fx';
+import type { Monster } from '../../game/state';
 import type { Peril } from '../../game/state';
 import { livePicture, picAt, picAtFacing } from './live';
 import type { Act1Fx, Act1FxCtx } from './types';
@@ -70,9 +73,48 @@ function jaws(t: number): [number, number, number] {
 }
 
 let HANDS: Sprite[][] | null = null;
+/** (FLESH2) Whether he is there to be lit: the boss, alive, not gone down under the floor in his teleport. */
+function lit(m: Monster): boolean {
+  if (m.dead || !m.boss || m.kind !== 'fleshmancer') return false;
+  const a = m.act;
+  if (a && a.id === 'blink' && a.t > 0.3) return false;
+  if (a && a.id === 'rise' && a.t < FM2.blink.up) return false;
+  return true;
+}
+
+/** (FLESH2) The frame of a ring's hand from which it is dragged back down (art/fleshmancer.ts paintRingHand: 0.72 s). */
+const FM_SINK_FRAME = Math.round(0.72 * FM_HAND_FPS);
 
 export const FX: Act1Fx | null = {
+  glow(c, m, p) {
+    // (FLESH2: what of his shines over the dark: his power rising off him, and the pillar of it going up as he dies)
+    if (!FLESH2.on || !c.g) return;
+    if (m && lit(m)) {
+      const [sx, sy] = c.at(m.x, m.y);
+      drawPowerMotes(c.g, sx, sy, 38, c.t);
+    }
+    if (p && p.a1 === FM_DEATH_FX) {
+      const [sx, sy] = c.at(p.x, p.y);
+      drawDeathPillar(c.g, sx, sy, p.t);
+    }
+  },
+  air(c, m, p) {
+    // (FLESH2: the pillar's light in the dark, as it goes up)
+    if (!FLESH2.on || !p || p.a1 !== FM_DEATH_FX) return;
+    const [sx, sy] = c.at(p.x, p.y);
+    const u = (p.t - FM_END.pillar[0]) / (FM_END.pillar[1] - FM_END.pillar[0]);
+    if (u >= 0 && u <= 1) {
+      c.spot(sx, sy - 60, 110, 0.9 * (1 - u));
+      c.spot(sx, sy, 80, 0.7 * (1 - u));
+    }
+    void m;
+  },
   ground(c, m, p) {
+    // (brought up to par, FLESH2: his circle under him, lit; and his death's burst and cracks)
+    if (FLESH2.on && c.g) {
+      if (m && lit(m)) drawCircle(c.g, c.at, m.x, m.y, c.t, (x, y, r, a) => c.spot(x, y, r, a));
+      if (p && p.a1 === FM_DEATH_FX) drawDeathFloor(c.g, c.at, p.x, p.y, p.t, (x, y, r, a) => c.spot(x, y, r, a));
+    }
     if (m || !p || !p.a1) return;
     switch (p.a1) {
       case FM_SHARDS:
@@ -105,6 +147,20 @@ export const FX: Act1Fx | null = {
   },
   standing(c, m, p) {
     if (m || !p || !p.a1) return;
+    // (FLESH2: as he dies, the hands of his dead burst up all round him and drag him under: the game's own hands)
+    if (FLESH2.on && p.a1 === FM_DEATH_FX) {
+      const hands = (HANDS ??= Array.from({ length: FM_HAND_KINDS }, (_, k) => makeRingHandArt('front', k)));
+      for (const q of deathHands()) {
+        const f = Math.floor((p.t - q.at) * FM_HAND_FPS);
+        if (f < 0 || f >= FM_HAND_FRAMES) continue;
+        const x = p.x + q.dx;
+        const y = p.y + q.dy;
+        const [sx, sy] = c.at(x, y);
+        c.stand(x + y, hands[q.j % FM_HAND_KINDS][f], sx, sy);
+        if (f < 6) c.spot(sx, sy - 10, 24, 0.5);
+      }
+      return;
+    }
     switch (p.a1) {
       case FM_SHARDS:
         standing(c, p, pic(p, 'air', SHARD_ROOM, (px, at) => {
@@ -119,7 +175,9 @@ export const FX: Act1Fx | null = {
           const since = p.t - ringBurst(i);
           if (since < 0) return;
           for (const { j, a } of ringHands(i).hands) {
-            const f = Math.floor((since - ((j * 7) % 5) * 0.012) * FM_HAND_FPS);
+            let f = Math.floor((since - ((j * 7) % 5) * 0.012) * FM_HAND_FPS);
+            // (FLESH2: he is dead: every hand of his rings dragged back down at once)
+            if (FLESH2.on && p.done === 2 && p.c >= 0) f = Math.max(f, FM_SINK_FRAME + Math.floor((p.t - p.c) * FM_HAND_FPS));
             if (f < 0 || f >= FM_HAND_FRAMES) continue;
             const x = p.x + Math.cos(p.b + a) * r;
             const y = p.y + Math.sin(p.b + a) * r;

@@ -46,6 +46,11 @@ import { stage } from '../src/art/skin';
 import type { V3 } from '../src/art/skeleton';
 import { rgba } from '../src/engine/px';
 import { MOTH_SHAPE } from './moth_shape';
+import { MOTH2 } from '../src/art/moth2_switch';
+
+// (these hold the art chat's pictures of her as he said yes to them; made ghostly since, 14 Nov 2026, behind MOTH2, on: her scales
+// glowing, no little moths crawling on her, her death in light, held by tests/moth2.test.ts; so here her pictures as they were)
+MOTH2.on = false;
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -192,7 +197,8 @@ test('1. the switch is off, and of the game only floor 20\'s own files import it
     }
   }
   // (Brought into the game by the main chat, 31 Oct 2026, on floor 20 behind HIGH_CITY (off): its figure, rules and effects)
-  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/moth.ts game/act1_rules/moth.ts render/act1_fx/moth.ts', 'game files that import it');
+  // (and, made ghostly, 14 Nov 2026, behind MOTH2: her new attacks' shapes and numbers, art/moth2.ts: tests/moth2.test.ts)
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/moth.ts art/moth2.ts game/act1_rules/moth.ts render/act1_fx/moth.ts', 'game files that import it');
 });
 
 test('2. EVERY MOVE OF IT THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

@@ -29,6 +29,7 @@
 
 import { BEAT_RING, BOOK, BUFFET_CONE, DUST_CLOUD, EYE_BEAMS, MOTH_BEAT, MOTH_BEAT_BLOW, MOTH_BUFFET, MOTH_DUST, MOTH_EYES, MOTH_LAND, MOTH_PACE, MOTH_SWARM, SWARM, beamLines, mothGeomAt } from '../../art/moth_moves';
 import { CLOUD_FX, GUST_FX, WAVE_FX, swarmAt } from '../../art/moth_fx';
+import { ECLIPSE, MOTH2, PHANTOMS, PHANTOMS_LONG, inEclipse, phantomOver } from '../../art/moth2';
 import { TILE3 } from '../../art/new_mobs3';
 import type { V3 } from '../../art/skeleton';
 import { beside, handOf } from '../facing';
@@ -65,7 +66,23 @@ const ACTS: readonly ActDef[] = [
   { id: 'moth:buffet', clip: 'attack', long: MOTH_BUFFET.long, hit: MOTH_BUFFET.hit, dmg: MOTH_TUNE.buffet.dmg, cooldown: 0, first: 1, after: 0.4, near: 0, far: BUFFET_CONE.tiles - 1 },
   { id: 'moth:dust', clip: 'dust', long: MOTH_DUST.long, hit: MOTH_DUST.hit, dmg: 0, cooldown: MOTH_TUNE.dust.cd[0], first: 4, after: 0.2, near: 1.5, far: DUST_CLOUD.ahead + DUST_CLOUD.tiles / 2 },
   { id: 'moth:swarm', clip: 'swarm', long: MOTH_SWARM.long, hit: MOTH_SWARM.hit, dmg: MOTH_TUNE.swarm.dmg, cooldown: MOTH_TUNE.swarm.cd[0], first: 9, after: 0.2, near: 3, far: SWARM.tiles - 3 },
-  { id: 'moth:eyes', clip: 'eyes', long: MOTH_EYES.long, hit: MOTH_EYES.hit, dmg: MOTH_TUNE.eyes.dmg, cooldown: MOTH_TUNE.eyes.cd[0], first: 6, after: 0.2, near: 2.4, far: EYE_BEAMS.tiles - 2 },
+  // (made ghostly, art/moth2.ts MOTH2: ECLIPSE in its place, on her Eyes' own moves; her shadow reaches as far as ECLIPSE's shape, so she casts it only so near him)
+  {
+    id: 'moth:eyes',
+    clip: 'eyes',
+    long: MOTH_EYES.long,
+    hit: MOTH_EYES.hit,
+    dmg: MOTH_TUNE.eyes.dmg,
+    cooldown: MOTH_TUNE.eyes.cd[0],
+    first: 6,
+    after: 0.2,
+    get near(): number {
+      return MOTH2.on ? 1.5 : 2.4;
+    },
+    get far(): number {
+      return MOTH2.on ? 6 : EYE_BEAMS.tiles - 2;
+    },
+  },
   { id: 'moth:beat', clip: 'beat', long: MOTH_BEAT_BLOW.long, hit: MOTH_BEAT_BLOW.hit, dmg: MOTH_TUNE.beat.dmg, cooldown: MOTH_TUNE.beat.cd, first: 1.2, after: 0, near: 0, far: 99 },
   { id: 'moth:land', clip: 'land', long: MOTH_LAND.long, hit: MOTH_LAND.touch, dmg: 0, cooldown: 0, first: 0, after: 0, near: 0, far: 999, forced: true },
 ];
@@ -258,6 +275,14 @@ export const RULES: Act1Rules | null = {
     const k = a1Of(m);
     k.wx = w.fx;
     k.wy = w.fy;
+    // (made ghostly: her shadow and her phantoms go at him, not along her picture's way)
+    if (MOTH2.on && (a.id === 'moth:eyes' || a.id === 'moth:swarm')) {
+      const dx = R.g.hero.x - m.x;
+      const dy = R.g.hero.y - m.y;
+      const d = Math.hypot(dx, dy);
+      k.ax = d > 1e-6 ? dx / d : w.fx;
+      k.ay = d > 1e-6 ? dy / d : w.fy;
+    }
     if (a.id === 'moth:eyes' || a.id === 'moth:swarm') R.g.sfx('whirl', 0.3);
   },
   end(R, m, a) {
@@ -310,6 +335,16 @@ export const RULES: Act1Rules | null = {
         return;
       case 'moth:eyes':
         if (!at(a.hit)) return;
+        if (MOTH2.on) {
+          // ECLIPSE: her shadow strikes; whoever is in it is struck (rolling, not)
+          const ax = k.ax ?? wx;
+          const ay = k.ay ?? wy;
+          g.sfx('gust', 0.7);
+          g.emit({ t: 'shake', amount: 4 });
+          R.peril(m, 'act1', m.x, m.y, { a1: 'moth:eclipse', fx: ax, fy: ay, dur: ECLIPSE.after, hit: 0 });
+          if (!h.move && inEclipse(m.x, m.y, ax, ay, h.x, h.y)) R.blow(m, a.dmg);
+          return;
+        }
         g.sfx('beam', 0.8);
         g.emit({ t: 'shake', amount: 3 });
         R.peril(m, 'act1', m.x, m.y, { a1: 'moth:beams', fx: wx, fy: wy, dur: 0.75, hit: 0 });
@@ -317,6 +352,12 @@ export const RULES: Act1Rules | null = {
         return;
       case 'moth:swarm':
         if (!at(a.hit)) return;
+        if (MOTH2.on) {
+          // PHANTOMS: three of her, each down its lane, one after another (game/act1_rules: their peril strikes)
+          g.sfx('whirl', 0.8);
+          R.peril(m, 'act1', m.x, m.y, { a1: 'moth:phantoms', fx: k.ax ?? wx, fy: k.ay ?? wy, dur: PHANTOMS_LONG, hit: 0, dmg: g.rollMonsterDmg(m) * PHANTOMS.dmg, a: 0 });
+          return;
+        }
         g.sfx('whirl', 0.7);
         R.peril(m, 'act1', m.x, m.y, { a1: 'moth:swarm', fx: wx, fy: wy, dur: SWARM.long, hit: 0, dmg: g.rollMonsterDmg(m) * a.dmg });
         return;
@@ -366,6 +407,19 @@ export const RULES: Act1Rules | null = {
         }
         return;
       }
+      case 'moth:phantoms': {
+        // (each phantom strikes him once, as its body passes over him; rolling, not)
+        if (h.move) return;
+        for (let i = 0; i < PHANTOMS.n; i++) {
+          const bit = 1 << i;
+          if ((p.a & bit) !== 0) continue;
+          if (phantomOver(p.x, p.y, p.fx, p.fy, i, p.t, h.x, h.y)) {
+            p.a |= bit;
+            g.hurtHero(p.dmg, p.el, p.words, null, p.from, h.x, h.y, p.half);
+          }
+        }
+        return;
+      }
       case 'moth:wave': {
         // (the beat's wind rolling out over the whole top: it strikes him as it passes under him, once)
         if (p.t > WAVE_FX.reach + 0.1) return;
@@ -384,6 +438,6 @@ export const RULES: Act1Rules | null = {
     const w = pictureWay(m.fx, m.fy);
     R.peril(m, 'act1', m.x, m.y, { a1: 'moth:words', fx: w.fx, fy: w.fy, dur: 6, hit: 0 });
     // (its dust, its swarm and its wind harm nothing more once it is dead: they are left to fade)
-    for (const p of R.g.perils) if (p.a1 === 'moth:dust' || p.a1 === 'moth:shed' || p.a1 === 'moth:swarm' || p.a1 === 'moth:wave') p.done = 1;
+    for (const p of R.g.perils) if (p.a1 === 'moth:dust' || p.a1 === 'moth:shed' || p.a1 === 'moth:swarm' || p.a1 === 'moth:wave' || p.a1 === 'moth:phantoms' || p.a1 === 'moth:eclipse') p.done = 1;
   },
 };
