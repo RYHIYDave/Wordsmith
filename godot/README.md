@@ -586,6 +586,39 @@ through them in their own opening pictures.
   Quiet Tower and singing in the Moth's fight), the whole court, the captain's voice. In the saved game. `--only=quests1620`
   (`check_quest1620.gd`): 21 steps.
 
+## The other heroes (the cloud chat, 21 Nov 2026)
+
+His pick, asked what to build next: “The other heroes (Recommended)”. Every hero of the game is in it now, each by the game's own
+rules (`scripts/heroes/<class>.gd`, each over `kit.gd`: game.ts useBasic, useSkill, begin, release, reachPoint, the projectiles;
+TRACK_AIM and lock.ts leadPoint) and drawn as the game draws him (`scripts/heroes/<class>_look.gd`), his own voice as he attacks,
+is hurt and falls:
+- THE CLASS CARDS as a new game begins (`scripts/class_cards.gd`; ui/panels.ts drawTitle): the six over the ring on the hill, each
+  hero standing, gesturing, coming to a stand, walking when touched or chosen, making ready and warping in as he is picked; the
+  mode's toggle. `--only=cards` (`check_cards.gd`).
+- EVERY HERO'S SCARF, FEATHER OR BRAIDS (`scripts/tails.gd`, engine/tails.ts line for line: `npx tsx tools/godot_tails_check.ts`,
+  then `godot --headless --path godot -s res://checks/tails_check.gd`, 0 pixels apart) and the pool of light behind him; his town
+  pictures (his weapon on his back); the lights of his own pictures (a lit crystal, a glowing feather) and of what he sends.
+- THE RANGER: his Shot, his Volley (the arrows up and coming down round where he aimed, put where the enemy is going), his Trap
+  (his roll and the trap left armed); his wind as the game draws it (render/wild.ts: the air thrown off at the loose, his arrows'
+  trails and hits, the volley's column, the trap's whirlwind, his roll's swoosh).
+- THE MAGE: her Wave (through all in its way), her Orb (set where she aims, its waves round it), her Warp ("No room" where there
+  is none); big and wild as the game draws them (her crystal crackling, the wave's crest, the orb turning and pulsing, the warp's
+  bolt and thunderclap): `assets/heroes/spells.*`.
+- THE WARLOCK: his hellfire bolt and its burn, his Curse and the burns leaping from a cursed one dying, his Smoke Step, his pact
+  filling over his head and the change (R), the demon's Claw Rake, Damning and Smoke Step, its burning out; his pictures kept in
+  packs read as the game reads them (the demon's): `assets/heroes/warlock_fx.*`.
+- THE TINKERER: her Vial Toss; her Golem (whistled out, dropping in; running at what is awake near her and fighting it with its
+  combo, uppercut, uppercut, slam; her next whistle rocket-jumps it onto where she aims, landing as its pound; left behind,
+  whistled up beside her again; winding down as she falls); her Blast Jump. The Golem's pictures (its run, its rocket jump and
+  everything at it, its take-offs and landings, its trail) and her effects, baked once: `assets/heroes/golem*`, `tinkerer_fx*`.
+- THE BRAWLER, THE VETERAN: his three globes and his combos (taps the jab, the cross, the hook, the spinning elbow; holds the round
+  kick and the push kick; a swipe his dodging jump, or with a tap or a hold set in fire the flying uppercut, the flying knee, the
+  spinning jump kicks; locked at three, R cancels), each move carried and aimed as the art has it, its blow reaching each in its
+  cone or crescent as its front comes to them; his action lines, after-images, bursts, rings and stars; the globes painted pixel
+  by pixel as the game paints them: `assets/heroes/veteran*`.
+`--only=heroes --cls=<class>` (`check_heroes.gd`, on floor 2 with three of its skeletons held where they stand): the Ranger 5 steps,
+the Mage 7, the Warlock 11, the Tinkerer 9, the Brawler 7, each with what is drawn with him and his town pictures.
+
 ## Not in it yet
 
 Frenzied on the prison's bosses' own scripts
@@ -602,7 +635,10 @@ stone floating from him to the slab, the letters
 swirling round the ring and its column of light, a fallen hero's end (the game ends a fallen hero's run but for a Normal
 hero, who wakes in town; here he is back where the last save left him), the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
-breaks, what stands behind raised ground cut off by it, the rest of the heroes, menus, the title screen's music.
+breaks, what stands behind raised ground cut off by it, menus (a new hero is picked on the class cards; there is no title menu to
+go BACK to), the title screen's music and the ring's moving light; the heroes' skill trees and talents (the Tinkerer's Golem has its
+cannon arm, as he picked it), the modes' rules for a fallen hero, the soft shadows under the hero and the monsters (render.ts shadow: here drawn only under the Golem and the Mage's orbs); and the
+monsters' bake of the released game 25.3.21 (b982b7f72ca4: the port's is still fe60947db695).
 
 ## How it is made
 
@@ -629,6 +665,12 @@ breaks, what stands behind raised ground cut off by it, the rest of the heroes, 
 | `assets/floor6/holds.json` ... `floor10/holds.json`, `assets/act1/quest610.json` | the strongholds (their places, guards, halls and each one's five waves as the game spawns them), the eyrie's edge (floor 7), the cult's obelisks (floor 10), and the words and numbers of the quest line: `npx tsx tools/godot_holds.ts` |
 | `assets/looks/floor<N>_hold<n>` | a stronghold's hall as it is drawn from in it: `node tools/godot_record.mjs <N> --hold <n>` |
 | `assets/floor6/boss.json`, `floor7/boss.json` | a boss's ground out on the open floors (his area and what is well inside it, where his rules stand him, the drop round him), from the game's own map-maker: `npx tsx tools/godot_boss_ground.ts 1 6` (`1 7`) |
+| `assets/heroes/clips.json` | every hero's pictures' own times, his moves' lists as the bake numbers them, the cards' and the tails' numbers: `npx tsx tools/godot_hero_clips.ts` |
+| `assets/title/ring.png` | the ring on the hill the class cards lie over, painted by the game in a headless browser: `node tools/godot_title.mjs` |
+| `assets/heroes/spells.*` | the Mage's orb in each element's colours, her tones and her power's crackle: `npx tsx tools/godot_spells.ts` |
+| `assets/heroes/warlock_fx.*` | the Warlock's effects' pieces (render/warlock_fx.ts): `npx tsx tools/godot_warlock_fx.ts` |
+| `assets/heroes/golem*`, `tinkerer_fx*` | the Tinkerer's Golem (its moves, run, rocket jump and everything at it) and her effects' pieces, with her tune: `npx tsx tools/godot_tinkerer.ts` (about half a minute) |
+| `assets/heroes/veteran*` | the Brawler's moves' numbers and the art's places frame by frame, his bursts, rings and stars: `npx tsx tools/godot_veteran.ts` |
 | `assets/font`, `assets/hud` | the game's two pixel fonts, `npx tsx tools/godot_font.ts`; the HUD's pictures, colours and names, `npx tsx tools/godot_hud.ts` |
 | `scripts/` | GDScript, each file saying which TypeScript it follows |
 
