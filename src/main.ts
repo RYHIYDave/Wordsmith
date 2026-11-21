@@ -10,6 +10,8 @@ import { ENEMY_MOVES, useEnemyMoves } from './game/enemy_moves';
 import { F8F9_FIX } from './game/f8f9';
 import { F9_LAIRS } from './game/f9_lairs';
 import { CENSOR2 } from './art/censor2_art';
+import { MOTH2 } from './art/moth2_switch';
+import { FLESH2 } from './art/fm2_switch';
 import { FLOOR_LOOKS, useFloorLooks } from './game/floor_looks';
 import { ALL_OF_IT, useAllOfIt } from './game/all_of_it';
 import { DOOR_WALLS, WHOLE_WALLS, BACK_STAND } from './render/walls';
@@ -155,6 +157,8 @@ import type { HudIn, HudOut } from './ui/hud';
 import { guideAttack, guideBanner, huntBanner, questBanner } from './ui/guide';
 import { WORD_HALF, WORD_LEX, WORD_ROOM, drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
 import { EXIT_LABELS, exitLabels } from './game/exit_labels';
+import { BELL_MARK } from './render/bell_mark';
+import { HALL_LOOK } from './game/act1_dress';
 import { LOW_STACKS } from './art/low_stacks';
 import { FLOW } from './art/flowing';
 import { AISLES_CLEAR } from './game/act2/library';
@@ -3161,6 +3165,20 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** (FLOOR 9'S TWO SIDE BOSSES, behind F9_LAIRS: on at his yes of 14 Nov 2026) Each of them, for the films of them in play (tools/scenarios/f9_bosses_film.mjs). */
     /** (THE CENSOR MADE AGAIN, behind CENSOR2: off until his yes) His switch, and its use (his pictures and his size together). */
     censor2: { sw: CENSOR2, use: useCensor2 },
+    /** (THE FLESHMANCER BROUGHT UP TO PAR, behind FLESH2: off until his yes) His switch (his fire, his light, his death). */
+    fm2: {
+      sw: FLESH2,
+      use: (on: boolean) => {
+        FLESH2.on = on;
+      },
+    },
+    /** (THE MOTH MADE GHOSTLY, behind MOTH2: off until his yes) Her switch, thrown before her floor is come into (her pictures are painted as it says). */
+    moth2: {
+      sw: MOTH2,
+      use: (on: boolean) => {
+        MOTH2.on = on;
+      },
+    },
     f9Bosses: {
       sw: F9_LAIRS,
       /** Where they are, how they fare, what they do ('warchief', 'mistwolf'). */
@@ -3318,6 +3336,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     groundsAll: GROUNDS_ALL,
     /** (THE EXITS' NAMES, behind EXIT_LABELS in game/exit_labels.ts) Its switch. */
     exitLabels: EXIT_LABELS,
+    /** (THE MUFFLED BELL MADE EASIER TO SEE, behind BELL_MARK in render/bell_mark.ts, on at his word) Its switch: `bellMark.on`. */
+    bellMark: BELL_MARK,
+    /** (THE STRONGHOLDS' HALLS GIVEN MORE TO THEM, behind HALL_LOOK in game/act1_dress.ts, off until his yes) Its switch: `hallLook.on` (a level made after it is set). */
+    hallLook: HALL_LOOK,
     /** (A LITTLE HALLWAY INTO EACH STRONGHOLD'S HALL, behind HOLD_HALLWAY in game/act1_layout.ts) Its switch: set it before the floor is made. */
     holdHallway: HOLD_HALLWAY,
     /** (ENEMIES COMING IN UP OUT OF RIFTS, behind ARRIVALS in game/arrivals.ts) Its switch. */

@@ -39,6 +39,7 @@ import type { Ui } from './ui';
 import { arrow, drawWordTile, nameParts, tileWidth, wordForm } from './words';
 import { UNIQUE_PLAY } from '../render/unique_play';
 import type { Sprite } from '../engine/px';
+import { BELL_MARK } from '../render/bell_mark';
 
 export interface HudOut {
   /** Open the inventory: -1 = no; 0, 1 or 2 = that ability's phrase (or the evasive move's button) was pressed; 3 = the INVENTORY button. */
@@ -266,7 +267,9 @@ function bellsOnMap(L: Level, hx: number, hy: number, R: number, mark: (tx: numb
     });
   } else if (B.phase === 'asleep') {
     const m = B.plan.muffled;
-    if (L.explored[Math.floor(m.y) * f.w + Math.floor(m.x)]) mark(Math.floor(m.x), Math.floor(m.y), '#b8b4c6', 2);
+    // (THE MUFFLED BELL MADE EASIER TO SEE, behind BELL_MARK: in the friend's cyan, blinking, a size bigger, as the bells to ring are)
+    const lit = BELL_MARK.on && Math.floor(t * 3) % 2 === 0;
+    if (L.explored[Math.floor(m.y) * f.w + Math.floor(m.x)]) mark(Math.floor(m.x), Math.floor(m.y), BELL_MARK.on ? (lit ? '#22d0e0' : '#b8fff8') : '#b8b4c6', BELL_MARK.on ? 3 : 2);
   }
 }
 

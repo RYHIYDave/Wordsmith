@@ -1,0 +1,268 @@
+{
+ "switches": {
+  "quests610": true,
+  "f9Lairs": true,
+  "colossus": true,
+  "pillars": false,
+  "holdWaves": true,
+  "altarGoes": true,
+  "hallway": true,
+  "questMarks": true,
+  "speakNew": true,
+  "speakReturn": true,
+  "muster": true,
+  "arrivals": true
+ },
+ "hold": {
+  "tune": {
+   "near": 1.9,
+   "most": 3,
+   "pack": 4,
+   "life": 0.25,
+   "dust": [
+    0,
+    2,
+    4,
+    6
+   ],
+   "items": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "out": 0.55
+  },
+  "waves": {
+   "on": true,
+   "n": 5,
+   "gap": 2,
+   "life": 0.15
+  },
+  "make": [
+   [
+    {
+     "rarity": "plain"
+    }
+   ],
+   [
+    {
+     "rarity": "plain"
+    },
+    {
+     "rarity": "plain"
+    }
+   ],
+   [
+    {
+     "rarity": "blue"
+    },
+    {
+     "rarity": "plain"
+    }
+   ],
+   [
+    {
+     "rarity": "blue"
+    },
+    {
+     "rarity": "blue"
+    }
+   ],
+   [
+    {
+     "rarity": "yellow",
+     "own": true
+    },
+    {
+     "rarity": "blue"
+    }
+   ]
+  ],
+  "loot2": {
+   "on": true,
+   "hold": [
+    0,
+    3,
+    4,
+    6
+   ],
+   "dust": 1.5,
+   "gold": 2
+  },
+  "hallway": {
+   "on": true,
+   "long": 4,
+   "wide": 3
+  }
+ },
+ "arrivals": {
+  "on": true,
+  "rise": 1,
+  "open": 0.3,
+  "apart": 0.12,
+  "close": 0.4,
+  "size": {
+   "small": 0.45,
+   "medium": 0.6,
+   "large": 0.85,
+   "boss": 1.1
+  }
+ },
+ "text": {
+  "featherAsk": "The mystic: \"No word has come up from the town below in weeks, and the stars will not say why. The Queen vulture nests on the Ledge Road and sees everything. Bring me one of her feathers, and I will see what she has seen.\"",
+  "featherAskPrompt": "Mystic: a task",
+  "featherGot": "You pluck the Queen's FEATHER.",
+  "featherGivePrompt": "Mystic: the Queen's feather",
+  "featherGiven": "The mystic: \"A dome of the cult's siege magic, fed from three pillars in the Sunken Fen. Only a ward-stone can put them out, and the cult broke theirs in three. Two pieces are hidden in the Pinewood. The Stag carries the third.\"",
+  "featherGivenBosses": "The mystic: \"A dome of the cult's siege magic, fed from three pillars in the Sunken Fen. Only a ward-stone can put them out, and the cult broke theirs in three. The beasts of the Pinewood carry the pieces: the Mist Wolf, the Troll Chieftain and the Hollow Stag.\"",
+  "piecesHere": "Pieces of the ward-stone are on this floor.",
+  "piecesHereBosses": "The Mist Wolf, the Troll Chieftain and the Hollow Stag carry the ward-stone's pieces.",
+  "piecesWhole": "All three pieces of the WARD-STONE. The pillars in the Sunken Fen wait.",
+  "pieceLabel": "Ward-stone piece",
+  "pillarsLit": "The cult's three obelisks blaze with the siege. While one burns, the Drowned Eye cannot be hurt.",
+  "pillarsLitNoPiece": "The cult's three obelisks blaze with the siege. While one burns, the Drowned Eye cannot be hurt. Strike them down.",
+  "pillarPrompt": "Obelisk: set a ward-stone piece",
+  "siegeBroken": "THE SIEGE IS BROKEN. The Drowned Eye can be hurt.",
+  "shielded": "Shielded",
+  "pieceGot": [
+   "You take a piece of the WARD-STONE (1 of 3).",
+   "You take a piece of the WARD-STONE (2 of 3).",
+   "You take a piece of the WARD-STONE (3 of 3)."
+  ],
+  "pillarSet": [
+   "The ward-stone piece flares, and the last obelisk goes dark.",
+   "The ward-stone piece flares, and the obelisk goes dark. 1 still burns.",
+   "The ward-stone piece flares, and the obelisk goes dark. 2 still burn."
+  ],
+  "pillarBroken": [
+   "The last obelisk cracks and goes dark.",
+   "The obelisk cracks and goes dark. 1 still burns.",
+   "The obelisk cracks and goes dark. 2 still burn."
+  ],
+  "rollGot": [
+   "MUSTER ROLL PAGE (1 of 3).",
+   "MUSTER ROLL PAGE (2 of 3).",
+   "MUSTER ROLL PAGE (3 of 3)."
+  ],
+  "rollLabel": "Muster roll page",
+  "eyrie": "So that is what they did to the town."
+ },
+ "eyrie": {
+  "after": 2.2,
+  "pace": 0.7,
+  "walk": 4,
+  "short": 0.9,
+  "out": 1.6,
+  "hold": 3.4,
+  "back": 1.2,
+  "say": 0.5,
+  "share": 0.24,
+  "most": 230
+ },
+ "pieces": [
+  {
+   "kind": "mistwolf",
+   "name": "the MIST WOLF",
+   "piece": 0
+  },
+  {
+   "kind": "warchief",
+   "name": "the TROLL CHIEFTAIN",
+   "piece": 1
+  },
+  {
+   "kind": "stag",
+   "name": "the HOLLOW STAG",
+   "piece": 2
+  }
+ ],
+ "hunt": {
+  "enter": 6,
+  "fallen": 4
+ },
+ "pillars": {
+  "on": false,
+  "near": 1.8,
+  "blows": 12,
+  "gap": 0.3,
+  "reach": 0.8
+ },
+ "muster": {
+  "pages": 3
+ },
+ "marks": {
+  "secs": 6,
+  "where": {
+   "wordsmith": "He stands in the ring of stones.",
+   "armourer": "He works at his forge.",
+   "mystic": "She keeps the tent by the stash."
+  },
+  "back": "Take the waypoint back to town.",
+  "rune": [
+   ".............XX.............",
+   "...........XXooXX...........",
+   "..........XXowwoXX..........",
+   "........XXoowwwwooXX........",
+   "......XXoowwwwwwwwooXX......",
+   ".....XXoowwwowwowwwooXX.....",
+   "...XXoowwwooowwooowwwooXX...",
+   "..XXowwwwoXXowwoXXowwwwoXX..",
+   ".XXowwwooXXXowwoXXXoowwwoXX.",
+   ".XowwooXX..XowwoX..XXoowwoX.",
+   ".XXoooXX...XowwoX...XXoooXX.",
+   ".XowoooXXX.XowwoX.XXXooowoX.",
+   ".XowwwwoooXXowwoXXooowwwwoX.",
+   ".XooowwwwwooowwooowwwwwoooX.",
+   "..XXXooowwwwwwwwwwwwoooXXX..",
+   "....XXXXoowwwwwwwwooXXXX....",
+   "....XXXooowwwwwwwwoooXXX....",
+   "..XXXoowwwwwowwowwwwwooXXX..",
+   ".XooowwwwwooowwooowwwwwoooX.",
+   ".XowwwwooXXXowwoXXXoowwwwoX.",
+   ".XowoooXXX.XowwoX.XXXooowoX.",
+   ".XXoXXX....XowwoX....XXXoXX.",
+   "...X.......XowwoX.......X...",
+   "...........XowwoX...........",
+   "...........XowwoX...........",
+   "...........XowwoX...........",
+   "......XXXXXXowwoXXXXXX......",
+   ".....XXoooooowwooooooXX.....",
+   ".....XowwwwwwwwwwwwwwoX.....",
+   ".....XowwwwwwwwwwwwwwoX.....",
+   ".....XXoooooowwooooooXX.....",
+   ".......XXXXXowwoXXXXX.......",
+   "............XooX............",
+   ".............XX............."
+  ],
+  "colors": {
+   "X": "#0e0c24",
+   "w": "#e0fffc",
+   "o": "#58ecec"
+  },
+  "hot": {
+   "X": "#1e96b8",
+   "w": "#ffffff",
+   "o": "#e0fffc"
+  },
+  "flash": {
+   "every": 1.6,
+   "rise": 0.05,
+   "fall": 0.38,
+   "rays": 36,
+   "glow": 14
+  },
+  "mark": {
+   "half": 14,
+   "core": 0.85,
+   "cyan": 1.75,
+   "seam": 2.85
+  }
+ },
+ "dust": {
+  "color": "#5ce8f8",
+  "fps": 10,
+  "spill": 0.75,
+  "whirl": 0.6
+ }
+}

@@ -1,0 +1,288 @@
+// THE GODOT PORT: THE WORDS (the cloud chat, 15 Nov 2026; his pick that day, asked what to build next: “The words (Recommended)”).
+// What godot/scripts/words.gd needs of the game's own tables, so that no number of them is copied by hand:
+//   npx tsx tools/godot_words.ts          -> godot/assets/words/words.json
+//   npx tsx tools/godot_words.ts check    -> also godot/assets/words/check.json: what the game's own resolveSkill makes of the
+//                                            Warrior's three moves with every word and pair of words a hero of floors 1 to 10 can
+//                                            set in them, for a spread of attributes (the Godot side's check reads it: every
+//                                            number and every line of text must come out the same).
+// THE WORDS OF FLOORS 1 TO 5: the prison's six (types.ts PRISON_WORD_IDS: power, poison, frost, fire, lightning, swift) and
+// Heavy, the armourer's reward to the Warrior (game/quests15.ts FURNACE_WORD).
+// THE WORDS OF FLOORS 6 TO 10 (the words' port of the descent, 15 Nov 2026): the rest of what may be found there (types.ts wordsAt:
+// Twin, Leech, Volatile, Precise, Frenzied, Guarding, Lasting, Fleeting, Vast), after them in the game's order (types.ts WORD_IDS).
+// The city's words and the last words are found only from floor 11 and 16; the melded and ranked words are made, never found.
+// WORDMELDING (the meld's port, 15 Nov 2026): THE WORDS MELDING MAKES, after them (game/melds.ts wordIds: the ten melds of two damage
+// words, Volatile's five, the eight across the groups, the five damage words' rank II), made at the wordsmith and never found
+// (`made`); their rules' numbers (melds.ts MELD_TUNE, RANK_TUNE, melds8.ts MELD8_TUNE, defs.ts ATTR_SPLIT.melds) and what each is
+// made of (types.ts MELD_OF, RANK_OF). The check widens to them: every made word alone on a side against every word or none on
+// the other, and with each other word it may share its side with, and a sample of three.
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { gameSwitches } from './godot_switches';
+import { DEMON_KIT } from '../src/game/warlock';
+import { WARRIOR_KITS } from '../src/game/talents';
+import { readFileSync } from 'node:fs';
+import { ARC_CHAIN, ATTR_GIVES, ATTR_SPLIT, BIND, BLEED, CLASSES, HYBRID_LESS, CULL, FIRST_WORD, FLEETING, FRENZY, GUARD, HEAVY, HEX, HUSH_LEAVES, LASTING, LEECH, MIRRORING, MOVE_OPENS, PIERCE, PLUNDER, PRECISE, PULL, REAP, SKILLS, SLOT_OPENS, SPLIT, STILL, SURGE, TUNE, VAST, WORDS, skillsFor, wordsAt } from '../src/game/defs';
+import { MANA_AS_CDR } from '../src/game/items';
+import { FURNACE_WORD, MELDSTONE_WORDS } from '../src/game/quests15';
+import { resolveSkill, socketProblem } from '../src/game/words';
+import { DEEP_WORDS_FROM, DEEP_WORD_IDS, LAST_WORDS_FROM, LAST_WORD_IDS, MELD8_IDS, MELD_IDS, MELD_OF, PRISON_WORD_IDS, RANK_IDS, RANK_OF, VOLT_MELD_IDS, WORD_IDS } from '../src/game/types';
+import { MELD_DUST_COLOR, MELD_TUNE, RANK_TUNE, wordIds } from '../src/game/melds';
+import { MELD8_TUNE } from '../src/game/melds8';
+import { gearLines, gearNote } from '../src/ui/lexicon';
+import { NEW_GLYPH, NEW_RAMP } from '../src/render/words3';
+import { W10_RAMP } from '../src/render/words10';
+import { LEX_PAGES } from '../src/ui/lexicon28';
+import type { Derived } from '../src/game/state';
+import type { ClassId, WordId } from '../src/game/types';
+
+gameSwitches();
+const OUT = 'godot/assets/words';
+mkdirSync(OUT, { recursive: true });
+
+const PRISON: WordId[] = [...PRISON_WORD_IDS, FURNACE_WORD.warrior];
+// (floors 6 to 10's: what may be found on any of them, not already among the prison's, in the game's order)
+const WILDS: WordId[] = WORD_IDS.filter((w) => !PRISON.includes(w) && [6, 7, 8, 9, 10].some((d) => wordsAt(d).includes(w)));
+// (THE CITY'S FIVE, found from floor 11 down: types.ts DEEP_WORD_IDS)
+// (THE HIGH CITY'S SEVEN LAST WORDS, found from floor 16 down: types.ts LAST_WORD_IDS)
+const OURS: WordId[] = [...PRISON, ...WILDS, ...DEEP_WORD_IDS.filter((w) => !WILDS.includes(w) && !PRISON.includes(w)), ...LAST_WORD_IDS.filter((w) => !WILDS.includes(w) && !PRISON.includes(w))];
+// (WORDMELDING: the words melding makes, in the order the game keeps a hero's words in: melds.ts wordIds)
+const MADE: WordId[] = wordIds().filter((w) => !WORD_IDS.includes(w));
+// (game.ts's own seconds for "of Echoes", kept in it unexported: read out of its source, not copied by hand)
+const GAME_TS = readFileSync('src/game/game.ts', 'utf8');
+const gameConst = (name: string): number => {
+  const m = new RegExp(`const ${name} = ([0-9.]+);`).exec(GAME_TS);
+  if (!m) throw new Error(`game.ts has no ${name}`);
+  return Number(m[1]);
+};
+// (the first colour a function of the game's renderer writes straight into what it draws)
+const hexIn = (file: string, fn: string): string => {
+  const text = readFileSync(file, 'utf8');
+  const at = text.search(new RegExp(`^(?:export )?function ${fn}\\(`, 'm'));
+  const m = at < 0 ? null : /'(#[0-9a-fA-F]{6})'/.exec(text.slice(at, text.indexOf('\n}\n', at)));
+  if (!m) throw new Error(`no colour in ${fn}`);
+  return m[1];
+};
+const moves = skillsFor('warrior', 'greatsword');
+// (EVERY HERO: each class's three moves with the weapon he starts with (defs.ts skillsFor: with OWN_MOVES on, the class's own; the
+// Brawler made again, the Veteran's three), the attribute they grow with (the class's own, and the Warlock's two, less HYBRID_LESS:
+// words.ts resolveSkill), his starting attributes and weapon)
+const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
+const classes = Object.fromEntries(CLASS_IDS.map((c) => [c, { name: CLASSES[c].name, blurb: CLASSES[c].blurb, primary: CLASSES[c].primary, two: CLASSES[c].grows ?? null, attrs: CLASSES[c].attrs, starts: CLASSES[c].starts, moves: skillsFor(c, CLASSES[c].starts) }]));
+// (THE WARLOCK'S DEMON, game/warlock.ts DEMON_KIT: its three in the places of his, his words in them, as the demon)
+const demonKit = [...DEMON_KIT];
+// (THE WARRIOR'S BATTLE AXE AND WARHAMMER, game/talents.ts WARRIOR_KITS: their three each, his in place of the greatsword's once
+// his tree's first point picks one)
+const warriorArms = [...WARRIOR_KITS.battleaxe, ...WARRIOR_KITS.warhammer];
+// (THE MAGE'S AND THE RANGER'S MOVES TO LEARN, game/swap_moves.ts: hers Ball, Spear and Beam, his Snare, Snipe and Rally, each in
+// the place of one of their own once their tree gives it)
+// (and THE TINKERER'S CONTRAPTION in her Vial Toss's place, once her tree gives it: game.ts refresh)
+const swapMoves: Record<string, string[]> = { mage: ['ball', 'spear', 'beam'], ranger: ['snare', 'snipe', 'rally'], tinkerer: ['contraption'] };
+const allMoves = [...new Set([...CLASS_IDS.flatMap((c) => classes[c].moves), ...demonKit, ...warriorArms, ...Object.values(swapMoves).flat()])];
+const words = Object.fromEntries([...OURS, ...MADE].map((w) => [w, WORDS[w]]));
+// (THE PORT'S OWN WORDS FOR A MOVE: the Tinkerer's Golem only shoots, his word of 21 Nov 2026: “i think we should change the golem to
+// be ranged, small shots, then big shot on the whistle.”; asked, the big shot in place of its pound and its jump, “Replace them
+// (Recommended)”)
+const PORT_DESC: Record<string, string> = {
+  golem: 'Whistle your Golem out: it follows you and shoots its cannon at what it fights. Whistle again and hold: it charges its big shot, fired as you let go.',
+};
+const skills = Object.fromEntries(allMoves.map((id) => [id, PORT_DESC[id] ? { ...SKILLS[id], desc: PORT_DESC[id] } : SKILLS[id]]));
+writeFileSync(`${OUT}/words.json`, JSON.stringify({
+  // (the words a Warrior can come by on floors 1 to 5, in the game's order; each as defs.ts WORDS has it)
+  ids: OURS,
+  words,
+  // (his three moves as defs.ts SKILLS has them: the quick attack, the slow one, the evasive one; and the attribute each grows
+  // with: the Warrior's own, his Strength)
+  moves,
+  skills,
+  grows: CLASSES.warrior.primary,
+  classes,
+  demonKit,
+  warriorKits: WARRIOR_KITS,
+  hybridLess: HYBRID_LESS,
+  // (the numbers the words' rules read)
+  heavy: HEAVY,
+  poison: { time: TUNE.poisonTime, stacks: TUNE.poisonStacks },
+  // (floors 6 to 10's words' numbers: defs.ts PRECISE, FRENZY, GUARD, LASTING, FLEETING, VAST, LEECH (its cap a second, null for
+  // none); "of Echoes"' wait and a held move's echoed turns, game.ts ECHO_DELAY, ECHO_BITES; the first floor they are found on)
+  precise: PRECISE,
+  frenzy: FRENZY,
+  guard: GUARD,
+  lasting: LASTING,
+  fleeting: FLEETING,
+  vast: VAST,
+  leechCap: Number.isFinite(LEECH.cap) ? LEECH.cap : null,
+  echo: { delay: gameConst('ECHO_DELAY'), bites: gameConst('ECHO_BITES') },
+  wilds: WILDS,
+  // (THEIR LOOKS' COLOURS, for godot/scripts/fx_words610.gd: Precise's, Frenzied's and Guarding's ramps, darkest to brightest,
+  // and Guarding's shield as the ward draws it (render/words3.ts NEW_RAMP, NEW_GLYPH); Lasting's, Fleeting's and Vast's
+  // (render/words10.ts W10_RAMP); and the dark the ward's shields and Precise's sight are edged in, read out of the functions
+  // that draw them)
+  looks: {
+    ramp: { precise: NEW_RAMP.precise, frenzied: NEW_RAMP.frenzied, guarding: NEW_RAMP.guarding, ...W10_RAMP },
+    guardGlyph: NEW_GLYPH.guarding,
+    wardDark: hexIn('src/render/words3.ts', 'drawWard'),
+    sightDark: hexIn('src/render/words3.ts', 'drawSight'),
+  },
+  arcChain: ARC_CHAIN,
+  primaryDmg: ATTR_GIVES.primaryDmg,
+  intCdr: ATTR_GIVES.intCdr,
+  manaAsCdr: MANA_AS_CDR,
+  byWeapon: ATTR_SPLIT.on ? ATTR_SPLIT.byWeapon.filter((w) => OURS.includes(w)) : [],
+  // (when a move opens, and when each of its slots does: defs.ts MOVE_OPENS, SLOT_OPENS as the first levels set them)
+  moveOpens: MOVE_OPENS,
+  slotOpens: SLOT_OPENS,
+  // (how words are come by: the wordsmith's first word, the armourer's reward, the two the Meldstone brings)
+  first: FIRST_WORD.warrior,
+  furnace: FURNACE_WORD.warrior,
+  firstOf: FIRST_WORD,
+  furnaceOf: FURNACE_WORD,
+  meldstone: MELDSTONE_WORDS,
+  // WORDMELDING (game/melds.ts, melds8.ts): the words melding makes (`made`, the game's order), each group of them, what each is
+  // made of, and the numbers their rules read; the attribute each melded word grows with (ATTR_SPLIT.melds); what a meld costs and
+  // the friend's cyan runedust is told in (MELD_DUST_COLOR); and the colour Eruption's HEAT is said in (game.ts meldHit, read out of
+  // its source)
+  made: MADE,
+  melds: {
+    ten: MELD_IDS,
+    volt: VOLT_MELD_IDS,
+    eight: MELD8_IDS,
+    ranks: RANK_IDS,
+    of: Object.fromEntries(MADE.filter((w) => w in MELD_OF).map((w) => [w, MELD_OF[w as keyof typeof MELD_OF]])),
+    rankOf: RANK_OF,
+    tune: MELD_TUNE,
+    rankStep: RANK_TUNE.step,
+    eightTune: MELD8_TUNE,
+    attr: ATTR_SPLIT.melds,
+    dust: MELD_DUST_COLOR,
+    heat: (/text: 'HEAT', color: '(#[0-9a-fA-F]{6})'/.exec(GAME_TS) ?? ['', '#ffffff'])[1],
+  },
+  // (PULLING, a city word, for the meld it is part of, Implode: its numbers, defs.ts PULL)
+  pull: PULL,
+  // (THE CITY'S FIVE WORDS, found from floor 11 down (types.ts DEEP_WORD_IDS, DEEP_WORDS_FROM): their ids and their numbers, defs.ts
+  // PULL, SPLIT, HEX, STILL, BIND; on a monster's blow and in his moves)
+  city: { ids: DEEP_WORD_IDS, from: DEEP_WORDS_FROM, pull: PULL, split: SPLIT, hex: HEX, still: STILL, bind: BIND },
+  // (THE HIGH CITY'S SEVEN LAST WORDS, found from floor 16 down (types.ts LAST_WORD_IDS, LAST_WORDS_FROM): their numbers, defs.ts
+  // PIERCE, BLEED, REAP, CULL, SURGE, PLUNDER, MIRRORING; and the kinds the Hush leaves alive, not cut in two by Culling)
+  last: { ids: LAST_WORD_IDS, from: LAST_WORDS_FROM, pierce: PIERCE, bleed: BLEED, reap: REAP, cull: CULL, surge: SURGE, plunder: PLUNDER, mirroring: MIRRORING, hushLeaves: [...HUSH_LEAVES], gold: [TUNE.goldMin, TUNE.goldMax] },
+  // (each word's page as the wordsmith's half reads it, under the word just made and under a word of his picked to buy,
+  // ui/lexicon.ts wordPage: what it becomes on gear, in the Lexicon's words, and the note under it)
+  page: Object.fromEntries([...OURS, ...MADE].map((w) => [w, { gear: gearLines(w, 'cooldown'), note: gearNote(w) }])),
+  // (THE LEXICON's five pages by what the words do, ui/lexicon28.ts LEX_PAGES ('groups', his pick of 9 Nov 2026), and how many
+  // words there are in all, types.ts WORD_IDS: "N OF 28 FOUND")
+  lexPages: LEX_PAGES.map((p) => ({ name: p.name, words: [...p.words] })),
+  allWords: WORD_IDS.length,
+}, null, 1));
+console.log(`words: ${OURS.join(', ')}; made: ${MADE.join(', ')}; moves ${moves.join(', ')}`);
+
+if (process.argv[2] === 'check') {
+  // (every loadout of up to two a side that the sockets allow, of the words above)
+  const sides: (WordId | null)[][] = [[null]];
+  for (const a of OURS) sides.push([a]);
+  for (const a of OURS) for (const b of OURS) if (a < b && socketProblem([a, null], b) === null) sides.push([a, b]);
+  // (with floors 6 to 10's words the whole grid of pairs is too many to keep: every side of one word or none against every other
+  // for every hero; a pair against none or one word for the first, every third of those for the others; pair against pair a
+  // sample)
+  const keep = (d: unknown, front: (WordId | null)[], behind: (WordId | null)[], n: number): boolean => {
+    const many = front.length + behind.length;
+    if (many <= 2) return true;
+    if (many === 3) return d === heroes[0] || n % 3 === 0;
+    return n % (d === heroes[0] ? 11 : 37) === 0;
+  };
+  const heroes: Pick<Derived, 'str' | 'dex' | 'int' | 'area' | 'aps' | 'cdr'>[] = [
+    { str: 14, dex: 8, int: 6, area: 1, aps: 1.092, cdr: 0.015 },
+    { str: 37, dex: 23, int: 31, area: 1.15, aps: 1.6, cdr: 0.2 },
+    { str: 80, dex: 11, int: 77, area: 1, aps: 1.31, cdr: 0.6 },
+    { str: 139, dex: 64, int: 120, area: 1.3, aps: 2.05, cdr: 0 },
+  ];
+  const rows: unknown[] = [];
+  const row = (id: string, d: Pick<Derived, 'str' | 'dex' | 'int' | 'area' | 'aps' | 'cdr'>, front: (WordId | null)[], behind: (WordId | null)[], cls: ClassId = 'warrior'): void => {
+    const r = resolveSkill(SKILLS[id as keyof typeof SKILLS], front, behind, cls, d as Derived, 'cooldown');
+    rows.push({ id, cls, d, front, behind, r: { name: r.name, projSpeed: r.projSpeed, element: r.element, dmgMult: r.dmgMult, size: r.size, rate: r.rate, cooldown: r.cooldown, splash: r.splash, splashDmg: r.splashDmg, pierce: r.pierce, ignite: r.ignite, chill: r.chill, arcs: r.arcs, arcDmg: r.arcDmg, poison: r.poison, stun: r.stun, might: r.might, haste: r.haste, zone: r.zone, cloud: r.cloud, cracks: r.cracks, lines: PORT_DESC[id] && r.lines[0] === SKILLS[id as keyof typeof SKILLS].desc ? [PORT_DESC[id], ...r.lines.slice(1)] : r.lines,
+      // (floors 6 to 10's words)
+      count: r.count, countDmg: r.countDmg, echo: r.echo, leech: r.leech, orbChance: r.orbChance, volatile: r.volatile, rune: r.rune, precise: r.precise, mark: r.mark,
+      frenzy: r.frenzy, frenzyFeed: r.frenzyFeed, shield: r.shield, ward: r.ward, last: r.last, pace: r.pace, boost: r.boost, vast: r.vast, wide: r.wide,
+      // (WORDMELDING: the melded word in front and behind, whose twists the fight does)
+      meld: r.meld ?? null, meldBehind: r.meldBehind ?? null,
+      // (THE LAST WORDS)
+      through: r.through, lance: r.lance, bleed: r.bleed, thorns: r.thorns, reap: r.reap, spirit: r.spirit, cull: r.cull, cullMark: r.cullMark, surge: r.surge, dodgeSurge: r.dodgeSurge, plunder: r.plunder, plunderBurst: r.plunderBurst, mirror: r.mirror, mirrorLeave: r.mirrorLeave } });
+  };
+  for (const id of moves) {
+    for (const d of heroes) {
+      let n = 0;
+      for (const front of sides) for (const behind of sides) {
+        if (!keep(d, front, behind, n++)) continue;
+        row(id, d, front, behind);
+      }
+    }
+  }
+  // WORDMELDING: the words melding makes. Each alone on a side against nothing or any one word on the other (every hero: the first
+  // all of them, the others every third); each with every word it may share its side with, against nothing (the first hero all,
+  // the others every fifth); and of those, with one word on the other side, a sample (every 37th, every 97th)
+  const singles: (WordId | null)[][] = [[null], ...[...OURS, ...MADE].map((w) => [w])];
+  const madePairs: (WordId | null)[][] = [];
+  for (const m of MADE) for (const w of OURS) if (socketProblem([m, null], w) === null) madePairs.push([m, w]);
+  for (const id of moves) {
+    for (const d of heroes) {
+      const first = d === heroes[0];
+      let n = 0;
+      for (const m of MADE) for (const other of singles) {
+        if (first || n % 3 === 0) row(id, d, [m], other);
+        if ((first || n % 3 === 0) && other[0] !== m) row(id, d, other, [m]);
+        n++;
+      }
+      for (const p of madePairs) {
+        if (first || n % 5 === 0) {
+          row(id, d, p, [null]);
+          row(id, d, [null], p);
+        }
+        n++;
+        for (const other of singles.slice(1)) {
+          if (n % (first ? 37 : 97) === 0) {
+            row(id, d, p, other);
+            row(id, d, other, p);
+          }
+          n++;
+        }
+      }
+    }
+  }
+  // EVERY OTHER HERO'S THREE MOVES: each word alone on a side against nothing or any one word on the other (every hero's numbers: the
+  // first all, the others every third); every pair the sockets allow against nothing (the first all, the others every fifth), and
+  // against one word a sample (every 29th); the words melding makes alone, against nothing
+  for (const c of CLASS_IDS) {
+    for (const id of c === 'warlock' ? [...classes[c].moves, ...demonKit] : c === 'warrior' ? warriorArms : [...classes[c].moves, ...(swapMoves[c] ?? [])]) {
+      for (const d of heroes) {
+        const first = d === heroes[0];
+        let n = 0;
+        const singlesAll: (WordId | null)[][] = [[null], ...OURS.map((w) => [w])];
+        for (const a of singlesAll) for (const b of singlesAll) {
+          if (first || n % 3 === 0) row(id, d, a, b, c);
+          n++;
+        }
+        for (const p of sides.filter((g) => g.length === 2)) {
+          if (first || n % 5 === 0) {
+            row(id, d, p, [null], c);
+            row(id, d, [null], p, c);
+          }
+          n++;
+          for (const o of singlesAll.slice(1)) {
+            if (n % 29 === 0) {
+              row(id, d, p, o, c);
+              row(id, d, o, p, c);
+            }
+            n++;
+          }
+        }
+        for (const m of MADE) {
+          row(id, d, [m], [null], c);
+          row(id, d, [null], [m], c);
+        }
+      }
+    }
+  }
+  // (and what a socket refuses: socketProblem, for every word into every side of up to two)
+  // (WORDMELDING: the words melding makes too, into every side, and every word into a side with one of them)
+  const refused: unknown[] = [];
+  for (const g of [...sides, ...MADE.map((m) => [m]), ...madePairs]) for (const w of [...OURS, ...MADE]) for (const most of [1, 2]) refused.push({ group: g.length === 1 ? [g[0], null] : g, word: w, most, why: socketProblem(g.length === 1 ? [g[0], null] : g, w, most) });
+  writeFileSync(`${OUT}/check.json`, JSON.stringify({ rows, refused }));
+  console.log(`check: ${rows.length} moves resolved, ${refused.length} sockets asked`);
+}

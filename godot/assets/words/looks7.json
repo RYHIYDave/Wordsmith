@@ -1,0 +1,377 @@
+{
+ "ramp": {
+  "piercing": [
+   "#14161a",
+   "#3a3e44",
+   "#767a7c",
+   "#b4b4ae",
+   "#eef0f2",
+   "#ffffff"
+  ],
+  "bleeding": [
+   "#140105",
+   "#300309",
+   "#56060f",
+   "#800818",
+   "#d0182c",
+   "#ff8a7a"
+  ],
+  "reaping": [
+   "#0c1410",
+   "#1e3026",
+   "#3e5a4a",
+   "#6c8a78",
+   "#cfe6d4",
+   "#f4fff6"
+  ],
+  "culling": [
+   "#100c18",
+   "#262036",
+   "#4a4462",
+   "#787890",
+   "#e6dcc8",
+   "#fffaf0"
+  ],
+  "surging": [
+   "#060c22",
+   "#0e1c4a",
+   "#1a3070",
+   "#2a4a9a",
+   "#a8c4ff",
+   "#ffffff"
+  ],
+  "plundering": [
+   "#1a1404",
+   "#3a2e08",
+   "#5e4c06",
+   "#907806",
+   "#c8c47a",
+   "#f4f0d0"
+  ],
+  "mirroring": [
+   "#0e1614",
+   "#2a3a36",
+   "#647c74",
+   "#b4d2c6",
+   "#e8f6f0",
+   "#ffffff"
+  ]
+ },
+ "enemy": [
+  "#0e050a",
+  "#2a0c1c",
+  "#5a1438",
+  "#c02860",
+  "#ff4f8a",
+  "#ffd27a"
+ ],
+ "enemyFire": [
+  "#2a0c1c",
+  "#5a1438",
+  "#c02860",
+  "#ff4f8a",
+  "#ffd27a",
+  "#fff2c8"
+ ],
+ "enemyBlood": [
+  "#12040a",
+  "#34061a",
+  "#5c0a28",
+  "#8a0c30",
+  "#ff4f8a",
+  "#ffd27a"
+ ],
+ "friend": [
+  "#0a3a46",
+  "#127888",
+  "#28dcf0",
+  "#5ce8f8"
+ ],
+ "dust": [
+  "#4a4038",
+  "#6a5e50",
+  "#8a7c6a",
+  "#a89a86"
+ ],
+ "duskDust": [
+  "#2a2430",
+  "#3a3240",
+  "#4c4250",
+  "#625660",
+  "#7c6e72"
+ ],
+ "briar": [
+  "#1c0408",
+  "#3a0a10",
+  "#5c1018",
+  "#8a1c24",
+  "#b83a3a"
+ ],
+ "thorn": "#e0b4a4",
+ "stone": [
+  "#2a2436",
+  "#463e58",
+  "#6a6080",
+  "#9a92b0"
+ ],
+ "claw": [
+  "#3a3a42",
+  "#6a6a74",
+  "#9c9ca6",
+  "#cacad2",
+  "#f2f2f6"
+ ],
+ "glyph": {
+  "piercing": [
+   "......o",
+   "..XXXo.",
+   ".X..oX.",
+   ".X.o.X.",
+   ".XX..X.",
+   ".XXXX..",
+   "X......"
+  ],
+  "bleeding": [
+   "...X...",
+   "..XXX..",
+   ".XXX.X.",
+   "XXX.oXX",
+   "XX.oXXX",
+   "..oXXX.",
+   "..XXX.."
+  ],
+  "reaping": [
+   "..XXXX.",
+   ".o....X",
+   "o.....X",
+   ".....X.",
+   "....X..",
+   "...X...",
+   "..X...."
+  ],
+  "culling": [
+   ".oXX.X.",
+   "oXXXXX.",
+   "oXXXXX.",
+   ".oXX.X.",
+   ".....X.",
+   ".......",
+   "XXXXXXX"
+  ],
+  "surging": [
+   "..XXX..",
+   ".X...X.",
+   "X.ooo.X",
+   ".o...o.",
+   "o.XXX.o",
+   ".X...X.",
+   "...o..."
+  ],
+  "plundering": [
+   "..XXX..",
+   ".XoooX.",
+   ".Xo.oX.",
+   "X.XXX.X",
+   "XX...XX",
+   ".XXXXX.",
+   "..XXX.."
+  ],
+  "mirroring": [
+   "..X.o..",
+   ".XX.oo.",
+   "XXX.ooo",
+   "XXX.ooo",
+   "XXX.ooo",
+   ".XX.oo.",
+   "..X.o.."
+  ]
+ },
+ "beats": {
+  "piercing:front": {
+   "build": 0.03,
+   "hit": 0.2,
+   "fade": 0.35
+  },
+  "piercing:behind": {
+   "build": 0.5,
+   "hit": 0.22,
+   "fade": 1.9
+  },
+  "piercing:monster": {
+   "build": 0.1,
+   "hit": 0.15,
+   "fade": 0.45
+  },
+  "piercing:monster:pass": {
+   "build": 0.1,
+   "hit": 0.15,
+   "fade": 0.45
+  },
+  "bleeding:front": {
+   "build": 0.05,
+   "hit": 0.5,
+   "fade": 0.15
+  },
+  "bleeding:behind": {
+   "build": 0.22,
+   "hit": 0,
+   "fade": 0.5
+  },
+  "bleeding:monster": {
+   "build": 0.05,
+   "hit": 0.3,
+   "fade": 0.3
+  },
+  "reaping:front": {
+   "build": 0.15,
+   "hit": 0.55,
+   "fade": 0.25
+  },
+  "reaping:behind": {
+   "build": 0.45,
+   "hit": 0,
+   "fade": 0.6
+  },
+  "reaping:behind:hit": {
+   "build": 0,
+   "hit": 0.06,
+   "fade": 0.26
+  },
+  "reaping:monster": {
+   "build": 0.2,
+   "hit": 0.8,
+   "fade": 0.4
+  },
+  "culling:front": {
+   "build": 0.16,
+   "hit": 0.07,
+   "fade": 0.3
+  },
+  "culling:behind": {
+   "build": 0.3,
+   "hit": 0,
+   "fade": 0.3
+  },
+  "culling:behind:mark": {
+   "build": 0.05,
+   "hit": 0.2,
+   "fade": 0.4
+  },
+  "culling:monster": {
+   "build": 0.3,
+   "hit": 0.05,
+   "fade": 0.3
+  },
+  "culling:monster:blow": {
+   "build": 0.05,
+   "hit": 0.05,
+   "fade": 0.25
+  },
+  "surging:front": {
+   "build": 0.05,
+   "hit": 0.42,
+   "fade": 0.13
+  },
+  "surging:behind": {
+   "build": 0.05,
+   "hit": 0.42,
+   "fade": 0.13
+  },
+  "surging:monster": {
+   "build": 1,
+   "hit": 0.42,
+   "fade": 0.13
+  },
+  "surging:monster:warn": {
+   "build": 0.15,
+   "hit": 0,
+   "fade": 0.15
+  },
+  "surging:monster:wave": {
+   "build": 0.05,
+   "hit": 0.42,
+   "fade": 0.13
+  },
+  "plundering:front": {
+   "build": 0.05,
+   "hit": 0.5,
+   "fade": 2
+  },
+  "plundering:behind": {
+   "build": 0.1,
+   "hit": 0.89,
+   "fade": 0.12
+  },
+  "plundering:monster": {
+   "build": 0.04,
+   "hit": 0.58,
+   "fade": 0.15
+  },
+  "plundering:monster:drop": {
+   "build": 0.05,
+   "hit": 0.5,
+   "fade": 1.5
+  },
+  "mirroring:front": {
+   "build": 0.08,
+   "hit": 0.3,
+   "fade": 0.25
+  },
+  "mirroring:behind": {
+   "build": 0.25,
+   "hit": 0,
+   "fade": 0.2
+  },
+  "mirroring:behind:cast": {
+   "build": 0.05,
+   "hit": 0.33,
+   "fade": 0.9
+  },
+  "mirroring:monster": {
+   "build": 0.12,
+   "hit": 0.38,
+   "fade": 0.1
+  }
+ },
+ "time": {
+  "pierceSpeed": 26,
+  "lanceWait": 0.5,
+  "lanceFall": 0.06,
+  "lanceRun": 0.16,
+  "crack": 1.9,
+  "ghostSpeed": 11,
+  "thornsGrow": 0.22,
+  "thornsSink": 0.5,
+  "splash": 3,
+  "soulFlight": 0.55,
+  "spirit": 6,
+  "spiritBuild": 0.45,
+  "spiritFade": 0.6,
+  "spiritScale": 0.7,
+  "rakeStrike": 0.06,
+  "rakeFade": 0.26,
+  "rakeFollow": 0.4,
+  "rise": 0.8,
+  "cullHold": 0.16,
+  "cullSweep": 0.07,
+  "low": 0.35,
+  "surge": 0.42,
+  "warn": 1,
+  "coins": 0.7,
+  "purse": 0.45,
+  "shards": 0.28,
+  "reflection": 0.63,
+  "mirrorStep": 2.4,
+  "mirrorBeat": 0.12,
+  "pane": 0.25,
+  "paneClear": 0.75,
+  "cast": 0.38,
+  "breaking": 0.3,
+  "shatter": 0.6
+ },
+ "rx": 22.6,
+ "ry": 11.3,
+ "glassCut": 0.24,
+ "cutRest": 0.75,
+ "shadeWindup": 0.5
+}

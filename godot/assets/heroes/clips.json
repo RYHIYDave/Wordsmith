@@ -1,0 +1,1908 @@
+{
+ "warrior": {
+  "idleFps": 30,
+  "walkFps": 30,
+  "walkStride": null,
+  "startAt": 0,
+  "start": null,
+  "stops": [],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": true,
+    "n": 37
+   },
+   "19": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": true,
+    "n": 28
+   },
+   "20": {
+    "fps": 30,
+    "hit": 0.5,
+    "loop": null,
+    "tail": null,
+    "n": 35
+   },
+   "39": {
+    "fps": 32,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 16
+   },
+   "40": null,
+   "41": null,
+   "42": null,
+   "43": null,
+   "44": {
+    "fps": 30,
+    "hit": null,
+    "loop": 0,
+    "tail": null,
+    "n": 13
+   },
+   "45": {
+    "fps": 30,
+    "hit": 0,
+    "loop": null,
+    "tail": null,
+    "n": 16
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 47
+   }
+  },
+  "card": {
+   "idleFps": 10,
+   "walkFps": 30,
+   "idle": 12,
+   "walk": 15,
+   "stops": [],
+   "idleA": {
+    "fps": 20,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 73
+   },
+   "idleB": null,
+   "ready": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 41
+   }
+  }
+ },
+ "ranger": {
+  "idleFps": 30,
+  "walkFps": 60,
+  "walkStride": 1.9166666666666665,
+  "startAt": 0.09166666666666666,
+  "start": {
+   "fps": 60,
+   "hit": null,
+   "loop": null,
+   "tail": null,
+   "n": 9
+  },
+  "stops": [
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   }
+  ],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 27
+   },
+   "15": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 27
+   },
+   "16": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 27
+   },
+   "17": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 27
+   },
+   "18": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 27
+   },
+   "19": null,
+   "20": {
+    "fps": 30,
+    "hit": 0.4,
+    "loop": null,
+    "tail": null,
+    "n": 33
+   },
+   "35": {
+    "fps": 30,
+    "hit": 0.4,
+    "loop": null,
+    "tail": null,
+    "n": 33
+   },
+   "36": {
+    "fps": 30,
+    "hit": 0.4,
+    "loop": null,
+    "tail": null,
+    "n": 33
+   },
+   "37": {
+    "fps": 30,
+    "hit": 0.4,
+    "loop": null,
+    "tail": null,
+    "n": 33
+   },
+   "38": {
+    "fps": 30,
+    "hit": 0.4,
+    "loop": null,
+    "tail": null,
+    "n": 33
+   },
+   "39": null,
+   "40": {
+    "fps": 35,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 14
+   },
+   "41": {
+    "fps": 30,
+    "hit": null,
+    "loop": 1.5,
+    "tail": null,
+    "n": 58
+   },
+   "42": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 13
+   },
+   "43": {
+    "fps": 30,
+    "hit": 0.03333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 19
+   },
+   "44": null,
+   "45": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 10
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "48": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "49": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "50": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "51": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "52": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "53": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "54": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "55": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 47
+   },
+   "129": {
+    "fps": 30,
+    "hit": 0.24,
+    "loop": null,
+    "tail": null,
+    "n": 18
+   },
+   "130": {
+    "fps": 30,
+    "hit": 0.3,
+    "loop": null,
+    "tail": null,
+    "n": 19
+   }
+  },
+  "card": {
+   "idleFps": 30,
+   "walkFps": 60,
+   "idle": 72,
+   "walk": 25,
+   "stops": [
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    }
+   ],
+   "idleA": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 109
+   },
+   "idleB": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 109
+   },
+   "ready": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 36
+   }
+  }
+ },
+ "mage": {
+  "idleFps": 30,
+  "walkFps": 60,
+  "walkStride": 1.7633333333333334,
+  "startAt": 0.7916666666666666,
+  "start": {
+   "fps": 60,
+   "hit": null,
+   "loop": null,
+   "tail": null,
+   "n": 9
+  },
+  "stops": [
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   }
+  ],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.16666666666666666,
+    "loop": null,
+    "tail": null,
+    "n": 15
+   },
+   "19": null,
+   "20": {
+    "fps": 30,
+    "hit": 0.26666666666666666,
+    "loop": null,
+    "tail": null,
+    "n": 21
+   },
+   "39": null,
+   "40": null,
+   "41": {
+    "fps": 30,
+    "hit": null,
+    "loop": 0.13333333333333333,
+    "tail": null,
+    "n": 17
+   },
+   "42": {
+    "fps": 30,
+    "hit": 0.13333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 5
+   },
+   "43": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "44": null,
+   "45": null,
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 47
+   },
+   "131": {
+    "fps": 30,
+    "hit": 0.18,
+    "loop": null,
+    "tail": null,
+    "n": 16
+   },
+   "132": {
+    "fps": 30,
+    "hit": 0.2,
+    "loop": null,
+    "tail": null,
+    "n": 17
+   }
+  },
+  "card": {
+   "idleFps": 30,
+   "walkFps": 60,
+   "idle": 72,
+   "walk": 23,
+   "stops": [
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    }
+   ],
+   "idleA": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 109
+   },
+   "idleB": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 109
+   },
+   "ready": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 31
+   }
+  }
+ },
+ "warlock": {
+  "idleFps": 30,
+  "walkFps": 60,
+  "walkStride": 1.9933333333333332,
+  "startAt": 0,
+  "start": null,
+  "stops": [],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.5333333333333333,
+    "loop": null,
+    "tail": true,
+    "n": 45
+   },
+   "19": null,
+   "20": {
+    "fps": 30,
+    "hit": 0.8,
+    "loop": null,
+    "tail": true,
+    "n": 67
+   },
+   "39": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 10
+   },
+   "40": null,
+   "41": null,
+   "42": null,
+   "43": null,
+   "44": null,
+   "45": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 22
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 14
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 14
+   },
+   "56": {
+    "fps": 30.285714285714285,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 106
+   },
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 41
+   }
+  },
+  "card": {
+   "idleFps": 30,
+   "walkFps": 60,
+   "idle": 198,
+   "walk": 26,
+   "stops": [],
+   "idleA": null,
+   "idleB": null,
+   "ready": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 43
+   }
+  }
+ },
+ "tinkerer": {
+  "idleFps": 10,
+  "walkFps": 60,
+  "walkStride": 1.8399999999999999,
+  "startAt": 0,
+  "start": null,
+  "stops": [],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.5,
+    "loop": null,
+    "tail": true,
+    "n": 37
+   },
+   "19": null,
+   "20": {
+    "fps": 30,
+    "hit": 0.6666666666666666,
+    "loop": null,
+    "tail": true,
+    "n": 59
+   },
+   "39": {
+    "fps": 19.999999999999996,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 12
+   },
+   "40": null,
+   "41": null,
+   "42": null,
+   "43": null,
+   "44": null,
+   "45": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 23
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 14
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 14
+   },
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 75
+   }
+  },
+  "card": {
+   "idleFps": 10,
+   "walkFps": 60,
+   "idle": 60,
+   "walk": 24,
+   "stops": [],
+   "idleA": null,
+   "idleB": null,
+   "ready": null
+  }
+ },
+ "brawler": {
+  "idleFps": 30,
+  "walkFps": 30,
+  "walkStride": 2.453333333333333,
+  "startAt": 0,
+  "start": null,
+  "stops": [],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.4,
+    "loop": null,
+    "tail": null,
+    "n": 28
+   },
+   "19": null,
+   "20": {
+    "fps": 30,
+    "hit": 0.5333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 36
+   },
+   "39": null,
+   "40": null,
+   "41": null,
+   "42": null,
+   "43": null,
+   "44": null,
+   "45": null,
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 16
+   },
+   "47": null,
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 96
+   }
+  },
+  "card": {
+   "idleFps": 30,
+   "walkFps": 30,
+   "idle": 60,
+   "walk": 16,
+   "stops": [],
+   "idleA": null,
+   "idleB": null,
+   "ready": null
+  }
+ },
+ "warlock:demon": {
+  "idleFps": 30,
+  "walkFps": 60,
+  "walkStride": 3.2199999999999998,
+  "startAt": 0.14285714285714285,
+  "start": {
+   "fps": 60,
+   "hit": null,
+   "loop": null,
+   "tail": null,
+   "n": 19
+  },
+  "stops": [
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 15
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 15
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 15
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 15
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 15
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 15
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 15
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 15
+   }
+  ],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.4666666666666667,
+    "loop": null,
+    "tail": true,
+    "n": 32
+   },
+   "15": {
+    "fps": 30,
+    "hit": 0.4666666666666667,
+    "loop": null,
+    "tail": true,
+    "n": 32
+   },
+   "16": {
+    "fps": 30,
+    "hit": 0.4666666666666667,
+    "loop": null,
+    "tail": true,
+    "n": 32
+   },
+   "17": {
+    "fps": 30,
+    "hit": 0.4666666666666667,
+    "loop": null,
+    "tail": true,
+    "n": 32
+   },
+   "18": {
+    "fps": 30,
+    "hit": 0.4666666666666667,
+    "loop": null,
+    "tail": true,
+    "n": 32
+   },
+   "19": {
+    "fps": 30,
+    "hit": 0.4666666666666667,
+    "loop": null,
+    "tail": true,
+    "n": 32
+   },
+   "20": {
+    "fps": 30,
+    "hit": 0.8,
+    "loop": null,
+    "tail": true,
+    "n": 49
+   },
+   "39": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 10
+   },
+   "40": null,
+   "41": null,
+   "42": null,
+   "43": null,
+   "44": null,
+   "45": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 27
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 14
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 14
+   },
+   "56": {
+    "fps": 30.177514792899412,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 170
+   },
+   "57": null,
+   "125": {
+    "fps": 30,
+    "hit": 0.4666666666666667,
+    "loop": null,
+    "tail": true,
+    "n": 32
+   },
+   "126": {
+    "fps": 30,
+    "hit": 0.4666666666666667,
+    "loop": null,
+    "tail": true,
+    "n": 32
+   },
+   "127": {
+    "fps": 30,
+    "hit": 0.4666666666666667,
+    "loop": null,
+    "tail": true,
+    "n": 32
+   },
+   "128": {
+    "fps": 30,
+    "hit": 0.4666666666666667,
+    "loop": null,
+    "tail": true,
+    "n": 32
+   }
+  }
+ },
+ "warrior:axe": {
+  "idleFps": 30,
+  "walkFps": 30,
+  "walkStride": null,
+  "startAt": 0,
+  "start": null,
+  "stops": [],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": true,
+    "n": 37
+   },
+   "19": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": true,
+    "n": 28
+   },
+   "20": {
+    "fps": 30,
+    "hit": 0.36666666666666664,
+    "loop": null,
+    "tail": null,
+    "n": 21
+   },
+   "39": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 16
+   },
+   "40": null,
+   "41": {
+    "fps": 30,
+    "hit": null,
+    "loop": 0,
+    "tail": null,
+    "n": 30
+   },
+   "42": null,
+   "43": {
+    "fps": 30,
+    "hit": 0,
+    "loop": null,
+    "tail": null,
+    "n": 19
+   },
+   "44": null,
+   "45": {
+    "fps": 30,
+    "hit": 0,
+    "loop": null,
+    "tail": null,
+    "n": 23
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 47
+   },
+   "116": {
+    "fps": 30,
+    "hit": null,
+    "loop": 0,
+    "tail": null,
+    "n": 15
+   },
+   "117": {
+    "fps": 30,
+    "hit": 0,
+    "loop": null,
+    "tail": null,
+    "n": 15
+   },
+   "118": {
+    "fps": 30,
+    "hit": 0,
+    "loop": null,
+    "tail": null,
+    "n": 30
+   },
+   "119": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": true,
+    "n": 4
+   },
+   "120": {
+    "fps": 30,
+    "hit": 0.36666666666666664,
+    "loop": null,
+    "tail": null,
+    "n": 21
+   },
+   "121": {
+    "fps": 30,
+    "hit": null,
+    "loop": 0,
+    "tail": null,
+    "n": 30
+   },
+   "122": {
+    "fps": 30,
+    "hit": 0,
+    "loop": null,
+    "tail": null,
+    "n": 23
+   },
+   "123": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 6
+   }
+  }
+ },
+ "warrior:hammer": {
+  "idleFps": 30,
+  "walkFps": 30,
+  "walkStride": null,
+  "startAt": 0,
+  "start": null,
+  "stops": [],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.43333333333333335,
+    "loop": null,
+    "tail": true,
+    "n": 39
+   },
+   "19": {
+    "fps": 30,
+    "hit": 0.43333333333333335,
+    "loop": null,
+    "tail": true,
+    "n": 39
+   },
+   "20": {
+    "fps": 30,
+    "hit": 0.6333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 50
+   },
+   "39": {
+    "fps": 30.000000000000004,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 16
+   },
+   "40": null,
+   "41": null,
+   "42": null,
+   "43": null,
+   "44": null,
+   "45": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 22
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 47
+   },
+   "124": {
+    "fps": 30,
+    "hit": 0.2,
+    "loop": null,
+    "tail": null,
+    "n": 7
+   }
+  }
+ },
+ "tails": {
+  "w-scarf-a": {
+   "n": 9,
+   "seg": 1.75,
+   "w0": 5.2,
+   "w1": 2.8,
+   "dark": "#3c0818",
+   "mid": "#8e1428",
+   "light": "#c83040",
+   "gravity": 45,
+   "wind": 380,
+   "flutter": 460,
+   "rate": 2,
+   "drag": 5
+  },
+  "w-scarf-b": {
+   "n": 7,
+   "seg": 1.7,
+   "w0": 4.4,
+   "w1": 2.4,
+   "dark": "#3c0818",
+   "mid": "#650e20",
+   "light": "#8e1428",
+   "gravity": 125,
+   "wind": 330,
+   "flutter": 400,
+   "rate": 2.3,
+   "drag": 5
+  },
+  "r-feather": {
+   "n": 8,
+   "seg": 1.95,
+   "w0": 2.2,
+   "w1": 1.4,
+   "belly": 2.2,
+   "dark": "#0c6a80",
+   "mid": "#22d0e0",
+   "light": "#b8fff8",
+   "rest": [
+    [
+     0.25,
+     -1
+    ],
+    [
+     0.2,
+     -1
+    ],
+    [
+     0,
+     -1
+    ],
+    [
+     -0.45,
+     -0.9
+    ],
+    [
+     -0.8,
+     -0.6
+    ],
+    [
+     -1,
+     -0.2
+    ],
+    [
+     -1,
+     0.3
+    ],
+    [
+     -0.8,
+     0.65
+    ]
+   ],
+   "stiff": 1,
+   "gravity": 40,
+   "wind": 90,
+   "flutter": 70,
+   "rate": 1.9,
+   "drag": 9,
+   "glow": {
+    "color": "#b8fff8",
+    "r": 6,
+    "a": 0.4,
+    "at": 0.55
+   }
+  },
+  "m-scarf": {
+   "n": 7,
+   "seg": 1.6,
+   "w0": 4.8,
+   "w1": 3.2,
+   "dark": "#0c3a52",
+   "mid": "#157a8c",
+   "light": "#3cc4c0",
+   "tip": "#22d0e0",
+   "gravity": 150,
+   "wind": 290,
+   "flutter": 120,
+   "rate": 1.2,
+   "drag": 5
+  },
+  "m-feather": {
+   "n": 5,
+   "seg": 1.45,
+   "w0": 3,
+   "w1": 1.6,
+   "dark": "#0c6a80",
+   "mid": "#22d0e0",
+   "light": "#b8fff8",
+   "rest": [
+    [
+     0.8,
+     -1
+    ],
+    [
+     1,
+     -0.7
+    ],
+    [
+     1,
+     -0.3
+    ],
+    [
+     1,
+     0.1
+    ],
+    [
+     0.8,
+     0.5
+    ]
+   ],
+   "stiff": 1,
+   "gravity": 30,
+   "wind": 110,
+   "flutter": 60,
+   "rate": 2.1,
+   "drag": 9
+  },
+  "m-tress-a": {
+   "n": 5,
+   "seg": 1.1,
+   "w0": 3.2,
+   "w1": 1.5,
+   "dark": "#4a2c1a",
+   "mid": "#7e4f2c",
+   "light": "#b67e4a",
+   "rest": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "stiff": 0.1,
+   "gravity": 300,
+   "wind": 14,
+   "flutter": 10,
+   "rate": 0.9,
+   "drag": 8
+  },
+  "m-tress-b": {
+   "n": 5,
+   "seg": 1.1,
+   "w0": 3.2,
+   "w1": 1.5,
+   "dark": "#35200f",
+   "mid": "#4a2c1a",
+   "light": "#7e4f2c",
+   "rest": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "stiff": 0.1,
+   "gravity": 300,
+   "wind": 14,
+   "flutter": 10,
+   "rate": 0.9,
+   "drag": 8
+  },
+  "m-braid-a": {
+   "n": 4,
+   "seg": 1.05,
+   "w0": 3.2,
+   "w1": 2.6,
+   "dark": "#7a1058",
+   "mid": "#e0287a",
+   "light": "#ff7aa8",
+   "tip": "#22d0e0",
+   "rest": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "stiff": 0.14,
+   "gravity": 300,
+   "wind": 14,
+   "flutter": 10,
+   "rate": 0.9,
+   "drag": 8
+  },
+  "m-braid-b": {
+   "n": 4,
+   "seg": 1.05,
+   "w0": 3.2,
+   "w1": 2.6,
+   "dark": "#520a3c",
+   "mid": "#7a1058",
+   "light": "#e0287a",
+   "tip": "#22d0e0",
+   "rest": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "stiff": 0.14,
+   "gravity": 300,
+   "wind": 14,
+   "flutter": 10,
+   "rate": 0.9,
+   "drag": 8
+  }
+ },
+ "cards": {
+  "title": "WORDSMITH",
+  "order": [
+   "warrior",
+   "ranger",
+   "mage",
+   "warlock",
+   "tinkerer",
+   "brawler"
+  ],
+  "classes": {
+   "warrior": {
+    "name": "Warrior",
+    "blurb": "Up close and hard to kill.",
+    "primary": "str",
+    "attrs": {
+     "str": 14,
+     "dex": 8,
+     "int": 6
+    },
+    "starts": "greatsword"
+   },
+   "ranger": {
+    "name": "Ranger",
+    "blurb": "Fast, sharp and far away.",
+    "primary": "dex",
+    "attrs": {
+     "str": 8,
+     "dex": 14,
+     "int": 6
+    },
+    "starts": "bow"
+   },
+   "mage": {
+    "name": "Mage",
+    "blurb": "Raw power. Handle with care.",
+    "primary": "int",
+    "attrs": {
+     "str": 6,
+     "dex": 8,
+     "int": 14
+    },
+    "starts": "staff"
+   },
+   "warlock": {
+    "name": "Warlock",
+    "blurb": "A demon inside. It wants out.",
+    "primary": "int",
+    "attrs": {
+     "str": 11,
+     "dex": 6,
+     "int": 11
+    },
+    "starts": "tome"
+   },
+   "tinkerer": {
+    "name": "Tinkerer",
+    "blurb": "Gadgets, a Golem. Mostly bombs.",
+    "primary": "int",
+    "attrs": {
+     "str": 6,
+     "dex": 11,
+     "int": 11
+    },
+    "starts": "wrench"
+   },
+   "brawler": {
+    "name": "Brawler",
+    "blurb": "Bare knuckles. Bad attitude.",
+    "primary": "str",
+    "attrs": {
+     "str": 11,
+     "dex": 11,
+     "int": 6
+    },
+    "starts": "wraps"
+   }
+  },
+  "attrColor": {
+   "str": "#e03c44",
+   "dex": "#84c84c",
+   "int": "#58a8f0"
+  },
+  "modeLine": {
+   "normal": "Normal: a death sends the hero back to town, without what was found in that dungeon.",
+   "hardcore": "Hardcore: a death is the end of the hero. The Lexicon and the stash stay."
+  },
+  "enterOut": 0.4,
+  "phaseApart": 7,
+  "smithNight": "#05040f",
+  "ring": {
+   "w": 640,
+   "h": 360,
+   "lip": 312,
+   "lift": 30,
+   "headTop": 150,
+   "least": 26,
+   "under": 24,
+   "most": 7
+  }
+ },
+ "tune": {
+  "heroSpeed": 4.6,
+  "heroRadius": 0.3,
+  "attackSlow": 0.4,
+  "attackSlowTime": 0.18,
+  "attackCut": 0.12,
+  "comboWindow": 0.5,
+  "swingStep": 0.33,
+  "swingStepTime": 0.12,
+  "beamWalk": 0.7,
+  "whirlWalk": 0.9,
+  "volleyDelay": 0.45,
+  "volleyLife": 2.4,
+  "volleyEvery": 0.1,
+  "volleyHit": 0.8,
+  "volleyLead": 0.75,
+  "trapArm": 0.12,
+  "trapTrigger": 1.2,
+  "trapLife": 25,
+  "trapMax": 3,
+  "waveFan": 0.3,
+  "orbLife": 5,
+  "orbEvery": 1,
+  "orbMax": 2,
+  "familiarLife": 6,
+  "familiarMax": 3,
+  "channelWake": 1,
+  "channelMinCool": 0.35,
+  "beamPatches": 4,
+  "beamPatchGap": 2.4
+ },
+ "rangerArrow": {
+  "on": true,
+  "from": 0.794,
+  "height": 22.25,
+  "long": 11,
+  "volleyFrom": 0.266,
+  "volleyHeight": 27.6
+ },
+ "swap": {
+  "ball": {
+   "r": 1.6,
+   "share": 0.6
+  },
+  "snare": {
+   "hold": 2,
+   "life": 10,
+   "share": 1,
+   "r": 1.3,
+   "max": 3
+  },
+  "snipe": {
+   "full": 1.5,
+   "least": 0.6,
+   "most": 2.6,
+   "wide": 2.3,
+   "fast": 0.7,
+   "push": 1.4
+  },
+  "rally": {
+   "secs": 5,
+   "atk": 30,
+   "dmg": 30
+  },
+  "aura": {
+   "secs": 6,
+   "wait": 10,
+   "r": 3.2,
+   "burn": 0.3,
+   "every": 0.8,
+   "bolt": 0.45,
+   "shield": 0.25,
+   "chill": 0.5
+  }
+ },
+ "volleySeen": 0.3,
+ "trackAim": {
+  "near": 0.9
+ },
+ "palette": {
+  "ink": "#120d18",
+  "black": "#07050a",
+  "white": "#ffffff",
+  "st1": "#1c1722",
+  "st2": "#2a2331",
+  "st3": "#3a3040",
+  "st4": "#4d4252",
+  "st5": "#655868",
+  "st6": "#857888",
+  "st7": "#a89cab",
+  "er1": "#2b2020",
+  "er2": "#3d2c28",
+  "er3": "#544038",
+  "er4": "#6f584a",
+  "er5": "#8c7460",
+  "bn1": "#6e6658",
+  "bn2": "#a39a82",
+  "bn3": "#d4cbb0",
+  "bn4": "#f2ecd8",
+  "sl1": "#2e3440",
+  "sl2": "#4a5466",
+  "sl3": "#7a879c",
+  "sl4": "#b4c0d0",
+  "sl5": "#e6edf5",
+  "wd1": "#2d1b12",
+  "wd2": "#4a2c1a",
+  "wd3": "#6e4526",
+  "wd4": "#96643a",
+  "wd5": "#c08a55",
+  "gd1": "#7a4a10",
+  "gd2": "#b87a1c",
+  "gd3": "#e8b030",
+  "gd4": "#ffe070",
+  "gd5": "#fff6c0",
+  "fr1": "#5c1408",
+  "fr2": "#a82810",
+  "fr3": "#e05018",
+  "fr4": "#ff8a2a",
+  "fr5": "#ffc24a",
+  "fr6": "#fff0a0",
+  "bl1": "#3a0a12",
+  "bl2": "#6e1020",
+  "bl3": "#a81c2c",
+  "bl4": "#e03c44",
+  "bl5": "#ff8a80",
+  "sk1": "#7a4a38",
+  "sk2": "#b07050",
+  "sk3": "#dc9c74",
+  "sk4": "#f4c8a0",
+  "pu1": "#22123a",
+  "pu2": "#3c1e62",
+  "pu3": "#62329a",
+  "pu4": "#9858d0",
+  "pu5": "#d09cf8",
+  "bu1": "#101c48",
+  "bu2": "#1c3a86",
+  "bu3": "#2e6cc8",
+  "bu4": "#58a8f0",
+  "bu5": "#b0e0ff",
+  "gn1": "#12301c",
+  "gn2": "#1e5a2a",
+  "gn3": "#3c9038",
+  "gn4": "#84c84c",
+  "gn5": "#d0f080",
+  "vn1": "#26300c",
+  "vn2": "#4c5e10",
+  "vn3": "#7c9416",
+  "vn4": "#b4cc24",
+  "vn5": "#e6f47a",
+  "tl1": "#0e3038",
+  "tl2": "#18545c",
+  "tl3": "#28868a",
+  "tl4": "#58c0b0",
+  "tl5": "#b0f0dc",
+  "lt1": "#6a5a10",
+  "lt2": "#c8b020",
+  "lt3": "#fff060",
+  "lt4": "#ffffd0"
+ },
+ "ramps": {
+  "phys": [
+   "#4a5466",
+   "#7a879c",
+   "#b4c0d0",
+   "#e6edf5"
+  ],
+  "fire": [
+   "#a82810",
+   "#e05018",
+   "#ff8a2a",
+   "#ffc24a",
+   "#fff0a0"
+  ],
+  "frost": [
+   "#1c3a86",
+   "#2e6cc8",
+   "#58a8f0",
+   "#b0e0ff",
+   "#ffffff"
+  ],
+  "lightning": [
+   "#6a5a10",
+   "#c8b020",
+   "#fff060",
+   "#ffffd0",
+   "#ffffff"
+  ],
+  "arcane": [
+   "#3c1e62",
+   "#62329a",
+   "#9858d0",
+   "#d09cf8",
+   "#ffffff"
+  ]
+ },
+ "crackle": [
+  "#ffffff",
+  "#b8fff8",
+  "#22d0e0",
+  "#0c6a80"
+ ]
+}

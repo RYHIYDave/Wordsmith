@@ -1,0 +1,2845 @@
+{
+ "ids": [
+  "power",
+  "poison",
+  "frost",
+  "fire",
+  "lightning",
+  "swift",
+  "heavy",
+  "twin",
+  "leech",
+  "volatile",
+  "precise",
+  "frenzied",
+  "guarding",
+  "lasting",
+  "fleeting",
+  "vast",
+  "pulling",
+  "splitting",
+  "hexing",
+  "stilling",
+  "binding",
+  "piercing",
+  "bleeding",
+  "reaping",
+  "culling",
+  "surging",
+  "plundering",
+  "mirroring"
+ ],
+ "words": {
+  "power": {
+   "id": "power",
+   "kind": "damage",
+   "name": "Power",
+   "front": "Power",
+   "behind": "of Power",
+   "attr": "str",
+   "element": null,
+   "about": "The word of force.",
+   "frontText": "More damage and a bigger hit.",
+   "behindText": "Each hit that lands builds a short damage bonus.",
+   "monsterText": "Hits harder and has more life."
+  },
+  "poison": {
+   "id": "poison",
+   "kind": "damage",
+   "name": "Poison",
+   "front": "Poison",
+   "behind": "of Venom",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of venom. A slow death.",
+   "frontText": "A weaker hit that poisons. Poison stacks.",
+   "behindText": "Leaves a cloud of poison.",
+   "monsterText": "Poisons you."
+  },
+  "frost": {
+   "id": "frost",
+   "kind": "damage",
+   "name": "Frost",
+   "front": "Frost",
+   "behind": "of Frost",
+   "attr": "int",
+   "element": "frost",
+   "about": "The word of cold.",
+   "frontText": "Frost damage. Chills, then freezes.",
+   "behindText": "Passes through, hits softer, leaves ice that slows.",
+   "monsterText": "Deals frost damage and slows you."
+  },
+  "fire": {
+   "id": "fire",
+   "kind": "damage",
+   "name": "Flame",
+   "front": "Flame",
+   "behind": "of Flame",
+   "attr": "int",
+   "element": "fire",
+   "about": "The word of fire.",
+   "frontText": "Fire damage. Explodes and sets enemies burning.",
+   "behindText": "Passes through, hits softer, leaves burning ground.",
+   "monsterText": "Deals fire damage and sets you burning."
+  },
+  "lightning": {
+   "id": "lightning",
+   "kind": "damage",
+   "name": "Lightning",
+   "front": "Lightning",
+   "behind": "of Lightning",
+   "attr": "int",
+   "element": "lightning",
+   "about": "The word of storms.",
+   "frontText": "Lightning damage. Arcs to nearby enemies.",
+   "behindText": "Passes through, hits softer, leaves a storm that strikes.",
+   "monsterText": "Deals lightning damage and shocks you."
+  },
+  "swift": {
+   "id": "swift",
+   "kind": "shape",
+   "name": "Swift",
+   "front": "Swift",
+   "behind": "of Swiftness",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of speed.",
+   "frontText": "Faster to use again.",
+   "behindText": "Each use gives you a burst of speed.",
+   "monsterText": "Moves and attacks faster."
+  },
+  "heavy": {
+   "id": "heavy",
+   "kind": "shape",
+   "name": "Heavy",
+   "front": "Heavy",
+   "behind": "of Quakes",
+   "attr": "str",
+   "element": null,
+   "about": "The word of weight. Slow, and crushing.",
+   "frontText": "Slower, hits much harder and stuns.",
+   "behindText": "Leaves cracked ground that staggers enemies.",
+   "monsterText": "Its blows knock you back."
+  },
+  "twin": {
+   "id": "twin",
+   "kind": "shape",
+   "name": "Twin",
+   "front": "Twin",
+   "behind": "of Echoes",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of doubling. Two of a thing, each the weaker for it.",
+   "frontText": "Strikes, fires or bursts twice, each time weaker.",
+   "behindText": "Repeats itself a moment later, weaker.",
+   "monsterText": "Attacks twice."
+  },
+  "leech": {
+   "id": "leech",
+   "kind": "shape",
+   "name": "Leech",
+   "front": "Leeching",
+   "behind": "of Leeching",
+   "attr": "str",
+   "element": null,
+   "about": "The word of hunger. It takes life from what it touches.",
+   "frontText": "Heals you for every enemy hit.",
+   "behindText": "Enemies it kills drop life orbs.",
+   "monsterText": "Heals when it hits you."
+  },
+  "volatile": {
+   "id": "volatile",
+   "kind": "shape",
+   "name": "Volatile",
+   "front": "Volatile",
+   "behind": "of Ruin",
+   "attr": "int",
+   "element": null,
+   "about": "The word of ruin. Things burst.",
+   "frontText": "Enemies it kills explode.",
+   "behindText": "Leaves a rune that detonates a moment later.",
+   "monsterText": "Explodes when it dies."
+  },
+  "precise": {
+   "id": "precise",
+   "kind": "shape",
+   "name": "Precise",
+   "front": "Precise",
+   "behind": "of the Mark",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of the exact. Narrow, and deadly.",
+   "frontText": "More damage, a smaller area.",
+   "behindText": "Marks an enemy: your next hit on it is a certain critical.",
+   "monsterText": "Its hits find the gaps in your armour."
+  },
+  "frenzied": {
+   "id": "frenzied",
+   "kind": "shape",
+   "name": "Frenzied",
+   "front": "Frenzied",
+   "behind": "of Frenzy",
+   "attr": "str",
+   "element": null,
+   "about": "The word of rage. Faster, and faster.",
+   "frontText": "Each use makes the next faster, up to five times.",
+   "behindText": "Kills keep the frenzy going.",
+   "monsterText": "Speeds up as it is hurt."
+  },
+  "guarding": {
+   "id": "guarding",
+   "kind": "shape",
+   "name": "Guarding",
+   "front": "Guarding",
+   "behind": "of Warding",
+   "attr": "str",
+   "element": null,
+   "about": "The word of the shield. It keeps you.",
+   "frontText": "Each use gives you a brief shield.",
+   "behindText": "Leaves a ward circle: you take less damage inside it.",
+   "monsterText": "Carries a shield that soaks damage."
+  },
+  "lasting": {
+   "id": "lasting",
+   "kind": "shape",
+   "name": "Lasting",
+   "front": "Lasting",
+   "behind": "of Ages",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the long hour. What it makes, stays.",
+   "frontText": "Everything it makes and gives lasts half again as long.",
+   "behindText": "Everything it makes and gives lasts half again as long.",
+   "monsterText": "Its poison, burning and chill last longer on you."
+  },
+  "fleeting": {
+   "id": "fleeting",
+   "kind": "shape",
+   "name": "Fleeting",
+   "front": "Fleeting",
+   "behind": "of Moments",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of the moment. All of it, sooner.",
+   "frontText": "Everything it makes and gives is a third shorter, and does as much in that time.",
+   "behindText": "Everything it makes and gives is a third shorter, and does as much in that time.",
+   "monsterText": "Its poison and burning hurt you faster."
+  },
+  "vast": {
+   "id": "vast",
+   "kind": "shape",
+   "name": "Vast",
+   "front": "Vast",
+   "behind": "of the Expanse",
+   "attr": "str",
+   "element": null,
+   "about": "The word of the wide. Broad, and lighter.",
+   "frontText": "A much bigger area, a little less damage.",
+   "behindText": "Each hit splashes onto the enemies near what it hits.",
+   "monsterText": "Its attacks reach wider."
+  },
+  "pulling": {
+   "id": "pulling",
+   "kind": "shape",
+   "name": "Pulling",
+   "front": "Pulling",
+   "behind": "of the Vortex",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the drawing in. Everything comes to it.",
+   "frontText": "Drags the enemies it hits toward where it struck.",
+   "behindText": "Leaves a vortex that keeps drawing enemies in.",
+   "monsterText": "Its blows drag you toward it."
+  },
+  "splitting": {
+   "id": "splitting",
+   "kind": "shape",
+   "name": "Splitting",
+   "front": "Splitting",
+   "behind": "of Shards",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of the breaking apart. One becomes many.",
+   "frontText": "Breaks into three smaller copies that fly on to other enemies.",
+   "behindText": "Where it ends, shards fly out in every direction.",
+   "monsterText": "Splits in two when it dies."
+  },
+  "hexing": {
+   "id": "hexing",
+   "kind": "shape",
+   "name": "Hexing",
+   "front": "Hexing",
+   "behind": "of Hexes",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the curse. What it marks is undone.",
+   "frontText": "Curses what it hits: it takes more damage from everything.",
+   "behindText": "Leaves a hex circle: enemies inside deal less damage.",
+   "monsterText": "Its blows curse you: you take more damage."
+  },
+  "stilling": {
+   "id": "stilling",
+   "kind": "shape",
+   "name": "Stilling",
+   "front": "Stilling",
+   "behind": "of Stillness",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the held breath. Time slows for it.",
+   "frontText": "What it hits is slowed in time.",
+   "behindText": "Leaves a bubble where enemies and their shots crawl.",
+   "monsterText": "Its blows slow your cooldowns."
+  },
+  "binding": {
+   "id": "binding",
+   "kind": "shape",
+   "name": "Binding",
+   "front": "Binding",
+   "behind": "of the Snare",
+   "attr": "str",
+   "element": null,
+   "about": "The word of the knot. What it holds stays held.",
+   "frontText": "Holds the enemies it hits in place.",
+   "behindText": "Leaves a snare for the next enemy to cross.",
+   "monsterText": "Its blows root you to the spot."
+  },
+  "piercing": {
+   "id": "piercing",
+   "kind": "shape",
+   "name": "Piercing",
+   "front": "Piercing",
+   "behind": "of the Lance",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of the point. Nothing stands in its way.",
+   "frontText": "Goes through everything in its path.",
+   "behindText": "A lance of light strikes down its line a moment later.",
+   "monsterText": "Its shots fly through walls to reach you."
+  },
+  "bleeding": {
+   "id": "bleeding",
+   "kind": "shape",
+   "name": "Bleeding",
+   "front": "Bleeding",
+   "behind": "of Thorns",
+   "attr": "str",
+   "element": null,
+   "about": "The word of the open wound. It does not close.",
+   "frontText": "Makes enemies bleed, worse while they move.",
+   "behindText": "Leaves thorns that cut whatever walks through.",
+   "monsterText": "Its blows make you bleed."
+  },
+  "reaping": {
+   "id": "reaping",
+   "kind": "shape",
+   "name": "Reaping",
+   "front": "Reaping",
+   "behind": "of Spirits",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the harvest. What falls is gathered in.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns.",
+   "behindText": "Kills raise a spirit that fights for you for a while.",
+   "monsterText": "Rises once after it dies."
+  },
+  "culling": {
+   "id": "culling",
+   "kind": "shape",
+   "name": "Culling",
+   "front": "Culling",
+   "behind": "of the Reaper",
+   "attr": "str",
+   "element": null,
+   "about": "The word of the end. The weak are taken.",
+   "frontText": "Enemies left nearly dead by its hit die outright.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it.",
+   "monsterText": "Hits much harder when you are low."
+  },
+  "surging": {
+   "id": "surging",
+   "kind": "shape",
+   "name": "Surging",
+   "front": "Surging",
+   "behind": "of the Surge",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the swell. It gathers, then breaks.",
+   "frontText": "Every third use releases a shockwave round you.",
+   "behindText": "Your dodge releases a surge.",
+   "monsterText": "Sends out a shockwave every few seconds."
+  },
+  "plundering": {
+   "id": "plundering",
+   "kind": "shape",
+   "name": "Plundering",
+   "front": "Plundering",
+   "behind": "of Plunder",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of the taking. What is theirs is yours.",
+   "frontText": "Kills drop more gold, and sometimes an extra item.",
+   "behindText": "Gold bursts from kills and flies to you.",
+   "monsterText": "Each blow steals some of your gold, dropped when it dies."
+  },
+  "mirroring": {
+   "id": "mirroring",
+   "kind": "shape",
+   "name": "Mirroring",
+   "front": "Mirrored",
+   "behind": "of Mirrors",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the reflection. Two of you, where there was one.",
+   "frontText": "A reflection of you makes the same attack beside you, weaker.",
+   "behindText": "Leaves a mirror that repeats your next attack from where you stood.",
+   "monsterText": "Sends part of the harm you do it back at you."
+  },
+  "eruption": {
+   "id": "eruption",
+   "kind": "meld",
+   "of": [
+    "power",
+    "fire"
+   ],
+   "name": "Eruption",
+   "front": "Eruption",
+   "behind": "of Eruption",
+   "attr": "int",
+   "element": "fire",
+   "about": "Power and Flame, melded.",
+   "frontText": "A heavy fire hit. The blast leaves a pool of molten ground.",
+   "behindText": "Hits build heat. At full heat the next hit erupts.",
+   "monsterText": ""
+  },
+  "avalanche": {
+   "id": "avalanche",
+   "kind": "meld",
+   "of": [
+    "power",
+    "frost"
+   ],
+   "name": "Avalanche",
+   "front": "Avalanche",
+   "behind": "of the Avalanche",
+   "attr": "int",
+   "element": "frost",
+   "about": "Power and Frost, melded.",
+   "frontText": "A heavy cold hit that shoves enemies back and freezes the ones it stops.",
+   "behindText": "Every hit on a chilled enemy hits harder.",
+   "monsterText": ""
+  },
+  "thunder": {
+   "id": "thunder",
+   "kind": "meld",
+   "of": [
+    "power",
+    "lightning"
+   ],
+   "name": "Thunder",
+   "front": "Thunder",
+   "behind": "of Thunder",
+   "attr": "int",
+   "element": "lightning",
+   "about": "Power and Lightning, melded.",
+   "frontText": "One big bolt instead of arcs. It stuns.",
+   "behindText": "Every few hits, a thunderclap bursts around you.",
+   "monsterText": ""
+  },
+  "blight": {
+   "id": "blight",
+   "kind": "meld",
+   "of": [
+    "power",
+    "poison"
+   ],
+   "name": "Blight",
+   "front": "Blight",
+   "behind": "of Blight",
+   "attr": "dex",
+   "element": null,
+   "about": "Power and Poison, melded.",
+   "frontText": "The hit is not weakened, and poison bites harder the lower the enemy's life.",
+   "behindText": "Poisoned enemies take more damage from everything.",
+   "monsterText": ""
+  },
+  "scald": {
+   "id": "scald",
+   "kind": "meld",
+   "of": [
+    "fire",
+    "frost"
+   ],
+   "name": "Scald",
+   "front": "Scald",
+   "behind": "of Scalding",
+   "attr": "int",
+   "element": "fire",
+   "about": "Flame and Frost, melded.",
+   "frontText": "A burning enemy that gets chilled, or a chilled one set burning, cracks for a burst of damage.",
+   "behindText": "Fire meeting ice on the ground bursts into steam that hurts and hides.",
+   "monsterText": ""
+  },
+  "wildfire": {
+   "id": "wildfire",
+   "kind": "meld",
+   "of": [
+    "fire",
+    "lightning"
+   ],
+   "name": "Wildfire",
+   "front": "Wildfire",
+   "behind": "of Wildfire",
+   "attr": "int",
+   "element": "fire",
+   "about": "Flame and Lightning, melded.",
+   "frontText": "Burning jumps to nearby enemies the way lightning arcs.",
+   "behindText": "The burning ground throws sparks at enemies near it.",
+   "monsterText": ""
+  },
+  "fumes": {
+   "id": "fumes",
+   "kind": "meld",
+   "of": [
+    "fire",
+    "poison"
+   ],
+   "name": "Fumes",
+   "front": "Fuming",
+   "behind": "of Fumes",
+   "attr": "int",
+   "element": "fire",
+   "about": "Flame and Poison, melded.",
+   "frontText": "Burning poisoned enemies give off a toxic cloud.",
+   "behindText": "The poison cloud explodes when anything burning enters it.",
+   "monsterText": ""
+  },
+  "hailstorm": {
+   "id": "hailstorm",
+   "kind": "meld",
+   "of": [
+    "frost",
+    "lightning"
+   ],
+   "name": "Hailstorm",
+   "front": "Hailstorm",
+   "behind": "of the Hailstorm",
+   "attr": "int",
+   "element": "frost",
+   "about": "Frost and Lightning, melded.",
+   "frontText": "Arcs chill everything they touch. Frozen enemies pass arcs on further.",
+   "behindText": "A storm of ice that slows and strikes.",
+   "monsterText": ""
+  },
+  "frostbite": {
+   "id": "frostbite",
+   "kind": "meld",
+   "of": [
+    "frost",
+    "poison"
+   ],
+   "name": "Frostbite",
+   "front": "Frostbite",
+   "behind": "of Frostbite",
+   "attr": "int",
+   "element": "frost",
+   "about": "Frost and Poison, melded.",
+   "frontText": "Chilled enemies lose life over time, and frozen ones twice as fast.",
+   "behindText": "The ice on the ground poisons what crosses it.",
+   "monsterText": ""
+  },
+  "contagion": {
+   "id": "contagion",
+   "kind": "meld",
+   "of": [
+    "lightning",
+    "poison"
+   ],
+   "name": "Contagion",
+   "front": "Contagious",
+   "behind": "of Contagion",
+   "attr": "int",
+   "element": "lightning",
+   "about": "Lightning and Poison, melded.",
+   "frontText": "Every enemy an arc touches is poisoned.",
+   "behindText": "The poison cloud shocks whatever stands in it.",
+   "monsterText": ""
+  },
+  "demolition": {
+   "id": "demolition",
+   "kind": "meld",
+   "of": [
+    "power",
+    "volatile"
+   ],
+   "name": "Demolition",
+   "front": "Demolition",
+   "behind": "of Demolition",
+   "attr": "str",
+   "element": null,
+   "about": "Power and Volatile, melded.",
+   "frontText": "Bigger explosions. Elites and bosses also explode once, at half life.",
+   "behindText": "One huge rune, slow to go off.",
+   "monsterText": ""
+  },
+  "powderkeg": {
+   "id": "powderkeg",
+   "kind": "meld",
+   "of": [
+    "fire",
+    "volatile"
+   ],
+   "name": "Powderkeg",
+   "front": "Powderkeg",
+   "behind": "of the Powderkeg",
+   "attr": "int",
+   "element": "fire",
+   "about": "Flame and Volatile, melded.",
+   "frontText": "Burning enemies explode when killed, and the blast sets others burning.",
+   "behindText": "The rune leaves burning ground when it goes off.",
+   "monsterText": ""
+  },
+  "shatter": {
+   "id": "shatter",
+   "kind": "meld",
+   "of": [
+    "frost",
+    "volatile"
+   ],
+   "name": "Shatter",
+   "front": "Shatter",
+   "behind": "of Shattering",
+   "attr": "int",
+   "element": "frost",
+   "about": "Frost and Volatile, melded.",
+   "frontText": "Frozen enemies burst into shards that hit those around them.",
+   "behindText": "The rune freezes what is near, then bursts.",
+   "monsterText": ""
+  },
+  "chainreaction": {
+   "id": "chainreaction",
+   "kind": "meld",
+   "of": [
+    "lightning",
+    "volatile"
+   ],
+   "name": "Chain Reaction",
+   "front": "Chain Reaction",
+   "behind": "of Chain Reaction",
+   "attr": "int",
+   "element": "lightning",
+   "about": "Lightning and Volatile, melded.",
+   "frontText": "An exploding enemy sends arcs to the nearest enemies. Those it kills explode too.",
+   "behindText": "Runes are linked. One going off sets off the rest.",
+   "monsterText": ""
+  },
+  "rupture": {
+   "id": "rupture",
+   "kind": "meld",
+   "of": [
+    "poison",
+    "volatile"
+   ],
+   "name": "Rupture",
+   "front": "Rupture",
+   "behind": "of Rupture",
+   "attr": "dex",
+   "element": null,
+   "about": "Poison and Volatile, melded.",
+   "frontText": "Poisoned enemies burst when killed, splashing their poison on those around.",
+   "behindText": "The rune bursts into a poison cloud.",
+   "monsterText": ""
+  },
+  "siphon": {
+   "id": "siphon",
+   "kind": "meld",
+   "of": [
+    "leech",
+    "poison"
+   ],
+   "name": "Siphon",
+   "front": "Siphon",
+   "behind": "of Siphoning",
+   "attr": "dex",
+   "element": null,
+   "about": "Leech and Poison, melded.",
+   "frontText": "Your poison heals you while it eats them.",
+   "behindText": "Your poison heals you a little.",
+   "monsterText": ""
+  },
+  "cauterize": {
+   "id": "cauterize",
+   "kind": "meld",
+   "of": [
+    "leech",
+    "fire"
+   ],
+   "name": "Cauterize",
+   "front": "Cauterizing",
+   "behind": "of Cautery",
+   "attr": "int",
+   "element": "fire",
+   "about": "Leech and Flame, melded.",
+   "frontText": "Killing a burning enemy heals you a chunk.",
+   "behindText": "Killing a burning enemy heals you a little.",
+   "monsterText": ""
+  },
+  "forking": {
+   "id": "forking",
+   "kind": "meld",
+   "of": [
+    "twin",
+    "lightning"
+   ],
+   "name": "Forking",
+   "front": "Forking",
+   "behind": "of Forks",
+   "attr": "dex",
+   "element": "lightning",
+   "about": "Twin and Lightning, melded.",
+   "frontText": "Every hit arcs to a second enemy nearby.",
+   "behindText": "Every hit arcs to a second enemy nearby, weaker.",
+   "monsterText": ""
+  },
+  "shiver": {
+   "id": "shiver",
+   "kind": "meld",
+   "of": [
+    "precise",
+    "frost"
+   ],
+   "name": "Shiver",
+   "front": "Shivering",
+   "behind": "of Shivers",
+   "attr": "dex",
+   "element": "frost",
+   "about": "Precise and Frost, melded.",
+   "frontText": "Critical hits freeze the target for a moment.",
+   "behindText": "Critical hits freeze the target for an instant.",
+   "monsterText": ""
+  },
+  "sunder": {
+   "id": "sunder",
+   "kind": "meld",
+   "of": [
+    "heavy",
+    "power"
+   ],
+   "name": "Sunder",
+   "front": "Sundering",
+   "behind": "of Sundering",
+   "attr": "str",
+   "element": null,
+   "about": "Heavy and Power, melded.",
+   "frontText": "Stunned enemies take extra damage.",
+   "behindText": "Stunned enemies take a little extra damage.",
+   "monsterText": ""
+  },
+  "fervor": {
+   "id": "fervor",
+   "kind": "meld",
+   "of": [
+    "frenzied",
+    "fire"
+   ],
+   "name": "Fervor",
+   "front": "Fervent",
+   "behind": "of Fervor",
+   "attr": "str",
+   "element": "fire",
+   "about": "Frenzied and Flame, melded.",
+   "frontText": "Each kill makes you attack faster and burn hotter for a few seconds.",
+   "behindText": "Each kill quickens you and your fire a little.",
+   "monsterText": ""
+  },
+  "rimeward": {
+   "id": "rimeward",
+   "kind": "meld",
+   "of": [
+    "guarding",
+    "frost"
+   ],
+   "name": "Rime Ward",
+   "front": "Rime",
+   "behind": "of the Rime Ward",
+   "attr": "str",
+   "element": "frost",
+   "about": "Guarding and Frost, melded.",
+   "frontText": "Blocking a hit chills the attacker.",
+   "behindText": "Blocking a hit chills the attacker a little.",
+   "monsterText": ""
+  },
+  "implode": {
+   "id": "implode",
+   "kind": "meld",
+   "of": [
+    "pulling",
+    "volatile"
+   ],
+   "name": "Implode",
+   "front": "Imploding",
+   "behind": "of Implosion",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Volatile, melded.",
+   "frontText": "Drags enemies together, then the spot bursts.",
+   "behindText": "Drags enemies together a little, then a small burst.",
+   "monsterText": ""
+  },
+  "power2": {
+   "id": "power2",
+   "kind": "rank",
+   "name": "Power II",
+   "front": "Power",
+   "behind": "of Power",
+   "attr": "str",
+   "element": null,
+   "about": "Two Power, melded: Power at rank II.",
+   "frontText": "As Power, half as strong again.",
+   "behindText": "As of Power, half as strong again.",
+   "monsterText": ""
+  },
+  "fire2": {
+   "id": "fire2",
+   "kind": "rank",
+   "name": "Flame II",
+   "front": "Flame",
+   "behind": "of Flame",
+   "attr": "int",
+   "element": "fire",
+   "about": "Two Flame, melded: Flame at rank II.",
+   "frontText": "As Flame, half as strong again.",
+   "behindText": "As of Flame, half as strong again.",
+   "monsterText": ""
+  },
+  "frost2": {
+   "id": "frost2",
+   "kind": "rank",
+   "name": "Frost II",
+   "front": "Frost",
+   "behind": "of Frost",
+   "attr": "int",
+   "element": "frost",
+   "about": "Two Frost, melded: Frost at rank II.",
+   "frontText": "As Frost, half as strong again.",
+   "behindText": "As of Frost, half as strong again.",
+   "monsterText": ""
+  },
+  "lightning2": {
+   "id": "lightning2",
+   "kind": "rank",
+   "name": "Lightning II",
+   "front": "Lightning",
+   "behind": "of Lightning",
+   "attr": "int",
+   "element": "lightning",
+   "about": "Two Lightning, melded: Lightning at rank II.",
+   "frontText": "As Lightning, half as strong again.",
+   "behindText": "As of Lightning, half as strong again.",
+   "monsterText": ""
+  },
+  "poison2": {
+   "id": "poison2",
+   "kind": "rank",
+   "name": "Poison II",
+   "front": "Poison",
+   "behind": "of Venom",
+   "attr": "dex",
+   "element": null,
+   "about": "Two Poison, melded: Poison at rank II.",
+   "frontText": "As Poison, half as strong again.",
+   "behindText": "As of Venom, half as strong again.",
+   "monsterText": ""
+  }
+ },
+ "moves": [
+  "strike",
+  "whirlwind",
+  "leap"
+ ],
+ "skills": {
+  "strike": {
+   "id": "strike",
+   "name": "Strike",
+   "kind": "melee",
+   "icon": "strike",
+   "dmg": 1,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 1.7,
+   "radius": 0,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Hit one enemy in front of you.",
+   "verb": "STRIKE",
+   "windup": 0.333,
+   "follow": 0.3
+  },
+  "whirlwind": {
+   "id": "whirlwind",
+   "name": "Whirlwind",
+   "kind": "whirl",
+   "icon": "whirl",
+   "dmg": 0.55,
+   "cooldown": 3.5,
+   "mana": 16,
+   "range": 0,
+   "radius": 2,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Hold to spin: you cut everything around you again and again, and pass through enemies.",
+   "verb": "WHIRL",
+   "windup": 0.12,
+   "follow": 0.25,
+   "channel": 2.4,
+   "tick": 0.3
+  },
+  "leap": {
+   "id": "leap",
+   "name": "Lunge",
+   "kind": "leap",
+   "icon": "leap",
+   "dmg": 0.5,
+   "cooldown": 4,
+   "mana": 0,
+   "range": 6,
+   "radius": 1.6,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Dive at a spot, your sword out before you. Nothing can hit you as you go, and the point strikes where you land.",
+   "verb": "LUNGE",
+   "windup": 0,
+   "follow": 0
+  },
+  "shot": {
+   "id": "shot",
+   "name": "Shot",
+   "kind": "projectile",
+   "icon": "shot",
+   "dmg": 1,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 11,
+   "radius": 0.25,
+   "speed": 16,
+   "sockets": true,
+   "desc": "Loose an arrow at one enemy.",
+   "verb": "SHOOT",
+   "windup": 0.333,
+   "follow": 0.32
+  },
+  "volley": {
+   "id": "volley",
+   "name": "Volley",
+   "kind": "volley",
+   "icon": "volley",
+   "dmg": 0.7,
+   "cooldown": 5,
+   "mana": 14,
+   "range": 9,
+   "radius": 2.2,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Loose arrows at the sky: they rain on the spot you point at for a few seconds.",
+   "verb": "RAIN ARROWS",
+   "windup": 0.4,
+   "follow": 0.36
+  },
+  "trap": {
+   "id": "trap",
+   "name": "Trap",
+   "kind": "roll",
+   "icon": "trap",
+   "dmg": 1.2,
+   "cooldown": 3,
+   "mana": 0,
+   "range": 3.4,
+   "radius": 2,
+   "speed": 0,
+   "sockets": true,
+   "desc": "A quick roll that nothing can hit, and you leave a trap where you stood: it bursts when an enemy steps on it. Holds two charges.",
+   "verb": "ROLL AND TRAP",
+   "windup": 0,
+   "follow": 0
+  },
+  "wave": {
+   "id": "wave",
+   "name": "Wave",
+   "kind": "wave",
+   "icon": "wave",
+   "dmg": 0.65,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 6,
+   "radius": 1,
+   "speed": 9,
+   "sockets": true,
+   "desc": "Swing the staff: a wide wave of force that passes through every enemy in its path.",
+   "verb": "SEND A WAVE",
+   "windup": 0.16,
+   "follow": 0.32
+  },
+  "orb": {
+   "id": "orb",
+   "name": "Orb",
+   "kind": "orb",
+   "icon": "orb",
+   "dmg": 0.6,
+   "cooldown": 5,
+   "mana": 14,
+   "range": 6.5,
+   "radius": 2.2,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Slam the staff down: an orb appears where you point and sends out waves of force for a few seconds.",
+   "verb": "SET AN ORB",
+   "windup": 0.26,
+   "follow": 0.38
+  },
+  "warp": {
+   "id": "warp",
+   "name": "Warp",
+   "kind": "warp",
+   "icon": "warp",
+   "dmg": 0.5,
+   "cooldown": 5,
+   "mana": 0,
+   "range": 6,
+   "radius": 1.6,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Vanish and reappear at a spot, instantly, in a burst that hurts what stands there.",
+   "verb": "WARP",
+   "windup": 0,
+   "follow": 0
+  },
+  "hellbolt": {
+   "id": "hellbolt",
+   "name": "Hellfire Bolt",
+   "kind": "projectile",
+   "icon": "hellbolt",
+   "dmg": 0.8,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 9,
+   "radius": 0.3,
+   "speed": 14,
+   "sockets": true,
+   "desc": "Hurl a bolt of hellfire at one enemy. It burns, hard.",
+   "verb": "HURL HELLFIRE",
+   "windup": 0.24,
+   "follow": 0.4
+  },
+  "curse": {
+   "id": "curse",
+   "name": "Curse",
+   "kind": "curse",
+   "icon": "curse",
+   "dmg": 0.3,
+   "cooldown": 5,
+   "mana": 14,
+   "range": 0,
+   "radius": 4.5,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Chains of smoke curse every enemy near you. The cursed smoulder, and when one dies every burn on it spreads to those near it.",
+   "verb": "CURSE",
+   "windup": 0.3,
+   "follow": 0.45
+  },
+  "smokestep": {
+   "id": "smokestep",
+   "name": "Smoke Step",
+   "kind": "smoke",
+   "icon": "smokestep",
+   "dmg": 0.4,
+   "cooldown": 4,
+   "mana": 0,
+   "range": 6,
+   "radius": 1,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Break into smoke and streak to a spot. Nothing can hit you, and whoever you pass through is cursed.",
+   "verb": "SMOKE STEP",
+   "windup": 0,
+   "follow": 0
+  },
+  "vialtoss": {
+   "id": "vialtoss",
+   "name": "Vial Toss",
+   "kind": "vialtoss",
+   "icon": "vialtoss",
+   "dmg": 0.75,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 6.5,
+   "radius": 1.1,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Lob a vial off your belt. It bursts where it lands, hurting everything near.",
+   "verb": "TOSS A VIAL",
+   "windup": 0.22,
+   "follow": 0.34
+  },
+  "golem": {
+   "id": "golem",
+   "name": "Golem",
+   "kind": "golem",
+   "icon": "golem",
+   "dmg": 1.6,
+   "cooldown": 5,
+   "mana": 16,
+   "range": 0,
+   "radius": 2.4,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Whistle your Golem out: it follows you and shoots its cannon at what it fights. Whistle again and hold: it charges its big shot, fired as you let go.",
+   "verb": "WHISTLE",
+   "windup": 0.28,
+   "follow": 0.5
+  },
+  "blastjump": {
+   "id": "blastjump",
+   "name": "Blast Jump",
+   "kind": "blastjump",
+   "icon": "blastjump",
+   "dmg": 0.8,
+   "cooldown": 4,
+   "mana": 0,
+   "range": 6,
+   "radius": 1.6,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Slap a bomb down at your feet and ride the blast to a spot. Whatever is by you is blown away.",
+   "verb": "BLAST JUMP",
+   "windup": 0,
+   "follow": 0
+  },
+  "vpunch": {
+   "id": "vpunch",
+   "name": "Punch",
+   "kind": "vblow",
+   "icon": "vetpunch",
+   "dmg": 1,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 2.5,
+   "radius": 0,
+   "speed": 0,
+   "sockets": true,
+   "desc": "A tap fills a green globe: the jab, the cross, the hook, the spinning elbow, as his combo comes to them.",
+   "verb": "PUNCH",
+   "windup": 0,
+   "follow": 0
+  },
+  "vkick": {
+   "id": "vkick",
+   "name": "Kick",
+   "kind": "vblow",
+   "icon": "vetkick",
+   "dmg": 1,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 2.5,
+   "radius": 0,
+   "speed": 0,
+   "sockets": true,
+   "desc": "A hold fills an orange globe: the round kick, then the push kick.",
+   "verb": "KICK",
+   "windup": 0,
+   "follow": 0
+  },
+  "vjump": {
+   "id": "vjump",
+   "name": "Jump",
+   "kind": "vjump",
+   "icon": "vetjump",
+   "dmg": 1,
+   "cooldown": 4,
+   "mana": 0,
+   "range": 1,
+   "radius": 0,
+   "speed": 0,
+   "sockets": true,
+   "desc": "A swipe is his dodging jump. A swipe then a tap or a hold sets the globe in fire: the flying uppercut, the flying knee, the spinning jump kick.",
+   "verb": "JUMP",
+   "windup": 0,
+   "follow": 0
+  },
+  "rake": {
+   "id": "rake",
+   "name": "Claw Rake",
+   "kind": "melee",
+   "icon": "rake",
+   "dmg": 1.3,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 2,
+   "radius": 0,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Rake with one claw, then the other. What it tears is cursed.",
+   "verb": "RAKE",
+   "windup": 0.16,
+   "follow": 0.34
+  },
+  "damning": {
+   "id": "damning",
+   "name": "Damning",
+   "kind": "damning",
+   "icon": "damning",
+   "dmg": 0.8,
+   "cooldown": 6,
+   "mana": 16,
+   "range": 0,
+   "radius": 6,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Tear up the floor: the ground erupts under every enemy near you that is cursed or burning, and every burn on it goes off at once.",
+   "verb": "DAMN THEM",
+   "windup": 0.3,
+   "follow": 0.5
+  },
+  "demonstep": {
+   "id": "demonstep",
+   "name": "Smoke Step",
+   "kind": "smoke",
+   "icon": "demonstep",
+   "dmg": 1,
+   "cooldown": 4,
+   "mana": 0,
+   "range": 6,
+   "radius": 1.2,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Tear along the floor as smoke, raking and cursing whoever you pass through, and burst out where you stop.",
+   "verb": "SMOKE STEP",
+   "windup": 0,
+   "follow": 0
+  },
+  "cleave": {
+   "id": "cleave",
+   "name": "Cleave",
+   "kind": "melee",
+   "icon": "strike",
+   "dmg": 0.9,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 1.7,
+   "radius": 0,
+   "speed": 0,
+   "sockets": true,
+   "desc": "A wide chop: every enemy in its arc is struck.",
+   "verb": "CLEAVE",
+   "windup": 0.333,
+   "follow": 0.32,
+   "arc": true,
+   "arcCos": 0.259
+  },
+  "axethrow": {
+   "id": "axethrow",
+   "name": "Axe Throw",
+   "kind": "projectile",
+   "icon": "slam",
+   "dmg": 1.2,
+   "cooldown": 2.5,
+   "mana": 10,
+   "range": 6,
+   "radius": 0.45,
+   "speed": 12,
+   "sockets": true,
+   "desc": "Throw your axe: it flies through what it meets, and comes back to you, striking again.",
+   "verb": "THROW",
+   "windup": 0.367,
+   "follow": 0.3,
+   "returns": true
+  },
+  "chop": {
+   "id": "chop",
+   "name": "Leaping Chop",
+   "kind": "leap",
+   "icon": "leap",
+   "dmg": 0.9,
+   "cooldown": 4.5,
+   "mana": 0,
+   "range": 6,
+   "radius": 1.6,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Leap at a spot and bring your axe down where you land. Nothing can hit you as you go.",
+   "verb": "CHOP",
+   "windup": 0,
+   "follow": 0,
+   "ahead": 1.5,
+   "crouch": 0.16666666666666666
+  },
+  "smash": {
+   "id": "smash",
+   "name": "Smash",
+   "kind": "melee",
+   "icon": "slam",
+   "dmg": 1.25,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 1.4,
+   "radius": 0,
+   "speed": 0,
+   "sockets": true,
+   "desc": "The maul brought down on a spot before you: what it strikes staggers back, and a second blow soon after stuns it.",
+   "verb": "SMASH",
+   "windup": 0.433,
+   "follow": 0.38,
+   "stagger": true,
+   "spot": {
+    "at": 1.4,
+    "r": 0.4
+   }
+  },
+  "quake": {
+   "id": "quake",
+   "name": "Earthquake",
+   "kind": "burst",
+   "icon": "slam",
+   "dmg": 1.3,
+   "cooldown": 4,
+   "mana": 14,
+   "range": 0,
+   "radius": 2,
+   "speed": 0,
+   "sockets": true,
+   "desc": "A full spin, then the maul brought down: the ground before you quakes, and what stands on it is stunned.",
+   "verb": "QUAKE",
+   "windup": 0.633,
+   "follow": 0.4,
+   "stun": 0.6,
+   "ahead": 1.4
+  },
+  "charge": {
+   "id": "charge",
+   "name": "Shoulder Charge",
+   "kind": "leap",
+   "icon": "leap",
+   "dmg": 0.6,
+   "cooldown": 4,
+   "mana": 0,
+   "range": 6,
+   "radius": 0.7,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Charge at a spot, shoulder first, striking every enemy in your way. Nothing can hit you as you go.",
+   "verb": "CHARGE",
+   "windup": 0,
+   "follow": 0,
+   "through": true,
+   "crouch": 0.2,
+   "secs": 0.5
+  },
+  "ball": {
+   "id": "ball",
+   "name": "Ball",
+   "kind": "projectile",
+   "icon": "ball",
+   "dmg": 0.9,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 8,
+   "radius": 0.35,
+   "speed": 10,
+   "sockets": true,
+   "desc": "A ball flies at the enemy and bursts where it hits, hurting all round it.",
+   "verb": "THROW A BALL",
+   "windup": 0.18,
+   "follow": 0.32
+  },
+  "spear": {
+   "id": "spear",
+   "name": "Spear",
+   "kind": "projectile",
+   "icon": "spear",
+   "dmg": 0.8,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 11,
+   "radius": 0.25,
+   "speed": 17,
+   "sockets": true,
+   "desc": "A spear flies where you point, through every enemy in its line.",
+   "verb": "THROW A SPEAR",
+   "windup": 0.2,
+   "follow": 0.32
+  },
+  "beam": {
+   "id": "beam",
+   "name": "Beam",
+   "kind": "beam",
+   "icon": "beam",
+   "dmg": 0.5,
+   "cooldown": 4,
+   "mana": 16,
+   "range": 9,
+   "radius": 0.4,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Hold: a beam burns toward where you point, through everything in its way. Sweep it about.",
+   "verb": "FIRE A BEAM",
+   "windup": 0.14,
+   "follow": 0.2,
+   "channel": 2,
+   "tick": 0.2
+  },
+  "snare": {
+   "id": "snare",
+   "name": "Snare",
+   "kind": "snare",
+   "icon": "snare",
+   "dmg": 0.9,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 7,
+   "radius": 1.3,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Throw a snare where you point: what walks into it is held fast, then it bursts.",
+   "verb": "SET A SNARE",
+   "windup": 0.24,
+   "follow": 0.3
+  },
+  "snipe": {
+   "id": "snipe",
+   "name": "Snipe",
+   "kind": "snipe",
+   "icon": "snipe",
+   "dmg": 1.2,
+   "cooldown": 3,
+   "mana": 0,
+   "range": 14,
+   "radius": 0.3,
+   "speed": 26,
+   "sockets": true,
+   "channel": 3,
+   "desc": "Draw and hold: the longer you hold, the harder the shot, and it goes through enemies.",
+   "verb": "SNIPE",
+   "windup": 0.333,
+   "follow": 0.32
+  },
+  "rally": {
+   "id": "rally",
+   "name": "Rally",
+   "kind": "rally",
+   "icon": "rally",
+   "dmg": 0,
+   "cooldown": 8,
+   "mana": 12,
+   "range": 0,
+   "radius": 6,
+   "speed": 0,
+   "sockets": true,
+   "desc": "A call: your companions and allies near you attack faster and harder for a few seconds.",
+   "verb": "RALLY",
+   "windup": 0.3,
+   "follow": 0.3
+  },
+  "contraption": {
+   "id": "contraption",
+   "name": "Contraption",
+   "kind": "contraption",
+   "icon": "contraption",
+   "dmg": 0.55,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 6,
+   "radius": 1.1,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Throw down a little mortar. It sets itself up and lobs your vials at whatever comes near. Up to three at once.",
+   "verb": "THROW A CONTRAPTION",
+   "windup": 0.22,
+   "follow": 0.34
+  }
+ },
+ "grows": "str",
+ "classes": {
+  "warrior": {
+   "name": "Warrior",
+   "blurb": "Up close and hard to kill.",
+   "primary": "str",
+   "two": null,
+   "attrs": {
+    "str": 14,
+    "dex": 8,
+    "int": 6
+   },
+   "starts": "greatsword",
+   "moves": [
+    "strike",
+    "whirlwind",
+    "leap"
+   ]
+  },
+  "ranger": {
+   "name": "Ranger",
+   "blurb": "Fast, sharp and far away.",
+   "primary": "dex",
+   "two": null,
+   "attrs": {
+    "str": 8,
+    "dex": 14,
+    "int": 6
+   },
+   "starts": "bow",
+   "moves": [
+    "shot",
+    "volley",
+    "trap"
+   ]
+  },
+  "mage": {
+   "name": "Mage",
+   "blurb": "Raw power. Handle with care.",
+   "primary": "int",
+   "two": null,
+   "attrs": {
+    "str": 6,
+    "dex": 8,
+    "int": 14
+   },
+   "starts": "staff",
+   "moves": [
+    "wave",
+    "orb",
+    "warp"
+   ]
+  },
+  "warlock": {
+   "name": "Warlock",
+   "blurb": "A demon inside. It wants out.",
+   "primary": "int",
+   "two": [
+    "str",
+    "int"
+   ],
+   "attrs": {
+    "str": 11,
+    "dex": 6,
+    "int": 11
+   },
+   "starts": "tome",
+   "moves": [
+    "hellbolt",
+    "curse",
+    "smokestep"
+   ]
+  },
+  "tinkerer": {
+   "name": "Tinkerer",
+   "blurb": "Gadgets, a Golem. Mostly bombs.",
+   "primary": "int",
+   "two": [
+    "dex",
+    "int"
+   ],
+   "attrs": {
+    "str": 6,
+    "dex": 11,
+    "int": 11
+   },
+   "starts": "wrench",
+   "moves": [
+    "vialtoss",
+    "golem",
+    "blastjump"
+   ]
+  },
+  "brawler": {
+   "name": "Brawler",
+   "blurb": "Bare knuckles. Bad attitude.",
+   "primary": "str",
+   "two": [
+    "str",
+    "dex"
+   ],
+   "attrs": {
+    "str": 11,
+    "dex": 11,
+    "int": 6
+   },
+   "starts": "wraps",
+   "moves": [
+    "vpunch",
+    "vkick",
+    "vjump"
+   ]
+  }
+ },
+ "demonKit": [
+  "rake",
+  "damning",
+  "demonstep"
+ ],
+ "warriorKits": {
+  "greatsword": [
+   "strike",
+   "whirl",
+   "leap"
+  ],
+  "battleaxe": [
+   "cleave",
+   "axethrow",
+   "chop"
+  ],
+  "warhammer": [
+   "smash",
+   "quake",
+   "charge"
+  ]
+ },
+ "hybridLess": 8,
+ "heavy": {
+  "slower": 1.25,
+  "stun": 0.8,
+  "cracks": 4,
+  "stagger": 0.55,
+  "staggerAgain": 1.5,
+  "knock": 0.6,
+  "stunCap": 50
+ },
+ "poison": {
+  "time": 4,
+  "stacks": 8
+ },
+ "precise": {
+  "area": 0.7,
+  "markTime": 5,
+  "armourIgnored": 0.5
+ },
+ "frenzy": {
+  "each": 0.08,
+  "max": 5,
+  "hold": 3,
+  "monster": 0.5
+ },
+ "guard": {
+  "shield": 0.1,
+  "shieldTime": 3,
+  "ward": 0.3,
+  "wardTime": 4,
+  "monster": 0.2,
+  "blockCap": 50
+ },
+ "lasting": {
+  "longer": 0.5,
+  "longerMost": 0.7,
+  "monster": 0.5
+ },
+ "fleeting": {
+  "shorter": 0.3333333333333333,
+  "stronger": 0.3333333333333333,
+  "monster": 0.3333333333333333
+ },
+ "vast": {
+  "wider": 0.4,
+  "widerMost": 0.6,
+  "softer": 0.15,
+  "splash": 0.25,
+  "splashMost": 0.4,
+  "splashR": 1.5,
+  "monster": 0.3
+ },
+ "leechCap": null,
+ "echo": {
+  "delay": 0.8,
+  "bites": 3
+ },
+ "wilds": [
+  "twin",
+  "leech",
+  "volatile",
+  "precise",
+  "frenzied",
+  "guarding",
+  "lasting",
+  "fleeting",
+  "vast"
+ ],
+ "looks": {
+  "ramp": {
+   "precise": [
+    "#262c3a",
+    "#4e5870",
+    "#94a2bc",
+    "#eef4fa",
+    "#ffffff",
+    "#ffffff"
+   ],
+   "frenzied": [
+    "#380a06",
+    "#7c1a0c",
+    "#c03616",
+    "#ff5c33",
+    "#ff9670",
+    "#fff0e8"
+   ],
+   "guarding": [
+    "#0a2a1c",
+    "#124e32",
+    "#1e8048",
+    "#30a868",
+    "#8ae4ac",
+    "#eafff2"
+   ],
+   "lasting": [
+    "#1c1412",
+    "#3e2e28",
+    "#6e564c",
+    "#aa8880",
+    "#ecceb0",
+    "#fff4e6"
+   ],
+   "fleeting": [
+    "#1e1630",
+    "#5a4486",
+    "#b48ce6",
+    "#f8e4f8",
+    "#fff4ff",
+    "#ffffff"
+   ],
+   "vast": [
+    "#140e08",
+    "#2e2214",
+    "#4a3620",
+    "#6e4e2e",
+    "#c4a47e",
+    "#f0e2cc"
+   ]
+  },
+  "guardGlyph": [
+   "XXXXXX",
+   "X.oo.X",
+   "X.oo.X",
+   "X....X",
+   ".X..X.",
+   "..XX.."
+  ],
+  "wardDark": "#06140c",
+  "sightDark": "#0a0c14"
+ },
+ "arcChain": {
+  "on": true,
+  "reach": 3.5,
+  "gap": 0.07
+ },
+ "primaryDmg": 1,
+ "intCdr": 0.25,
+ "manaAsCdr": {
+  "perMana": 0.1,
+  "perRegen": 2
+ },
+ "byWeapon": [
+  "fire",
+  "frost",
+  "lightning"
+ ],
+ "moveOpens": [
+  1,
+  2,
+  5
+ ],
+ "slotOpens": {
+  "front": [
+   1,
+   15
+  ],
+  "behind": [
+   4,
+   20
+  ]
+ },
+ "first": {
+  "word": "power",
+  "skill": 0
+ },
+ "furnace": "heavy",
+ "firstOf": {
+  "warrior": {
+   "word": "power",
+   "skill": 0
+  },
+  "ranger": {
+   "word": "poison",
+   "skill": 2
+  },
+  "mage": {
+   "word": "frost",
+   "skill": 0
+  },
+  "warlock": {
+   "word": "fire",
+   "skill": 0
+  },
+  "tinkerer": {
+   "word": "lightning",
+   "skill": 0
+  },
+  "brawler": {
+   "word": "swift",
+   "skill": 0
+  }
+ },
+ "furnaceOf": {
+  "warrior": "heavy",
+  "ranger": "precise",
+  "mage": "fire",
+  "warlock": "poison",
+  "tinkerer": "volatile",
+  "brawler": "power"
+ },
+ "meldstone": [
+  "fire",
+  "frost"
+ ],
+ "made": [
+  "eruption",
+  "avalanche",
+  "thunder",
+  "blight",
+  "scald",
+  "wildfire",
+  "fumes",
+  "hailstorm",
+  "frostbite",
+  "contagion",
+  "demolition",
+  "powderkeg",
+  "shatter",
+  "chainreaction",
+  "rupture",
+  "siphon",
+  "cauterize",
+  "forking",
+  "shiver",
+  "sunder",
+  "fervor",
+  "rimeward",
+  "implode",
+  "power2",
+  "fire2",
+  "frost2",
+  "lightning2",
+  "poison2"
+ ],
+ "melds": {
+  "ten": [
+   "eruption",
+   "avalanche",
+   "thunder",
+   "blight",
+   "scald",
+   "wildfire",
+   "fumes",
+   "hailstorm",
+   "frostbite",
+   "contagion"
+  ],
+  "volt": [
+   "demolition",
+   "powderkeg",
+   "shatter",
+   "chainreaction",
+   "rupture"
+  ],
+  "eight": [
+   "siphon",
+   "cauterize",
+   "forking",
+   "shiver",
+   "sunder",
+   "fervor",
+   "rimeward",
+   "implode"
+  ],
+  "ranks": [
+   "power2",
+   "fire2",
+   "frost2",
+   "lightning2",
+   "poison2"
+  ],
+  "of": {
+   "eruption": [
+    "power",
+    "fire"
+   ],
+   "avalanche": [
+    "power",
+    "frost"
+   ],
+   "thunder": [
+    "power",
+    "lightning"
+   ],
+   "blight": [
+    "power",
+    "poison"
+   ],
+   "scald": [
+    "fire",
+    "frost"
+   ],
+   "wildfire": [
+    "fire",
+    "lightning"
+   ],
+   "fumes": [
+    "fire",
+    "poison"
+   ],
+   "hailstorm": [
+    "frost",
+    "lightning"
+   ],
+   "frostbite": [
+    "frost",
+    "poison"
+   ],
+   "contagion": [
+    "lightning",
+    "poison"
+   ],
+   "demolition": [
+    "power",
+    "volatile"
+   ],
+   "powderkeg": [
+    "fire",
+    "volatile"
+   ],
+   "shatter": [
+    "frost",
+    "volatile"
+   ],
+   "chainreaction": [
+    "lightning",
+    "volatile"
+   ],
+   "rupture": [
+    "poison",
+    "volatile"
+   ],
+   "siphon": [
+    "leech",
+    "poison"
+   ],
+   "cauterize": [
+    "leech",
+    "fire"
+   ],
+   "forking": [
+    "twin",
+    "lightning"
+   ],
+   "shiver": [
+    "precise",
+    "frost"
+   ],
+   "sunder": [
+    "heavy",
+    "power"
+   ],
+   "fervor": [
+    "frenzied",
+    "fire"
+   ],
+   "rimeward": [
+    "guarding",
+    "frost"
+   ],
+   "implode": [
+    "pulling",
+    "volatile"
+   ]
+  },
+  "rankOf": {
+   "power2": {
+    "word": "power",
+    "rank": 2
+   },
+   "fire2": {
+    "word": "fire",
+    "rank": 2
+   },
+   "frost2": {
+    "word": "frost",
+    "rank": 2
+   },
+   "lightning2": {
+    "word": "lightning",
+    "rank": 2
+   },
+   "poison2": {
+    "word": "poison",
+    "rank": 2
+   }
+  },
+  "tune": {
+   "cost": 1,
+   "fleshmancerDust": 3,
+   "eruption": {
+    "pool": 0.9,
+    "poolDps": 0.3,
+    "poolDur": 3,
+    "heat": 5,
+    "blast": 1.5,
+    "blastR": 2
+   },
+   "avalanche": {
+    "shove": 1.2,
+    "chilled": 0.3
+   },
+   "thunder": {
+    "bolt": 0.5,
+    "stun": 0.5,
+    "every": 4,
+    "clap": 0.8,
+    "clapR": 2.4
+   },
+   "blight": {
+    "most": 2,
+    "more": 0.2,
+    "secs": 5
+   },
+   "scald": {
+    "crack": 0.6,
+    "again": 1,
+    "steamDps": 0.25,
+    "slow": 0.3,
+    "dur": 4
+   },
+   "wildfire": {
+    "reach": 2.5,
+    "every": 0.6,
+    "spark": 0.3
+   },
+   "fumes": {
+    "cloud": 1.5,
+    "dur": 3,
+    "again": 2,
+    "blast": 4
+   },
+   "hailstorm": {
+    "passOn": 1,
+    "slow": 0.4
+   },
+   "frostbite": {
+    "bite": 0.15
+   },
+   "contagion": {
+    "shock": 2
+   },
+   "demolition": {
+    "bigger": 1.5,
+    "half": 0.5,
+    "runeWide": 2,
+    "runeHard": 2,
+    "wait": 2.4
+   },
+   "powderkeg": {
+    "burning": 1.5,
+    "burn": 0.3,
+    "burnSecs": 3,
+    "ground": 0.25,
+    "groundSecs": 4,
+    "wait": 1.4
+   },
+   "shatter": {
+    "share": 0.25,
+    "reach": 2.2,
+    "freezeAt": 0.4,
+    "wait": 1.4
+   },
+   "chainreaction": {
+    "arcs": 3,
+    "reach": 3.5,
+    "share": 0.5,
+    "next": 0.12,
+    "linkReach": 6,
+    "wait": 1.2
+   },
+   "rupture": {
+    "reach": 2,
+    "share": 1,
+    "cloud": 0.25,
+    "wait": 1.3
+   }
+  },
+  "rankStep": 0.5,
+  "eightTune": {
+   "behind": 0.5,
+   "siphon": {
+    "heal": 0.3
+   },
+   "cauterize": {
+    "heal": 0.06
+   },
+   "forking": {
+    "reach": 3,
+    "share": 0.5
+   },
+   "shiver": {
+    "secs": 0.8
+   },
+   "sunder": {
+    "more": 0.3
+   },
+   "fervor": {
+    "speed": 0.06,
+    "burn": 0.1,
+    "secs": 4,
+    "most": 5
+   },
+   "rimeward": {
+    "slow": 0.4,
+    "secs": 2,
+    "block": 5
+   },
+   "implode": {
+    "reach": 3,
+    "pull": 1.6,
+    "wait": 0.4,
+    "r": 2.2,
+    "share": 0.8
+   }
+  },
+  "attr": {
+   "eruption": "str",
+   "avalanche": "str",
+   "thunder": "str",
+   "blight": "str",
+   "fumes": "dex",
+   "frostbite": "dex",
+   "contagion": "dex",
+   "scald": "int",
+   "wildfire": "int",
+   "hailstorm": "int",
+   "demolition": "str",
+   "rupture": "dex",
+   "powderkeg": "int",
+   "shatter": "int",
+   "chainreaction": "int",
+   "siphon": "dex",
+   "cauterize": "int",
+   "forking": "dex",
+   "shiver": "dex",
+   "sunder": "str",
+   "fervor": "str",
+   "rimeward": "str",
+   "implode": "int"
+  },
+  "dust": "#5ce8f8",
+  "heat": "#ff9a5a"
+ },
+ "pull": {
+  "far": 1.5,
+  "most": 2.5,
+  "reach": 2.2,
+  "stop": 0.62,
+  "secs": 0.24,
+  "vortex": 3,
+  "pace": 0.9,
+  "middle": 0.45,
+  "monster": 0.6
+ },
+ "city": {
+  "ids": [
+   "pulling",
+   "splitting",
+   "hexing",
+   "stilling",
+   "binding"
+  ],
+  "from": 11,
+  "pull": {
+   "far": 1.5,
+   "most": 2.5,
+   "reach": 2.2,
+   "stop": 0.62,
+   "secs": 0.24,
+   "vortex": 3,
+   "pace": 0.9,
+   "middle": 0.45,
+   "monster": 0.6
+  },
+  "split": {
+   "copies": 3,
+   "share": 0.4,
+   "most": 0.6,
+   "reach": 3.2,
+   "speed": 9,
+   "shards": 6,
+   "shardShare": 0.25,
+   "shardMost": 0.4,
+   "shardReach": 3,
+   "shardWidth": 0.45,
+   "every": 0.3,
+   "life": 0.5,
+   "look": 0.75
+  },
+  "hex": {
+   "secs": 4,
+   "more": 0.2,
+   "most": 0.4,
+   "circle": 4,
+   "weaker": 0.25,
+   "weakest": 0.45,
+   "monster": 0.2,
+   "monsterSecs": 3
+  },
+  "still": {
+   "secs": 2,
+   "slower": 0.4,
+   "most": 0.6,
+   "bubble": 4,
+   "crawl": 0.6,
+   "crawlMost": 0.75,
+   "boss": 0.5,
+   "cooldowns": 0.4,
+   "monsterSecs": 4
+  },
+  "bind": {
+   "secs": 1.4,
+   "most": 2.2,
+   "elite": 0.5,
+   "again": 2,
+   "snareLife": 10,
+   "every": 0.5,
+   "reach": 0.9,
+   "snareSecs": 1.8,
+   "snareMost": 2.6,
+   "rootSecs": 0.8,
+   "rootAgain": 3
+  }
+ },
+ "last": {
+  "ids": [
+   "piercing",
+   "bleeding",
+   "reaping",
+   "culling",
+   "surging",
+   "plundering",
+   "mirroring"
+  ],
+  "from": 16,
+  "pierce": {
+   "through": 0.6,
+   "throughMost": 0.9,
+   "line": 3,
+   "lanceDelay": 0.5,
+   "lance": 0.8,
+   "lanceMost": 1.4,
+   "lanceW": 0.55,
+   "lanceEvery": 0.4,
+   "lanceLead": 1.5
+  },
+  "bleed": {
+   "dps": 0.15,
+   "dpsMost": 0.3,
+   "secs": 4,
+   "moving": 2,
+   "thorns": 0.25,
+   "thornsMost": 0.45,
+   "thornLife": 5,
+   "thornR": 1.4,
+   "thornEvery": 0.5,
+   "heroDps": 0.012,
+   "heroSecs": 3
+  },
+  "reap": {
+   "secs": 1,
+   "secsMost": 1.5,
+   "spiritSecs": 6,
+   "spiritEvery": 1,
+   "spiritDmg": 0.5,
+   "spiritDmgMost": 0.8,
+   "spiritSpeed": 6,
+   "spiritReach": 1,
+   "spirits": 3,
+   "riseAfter": 1.5,
+   "riseLife": 0.5
+  },
+  "cull": {
+   "under": 0.15,
+   "underMost": 0.22,
+   "elite": 0.5,
+   "markLife": 8,
+   "markR": 1,
+   "markUnder": 0.3,
+   "markMost": 0.4,
+   "markEvery": 0.5,
+   "low": 0.35,
+   "harder": 0.6,
+   "hushedWhole": true
+  },
+  "surge": {
+   "every": 3,
+   "dmg": 0.8,
+   "dmgMost": 1.2,
+   "radius": 2.6,
+   "dodge": 0.6,
+   "dodgeMost": 0.9,
+   "dodgeRadius": 2.2,
+   "monsterEvery": 5,
+   "monsterNear": 6,
+   "monsterRadius": 2.4,
+   "monsterWarn": 0.8,
+   "monsterDmg": 1
+  },
+  "plunder": {
+   "gold": 0.5,
+   "goldMost": 1,
+   "item": 0.05,
+   "eliteItem": 0.2,
+   "burst": 0.4,
+   "burstMost": 0.8,
+   "steal": 0.02,
+   "stealMost": 6
+  },
+  "mirroring": {
+   "share": 0.4,
+   "shareMost": 0.6,
+   "side": 2.4,
+   "leaveShare": 0.6,
+   "leaveMost": 0.8,
+   "leaveLife": 8,
+   "back": 0.15,
+   "backEvery": 0.4
+  },
+  "hushLeaves": [
+   "hushed",
+   "watch",
+   "fieldhand",
+   "carter",
+   "patient",
+   "orderly",
+   "gardener",
+   "groom",
+   "pguard",
+   "footman",
+   "dancer",
+   "lady",
+   "kknight",
+   "xbow"
+  ],
+  "gold": [
+   3,
+   8
+  ]
+ },
+ "page": {
+  "power": {
+   "gear": [
+    "Weapon, gloves, ring: Physical Damage or Added Damage or Strength.",
+    "Amulet: Physical Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "poison": {
+   "gear": [
+    "Weapon: Poison Damage (% or added).",
+    "Gloves, ring: Poison Damage (% or added) or Poison Resistance.",
+    "Amulet: Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Poison Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "frost": {
+   "gear": [
+    "Weapon: Frost Damage (% or added).",
+    "Gloves, ring: Frost Damage (% or added) or Frost Resistance.",
+    "Amulet: Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Frost Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "fire": {
+   "gear": [
+    "Weapon: Fire Damage (% or added).",
+    "Gloves, ring: Fire Damage (% or added) or Fire Resistance.",
+    "Amulet: Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Fire Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "lightning": {
+   "gear": [
+    "Weapon: Lightning Damage (% or added).",
+    "Gloves, ring: Lightning Damage (% or added) or Lightning Resistance.",
+    "Amulet: Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Lightning Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "swift": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Dexterity.",
+    "Boots: Movement Speed or Dexterity.",
+    "Off hand, helm, chest, belt: Cooldown Recovery or Dexterity."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "heavy": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "twin": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "leech": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Max Life or Life Regen."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "volatile": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "precise": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "frenzied": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Movement Speed or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "guarding": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Chance to Block or Strength.",
+    "Off hand, helm, chest, belt, boots: Chance to Block or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "lasting": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "fleeting": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Dexterity."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "vast": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "pulling": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "splitting": {
+   "gear": [
+    "At the bench: one piece made two, its properties shared between them."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "hexing": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "stilling": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "binding": {
+   "gear": [
+    "At the bench: a second piece of the same kind bound into the first, four properties in all."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "piercing": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "bleeding": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "reaping": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "culling": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "surging": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "plundering": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Gold Find or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Magic Find or Dexterity."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "mirroring": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Chance to Block or Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "eruption": {
+   "gear": [
+    "Weapon: Physical Damage and Fire Damage, or Physical Damage and Added Fire Damage, or Added Damage and Fire Damage, or Added Damage and Added Fire Damage, or Strength and Fire Damage, or Strength and Added Fire Damage.",
+    "Off hand, helm, chest, belt, boots: Armour and Fire Resistance, or Strength and Fire Resistance.",
+    "Gloves, ring: Physical Damage and Fire Damage, or Physical Damage and Added Fire Damage, or Physical Damage and Fire Resistance, or Added Damage and Fire Damage, or Added Damage and Added Fire Damage, or Added Damage and Fire Resistance, or Strength and Fire Damage, or Strength and Added Fire Damage, or Strength and Fire Resistance.",
+    "Amulet: Physical Damage and Fire Damage, or Physical Damage and Fire Resistance, or Strength and Fire Damage, or Strength and Fire Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "avalanche": {
+   "gear": [
+    "Weapon: Physical Damage and Frost Damage, or Physical Damage and Added Frost Damage, or Added Damage and Frost Damage, or Added Damage and Added Frost Damage, or Strength and Frost Damage, or Strength and Added Frost Damage.",
+    "Off hand, helm, chest, belt, boots: Armour and Frost Resistance, or Strength and Frost Resistance.",
+    "Gloves, ring: Physical Damage and Frost Damage, or Physical Damage and Added Frost Damage, or Physical Damage and Frost Resistance, or Added Damage and Frost Damage, or Added Damage and Added Frost Damage, or Added Damage and Frost Resistance, or Strength and Frost Damage, or Strength and Added Frost Damage, or Strength and Frost Resistance.",
+    "Amulet: Physical Damage and Frost Damage, or Physical Damage and Frost Resistance, or Strength and Frost Damage, or Strength and Frost Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "thunder": {
+   "gear": [
+    "Weapon: Physical Damage and Lightning Damage, or Physical Damage and Added Lightning Damage, or Added Damage and Lightning Damage, or Added Damage and Added Lightning Damage, or Strength and Lightning Damage, or Strength and Added Lightning Damage.",
+    "Off hand, helm, chest, belt, boots: Armour and Lightning Resistance, or Strength and Lightning Resistance.",
+    "Gloves, ring: Physical Damage and Lightning Damage, or Physical Damage and Added Lightning Damage, or Physical Damage and Lightning Resistance, or Added Damage and Lightning Damage, or Added Damage and Added Lightning Damage, or Added Damage and Lightning Resistance, or Strength and Lightning Damage, or Strength and Added Lightning Damage, or Strength and Lightning Resistance.",
+    "Amulet: Physical Damage and Lightning Damage, or Physical Damage and Lightning Resistance, or Strength and Lightning Damage, or Strength and Lightning Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "blight": {
+   "gear": [
+    "Weapon: Physical Damage and Poison Damage, or Physical Damage and Added Poison Damage, or Added Damage and Poison Damage, or Added Damage and Added Poison Damage, or Strength and Poison Damage, or Strength and Added Poison Damage.",
+    "Off hand, helm, chest, belt, boots: Armour and Poison Resistance, or Strength and Poison Resistance.",
+    "Gloves, ring: Physical Damage and Poison Damage, or Physical Damage and Added Poison Damage, or Physical Damage and Poison Resistance, or Added Damage and Poison Damage, or Added Damage and Added Poison Damage, or Added Damage and Poison Resistance, or Strength and Poison Damage, or Strength and Added Poison Damage, or Strength and Poison Resistance.",
+    "Amulet: Physical Damage and Poison Damage, or Physical Damage and Poison Resistance, or Strength and Poison Damage, or Strength and Poison Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "scald": {
+   "gear": [
+    "Weapon: Fire Damage and Frost Damage, or Fire Damage and Added Frost Damage, or Added Fire Damage and Frost Damage, or Added Fire Damage and Added Frost Damage.",
+    "Off hand, helm, chest, belt, boots: Fire Resistance and Frost Resistance.",
+    "Gloves, ring: Fire Damage and Frost Damage, or Fire Damage and Added Frost Damage, or Fire Damage and Frost Resistance, or Added Fire Damage and Frost Damage, or Added Fire Damage and Added Frost Damage, or Added Fire Damage and Frost Resistance, or Fire Resistance and Frost Damage, or Fire Resistance and Added Frost Damage, or Fire Resistance and Frost Resistance.",
+    "Amulet: Fire Damage and Frost Damage, or Fire Damage and Frost Resistance, or Fire Resistance and Frost Damage, or Fire Resistance and Frost Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "wildfire": {
+   "gear": [
+    "Weapon: Fire Damage and Lightning Damage, or Fire Damage and Added Lightning Damage, or Added Fire Damage and Lightning Damage, or Added Fire Damage and Added Lightning Damage.",
+    "Off hand, helm, chest, belt, boots: Fire Resistance and Lightning Resistance.",
+    "Gloves, ring: Fire Damage and Lightning Damage, or Fire Damage and Added Lightning Damage, or Fire Damage and Lightning Resistance, or Added Fire Damage and Lightning Damage, or Added Fire Damage and Added Lightning Damage, or Added Fire Damage and Lightning Resistance, or Fire Resistance and Lightning Damage, or Fire Resistance and Added Lightning Damage, or Fire Resistance and Lightning Resistance.",
+    "Amulet: Fire Damage and Lightning Damage, or Fire Damage and Lightning Resistance, or Fire Resistance and Lightning Damage, or Fire Resistance and Lightning Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "fumes": {
+   "gear": [
+    "Weapon: Fire Damage and Poison Damage, or Fire Damage and Added Poison Damage, or Added Fire Damage and Poison Damage, or Added Fire Damage and Added Poison Damage.",
+    "Off hand, helm, chest, belt, boots: Fire Resistance and Poison Resistance.",
+    "Gloves, ring: Fire Damage and Poison Damage, or Fire Damage and Added Poison Damage, or Fire Damage and Poison Resistance, or Added Fire Damage and Poison Damage, or Added Fire Damage and Added Poison Damage, or Added Fire Damage and Poison Resistance, or Fire Resistance and Poison Damage, or Fire Resistance and Added Poison Damage, or Fire Resistance and Poison Resistance.",
+    "Amulet: Fire Damage and Poison Damage, or Fire Damage and Poison Resistance, or Fire Resistance and Poison Damage, or Fire Resistance and Poison Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "hailstorm": {
+   "gear": [
+    "Weapon: Frost Damage and Lightning Damage, or Frost Damage and Added Lightning Damage, or Added Frost Damage and Lightning Damage, or Added Frost Damage and Added Lightning Damage.",
+    "Off hand, helm, chest, belt, boots: Frost Resistance and Lightning Resistance.",
+    "Gloves, ring: Frost Damage and Lightning Damage, or Frost Damage and Added Lightning Damage, or Frost Damage and Lightning Resistance, or Added Frost Damage and Lightning Damage, or Added Frost Damage and Added Lightning Damage, or Added Frost Damage and Lightning Resistance, or Frost Resistance and Lightning Damage, or Frost Resistance and Added Lightning Damage, or Frost Resistance and Lightning Resistance.",
+    "Amulet: Frost Damage and Lightning Damage, or Frost Damage and Lightning Resistance, or Frost Resistance and Lightning Damage, or Frost Resistance and Lightning Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "frostbite": {
+   "gear": [
+    "Weapon: Frost Damage and Poison Damage, or Frost Damage and Added Poison Damage, or Added Frost Damage and Poison Damage, or Added Frost Damage and Added Poison Damage.",
+    "Off hand, helm, chest, belt, boots: Frost Resistance and Poison Resistance.",
+    "Gloves, ring: Frost Damage and Poison Damage, or Frost Damage and Added Poison Damage, or Frost Damage and Poison Resistance, or Added Frost Damage and Poison Damage, or Added Frost Damage and Added Poison Damage, or Added Frost Damage and Poison Resistance, or Frost Resistance and Poison Damage, or Frost Resistance and Added Poison Damage, or Frost Resistance and Poison Resistance.",
+    "Amulet: Frost Damage and Poison Damage, or Frost Damage and Poison Resistance, or Frost Resistance and Poison Damage, or Frost Resistance and Poison Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "contagion": {
+   "gear": [
+    "Weapon: Lightning Damage and Poison Damage, or Lightning Damage and Added Poison Damage, or Added Lightning Damage and Poison Damage, or Added Lightning Damage and Added Poison Damage.",
+    "Off hand, helm, chest, belt, boots: Lightning Resistance and Poison Resistance.",
+    "Gloves, ring: Lightning Damage and Poison Damage, or Lightning Damage and Added Poison Damage, or Lightning Damage and Poison Resistance, or Added Lightning Damage and Poison Damage, or Added Lightning Damage and Added Poison Damage, or Added Lightning Damage and Poison Resistance, or Lightning Resistance and Poison Damage, or Lightning Resistance and Added Poison Damage, or Lightning Resistance and Poison Resistance.",
+    "Amulet: Lightning Damage and Poison Damage, or Lightning Damage and Poison Resistance, or Lightning Resistance and Poison Damage, or Lightning Resistance and Poison Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "demolition": {
+   "gear": [
+    "Weapon, gloves, ring: Physical Damage and Area of Effect, or Physical Damage and Intelligence, or Added Damage and Area of Effect, or Added Damage and Intelligence, or Strength and Area of Effect, or Strength and Intelligence.",
+    "Off hand, helm, chest, belt, boots: Armour and Cooldown Recovery, or Armour and Intelligence, or Strength and Cooldown Recovery, or Strength and Intelligence.",
+    "Amulet: Physical Damage and Area of Effect, or Physical Damage and Intelligence, or Strength and Area of Effect, or Strength and Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "powderkeg": {
+   "gear": [
+    "Weapon: Fire Damage and Area of Effect, or Fire Damage and Intelligence, or Added Fire Damage and Area of Effect, or Added Fire Damage and Intelligence.",
+    "Off hand, helm, chest, belt, boots: Fire Resistance and Cooldown Recovery, or Fire Resistance and Intelligence.",
+    "Gloves, ring: Fire Damage and Area of Effect, or Fire Damage and Intelligence, or Added Fire Damage and Area of Effect, or Added Fire Damage and Intelligence, or Fire Resistance and Area of Effect, or Fire Resistance and Intelligence.",
+    "Amulet: Fire Damage and Area of Effect, or Fire Damage and Intelligence, or Fire Resistance and Area of Effect, or Fire Resistance and Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "shatter": {
+   "gear": [
+    "Weapon: Frost Damage and Area of Effect, or Frost Damage and Intelligence, or Added Frost Damage and Area of Effect, or Added Frost Damage and Intelligence.",
+    "Off hand, helm, chest, belt, boots: Frost Resistance and Cooldown Recovery, or Frost Resistance and Intelligence.",
+    "Gloves, ring: Frost Damage and Area of Effect, or Frost Damage and Intelligence, or Added Frost Damage and Area of Effect, or Added Frost Damage and Intelligence, or Frost Resistance and Area of Effect, or Frost Resistance and Intelligence.",
+    "Amulet: Frost Damage and Area of Effect, or Frost Damage and Intelligence, or Frost Resistance and Area of Effect, or Frost Resistance and Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "chainreaction": {
+   "gear": [
+    "Weapon: Lightning Damage and Area of Effect, or Lightning Damage and Intelligence, or Added Lightning Damage and Area of Effect, or Added Lightning Damage and Intelligence.",
+    "Off hand, helm, chest, belt, boots: Lightning Resistance and Cooldown Recovery, or Lightning Resistance and Intelligence.",
+    "Gloves, ring: Lightning Damage and Area of Effect, or Lightning Damage and Intelligence, or Added Lightning Damage and Area of Effect, or Added Lightning Damage and Intelligence, or Lightning Resistance and Area of Effect, or Lightning Resistance and Intelligence.",
+    "Amulet: Lightning Damage and Area of Effect, or Lightning Damage and Intelligence, or Lightning Resistance and Area of Effect, or Lightning Resistance and Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "rupture": {
+   "gear": [
+    "Weapon: Poison Damage and Area of Effect, or Poison Damage and Intelligence, or Added Poison Damage and Area of Effect, or Added Poison Damage and Intelligence.",
+    "Off hand, helm, chest, belt, boots: Poison Resistance and Cooldown Recovery, or Poison Resistance and Intelligence.",
+    "Gloves, ring: Poison Damage and Area of Effect, or Poison Damage and Intelligence, or Added Poison Damage and Area of Effect, or Added Poison Damage and Intelligence, or Poison Resistance and Area of Effect, or Poison Resistance and Intelligence.",
+    "Amulet: Poison Damage and Area of Effect, or Poison Damage and Intelligence, or Poison Resistance and Area of Effect, or Poison Resistance and Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "siphon": {
+   "gear": [
+    "Weapon: Life on Hit and Poison Damage, or Life on Hit and Added Poison Damage, or Life on Kill and Poison Damage, or Life on Kill and Added Poison Damage.",
+    "Off hand, helm, chest, belt, boots: Max Life and Poison Resistance, or Life Regen and Poison Resistance.",
+    "Gloves, ring: Life on Hit and Poison Damage, or Life on Hit and Added Poison Damage, or Life on Hit and Poison Resistance, or Life on Kill and Poison Damage, or Life on Kill and Added Poison Damage, or Life on Kill and Poison Resistance.",
+    "Amulet: Life on Hit and Poison Damage, or Life on Hit and Poison Resistance, or Life on Kill and Poison Damage, or Life on Kill and Poison Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "cauterize": {
+   "gear": [
+    "Weapon: Life on Hit and Fire Damage, or Life on Hit and Added Fire Damage, or Life on Kill and Fire Damage, or Life on Kill and Added Fire Damage.",
+    "Off hand, helm, chest, belt, boots: Max Life and Fire Resistance, or Life Regen and Fire Resistance.",
+    "Gloves, ring: Life on Hit and Fire Damage, or Life on Hit and Added Fire Damage, or Life on Hit and Fire Resistance, or Life on Kill and Fire Damage, or Life on Kill and Added Fire Damage, or Life on Kill and Fire Resistance.",
+    "Amulet: Life on Hit and Fire Damage, or Life on Hit and Fire Resistance, or Life on Kill and Fire Damage, or Life on Kill and Fire Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "forking": {
+   "gear": [
+    "Weapon: Critical Chance and Lightning Damage, or Critical Chance and Added Lightning Damage, or Dexterity and Lightning Damage, or Dexterity and Added Lightning Damage.",
+    "Off hand, helm, chest, belt, boots: Critical Damage and Lightning Resistance, or Dexterity and Lightning Resistance.",
+    "Gloves, ring: Critical Chance and Lightning Damage, or Critical Chance and Added Lightning Damage, or Critical Chance and Lightning Resistance, or Dexterity and Lightning Damage, or Dexterity and Added Lightning Damage, or Dexterity and Lightning Resistance.",
+    "Amulet: Critical Chance and Lightning Damage, or Critical Chance and Lightning Resistance, or Dexterity and Lightning Damage, or Dexterity and Lightning Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "shiver": {
+   "gear": [
+    "Weapon: Critical Chance and Frost Damage, or Critical Chance and Added Frost Damage, or Dexterity and Frost Damage, or Dexterity and Added Frost Damage.",
+    "Off hand, helm, chest, belt, boots: Critical Damage and Frost Resistance, or Dexterity and Frost Resistance.",
+    "Gloves, ring: Critical Chance and Frost Damage, or Critical Chance and Added Frost Damage, or Critical Chance and Frost Resistance, or Dexterity and Frost Damage, or Dexterity and Added Frost Damage, or Dexterity and Frost Resistance.",
+    "Amulet: Critical Chance and Frost Damage, or Critical Chance and Frost Resistance, or Dexterity and Frost Damage, or Dexterity and Frost Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "sunder": {
+   "gear": [
+    "Weapon, gloves, ring: Chance to Stun and Physical Damage, or Chance to Stun and Added Damage, or Chance to Stun and Strength, or Strength and Physical Damage, or Strength and Added Damage.",
+    "Off hand, helm, chest, belt, boots: Armour and Strength, or Strength and Armour.",
+    "Amulet: Chance to Stun and Physical Damage, or Chance to Stun and Strength, or Strength and Physical Damage."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "fervor": {
+   "gear": [
+    "Weapon: Attack Speed and Fire Damage, or Attack Speed and Added Fire Damage, or Strength and Fire Damage, or Strength and Added Fire Damage.",
+    "Off hand, helm, chest, belt, boots: Movement Speed and Fire Resistance, or Strength and Fire Resistance.",
+    "Gloves, ring: Attack Speed and Fire Damage, or Attack Speed and Added Fire Damage, or Attack Speed and Fire Resistance, or Strength and Fire Damage, or Strength and Added Fire Damage, or Strength and Fire Resistance.",
+    "Amulet: Attack Speed and Fire Damage, or Attack Speed and Fire Resistance, or Strength and Fire Damage, or Strength and Fire Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "rimeward": {
+   "gear": [
+    "Weapon: Chance to Block and Frost Damage, or Chance to Block and Added Frost Damage, or Strength and Frost Damage, or Strength and Added Frost Damage.",
+    "Off hand, helm, chest, belt, boots: Chance to Block and Frost Resistance, or Strength and Frost Resistance.",
+    "Gloves, ring: Chance to Block and Frost Damage, or Chance to Block and Added Frost Damage, or Chance to Block and Frost Resistance, or Strength and Frost Damage, or Strength and Added Frost Damage, or Strength and Frost Resistance.",
+    "Amulet: Chance to Block and Frost Damage, or Chance to Block and Frost Resistance, or Strength and Frost Damage, or Strength and Frost Resistance."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "implode": {
+   "gear": [
+    "Weapon, gloves, amulet, ring: Pickup Reach and Area of Effect, or Pickup Reach and Intelligence.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach and Cooldown Recovery, or Pickup Reach and Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "power2": {
+   "gear": [
+    "Weapon, gloves, ring: Physical Damage or Added Damage or Strength.",
+    "Amulet: Physical Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength."
+   ],
+   "note": "Half as strong again as Power."
+  },
+  "fire2": {
+   "gear": [
+    "Weapon: Fire Damage (% or added).",
+    "Gloves, ring: Fire Damage (% or added) or Fire Resistance.",
+    "Amulet: Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Fire Resistance."
+   ],
+   "note": "Half as strong again as Flame."
+  },
+  "frost2": {
+   "gear": [
+    "Weapon: Frost Damage (% or added).",
+    "Gloves, ring: Frost Damage (% or added) or Frost Resistance.",
+    "Amulet: Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Frost Resistance."
+   ],
+   "note": "Half as strong again as Frost."
+  },
+  "lightning2": {
+   "gear": [
+    "Weapon: Lightning Damage (% or added).",
+    "Gloves, ring: Lightning Damage (% or added) or Lightning Resistance.",
+    "Amulet: Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Lightning Resistance."
+   ],
+   "note": "Half as strong again as Lightning."
+  },
+  "poison2": {
+   "gear": [
+    "Weapon: Poison Damage (% or added).",
+    "Gloves, ring: Poison Damage (% or added) or Poison Resistance.",
+    "Amulet: Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Poison Resistance."
+   ],
+   "note": "Half as strong again as Poison."
+  }
+ },
+ "lexPages": [
+  {
+   "name": "DAMAGE",
+   "words": [
+    "power",
+    "poison",
+    "fire",
+    "frost",
+    "lightning"
+   ]
+  },
+  {
+   "name": "STRIKE",
+   "words": [
+    "twin",
+    "heavy",
+    "precise",
+    "splitting",
+    "piercing",
+    "volatile",
+    "vast",
+    "surging",
+    "mirroring"
+   ]
+  },
+  {
+   "name": "TIME",
+   "words": [
+    "swift",
+    "frenzied",
+    "stilling",
+    "lasting",
+    "fleeting"
+   ]
+  },
+  {
+   "name": "CONTROL",
+   "words": [
+    "pulling",
+    "binding",
+    "hexing",
+    "guarding"
+   ]
+  },
+  {
+   "name": "SPOILS",
+   "words": [
+    "leech",
+    "bleeding",
+    "reaping",
+    "culling",
+    "plundering"
+   ]
+  }
+ ],
+ "allWords": 28
+}

@@ -37,6 +37,7 @@
 // the lightning strikes as his Movement 9 asks.
 //   test: tsx --test tests/moth.test.ts
 
+import { FLAME_DULL, GLOW_DUST, MOTH2 } from './moth2_switch';
 import type { ActorArt } from './actor_types';
 import { hash } from './kit';
 import { GLYPH, WORD_COLOR, WORD_GLOW } from './icons';
@@ -558,7 +559,9 @@ function dustGrains(move: string, t: number, G: MothGeom, heavy: number): [V3, s
     if (z < 2 || life > 0.92) continue;
     const drift: V3 = [Math.sin(life * 6 + i) * 10 * life - (move === 'walk' ? 60 * life : 0), Math.cos(life * 5 + i) * 10 * life, 0];
     const p = add([from[0], from[1], z], drift);
-    out.push([p, HUSH_DUST[life < 0.3 ? 3 : life < 0.6 ? 2 : 1], hash(i, 4, 9801) < 0.3 ? 2 : 1]);
+    // (made ghostly, art/moth2_switch.ts MOTH2: her scales glowing as they fall, a few of them the Hush's dull pink)
+    const dust = MOTH2.on ? (hash(i, 5, 9801) < 0.06 ? FLAME_DULL : GLOW_DUST[life < 0.3 ? 3 : life < 0.6 ? 2 : 1]) : HUSH_DUST[life < 0.3 ? 3 : life < 0.6 ? 2 : 1];
+    out.push([p, dust, hash(i, 4, 9801) < 0.3 ? 2 : 1]);
   }
   return out;
 }
@@ -599,6 +602,7 @@ function crumbleGrains(t: number, G: MothGeom): [V3, string, number][] {
   const out: [V3, string, number][] = [];
   const k = smooth(MOTH_DIES.crumble[0], MOTH_DIES.crumble[1], t);
   if (k <= 0) return out;
+  if (MOTH2.on) return lightGrains(t, G, k);
   const N = 260;
   for (let i = 0; i < N; i++) {
     const born = MOTH_DIES.crumble[0] + (MOTH_DIES.crumble[1] - MOTH_DIES.crumble[0]) * hash(i, 1, 9951);
@@ -628,6 +632,32 @@ function crumbleGrains(t: number, G: MothGeom): [V3, string, number][] {
   }
   return out;
 }
+/**
+ * MADE GHOSTLY (art/moth2_switch.ts MOTH2): AS SHE CRUMBLES SHE COMES APART INTO LIGHT, not grey dust. His pick of 14 Nov 2026 (“Yes,
+ * build these (Recommended)”, offered as: “At the end she comes apart into drifting light instead of grey dust”): the flakes off her
+ * wings and body rise, glowing, drifting and going out, and nothing is left lying on the top.
+ */
+function lightGrains(t: number, G: MothGeom, k: number): [V3, string, number][] {
+  const out: [V3, string, number][] = [];
+  const N = 320;
+  for (let i = 0; i < N; i++) {
+    const born = MOTH_DIES.crumble[0] + (MOTH_DIES.crumble[1] - MOTH_DIES.crumble[0]) * hash(i, 1, 9961);
+    const age = t - born;
+    const life = 1.1 + 0.9 * hash(i, 5, 9961);
+    if (age < 0 || age > life) continue;
+    const w = G.wings[i % 4];
+    const fromBody = i % 4 === 0;
+    const src = fromBody ? (G.ab[(i * 7) % G.ab.length] ?? G.TC) : onWing(w, (0.25 + 0.7 * hash(i, 2, 9961)) * w.len, (0.08 + 0.45 * hash(i, 3, 9961)) * w.len);
+    const u = age / life;
+    const rise = age * 46 + age * age * 30;
+    const p: V3 = [src[0] + Math.sin(age * 2.4 + i) * 14 * u, src[1] + Math.cos(age * 2 + i) * 14 * u, Math.min(src[2] + rise, 640)];
+    const c = hash(i, 4, 9961);
+    const col = u > 0.8 ? GLOW_DUST[1] : c < 0.07 ? FLAME_DULL : c < 0.45 ? GLOW_DUST[3] : GLOW_DUST[2];
+    out.push([p, col, u < 0.5 && hash(i, 6, 9961) < 0.5 ? 4 : 2]);
+  }
+  void k;
+  return out;
+}
 /** WHAT IS LAID AFTER ITS EDGE: its dust, the shaken scales, the words, its crumbling. */
 function moreOf(move: string, m: Moment): [V3, string, number][] {
   const t = m.t;
@@ -642,7 +672,8 @@ function moreOf(move: string, m: Moment): [V3, string, number][] {
 }
 /** Little moths crawling out over its wings as it wraps them round itself (the Swarm's warning): more and more, crawling. */
 function crawlersOf(move: string, t: number): [number, number, number, number][] {
-  if (move !== 'swarm') return [];
+  // (made ghostly, MOTH2: no little moths crawl out over her; copies of her shimmer off her instead, render/act1_fx/moth.ts)
+  if (move !== 'swarm' || MOTH2.on) return [];
   const k = smooth(0.25, 1.0, t) * (1 - smooth(MOTH_SWARM.strike[0], MOTH_SWARM.strike[1] + 0.05, t));
   if (k <= 0) return [];
   const out: [number, number, number, number][] = [];
@@ -660,6 +691,13 @@ function crawlersOf(move: string, t: number): [number, number, number, number][]
   return out;
 }
 
+/** For the checks (tests/moth2.test.ts): what is laid after its edge at a moment of a move, and the little moths crawling on it. */
+export function mothGrainsAt(move: string, t: number): [V3, string, number][] {
+  return moreOf(move, { t } as Moment);
+}
+export function mothCrawlersAt(move: string, t: number): [number, number, number, number][] {
+  return crawlersOf(move, t);
+}
 const keyOf = (m: Moment): MoveName => byName[m.move ?? ''] ?? (m.dying ? 'dying' : 'stand');
 const SAY: MothSay = {
   smear: (m) => smearOf(keyOf(m), m.t),

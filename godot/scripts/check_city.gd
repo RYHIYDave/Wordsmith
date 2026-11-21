@@ -1,0 +1,2410 @@
+## THE CHECK OF THE CITY'S FLOORS' MONSTERS (--only=city --floor=N; main.gd sends it here): the floor laid out with its kinds each by
+## its own rules (game/act1_rules/<kind>.ts; scripts/act2/); then each common kind on it fought alone, the hero set where its moves
+## reach him, each move made and what it does seen (its blow landing, what it lays on the floor and throws), pictured as it goes;
+## then the floor's boss, met, each of his moves made in turn and what it does seen, pictured; then struck dead. A line a step (OK or
+## WRONG); then the sum, CITY.
+extends RefCounted
+
+var M
+var h
+var n := 0
+var bad: Array = []
+var dir := ""
+var tag := ""
+var P
+var shot := 0
+
+
+func _line(ok: bool, what: String) -> void:
+	n += 1
+	if not ok:
+		bad.append(n)
+	print("CITY %02d %s: %s" % [n, "OK" if ok else "WRONG", what])
+
+
+func _snap(name: String) -> void:
+	shot += 1
+	await M._snap("%s/%s%02d_%s.png" % [dir, tag, shot, name])
+
+
+## A mark of the kind's on the floor now, named so (and, where asked, as `cond` has it).
+func _a1(name: String, cond := Callable()) -> Dictionary:
+	for p in P.list:
+		if p.get("kind") == "a1" and p.get("a1") == name and (not cond.is_valid() or cond.call(p)):
+			return p
+	return {}
+
+
+## Runs the world on for up to `secs`, the hero kept whole (counting each time he is struck), until `until` holds; true if it did.
+func _run(secs: float, until := Callable(), keep := Callable()) -> bool:
+	var t := 0.0
+	while t < secs:
+		await M.get_tree().process_frame
+		t += M.get_process_delta_time()
+		if h.life < h.max_life:
+			struck += 1
+			h.life = h.max_life
+		if keep.is_valid():
+			keep.call()
+		if until.is_valid() and until.call():
+			return true
+	return not until.is_valid()
+
+
+var struck := 0
+
+
+## Only move `i` of its rules ready, now: the others' waits put far off.
+static func _ready_only(m, i: int) -> void:
+	var A: Array = m.h2.acts()
+	if m.h2.cds.size() != A.size():
+		m.h2.cds = []
+		for a in A:
+			m.h2.cds.append(0.0)
+	for k in A.size():
+		m.h2.cds[k] = 0.0 if k == i else 999.0
+	m._cd = 0.0
+	# (standing, not walking on to the end of a step it had begun)
+	if m.h2.act == null:
+		m.h2._to("stand")
+
+
+func run(main, hero, out: String) -> void:
+	M = main
+	h = hero
+	dir = out
+	var depth := int(M._arg("floor")) if M._arg("floor") != "" else 11
+	tag = "c%d_" % depth
+	M.loot.level = 30
+	M.loot.ring_lit = true
+	M.loot.derive()
+	h.walked = 50.0
+	# (he is struck as the game strikes him: each blow counted, then he is made whole again)
+	h.unhurt = false
+	await M.go_to("floor%d" % depth, "down")
+	await M._wait(1.4)
+	if M.sight != null:
+		M.sight.see_all()
+	P = M._monsters.perils
+	var kinds := {}
+	var own := {}
+	for m in M._monsters.list:
+		if is_instance_valid(m):
+			kinds[m.kind] = kinds.get(m.kind, 0) + 1
+			if m.h2 != null:
+				own[m.kind] = true
+	var want: Array = KINDS.get(depth, [])
+	var all := true
+	for k in want:
+		all = all and own.has(k)
+	_line(all and not want.is_empty(), "floor %d laid out: %s, each by its own rules (%s)" % [depth, kinds, ", ".join(own.keys())])
+	await _snap("the_floor")
+	# (one plain one of each common kind kept, the nearest; held where it stands till its turn; the rest of the floor, but the boss, put away)
+	for k in COMMON.get(depth, []):
+		# (a plain one, wordless, where the floor has one; else the plainest: a pack's minion; floor 14's patient one lying in its bed)
+		var m = null
+		if k == "patient":
+			for o in M._monsters.list:
+				if is_instance_valid(o) and not o.dead and o.kind == k and int(o.a1_in.get("bed", 0)) == 1 and (m == null or o.world.distance_to(h.world) < m.world.distance_to(h.world)):
+					m = o
+		if m == null:
+			for o in M._monsters.list:
+				if is_instance_valid(o) and not o.dead and o.kind == k and not o.boss and not o.elite and not o.champion and o.words.is_empty() and (m == null or o.world.distance_to(h.world) < m.world.distance_to(h.world)):
+					m = o
+		if m == null:
+			for o in M._monsters.list:
+				if is_instance_valid(o) and not o.dead and o.kind == k and not o.boss and not o.elite and not o.champion and (m == null or o.world.distance_to(h.world) < m.world.distance_to(h.world)):
+					m = o
+		if m != null:
+			chosen[k] = m
+		# (FLOOR 20: a shadow of each of the four royals kept, each its own: `rshadow_f<form>`)
+		if k == "rshadow":
+			for f in 4:
+				var best = null
+				for o in M._monsters.list:
+					if is_instance_valid(o) and not o.dead and o.kind == k and int(o.form) == f and not o.elite and not o.champion and (best == null or o.world.distance_to(h.world) < best.world.distance_to(h.world)):
+						best = o
+				if best != null:
+					chosen["rshadow_f%d" % f] = best
+	# (a dancer's partner kept with it: the pair's throw is theirs together)
+	var also: Array = []
+	var dn = chosen.get("dancer")
+	if dn != null:
+		for o in M._monsters.list:
+			if is_instance_valid(o) and o.kind == "dancer" and o.id == int(dn.a1_in.get("partner", -2)):
+				also.append(o)
+				chosen["dancer_partner"] = o
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.boss and not chosen.values().has(o) and not also.has(o):
+			o.queue_free()
+	for m in chosen.values():
+		m.rise(1e9)
+	await M._wait(0.1)
+	for k in COMMON.get(depth, []):
+		# (`--kind=K`: that kind's steps alone)
+		if M._arg("kind") != "" and not M._arg("kind").split(",").has(k):
+			continue
+		await _common(k)
+	if depth == 11:
+		await _crier()
+	elif depth == 12:
+		await _ratking()
+	elif depth == 13:
+		await _pair()
+	elif depth == 14:
+		await _physician()
+	elif depth == 15:
+		await _censor()
+	if depth == 16 and (M._arg("kind") == "" or M._arg("kind").split(",").has("garden")):
+		await _garden()
+	if depth == 16 and (M._arg("kind") == "" or M._arg("kind").split(",").has("princess")):
+		await _princess()
+	if depth == 17 and (M._arg("kind") == "" or M._arg("kind").split(",").has("prince")):
+		await _prince()
+	if depth == 18 and (M._arg("kind") == "" or M._arg("kind").split(",").has("mirrors")):
+		await _mirrors()
+	if depth == 18 and (M._arg("kind") == "" or M._arg("kind").split(",").has("gqueen")):
+		await _gqueen()
+	if depth == 19 and (M._arg("kind") == "" or M._arg("kind").split(",").has("ports")):
+		await _ports()
+	if depth == 19 and (M._arg("kind") == "" or M._arg("kind").split(",").has("gking")):
+		await _gking()
+	if depth == 20 and (M._arg("kind") == "" or M._arg("kind").split(",").has("moth")):
+		await _moth()
+	if depth == 20 and (M._arg("kind") == "" or M._arg("kind").split(",").has("tower")):
+		await _tower()
+	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
+
+
+## The kinds of each floor with rules of their own; its common ones fought alone (the boss apart).
+const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"], 12: ["rat", "dredger", "scribe", "hushed", "ratking"],
+	13: ["fieldhand", "carter", "hushed", "scraper", "quill"], 14: ["patient", "orderly", "hushed", "physician"],
+	15: ["inkling", "bookwarden", "scribe", "hushed", "censor"], 16: ["swan", "gardener", "groom", "pguard"],
+	17: ["dancer", "footman", "order", "prince"], 18: ["lady", "reflection", "qguard", "gqueen"], 19: ["xbow", "order", "kknight", "gking"],
+	20: ["hshape", "rshadow", "rshade", "order", "moth"]}
+const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"], 13: ["fieldhand", "carter"], 14: ["patient", "orderly"],
+	15: ["inkling", "bookwarden"], 16: ["swan", "gardener", "groom", "pguard"], 17: ["dancer", "footman", "order"],
+	18: ["lady", "reflection", "qguard"], 19: ["xbow", "order", "kknight"], 20: ["hshape", "rshadow", "rshade", "order"]}
+
+
+var chosen := {}
+
+
+## One of a kind, alone: its kept one let go into the fight, the others still held; the floor's marks cleared.
+func _alone(kind: String):
+	var m = chosen.get(kind)
+	if m == null or not is_instance_valid(m):
+		return null
+	P.list.clear()
+	# (he stands well off it as it is let go: a patient in its bed lies on till he comes near)
+	h.world = M._spot_near(m.world, 8.0, h.world)
+	m._t = 0.0
+	await M._wait(0.1)
+	return m
+
+
+func _common(kind: String) -> void:
+	var m = await _alone(kind)
+	if m == null:
+		_line(false, "no plain %s on the floor" % kind)
+		return
+	struck = 0
+	match kind:
+		"swan":
+			h.world = M._spot_near(m.world + m.face * 1.0, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var bit: bool = await _run(6.0, func(): return _is_act(m, "swan:bite") and float(m.h2.act["t"]) >= 0.35)
+			var warned: bool = not _a1("swan:warn").is_empty()
+			await _snap("swan_bites")
+			await _run(1.0)
+			_line(bit and warned and struck > 0, "the swan: its bite, the strip marked in pink through its wind-up (%s), the hero bitten (%d)" % [warned, struck])
+			# (its charge: from 3.5 tiles off, it rushes him, quicker)
+			_ready_only(m, -1)
+			await _run(0.8, func(): return m.h2.act == null)
+			h.world = M._spot_near(m.world, 3.5, h.world)
+			m.h2.a1["cd"] = 0.0
+			var v: float = m.speed
+			var charged: bool = await _run(2.0, func(): return float(m.h2.a1.get("ch", 0.0)) > 0.0)
+			_line(charged and m.speed > v * 1.5, "its charge: seen 3.5 tiles off, its waddle quickened (%.2f to %.2f)" % [v, m.speed])
+		"gardener":
+			# (a way across the lawn clear for him to be flung along and stumble on: the hero 2.6 tiles along it)
+			var GA = load("res://scripts/act3/gardener.gd")
+			# (the way to where he stands, on a tile's middle, clear: the game lunges only so)
+			for k in 32:
+				var u := Vector2(cos(k * TAU / 32.0), sin(k * TAU / 32.0))
+				var at: Vector2 = M._spot_near(m.world + u * 2.6, 0.0, h.world)
+				if at.distance_to(m.world) <= 3.4 and GA.clear_lunge(m, (at - m.world).normalized()):
+					h.world = at
+					break
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var from: Vector2 = m.world
+			var crouched: bool = await _run(6.0, func(): return _is_act(m, "gardener:lunge") and float(m.h2.act["t"]) >= 0.8)
+			var warned: bool = not _a1("gardener:warn").is_empty()
+			await _snap("gardener_crouches")
+			var snapped: bool = await _run(2.0, func(): return not _a1("gardener:clip").is_empty())
+			await _run(0.15)
+			await _snap("gardener_snaps")
+			await _run(2.5, func(): return m.h2.act == null)
+			var moved: float = m.world.distance_to(from)
+			_line(crouched and warned and snapped and struck > 0 and moved > 2.5, "the gardener's shear lunge: crouched, its lane marked (%s); flung, the blades snapped shut, cut grass (%s); the hero struck (%d); he stumbled on %.2f tiles" % [warned, snapped, struck, moved])
+		"groom":
+			h.world = M._spot_near(m.world + m.face * 4.0, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var whistled: bool = await _run(6.0, func(): return not _a1("groom:horse").is_empty())
+			var line: Dictionary = _a1("groom:horse")
+			var came: bool = await _run(2.0, func(): return float(line.get("t", -1.0)) >= 0.15)
+			await _snap("groom_horse")
+			await _run(1.5)
+			_line(whistled and came and struck > 0, "the groom whistles: its line marked across the garden (%.1f tiles), the horse galloping down it out of the mist, the hero run down (%d)" % [float(line.get("a", 0.0)), struck])
+		"pguard":
+			h.world = M._spot_near(m.world + m.face * 1.4, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var thrust: bool = await _run(6.0, func(): return _is_act(m, "pguard:thrust") and float(m.h2.act["t"]) >= 0.5)
+			var warned: bool = not _a1("pguard:warn").is_empty()
+			await _snap("pguard_thrusts")
+			await _run(1.5, func(): return m.h2.act == null)
+			_line(thrust and warned and struck > 0, "the palace guard (%s): his thrust along its marked line, the hero struck (%d)" % ["the partisan" if m.form == 0 else "the sword", struck])
+			# THE JAVELIN: the partisan guard's (or the sword guard's) hurled at him, sticking; the partisan wrenched out again (a sword
+			# guard is then made the partisan guard, that both are seen)
+			var PG = load("res://scripts/act3/pguard.gd")
+			for turn in (2 if m.form != 0 else 1):
+				if turn == 1:
+					PG._form(m, 0)
+					await _run(0.8, func(): return m.h2.act == null)
+				struck = 0
+				var form0: int = m.form
+				var who: String = "partisan" if form0 == 0 else "javelin"
+				var mine := func(p): return int(p["b"]) == (0 if form0 == 0 else 1)
+				h.world = M._spot_near(m.world, 4.5, h.world)
+				m.face = (h.world - m.world).normalized()
+				_ready_only(m, 1 if form0 == 0 else 2)
+				var thrown: bool = await _run(6.0, func(): return not _a1("pguard:jav", mine).is_empty())
+				await _run(0.25)
+				await _snap("pguard_%s_flies" % who)
+				var stuck: bool = await _run(2.0, func(): return int(_a1("pguard:jav", mine).get("done", 0)) == 1)
+				await _run(0.3)
+				await _snap("pguard_%s_sticks" % who)
+				await _run(2.5, func(): return m.h2.act == null)
+				var after: int = m.form
+				_line(thrown and stuck and struck > 0 and after == (2 if form0 == 0 else 3) and m.art.name == ("pguard_2" if form0 == 0 else "pguard_3"),
+					"his %s hurled at him, its fall marked round him, sticking: the hero struck (%d); his look now %d (%s)" % [who, struck, after, m.art.name])
+				if form0 == 0:
+					# (he marches to it and wrenches it out, the hero kept off)
+					_ready_only(m, -1)
+					h.world = M._spot_near(m.world, 8.0, h.world)
+					var pulled: bool = await _run(14.0, func(): return _is_act(m, "pguard:pullout"))
+					await _run(0.9)
+					await _snap("pguard_pulls_it_out")
+					var back: bool = await _run(3.0, func(): return m.form == 0)
+					_line(pulled and back and _a1("pguard:jav", mine).is_empty(), "he marches to his partisan and wrenches it out of the turf (%s): the partisan guard again (%d)" % [pulled, m.form])
+		"dancer":
+			await _dancers(m)
+		"footman":
+			# (on its loop: it crosses straight before him at its far end, 5.95 tiles out)
+			for k in 32:
+				var u := Vector2(cos(k * TAU / 32.0), sin(k * TAU / 32.0))
+				var at: Vector2 = m.world + u * 5.95
+				if M.map.walkable(floori(at.x), floori(at.y)) and M._monsters.sees(m.world, at):
+					h.world = at
+					break
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var flung: bool = await _run(6.0, func(): return _is_act(m, "footman:tray") and float(m.h2.act["t"]) >= 1.1)
+			var lane: bool = not _a1("footman:warn").is_empty() or not _a1("footman:show").is_empty()
+			await _snap("footman_tray_flies")
+			await _run(1.5, func(): return m.h2.act == null)
+			_line(flung and lane and struck > 0, "the footman's tray flung out along its loop and back into his hand: the hero struck (%d; flung %s, %.1f tiles off)" % [struck, flung, m.world.distance_to(h.world)])
+			struck = 0
+			h.world = M._spot_near(m.world + m.face * 1.8, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 1)
+			var raised: bool = await _run(6.0, func(): return _is_act(m, "footman:fire") and float(m.h2.act["t"]) >= 1.05)
+			await _snap("footman_fire_fan")
+			await _run(1.5, func(): return m.h2.act == null)
+			_line(raised and struck > 0, "his candelabrum brought down: the fire fan bursting out before him, the hero struck (%d)" % struck)
+		"order":
+			h.world = M._spot_near(m.world + m.face * 4.5, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			m.h2.a1["rush_cd"] = 99.0
+			var thrown: bool = await _run(6.0, func(): return not _a1("order:knife").is_empty())
+			await _run(0.1)
+			await _snap("order_knife_flies")
+			await _run(1.2)
+			_line(thrown and struck > 0, "the Order's curved knife thrown along its marked line: the hero struck (%d)" % struck)
+			struck = 0
+			h.hush_t = 0.0
+			h.world = M._spot_near(m.world + m.face * 2.5, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 1)
+			var palmed: bool = await _run(6.0, func(): return _is_act(m, "order:palm") and float(m.h2.act["t"]) >= 1.05)
+			await _snap("order_grey_wave")
+			_line(palmed and struck > 0 and h.hush_t > 0.0, "the hushing palm: the grey wave over its cone, the hero struck (%d) and HUSHED (%.1f s)" % [struck, h.hush_t])
+			await _run(1.5, func(): return m.h2.act == null)
+			# (still, then sudden: from far off, flung at him)
+			_ready_only(m, -1)
+			h.world = M._spot_near(m.world, 9.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			var d0: float = m.world.distance_to(h.world)
+			m.h2.a1["rush_cd"] = 0.0
+			var rushed: bool = await _run(3.0, func(): return _is_act(m, "order:rush"))
+			await _run(0.8, func(): return m.h2.act == null)
+			_line(rushed and m.world.distance_to(h.world) < d0 - 3.5, "still, then sudden: the rush from %.1f tiles off, flung at him to %.1f" % [d0, m.world.distance_to(h.world)])
+		"lady":
+			h.world = M._spot_near(m.world + m.face * 5.0, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var flashed: bool = await _run(5.0, func(): return _is_act(m, "lady:flash") and float(m.h2.act["t"]) >= 0.85)
+			await _run(0.1)
+			await _snap("lady_flash")
+			await _run(1.0, func(): return m.h2.act == null)
+			_line(flashed and struck > 0, "the lady's flash from range: her mirror swept up, the cone of cold light before her: the hero struck (%d)" % struck)
+			# (he comes near: she glides back; at her distance, she circles him)
+			_ready_only(m, -1)
+			h.world = M._spot_near(m.world, 2.0, h.world)
+			var d0: float = m.world.distance_to(h.world)
+			var back: bool = await _run(3.0, func(): return _is_act(m, "lady:back"))
+			await _run(0.8)
+			var d1: float = m.world.distance_to(h.world)
+			h.world = M._spot_near(m.world, 5.2, h.world)
+			var a0: float = (m.world - h.world).angle()
+			var round_: bool = await _run(3.0, func(): return _is_act(m, "lady:left") or _is_act(m, "lady:right"))
+			await _run(1.0)
+			var turned: float = absf(angle_difference(a0, (m.world - h.world).angle()))
+			await _snap("lady_circles")
+			_line(back and d1 > d0 + 0.5 and round_ and turned > 0.15, "she keeps her distance: gliding back from %.1f to %.1f tiles; circling him (%.2f radians round)" % [d0, d1, turned])
+		"reflection":
+			# (as it wakes: out of the nearest mirror; one laid further than 9 tiles from any has none, so it is stood near one)
+			var G = M.gallery
+			if G != null:
+				for q in G.mirrors:
+					var f := Vector2(q["x"], q["y"]) + Vector2(q["fx"], q["fy"]) * 3.0
+					if int(q["frame"]) == 0 and not q["taken"] and M.map.walkable(floori(f.x), floori(f.y)):
+						m.world = f
+						m.h2.a1.erase("out_done")
+						h.world = M._spot_near(f, 5.0, h.world)
+						break
+			var stepped: bool = await _run(4.0, func(): return _is_act(m, "reflection:out"))
+			await _run(0.3)
+			await _snap("reflection_steps_out")
+			await _run(2.0, func(): return m.h2.act == null)
+			_line(stepped, "your reflection steps out of a tall mirror, a glassy copy of the Warrior (form %d)" % int(m.form))
+			struck = 0
+			h.world = M._spot_near(m.world + m.face * 1.4, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var cut: bool = await _run(5.0, func(): return _is_act(m, "reflection:tap0") and float(m.h2.act["t"]) >= 0.3)
+			await _snap("reflection_cut_marked")
+			await _run(1.5, func(): return m.h2.act == null)
+			_line(cut and struck > 0, "its Strike, held a moment and marked, then the cut: the hero struck (%d)" % struck)
+			struck = 0
+			h.world = M._spot_near(m.world + m.face * 1.3, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 1)
+			var slam: bool = await _run(5.0, func(): return _is_act(m, "reflection:hold0") and float(m.h2.act["t"]) >= 0.6)
+			await _snap("reflection_slam_marked")
+			await _run(1.8, func(): return m.h2.act == null)
+			_line(slam and struck > 0, "its Slam, held and marked, brought down before it: the hero struck (%d)" % struck)
+		"qguard":
+			h.world = M._spot_near(m.world + m.face * 1.2, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			m.h2.a1["next"] = 999.0
+			var slashed: bool = await _run(5.0, func(): return _is_act(m, "qguard:slash") and float(m.h2.act["t"]) >= 1.0)
+			await _snap("qguard_x")
+			await _run(1.0, func(): return m.h2.act == null)
+			_line(slashed and struck >= 1, "the queen's guard's double slash: the X before him, the hero struck (%d)" % struck)
+			struck = 0
+			h.world = M._spot_near(m.world + m.face * 4.0, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 1)
+			var fanned: bool = await _run(5.0, func(): return not _a1("qguard:fan").is_empty())
+			await _run(0.15)
+			await _snap("qguard_shards")
+			await _run(0.6)
+			_line(fanned and struck > 0, "the shard fan: five slivers of glass flung, the hero struck (%d)" % struck)
+			# (he far off: into the glass, and out of another beside him)
+			_ready_only(m, -1)
+			h.world = M._spot_near(m.world, 8.0, h.world)
+			m.h2.a1["next"] = 0.0
+			var went: bool = await _run(4.0, func(): return _is_act(m, "qguard:stepIn"))
+			var out: bool = await _run(3.0, func(): return _is_act(m, "qguard:stepOut"))
+			await _run(0.7)
+			_line(went and out and m.world.distance_to(h.world) < 2.5, "farther off, he steps into the glass and out of another beside him (%.1f tiles from him)" % m.world.distance_to(h.world))
+		"xbow":
+			h.world = M._spot_near(m.world, 6.0, h.world)
+			var aimed: bool = await _run(5.0, func(): return _is_act(m, "xbow:shot") and float(m.h2.act["t"]) >= 1.25)
+			var lane: bool = not _a1("xbow:show").is_empty()
+			await _snap("xbow_red_line")
+			await _run(0.12)
+			await _snap("xbow_bolt")
+			var reload: bool = await _run(2.0, func(): return _is_act(m, "xbow:reload"))
+			_line(aimed and lane and struck > 0 and reload, "the crossbowman holds his spot: the red aim line drawn out and held; the bolt down it, the hero struck (%d); the reload after" % struck)
+		"kknight":
+			h.world = M._spot_near(m.world + m.face * 3.5, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var cleave: bool = await _run(6.0, func(): return not _a1("kknight:crack").is_empty())
+			await _run(0.2)
+			await _snap("kknight_crack")
+			await _run(1.5, func(): return m.h2.act == null)
+			_line(cleave and struck > 0, "the king's knight's cleave: the floor cracked on out before him, the hero struck (%d)" % struck)
+			struck = 0
+			h.world = M._spot_near(m.world + m.face * 2.5, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 1)
+			var planted: bool = await _run(6.0, func(): return not _a1("kknight:banner").is_empty())
+			await _run(1.0)
+			await _snap("kknight_banner_rally")
+			var bp: Dictionary = _a1("kknight:banner")
+			var rally: float = m.h2.rally_of(m)
+			var looked: String = m.art.name
+			for k in 3:
+				h._break_props(0, Vector2(bp.get("x", 0.0), bp.get("y", 0.0)), 0.5)
+				await _run(0.2)
+			var cut: bool = float(bp.get("d", -1.0)) >= 0.0
+			await _run(0.3)
+			await _snap("kknight_banner_cut_down")
+			_line(planted and struck > 0 and rally > 1.2 and looked == "kknight_1" and cut and M._wu_said("The banner is cut down") != "",
+				"the rallying banner: driven in, its shockwave striking the hero (%d); while it stands those near it hit harder (x%.1f); he without it (%s); three blows cut it down" % [struck, rally, looked])
+		"rshadow":
+			await _rshadows()
+		"rshade":
+			h.world = M._spot_near(m.world, 4.5, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var marked: bool = await _run(5.0, func(): return not _a1("rshade:line", func(q): return float(q["t"]) >= -0.25).is_empty())
+			await _snap("rshade_line_marked")
+			var line: Dictionary = _a1("rshade:line")
+			await _run(1.5, func(): return float(line.get("t", -1.0)) >= 0.6)
+			await _snap("rshade_rime_creeps")
+			var froze: bool = await _run(2.0, func(): return not _a1("rshade:ice").is_empty())
+			var held: bool = h.held > 0.0
+			await _run(0.25)
+			await _snap("rshade_frozen")
+			_line(marked and froze and held and struck > 0, "the Rime Shade's breath: its line marked at him; the rime creeping down it; its front reaching him: struck (%d), FROZEN IN PLACE" % struck)
+			# (the rime lying where its front has passed slows him)
+			await _run(1.0, func(): return h.held <= 0.0)
+			var on: Vector2 = Vector2(line["x"], line["y"]) + Vector2(line["fx"], line["fy"]) * 1.5
+			h.world = on
+			await _run(0.3, Callable(), func(): h.world = on)
+			var slowed: bool = h._slow_t > 0.0 and h._slow_by >= 0.39
+			await _snap("rshade_rime_lies")
+			_line(slowed, "the rime lying where its front passed: standing in it he goes slower (by %.2f)" % h._slow_by)
+		"hshape":
+			# (in the open, 4.5 tiles off: it circles him, closing, and swoops)
+			h.world = M._spot_near(m.world, 4.5, h.world)
+			_ready_only(m, -1)
+			var circled: bool = await _run(6.0, func(): return m.h2.act != null and str(m.h2._id()).begins_with("hshape:glide"))
+			await _run(1.0)
+			await _snap("hshape_circles")
+			var swooped: bool = await _run(14.0, func(): return _is_act(m, "hshape:swoopL") or _is_act(m, "hshape:swoopR"))
+			await _run(0.45, func(): return m.h2.act != null and float(m.h2.act["t"]) >= 0.45)
+			var warned: bool = not _a1("hshape:warn").is_empty()
+			await _snap("hshape_swoop_marked")
+			var gripped: bool = await _run(1.0, func(): return not _a1("hshape:grip").is_empty())
+			await _run(0.1)
+			await _snap("hshape_grips")
+			var hushed: bool = h.hush_t > 0.0
+			await _run(1.5, func(): return m.h2.act == null)
+			_line(circled and swooped and warned and gripped and struck > 0 and hushed, "the Hush in its own shape: round him on its ring, closing; its swoop, the round marked (%s); its grip: the hero struck (%d), held and HUSHED" % [warned, struck])
+			# (too close in to circle: it grips as before)
+			struck = 0
+			h.hush_t = 0.0
+			await _run(1.0, func(): return m.h2.act == null)
+			h.world = M._spot_near(m.world + m.face * 1.4, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var grip: bool = await _run(4.0, func(): return _is_act(m, "hshape:grip") and float(m.h2.act["t"]) >= 0.5)
+			await _snap("hshape_grip_close")
+			await _run(1.0)
+			_line(grip and struck > 0, "close in, it grips as before: the hero struck (%d)" % struck)
+		"hushed":
+			h.world = M._spot_near(m.world, 0.9, h.world)
+			_ready_only(m, 0)
+			var went: bool = await _run(6.0, func(): return m.h2.act != null and float(m.h2.act["t"]) >= 0.5)
+			await _snap("hushed_lunges")
+			await _run(1.2)
+			_line(went and struck > 0, "the Hushed: its lunge and grab (%s), the hero caught (%d)" % [M._monsters.used, struck])
+		"rat":
+			h.world = M._spot_near(m.world, 1.0, h.world)
+			_ready_only(m, 0)
+			var went: bool = await _run(6.0, func(): return m.h2.act != null and float(m.h2.act["t"]) >= 0.42)
+			await _snap("rat_leaps")
+			await _run(1.0)
+			_line(went and struck > 0, "the plague rat: its leap and bite (%s), the hero bitten (%d)" % [M._monsters.used, struck])
+		"dredger":
+			# (the hook: caught out where the hook bites, and hauled in)
+			h.world = M._spot_near(m.world + m.face * 2.0, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var d0: float = h.world.distance_to(m.world)
+			var hooked: bool = await _run(6.0, func(): return int(m.h2.a1.get("hooked", 0)) == 1)
+			var held: bool = h.held > 0.0
+			await _run(0.3)
+			await _snap("dredger_hauls")
+			await _run(1.2)
+			var d1: float = h.world.distance_to(m.world)
+			_line(hooked and held and struck > 0 and d1 < d0 - 0.3, "the dredger's hook and haul: the hero struck (%d), HOOKED, held, hauled in from %.2f to %.2f tiles" % [struck, d0, d1])
+			await _run(1.0)
+			# (the cast net, at him out past the hook)
+			struck = 0
+			var way: Vector2 = (h.world - m.world).normalized()
+			# (kept 3 tiles off before it, where its net reaches, till it casts)
+			var stay := func():
+				if m.h2.act == null:
+					h.world = M._spot_near(m.world + way * 3.0, 0.0, h.world)
+			_ready_only(m, 1)
+			var aimed: bool = await _run(6.0, func(): return not _a1("dredger:aim", func(p): return float(p["t"]) >= 0.9).is_empty(), stay)
+			await _snap("dredger_net_marked")
+			var flies: bool = await _run(2.0, func(): return not _a1("dredger:net", func(p): return float(p["t"]) >= 0.25).is_empty())
+			await _snap("dredger_net_flies")
+			var netted: bool = await _run(1.0, func(): return h.held > 0.5)
+			await _run(0.2)
+			await _snap("dredger_net_lies")
+			_line(aimed and flies and netted and struck > 0, "the dredger's cast net: where it falls marked, flying, falling on him: struck (%d) and NETTED (held %.1f s)" % [struck, h.held])
+		"fieldhand":
+			# (thrown along the floor's way nearest him: he stands 3.5 tiles off along it, in the sickle's way out)
+			var ax: Vector2 = m.h2.axis_of(h.world - m.world)
+			h.world = M._spot_near(m.world + ax * 3.6, 0.0, h.world)
+			m.face = ax
+			_ready_only(m, 0)
+			# (once it has begun, he stands where the sickle passes on its way out, a third of its flight along)
+			var on_way := func():
+				if m.h2.act != null and float(m.h2.act["t"]) < 0.7:
+					var q = m.h2.boom_at(m.h2.BOOM_HIT + 0.3 * float(m.h2.BOOM["fly"]))
+					h.world = m.h2.beside(m.world, m.face, m.h2.act["hand"], q.x, q.y)
+			var marked: bool = await _run(6.0, func(): return not _a1("fieldhand:boom", func(p): return float(p["t"]) >= 0.5).is_empty(), on_way)
+			await _snap("fieldhand_curve_marked")
+			var flies: bool = await _run(2.0, func(): return m.h2.act != null and float(m.h2.act["t"]) >= 1.1)
+			await _snap("fieldhand_sickle_flies")
+			await _run(2.0, func(): return m.h2.act == null)
+			var b := int(m.h2.act.get("b", 0)) if m.h2.act != null else 0
+			_line(marked and flies and struck > 0, "the fieldhand's sickle boomerang: its curve marked, flung, spinning out and back: the hero struck %d (out and back)" % struck)
+		"carter":
+			# (the lash: caught out at its end, coiled round and dragged in)
+			h.world = M._spot_near(m.world + m.face * 2.2, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var d0: float = h.world.distance_to(m.world)
+			var lashed: bool = await _run(6.0, func(): return int(m.h2.a1.get("grab", 0)) == 1)
+			var held: bool = h.held > 0.0
+			await _run(0.4)
+			await _snap("carter_lash_drags")
+			await _run(1.0)
+			_line(lashed and held and struck > 0 and h.world.distance_to(m.world) < d0 - 0.3, "the carter's lash: struck (%d), LASHED, held, dragged in from %.2f to %.2f tiles" % [struck, d0, h.world.distance_to(m.world)])
+			await _run(1.0)
+			# (the driver's lash: he stands where its first crack falls)
+			struck = 0
+			var way: Vector2 = (h.world - m.world).normalized()
+			var stay := func():
+				if m.h2.act == null:
+					h.world = M._spot_near(m.world + way * 1.3, 0.0, h.world)
+			_ready_only(m, 1)
+			var rings: bool = await _run(6.0, func(): return not _a1("carter:warn", func(p): return float(p["t"]) >= 0.7).is_empty(), stay)
+			await _snap("carter_lashes_marked")
+			var cracked: bool = await _run(2.0, func(): return not _a1("carter:crack").is_empty())
+			await _run(0.1)
+			await _snap("carter_lashes_crack")
+			await _run(1.5)
+			_line(rings and cracked and struck > 0, "the carter's driver's lash: its three rings marked, the cracks striking the floor; the hero struck (%d)" % struck)
+		"patient":
+			# (lying in its bed: he comes near, in its sight; it rises; then its silent scream)
+			var abed: bool = int(m.h2.a1.get("bed", 0)) == 1
+			await _snap("patient_abed")
+			h.world = M._spot_near(m.world + m.face * 2.5, 0.0, h.world)
+			var rises: bool = await _run(4.0, func(): return m.h2.act != null and m.h2.acts()[m.h2.act["i"]]["id"] == "patient:rise" and float(m.h2.act["t"]) >= 1.0)
+			await _snap("patient_rises")
+			var up: bool = await _run(3.0, func(): return int(m.h2.a1.get("bed", 0)) == 0)
+			h.world = M._spot_near(m.world + m.face * 1.2, 0.0, h.world)
+			_ready_only(m, 0)
+			var screams: bool = await _run(5.0, func(): return not _a1("patient:scream", func(p): return float(p["t"]) >= 0.2).is_empty())
+			await _snap("patient_screams")
+			await _run(0.5)
+			_line(abed and rises and up and screams and struck > 0, "the Hushed patient: lying in its ward bed (%s), rising as he comes near (%s, up %s), its silent scream (%s) striking him (%d)" % [abed, rises, up, screams, struck])
+		"orderly":
+			h.world = M._spot_near(m.world + m.face * 1.4, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var slammed: bool = await _run(6.0, func(): return not _a1("orderly:slam").is_empty())
+			await _run(0.15)
+			await _snap("orderly_mallet")
+			_line(slammed and struck > 0, "the orderly's mallet blow: held high, into the floor; the hero struck and knocked back (%d)" % struck)
+			await _run(1.5, func(): return m.h2.act == null)
+			struck = 0
+			# (he stands 5 tiles off down a run of open floor from it, where the gurney can career)
+			var way := Vector2.ZERO
+			for w in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1), Vector2(0.7071, 0.7071), Vector2(-0.7071, 0.7071), Vector2(0.7071, -0.7071), Vector2(-0.7071, -0.7071)]:
+				var ok := true
+				for k2 in 13:
+					var q: Vector2 = m.world + w * (k2 * 0.5)
+					if not M._monsters.clear(q.x, q.y, 0.35):
+						ok = false
+				if ok:
+					way = w
+					break
+			var stay := func():
+				if m.h2.act == null:
+					h.world = m.world + way * 5.0
+			_ready_only(m, 1)
+			var laned: bool = await _run(6.0, func(): return not _a1("orderly:gurney", func(p): return float(p["t"]) >= -0.2).is_empty(), stay)
+			await _snap("orderly_gurney_lane")
+			var crashed: bool = await _run(3.0, func(): return not _a1("orderly:gurney", func(p): return float(p["hit"]) < 1e9 and float(p["t"]) - float(p["hit"]) >= 0.1).is_empty())
+			await _snap("orderly_gurney_crash")
+			await _run(0.5)
+			_line(laned and crashed and struck > 0, "the gurney charge: the lane marked (%s, along %s), the gurney slammed down it, crashing (%s) on him (%d)" % [laned, way, crashed, struck])
+		"inkling":
+			# (on open floor, clear of the library's shelves)
+			m.world = _open_spot(m.world)
+			# THE INK LASH: no melting meanwhile
+			m.h2.a1["mcd"] = 999.0
+			h.world = M._spot_near(m.world + m.face * 0.7, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var lashed: bool = await _run(6.0, func(): return m.h2.act != null and str(m.h2.acts()[m.h2.act["i"]]["id"]) == "inkling:lash" and float(m.h2.act["t"]) >= 0.55)
+			await _snap("inkling_lash")
+			await _run(1.2, func(): return m.h2.act == null)
+			_line(lashed and struck > 0, "the inkling's ink lash: its claws raked across before it, the hero struck (%d)" % struck)
+			# THE MELT: the hero off in its sight; a pool sliding to him, out of reach; rising before him
+			struck = 0
+			h.world = M._spot_near(m.world, 5.0, h.world)
+			m.h2.a1["mcd"] = 0.0
+			m.h2.cds[0] = 999.0
+			var pooled: bool = await _run(6.0, func(): return int(m.h2.a1.get("sunk", 0)) == 2)
+			await _run(0.5)
+			await _snap("inkling_pool")
+			var out_of_reach: bool = not m.h2.reachable(m)
+			var rose: bool = await _run(6.0, func(): return int(m.h2.a1.get("sunk", 0)) == 3)
+			var near: float = m.world.distance_to(h.world)
+			await _run(0.5)
+			await _snap("inkling_rises")
+			_line(pooled and out_of_reach and rose and near <= 1.5 and _a1("inkling:pool").is_empty(), "the melt: run down into a pool of ink, out of reach, sliding to the hero; risen %.1f tiles from him" % near)
+		"bookwarden":
+			m.world = _open_spot(m.world)
+			# THE TOME SLAM
+			h.world = M._spot_near(m.world + m.face * 1.8, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var slammed: bool = await _run(6.0, func(): return not _a1("bookwarden:mark").is_empty())
+			await _run(0.12)
+			await _snap("bookwarden_slam")
+			_line(slammed and struck > 0, "the bookwarden's tome slam: flat on the floor, the dust, the cracks, the loose pages; the hero struck and shoved back (%d)" % struck)
+			await _run(2.0, func(): return m.h2.act == null)
+			# THE BOOK BARRAGE
+			struck = 0
+			h.world = M._spot_near(m.world, 5.0, h.world)
+			_ready_only(m, 1)
+			var wheel: bool = await _run(6.0, func(): return not _a1("bookwarden:barrage", func(p): return float(p["t"]) >= 0.95).is_empty())
+			await _snap("bookwarden_books_wheel")
+			var flung: bool = await _run(1.0, func(): return not _a1("bookwarden:barrage", func(p): return float(p["t"]) >= 1.3).is_empty())
+			await _snap("bookwarden_books_flung")
+			await _run(2.0)
+			await _snap("bookwarden_books_lie")
+			_line(wheel and flung and struck > 0, "the book barrage: nine books torn up and wheeling round him, flung one after another, the hero struck by %d" % struck)
+		"hound":
+			h.world = M._spot_near(m.world, 1.0, h.world)
+			_ready_only(m, 0)
+			var went: bool = await _run(6.0, func(): return m.h2.act != null and float(m.h2.act["t"]) >= 0.45)
+			await _snap("hound_pounces")
+			await _run(1.0)
+			_line(went and struck > 0, "the watch hound: its pounce (%s), the hero struck (%d)" % [M._monsters.used, struck])
+		"scribe":
+			h.world = M._spot_near(m.world, 4.0, h.world)
+			_ready_only(m, 0)
+			var marked: bool = await _run(6.0, func(): return not _a1("scribe:mark").is_empty() and float(_a1("scribe:mark")["t"]) >= 0.5)
+			await _snap("scribe_marks_the_spot")
+			var flies: bool = await _run(3.0, func(): return not _a1("scribe:ink", func(p): return float(p["t"]) >= 0.12 and float(p["t"]) < float(p["hit"])).is_empty())
+			await _snap("scribe_ink_flies")
+			var pool: bool = await _run(2.0, func(): return not _a1("scribe:ink", func(p): return float(p["t"]) - float(p["hit"]) >= 0.25).is_empty())
+			await _snap("scribe_ink_pool")
+			var ink: Dictionary = _a1("scribe:ink")
+			var slowed := false
+			if not ink.is_empty():
+				h.world = Vector2(ink["x"], ink["y"])
+				await _run(0.3)
+				slowed = h.chill_t > 0.0 and h.chill_k > 0.0
+			_line(marked and flies and pool and struck > 0 and slowed, "the scribe: the spot marked, the ink flicked and flying, its pool lying; the hero struck (%d), slowed in it (%.2f)" % [struck, h.chill_k])
+		"watch":
+			# (the chop: its reach ringed, the bite, the split)
+			h.world = M._spot_near(m.world, 1.8, h.world)
+			_ready_only(m, 0)
+			var ringed: bool = await _run(6.0, func(): return m.h2.act != null and m.h2.act["i"] == 0 and float(m.h2.act["t"]) >= 0.6)
+			var warned := false
+			for p in P.list:
+				if p.get("kind") == "warn":
+					warned = true
+			await _snap("watch_chop_held")
+			var at0: Vector2 = h.world
+			var bit: bool = await _run(2.0, func(): return not _a1("watch:bite", func(p): return float(p["t"]) >= 0.08).is_empty())
+			await _snap("watch_chop_bites")
+			var knocked: bool = h.world.distance_to(at0) > 0.1
+			await _run(0.5)
+			await _snap("watch_chop_split")
+			_line(ringed and warned and bit and struck > 0 and knocked, "the Watchman's chop: held, its reach ringed (%s); the bite and the split; the hero struck (%d) and knocked back %.2f" % [warned, struck, h.world.distance_to(at0)])
+			await _run(1.5)
+			# (the lantern: lobbed where he stands, smashing, its oil burning)
+			struck = 0
+			h.world = M._spot_near(m.world, 5.0, h.world)
+			_ready_only(m, 1)
+			var lobbed: bool = await _run(6.0, func(): return not _a1("watch:lantern", func(p): return float(p["t"]) >= 0.25).is_empty())
+			await _snap("watch_lantern_flies")
+			var smashed: bool = await _run(2.0, func(): return not _a1("watch:lantern", func(p): return float(p["t"]) - float(p["hit"]) >= 0.1).is_empty())
+			await _snap("watch_lantern_smashes")
+			var hit_by_smash := struck
+			await _run(1.5)
+			await _snap("watch_oil_burns")
+			var burned_before := struck
+			await _run(1.6)
+			_line(lobbed and smashed and hit_by_smash > 0 and struck > burned_before, "the Watchman's lantern: lobbed, smashing on him (%d), its oil burning him as he stands in it (%d more)" % [hit_by_smash, struck - burned_before])
+
+
+# --- THE CRIER (floor 11's boss) ---
+
+func _crier() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss:
+			boss = o
+	if boss == null:
+		_line(false, "floor 11 has no boss")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	# (met: the hero come into his square)
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(4.0, func(): return boss._said != "")
+	await _snap("crier_met")
+	_line(met and boss._said == "..." and boss.state != "sleep", "the Crier met in his square: his line '%s' (no voice: the Hush took it first), %s, %.0f life" % [boss._said, boss.title, boss.max_life])
+	await _run(3.0)
+	var keep := func():
+		if h.world.distance_to(boss.world) > 10.0:
+			h.world = M._spot_near(boss.world, 5.0, h.world)
+	# THE TOLL
+	struck = 0
+	h.world = M._spot_near(boss.world, 4.0, h.world)
+	_ready_only(boss, 0)
+	var tolled: bool = await _run(6.0, func(): return not _a1("crier:toll", func(p): return float(p["t"]) >= 0.3).is_empty(), keep)
+	await _snap("crier_toll_marked")
+	await _run(0.4, Callable(), keep)
+	await _snap("crier_toll_bursts")
+	await _run(3.0, func(): return boss.h2.act == null, keep)
+	var used_toll: int = M._monsters.used.get("crier_toll", 0)
+	_line(tolled and struck >= 3, "the toll follows you: five tolls rung, each marking where he stood, bursting on him standing still (%d struck)" % struck)
+	await _run(1.0, Callable(), keep)
+	# THE SHOUT OFF THE WALLS
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	_ready_only(boss, 1)
+	var walls: bool = await _run(6.0, func(): return not _a1("crier:shout9", func(p): return float(p["t"]) >= 1.2).is_empty(), keep)
+	await _snap("crier_shout_warning")
+	var sh: Dictionary = _a1("crier:shout9")
+	var w := [float(sh.get("a", 0.0)), float(sh.get("b", 0.0)), float(sh.get("c", 0.0)), float(sh.get("d", 0.0))]
+	# (he is put before him, in the wave's way)
+	if not sh.is_empty():
+		var f := Vector2(sh["fx"], sh["fy"])
+		h.world = M._spot_near(boss.world + f * minf(4.0, w[0] - 0.5), 0.0, h.world)
+	var hushed: bool = await _run(2.5, func(): return h.hush_t > 0.0)
+	await _run(0.15)
+	await _snap("crier_shout_fronts")
+	var dark: bool = h.loadout.hushed
+	await _run(1.0)
+	await _snap("crier_shout_dark")
+	_line(walls and w[0] > 0.0 and hushed and dark and struck > 0, "the shout off the walls: his square's walls found (ahead %.1f, behind %.1f, left %.1f, right %.1f); a front over him, struck (%d), HUSHED (%.1f s, his moves wordless: %s)" % [w[0], w[1], w[2], w[3], struck, h.hush_t, dark])
+	await _run(4.5, func(): return h.hush_t <= 0.0)
+	_line(h.hush_t <= 0.0 and not h.loadout.hushed, "the Hush runs out: his words his again")
+	# THE PROCLAMATION
+	struck = 0
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	_ready_only(boss, 2)
+	var marked: bool = await _run(8.0, func(): return not _a1("crier:decree", func(p): return float(p["t"]) >= 1.0).is_empty(), keep)
+	await _snap("crier_decree_marked")
+	var dc: Dictionary = _a1("crier:decree")
+	# (he stands in its lane, on it)
+	if not dc.is_empty():
+		h.world = M._spot_near(Vector2(dc["x"], dc["y"]) + Vector2(dc["fx"], dc["fy"]) * minf(4.0, float(dc["d"]) - 0.5), 0.0, h.world)
+	var rolled: bool = await _run(2.0, func(): return not _a1("crier:decree", func(p): return float(p["t"]) - float(p["hit"]) >= 0.2).is_empty())
+	await _snap("crier_decree_unrolls")
+	var by_roll := struck
+	await _run(1.2)
+	await _snap("crier_decree_burns")
+	_line(marked and rolled and by_roll > 0 and struck > by_roll, "the Proclamation: its lane marked (%.1f tiles), the decree flung down it, its roll striking him (%d), then its burning letters (%d more)" % [float(dc.get("d", 0.0)), by_roll, struck - by_roll])
+	await _run(3.0, Callable(), keep)
+	# THE CROWD
+	h.world = M._spot_near(boss.world, 3.5, boss.world)
+	_ready_only(boss, 3)
+	var called0 := _called()
+	var pools: bool = await _run(8.0, func(): return not _a1("crier:call9", func(p): return float(p["t"]) >= 1.1).is_empty(), keep)
+	await _snap("crier_crowd_pools")
+	var cl: Dictionary = _a1("crier:call9")
+	var np: int = (cl.get("pools", []) as Array).size()
+	var came: bool = await _run(3.0, func(): return _called() >= called0 + 3, keep)
+	await _snap("crier_crowd_comes")
+	_line(pools and np >= 2 and came, "the Crowd: %d pools at the edges of his square; the Hushed out of them (%d called)" % [np, _called()])
+	# HIS DEATH: what of his would harm goes with him
+	_ready_only(boss, 0)
+	await _run(1.4, func(): return not _a1("crier:toll").is_empty(), keep)
+	boss.hurt(1e9)
+	await _run(0.2)
+	var left := 0
+	for p in P.list:
+		if p.get("kind") == "a1" and str(p.get("a1", "")).begins_with("crier:") and float(p["t"]) < float(p["dur"]):
+			left += 1
+	await M._wait(1.0)
+	await _snap("crier_falls")
+	_line(boss.dead and left == 0, "the Crier struck dead: the Hush pours out of him; what of his would harm gone with him (%d left)" % left)
+
+
+# --- THE RAT KING (floor 12's boss) ---
+
+func _ratking() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss:
+			boss = o
+	if boss == null:
+		_line(false, "floor 12 has no boss")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(4.0, func(): return boss._said != "")
+	await _snap("ratking_met")
+	_line(met and boss.state != "sleep", "the Rat King met in his cistern: '%s', %s, %.0f life" % [boss._said, boss.title, boss.max_life])
+	await _run(2.0)
+	var keep := func():
+		if h.world.distance_to(boss.world) > 12.0:
+			h.world = M._spot_near(boss.world, 5.0, h.world)
+	# THE BITE
+	struck = 0
+	h.world = M._spot_near(boss.world, 2.0, h.world)
+	_ready_only(boss, 0)
+	var marked: bool = await _run(6.0, func(): return not _a1("ratking:wedge", func(p): return float(p["t"]) >= 0.6).is_empty(), keep)
+	await _snap("ratking_bite_wedge")
+	await _run(0.45)
+	await _snap("ratking_bite_snaps")
+	await _run(1.5, func(): return boss.h2.act == null)
+	_line(marked and struck > 0, "the bite: the wedge marked, the front rats snapping shut on him (%d)" % struck)
+	# STOLEN WORDS: his own word FROST set, that the King steals it
+	struck = 0
+	h.loadout.put(0, "front", "frost")
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	_ready_only(boss, 1)
+	var lined: bool = await _run(6.0, func(): return not _a1("ratking:aim", func(p): return float(p["t"]) >= 1.1).is_empty(), keep)
+	await _snap("ratking_word_locked")
+	var flies: bool = await _run(1.5, func(): return not _a1("ratking:word", func(p): return float(p["t"]) >= 0.12 and int(p["done"]) == 0).is_empty())
+	await _snap("ratking_word_flies")
+	var wd: Dictionary = _a1("ratking:word")
+	var burst: bool = await _run(2.0, func(): return not _a1("ratking:word", func(p): return int(p["done"]) == 1 and float(p["t"]) - float(p["hit"]) >= 0.1).is_empty())
+	await _snap("ratking_word_bursts")
+	var stole: String = RK_STOLEN[int(wd.get("b", -1))] if wd.has("b") else "-"
+	_line(lined and flies and burst and struck > 0 and stole == "frost", "stolen words: his own FROST stolen (%s), its line following him and locked, spat, bursting on him (%d)" % [stole, struck])
+	await _run(1.5, func(): return boss.h2.act == null)
+	# THE ROLL
+	struck = 0
+	var lane := Vector2.ZERO
+	for w in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1), Vector2(0.7071, 0.7071), Vector2(-0.7071, 0.7071), Vector2(0.7071, -0.7071), Vector2(-0.7071, -0.7071)]:
+		if boss.h2.clear_for(boss, boss.world, w, 0.6, 8.0) >= 7.9:
+			lane = w
+			break
+	if lane != Vector2.ZERO:
+		h.world = boss.world + lane * 5.0
+	_ready_only(boss, 2)
+	var curled: bool = await _run(6.0, func(): return not _a1("ratking:roll9", func(p): return float(p["t"]) >= 1.0).is_empty())
+	await _snap("ratking_roll_lane")
+	var from: Vector2 = boss.world
+	await _run(0.45)
+	await _snap("ratking_rolls")
+	var opened: bool = await _run(2.0, func(): return not _a1("ratking:roll9", func(p): return float(p["t"]) >= 2.3).is_empty())
+	await _snap("ratking_bursts_open")
+	var ran: float = boss.world.distance_to(from)
+	_line(curled and opened and ran > 3.0 and struck > 0, "the roll: his lane marked, barrelling down it %.1f tiles, bursting open at its end; the hero run down (%d)" % [ran, struck])
+	await _run(2.0, func(): return boss.h2.act == null, keep)
+	# UNKNOT
+	struck = 0
+	h.world = M._spot_near(boss.world, 2.0, h.world)
+	_ready_only(boss, 3)
+	var swelled: bool = await _run(6.0, func(): return boss.h2.act != null and boss.h2.acts()[boss.h2.act["i"]]["id"] == "ratking:unknot" and float(boss.h2.act["t"]) >= 1.1)
+	await _snap("ratking_bursts_apart")
+	var at0: Vector2 = boss.world
+	var gone: bool = await _run(1.5, func(): return boss.h2.swarming())
+	var out_of_reach: bool = not boss.h2.reachable(boss)
+	await _run(0.3)
+	await _snap("ratking_swarm")
+	var back: bool = await _run(3.0, func(): return boss.h2.act == null)
+	await _snap("ratking_knotted_again")
+	_line(swelled and gone and out_of_reach and back and boss.world.distance_to(at0) > 2.0 and struck > 0, "unknot: the rats burst outward (%d struck), gone into the cracks, out of reach; the swarm across him; knotted again %.1f tiles off" % [struck, boss.world.distance_to(at0)])
+	# THE SLUICES: his fight's clock run on to their first opening; the hero in a lane, by the gates
+	struck = 0
+	_ready_only(boss, 0)
+	boss.h2.cds[0] = 999.0
+	boss.h2.a1["fight"] = 8.9
+	var opened2: bool = await _run(1.0, func(): return not _a1("ratking:sluice").is_empty())
+	# (he is held where he is while it runs, that the flood alone strikes the hero)
+	boss.rise(1e9)
+	struck = 0
+	var sl: Dictionary = _a1("ratking:sluice")
+	if not sl.is_empty():
+		var C: Dictionary = boss.h2.cistern_of_peril(sl)
+		var L: Array = boss.h2.lanes_for(C["across"])
+		# (in the lane furthest from him, by the gates)
+		var best := 0
+		for i in L.size():
+			if boss.h2.from_cistern(C, 0.0, float(L[i]["y"])).distance_to(boss.world) > boss.h2.from_cistern(C, 0.0, float(L[best]["y"])).distance_to(boss.world):
+				best = i
+		h.world = M._spot_near(boss.h2.from_cistern(C, -float(C["half"]) + 3.0, float(L[best]["y"])), 0.0, h.world)
+	await _run(1.0)
+	await _snap("ratking_sluices_marked")
+	var at1: Vector2 = h.world
+	var C1: Dictionary = boss.h2.cistern_of_peril(sl) if not sl.is_empty() else {}
+	var flooded: bool = await _run(2.5, func(): return struck > 0)
+
+	await _run(0.25)
+	await _snap("ratking_flood")
+	await _run(0.5)
+	boss._t = 0.0
+	_line(opened2 and flooded and h.world.distance_to(at1) > 0.8, "the sluices: the lanes marked, the gates grinding open, the flood down his lane: struck (%d), carried %.1f tiles" % [struck, h.world.distance_to(at1)])
+	# HIS DEATH
+	await _run(0.3)
+	boss.hurt(1e9)
+	await _run(1.2)
+	await _snap("ratking_falls")
+	_line(boss.dead, "the Rat King struck dead")
+
+
+const RK_STOLEN := ["fire", "frost", "lightning", "poison"]
+
+
+# --- THE SCRAPER AND THE QUILL (floor 13's double boss) ---
+
+func _pair() -> void:
+	var sr = null
+	var ql = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.kind == "scraper":
+			sr = o
+		elif is_instance_valid(o) and o.kind == "quill":
+			ql = o
+	if sr == null or ql == null:
+		_line(false, "floor 13 has not its pair")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != sr and o != ql:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(sr.world, 5.0, h.world)
+	var met: bool = await _run(4.0, func(): return sr._said != "")
+	await _snap("pair_met")
+	_line(met and sr.state != "sleep" and ql.state != "sleep" and M._hud.card.get("name", "").find(" and ") > 0,
+		"the pair met on the Pulping Floor, waking together: '%s'; across the screen '%s'" % [sr._said, M._hud.card.get("name", "")])
+	await _run(3.5)
+	var keep := func():
+		if h.world.distance_to(sr.world) > 10.0:
+			h.world = M._spot_near(sr.world, 4.0, h.world)
+	# (the Quill held aside while the Scraper makes its own three)
+	ql.rise(1e9)
+	sr.h2.a1["combo"] = 999.0
+	sr.h2.a1["heal"] = 999.0
+	struck = 0
+	h.world = M._spot_near(sr.world + sr.face * 3.4, 0.0, h.world)
+	_ready_only(sr, 0)
+	var ringed: bool = await _run(6.0, func(): return not _a1("scraper:aim", func(p): return float(p["t"]) >= 0.3).is_empty(), keep)
+	await _snap("scraper_snap_ring")
+	await _run(0.4)
+	await _snap("scraper_snaps")
+	_line(ringed and struck > 0, "the Scraper's claw snap: its ring closing, the claw snapping shut on him (%d)" % struck)
+	await _run(1.0, func(): return sr.h2.act == null)
+	struck = 0
+	h.world = M._spot_near(sr.world + sr.face * 2.5, 0.0, h.world)
+	_ready_only(sr, 2)
+	var fan: bool = await _run(6.0, func(): return not _a1("scraper:aim", func(p): return float(p["t"]) >= 0.7).is_empty(), keep)
+	await _snap("scraper_scour_fan")
+	await _run(0.4)
+	await _snap("scraper_scours")
+	# (straight before it he is the last the claws reach, as they meet in its middle)
+	await _run(1.5, func(): return struck > 0 or sr.h2.act == null)
+	_line(fan and struck > 0, "the scour: the fan marked, both claws slammed down and dragged in; the hero struck (%d)" % struck)
+	await _run(2.0, func(): return sr.h2.act == null)
+	struck = 0
+	var lane := Vector2.ZERO
+	for w in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]:
+		if sr.h2.clear_along(sr, sr.world, w, 0.25, 6.0, 0.42):
+			lane = w
+			break
+	h.world = M._spot_near(sr.world + lane * 3.0, 0.0, h.world)
+	_ready_only(sr, 1)
+	var marked: bool = await _run(6.0, func(): return not _a1("scraper:aim", func(p): return int(p["c"]) == 1 and float(p["t"]) >= 0.5).is_empty())
+	await _snap("scraper_rush_lane")
+	var from: Vector2 = sr.world
+	await _run(0.9)
+	await _snap("scraper_rushes")
+	_line(marked and struck > 0 and sr.world.distance_to(from) > 3.0, "the backward rush: its tail turned on him, the lane marked, shooting back %.1f tiles: the hero struck and thrown aside (%d)" % [sr.world.distance_to(from), struck])
+	await _run(1.5, func(): return sr.h2.act == null)
+	# (the Quill's own two; the Scraper held aside)
+	ql._t = 0.0
+	await _run(0.2)
+	sr.rise(1e9)
+	struck = 0
+	h.world = M._spot_near(ql.world + ql.face * 2.4, 0.0, h.world)
+	_ready_only(ql, 0)
+	var stab: bool = await _run(6.0, func(): return not _a1("quill:aim", func(p): return float(p["t"]) >= 0.3).is_empty())
+	await _snap("quill_stab_ring")
+	await _run(0.5)
+	await _snap("quill_stabs")
+	_line(stab and struck > 0, "the Quill's nib stab: its ring closing, the nib striking (%d)" % struck)
+	await _run(1.0, func(): return ql.h2.act == null)
+	struck = 0
+	var qway: Vector2 = ql.face
+	h.world = M._spot_near(ql.world + qway * 3.3, 0.0, h.world)
+	_ready_only(ql, 1)
+	var laid: bool = await _run(6.0, func(): return not _a1("quill:line", func(p): return int(p["c"]) == 2).is_empty())
+	await _snap("quill_lines_laid")
+	await _run(0.8)
+	await _snap("quill_lines_burst")
+	_line(laid and struck > 0, "the ink lines: three lines laid across the floor before it, bursting; the hero on one struck (%d)" % struck)
+	await _run(1.5, func(): return ql.h2.act == null)
+	# OVERWRITE: the Scraper hurt; the Quill sent to write over its wounds
+	sr._t = 0.0
+	await _run(0.3)
+	sr.life = sr.max_life * 0.6
+	var l0: float = sr.life
+	sr.h2.a1["heal"] = 0.0
+	h.world = M._spot_near(sr.world, 6.0, h.world)
+	var sent: bool = await _run(4.0, func(): return int(ql.h2.a1["mode"]) == 1 or ql.h2.act != null and ql.h2.acts()[ql.h2.act["i"]]["id"] == "quill:takeoff")
+	var flew: bool = await _run(4.0, func(): return ql.h2.act != null and ql.h2.acts()[ql.h2.act["i"]]["id"] == "quill:fly")
+	await _snap("quill_flies")
+	var writes: bool = await _run(5.0, func(): return ql.h2.act != null and ql.h2.acts()[ql.h2.act["i"]]["id"] == "quill:write")
+	await _run(1.5)
+	await _snap("quill_overwrites")
+	await _run(1.0)
+	_line(sent and flew and writes and sr.life > l0 + 1.0, "overwrite: the Quill sent, flying to the Scraper's side and landing; writing over its wounds: %.0f to %.0f life" % [l0, sr.life])
+	await _run(5.0, func(): return int(sr.h2.a1["written"]) == 0)
+	# THE PALIMPSEST: their ultimate, five strips, each at him
+	struck = 0
+	sr.h2.a1["combo"] = 0.0
+	h.world = M._spot_near(sr.world, 5.0, h.world)
+	var begun: bool = await _run(6.0, func(): return int(sr.h2.a1["ult"]) == 1)
+	var stripped: bool = await _run(8.0, func(): return not _a1("scraper:strip").is_empty(), keep)
+	var stp: Dictionary = _a1("scraper:strip")
+	# (he stands on the strip, at its middle)
+	if not stp.is_empty():
+		h.world = M._spot_near(Vector2(stp["x"], stp["y"]) + Vector2(stp["fx"], stp["fy"]) * 6.0, 0.0, h.world)
+	await _snap("palimpsest_strip")
+	var written: bool = await _run(4.0, func(): return not _a1("scraper:strip", func(p): return int(p["d"]) >= 1).is_empty())
+	await _run(0.2)
+	await _snap("palimpsest_swoop")
+	var burst: bool = await _run(4.0, func(): return not _a1("scraper:strip", func(p): return int(p["done"]) == 1).is_empty())
+	await _run(0.1)
+	await _snap("palimpsest_bursts")
+	await _run(0.5)
+	var rounds: bool = await _run(30.0, func(): return int(sr.h2.a1["ult"]) == 0, func():
+		var q: Dictionary = _a1("scraper:strip", func(p): return int(p["done"]) == 0)
+		if not q.is_empty():
+			h.world = M._spot_near(Vector2(q["x"], q["y"]) + Vector2(q["fx"], q["fy"]) * 6.0, 0.0, h.world))
+	_line(begun and stripped and written and burst and struck > 0 and int(sr.h2.a1["round"]) >= 2, "the Palimpsest: %d strips scraped, the Quill swooping down each writing it, each bursting; the hero on them struck (%d); over %s" % [int(sr.h2.a1["round"]), struck, rounds])
+	# ONE FALLS, THE OTHER FIGHTS ON (the Quill struck down on the floor: in the air it is not felled)
+	await _run(6.0, func(): return not ql.h2.aloft(ql))
+	ql.hurt(1e9)
+	await _run(0.5)
+	var alone: bool = ql.dead and not sr.dead
+	await _snap("pair_one_falls")
+	sr.hurt(1e9)
+	await _run(1.5)
+	await _snap("pair_both_fallen")
+	_line(alone and sr.dead, "the Quill struck dead: the Scraper fights on alone; then it too")
+
+
+func _called() -> int:
+	var k := 0
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and o.has_meta("crier_called"):
+			k += 1
+	return k
+
+
+# --- FLOOR 14'S BOSS, THE PHYSICIAN ---
+
+const PHR := preload("res://scripts/act2/physician.gd")
+const SAVE := preload("res://scripts/save.gd")
+
+
+func _is_act(m, id: String) -> bool:
+	return m.h2 != null and m.h2.act != null and str(m.h2.acts()[m.h2.act["i"]]["id"]) == id
+
+
+## A place `away` tiles from him that his lens sees, the line to it clear of what cannot be walked.
+func _in_his_light(boss, away: float) -> Vector2:
+	var best: Vector2 = h.world
+	var map = M._monsters.map
+	for ty in range(floori(boss.world.y - away - 2), floori(boss.world.y + away + 3)):
+		for tx in range(floori(boss.world.x - away - 2), floori(boss.world.x + away + 3)):
+			if not map.walkable(tx, ty):
+				continue
+			var q := Vector2(tx + 0.5, ty + 0.5)
+			if absf(q.distance_to(boss.world) - away) > 0.6:
+				continue
+			var f: Vector2 = (q - boss.world).normalized()
+			if PHR.lens_sees(map, PHR.lens_spot(boss.world, f, 1), q) and M._monsters.sees(boss.world, q):
+				return q
+	return best
+
+
+func _physician() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "physician":
+			boss = o
+	if boss == null:
+		_line(false, "floor 14 has no Physician")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(4.0, func(): return boss._said != "")
+	await _snap("physician_met")
+	_line(met and boss.state != "sleep", "the Physician met in his theatre: '%s', %s, %.0f life" % [boss._said, boss.title, boss.max_life])
+	await _run(1.5)
+	# THE RAP
+	struck = 0
+	h.world = M._spot_near(boss.world, 1.8, h.world)
+	_ready_only(boss, 0)
+	var held_up: bool = await _run(6.0, func(): return not _a1("physician:rapmark", func(p): return _is_act(boss, "physician:rap") and float(boss.h2.act["t"]) >= 0.75).is_empty())
+	await _snap("physician_rap_marked")
+	await _run(0.3)
+	await _snap("physician_rap_cracks")
+	await _run(2.0, func(): return boss.h2.act == null)
+	_line(held_up and struck > 0, "the rap: the cane held up, its line and star marked; brought down, the boards cracked; the hero struck (%d)" % struck)
+	# THE DRAW: his FROST set, that the Physician draws it out
+	struck = 0
+	h.loadout.front[0] = h.loadout.front[0].map(func(_w): return null)
+	h.loadout.put(0, "front", "frost")
+	h.world = M._spot_near(boss.world, 2.5, h.world)
+	_ready_only(boss, 1)
+	var en_garde: bool = await _run(6.0, func(): return _is_act(boss, "physician:draw") and float(boss.h2.act["t"]) >= 0.85)
+	await _snap("physician_draw_lane")
+	await _run(0.28)
+	await _snap("physician_draw_needle")
+	var drawn: bool = await _run(1.0, func(): return boss.h2.held_word() != "")
+	var gone_from_him: bool = not h.loadout.front[0].has("frost")
+	var hangs: bool = await _run(3.0, func(): return not _a1("physician:held", func(p): return float(p["t"]) >= 0.5).is_empty())
+	await _snap("physician_holds_frost")
+	_line(en_garde and drawn and gone_from_him and hangs and boss.h2.held_word() == "frost" and struck > 0, "the Draw: the lane marked, the lunge's needle of light; struck (%d), his FROST drawn out of its socket, hanging over the Physician's head" % struck)
+	# (the save has it where it would go back to; the game itself goes on as it is)
+	var run: Dictionary = SAVE.run_of(M)
+	_line((run["front"][0] as Array).has("frost") and not h.loadout.front[0].has("frost"), "saved while he holds it: FROST written into the save in its own socket; still his in the game")
+	await _run(1.0, func(): return boss.h2.act == null)
+	# BEATEN BACK OUT OF HIM: five blows that land
+	_ready_only(boss, 0)
+	boss.h2.cds[0] = 999.0
+	for k in 5:
+		boss.hurt(1.0)
+		await _run(0.12)
+	var home: bool = h.loadout.front[0].has("frost") and boss.h2.held_word() == ""
+	var flies: bool = not _a1("physician:freed").is_empty()
+	await _run(0.25)
+	await _snap("physician_frost_flies_home")
+	_line(home and flies, "five blows land on him: FROST beaten back out of him, flying home to its socket")
+	await _run(0.6)
+	# DIAGNOSIS: in the lens's light, standing there, the mark fills; he operates
+	struck = 0
+	h.world = _in_his_light(boss, 6.0)
+	_ready_only(boss, 2)
+	var looks: bool = await _run(6.0, func(): return _is_act(boss, "physician:diagnose") and int(boss.h2.a1.get("dOn", 0)) == 1 and float(boss.h2.a1.get("dFill", 0.0)) >= 0.55)
+	await _snap("physician_diagnosis")
+	var op_on: bool = await _run(3.0, func(): return not _a1("physician:op").is_empty())
+	var op: Dictionary = _a1("physician:op")
+	await _run(0.35)
+	await _snap("physician_operation_dark")
+	await _run(0.6)
+	await _snap("physician_instruments_held")
+	var hit: bool = await _run(1.0, func(): return not op.is_empty() and float(op["t"]) >= PHR.OP_HIT + 0.02)
+	await _snap("physician_instruments_strike")
+	await _run(0.5)
+	await _snap("physician_stuck_scorched")
+	_line(looks and op_on and hit and struck > 0, "Diagnosis: the lens's beam on him, the mark filling; full, HE OPERATES: dark, the spotlight on him, his instruments flung out, held, closing in: struck (%d)" % struck)
+	await _run(2.5, func(): return boss.h2.act == null)
+	# HID FROM THE LENS: the mark drains, he lowers it, no operation
+	struck = 0
+	h.world = _in_his_light(boss, 6.0)
+	_ready_only(boss, 2)
+	await _run(6.0, func(): return _is_act(boss, "physician:diagnose") and int(boss.h2.a1.get("dOn", 0)) == 1 and float(boss.h2.a1.get("dFill", 0.0)) >= 0.3)
+	# (out of the light: well round him, behind him)
+	var behind: Vector2 = M._spot_near(boss.world - boss.face * 4.0, 0.0, h.world)
+	h.world = behind
+	var drained: bool = await _run(3.0, func(): return float(boss.h2.a1.get("dFill", 1.0)) <= 0.0)
+	var lowered: bool = await _run(10.0, func(): return boss.h2.act == null)
+	_line(drained and lowered and _a1("physician:op").is_empty(), "out of his light: the mark drains away; he lowers the lens and does not operate")
+	# ROUNDS: three raps, the rings of the Hush; patients laid in the free beds near him rise
+	struck = 0
+	h.hush_t = 0.0
+	h.loadout.set_hushed(false)
+	h.world = M._spot_near(boss.world, 3.0, h.world)
+	_ready_only(boss, 4)
+	var reach: bool = await _run(6.0, func(): return _is_act(boss, "physician:rounds") and float(boss.h2.act["t"]) >= 0.8)
+	await _snap("physician_rounds_reach")
+	await _run(0.35)
+	await _snap("physician_rounds_ring")
+	var hushed: bool = await _run(1.5, func(): return h.hush_t > 0.0)
+	var called := 0
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and o.kind == "patient" and o.h2 != null and int(o.h2.a1.get("called", -1)) == boss.id:
+			called += 1
+	await _run(2.0)
+	await _snap("physician_patients_rise")
+	var up := 0
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and o.kind == "patient" and o.h2 != null and int(o.h2.a1.get("called", -1)) == boss.id and int(o.h2.a1.get("go", 0)) == 1:
+			up += 1
+	_line(reach and hushed and called > 0 and up == called, "rounds: three raps, rings of the Hush rolling out: the hero hushed; %d patients laid in the free beds near him, rising" % called)
+	await _run(2.0, func(): return boss.h2.act == null)
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.kind == "patient":
+			o.queue_free()
+	await M._wait(0.1)
+	# A WORD NEVER LOST: held as the hero leaves the place, it is his again
+	h.loadout.front[0] = h.loadout.front[0].map(func(_w): return null)
+	h.loadout.put(0, "front", "frost")
+	boss.h2._draw_out(boss, h)
+	var took: bool = boss.h2.held_word() == "frost"
+	h.fresh_place()
+	_line(took and h.loadout.front[0].has("frost") and boss.h2.held_word() == "", "a word never lost: held as the hero leaves, FROST is his again in its socket")
+	# HIS DEATH, holding a word: it flies home
+	boss.h2._draw_out(boss, h)
+	await _run(0.3)
+	boss.hurt(1e9)
+	var freed: bool = not _a1("physician:freed").is_empty()
+	await _run(1.2)
+	await _snap("physician_falls")
+	_line(boss.dead and freed and h.loadout.front[0].has("frost"), "the Physician struck dead: the word he held flies home")
+
+
+# --- FLOOR 15 ---
+
+## The nearest place to `at` with open floor two tiles all round it (the library's shelves stand close).
+func _open_spot(at: Vector2) -> Vector2:
+	var map = M._monsters.map
+	var best := at
+	var bd := INF
+	for ty in range(floori(at.y) - 30, floori(at.y) + 31):
+		for tx in range(floori(at.x) - 30, floori(at.x) + 31):
+			var ok := true
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					if not map.walkable(tx + dx, ty + dy):
+						ok = false
+						break
+				if not ok:
+					break
+			var q := Vector2(tx + 0.5, ty + 0.5)
+			if ok and q.distance_to(at) < bd:
+				bd = q.distance_to(at)
+				best = q
+	return best
+
+
+# --- FLOOR 15'S BOSS, THE CENSOR ---
+
+const CER := preload("res://scripts/act2/censor.gd")
+
+
+func _censor() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "censor":
+			boss = o
+	if boss == null:
+		_line(false, "floor 15 has no Censor")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(4.0, func(): return boss._said != "")
+	await _snap("censor_met")
+	_line(met and boss.state != "sleep", "the Censor met in his Reading Room: '%s', %s, %.0f life; his room %d tiles" % [boss._said, boss.title, boss.max_life, (M._monsters.censor.get("ground", []) as Array).size()])
+	# (his ink all the while: held off for each move's own pictures, but where it is looked at; his words, which burn and poison, put by:
+	# each count of a blow is his move's own)
+	boss.h2.a1["iw"] = 999.0
+	boss.words = []
+	# THE BRUSH SLASH
+	struck = 0
+	h.world = M._spot_near(boss.world + boss.face * 1.8, 0.0, h.world)
+	boss.face = (h.world - boss.world).normalized()
+	_ready_only(boss, 0)
+	var slashed: bool = await _run(6.0, func(): return not _a1("censor:slash", func(p): return float(p["t"]) >= 0.15).is_empty())
+	await _snap("censor_slash")
+	_line(slashed and struck > 0, "the brush slash: down and across before him, its arc of ink on the floor; the hero struck (%d)" % struck)
+	await _run(2.0, func(): return boss.h2.act == null)
+	# STRIKE-THROUGH, TWICE IN A ROW
+	struck = 0
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	_ready_only(boss, 1)
+	var aimed: bool = await _run(6.0, func(): return not _a1("censor:aim", func(p): return _is_act(boss, "censor:strike") and float(boss.h2.act["t"]) >= 0.6).is_empty())
+	await _snap("censor_strike_aim")
+	var ran: bool = await _run(1.0, func(): return not _a1("censor:line", func(p): return float(p["t"]) >= 0.25).is_empty())
+	await _snap("censor_strike_line")
+	var before: int = int(M._monsters.used.get("censor_strike", 0)) - 1
+	await _run(4.5, func(): return int(M._monsters.used.get("censor_strike", 0)) - before >= 2 and boss.h2.act == null)
+	var lines: int = int(M._monsters.used.get("censor_strike", 0)) - before
+	_line(aimed and ran and lines >= 2 and struck > 0, "Strike-Through twice in a row: the line marked, the brush thrust, a burning line run out to the wall (%d lines), the hero struck (%d)" % [lines, struck])
+	await _run(3.0, func(): return boss.h2.act == null)
+	# REDACTION, BY TURNS: one way, both ways at once, the page struck out
+	var kinds := ["one way", "both ways at once", "the page struck out"]
+	for r in 3:
+		struck = 0
+		h.world = M._spot_near(boss.world, 4.0, h.world)
+		_ready_only(boss, 2)
+		var marked: bool = await _run(8.0, func(): return not _a1("censor:bars", func(p): return float(p["t"]) >= -0.3 and float(p["t"]) < 0.0).is_empty())
+		await _snap("censor_redaction_%d_marked" % r)
+		var slam: bool = await _run(1.5, func(): return not _a1("censor:bars", func(p): return int(p["done"]) == 1 and float(p["t"]) >= 0.08).is_empty())
+		await _snap("censor_redaction_%d_slams" % r)
+		await _run(1.2)
+		if r == 2:
+			await _snap("censor_page_struck_out")
+		_line(marked and slam, "Redaction, %s: the bars marked out in pink, slammed down black (%d struck), lying wet; %d tiles under his ink" % [kinds[r], struck, CER.inked_count(M._monsters.map)])
+		await _run(4.0, func(): return boss.h2.act == null)
+	# WHAT HE LAYS STAYS: standing on it, hurt
+	struck = 0
+	var map = M._monsters.map
+	# (on his newest ink: the oldest dries away as more is laid, and what has dried hurts no more)
+	var inked_at := Vector2.INF
+	var pool: Array = CER._pool_of(map)["list"]
+	for e in range(pool.size() - 1, -1, -1):
+		for i in (pool[e].get("tiles", []) as Array):
+			var q := Vector2(int(i) % map.w + 0.5, int(i) / map.w + 0.5)
+			if CER.inked(map, q.x, q.y) and q.distance_to(boss.world) > 3.0:
+				inked_at = q
+				break
+		if inked_at != Vector2.INF:
+			break
+	boss.rise(1e9)
+	if inked_at != Vector2.INF:
+		var stand := func(): h.world = inked_at
+		await _run(1.6, Callable(), stand)
+	await _snap("censor_ink_on_the_floor")
+	_line(inked_at != Vector2.INF and struck >= 2, "his ink stays on the floor: standing on it the hero is hurt again and again (%d times in 1.6 s)" % struck)
+	boss._t = 0.0
+	# HIS INK ALL THE WHILE: a cross of bars where the hero is heading, and lines across the room
+	struck = 0
+	_ready_only(boss, 0)
+	boss.h2.cds[0] = 999.0
+	boss.h2.a1["iw"] = 0.1
+	h.world = M._spot_near(boss.world, 4.0, h.world)
+	var crossed_on: bool = await _run(3.0, func(): return not _a1("censor:bars", func(p): return int(p.get("c", 0)) == 1 and float(p["t"]) >= -0.2).is_empty())
+	await _snap("censor_ink_cross")
+	boss.h2.a1["ik"] = 2
+	boss.h2.a1["iw"] = 0.1
+	var margin: bool = await _run(3.0, func(): return not _a1("censor:margin", func(p): return float(p["t"]) >= 0.3).is_empty())
+	await _snap("censor_ink_line_across")
+	_line(crossed_on and margin, "his ink all the while: a cross of bars slamming where the hero is heading; a line of ink run across the room through him")
+	# HE WALKS OFF TO CLEAN FLOOR, his big move over
+	var from: Vector2 = boss.world
+	boss.h2.a1["wo"] = 1
+	boss.h2.a1["ww"] = 0.0
+	boss.h2.a1["iw"] = 999.0
+	var walked: bool = await _run(6.0, func(): return int(boss.h2.a1.get("wk", 0)) == 1)
+	await _run(1.5)
+	await _snap("censor_walks_off")
+	_line(walked and boss.world.distance_to(from) > 1.0, "he walks off to clean floor (%.1f tiles), none of his ink round where he goes" % boss.world.distance_to(from))
+	await _run(4.0, func(): return int(boss.h2.a1.get("wk", 0)) == 0)
+	# THE HUSH
+	h.hush_t = 0.0
+	h.loadout.set_hushed(false)
+	h.world = M._spot_near(boss.world, 7.0, h.world)
+	_ready_only(boss, 3)
+	var rolls: bool = await _run(6.0, func(): return not _a1("censor:hush", func(p): return float(p["t"]) >= 0.45).is_empty())
+	await _snap("censor_hush_rolls")
+	var dark: bool = await _run(2.0, func(): return h.hush_t > 0.0)
+	await _run(0.8)
+	await _snap("censor_hush_veil")
+	_line(rolls and dark, "the Hush: a ring of silence rolling out across his room; as it passed him the hero's words went dark")
+	await _run(2.0, func(): return boss.h2.act == null)
+	# HIS DEATH: his ink dries away; the book of stolen words bursts
+	var had: int = CER.inked_count(map)
+	boss.hurt(1e9)
+	var book: bool = not _a1("censor:book").is_empty()
+	await _run(0.6)
+	await _snap("censor_book_bursts")
+	await _run(1.2)
+	await _snap("censor_falls")
+	_line(boss.dead and book and had > 0 and CER.inked_count(map) == 0, "the Censor struck dead: his ink dried away (%d tiles of it), the book of stolen words burst, its words flying home" % had)
+
+
+## FLOOR 16'S BOSS, THE PRINCESS (act3/princess.gd, pr_marks.gd): met, her swans circling her; her glide about him; the lash; the
+## snare, holding him in, broken by three of his blows; the Eleven; the Vow, his words dark; her steed at her second phase, its leaps
+## round her arena and at him; in her third, struck down on her steed: it fades, and she falls, her swans flying off, her whisper.
+func _princess() -> void:
+	var PR = load("res://scripts/act3/princess.gd")
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "princess":
+			boss = o
+	if boss == null:
+		_line(false, "floor 16 has no Princess")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(8.0, func(): return boss.state != "sleep" and not boss.waits)
+	var swans: bool = await _run(1.0, func(): return not _a1("princess:swans").is_empty())
+	await _run(0.5)
+	await _snap("princess_met")
+	_line(met and swans, "the Princess met in her pavilion: %s, %.0f life (%s); her garden's swans circling her (%d: %s)" % [boss.title, boss.max_life, boss.state, boss.h2.swans(), swans])
+	# HER GLIDE: darting about him between her moves
+	_ready_only(boss, -1)
+	# (the ground she covers, dart after dart, and how many darts)
+	var went := [0.0, 0, boss.world, false]
+	var log_glide := func() -> void:
+		went[0] += boss.world.distance_to(went[2])
+		went[2] = boss.world
+		var going: bool = int(boss.h2.a1.get("gk", 0)) == 1
+		if going and not went[3]:
+			went[1] += 1
+		went[3] = going
+	await _run(3.0, Callable(), log_glide)
+	await _snap("princess_glides")
+	_line(went[0] > 3.0 and went[1] >= 2, "her glide: hovering, darting about him: %d darts, %.1f tiles covered in 3 s, %.1f from him" % [went[1], went[0], boss.world.distance_to(h.world)])
+	# THE LASH
+	await _run(2.0, func(): return boss.h2.act == null and int(boss.h2.a1.get("gk", 0)) == 0)
+	struck = 0
+	h.world = M._spot_near(boss.world + boss.face * 3.0, 0.0, h.world)
+	_ready_only(boss, 0)
+	var lashing: bool = await _run(4.0, func(): return _is_act(boss, "princess:lash") and float(boss.h2.act["t"]) >= 0.6)
+	var wedge: bool = not _a1("princess:warn").is_empty()
+	await _snap("princess_lash_wedge")
+	await _run(0.25)
+	await _snap("princess_lash_whips")
+	await _run(1.2, func(): return boss.h2.act == null)
+	_line(lashing and wedge and struck > 0, "the lash: the wedge it will sweep marked in pink; the vine whipped a quarter turn round her front, 7.5 tiles long; the hero struck (%d)" % struck)
+	# THE SNARE: held in; broken by three blows
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	_ready_only(boss, 1)
+	var ringed: bool = await _run(5.0, func(): return not _a1("princess:snare", func(p): return float(p["t"]) < 0.0).is_empty())
+	await _snap("princess_snare_ringed")
+	var held: bool = await _run(1.5, func(): return bool(_a1("princess:snare").get("held", false)))
+	await _run(0.4)
+	await _snap("princess_snare_holds")
+	var sn: Dictionary = _a1("princess:snare")
+	var kept := false
+	if not sn.is_empty():
+		var c := Vector2(sn["x"], sn["y"])
+		h.world = c + Vector2(4.0, 0.0)
+		await _run(0.4)
+		kept = h.world.distance_to(c) <= float(PR.SNARE["r"])
+	_line(ringed and held and kept and struck > 0, "the vine snare: where he stood ringed in pink; the thicket burst up round him, struck (%d), HELD IN (walked out, kept %.1f from its middle)" % [struck, h.world.distance_to(Vector2(sn.get("x", 0.0), sn.get("y", 0.0)))])
+	_ready_only(boss, -1)
+	var lives: Array = []
+	if not sn.is_empty():
+		for k in 3:
+			h._break_props(0, Vector2(sn["x"], sn["y"]), 1.0)
+			lives.append(int(sn["life"]))
+			await _run(0.25)
+			if k == 0:
+				await _snap("princess_snare_struck")
+	await _run(0.3)
+	await _snap("princess_snare_bursts")
+	_line(lives == [2, 1, 0] and float(sn.get("broken", -1.0)) >= 0.0 and not bool(sn.get("held", true)), "three blows on it, its life %s: it bursts apart and lets him go" % str(lives))
+	await _run(1.0)
+	# THE ELEVEN
+	struck = 0
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	_ready_only(boss, 2)
+	var marked: bool = await _run(5.0, func(): return not _a1("princess:eleven").is_empty())
+	await _run(0.35)
+	await _snap("princess_eleven_feathers")
+	var dived: bool = await _run(2.0, func(): return float(_a1("princess:eleven").get("t", -1.0)) >= 0.15)
+	await _snap("princess_eleven_swans_dive")
+	var n_lines: int = (_a1("princess:eleven").get("lines", []) as Array).size()
+	await _run(1.2)
+	_line(marked and dived and n_lines >= 5 and struck > 0, "the Eleven: %d lines marked by falling feathers, the middle through him; her swans diving along them; struck (%d)" % [n_lines, struck])
+	# THE VOW
+	struck = 0
+	h.hush_t = 0.0
+	h.world = M._spot_near(boss.world, 2.0, h.world)
+	_ready_only(boss, 3)
+	var vowed: bool = await _run(5.0, func(): return not _a1("princess:vow").is_empty())
+	var hushed: bool = await _run(0.5, func(): return h.hush_t > 0.0)
+	await _run(0.2)
+	await _snap("princess_vow")
+	_line(vowed and hushed and struck > 0, "the Vow: a ring of silence burst out round her, struck (%d); his words dark in it (HUSHED %s)" % [struck, hushed])
+	await _run(3.5)
+	# HER STEED, as her second phase comes
+	struck = 0
+	_ready_only(boss, -1)
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	boss.life = boss.max_life * 0.6
+	var formed: bool = await _run(4.0, func(): return boss.h2.riding())
+	await _run(1.0)
+	await _snap("princess_steed_forms")
+	var lapped: bool = await _run(12.0, func(): return int(boss.h2.a1.get("rn", 0)) >= 8)
+	var at_you: bool = await _run(3.0, func(): return _is_act(boss, "princess:leap") and int(boss.h2.act.get("a", 0)) == 1 and float(boss.h2.act["t"]) >= 0.45)
+	await _snap("princess_leaps_at_him")
+	var faded: bool = await _run(12.0, func(): return not boss.h2.riding())
+	_line(formed and lapped and at_you and faded and struck > 0 and boss.h2.phase_in() == 2,
+		"her second phase: the spectral steed formed under her; eight leaps round her arena, seven at him, where its hooves come down ringed; struck (%d); it fades" % struck)
+	# HER THIRD: on her steed again, struck down on it: it fades first, and she falls
+	_ready_only(boss, -1)
+	boss.life = boss.max_life * 0.3
+	var again: bool = await _run(4.0, func(): return boss.h2.riding() and int(boss.h2.a1.get("rn", 0)) >= 1)
+	boss.hurt(boss.life + 1000.0)
+	var floored: bool = boss.life >= 1.0 and not boss.dead
+	var falls: bool = await _run(4.0, func(): return boss.dead)
+	await _run(0.4)
+	await _snap("princess_falls")
+	var flying: bool = not _a1("princess:fall").is_empty()
+	var whispered: bool = await _run(2.0, func(): return boss._said == PR.WHISPER and boss._said_t > 0.0)
+	await _run(0.3)
+	await _snap("princess_whispers")
+	_line(again and floored and falls and flying and whispered, "her third phase: on her steed again; struck down on it, held at 1 life (%s), the steed fades and she falls; her swans fly off; she whispers \"%s\"" % [floored, boss._said])
+
+
+## FLOOR 16'S OWN GROUND (act3/garden.gd): a bed of nettles walked into: slowed, stung after a moment and again while in it, the
+## patch stirring; a monster in it stung too; her vine in the yew drawn back as he comes near.
+func _garden() -> void:
+	var G = M.garden
+	if G == null or not G.on():
+		_line(false, "floor 16 has no nettle beds")
+		return
+	# (a bed's middle, open ground; the hero stands just out of it)
+	var bed := Vector2.INF
+	var out := Vector2.INF
+	var map = M.map
+	for i in map.w * map.h:
+		var p := Vector2(i % map.w + 0.5, i / map.w + 0.5)
+		if not G.in_nettles(p) or not map.walkable(i % map.w, i / map.w):
+			continue
+		for d in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
+			var q: Vector2 = p + d * 2.0
+			if not G.in_nettles(q) and map.walkable(floori(q.x), floori(q.y)):
+				bed = p
+				out = q
+				break
+		if bed != Vector2.INF:
+			break
+	if bed == Vector2.INF:
+		_line(false, "no bed of nettles to walk into")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.boss:
+			o.rise(1e9)
+	h.world = out
+	await _run(0.6)
+	var pace0: float = h.walk_pace()
+	struck = 0
+	h.world = bed
+	var stung_first: bool = await _run(0.5, func(): return struck > 0)
+	var pace1: float = h.walk_pace()
+	var stirred: bool = false
+	for name in G._patch.get(floori(bed.y) * map.w + floori(bed.x), []):
+		stirred = stirred or float(G._shown.get(name, 0.0)) > 0.0
+	await _snap("garden_nettles_stir")
+	await _run(1.0)
+	var again: int = struck
+	_line(stung_first and again >= 2 and pace1 < pace0 * 0.65 and stirred, "a bed of nettles walked into: stung at once (%d) and again while in it (%d in 1.5 s); slowed, his pace %.2f to %.2f; the patch stirred (%s)" % [1 if stung_first else 0, again, pace0, pace1, stirred])
+	h.world = out
+	await _run(0.7)
+	_line(h.walk_pace() >= pace0 - 0.01, "stepped out: his pace back a moment after (%.2f)" % h.walk_pace())
+	# (a monster on foot in it: stung too)
+	var mob = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.boss and not o.dead:
+			mob = o
+			break
+	if mob != null:
+		var was: float = mob.life
+		mob.world = bed
+		# (let go: one held rising is reached by nothing)
+		mob._t = 0.0
+		await _run(0.5)
+		_line(mob.life < was and mob.nettle_k < 1.0, "a %s in it: stung (%.0f to %.0f), slowed (%.1f)" % [mob.kind, was, mob.life, mob.nettle_k])
+		mob.world = mob.world + Vector2(0, 40)
+	# (her vine in the yew: drawn back as he comes near, and the last kept)
+	if not G._vines.is_empty():
+		var v: Dictionary = G._vines[0]
+		h.world = M._spot_near(v["at"], 2.5, h.world)
+		await _run(1.0)
+		await _snap("garden_yew_vine")
+		_line(float(G._shown.get(v["name"], 0.0)) >= 1.0, "her vine in the yew: he comes near, it draws back into the yew (%.2f)" % float(G._shown.get(v["name"], 0.0)))
+
+
+## THE MASKED DANCERS (act3/dancer.gd), a pair: waltzing as they sleep; noticing him, the waltz broken; the partner throw, she spun down
+## the lane at him; his lady gone, the gentleman's spin; the clock's chime calling them to stop dead and look (act3/masque.gd).
+func _dancers(m) -> void:
+	var lady = chosen.get("dancer_partner")
+	if lady != null and int(m.form) % 2 == 0:
+		# (the gentleman leads: m is he)
+		var g = lady
+		lady = m
+		m = g
+	if lady == null or not is_instance_valid(lady):
+		_line(false, "no pair of dancers")
+		return
+	# (the pair asleep again at their spot, he far off: as the floor lays them)
+	lady._t = 0.0
+	var spot: Vector2 = lady.world
+	h.world = M._spot_near(spot, 25.0, h.world)
+	await _run(0.2)
+	for d in [m, lady]:
+		d.state = "sleep"
+		d.h2.act = null
+		d.world = spot
+		var k: Dictionary = d.h2._keep(d)
+		k["noticed"] = 0
+		k["split"] = 0
+		k["want"] = 0
+	await _run(0.5)
+	var waltz: bool = m.state == "sleep" and m.h2.shown(m).get("list", "") == "waltz" and lady.h2.shown(lady).get("list", "") == "waltz"
+	await _snap("dancers_waltz")
+	_line(waltz, "a pair of masked dancers waltzing at their spot as they sleep (%s and %s)" % [m.name, lady.name])
+	# NOTICED: let go, he near: the waltz breaks
+	h.world = M._spot_near(m.world, 5.0, h.world)
+	var noticed: bool = await _run(4.0, func(): return _is_act(m, "dancer:notice") or _is_act(lady, "dancer:notice"))
+	await _run(1.0, func(): return m.h2.act == null and lady.h2.act == null)
+	_line(noticed and m.world.distance_to(lady.world) > 0.05, "noticing him, the waltz breaks: each steps out of the pair (%.2f apart)" % m.world.distance_to(lady.world))
+	# THE PARTNER THROW
+	struck = 0
+	lady.world = m.world + Vector2(0.3, 0.3)
+	h.world = M._spot_near(m.world + (h.world - m.world).normalized() * 5.0, 0.0, h.world)
+	m.face = (h.world - m.world).normalized()
+	_ready_only(m, 0)
+	_ready_only(lady, -1)
+	var whirl: bool = await _run(6.0, func(): return _is_act(lady, "dancer:thrown") and float(lady.h2.act["t"]) >= 0.9)
+	var lane: bool = not _a1("dancer:warn").is_empty()
+	await _snap("dancers_whirl_lane")
+	var at0: Vector2 = lady.world
+	await _run(0.5)
+	await _snap("dancers_she_is_flung")
+	await _run(1.5, func(): return lady.h2.act == null)
+	_line(whirl and lane and struck > 0 and lady.world.distance_to(at0) > 2.0, "the partner throw: she takes his hands, the pair whirl, the lane marked; flung down it spinning like a top (%.1f tiles), the hero struck (%d)" % [lady.world.distance_to(at0), struck])
+	# HIS LADY GONE: he spins into him
+	lady.hurt(lady.life + 1000.0)
+	await _run(0.5)
+	struck = 0
+	h.world = M._spot_near(m.world + m.face * 1.6, 0.0, h.world)
+	m.face = (h.world - m.world).normalized()
+	_ready_only(m, 2)
+	var spun: bool = await _run(5.0, func(): return _is_act(m, "dancer:spin") and float(m.h2.act["t"]) >= 0.55)
+	await _snap("dancer_spin_marked")
+	await _run(1.5, func(): return m.h2.act == null)
+	_line(spun and struck > 0, "his lady gone, the whirling spin: its circle marked, carried in, the hero struck (%d)" % struck)
+	# THE CLOCK CHIMES
+	var Q = M.masque
+	if Q == null or not Q.on():
+		_line(false, "no clock on the floor")
+		return
+	Q.chime_now()
+	var chimed: bool = await _run(1.0, func(): return _is_act(m, "dancer:chime"))
+	await _run(0.4)
+	await _snap("clock_chimes")
+	_line(chimed and M._wu_said("The ebony clock chimes.") != "" and Q._ring > 0.0, "the great ebony clock chimes (\"%s\"), striking: the dancer stops dead and looks" % M._wu_said("The ebony clock chimes."))
+
+
+## FLOOR 17'S BOSS, THE PRINCE (act3/prince.gd, marks17.gd): met; darting about him; the thrust; the masks; the dance; Midnight's rings
+## rolling from the clock; his death.
+func _prince() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "prince":
+			boss = o
+	if boss == null:
+		_line(false, "floor 17 has no Prince")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(8.0, func(): return boss.state != "sleep" and not boss.waits)
+	await _snap("prince_met")
+	_line(met, "the Prince met in the Black Room: %s, %.0f life" % [boss.title, boss.max_life])
+	# NEVER STILL: his darts
+	_ready_only(boss, -1)
+	boss.h2._keep()["dart_cd"] = 0.0
+	var darted: bool = await _run(3.0, func(): return _is_act(boss, "prince:dart"))
+	var from: Vector2 = boss.world
+	await _run(0.9, func(): return boss.h2.act == null)
+	await _snap("prince_darts")
+	_line(darted and boss.world.distance_to(from) > 1.5, "never still: he darts across him (%.1f tiles)" % boss.world.distance_to(from))
+	# THE THRUST
+	struck = 0
+	boss.h2._keep()["dart_cd"] = 99.0
+	h.world = M._spot_near(boss.world + boss.face * 2.5, 0.0, h.world)
+	boss.face = (h.world - boss.world).normalized()
+	_ready_only(boss, 0)
+	var thrust: bool = await _run(5.0, func(): return _is_act(boss, "prince:thrust") and float(boss.h2.act["t"]) >= 0.6)
+	await _snap("prince_thrust_marked")
+	await _run(1.5, func(): return boss.h2.act == null)
+	_line(thrust and struck > 0, "the rapier thrust along its marked line: the hero struck (%d)" % struck)
+	# MASKS
+	struck = 0
+	h.world = M._spot_near(boss.world + boss.face * 5.0, 0.0, h.world)
+	boss.face = (h.world - boss.world).normalized()
+	_ready_only(boss, 1)
+	var masks: bool = await _run(5.0, func(): return not _a1("prince:mask").is_empty())
+	await _run(0.2)
+	await _snap("prince_masks_fly")
+	await _run(1.2)
+	_line(masks and struck > 0, "masks: five smiling masks flung spinning in a fan: the hero struck (%d)" % struck)
+	# THE DANCE
+	struck = 0
+	h.world = M._spot_near(boss.world + boss.face * 3.0, 0.0, h.world)
+	_ready_only(boss, 2)
+	var danced: bool = await _run(5.0, func(): return not _a1("prince:dance").is_empty())
+	await _run(1.0)
+	await _snap("prince_dance_ring")
+	var waltzed: bool = await _run(3.0, func(): return _is_act(boss, "prince:waltz"))
+	await _run(1.0)
+	_line(danced and struck > 0 and waltzed, "the Dance: a ring of masked partners closing round him, snapping shut: caught (%d); he waltzes away" % struck)
+	# MIDNIGHT
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null)
+	_ready_only(boss, 3)
+	var Q = M.masque
+	var at: Vector2 = Q.at if Q != null and Q.on() else boss.world
+	h.world = M._spot_near(at, 4.0, h.world)
+	var midnight: bool = await _run(6.0, func(): return not _a1("prince:chime").is_empty())
+	await _run(0.9)
+	await _snap("prince_midnight_rings")
+	await _run(2.5)
+	_line(midnight and struck > 0 and Q != null and Q._clock != "", "Midnight: the great ebony clock strikes twelve, a ring rolling out at each chime, its gap: the hero struck (%d)" % struck)
+	# HIS DEATH
+	boss.hurt(boss.life + 1e6)
+	var fell: bool = await _run(2.0, func(): return boss.dead)
+	await _run(0.6)
+	await _snap("prince_falls")
+	_line(fell and _a1("prince:chime", func(p): return int(p["done"]) == 0).is_empty(), "the Prince falls: his mask cracks; what of his was still to come does not come")
+
+
+## FLOOR 18'S TALL MIRRORS (act3/gallery.gd): a blow near one cracks it; another bursts it, its shards across the floor before it.
+func _mirrors() -> void:
+	var G = M.gallery
+	if G == null or not G.on():
+		_line(false, "floor 18 has no tall mirrors")
+		return
+	var mr = null
+	for q in G.mirrors:
+		if int(q["frame"]) == 0 and str(q["state"]) != "":
+			var f := Vector2(q["x"], q["y"]) + Vector2(q["fx"], q["fy"]) * 1.0
+			if M.map.walkable(floori(f.x), floori(f.y)):
+				mr = q
+				break
+	if mr == null:
+		_line(false, "no whole mirror to strike")
+		return
+	var at: Vector2 = Vector2(mr["x"], mr["y"]) + Vector2(mr["fx"], mr["fy"]) * 1.0
+	h.world = at
+	struck = 0
+	h._break_props(0, at, 0.5)
+	await _run(0.3)
+	var cracked: bool = int(mr["frame"]) == 1
+	await _snap("mirror_cracked")
+	h._break_props(0, at, 0.5)
+	var burst: bool = await _run(1.0, func(): return int(mr["frame"]) == 2)
+	await _run(0.2)
+	await _snap("mirror_bursts")
+	_line(cracked and burst and struck > 0, "a tall mirror: struck near, it cracks; again, it bursts, its shards across the floor before it: the hero struck (%d)" % struck)
+
+
+## FLOOR 18'S BOSS, THE QUEEN (act3/gqueen.gd, marks18.gd): her hall and her mirror; the comb and its poison; Looking Glass; her
+## Reflections; Shatter; the ring of mirrors, her found and stunned; her death, her mirror telling the truth.
+func _gqueen() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "gqueen":
+			boss = o
+	if boss == null:
+		_line(false, "floor 18 has no Queen")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(8.0, func(): return boss.state != "sleep" and not boss.waits)
+	var hall: bool = await _run(1.0, func(): return not _a1("gqueen:hall").is_empty())
+	await _snap("gqueen_met")
+	_line(met and hall, "the Queen met in the Mirror Hall: %s, %.0f life; her hall's pier glasses and her mirror" % [boss.title, boss.max_life])
+	# THE COMB
+	h.world = M._spot_near(boss.world + boss.face * 2.0, 0.0, h.world)
+	boss.face = (h.world - boss.world).normalized()
+	_ready_only(boss, 0)
+	var stab: bool = await _run(5.0, func(): return _is_act(boss, "gqueen:comb") and float(boss.h2.act["t"]) >= 0.85)
+	var cloud: bool = await _run(0.5, func(): return not _a1("gqueen:cloud").is_empty())
+	await _run(0.3)
+	await _snap("gqueen_comb_poison")
+	await _run(1.5)
+	_line(stab and cloud and struck > 0, "the comb: its stab, her poison left where it struck, biting: the hero struck (%d)" % struck)
+	# LOOKING GLASS
+	struck = 0
+	await _run(1.0, func(): return boss.h2.act == null)
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	_ready_only(boss, 1)
+	var into: bool = await _run(5.0, func(): return _is_act(boss, "gqueen:glass"))
+	var out: bool = await _run(4.0, func(): return _is_act(boss, "gqueen:out") and float(boss.h2.act["t"]) >= 0.5)
+	await _snap("gqueen_out_of_glass")
+	await _run(1.5, func(): return boss.h2.act == null)
+	_line(into and out and struck > 0, "Looking Glass: into a glass, out of one behind him, her stab: the hero struck (%d)" % struck)
+	# REFLECTIONS
+	_ready_only(boss, 2)
+	var copies := 0
+	var made: bool = await _run(5.0, func(): return _is_act(boss, "gqueen:reflect") and float(boss.h2.act["t"]) >= 1.05)
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and o.kind == "reflection":
+			copies += 1
+	await _run(0.5)
+	await _snap("gqueen_reflections")
+	_line(made and copies >= 1, "Reflections: copies of him stepping out of her awake pier glasses (%d)" % copies)
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.kind == "reflection":
+			o.queue_free()
+	await _run(1.5, func(): return boss.h2.act == null)
+	# SHATTER
+	struck = 0
+	var F: Dictionary = boss.h2.hall_frame(M)
+	h.world = Vector2(F["x"], F["y"]) + F["u"] * 1.5
+	_ready_only(boss, 3)
+	var trembling: bool = await _run(5.0, func(): return _is_act(boss, "gqueen:shatter") and float(boss.h2.act["t"]) >= 1.0)
+	await _snap("gqueen_shatter_lanes")
+	await _run(0.45)
+	await _snap("gqueen_shatter_flies")
+	await _run(1.5, func(): return boss.h2.act == null)
+	_line(trembling and struck > 0, "Shatter: every pier glass trembling, its lane lit; burst at once, their glass flying across the hall: the hero in a lane struck (%d)" % struck)
+	# THE RING OF MIRRORS: her found, stunned
+	struck = 0
+	h.world = M._spot_near(boss.world, 4.0, h.world)
+	_ready_only(boss, 4)
+	var ring: bool = await _run(6.0, func(): return not _a1("gqueen:ring").is_empty())
+	await _run(1.0)
+	await _snap("gqueen_ring_of_mirrors")
+	var rp: Dictionary = _a1("gqueen:ring")
+	var stunned := false
+	if not rp.is_empty():
+		var spot: Vector2 = boss.h2.ring_spots(M.map, rp)[int(rp["a"])]
+		for k in 3:
+			h._break_props(0, spot, 0.5)
+			await _run(0.4)
+		stunned = await _run(1.0, func(): return _is_act(boss, "gqueen:stunned"))
+		await _snap("gqueen_found_stunned")
+	_line(ring and stunned and boss.hex_t > 0.0, "the ring of mirrors: six round him, her in every one, each with its bar of life; her own broken in three blows: found, STUNNED")
+	await _run(3.5, func(): return boss.h2.act == null)
+	# HER DEATH
+	boss.hurt(boss.life + 1e6)
+	var fell: bool = await _run(2.0, func(): return boss.dead)
+	await _run(1.0)
+	await _snap("gqueen_falls")
+	var P0: Dictionary = _a1("gqueen:hall")
+	_line(fell and not P0.is_empty() and int(P0["c"]) == 2 and str(P0.get("say", "")) == "The king is dying. Something sits on his chest.", "the Queen falls: her mirror cracks across and tells the truth: \"%s\"" % str(P0.get("say", "")))
+
+
+## FLOOR 19'S PORTCULLISES (act3/keep.gd): one near him shakes, falls and slams: he under it struck and thrown clear; its row not walked
+## while it is down; wound up again.
+func _ports() -> void:
+	var K = M.keep
+	if K == null or not K.on():
+		_line(false, "floor 19 has no portcullises")
+		return
+	var s: Dictionary = K.ports[0]
+	var tiles: Array = K.tiles_of(s)
+	var t0: int = tiles[int(s["n"]) / 2]
+	h.world = Vector2(t0 % M.map.w + 0.5, t0 / M.map.w + 0.5)
+	s["phase"] = "up"
+	s["t"] = 0.05
+	var shook: bool = await _run(1.0, func(): return s["phase"] == "warn")
+	await _snap("portcullis_shakes")
+	struck = 0
+	var slammed: bool = await _run(2.0, func(): return s["phase"] == "slam")
+	await _run(0.2)
+	await _snap("portcullis_slammed")
+	var thrown: bool = not K.under(s, h.world)
+	var shut: bool = M.map.walk[t0] == 0
+	var up: bool = await _run(7.0, func(): return s["phase"] == "up")
+	_line(shook and slammed and thrown and shut and struck > 0 and up and M.map.walk[t0] == 1, "a portcullis near him shakes, falls and slams: he under it thrown clear and struck (%d); its row cut off while it is down; wound up again" % struck)
+
+
+## FLOOR 19'S BOSS, THE KING (act3/gking.gd): met in the Throne Hall; his charge and its line of sparks, the Decree, the crown's weight,
+## the Curtains; at a third of his life the Hush climbing off him (nothing hurts him the while), and at his side its three moves (the
+## shield struck off by six blows, the grab and drag, the grey fog); his death: the Hush unwinding, the songbird winding and singing.
+func _gking() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "gking":
+			boss = o
+	if boss == null:
+		_line(false, "floor 19 has no King")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(8.0, func(): return boss.state != "sleep" and not boss.waits)
+	await _snap("gking_met")
+	_line(met, "the King met in the Throne Hall: %s, %.0f life" % [boss.title, boss.max_life])
+	var hold := func() -> void:
+		for k in boss.h2.cds.size():
+			boss.h2.cds[k] = 999.0
+	# THE CHARGE, AND ITS LINE OF SPARKS
+	await _run(1.0, func(): return boss.h2.act == null)
+	h.world = M._spot_near(boss.world + boss.face * 6.0, 0.0, h.world)
+	boss.face = (h.world - boss.world).normalized()
+	_ready_only(boss, 0)
+	var warned: bool = await _run(4.0, func(): return _is_act(boss, "gking:charge") and float(boss.h2.act["t"]) >= 0.5)
+	await _snap("gking_charge_lane")
+	var ran: bool = await _run(1.5, func(): return _is_act(boss, "gking:charge") and float(boss.h2.act["t"]) >= 1.2)
+	await _snap("gking_charge_running")
+	await _run(1.0, func(): return not _is_act(boss, "gking:charge") or float(boss.h2.act["t"]) >= 1.6, hold)
+	var hit_run := struck
+	var line: bool = await _run(2.0, func(): return not _a1("gking:sparks", func(q): return float(q["d"]) > 0.0 and float(q["t"]) >= float(q["d"]) + 0.45).is_empty(), hold)
+	await _snap("gking_sparks_held")
+	await _run(0.27, Callable(), hold)
+	await _snap("gking_sparks_shot")
+	await _run(0.2, Callable(), hold)
+	await _snap("gking_sparks_pop")
+	await _run(0.8, Callable(), hold)
+	var sp: Dictionary = _a1("gking:sparks")
+	_line(warned and ran and line and hit_run > 0 and struck > hit_run, "the charge: his lane marked, run at 12 tiles a second, the hero in it struck (%d); the line of sparks cut behind him bursting a moment after he stops: struck again (%d)" % [hit_run, struck - hit_run])
+	# THE DECREE
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	h.world = M._spot_near(boss.world + boss.face * 4.0, 0.0, h.world)
+	_ready_only(boss, 1)
+	var sword: bool = await _run(5.0, func(): return not _a1("gking:decree").is_empty())
+	await _run(1.2)
+	await _snap("gking_decree_rising")
+	await _run(1.6, Callable(), hold)
+	await _snap("gking_decree_march")
+	await _run(3.0, Callable(), hold)
+	_line(sword and struck > 0, "the Decree: three lines of his knights rising behind him and marching across the hall: the hero walked into, struck (%d)" % struck)
+	# THE CROWN'S WEIGHT
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	_ready_only(boss, 2)
+	var sent: bool = await _run(5.0, func(): return not _a1("gking:weight").is_empty())
+	await _run(1.4, Callable(), hold)
+	await _snap("gking_weight_follows")
+	var w: Dictionary = _a1("gking:weight")
+	var over: bool = not w.is_empty() and h.world.distance_to(Vector2(w["x"], w["y"])) < 0.6
+	await _run(1.2, func(): return not w.is_empty() and float(w["t"]) >= 2.6, hold)
+	await _snap("gking_weight_hangs")
+	await _run(0.5, func(): return not w.is_empty() and int(w["done"]) == 1, hold)
+	await _run(0.05, Callable(), hold)
+	await _snap("gking_weight_slam")
+	_line(sent and over and struck > 0, "the crown's weight: sent up, hanging over him, following him; stopped, trembling, slammed down: the hero under it struck (%d)" % struck)
+	await _run(1.4, Callable(), hold)
+	await _snap("gking_weight_home")
+	# THE CURTAINS
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	_ready_only(boss, 3)
+	var flung: bool = await _run(5.0, func(): return not _a1("gking:faces").is_empty())
+	await _run(0.45)
+	await _snap("gking_curtains_faces")
+	await _run(2.5, Callable(), hold)
+	_line(flung and struck > 0, "the Curtains: the faces of his deeds streaming out of the hangings behind him at where he stood: the hero struck (%d)" % struck)
+	# HIS LAST PHASE: THE HUSH CLIMBS OFF HIM
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	hold.call()
+	boss.life = boss.max_life * 0.3
+	h.world = M._spot_near(boss.world, 4.0, h.world)
+	var climbing: bool = await _run(4.0, func(): return _is_act(boss, "gking:climb") and float(boss.h2.act["t"]) >= 1.0, hold)
+	var life0: float = boss.life
+	boss.damage(50.0)
+	var unhurt: bool = absf(boss.life - life0) < 0.01
+	await _snap("gking_climb")
+	var beside: bool = await _run(3.0, func(): return not _a1("gking:hush").is_empty(), hold)
+	await _run(0.3, Callable(), hold)
+	await _snap("gking_hush_beside")
+	_line(climbing and unhurt and beside and int(boss.form) == 1, "his last phase: the Hush climbs off him (a blow then does nothing: \"Invulnerable\") and stands at his side")
+	# ITS SHIELD, struck off by six blows
+	var hp: Dictionary = _a1("gking:hush")
+	var wrapped: bool = await _run(5.0, func(): return boss.h2.shielding(boss), hold)
+	await _run(0.2, Callable(), hold)
+	await _snap("gking_hush_shield")
+	life0 = boss.life
+	for k in 6:
+		boss.damage(40.0)
+		await _run(0.1, Callable(), hold)
+	var held_off: bool = absf(boss.life - life0) < 0.01
+	var off: bool = await _run(1.0, func(): return int(hp["b"]) == boss.h2.STAND and float(boss.h2.a1.get("dazed", 0.0)) > 0.0, hold)
+	_line(wrapped and held_off and off, "its shield: wrapped round him, his blows land on it (\"Shielded\"); at the sixth it is struck off, dazed")
+	# ITS GRAB AND DRAG
+	struck = 0
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	var keep_far := func() -> void:
+		hold.call()
+		if int(hp["b"]) == boss.h2.STAND:
+			h.world = M._spot_near(boss.world, 6.0, h.world)
+	var reared: bool = await _run(6.0, func(): return int(hp["b"]) == boss.h2.GRABS, keep_far)
+	await _run(0.4, Callable(), hold)
+	await _snap("gking_hush_grab_line")
+	var caught: bool = await _run(1.0, func(): return int(hp["done"]) == 1, hold)
+	await _run(0.2, Callable(), hold)
+	await _snap("gking_hush_drags")
+	await _run(2.0, func(): return int(hp["b"]) != boss.h2.GRABS, hold)
+	var dragged: float = h.world.distance_to(boss.world)
+	_line(reared and caught and struck > 0 and dragged < 2.6, "its grab: its arms shooting out along the line marked; caught, struck (%d) and dragged back before the King (%.1f tiles from him)" % [struck, dragged])
+	# ITS GREY FOG
+	var breathed: bool = await _run(6.0, func(): return not _a1("gking:fog").is_empty(), hold)
+	await _run(0.4, Callable(), hold)
+	await _snap("gking_fog_marked")
+	var fog: Dictionary = _a1("gking:fog")
+	var slowed := false
+	if not fog.is_empty():
+		h.world = Vector2(fog["x"], fog["y"])
+		await _run(1.2, Callable(), func(): hold.call(); h.world = Vector2(fog["x"], fog["y"]))
+		slowed = h._slow_t > 0.0 and h._slow_by >= 0.44
+	await _snap("gking_fog_lies")
+	var patches := 0
+	for q in P.list:
+		if str(q.get("a1", "")) == "gking:fog":
+			patches += 1
+	_line(breathed and slowed and patches >= 2, "its grey fog: %d patches on and either side of him; standing in one he goes slower (by %.2f)" % [patches, h._slow_by])
+	# HIS DEATH
+	boss.h2.a1["cdShield"] = 999.0
+	await _run(0.5, func(): return not boss.h2.shielding(boss), hold)
+	boss.hurt(boss.life + 1e6)
+	var fell: bool = await _run(2.0, func(): return boss.dead)
+	await _run(0.6)
+	await _snap("gking_dies_hush_unwinds")
+	var unwinding: bool = float(hp["c"]) == 1.0
+	await _run(1.6)
+	await _snap("gking_bird_sings")
+	var bird: Dictionary = _a1("gking:bird")
+	var gone_broken: bool = M.look != null and M.look._shown.has("bird")
+	_line(fell and unwinding and not bird.is_empty() and gone_broken and _a1("gking:fog").is_empty(), "the King dies: the Hush unwinds into nothing, the fog lifts; the broken songbird before his throne winds itself up and sings")
+
+
+## One kept monster let go into the fight alone (the floor's marks cleared; he well off it as it is let go).
+func _alone_m(m):
+	if m == null or not is_instance_valid(m):
+		return null
+	P.clear()
+	h.world = M._spot_near(m.world, 8.0, h.world)
+	m._t = 0.0
+	await M._wait(0.1)
+	return m
+
+
+## FLOOR 20'S SHADOWS OF THE FOUR ROYALS (act3/rshadow.gd): each its royal's basic and its one big move.
+func _rshadows() -> void:
+	var names := ["the Princess", "the Prince", "the Queen", "the King"]
+	for f in 4:
+		var m = await _alone_m(chosen.get("rshadow_f%d" % f))
+		if m == null:
+			_line(false, "no shadow of %s on the floor" % names[f])
+			continue
+		struck = 0
+		match f:
+			0:
+				h.world = M._spot_near(m.world + m.face * 3.0, 0.0, h.world)
+				m.face = (h.world - m.world).normalized()
+				_ready_only(m, 0)
+				var lash: bool = await _run(5.0, func(): return _is_act(m, "rshadow:lash") and float(m.h2.act["t"]) >= 0.6)
+				await _snap("rshadow_princess_lash")
+				await _run(1.5, func(): return m.h2.act == null)
+				var s1 := struck
+				struck = 0
+				h.world = M._spot_near(m.world, 4.0, h.world)
+				_ready_only(m, 4)
+				var snared: bool = await _run(6.0, func(): return not _a1("rshadow:snare", func(q): return float(q["t"]) >= 0.15).is_empty())
+				await _snap("rshadow_princess_snare")
+				var held: bool = h._slow_t > 0.0
+				await _run(1.5, func(): return m.h2.act == null)
+				_line(lash and s1 > 0 and snared and struck > 0 and held, "the shadow of the Princess: its lash (%d); its snare bursting up round him, holding him (%d)" % [s1, struck])
+			1:
+				h.world = M._spot_near(m.world + m.face * 2.0, 0.0, h.world)
+				m.face = (h.world - m.world).normalized()
+				_ready_only(m, 1)
+				var thrust: bool = await _run(5.0, func(): return _is_act(m, "rshadow:thrust") and float(m.h2.act["t"]) >= 0.6)
+				await _snap("rshadow_prince_thrust")
+				await _run(2.0, func(): return m.h2.act == null)
+				var s1 := struck
+				struck = 0
+				# (on one of the four ways its picture faces, 4 tiles off: its masks fly along that way and either side of it)
+				for w in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]:
+					var at: Vector2 = m.world + w * 4.0
+					if M.map.walkable(floori(at.x), floori(at.y)) and M._monsters.sees(m.world, at):
+						h.world = Vector2(floorf(at.x) + 0.5, floorf(at.y) + 0.5)
+						break
+				_ready_only(m, 5)
+				var flung: bool = await _run(6.0, func(): return not _a1("rshadow:masks", func(q): return float(q["t"]) >= 0.15).is_empty())
+				await _snap("rshadow_prince_masks")
+				await _run(1.5, func(): return m.h2.act == null)
+				_line(thrust and s1 > 0 and flung and struck > 0, "the shadow of the Prince: its thrust (%d); three masks flung in a fan: the hero struck (%d)" % [s1, struck])
+			2:
+				h.world = M._spot_near(m.world + m.face * 1.6, 0.0, h.world)
+				m.face = (h.world - m.world).normalized()
+				_ready_only(m, 2)
+				var comb: bool = await _run(5.0, func(): return _is_act(m, "rshadow:comb") and float(m.h2.act["t"]) >= 0.6)
+				await _snap("rshadow_queen_comb")
+				await _run(1.5, func(): return m.h2.act == null)
+				var s1 := struck
+				struck = 0
+				h.world = M._spot_near(m.world, 5.0, h.world)
+				_ready_only(m, 6)
+				var into: bool = await _run(6.0, func(): return _is_act(m, "rshadow:blinkIn"))
+				var out: bool = await _run(3.0, func(): return _is_act(m, "rshadow:blinkOut"))
+				var behind: float = m.world.distance_to(h.world)
+				# (out of it 2.45 tiles behind him: its stab reaches 1.77, so he steps back into it)
+				h.world = h.world.lerp(m.world, 0.5)
+				await _run(0.25)
+				await _snap("rshadow_queen_blinks_out")
+				await _run(1.5, func(): return m.h2.act == null)
+				_line(comb and s1 > 0 and into and out and behind < 2.7 and struck > 0, "the shadow of the Queen: its comb (%d); into her hand mirror, out of it behind him (%.2f tiles), stabbing as he steps back into it (%d)" % [s1, behind, struck])
+			3:
+				h.world = M._spot_near(m.world + m.face * 4.0, 0.0, h.world)
+				m.face = (h.world - m.world).normalized()
+				_ready_only(m, 3)
+				var braced: bool = await _run(5.0, func(): return _is_act(m, "rshadow:charge") and float(m.h2.act["t"]) >= 0.6)
+				await _snap("rshadow_king_charge_way")
+				await _run(1.6, func(): return _is_act(m, "rshadow:charge") and float(m.h2.act["t"]) >= 2.05)
+				await _snap("rshadow_king_sparks_held")
+				await _run(0.5, func(): return _is_act(m, "rshadow:charge") and float(m.h2.act["t"]) >= 2.5)
+				await _snap("rshadow_king_sparks_burst")
+				await _run(1.0, func(): return m.h2.act == null)
+				var s1 := struck
+				struck = 0
+				h.world = M._spot_near(m.world, 4.0, h.world)
+				_ready_only(m, 7)
+				var sent: bool = await _run(6.0, func(): return _is_act(m, "rshadow:weight") and float(m.h2.act["t"]) >= 2.4)
+				await _snap("rshadow_king_crown_follows")
+				await _run(2.0, func(): return _is_act(m, "rshadow:weight") and float(m.h2.act["t"]) >= 4.15)
+				await _snap("rshadow_king_crown_slams")
+				await _run(2.0, func(): return m.h2.act == null)
+				_line(braced and s1 > 0 and sent and struck > 0, "the shadow of the King: its charge and its line of sparks bursting (%d); its crown's weight following him, slammed down (%d)" % [s1, struck])
+		m.queue_free()
+		await M._wait(0.1)
+
+
+## FLOOR 20'S BOSS, THE MOTH MADE GHOSTLY (act3/moth.gd, moth_marks.gd, moth_paint.gd): met on the top; her beat; her pictures taken in a
+## move at a time; the ghost wing, the Hush, Eclipse and the Phantoms, each made and what it does seen; her second phase's Hush shed over
+## him; her last: unhurt as she flies to the lectern, the chapter knocked to the stones, down on it; the Unwriting; the songbird's
+## song. Her death is the tower's check's (_tower), as the trapdoor opens after it.
+func _moth() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "moth":
+			boss = o
+	if boss == null:
+		_line(false, "floor 20 has no Moth")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	var A: Array = boss.h2.acts()
+	var I := {}
+	for i in A.size():
+		I[str(A[i]["id"])] = i
+	var hold := func() -> void:
+		for k in boss.h2.cds.size():
+			boss.h2.cds[k] = 999.0
+	# (where he stands before her, along the way her picture faces, so far)
+	var before := func(d: float) -> Vector2:
+		var w: Vector2 = boss.h2.picture_way(boss.face)
+		return M._spot_near(boss.world + w * d, 0.0, h.world)
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	var met: bool = await _run(8.0, func(): return boss.state != "sleep" and not boss.waits)
+	var b0: float = boss.h2.beat()
+	await _run(0.5, Callable(), hold)
+	var b1: float = boss.h2.beat()
+	var own: Dictionary = boss.h2.shown(boss)
+	await _snap("moth_met")
+	var held: int = boss.art.held()
+	_line(met and b1 != b0 and own.get("list", "") in ["idle", "walk"] and int(own["i"]) == floori(b1 * 15.0 + 1e-6) % 36, "the Moth met on the top: %s, %.0f life; her wings beat by her own clock (%.2f s into the beat), her picture its frame" % [boss.title, boss.max_life, b1])
+	_line(boss.art.lazy and held > 0 and held < 40, "her pictures taken in a move at a time: %d of her %d sheets in hand" % [held, boss.art.sheets.size()])
+	# GHOST WING (the buffet)
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	h.world = before.call(4.0)
+	var d0: float = h.world.distance_to(boss.world)
+	_ready_only(boss, I["moth:buffet"])
+	var warned: bool = await _run(5.0, func(): return _is_act(boss, "moth:buffet") and float(boss.h2.act["t"]) >= 0.7)
+	await _snap("moth_ghost_wing_cone")
+	var swept: bool = await _run(2.0, func(): return not _a1("moth:gust", func(q): return float(q["t"]) >= 0.25).is_empty(), hold)
+	var d1: float = h.world.distance_to(boss.world)
+	await _snap("moth_ghost_wing")
+	_line(warned and swept and struck > 0 and d1 > d0 + 0.5, "the ghost wing: its cone marked, her wings' ghost sweeping it: the hero in it struck (%d) and thrown back (%.1f to %.1f tiles)" % [struck, d0, d1])
+	# THE HUSH (her Dust)
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	h.world = before.call(4.5)
+	_ready_only(boss, I["moth:dust"])
+	var fell: bool = await _run(5.0, func(): return not _a1("moth:dust", func(q): return float(q["t"]) >= 0.8).is_empty())
+	await _snap("moth_hush_falling")
+	var dust := _a1("moth:dust")
+	if not dust.is_empty():
+		h.world = Vector2(dust["x"], dust["y"])
+	var hushed: bool = await _run(2.5, func(): return h.hush_t > 0.0 and struck > 0, hold)
+	await _snap("moth_hush_lying")
+	_line(fell and hushed, "the Hush: her scales falling like snow before her; settled, his words dark in it (%.1f s) and it biting (%d)" % [h.hush_t, struck])
+	# ECLIPSE (her Eyes)
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	for p in P.list.duplicate():
+		if str(p.get("a1", "")).begins_with("moth:dust"):
+			P.list.erase(p)
+	h.hush_t = 0.0
+	h.world = before.call(3.5)
+	_ready_only(boss, I["moth:eyes"])
+	var rose: bool = await _run(5.0, func(): return _is_act(boss, "moth:eyes") and float(boss.h2.act["t"]) >= 0.9)
+	await _snap("moth_eclipse_moon")
+	var cast: bool = await _run(1.0, func(): return not _a1("moth:eclipse", func(q): return float(q["t"]) >= 0.15).is_empty(), hold)
+	await _snap("moth_eclipse_strikes")
+	_line(rose and cast and struck > 0, "Eclipse: the moon rising behind her, her shadow thrown toward him, its eyes opening; it strikes: the hero in it struck (%d)" % struck)
+	# THE PHANTOMS (her Swarm)
+	struck = 0
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	h.world = before.call(6.0)
+	_ready_only(boss, I["moth:swarm"])
+	var wrapped: bool = await _run(5.0, func(): return _is_act(boss, "moth:swarm") and float(boss.h2.act["t"]) >= 0.95)
+	await _snap("moth_phantoms_gather")
+	var glided: bool = await _run(1.5, func(): return not _a1("moth:phantoms", func(q): return float(q["t"]) >= 0.45).is_empty(), hold)
+	await _snap("moth_phantoms")
+	await _run(1.5, Callable(), hold)
+	_line(wrapped and glided and struck > 0, "the Phantoms: copies of her shimmering off her, their lanes marked; three gliding down them, the first at him: struck (%d)" % struck)
+	# HER SECOND PHASE: the Hush shed over him
+	await _run(2.0, func(): return boss.h2.act == null, hold)
+	boss.life = boss.max_life * 0.6
+	var shed: bool = await _run(8.0, func(): return not _a1("moth:shed", func(q): return float(q["t"]) >= -0.6).is_empty(), hold)
+	await _snap("moth_shed_marked")
+	await _run(0.3, Callable(), hold)
+	var quick: bool = absf(boss.speed - float(boss.h2.a1["base"]) * 1.25) < 1e-3
+	_line(shed and quick, "her second phase: she drifts faster (%.2f), and sheds the Hush over him, where it will fall marked first" % boss.speed)
+	# HER LAST: in the air she cannot die; unhurt, she flies to the lectern; the chapter knocked to the stones; down on it
+	for p in P.list.duplicate():
+		if str(p.get("a1", "")).begins_with("moth:"):
+			P.list.erase(p)
+	boss.life = boss.max_life * 0.3
+	boss.hurt(boss.life + 1e6)
+	var kept: bool = not boss.dead and boss.life >= 1.0
+	var flying: bool = await _run(3.0, func(): return int(boss.h2.a1.get("toLand", 0)) == 1, hold)
+	var was: float = boss.life
+	boss.hurt(1000.0)
+	var unhurt: bool = boss.life == was
+	var down: bool = await _run(12.0, func(): return boss.h2.perched(), hold)
+	await _run(0.5, Callable(), hold)
+	var book := _a1("moth:book")
+	await _snap("moth_on_the_book")
+	_line(kept and flying and unhurt and down and not book.is_empty() and M.look.data["variants"].has("lectern"), "her last phase: she cannot die in the air (her life held at %.0f); unhurt, she flies to the lectern; the chapter knocked to the stones; she comes down on it" % was)
+	# THE UNWRITING (her beat, on the book)
+	struck = 0
+	h.world = M._spot_near(boss.world, 4.0, h.world)
+	_ready_only(boss, I["moth:beat"])
+	var rearing: bool = await _run(5.0, func(): return _is_act(boss, "moth:beat") and float(boss.h2.act["t"]) >= 0.85)
+	await _snap("moth_pages_loosing")
+	var ring: bool = await _run(1.0, func(): return not _a1("moth:wave", func(q): return float(q["t"]) >= 0.3).is_empty(), hold)
+	await _snap("moth_unwriting")
+	await _run(1.0, Callable(), hold)
+	_line(rearing and ring and struck > 0, "the Unwriting: the chapter's pages tearing loose as she rears; a ring of burning pages rolling out over the whole top: struck as it passed under him (%d)" % struck)
+	# THE SONGBIRD, mended
+	var Q = M.quest1620
+	var bird_was: String = Q.bird
+	Q.bird = "mended"
+	Q.sung_in = 0
+	await _run(0.1, Callable(), hold)
+	var ready: bool = Q.song_ready()
+	var said: Array = Q.prompt()
+	h.hush(5.0)
+	var lying := {"kind": "a1", "a1": "moth:shed", "x": h.world.x, "y": h.world.y, "fx": 1.0, "fy": 0.0, "t": 2.0, "hit": 0.0, "dur": 6.6, "dmg": 1.0, "done": 0, "a": 0.0, "b": 0.0, "c": 0.0, "d": 0.0, "hand": 1, "src": boss, "by": boss.blow(), "fig": boss.art}
+	P.list.append(lying)
+	Q.sing()
+	var unhushed: bool = h.hush_t == 0.0
+	await _run(0.2, Callable(), hold)
+	var stunned: bool = boss.stun_t > 2.0
+	var cleared: bool = not P.list.has(lying) and unhushed
+	var once: bool = not Q.song_ready()
+	await _snap("moth_songbird")
+	Q.bird = bird_was
+	_line(ready and str(said[1]) == "song" and stunned and cleared and once, "the songbird, mended: \"%s\"; it sings: her Hush blown away, his words back, she stunned (%.1f s); once a phase" % [said[0], boss.stun_t])
+
+
+## FLOOR 20'S WAY UP AND DOWN (act3/tower.gd): up the stair at the stairhead onto the top, through the trapdoor; the trapdoor slamming
+## shut behind him as the Moth wakes to him; back down through it once open.
+func _tower() -> void:
+	var T = M.tower
+	if T == null or not T.on():
+		_line(false, "floor 20 has no tower")
+		return
+	var plan: Dictionary = T.plan
+	var stair := Vector2(plan["stair"]["x"], plan["stair"]["y"])
+	var arrive := Vector2(plan["top"]["arrive"]["x"], plan["top"]["arrive"]["y"])
+	var trap := Vector2(float(plan["top"]["trap"]["x"]) + 0.5, float(plan["top"]["trap"]["y"]) + 0.5)
+	h.world = M._spot_near(stair, 2.6, h.world)
+	await _run(0.3)
+	await _snap("tower_stairhead")
+	h.world = stair + (h.world - stair).normalized() * 1.5
+	var up: bool = await _run(3.0, func(): return h.world.distance_to(arrive) < 0.2 and not T._going)
+	await _run(0.2)
+	await _snap("tower_top")
+	_line(up and T.on_top(h.world), "up the tower's stair: the screen darkened, he comes up through the trapdoor onto the top, facing its middle")
+	# (the Moth awake to him, he off the trapdoor: it slams shut)
+	var moth = T._moth()
+	var slammed := false
+	if moth != null:
+		moth.mgr.wake(moth)
+		h.world = M._spot_near(trap, 2.5, h.world)
+		slammed = await _run(3.0, func(): return T.shut)
+		await _run(0.2)
+		await _snap("tower_trapdoor_shut")
+		# (shut: standing on it takes him nowhere)
+		h.world = trap
+		await _run(1.0)
+		var stayed: bool = T.on_top(h.world)
+		moth.waits = false
+		# (she cannot die in the air: down on the book first, as in her last phase)
+		moth.h2.a1["perched"] = 1
+		moth.hurt(moth.life + 1e6)
+		var words: bool = moth.dead and not _a1("moth:words").is_empty()
+		await _run(1.6)
+		await _snap("moth_dies_words")
+		await _run(1.8)
+		await _snap("moth_dies_light")
+		_line(words, "the Moth's death: her scream; every word she swallowed flying home; she comes apart into drifting light")
+		var opened: bool = await _run(9.0, func(): return not T.shut)
+		await _snap("tower_trapdoor_open")
+		_line(slammed and stayed and opened, "the trapdoor: slammed shut behind him as the Moth woke to him (standing on it takes him nowhere); open again once its death has played out")
+	else:
+		_line(false, "floor 20 has no Moth")
+	h.world = trap + Vector2(0.9, 0.0)
+	await _run(0.3)
+	h.world = trap
+	var down: bool = await _run(3.0, func(): return not T.on_top(h.world) and not T._going)
+	await _run(0.2)
+	await _snap("tower_back_down")
+	_line(down and h.world.distance_to(Vector2(plan["stair"]["back"]["x"], plan["stair"]["back"]["y"])) < 0.3, "down through the open trapdoor: back before the stair")
+

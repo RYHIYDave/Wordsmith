@@ -74,11 +74,15 @@ import { bridgeOf, doorOf, forgetMade as forgetF8F9Made } from '../art/f8f9';
 import type { Painter } from './painter';
 import { Ahead } from '../engine/steps';
 import type { LoadStep } from '../engine/steps';
+import { HALL_LOOK, SANCTUM } from '../game/act1_dress';
+import { sanctumPieces } from '../art/cult_sanctum';
 
 const MAPS = new Map<number, Map<string, Piece>>();
 /** The pieces of floor `n` of the descent (6 to 10) by name, with the set's camp and the strongholds' (made the first time they are asked for, and kept until `forgetAct1`). */
 export function act1Pieces(n: number): Map<string, Piece> {
   let m = MAPS.get(n);
+  // (HALL_LOOK: the sanctum's own pieces wanted where they were not made, its switch put on since: made again with them)
+  if (m && HALL_LOOK.on && n >= 6 && n <= 10 && !m.has(SANCTUM.pillar)) m = undefined;
   if (m) return m;
   m = new Map(act1ListsOf(n, (key, make) => LISTS_AHEAD.take(`${n}:${key}`, make)).map((p) => [p.name, p]));
   LISTS_AHEAD.clear();
@@ -108,7 +112,9 @@ function act1ListsOf(n: number, part: ListPart): Piece[] {
   const own = (): Piece[] => (n === 6 ? quarryPieces() : n === 7 ? ledgePieces() : n === 8 ? canyonPieces() : n === 9 ? (F9_LAIRS.on ? [...pinewoodPieces(), ...f9LairPieces()] : pinewoodPieces()) : fenPieces());
   // (the strongholds' gatehouse, court, altar, braziers and banners are the Quarry's: art/floor6.ts; the hall's, the redoubt's)
   const shared = (): Piece[] => (n === 6 ? [] : quarryPieces().filter((p) => p.name.startsWith("the redoubt's") || p.name.startsWith("the court's") || p.name === 'the altar of the words' || p.name === "the cult's brazier" || p.name === "the cult's banner" || p.name === 'pine' || p.name === 'boulder'));
-  return [...part('camp', campPieces), ...part('redoubt', redoubtPieces), ...part('shared', shared), ...part('own', own)];
+  // (HALL_LOOK: the strongholds' halls made new, the cult's sanctum: art/cult_sanctum.ts)
+  const sanctum = HALL_LOOK.on ? part('sanctum', sanctumPieces) : [];
+  return [...part('camp', campPieces), ...part('redoubt', redoubtPieces), ...sanctum, ...part('shared', shared), ...part('own', own)];
 }
 /**
  * The steps that make floor `n`'s pieces a list at a time (none where they are made), then its pieces. EACH LIST A PIECE A STEP
@@ -152,7 +158,7 @@ export function forgetAct1(keep: number): void {
 }
 
 /** The pieces that move (their frames a loop), at LOOP_FPS; every other's frames are its looks, one a place. */
-const MOVING = new Set(['a brazier on its tripod', "the cult's watchfire", "the cult's cauldron", "the cult's brazier", "the cult's banner", "the cult's ring of magic", 'the half-cut obelisk', "the cult's obelisk", "the redoubt's gatehouse",
+const MOVING = new Set(["the cult's pillar", 'the hooded idol', "the cult's great sigil", 'a brazier on its tripod', "the cult's watchfire", "the cult's cauldron", "the cult's brazier", "the cult's banner", "the cult's ring of magic", 'the half-cut obelisk', "the cult's obelisk", "the redoubt's gatehouse",
   // (THE HIGH CITY, FLOOR 19, THE KEEP: its honest fire, its frames over and over: the braziers, the pitch heating, the torches on the walls)
   'a brazier', 'a cauldron of pitch', 'a torch in its sconce',
   // (F9_LAIRS, on at his yes of 14 Nov 2026: floor 9's side areas' fire and moonbeam: art/f9_lairs.ts)

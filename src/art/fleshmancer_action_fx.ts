@@ -21,6 +21,7 @@
 import { Px } from '../engine/px';
 import { FLAME } from './mkit';
 import { hash } from './kit';
+import { FLESH2 } from './fm2_switch';
 import { FIRE_HIT, FIRE_STOP, MINI_HIT, MINI_STOP, MINI_WHIP, RAISE_HIT, RAISE_HOLD, RING_HITS, SHARD_DRAW, SHARD_HITS, WHIP, fireWay, miniWay, f } from './fleshmancer_action';
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -377,6 +378,11 @@ export function fireStrikes(t: number, fwd: number, left: number, mini = false):
  * and the lanes' flames.
  */
 export function paintFire(p: Px, at: At, t: number, C: readonly [number, number], aim: number, mouth: readonly [number, number] | null, layer: 'floor' | 'air', mini = false, keep: Keep = ALL): void {
+  // (brought up to par, art/fm2_switch.ts FLESH2: his flames as flames, not spikes)
+  if (FLESH2.on && layer === 'air') {
+    paintFlames(p, at, t, C, aim, mouth, mini, keep);
+    return;
+  }
   const F = fireOf(mini);
   const S = F.size;
   const big = mini ? 0.75 : 1;
@@ -455,6 +461,137 @@ export function paintFire(p: Px, at: At, t: number, C: readonly [number, number]
         const tall = big * (16 + 14 * (1 - far)) * (0.7 + 0.3 * Math.sin(t * 31 + seed));
         tongue(p, x, y, tall, big * (6 + 4 * (1 - far)), -6 * Math.sin(t * 5 + d), o === 0 ? 1 : 0.4, seed);
       }
+    }
+  }
+}
+
+// =============================================================================================
+// HIS FIRE AS FLAMES (FLESH2, art/fm2_switch.ts): the same stream and lanes, where and when they burn, drawn as fire
+
+/** His pink fire's shells, outside in: a dark rim, his pink, its hotter pink, his gold, and the white of its heart. */
+const SHELLS: readonly [number, string][] = [
+  [1, FLAME[0]],
+  [0.88, FLAME[1]],
+  [0.68, FLAME[2]],
+  [0.46, FLAME[3]],
+  [0.28, FLAME[4]],
+];
+/**
+ * A FLAME standing at (x, y) on the picture: `tall` and `wide` pixels; round and full at its foot, licking up to a tip that sways and
+ * forks, its sides rippling upward with the clock `t`; shells from his pink at its rim to gold and white at its heart (`hot`).
+ */
+function flame(p: Px, x: number, y: number, tall: number, wide: number, t: number, seed: number, hot: number): void {
+  if (tall < 3 || wide < 2) return;
+  const sway = Math.sin(t * 6 + seed * 1.7) * wide * 0.35;
+  for (const [s, c] of SHELLS) {
+    const rows = Math.max(1, Math.round(tall * (0.32 + 0.68 * s)));
+    for (let i = 0; i < rows; i++) {
+      const u = i / Math.max(1, rows - 1);
+      // (full at its foot, round under it; then licking up)
+      const prof = u < 0.22 ? Math.sqrt(Math.max(0, 1 - ((0.22 - u) / 0.22) ** 2 * 0.7)) : Math.pow(Math.cos(((u - 0.22) / 0.78) * (Math.PI / 2)), 0.75);
+      const ripple = Math.sin(u * 8 - t * 14 + seed) * (0.6 + 1.8 * u) * (wide / 12);
+      const hw = Math.max(0.5, (wide / 2) * s * prof);
+      const mid = x + sway * u * u + ripple;
+      const yy = Math.round(y - i - (1 - s) * tall * 0.06);
+      // (its tip forked: a notch up its middle near the top of its outer flame)
+      const fork = s >= 0.88 && u > 0.68 ? hw * 0.55 * ((u - 0.68) / 0.32) : 0;
+      for (let X = Math.round(mid - hw); X <= Math.round(mid + hw); X++) {
+        if (fork > 0 && Math.abs(X - mid - Math.sin(t * 9 + seed) * 1.5) < fork) continue;
+        p.set(X, yy, c);
+      }
+    }
+  }
+  if (hot > 0.2) {
+    // (its heart white, low in it)
+    const hr = Math.max(1, Math.round(wide * 0.12 * hot));
+    for (let j = 0; j < Math.round(tall * 0.22); j++) for (let X = -hr; X <= hr; X++) p.set(Math.round(x + X), Math.round(y - 2 - j), WHITE);
+  }
+  // (a lick torn off its tip, rising, and an ember or two)
+  const life = (t * 1.7 + hash(seed, 7, 581)) % 1;
+  if (life < 0.6) {
+    const ly = y - tall * (0.85 + life * 0.9);
+    const lx = x + sway + Math.sin(life * 9 + seed) * 2;
+    const r = Math.max(1, Math.round(wide * 0.18 * (1 - life)));
+    for (let j = -r; j <= r; j++) for (let X = -r; X <= r; X++) if (X * X + j * j <= r * r) p.set(Math.round(lx + X), Math.round(ly + j), life < 0.3 ? FLAME[2] : FLAME[1]);
+  }
+  for (let e = 0; e < 2; e++) {
+    const el = (t * (0.9 + 0.4 * e) + hash(seed, e, 582)) % 1;
+    const ex = x + (hash(seed, e + 3, 582) - 0.5) * wide * 1.6 + Math.sin(el * 7 + e) * 3;
+    const ey = y - tall * 0.6 - el * tall * 1.6;
+    if (hash(seed, e + 9, 582) < 0.6) p.set(Math.round(ex), Math.round(ey), el < 0.5 ? FLAME[4] : FLAME[3]);
+  }
+}
+/** His fire's flames ('air'): the lanes left burning, and the stream out of the jaws whipped round, as `paintFire` lays them. */
+function paintFlames(p: Px, at: At, t: number, C: readonly [number, number], aim: number, mouth: readonly [number, number] | null, mini: boolean, keep: Keep): void {
+  const F = fireOf(mini);
+  const S = F.size;
+  const big = mini ? 0.75 : 1;
+  const ptAt = (a: number, d: number, z = 0): readonly [number, number] => {
+    const [ux, uy] = way(aim, -a);
+    return at(C[0] + ux * d, C[1] + uy * d, z);
+  };
+  // THE LANES LEFT BURNING: a bed of embers along each, and flames standing on it, close enough to run together
+  for (const [li, l] of fireLanes(mini).entries()) {
+    const since = t - l.at;
+    if (since < 0 || since > S.burn) continue;
+    const out = since < S.burn - S.die ? S.reach : S.land + (S.reach - S.land) * clamp01(1 - (since - (S.burn - S.die)) / S.die);
+    const fresh = clamp01(1 - since / 0.35);
+    for (let d = S.land; d <= out; d += 0.09) {
+      const [x, y] = ptAt(l.a, d);
+      if (!keep(y)) continue;
+      const seed = Math.floor(d * 40) + li * 101;
+      dot(p, x + (hash(seed, 1, 583) - 0.5) * 6, y, hash(seed, Math.floor(t * 12), 584) < 0.5 ? FLAME[1] : FLAME[2], 2);
+    }
+    for (let d = S.land + 0.12; d <= out; d += 0.3) {
+      const off = ((hash(Math.floor(d * 10), li, 585) - 0.5) * S.laneHalf * 1.2) / Math.max(d, 0.5);
+      const [x, y] = ptAt(l.a + off, d);
+      if (!keep(y)) continue;
+      const seed = Math.floor(d * 10) * 7 + li * 131;
+      const flick = 0.75 + 0.25 * Math.sin(t * 17 + seed * 1.3);
+      const end = d > out - 0.6 ? clamp01((out - d) / 0.6) * 0.8 + 0.2 : 1;
+      const tall = big * (17 + 13 * hash(seed, 3, 586)) * flick * (1 + 0.6 * fresh) * end;
+      flame(p, x, y, tall, big * (11 + 5 * hash(seed, 4, 587)) * (0.8 + 0.2 * end), t, seed, 0.5 + 0.5 * fresh);
+    }
+  }
+  const now = F.way(t);
+  if (now === null || !mouth) return;
+  // THE STREAM: the whip's after-images, low and dull, then the stream itself, a roaring river of flame thick near him
+  for (const back of [2, 1]) {
+    const a = F.way(Math.max(F.hit, t - back / 30)) ?? now;
+    if (Math.abs(a - now) < 0.05) continue;
+    for (let d = S.land; d <= S.reach; d += 0.3) {
+      const [x, y] = ptAt(a, d);
+      if (!keep(y)) continue;
+      dot(p, x, y - 3, back === 1 ? FLAME[2] : FLAME[1], 3);
+    }
+  }
+  const [lx, ly] = ptAt(now, S.land);
+  if (keep(ly)) {
+    // (out of the jaws, arcing down onto the floor: a gout, round and roiling)
+    const [mx, my] = mouth;
+    const midx = (mx + lx) / 2;
+    const midy = Math.min(my, ly) - 16 * big;
+    for (let i = 0; i <= 26; i++) {
+      const u = i / 26;
+      const x = (1 - u) * (1 - u) * mx + 2 * u * (1 - u) * midx + u * u * lx;
+      const y = (1 - u) * (1 - u) * my + 2 * u * (1 - u) * midy + u * u * ly;
+      const r = big * (3 + 3 * u + Math.sin(t * 37 + i) * 0.8);
+      for (let k = -Math.ceil(r); k <= Math.ceil(r); k++) for (let j = -Math.ceil(r); j <= Math.ceil(r); j++) {
+        const q = Math.hypot(k, j * 1.2) / r;
+        if (q > 1) continue;
+        dot(p, x + k, y + j, q < 0.35 ? WHITE : q < 0.6 ? FLAME[4] : q < 0.82 ? FLAME[3] : FLAME[2]);
+      }
+    }
+  }
+  for (let d = S.reach; d >= S.land; d -= 0.2) {
+    const far = (d - S.land) / (S.reach - S.land);
+    for (const o of [-1, 0, 1]) {
+      const off = (o * S.half * 0.6) / Math.max(d, 0.5);
+      const [x, y] = ptAt(now + off, d);
+      if (!keep(y)) continue;
+      const seed = Math.floor(d * 10) * 5 + o + 900;
+      const tall = big * (30 + 22 * (1 - far)) * (0.8 + 0.2 * Math.sin(t * 29 + seed));
+      flame(p, x, y, tall * (o === 0 ? 1 : 0.65), big * (13 + 7 * (1 - far)), t, seed, o === 0 ? 1 : 0.5);
     }
   }
 }
