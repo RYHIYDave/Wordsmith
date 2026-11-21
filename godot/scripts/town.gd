@@ -58,6 +58,11 @@ const TURN_BACK := 1.95
 const STATION_NAME := {"gate": "GATE", "wordsmith": "WORDSMITH", "armourer": "ARMOURER", "mystic": "MYSTIC", "lexicon": "LEXICON", "stash": "STASH", "stranger": "STRANGER"}
 const NAME_LIFT := {"gate": 74.0, "stash": 26.0, "lexicon": 40.0, "mystic": 86.0, "wordsmith": 44.0, "armourer": 50.0, "stranger": 40.0}
 const PF := preload("res://scripts/pixel_font.gd")
+const Glow := preload("res://scripts/figure_glow.gd")
+## THE RING'S MOMENTS (render.ts standRing3; art/ring3.ts swirlAt, art/townscene.ts swirlNow, columnSprite; art/quest3.ts floatingOf):
+## the letters of light that swirl round the wordsmith, the column of light over his slab, and the master rune-stone given, rising
+## out of the hero, floating over the slab, lying down and laid in with a burst of its light. Their pictures: tools/godot_ring.ts.
+const RFX_DIR := "res://assets/town/ring_fx"
 const USE := 1.9
 ## (townscene.ts: each person's clock, how many times his loop goes round before he does his thing, the way he works)
 const FOLK := {
@@ -88,6 +93,18 @@ var _folk_lists := {}
 var _folk_sheets: Array[Texture2D] = []
 var _folk_cache := {}
 var _things: Array = []  # {kind, node, variant, x, y}
+## (the ring's moments: their pictures, the sprites they are shown on, the layer of their lights, where the ring and the slab are)
+var _rfx := {}
+var _rfx_tune := {}
+var _rfx_tex: Texture2D
+var _letters: Array = []
+var _column: Sprite2D
+var _stone: Sprite2D
+var _flash: Sprite2D
+var _rfx_lights: Node2D
+var _rfx_lit: Array = []
+var _ring_mid = null
+var _slab_mid = null
 var _folk: Array = []  # {kind, node, x, y, to, last_act}
 var _names: Node2D
 var _t := 0.0
@@ -240,6 +257,8 @@ func _process(dt: float) -> void:
 	else:
 		_camp_onward()
 	_use()
+	if not camp:
+		_ring_moments()
 	_names.queue_redraw()
 	_step_gate(dt)
 	_show_gate()
@@ -847,3 +866,190 @@ func _camp_onward() -> void:
 			loot.say("The way on into the city. (Floor 11 is not in the Godot version yet.)", Color(0.55, 0.6, 0.8))
 	elif d > 2.5:
 		_told_onward = false
+
+
+# --- THE RING'S MOMENTS (render.ts standRing3) ---
+
+func _rfx_ready() -> void:
+	var d = JSON.parse_string(FileAccess.get_file_as_string(RFX_DIR + ".json"))
+	_rfx_tex = load(RFX_DIR + ".png")
+	_rfx_tune = d["tune"]
+	for p in d["pics"]:
+		_rfx[p["name"]] = p
+	for t in data["props"]:
+		if t["kind"] == "runeRing":
+			_ring_mid = Vector2(t["x"], t["y"])
+		elif t["kind"] == "runeSlab":
+			_slab_mid = Vector2(t["x"], t["y"])
+	for i in 14:
+		_letters.append(_rfx_sprite())
+	_column = _rfx_sprite()
+	_stone = _rfx_sprite()
+	_flash = _rfx_sprite()
+	# (what they give off, over the place's dark, added: render.ts propLit)
+	_rfx_lights = Node2D.new()
+	_rfx_lights.material = Glow.added()
+	_rfx_lights.z_index = 51
+	_rfx_lights.draw.connect(_draw_rfx_lights)
+	add_child(_rfx_lights)
+
+
+func _rfx_sprite() -> Sprite2D:
+	var n := Sprite2D.new()
+	n.texture = _rfx_tex
+	n.region_enabled = true
+	n.centered = false
+	n.visible = false
+	stands.add_child(n)
+	return n
+
+
+## One of the ring's pictures stood at (x, y) tiles, `z` game pixels up, among what stands at depth `d`; scaled `k`, faded `a`.
+func _rfx_put(n: Sprite2D, name: String, x: float, y: float, z: float, d: float, k := 1.0, a := 1.0) -> void:
+	var p: Dictionary = _rfx.get(name, {})
+	if p.is_empty():
+		n.visible = false
+		return
+	var top := Iso.to_screen(x, y) - Vector2(0, z * 2.0)
+	n.visible = true
+	n.region_rect = Rect2(p["x"], p["y"], p["w"], p["h"])
+	n.position = Vector2(top.x, d * Iso.HH)
+	n.scale = Vector2(k, k)
+	n.offset = -Vector2(p["ax"], p["ay"]) + Vector2(0, (top.y - d * Iso.HH) / k)
+	n.modulate.a = a
+	for l in p.get("lights", []):
+		_rfx_lit.append([top + Vector2(float(l["x"]), float(l["y"])) * 2.0 * k, l, a])
+
+
+## (art/townscene.ts smithAct) Where the wordsmith is in his work: seconds into it, or -1 (while he is turned to someone, and while
+## his ring is dark or powering up).
+func _smith_act(pw: Dictionary) -> float:
+	if pw.has("dark") or (pw.has("g") and float(pw["g"]) < float(_ring["power"]["done"])):
+		return -1.0
+	for f in _folk:
+		if f["kind"] == "wordsmith" and f["to"] != "" and f["to"] != FOLK["wordsmith"]["work"]:
+			return -1.0
+	if not _folk_lists.has("wordsmith:idle") or not _folk_lists.has("wordsmith:act"):
+		return -1.0
+	var loop_t: float = _folk_lists["wordsmith:idle"].size() / FPS
+	var rest: float = int(FOLK["wordsmith"]["loops"]) * loop_t
+	var every: float = rest + _folk_lists["wordsmith:act"].size() / FPS
+	var u := fposmod(_t + float(FOLK["wordsmith"]["phase"]), every)
+	return -1.0 if u < rest else u - rest
+
+
+## (art/ring3.ts flareOf) How hard the ring flares at a moment of his work: 1 as the rune goes into the slab, gone 0.8 s later.
+func _flare_of(act: float) -> float:
+	var lands: float = _rfx_tune.get("lands", 2.12)
+	if act < lands:
+		return 0.0
+	return maxf(0.0, 1.0 - (act - lands) / 0.8)
+
+
+## (art/ring3.ts swirlAt) The fourteen letters going round him at every height: as he writes they draw in and go faster; as the
+## rune goes into the slab they are thrown out to the stones, and come back. Each [x, y, z, k, heat, big] from the ring's middle.
+func _swirl_at(t: float, act: float) -> Array:
+	var out: Array = []
+	var lands: float = _rfx_tune.get("lands", 2.12)
+	var runes: int = int(_rfx_tune.get("runes", 8))
+	var writing := minf(1.0, act / 0.6) if act >= 0.0 and act < lands else 0.0
+	var flare := _flare_of(act)
+	var spin := 0.55 + 0.9 * writing + 1.6 * flare
+	for i in 14:
+		var a := float(i) / 14.0 * TAU + t * spin * (1.0 if i % 2 == 0 else 0.85) + sin(t * 0.3 + i) * 0.2
+		var r := (1.35 + 0.32 * sin(t * 0.7 + i * 1.9)) * (1.0 - 0.45 * writing) + 1.0 * flare
+		var z := 14.0 + 16.0 * (0.5 + 0.5 * sin(t * 0.9 + i * 2.3)) + 10.0 * writing
+		var flick := Perils._hash(i, floori(t * 6.0), 51)
+		var heat := 2 if flare > 0.2 or flick > 0.82 else (1 if flick > 0.45 or writing > 0.5 else 0)
+		out.append([cos(a) * r, sin(a) * r, z, posmod(i + floori(t * 0.4 + i * 0.37), runes), heat, i % 3 == 0])
+	return out
+
+
+## (art/townscene.ts swirlNow) None while the ring is dark; bursting out of the slab as it powers up; else going round him.
+func _swirl_now(pw: Dictionary) -> Array:
+	var P: Dictionary = _ring["power"]
+	if pw.has("dark") or (pw.has("g") and float(pw["g"]) < float(P["flare"])):
+		return []
+	if pw.has("g") and float(pw["g"]) < float(P["done"]):
+		var g: float = pw["g"]
+		var k := minf(1.0, (g - float(P["flare"])) / 0.45)
+		var e := 1.0 - (1.0 - k) * (1.0 - k)
+		var sl: Array = _rfx_tune.get("slab", [0, 1])
+		var out: Array = []
+		for l in _swirl_at(_t, float(_rfx_tune.get("lands", 2.12)) + (g - float(P["flare"]))):
+			out.append([float(sl[0]) + (l[0] - float(sl[0])) * e, float(sl[1]) + (l[1] - float(sl[1])) * e, 11.0 + (l[2] - 11.0) * e, l[3], 2, l[5]])
+		return out
+	return _swirl_at(_t, _smith_act(pw))
+
+
+## (art/quest3.ts floatingOf) Where the floating stone is `g` seconds after it was given, between the hero and the slab's hollow,
+## and how it is turned: [x, y, z, lie], or empty when it is not in the air.
+func _floating_of(g: float, h: Vector2, slab: Vector2, slab_top: float) -> Array:
+	var P: Dictionary = _ring["power"]
+	if g < 0.0 or g >= float(P["set"]):
+		return []
+	var ease := func(k: float) -> float: return k * k * (3.0 - 2.0 * k)
+	if g < float(P["risen"]):
+		return [h.x, h.y, 8.0 + 20.0 * ease.call(g / float(P["risen"])), 0.0]
+	if g < float(P["over"]):
+		var k: float = ease.call((g - float(P["risen"])) / (float(P["over"]) - float(P["risen"])))
+		return [h.x + (slab.x - h.x) * k, h.y + (slab.y - h.y) * k, 28.0 + (slab_top + 14.0 - 28.0) * k + sin(k * PI) * 6.0, 0.0]
+	if g < float(P["lain"]):
+		return [slab.x, slab.y, slab_top + 14.0, 90.0 * ease.call((g - float(P["over"])) / (float(P["lain"]) - float(P["over"])))]
+	var k2 := (g - float(P["lain"])) / (float(P["set"]) - float(P["lain"]))
+	return [slab.x, slab.y, slab_top + 14.0 - 14.0 * k2 * k2, 90.0]
+
+
+## (render.ts standRing3) The letters, the column over the slab, the floating stone and its burst as it is laid in, each stood
+## among what stands by how near it is, each frame.
+func _ring_moments() -> void:
+	if _rfx.is_empty():
+		if not FileAccess.file_exists(RFX_DIR + ".json"):
+			return
+		_rfx_ready()
+	_rfx_lit = []
+	var pw := _power()
+	var letters: Array = _swirl_now(pw) if _ring_mid != null else []
+	for i in _letters.size():
+		var n: Sprite2D = _letters[i]
+		if i >= letters.size():
+			n.visible = false
+			continue
+		var l: Array = letters[i]
+		var x: float = _ring_mid.x + l[0]
+		var y: float = _ring_mid.y + l[1]
+		_rfx_put(n, "%s %d %d" % ["big" if l[5] else "letter", l[4], l[3]], x, y, l[2], x + y)
+	# (the column of light over the slab: none while the ring is dark; rising as it powers up)
+	var P: Dictionary = _ring["power"]
+	_column.visible = false
+	if _slab_mid != null and not pw.has("dark") and not (pw.has("g") and float(pw["g"]) < float(P["flare"])):
+		var d: float = _slab_mid.x + _slab_mid.y + 0.05
+		if pw.has("g") and float(pw["g"]) < float(P["flare"]) + 0.5:
+			var steps: int = int(_rfx_tune.get("rise", 8))
+			_rfx_put(_column, "rise %d" % mini(steps - 1, floori((float(pw["g"]) - float(P["flare"])) / 0.5 * steps)), _slab_mid.x, _slab_mid.y, 11.0, d)
+		else:
+			var f := 1.0 if pw.has("g") and float(pw["g"]) < float(P["done"]) else _flare_of(_smith_act(pw))
+			_rfx_put(_column, "col %d" % (floori(_t * (12.0 + 12.0 * f)) % int(_rfx_tune.get("column", 8))), _slab_mid.x, _slab_mid.y, 11.0, d, 1.0, minf(1.0, 0.42 + 0.58 * f))
+	# (THE MASTER RUNE-STONE given: it rises out of the hero, floats over the slab, lies down and is laid into the hollow in its top,
+	# with a burst of its light)
+	_stone.visible = false
+	_flash.visible = false
+	if _slab_mid != null and pw.has("g") and hero != null:
+		var g: float = pw["g"]
+		var fl := _floating_of(g, hero.world, _slab_mid, 11.0)
+		if not fl.is_empty():
+			var lay: int = int(_rfx_tune.get("laying", 6))
+			var name := ("stone %d" % (floori(_t * 10.0) % int(_rfx_tune.get("standing", 12)))) if fl[3] <= 0.5 else ("lay %d" % mini(lay - 1, roundi(fl[3] / 90.0 * (lay - 1))))
+			_rfx_put(_stone, name, fl[0], fl[1], fl[2], fl[0] + fl[1] + 0.06)
+		var set_at: float = P["set"]
+		if g >= set_at and g < set_at + 0.3:
+			_rfx_put(_flash, "flash", _slab_mid.x, _slab_mid.y, 11.0, _slab_mid.x + _slab_mid.y + 0.07, 0.6 + (g - set_at) * 2.4, 1.0 - (g - set_at) / 0.3)
+	_rfx_lights.queue_redraw()
+
+
+func _draw_rfx_lights() -> void:
+	for q in _rfx_lit:
+		var l: Dictionary = q[1]
+		var r := float(l["r"]) * 2.0
+		var at: Vector2 = q[0]
+		_rfx_lights.draw_texture_rect(Glow.tex(), Rect2(at.x - r, at.y - r, r * 2.0, r * 2.0), false, Glow.tint(l, float(q[2])))

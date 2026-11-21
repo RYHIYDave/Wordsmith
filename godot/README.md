@@ -886,6 +886,19 @@ now the game's own:
 - A BARREL OR AN URN BROKEN throws its eight sparks (game.ts breakProps), a lever pulled its six (pullLever).
 `--only=fxleft` (check_glows.gd), each alone on floor 2, pictured.
 
+## The wordsmith's ring's moments (the cloud chat, 21 Nov 2026)
+
+As the game stands them (render.ts standRing3; art/ring3.ts swirlAt; art/townscene.ts swirlNow, columnSprite; art/quest3.ts
+floatingOf), in the game's own pictures (tools/godot_ring.ts: town/ring_fx), each among what stands by how near it is, their
+lights over the dark (town.gd `_ring_moments`):
+- THE MASTER RUNE-STONE GIVEN rises out of the hero (0.5 s), floats over the slab (to 1.3), lies down over its hollow (to 1.6)
+  and is laid in (1.9) with a burst of its light.
+- THE COLUMN OF LIGHT over the slab: none while the ring is dark; rising off the slab as it flares; then burning, brighter and
+  quicker as he writes a rune into the slab.
+- THE LETTERS OF LIGHT, fourteen of his runes small and big, going round him at every height: bursting out of the slab as the
+  ring flares; drawn in and faster as he writes; thrown out to the stones as the rune goes into the slab, and back.
+`--only=town` pictures them (37 to 41).
+
 ## Not in it yet
 
 Frenzied on the prison's bosses' own scripts
@@ -894,9 +907,7 @@ above), a phone's thrift with the side bosses' films (the Troll Chieftain's and 
 as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), the bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
 and blows; what a boss says is shown, not spoken), the
-Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them; in the town: the
-stone floating from him to the slab, the letters
-swirling round the ring and its column of light, the camp's GATE service; uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them; in the town: the camp's GATE service; uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); a phone's own options (where an attack aims, the screen turned).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
