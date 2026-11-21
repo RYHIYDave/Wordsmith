@@ -53,6 +53,9 @@ var _banner_at := -9.0
 var _plates: Array = []
 var _lunge := Rect2()
 var _inv_button := Rect2()
+## (THE SKILL TREES: NEW TALENT, while a point waits to be spent: hud.ts; pressed, the gear screen on TALENTS)
+var _talent_button := Rect2()
+const Talents := preload("res://scripts/talents.gd")
 var pointer = null
 
 
@@ -98,6 +101,10 @@ func _input(e: InputEvent) -> void:
 	var p: Vector2 = e.position / 2.0
 	if _inv_button.has_point(p):
 		main._inv.toggle()
+		get_viewport().set_input_as_handled()
+		return
+	if _talent_button.has_point(p):
+		main._inv.open_talents()
 		get_viewport().set_input_as_handled()
 		return
 	if main._in_fight():
@@ -374,11 +381,19 @@ func _draw() -> void:
 	# ---- level-up and interact prompts ----
 	var pbh := 13.0
 	var prompt_y := bar_top - 22
+	_talent_button = Rect2()
 	if loot != null and loot.points > 0:
 		# (in the game L opens the level's choice; here it is made on the gear screen)
 		var label := "LEVEL UP (I)"
 		var w := 78.0
 		_button(floorf(W / 2.0 - w / 2.0), prompt_y, w, pbh, label, false, true, pulse)
+		prompt_y -= pbh + 3
+	elif loot != null and hero != null and Talents.points(loot.level) > hero.talents.size():
+		# THE SKILL TREES: a talent point is waiting (after the level's attribute, where both come at once)
+		var label := "NEW TALENT"
+		var w := _width(label) + 12
+		_talent_button = Rect2(floorf(W / 2.0 - w / 2.0), prompt_y, w, pbh)
+		_button(_talent_button.position.x, prompt_y, w, pbh, label, false, true, pulse)
 		prompt_y -= pbh + 3
 	if main != null:
 		var p: Array = main.prompt()

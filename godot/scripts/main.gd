@@ -298,6 +298,14 @@ func _ready() -> void:
 	if cls == "":
 		cls = str(_restored.get("cls", "warrior"))
 	set_class(cls, _restored.is_empty())
+	# (THE SKILL TREES: his talents put back once his class is his: game.ts restore, cleanTalents; the picks made on them)
+	if not _restored.is_empty():
+		hero.talents = preload("res://scripts/talents.gd").clean(hero.cls, loot.level, _restored.get("talents"))
+		hero.picks = {}
+		if _restored.get("picks") is Dictionary:
+			for k in _restored["picks"]:
+				if hero.talents.has(k):
+					hero.picks[k] = str(_restored["picks"][k])
 	_build(first, "start")
 	if not _restored.is_empty():
 		Save.restore_bought(self, _restored)
@@ -351,6 +359,9 @@ func _picked(c: String, m: String, first: String) -> void:
 func set_class(c: String, fresh: bool) -> void:
 	if not Words.data()["classes"].has(c):
 		c = "warrior"
+	if hero.cls != c or fresh:
+		hero.talents = []
+		hero.picks = {}
 	hero.cls = c
 	# (in his town, the camp and the rim, his weapon on his back: render.ts, the heroes' art `town: game.level.town`; the bake's
 	# `town` key, art/heroes3.ts; anywhere else, the dungeon's)
@@ -2043,6 +2054,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE ROYAL CARDS AND THE QUEST LINE OF FLOORS 16 TO 20: check_quest1620.gd)
 	if _arg("only") == "quests1620":
 		await preload("res://scripts/check_quest1620.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE SKILL TREES: --only=talents: check_talents.gd)
+	if _arg("only") == "talents":
+		await preload("res://scripts/check_talents.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (THE CLASS CARDS: --only=cards: check_cards.gd)

@@ -137,6 +137,10 @@ const LAND_LIST := 45
 ## HIS CLASS (game/defs.ts CLASSES): the Warrior's three moves are made here; any other class's by its own kit (scripts/heroes/
 ## <class>.gd: his moves, what they send and leave, and his pictures through them), each step handed to it.
 var cls := "warrior"
+## THE SKILL TREES (game/talents.ts; talents.gd): the talents taken, in the order taken, and the picks made on those with a pick
+## of two (game.ts hero.talents, hero.picks).
+var talents: Array = []
+var picks := {}
 var kit = null
 var map: FloorMap
 var art: BakedHero
@@ -1963,3 +1967,15 @@ func readiness() -> Dictionary:
 	if kit != null:
 		return kit.readiness()
 	return {"whirl": 1.0 - _whirl_cd / maxf(0.01, _whirl_full), "lunge": 1.0 - _lunge_cd / maxf(0.01, _lunge_full)}
+
+
+## THE SKILL TREES: his talents are changed (one taken, undone, a pick made): what hangs on them is put right (game.ts
+## allForHim, refresh). (Their own rules read `talents` as they act: talents.gd PORTED says which are here.)
+func talents_changed() -> void:
+	if loadout != null:
+		loadout.refresh()
+
+
+## Whether talent `id` is his (game.ts has).
+func has(id: String) -> bool:
+	return talents.has(id)

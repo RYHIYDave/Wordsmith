@@ -48,6 +48,11 @@ static func run_of(main) -> Dictionary:
 		run["clapper"] = q11.clapper
 		if not q11.laid_out.is_empty():
 			run["laidOut"] = {"armourer": q11.laid_out.duplicate(true)}
+	# (THE SKILL TREES: the talents taken, and the picks made on them: game.ts save `talents`, `picks`)
+	if not h.talents.is_empty():
+		run["talents"] = h.talents.duplicate()
+	if not h.picks.is_empty():
+		run["picks"] = h.picks.duplicate()
 	# (THE ROYAL CARDS: the cards he holds, once he has any: game.ts save `cards`)
 	if not loot.cards.is_empty():
 		run["cards"] = loot.cards.duplicate()

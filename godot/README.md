@@ -586,6 +586,19 @@ through them in their own opening pictures.
   Quiet Tower and singing in the Moth's fight), the whole court, the captain's voice. In the saved game. `--only=quests1620`
   (`check_quest1620.gd`): 21 steps.
 
+## The skill trees (the cloud chat, 21 Nov 2026)
+
+`scripts/talents.gd` (game/talents.ts, from `tools/godot_talents.ts` -> `assets/talents.json`: the six trees as the released game
+has them, its switches as they stand: the remade talents' words, the Mage's and the Ranger's moves to swap, the Warrior's three
+weapons, the lines both ways, the companions off): a point every 5 levels, 10 in all; a talent open where its tree begins or
+once one joined to it by a line is his; the Warrior's first point his weapon, one only, its path its own, IRON once one is his;
+undone in town only, for 10 gold a level, and not while one taken hangs on it alone; kept in the save (`talents`, `picks`), and
+a saved list made safe. `scripts/talents_page.gd` (ui/talents.ts): the inventory's TALENTS page, the tree in its own shape with
+its faint picture behind (the weapons, the arrow, the claw, the gear, the globes), the points over it, a stone pressed read on
+its card over the game's half with TAKE (1 POINT), UNDO for gold, a pick of two; and on the HUD, NEW TALENT while a point waits.
+`--only=talents` (check_talents.gd) checks the rules and pictures the six trees. IN THE PORT, a talent whose rules are not
+brought over yet says so on its card and cannot be taken (talents.gd `PORTED`): for now only the Warrior's greatsword.
+
 ## The shadows under the figures, and the named ones' rings (the cloud chat, 21 Nov 2026)
 
 `scripts/shadows.gd`, as the game's render.ts `shadow`: one soft black oval (mage_look.gd `blot`) on the floor under every
@@ -646,7 +659,7 @@ swirling round the ring and its column of light, a fallen hero's end (the game e
 hero, who wakes in town; here he is back where the last save left him), the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
 breaks, what stands behind raised ground cut off by it, menus (a new hero is picked on the class cards; there is no title menu to
-go BACK to), the title screen's music and the ring's moving light; the heroes' skill trees and talents (the Tinkerer's Golem has its
+go BACK to), the title screen's music and the ring's moving light; the talents' own rules (the trees and their page are in: above; the Tinkerer's Golem has its
 cannon arm, as he picked it), the modes' rules for a fallen hero.
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 

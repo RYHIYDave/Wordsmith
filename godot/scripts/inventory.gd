@@ -50,8 +50,11 @@ const MAGIC := Color(0.55, 0.7, 1.0)
 const GOLD := Color(1.0, 0.85, 0.4)
 const SLOT_NAMES := {"mainhand": "WEAPON", "offhand": "OFF-HAND", "helm": "HELM", "chest": "CHEST", "gloves": "GLOVES",
 	"belt": "BELT", "boots": "BOOTS", "amulet": "AMULET", "ring1": "RING", "ring2": "RING"}
-const PAGES := ["gear", "attacks"]
-const PAGE_LABEL := {"gear": "GEAR", "attacks": "ATTACKS"}
+const PAGES := ["gear", "attacks", "talents"]
+const PAGE_LABEL := {"gear": "GEAR", "attacks": "ATTACKS", "talents": "TALENTS"}
+## THE SKILL TREES' PAGE (ui/talents.ts: talents_page.gd), and its talents' rules (talents.gd)
+const TalentsPage := preload("res://scripts/talents_page.gd")
+const Talents := preload("res://scripts/talents.gd")
 ## (how each move is made, with a mouse: ui/inventory.ts)
 const HOW := ["LEFT", "RIGHT", "SPACE"]
 
@@ -122,6 +125,9 @@ var _pouch: Array = []   # {r, w, bare, stone}
 var _cells: Array = []   # {r, where, item, worn}
 var _over := {}
 var _card_buttons: Array = []  # [Rect2, id]
+var _tal  # talents_page.gd
+var _tal_buttons: Array = []  # [Rect2, action, arg]
+var _dt := 0.0
 var _page_y := 0.0
 var _page_h := 0.0
 var _strip_y := 0.0
@@ -136,6 +142,7 @@ func _ready() -> void:
 	_font = ThemeDB.fallback_font
 	_hud = JSON.parse_string(FileAccess.get_file_as_string("res://assets/hud/hud.json"))
 	_hud_tex = load("res://assets/hud/hud.png")
+	_tal = TalentsPage.new(self, _hud["theme"], _hud["palette"])
 	visible = false
 	if not InputMap.has_action("inventory"):
 		InputMap.add_action("inventory")
@@ -154,6 +161,7 @@ func _process(dt: float) -> void:
 	if not visible:
 		return
 	_t += dt
+	_dt = dt
 	_note_t = maxf(0.0, _note_t - dt)
 	if not _flash.is_empty():
 		_flash["t"] += dt
@@ -195,6 +203,14 @@ func toggle() -> void:
 
 
 ## Opened on a move (the HUD: a press on its plate at the bottom of the screen): the ATTACKS page, that move read out.
+## Opened on THE SKILL TREES' page (the HUD's NEW TALENT).
+func open_talents() -> void:
+	if not visible:
+		toggle()
+	if not loot.first_word_waits():
+		_page = "talents"
+
+
 func open_on(i: int) -> void:
 	if not visible:
 		toggle()
@@ -250,6 +266,18 @@ func _pressed(at: Vector2) -> void:
 		if tb["r"].has_point(at):
 			_press("tab", tb["page"])
 			return
+	# (THE SKILL TREES' page: its card's buttons, then a stone, read)
+	if _page == "talents":
+		for b in _tal_buttons:
+			if b[0].has_point(at):
+				_tal_press(b[1], b[2])
+				return
+		var id: String = _tal.stone_at(at / K)
+		if id != "":
+			_tal.sel = id
+			return
+		_tal.sel = ""
+		return
 	for c in _pouch:
 		if c["r"].has_point(at):
 			# a word is pressed: it is in hand (to be read), and may be dragged from here
@@ -449,6 +477,49 @@ func _press(action: String, arg) -> void:
 	_hover = {}
 
 
+## THE SKILL TREES: a talent taken with a point (game.ts takeTalent), undone in town for gold (unlearnTalent), its pick of two
+## made (choosePick); a press elsewhere on its card is the card's.
+func _tal_press(action: String, arg) -> void:
+	match action:
+		"tal_take":
+			var why := Talents.take_problem(hero.cls, loot.level, hero.talents, arg)
+			if why != "":
+				_say(why)
+				return
+			hero.talents.append(arg)
+			hero.talents_changed()
+			_tal.flash = {"id": arg, "t": 0.0}
+			if loot.sfx != null:
+				loot.sfx.play("equip")
+		"tal_undo":
+			var why := Talents.unlearn_problem(hero.cls, hero.talents, arg)
+			if why == "" and not main.is_home(main.place):
+				why = "Undone in town only"
+			if why == "" and loot.gold < Talents.unlearn_price(loot.level):
+				why = "Needs %d gold" % Talents.unlearn_price(loot.level)
+			if why != "":
+				_say(why)
+				return
+			loot.gold -= Talents.unlearn_price(loot.level)
+			hero.talents.erase(arg)
+			var d := Talents.of(hero.cls, arg)
+			if d.get("pick") != null and d["pick"].get("lock", false):
+				hero.picks.erase(arg)
+			hero.talents_changed()
+			if loot.sfx != null:
+				loot.sfx.play("gold")
+		"tal_pick":
+			var d := Talents.of(hero.cls, _tal.sel)
+			if d.get("pick") != null and d["pick"].get("lock", false) and hero.picks.has(_tal.sel):
+				_say("Unlearn to change")
+				return
+			hero.picks[_tal.sel] = arg
+			hero.talents_changed()
+			_tal.flash = {"id": _tal.sel, "t": 0.0}
+			if loot.sfx != null:
+				loot.sfx.play("equip")
+
+
 func _say(why: String) -> void:
 	if why != "":
 		_note = why
@@ -593,6 +664,11 @@ func _lay() -> void:
 	_pouch_y = _strip_y + CAP
 	_bag_y = _pouch_y + (room * LINE - 2.0 * K) + 3.0 * K + CAP
 	_page_h = _strip_y - 3.0 * K - _page_y
+	# (THE SKILL TREES' page: no bag at its foot, nor his words; the tree has the panel down to its bottom: ui/inventory.ts `bare`,
+	# his words of 31 Oct 2026, "The bag covers the tree")
+	if _page == "talents":
+		_strip_y = H
+		_page_h = H - M - _page_y
 	# the names of the pages, and DONE
 	_tabs = []
 	var x := M
@@ -622,6 +698,8 @@ func _lay() -> void:
 			break
 		how += 1
 	_pouch = _pouch.filter(func(c): return c["line"] < room)
+	if _page == "talents":
+		_pouch = []
 	# the ATTACKS page: each move a line, laid out as it reads
 	_slots = []
 	_plates = [null, null, null]
@@ -671,7 +749,7 @@ func _lay() -> void:
 		for i in loot.EQUIP.size():
 			var slot: String = loot.EQUIP[i]
 			_cells.append({"r": Rect2(16 + (i % 2) * 112, _page_y + 4 + floorf(i / 2.0) * 40, 106, 36), "where": slot, "item": loot.gear[slot], "worn": true})
-	for i in loot.BAG:
+	for i in (0 if _page == "talents" else loot.BAG):
 		_cells.append({"r": Rect2(M + (i % BAG_COLS) * PITCH, _bag_y + floorf(float(i) / BAG_COLS) * PITCH, CELL, CELL), "where": i, "item": loot.bag[i] if i < loot.bag.size() else null, "worn": false})
 	# what the word in hand hangs over: under the pointer
 	_over = _target_at(_mouse) if _word != "" and _pending.is_empty() else {}
@@ -690,9 +768,10 @@ func _draw() -> void:
 	var W := size.x / 2.0
 	var blink := sin(_t * 7.0) > 0.0
 	draw_rect(Rect2(0, 0, W, size.y), PANEL)
-	# (the bottom that never changes stands on a ground of its own)
-	draw_rect(Rect2(0, _strip_y - 3.0 * K, W, size.y - _strip_y + 3.0 * K), Color(0.07, 0.09, 0.26))
-	draw_rect(Rect2(0, _strip_y - 3.0 * K, W, 1), EDGE)
+	# (the bottom that never changes stands on a ground of its own; not on THE SKILL TREES' page)
+	if _page != "talents":
+		draw_rect(Rect2(0, _strip_y - 3.0 * K, W, size.y - _strip_y + 3.0 * K), Color(0.07, 0.09, 0.26))
+		draw_rect(Rect2(0, _strip_y - 3.0 * K, W, 1), EDGE)
 	draw_line(Vector2(W, 0), Vector2(W, size.y), EDGE, 2.0)
 	var first: bool = loot.first_word_waits()
 	for tb in _tabs:
@@ -706,12 +785,17 @@ func _draw() -> void:
 	draw_rect(_done, Color(PRESS, 0.18))
 	draw_rect(_done, PRESS if not (_coached and blink) else Color.WHITE, false, 1.5)
 	_mid(_done, "DONE", NORMAL, PRESS)
+	_tal_buttons = []
 	if _page == "attacks":
 		_draw_attacks(blink, first)
+	elif _page == "talents":
+		_tal.lay_out(hero.cls, Rect2(M / K, _page_y / K, (W - 2.0 * M) / K, _page_h / K))
+		_tal.draw(hero, loot.level, _t, _dt)
 	else:
 		_draw_gear()
-	_draw_bag(blink, first)
-	_draw_words(first)
+	if _page != "talents":
+		_draw_bag(blink, first)
+		_draw_words(first)
 	if shop != "":
 		_shelf()
 	if altar >= 0:
@@ -727,6 +811,9 @@ func _draw() -> void:
 		draw_rect(nr, Color.BLACK)
 		_mid(nr, _note, NORMAL, BAD)
 	_draw_flash()
+	# (THE SKILL TREES: the card of the talent being read, over the game's half)
+	if _page == "talents":
+		_tal_buttons = _tal.draw_card(hero, loot.level, loot.gold, main.is_home(main.place), W / K, size.y / K)
 	# the word being dragged follows the pointer (over a slot it may go in it is shown sitting there)
 	if not _drag.is_empty() and _drag["moving"] and _word != "":
 		var fits: bool = not _over.is_empty() and _over["kind"] == "slot" and place_problem(_over["i"], _over["side"], _over["k"], _word) == ""
