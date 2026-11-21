@@ -1,10 +1,13 @@
-## THE GEAR SCREEN (I or Tab; the game's ui/inventory.ts): on the left half of the screen, the game seen in the other half
-## (Version 14.2), the game held still while it is open. In the heroes' colours (Version 13.0): deep blue panels, cyan for
-## what is picked, pink for the one thing to press.
+## THE GEAR SCREEN (I or Tab; the game's ui/inventory.ts): on the right half of the screen (invRect), the game seen in the other
+## half with the hero in its middle (main.ts renderer.view; beside a service the picture stays where it was), held still while it
+## is open, the HUD and the small map put by. In the game's own letters (pixel_font.gd) and colours (ui.ts THEME), its boxes with
+## their corners cut (ui.ts box), cyan for what is picked, pink for the one thing to press.
 ## LAID OUT AS THE GAME LAYS ITS OWN (ui/inventory.ts drawInventory, two of the screen's pixels to one of the game's): along
 ## the top the names of its pages and DONE; the page; and a bottom that never changes, YOUR WORDS over the BAG.
-##   GEAR: his ten slots (a press takes a piece off, into the bag) and his numbers: damage, attacks a second, life, armour,
-##     Str / Dex / Int, and +5 to place after a level (game.ts chooseAttr).
+##   GEAR: the hero as he stands, twice his size, his scarf moving, on a ground of his own between two columns of slots in the
+##     order of the body (DOLL_SLOT; an empty one shows faintly what goes there); a press takes a piece off, into the bag. Beside
+##     him his numbers at a glance (drawGlance), and +5 to place after a level (game.ts chooseAttr).
+##   STATS: the attributes and the level, how far to the next; the defences and the attack side by side (drawStats).
 ##   ATTACKS: each of his moves that is open a line, as it reads: its slots IN FRONT, the move on its plate (its picture, its
 ##     name, how it is made), its slots BEHIND, and what A HIT of it does (game.ts hitRange) and how often. A slot is a socket
 ##     the size of a bag's cell; a word set in it shows as its rune stone. A move not yet open is not shown, nor a slot not
@@ -27,31 +30,59 @@
 ## it has left.
 ## A NEW PLAYER'S FIRST WORD (ui/guide.ts guideCoach): while it waits, the page is the attacks', a line under them says where
 ## it goes, and it goes nowhere else ("Your first word goes on an attack").
-## The letters and frames are still Godot's plain ones, not the game's own; the game's STATS page is here on the GEAR page,
-## beside what he wears, and its own lexicon of words is not here.
+## LEXICON beside the bag (WORD_LEX): every word he holds on a panel of its own over the game's half. At a service, the tile at
+## the end of the words' line (WORD_ROOM): ALL turns the bottom to every word, BAG back to the bag.
 extends Control
 
 const Words := preload("res://scripts/words.gd")
+## THE GAME'S LETTERS (engine/font.ts: pixel_font.gd), its normal and its small
+const PF := preload("res://scripts/pixel_font.gd")
 
-const PANEL := Color(0.05, 0.07, 0.2, 1.0)
-const BOX := Color(0.09, 0.12, 0.32)
-const HOT := Color(0.16, 0.2, 0.5)
-const INK := Color(0.03, 0.04, 0.13)
-const EDGE := Color(0.22, 0.28, 0.62)
-const PICK := Color(0.35, 0.9, 1.0)
-const PICK_LO := Color(0.13, 0.66, 0.75)
-const PICK_BG := Color(0.07, 0.31, 0.42)
-const PRESS := Color(0.96, 0.27, 0.47)
-const DIM := Color(0.55, 0.6, 0.8)
-const FAINT := Color(0.35, 0.38, 0.55)
-const TEXT := Color(0.86, 0.88, 0.96)
+const PANEL := Color("#0e0c24")
+const BOX := Color("#1a1648")
+## (ui.ts THEME: bg2, the ground of a button; edgeHi, the rim of a lit one; slot, an empty cell's ground)
+const BG2 := Color("#2a2466")
+const EDGE_HI := Color("#7a74c8")
+const SLOT := Color("#0e0c24")
+const HOT := Color("#4640a0")
+const INK := Color("#0e0c24")
+const EDGE := Color("#3a3478")
+const PICK := Color("#7af8f0")
+const PICK_LO := Color("#22a8c0")
+const PICK_BG := Color("#12506a")
+const PRESS := Color("#e0287a")
+const PRESS_HI := Color("#ff7aa8")
+const DIM := Color("#9c96dc")
+const FAINT := Color("#5a54b0")
+const TEXT := Color("#f0e8ff")
 const BAD := Color("#ff6e80")
-const MAGIC := Color(0.55, 0.7, 1.0)
-const GOLD := Color(1.0, 0.85, 0.4)
+const MAGIC := Color("#9cb0ff")
+const GOLD := Color("#ffe070")
+## (game/vendors.ts VENDORS: whose shelf is whose)
+const SHOP_NAME := {"armourer": "Armourer", "mystic": "Mystic"}
+## (types.ts RARITY_NAMES)
+const RARITY_NAMES := ["Normal", "Magic", "Rare", "Unique"]
 const SLOT_NAMES := {"mainhand": "WEAPON", "offhand": "OFF-HAND", "helm": "HELM", "chest": "CHEST", "gloves": "GLOVES",
 	"belt": "BELT", "boots": "BOOTS", "amulet": "AMULET", "ring1": "RING", "ring2": "RING"}
-const PAGES := ["gear", "attacks", "talents"]
-const PAGE_LABEL := {"gear": "GEAR", "attacks": "ATTACKS", "talents": "TALENTS"}
+const PAGES := ["gear", "attacks", "stats", "talents"]
+const PAGE_LABEL := {"gear": "GEAR", "attacks": "ATTACKS", "stats": "STATS", "talents": "TALENTS"}
+## THE HERO AND THE SLOTS BESIDE HIM (ui/inventory.ts DOLL_W, DOLL_SLOT): a column of slots, the hero, a column of slots, game
+## pixels; which column (0 screen-left of him, 1 right) and row each thing worn has its slot in, in the order of the body, a pair
+## to a row: head and neck; chest and waist; the two hands' weapons; hands and feet; the two rings.
+const DOLL_W := 116.0
+const DOLL_ROWS := 5
+const DOLL_SLOT := {"helm": [0, 0], "amulet": [1, 0], "chest": [0, 1], "belt": [1, 1], "mainhand": [0, 2], "offhand": [1, 2],
+	"gloves": [0, 3], "boots": [1, 3], "ring1": [0, 4], "ring2": [1, 4]}
+## (what an empty slot shows, faintly: the kind of thing that goes there: ui/inventory.ts GHOST)
+const GHOST := {"mainhand": "greatsword:0", "offhand": "shield:0", "helm": "helm:0", "chest": "armor:0", "gloves": "gloves:0",
+	"belt": "belt:0", "boots": "boots:0", "amulet": "amulet:0", "ring1": "ring:0", "ring2": "ring:0"}
+## (the attributes' names and colours: defs.ts ATTR_NAME, ui/panels.ts ATTR_COLOR)
+const ATTR_NAME := {"str": "STRENGTH", "dex": "DEXTERITY", "int": "INTELLIGENCE"}
+const ATTR_COLOR := {"str": Color("#e03c44"), "dex": Color("#84c84c"), "int": Color("#58a8f0")}
+const Tails := preload("res://scripts/tails.gd")
+## (defs.ts CLASSES: who he is, under his level beside the bag)
+const CLASS_NAME := {"warrior": "Warrior", "ranger": "Ranger", "mage": "Mage", "warlock": "Warlock", "tinkerer": "Tinkerer", "brawler": "Veteran"}
+const BakedHero := preload("res://scripts/baked_hero.gd")
 ## THE SKILL TREES' PAGE (ui/talents.ts: talents_page.gd), and its talents' rules (talents.gd)
 const TalentsPage := preload("res://scripts/talents_page.gd")
 const Talents := preload("res://scripts/talents.gd")
@@ -81,6 +112,8 @@ var loot  # loot.gd
 var main  # main.gd
 var hero  # hero.gd
 var _font: Font
+## (the halves changed round: the panel drawn on the right: _half)
+var _xf := Vector2.ZERO
 var _hits: Array = []  # [Rect2, action, arg, item]
 var _hover := {}
 ## THE VENDORS (game.ts, ui/town.ts vendorSide): open at a vendor's, his shelf on the right half; a piece there bought for
@@ -134,6 +167,14 @@ var _strip_y := 0.0
 var _pouch_y := 0.0
 var _bag_y := 0.0
 var _rows_end := 0.0
+## (the GEAR page: the rows of the hero's slots, how far apart, how tall, where they begin; his figure's scarf, and its clock)
+var _doll_pitch := 0.0
+var _doll_h := 0.0
+var _doll_y := 0.0
+var _doll_tails = null
+## (the HUD and the small map as they were before the panel came up)
+var _hud_was: Array = []
+var _doll_t := -10.0
 
 
 func _ready() -> void:
@@ -200,6 +241,16 @@ func toggle() -> void:
 		wsmith = ""
 		svc = ""
 	mouse_filter = Control.MOUSE_FILTER_STOP if visible else Control.MOUSE_FILTER_IGNORE
+	# (the HUD and the small map are not over the game's half while the panel is up: ui/inventory.ts, the game draws neither)
+	if main != null:
+		if visible:
+			_hud_was = [main._hud.visible, main._mini.visible]
+			main._hud.visible = false
+			main._mini.visible = false
+		elif not _hud_was.is_empty():
+			main._hud.visible = _hud_was[0]
+			main._mini.visible = _hud_was[1]
+			_hud_was = []
 
 
 ## Opened on a move (the HUD: a press on its plate at the bottom of the screen): the ATTACKS page, that move read out.
@@ -218,15 +269,23 @@ func open_on(i: int) -> void:
 	_focus = clampi(i, 0, 2)
 
 
-func _gui_input(e: InputEvent) -> void:
+func _gui_input(ev: InputEvent) -> void:
+	# (the screen's two halves changed round to the lay the panel is laid out in: _to_panel)
+	var e := ev
+	if ev is InputEventMouse:
+		e = ev.duplicate()
+		e.position = _to_panel(ev.position)
 	if e is InputEventMouseMotion:
 		_mouse = e.position
 		_hover = {}
 		for h in _hits:
-			if h[0].has_point(e.position) and (h[1] == "worn" or h[1] == "bag" or h[1] == "buy" or h[1] == "st_take"):
+			if h[0].has_point(e.position) and (h[1] == "worn" or h[1] == "bag" or h[1] == "buy" or h[1] == "buyback" or h[1] == "st_take"):
 				_hover = {"item": h[3], "at": e.position}
 		if not _drag.is_empty() and not _drag["moving"] and e.position.distance_to(_drag["at"]) > 5.0 * K:
 			_begin_drag()
+		for dd in [_shelf_drag, _piece_drag]:
+			if not dd.is_empty() and not dd["moving"] and e.position.distance_to(dd["at"]) > 5.0 * K:
+				dd["moving"] = true
 	if e is InputEventMouseButton:
 		_mouse = e.position
 		if e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
@@ -238,8 +297,13 @@ func _gui_input(e: InputEvent) -> void:
 				if c["r"].has_point(e.position) and _set_in(c) != null:
 					_unsocket(c["i"], c["side"], c["k"])
 			# (THE WORDSMITH'S TRADE: on one of his words, it is bought at once, as everywhere: ui/trades.ts; THE STRANGER: on a kind
-			# of piece, a throw at once)
+			# of piece, a throw at once; THE VENDOR: on a piece of his, bought at once; on a piece of the bag, sold at once)
 			for h in _hits:
+				if (h[1] == "buy" or h[1] == "buyback") and h[0].has_point(e.position):
+					_press(h[1], h[2])
+					_shelf_pick = []
+				elif h[1] == "bag" and shop != "" and h[0].has_point(e.position) and _word == "" and _pending.is_empty():
+					_press("bag", h[2])
 				if h[1] == "ws_cell" and h[0].has_point(e.position):
 					_ws_quick(h[2])
 				elif h[1] == "gm_kind" and h[0].has_point(e.position):
@@ -302,8 +366,22 @@ func _pressed(at: Vector2) -> void:
 			return
 	for h in _hits:
 		if h[0].has_point(at):
+			# (THE VENDOR'S HALF: a piece of his pressed is picked, and may be carried across; pressed again, it is bought)
+			if h[1] == "buy" or h[1] == "buyback":
+				if _shelf_pick == [h[1], h[2]]:
+					_press(h[1], h[2])
+					_shelf_pick = []
+				else:
+					_shelf_pick = [h[1], h[2]]
+					_shelf_drag = {"what": [h[1], h[2]], "at": at, "moving": false}
+				return
+			# (and a piece of the bag pressed there may be carried across to him, or sold where it is let go)
+			if h[1] == "bag" and shop != "" and _word == "" and _pending.is_empty() and not loot.first_word_waits():
+				_piece_drag = {"i": h[2], "at": at, "moving": false}
+				return
 			_press(h[1], h[2])
 			return
+	_shelf_pick = []
 	# a press on nothing: whatever was in hand is put down
 	_word = ""
 	_look = null
@@ -313,6 +391,20 @@ func _pressed(at: Vector2) -> void:
 
 
 func _released(at: Vector2) -> void:
+	var W := size.x / 2.0
+	if not _shelf_drag.is_empty():
+		var d := _shelf_drag
+		_shelf_drag = {}
+		# (carried across to the panel and let go there: bought)
+		if d["moving"] and at.x < W:
+			_press(d["what"][0], d["what"][1])
+			_shelf_pick = []
+	if not _piece_drag.is_empty():
+		var d := _piece_drag
+		_piece_drag = {}
+		# (pressed and let go where it lies, as before; or carried over to the vendor's half and let go there: sold)
+		if not d["moving"] or at.x >= W:
+			_press("bag", d["i"])
 	if _drag.is_empty():
 		return
 	var d := _drag
@@ -455,6 +547,16 @@ func _press(action: String, arg) -> void:
 			_pending = {}
 		"buy":
 			loot.buy(shop, arg)
+		"buyback":
+			_say(loot.buy_back(arg))
+		"lex":
+			_lex = not _lex
+		"swap":
+			_all = not _all
+		"shelf_take":
+			if not _shelf_pick.is_empty():
+				_press(_shelf_pick[0], _shelf_pick[1])
+				_shelf_pick = []
 		"attr":
 			loot.choose_attr(arg)
 		"front", "behind":
@@ -674,11 +776,30 @@ func _lay() -> void:
 	# the names of the pages, and DONE
 	_tabs = []
 	var x := M
+	# (as much air round each name as the panel leaves once DONE has its room: ui/inventory.ts)
+	var names := 0.0
 	for pg in PAGES:
-		var w := _width(PAGE_LABEL[pg], NORMAL) + 10.0 * K
+		names += _width(PAGE_LABEL[pg], NORMAL)
+	var pad := clampf(floorf((body_w - 44.0 * K - 6.0 * K - names - 2.0 * K * (PAGES.size() - 1)) / (PAGES.size() * K)), 4.0, 10.0) * K
+	for pg in PAGES:
+		var w := _width(PAGE_LABEL[pg], NORMAL) + pad
 		_tabs.append({"r": Rect2(x, top + K, w, HEAD - 3.0 * K), "page": pg})
 		x += w + 2.0 * K
 	_done = Rect2(W - M - 44.0 * K, top + K, 44.0 * K, HEAD - 3.0 * K)
+	# (WORD_ROOM: at a service, the tile at the end of the words' first line that turns the bottom from the bag to every word and
+	# back; WORD_LEX: elsewhere, LEXICON beside the bag, every word in a panel of its own over the game's half)
+	var service := shop != "" or altar >= 0 or wsmith != "" or svc != ""
+	if not service:
+		_all = false
+	_swap_r = Rect2(M + body_w - SWAP_W * K, _pouch_y, SWAP_W * K, TH) if service and _page != "talents" else Rect2()
+	_lex_r = Rect2()
+	var ix := M + BAG_COLS * PITCH - 2.0 * K + 8.0 * K
+	if not service and _page != "talents" and W - M - ix >= 30.0 * K:
+		_lex_r = Rect2(ix, _bag_y + bag_h - 15.0 * K, minf(W - M - ix, 64.0 * K), 15.0 * K)
+	if _all:
+		# (every word, in the room the words' line and the bag both take; the bag not there)
+		room = maxi(room, floori((strip_h - CAP - 2.0 * K + 2.0 * K) / LINE))
+	var line_w := body_w - (SWAP_W * K + GAP if _swap_r.has_area() else 0.0)
 	# his words: tiles in lines; without their rune stones if they do not go in so, then as their rune stones alone
 	_pouch = []
 	var held: Array = loot.held()
@@ -689,8 +810,8 @@ func _lay() -> void:
 		var px := 0.0
 		var line := 0
 		for w in held:
-			var tw: float = CELL if how == 2 else minf(body_w, _tile_w(w, "name", int(loot.words[w]), how == 1))
-			if px > 0.0 and px + tw > body_w:
+			var tw: float = CELL if how == 2 else minf(line_w, _tile_w(w, "name", int(loot.words[w]), how == 1))
+			if px > 0.0 and px + tw > line_w:
 				px = 0.0
 				line += 1
 			_pouch.append({"r": Rect2(M + px, _pouch_y + line * LINE, tw, TH), "w": w, "bare": how == 1, "stone": how == 2, "line": line})
@@ -702,6 +823,28 @@ func _lay() -> void:
 	_pouch = _pouch.filter(func(c): return c["line"] < room)
 	if _page == "talents":
 		_pouch = []
+	# (WORD_LEX, open: every word as its rune stone, in lines over the game's half at its foot, on a panel of its own: ui/inventory.ts
+	# halfRoom, layPouch with `runes`; laid in the other half's lay, from W)
+	_lex_panel = Rect2()
+	if _lex and _lex_r.has_area() and _page != "talents":
+		var half_w := W - 2.0 * 6.0 * K
+		var half_lines := maxi(1, floori((H - 2.0 * 6.0 * K - CAP - 4.0 * K + 2.0 * K) / LINE))
+		var cells: Array = []
+		var px := 0.0
+		var line := 0
+		for w in held:
+			if px > 0.0 and px + CELL > half_w:
+				px = 0.0
+				line += 1
+			cells.append([w, px, line])
+			px += CELL + GAP
+		cells = cells.filter(func(c): return c[2] < half_lines)
+		var used: int = (int(cells[-1][2]) + 1) if not cells.is_empty() else 1
+		var pouch_h: float = used * LINE - 2.0 * K
+		_lex_panel = Rect2(W + (6.0 - 4.0) * K, H - 6.0 * K - pouch_h - CAP - 8.0 * K, half_w + 8.0 * K, pouch_h + CAP + 10.0 * K)
+		var py := _lex_panel.position.y + 4.0 * K + CAP
+		for c in cells:
+			_pouch.append({"r": Rect2(_lex_panel.position.x + 4.0 * K + c[1], py + c[2] * LINE, CELL, TH), "w": c[0], "bare": false, "stone": true, "line": c[2], "lex": true})
 	# the ATTACKS page: each move a line, laid out as it reads
 	_slots = []
 	_plates = [null, null, null]
@@ -748,10 +891,14 @@ func _lay() -> void:
 	# his gear: what he wears, on the GEAR page; and, on every page, the bag
 	_cells = []
 	if _page == "gear":
-		for i in loot.EQUIP.size():
-			var slot: String = loot.EQUIP[i]
-			_cells.append({"r": Rect2(16 + (i % 2) * 112, _page_y + 4 + floorf(i / 2.0) * 40, 106, 36), "where": slot, "item": loot.gear[slot], "worn": true})
-	for i in (0 if _page == "talents" else loot.BAG):
+		# (the hero between two columns of slots, the rows as far apart as the page allows: ui/inventory.ts dollAt)
+		_doll_pitch = clampf(floorf((_page_h - CELL) / ((DOLL_ROWS - 1) * K)) * K, CELL, PITCH)
+		_doll_h = (DOLL_ROWS - 1) * _doll_pitch + CELL
+		_doll_y = _page_y + maxf(0.0, floorf((_page_h - _doll_h) / (2.0 * K)) * K)
+		for slot in loot.EQUIP:
+			var cr: Array = DOLL_SLOT[slot]
+			_cells.append({"r": Rect2(M + int(cr[0]) * (DOLL_W * K - CELL), _doll_y + int(cr[1]) * _doll_pitch, CELL, CELL), "where": slot, "item": loot.gear[slot], "worn": true})
+	for i in (0 if _page == "talents" or _all else loot.BAG):
 		_cells.append({"r": Rect2(M + (i % BAG_COLS) * PITCH, _bag_y + floorf(float(i) / BAG_COLS) * PITCH, CELL, CELL), "where": i, "item": loot.bag[i] if i < loot.bag.size() else null, "worn": false})
 	# what the word in hand hangs over: under the pointer
 	_over = _target_at(_mouse) if _word != "" and _pending.is_empty() else {}
@@ -769,35 +916,50 @@ func _draw() -> void:
 	_lay()
 	var W := size.x / 2.0
 	var blink := sin(_t * 7.0) > 0.0
+	# (THE VIEW: with the panel up and no service beside it, the game is seen with the hero in the middle of the half it has
+	# (main.ts renderer.view, gameRect); beside a service the picture stays where it was)
+	if hero != null and hero._cam != null and shop == "" and altar < 0 and wsmith == "" and svc == "":
+		hero._cam.offset.x = W / 2.0 / maxf(0.01, hero._cam.zoom.x)
+	# (THE PANEL, on the right half: ui/inventory.ts invRect; laid out from 0 and drawn moved over: _half)
+	_half(1)
 	draw_rect(Rect2(0, 0, W, size.y), PANEL)
 	# (the bottom that never changes stands on a ground of its own; not on THE SKILL TREES' page)
 	if _page != "talents":
-		draw_rect(Rect2(0, _strip_y - 3.0 * K, W, size.y - _strip_y + 3.0 * K), Color(0.07, 0.09, 0.26))
+		draw_rect(Rect2(0, _strip_y - 3.0 * K, W, size.y - _strip_y + 3.0 * K), BOX)
 		draw_rect(Rect2(0, _strip_y - 3.0 * K, W, 1), EDGE)
-	draw_line(Vector2(W, 0), Vector2(W, size.y), EDGE, 2.0)
+	# (its edge against the game: a line, and a hair of light along it)
+	draw_rect(Rect2(0, 0, K, size.y), EDGE_HI)
+	draw_rect(Rect2(0, 0, 1, size.y), PICK_LO)
 	var first: bool = loot.first_word_waits()
 	for tb in _tabs:
 		var on: bool = tb["page"] == _page
 		var off: bool = first and tb["page"] != "attacks"
 		var r: Rect2 = tb["r"]
-		draw_rect(r, HOT if on else BOX)
-		draw_rect(r, PICK if on else EDGE, false, 1.5 if on else 1.0)
+		var hot: bool = not off and not on and r.has_point(_mouse)
+		_gbox(r, HOT if on else (BG2 if hot else BOX), PICK if on else (EDGE_HI if hot else EDGE))
 		_mid(r, PAGE_LABEL[tb["page"]], NORMAL, FAINT if off else (PICK if on else TEXT))
 	# (pink is the one thing to press: DONE)
-	draw_rect(_done, Color(PRESS, 0.18))
-	draw_rect(_done, PRESS if not (_coached and blink) else Color.WHITE, false, 1.5)
-	_mid(_done, "DONE", NORMAL, PRESS)
+	_gbutton(_done, "DONE", true, (_coached and blink) or _done.has_point(_mouse))
 	_tal_buttons = []
 	if _page == "attacks":
 		_draw_attacks(blink, first)
 	elif _page == "talents":
 		_tal.lay_out(hero.cls, Rect2(M / K, _page_y / K, (W - 2.0 * M) / K, _page_h / K))
 		_tal.draw(hero, loot.level, _t, _dt)
+	elif _page == "stats":
+		_draw_stats(Rect2(M, _page_y, W - 2.0 * M, _page_h))
 	else:
 		_draw_gear()
 	if _page != "talents":
 		_draw_bag(blink, first)
 		_draw_words(first)
+	if _note_t > 0.0:
+		var nw := minf(W - 8.0, _width(_note, NORMAL) + 16.0)
+		var nr := Rect2(floorf((W - nw) / 2.0), _strip_y - 16.0 * K, nw, 11.0 * K)
+		draw_rect(nr, Color.BLACK)
+		_mid(nr, _note, NORMAL, BAD)
+	# (THE SERVICES, on the left half: ui/inventory.ts gameRect; laid out from W)
+	_half(-1)
 	if shop != "":
 		_shelf()
 	if altar >= 0:
@@ -806,26 +968,37 @@ func _draw() -> void:
 		_ws_side(blink)
 	if svc != "":
 		_svc_side(blink)
+	# (WORD_LEX: his lexicon open, every word on a panel of its own over the game's half)
+	if _lex_panel.has_area():
+		_draw_lex()
+	# (what is read, on a card over the game's half against the panel's edge)
 	_draw_reading(blink, first)
-	if _note_t > 0.0:
-		var nw := minf(W - 8.0, _width(_note, NORMAL) + 16.0)
-		var nr := Rect2(floorf((W - nw) / 2.0), _strip_y - 16.0 * K, nw, 11.0 * K)
-		draw_rect(nr, Color.BLACK)
-		_mid(nr, _note, NORMAL, BAD)
-	_draw_flash()
 	# (THE SKILL TREES: the card of the talent being read, over the game's half)
 	if _page == "talents":
 		_tal_buttons = _tal.draw_card(hero, loot.level, loot.gold, main.is_home(main.place), W / K, size.y / K)
+	_half(0)
+	_draw_flash()
 	# the word being dragged follows the pointer (over a slot it may go in it is shown sitting there)
 	if not _drag.is_empty() and _drag["moving"] and _word != "":
 		var fits: bool = not _over.is_empty() and _over["kind"] == "slot" and place_problem(_over["i"], _over["side"], _over["k"], _word) == ""
 		if not fits:
 			var form: String = _over["side"] if not _over.is_empty() and _over["kind"] == "slot" else "name"
 			var tw := _tile_w(_word, form)
-			_tile(Rect2(roundf(_mouse.x - tw / 2.0), roundf(_mouse.y - TH - 4.0 * K), tw, TH), _word, form, {"lit": true, "edge": PICK})
+			var m := _to_screen(_mouse)
+			_tile(Rect2(roundf(m.x - tw / 2.0), roundf(m.y - TH - 4.0 * K), tw, TH), _word, form, {"lit": true, "edge": PICK})
+	# a piece carried across to or from the vendor follows the pointer
+	var carried = null
+	if not _shelf_drag.is_empty() and _shelf_drag["moving"]:
+		var items: Array = loot.shops.get(shop, []) if _shelf_drag["what"][0] == "buy" else loot.sold
+		carried = items[_shelf_drag["what"][1]] if _shelf_drag["what"][1] < items.size() else null
+	elif not _piece_drag.is_empty() and _piece_drag["moving"] and int(_piece_drag["i"]) < loot.bag.size():
+		carried = loot.bag[int(_piece_drag["i"])]
+	if carried != null:
+		var m := _to_screen(_mouse)
+		_icon_at(carried["icon"], Rect2(m - Vector2(CELL, CELL) / 2.0, Vector2(CELL, CELL)))
 	# the card of the piece pointed at
-	if not _hover.is_empty() and _hover["item"] != null and _word == "" and _pending.is_empty():
-		_card(_hover["item"], _hover["at"])
+	elif not _hover.is_empty() and _hover["item"] != null and _word == "" and _pending.is_empty():
+		_card(_hover["item"], _to_screen(_hover["at"]))
 
 
 # --- the ATTACKS page ---
@@ -839,8 +1012,7 @@ func _draw_attacks(blink: bool, first: bool) -> void:
 		var a: Rect2 = _plates[s]
 		var def := _skill(s)
 		var r: Dictionary = hero.loadout.r(s)
-		draw_rect(a, HOT if _focus == s else BOX)
-		draw_rect(a, PICK if _focus == s else EDGE, false, 1.5 if _focus == s else 1.0)
+		_gbox(a, HOT if _focus == s else BOX, PICK if _focus == s else EDGE)
 		_hud_pic("ability:" + str(def["icon"]), Rect2(a.position + Vector2(2.0 * K, 2.0 * K), Vector2(16.0 * K, 16.0 * K)))
 		_top(a.position + Vector2(22.0 * K, 3.0 * K), str(def["name"]).to_upper(), NORMAL, Color.WHITE)
 		_top(a.position + Vector2(22.0 * K, 12.0 * K), HOW[s], SMALL, DIM)
@@ -871,8 +1043,7 @@ func _draw_attacks(blink: bool, first: bool) -> void:
 		else:
 			# an empty slot: a dark notch with a plus in the middle, lit while the word in hand could go in
 			var wanted: bool = first and c["i"] == 0 and c["side"] == "front" and c["k"] == 0
-			draw_rect(r, (PICK_BG if blink else Color(0.06, 0.21, 0.33)) if ok else INK)
-			draw_rect(r, ((PICK if blink else PICK_LO) if ok else (DIM if wanted or hot else EDGE)), false, 1.5 if ok else 1.0)
+			_gbox(r, (PICK_BG if blink else Color(0.06, 0.21, 0.33)) if ok else INK, ((PICK if blink else PICK_LO) if ok else (DIM if wanted or hot else EDGE)))
 			var mid := r.position + (r.size / 2.0).floor()
 			var plus: Color = PICK if ok else EDGE
 			draw_rect(Rect2(mid.x - 3.0 * K, mid.y - K / 2.0, 7.0 * K, K), plus)
@@ -969,41 +1140,198 @@ func _pace(i: int) -> Array:
 # --- the GEAR page: what he wears, and his numbers ---
 
 func _draw_gear() -> void:
+	var W := size.x / 2.0
+	# the hero, as he stands in the game and twice the size, on a ground of his own between the two columns of slots
+	var hero_x := M + CELL + 3.0 * K
+	var hero_w := DOLL_W * K - 2.0 * CELL - 6.0 * K
+	var box := Rect2(hero_x, _doll_y, hero_w, _doll_h)
+	_gbox(box, BOX, BOX)
+	_draw_doll(box, Vector2(M + DOLL_W * K / 2.0, _doll_y + floorf((_doll_h / K + 70.0) / 2.0) * K))
 	for c in _cells:
 		if not c["worn"]:
 			continue
 		var r: Rect2 = c["r"]
 		var it = c["item"]
 		var slot: String = c["where"]
-		draw_rect(r, BOX)
-		draw_rect(r, _cell_edge(c), false, 1.0)
-		_text(r.position + Vector2(38, 13), SLOT_NAMES[slot], 9, DIM)
+		var lit: bool = r.has_point(_mouse)
+		_gbox(r, BG2 if lit else SLOT, _cell_edge(c))
 		if it != null:
-			_icon(it["icon"], Rect2(r.position + Vector2(3, 3), Vector2(30, 30)))
-			_text(r.position + Vector2(38, 28), _short(it["name"], 13), 10, loot.RARITY_COLOR[int(it["rarity"])])
-			_pips(it, Rect2(r.position + Vector2(3, 3), Vector2(30, 30)))
+			_icon_at(it["icon"], r)
+			_pips(it, r)
+		else:
+			# (an empty slot shows, faintly, the kind of thing that goes in it)
+			_icon_at(GHOST[slot], r, 0.3)
 		_hits.append([r, "worn", slot, it])
-	var sx := 250.0
-	var y0 := _page_y + 4.0
-	var s: Dictionary = hero.stats
-	_text(Vector2(sx, y0 + 10), "LEVEL %d" % loot.level, 13, PICK)
-	var lines := [
-		"DAMAGE  %d-%d" % [roundi(s["dmg_min"] * (1.0 + s["str"] / 100.0) * (1.0 + (s["dmg_pct"] + s["phys_pct"]) / 100.0)), roundi(s["dmg_max"] * (1.0 + s["str"] / 100.0) * (1.0 + (s["dmg_pct"] + s["phys_pct"]) / 100.0))],
-		"ATTACKS  %.2f a second" % s["aps"],
-		"LIFE  %d" % roundi(hero.max_life),
-		"ARMOUR  %d" % roundi(s["armor"]),
-		"CRITICAL  %.1f%%" % s["crit_chance"],
-	]
-	for i in lines.size():
-		_text(Vector2(sx, y0 + 30 + i * 15), lines[i], 11, TEXT)
-	for i in 3:
-		var a: String = ["str", "dex", "int"][i]
-		var y := y0 + 110.0 + i * 20
-		_text(Vector2(sx, y + 13), "%s  %d" % [a.to_upper(), roundi(s[a])], 11, TEXT)
-		if loot.points > 0:
-			_button(Rect2(sx + 80, y, 52, 17), "+5", "attr", a, PRESS)
+	# beside him: his numbers at a glance (what changes when a piece is put on: ui/inventory.ts drawGlance)
+	var gx := M + DOLL_W * K + 8.0 * K
+	# (a level gained: +5 to place, as the game's level-up asks (game.ts chooseAttr): a row of its own at the foot of his numbers)
+	var ask := 16.0 * K if loot.points > 0 else 0.0
+	_draw_glance(Rect2(gx, _page_y + K, W - M - gx, _page_h - K - ask))
 	if loot.points > 0:
-		_text(Vector2(sx, y0 + 186), "LEVEL UP: +5 TO ONE", 10, PRESS)
+		var bw := floorf((W - M - gx - 4.0 * K) / (3.0 * K)) * K
+		var bx := gx
+		for a in ["str", "dex", "int"]:
+			var r := Rect2(bx, _page_y + _page_h - 13.0 * K, bw, 12.0 * K)
+			_gbutton(r, "+5 %s" % a.to_upper(), true, r.has_point(_mouse), true)
+			_hits.append([r, "attr", a, null])
+			bx += bw + 2.0 * K
+
+
+## The figure on the GEAR page (ui/inventory.ts dollFigure): he stands in his loop, facing down and to the right, twice his size,
+## his scarf moving, cut to his ground.
+func _draw_doll(box: Rect2, feet: Vector2) -> void:
+	var art = hero.art
+	if art == null:
+		return
+	var side := 0 if art.sides() == 2 else BakedHero.SIDES.find("toward")
+	var n: int = art.count(side, BakedHero.IDLE)
+	if n == 0:
+		return
+	var f: Dictionary = art.frame(side, BakedHero.IDLE, int(_t * 30.0) % n)
+	var p: Dictionary = f["part"]
+	var ax := float(p["ax"])
+	var ay := float(p["ay"])
+	var w := float(p["w"])
+	var h := float(p["h"])
+	# (a game pixel of the figure is four of the screen's here: two of the panel's game pixels)
+	var u := 2.0 * K
+	if _doll_tails == null:
+		_doll_tails = Tails.new(JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/clips.json"))["tails"])
+	if _t - _doll_t > 0.5 or _t < _doll_t:
+		_doll_tails.reset()
+	_doll_t = _t
+	_doll_tails.step(_dt, p.get("tails", []), ax, ay, 1.0, 0.0, 0.0)
+	_doll_tails.refresh()
+	var at := feet
+	for over in [false, true]:
+		var t = _doll_tails
+		var tr: Rect2i = t.box[over]
+		if tr.size.x > 0 and t.tex[over] != null:
+			_clip_blit(t.tex[over], Rect2(at.x + (tr.position.x - t.HW) / 2.0 * u, at.y + (tr.position.y - t.UP) / 2.0 * u, tr.size.x / 2.0 * u, tr.size.y / 2.0 * u), Rect2(tr.position, tr.size), box)
+		if not over:
+			var tex: AtlasTexture = f["tex"]
+			_clip_blit(tex.atlas, Rect2(at.x - ax * u, at.y - ay * u, w * u, h * u), tex.region, box)
+
+
+## A picture drawn into `dest`, only what of it lies within `clip` (the source cut to match).
+func _clip_blit(tex: Texture2D, dest: Rect2, src: Rect2, clip: Rect2) -> void:
+	var c := dest.intersection(clip)
+	if not c.has_area():
+		return
+	var kx := src.size.x / dest.size.x
+	var ky := src.size.y / dest.size.y
+	var s := Rect2(src.position + Vector2((c.position.x - dest.position.x) * kx, (c.position.y - dest.position.y) * ky), Vector2(c.size.x * kx, c.size.y * ky))
+	draw_texture_rect_region(tex, c, s)
+
+
+## A piece's picture in a cell, at its own size in game pixels, in the middle (ui.ts slot).
+func _icon_at(key: String, r: Rect2, alpha := 1.0) -> void:
+	if not loot.pics.has(key):
+		return
+	var src: Rect2 = loot.pics[key]["rect"]
+	var d := (src.size / 2.0).floor() * K
+	draw_texture_rect_region(loot.sheet, Rect2((r.position + (r.size - d) / 2.0).floor(), d), src, Color(1, 1, 1, alpha))
+
+
+## (ui/inventory.ts statRow) A name in the small letters, its number at the right in the normal ones, white.
+func _stat_row(label: String, value: String, x: float, y: float, w: float, c := DIM) -> void:
+	_top(Vector2(x, y + 2.0 * K), label, SMALL, c)
+	_top(Vector2(x + w - _width(value, NORMAL), y), value, NORMAL, Color.WHITE)
+
+
+## (ui/inventory.ts drawGlance) Beside the hero on the GEAR page: the numbers that a piece of gear changes, at a glance, as many as
+## there is room for, the most telling first.
+func _draw_glance(r: Rect2) -> void:
+	if r.size.x < 60.0 * K:
+		return
+	var s: Dictionary = hero.stats
+	var rows := [
+		["LIFE", "%d" % roundi(hero.max_life)],
+		["ARMOUR", "%d" % roundi(s.get("armor", 0.0))],
+		["DAMAGE", "%d-%d" % [roundi(s["dmg_min"]), roundi(s["dmg_max"])]],
+		["A SECOND", "%.2f" % s["aps"]],
+		["CRITICAL", "%.1f%%" % s["crit_chance"]],
+		["FIRE", "%d%%" % roundi(s.get("res_fire", 0.0))],
+		["FROST", "%d%%" % roundi(s.get("res_frost", 0.0))],
+		["LIGHTNING", "%d%%" % roundi(s.get("res_light", 0.0))],
+		["POISON", "%d%%" % roundi(s.get("res_poison", 0.0))],
+	]
+	var pitch := clampf(floorf(r.size.y / (rows.size() * K)), 9.0, 12.0) * K
+	var y := r.position.y + maxf(0.0, floorf((r.size.y - (rows.size() - 1) * pitch - 8.0 * K) / (2.0 * K)) * K)
+	for row in rows:
+		if y + 8.0 * K > r.end.y:
+			break
+		_stat_row(row[0], row[1], r.position.x, y, r.size.x)
+		y += pitch
+
+
+## (ui/inventory.ts drawStats) THE STATS PAGE: the attributes and the level across the top (how far to the next level as a bar
+## under them); then, side by side, the defences and the attack.
+func _draw_stats(r: Rect2) -> void:
+	var s: Dictionary = hero.stats
+	var cells: Array = []
+	for a in ["str", "dex", "int"]:
+		cells.append([ATTR_NAME[a], "%d" % roundi(s[a]), ATTR_COLOR[a]])
+	cells.append(["LEVEL", "%d" % loot.level, DIM])
+	var widths: Array = cells.map(func(c): return maxf(_width(c[0], SMALL), _width(c[1], NORMAL)))
+	var sum := 0.0
+	for w in widths:
+		sum += w
+	var air := maxf(4.0 * K, floorf((r.size.x - sum) / ((cells.size() - 1) * K)) * K)
+	var x := r.position.x
+	for i in cells.size():
+		_top(Vector2(x, r.position.y + K), cells[i][0], SMALL, cells[i][2])
+		_top(Vector2(x, r.position.y + 8.0 * K), cells[i][1], NORMAL, Color.WHITE)
+		x += widths[i] + air
+	# (how far to the next level)
+	var frac := clampf(loot.xp / maxf(1.0, loot.xp_to_next(loot.level)), 0.0, 1.0)
+	draw_rect(Rect2(r.position.x, r.position.y + 19.0 * K, r.size.x, 1.5 * K), SLOT)
+	draw_rect(Rect2(r.position.x, r.position.y + 19.0 * K, roundf(r.size.x * frac / K) * K, 1.5 * K), PICK)
+	var stop := roundi(hero.armour_cut() * 100.0) if hero.has_method("armour_cut") else 0
+	var armor := float(s.get("armor", 0.0))
+	var defence := [
+		["LIFE", "%d / %d" % [ceili(hero.life), roundi(hero.max_life)]],
+		["LIFE A SECOND", "%.1f" % s.get("life_regen", 0.0)],
+		["ARMOUR", ("%d (%d%%)" % [roundi(armor), stop]) if armor > 0.0 else "0"],
+		["FIRE RESIST", "%d%%" % roundi(s.get("res_fire", 0.0))],
+		["FROST RESIST", "%d%%" % roundi(s.get("res_frost", 0.0))],
+		["LIGHTNING RESIST", "%d%%" % roundi(s.get("res_light", 0.0))],
+		["POISON RESIST", "%d%%" % roundi(s.get("res_poison", 0.0))],
+		["FLASKS", "%d" % loot.potions],
+	]
+	var attack := [
+		["WEAPON DAMAGE", "%d-%d" % [roundi(s["dmg_min"]), roundi(s["dmg_max"])]],
+		["ATTACKS A SECOND", "%.2f" % s["aps"]],
+		["CRITICAL CHANCE", "%.1f%%" % s["crit_chance"]],
+		["CRITICAL DAMAGE", "+%d%%" % roundi(s.get("crit_mult", 0.0))],
+	]
+	var mana: bool = hero.loadout.limit == "mana"
+	if mana:
+		attack.append(["MANA", "%d / %d" % [floori(hero.mana), roundi(hero.max_mana)]])
+		attack.append(["MANA A SECOND", "%.1f" % hero.mana_regen])
+	if float(s.get("cdr", 0.0)) > 0.0:
+		attack.append(["MANA COST" if mana else "COOLDOWNS", "-%d%%" % roundi(float(s["cdr"]) * 100.0)])
+	if float(s.get("area", 1.0)) != 1.0:
+		attack.append(["AREA", "+%d%%" % roundi((float(s["area"]) - 1.0) * 100.0)])
+	if float(s.get("move_speed", 0.0)) != 0.0:
+		attack.append(["MOVE SPEED", "+%d%%" % roundi(float(s["move_speed"]))])
+	var gutter := 10.0 * K
+	var col_w := floorf((r.size.x - gutter) / (2.0 * K)) * K
+	var top := r.position.y + 25.0 * K
+	var most := maxi(defence.size(), attack.size())
+	var pitch := clampf(floorf((r.end.y - top - 9.0 * K) / (most * K)), 9.0, 11.0) * K
+	var blocks := [["DEFENCE", defence], ["ATTACK", attack]]
+	for i in 2:
+		var bx := r.position.x + i * (col_w + gutter)
+		var y := top
+		_top(Vector2(bx, y), blocks[i][0], SMALL, PICK)
+		draw_rect(Rect2(bx, y + 6.5 * K, col_w, K), EDGE)
+		y += 9.0 * K
+		for row in blocks[i][1]:
+			if y + 8.0 * K > r.end.y:
+				break
+			_stat_row(row[0], row[1], bx, y, col_w)
+			y += pitch
 
 
 ## The rim of a piece's cell: lit while a word in hand could be burned into it, or waits on it for a yes or a no; else its
@@ -1042,23 +1370,29 @@ func _pips(it: Dictionary, r: Rect2) -> void:
 
 func _draw_bag(_blink: bool, first: bool) -> void:
 	var W := size.x / 2.0
+	# (WORD_LEX: LEXICON, under the gold and the level beside the bag)
+	if _lex_r.has_area():
+		_gbutton(_lex_r, "LEXICON", false, _lex or _lex_r.has_point(_mouse))
+		_hits.append([_lex_r, "lex", null, null])
+	if _all:
+		return
 	_small(Vector2(M, _bag_y - CAP), "BAG", DIM)
 	for c in _cells:
 		if c["worn"]:
 			continue
 		var r: Rect2 = c["r"]
 		var it = c["item"]
-		draw_rect(r, INK)
-		draw_rect(r, _cell_edge(c), false, 1.0)
+		# (ui.ts slot: a dark cell, its rim the piece's rarity; lit while pointed at; the piece at its own size in the middle)
+		_gbox(r, BG2 if r.has_point(_mouse) and it != null else SLOT, _cell_edge(c))
 		if it != null:
-			_icon(it["icon"], r.grow(-K), 0.3 if first else 1.0)
+			_icon_at(it["icon"], r, 0.3 if first else 1.0)
 			_pips(it, r)
 			_hits.append([r, "bag", c["where"], it])
 	# beside the bag: what he has, and who he is
 	var ix := M + BAG_COLS * PITCH - 2.0 * K + 8.0 * K
 	if M + (W - 2.0 * M) - ix >= 30.0 * K:
 		_hud_pic("gold", Rect2(ix, _bag_y, 16, 16))
-		_top(Vector2(ix + 20, _bag_y + 2.0 * K), "%d" % loot.gold, SMALL, GOLD)
+		_top(Vector2(ix + 9.0 * K, _bag_y + 2.0 * K), "%d" % loot.gold, SMALL, GOLD)
 		# (WORDMELDING: the runedust carried, beside the gold, once there is any or the Meldstone has been found: act1/quest610.gd)
 		var q6 = main.quest610 if main != null else null
 		if q6 != null and (q6.dust > 0 or loot.meld != ""):
@@ -1066,7 +1400,7 @@ func _draw_bag(_blink: bool, first: bool) -> void:
 			_film_pic("rd_icon", Vector2(dx, _bag_y + K))
 			_top(Vector2(dx + 12.0 * K, _bag_y + 2.0 * K), "%d" % q6.dust, SMALL, Color(str(q6.Q["dust"]["color"])))
 		_top(Vector2(ix, _bag_y + 14.0 * K), "LEVEL %d" % loot.level, SMALL, DIM)
-		_top(Vector2(ix, _bag_y + 22.0 * K), "WARRIOR", SMALL, FAINT)
+		_top(Vector2(ix, _bag_y + 22.0 * K), str(hero.cls_name() if hero.has_method("cls_name") else CLASS_NAME.get(hero.cls, hero.cls)).to_upper(), SMALL, FAINT)
 
 
 func _draw_words(first: bool) -> void:
@@ -1077,10 +1411,21 @@ func _draw_words(first: bool) -> void:
 		if not loot.ring_lit:
 			dark = "Slots open at the wordsmith: bring him the MASTER RUNE-STONE." if loot.quest != "" else "No word slots until his ring is lit."
 		_top(Vector2(M, _pouch_y + floorf((TH - 5.0 * K) / 2.0)), dark if dark != "" else "empty", SMALL, DIM if dark != "" else FAINT)
-	var hidden: int = loot.held().size() - _pouch.size()
+	var line: Array = _pouch.filter(func(c): return not c.get("lex", false))
+	var hidden: int = loot.held().size() - line.size()
 	if hidden > 0:
-		_small(Vector2(size.x / 2.0 - M, _pouch_y - CAP), "+%d MORE" % hidden, DIM, true)
-	for c in _pouch:
+		_small(Vector2(size.x / 2.0 - M - (_swap_r.size.x + GAP if _swap_r.has_area() else 0.0), _pouch_y - CAP), "+%d MORE" % hidden, DIM, true)
+	# (WORD_ROOM: the tile that turns the bottom: ALL, and how many words he holds; or BAG, and how full it is)
+	if _swap_r.has_area():
+		var hot := _swap_r.has_point(_mouse)
+		_gbox(_swap_r, BG2 if hot else BOX, EDGE_HI if hot else (PICK_LO if hidden > 0 and not _all else EDGE))
+		var mid := _swap_r.position.x + floorf(_swap_r.size.x / (2.0 * K)) * K
+		var top_line := "BAG" if _all else "ALL"
+		var low_line := ("%d/%d" % [loot.bag.size(), loot.BAG]) if _all else "%d" % loot.held().size()
+		_top(Vector2(mid - floorf(_width(top_line, SMALL) / (2.0 * K)) * K, _swap_r.position.y + 3.0 * K), top_line, SMALL, PICK if hidden > 0 and not _all else TEXT)
+		_top(Vector2(mid - floorf(_width(low_line, SMALL) / (2.0 * K)) * K, _swap_r.position.y + 11.0 * K), low_line, SMALL, DIM)
+		_hits.append([_swap_r, "swap", null, null])
+	for c in line:
 		var sel: bool = _word == c["w"] or (not _pending.is_empty() and _pending["word"] == c["w"])
 		var n := int(loot.words[c["w"]])
 		# (the one being carried, or waiting on a piece, has left its tile when it is the last of its kind)
@@ -1092,6 +1437,25 @@ func _draw_words(first: bool) -> void:
 			_tile(r, c["w"], "name", {"lit": sel or c["r"].has_point(_mouse), "edge": PICK if sel else null, "count": n, "bare": c["bare"], "stone": c["stone"]})
 		if first and c["w"] == loot.first_spare() and _word == "":
 			_arrow(Vector2(c["r"].end.x + 2.0 * K, c["r"].position.y + c["r"].size.y / 2.0))
+
+
+## (WORD_LEX, ui.ts panel) His lexicon: a panel with a soft shadow under it and a hair of light along its top, LEXICON and how many
+## words he holds, and every word as its rune stone; a word pressed is in hand as from the line over the bag.
+func _draw_lex() -> void:
+	var r := _lex_panel
+	draw_rect(Rect2(r.position + Vector2(2.0 * K, 2.0 * K), r.size), Color(Color("#07050a"), 0.55))
+	_gbox(r, BOX, EDGE)
+	draw_rect(Rect2(r.position.x + 2.0 * K, r.position.y + 1, r.size.x - 4.0 * K, 1), PICK_LO)
+	var cells: Array = _pouch.filter(func(c): return c.get("lex", false))
+	_small(Vector2(r.position.x + 4.0 * K, r.position.y + 4.0 * K), "LEXICON  %d" % loot.held().size(), DIM)
+	if cells.is_empty():
+		_top(Vector2(r.position.x + 4.0 * K, r.position.y + 4.0 * K + CAP + floorf((TH - 5.0 * K) / 2.0)), "empty", SMALL, FAINT)
+	for c in cells:
+		var sel: bool = _word == c["w"] or (not _pending.is_empty() and _pending["word"] == c["w"])
+		var rr: Rect2 = c["r"]
+		if sel:
+			rr.position.y -= K
+		_tile(rr, c["w"], "name", {"lit": sel or c["r"].has_point(_mouse), "edge": PICK if sel else null, "count": int(loot.words[c["w"]]), "bare": false, "stone": true})
 
 
 ## A small arrow that bobs beside a thing to be pressed, its tip at `at`, standing to its right (ui/words.ts arrow 'left').
@@ -1311,14 +1675,14 @@ func _draw_reading(blink: bool, first: bool) -> void:
 	var bh := 15.0 * K
 	var foot := bh + 5.0 * K if not buttons.is_empty() else 0.0
 	var ch := 5.0 * K + tall + foot + 3.0 * K
-	var cx := W + 3.0 * K
+	# (against the panel's edge, over the game's half: the panel on the right, the card to the left of it)
+	var cx := 2.0 * W - 3.0 * K - card_w
 	var mid: float = (about.position.y + about.size.y / 2.0) if about != null else size.y / 2.0
 	var cy := clampf(roundf(mid - ch / 2.0), 3.0 * K, size.y - ch - 3.0 * K)
 	if shop != "":
 		# (over a vendor's half the card lies on lettering, not on the game: a dark margin round it keeps the two apart)
 		draw_rect(Rect2(cx - 3.0 * K, cy - 3.0 * K, card_w + 6.0 * K, ch + 6.0 * K), Color(INK, 0.72))
-	draw_rect(Rect2(cx, cy, card_w, ch), INK)
-	draw_rect(Rect2(cx, cy, card_w, ch), EDGE, false, 1.5)
+	_gbox(Rect2(cx, cy, card_w, ch), INK, EDGE)
 	var y := cy + 5.0 * K
 	for r in rows:
 		if r.has("parts"):
@@ -1331,8 +1695,7 @@ func _draw_reading(blink: bool, first: bool) -> void:
 	for b in buttons:
 		var r := Rect2(bx, cy + ch - 4.0 * K - bh, bw, bh)
 		var pink: bool = b[1] == "yes" or (b[1] == "ws_to_meld" and _ws_problem(_word) == "")
-		draw_rect(r, Color(PRESS, 0.35 if blink else 0.18) if pink else BOX)
-		draw_rect(r, PRESS if pink else EDGE, false, 1.5)
+		_gbox(r, Color(PRESS, 0.35 if blink else 0.18) if pink else BOX, PRESS if pink else EDGE)
 		_mid(r, b[0], NORMAL, Color.WHITE if pink else TEXT)
 		_card_buttons.append([r, b[1]])
 		bx += bw + 3.0 * K
@@ -1449,44 +1812,66 @@ func _draw_flash() -> void:
 
 # --- a piece's card ---
 
-func _card(it: Dictionary, at: Vector2) -> void:
-	var rows: Array = [[it["name"], loot.RARITY_COLOR[int(it["rarity"])], 13], [it["kind"], DIM, 10]]
-	for l in loot.lines_of(it, "implicit"):
-		rows.append([l, TEXT, 11])
+func _card(it: Dictionary, at: Vector2, fixed := false) -> float:
+	# (ui/panels.ts itemCard: its name in its rarity's colour; its rarity and kind, small; a weapon's damage and pace; what it was
+	# made with, in the plain colour; its properties in the magic blue; the words burned in, each under its word's name and in its
+	# colour; how many more words it will take; the level it needs)
+	var rows: Array = [[it["name"], loot.RARITY_COLOR[int(it["rarity"])], false]]
+	var kind: String = str(it.get("kind", ""))
+	var slot: String = str(it.get("slot", ""))
+	if slot == "mainhand":
+		kind = "%s weapon" % ("Light" if int(it.get("hands", 2)) == 1 or kind == "Bow" else "Heavy")
+	var base: String = str(it.get("base", it["name"]))
+	rows.append(["%s %s%s" % [RARITY_NAMES[int(it["rarity"])], kind, (" - " + base) if base != str(it["name"]) else ""], DIM, true])
+	var implicit: Array = loot.lines_of(it, "implicit").duplicate()
+	if slot == "mainhand" and not implicit.is_empty() and str(implicit[0]).begins_with("Adds ") and str(implicit[0]).ends_with(" Damage"):
+		var lohi: String = str(implicit[0]).trim_prefix("Adds ").trim_suffix(" Damage")
+		rows.append(["%s damage, %.2f a second" % [lohi, float(it.get("aps", 1.0))], TEXT, false])
+		implicit.remove_at(0)
+	for l in implicit:
+		rows.append([l, TEXT, false])
 	for l in loot.lines_of(it):
-		rows.append([l, MAGIC, 11])
-	# (the words burned into it, each line under its word's name and in its colour: ui/panels.ts itemCard)
+		rows.append([l, MAGIC, false])
 	for im in it.get("imbues", []):
 		for l in loot.lines_of(im):
-			rows.append(["%s: %s" % [Words.word(im["word"])["name"], l], loot.word_color(im["word"]), 11])
-	# (how many more words it will take: "All items have room for 4 mods")
+			rows.append(["%s: %s" % [Words.word(im["word"])["name"], l], loot.word_color(im["word"]), false])
 	if int(it["rarity"]) != 3:
 		var left: int = loot.room(it)
-		rows.append([("Room for %d %s" % [left, "word" if left == 1 else "words"]) if left > 0 else "No room for words", DIM if left > 0 else FAINT, 10])
-	if it["weapon"]:
-		rows.append(["%.2f attacks a second" % it["aps"], DIM, 10])
-	rows.append(["Level %d" % it["req"], DIM, 10])
-	if shop != "":
-		rows.append(["Sells for %d gold" % floori(float(it.get("value", 0)) * 0.25), GOLD, 10])
-	# (as wide as its longest line: a word burned in may read long)
-	var w := 230.0
+		rows.append([("Room for %d %s" % [left, "word" if left == 1 else "words"]) if left > 0 else "No room for words", DIM if left > 0 else FAINT, true])
+	if int(it.get("req", 1)) > 1:
+		rows.append(["Needs level %d" % int(it["req"]), DIM if int(it["req"]) <= loot.level else BAD, true])
+	if shop != "" and not fixed:
+		rows.append(["Sells for %d gold" % loot.sell_value(it), GOLD, true])
+	# (as the game's card: lines wrapped to its width, the small ones 7 apart and the normal ones 9)
+	var w := 150.0 * K
+	var inner := w - 10.0 * K
+	var lines: Array = []
 	for r in rows:
-		w = maxf(w, _width(r[0], r[2]) + 16.0)
-	var h := 10.0 + rows.size() * 16.0
-	var p := at + Vector2(16, 0)
-	p.x = minf(p.x, size.x - w - 4)
-	p.y = minf(p.y, size.y - h - 4)
-	draw_rect(Rect2(p, Vector2(w, h)), INK)
-	draw_rect(Rect2(p, Vector2(w, h)), loot.RARITY_COLOR[int(it["rarity"])], false, 1.5)
-	for i in rows.size():
-		_text(p + Vector2(8, 18 + i * 16), rows[i][0], rows[i][2], rows[i][1])
+		for part in _wrap(str(r[0]), inner, SMALL if r[2] else NORMAL):
+			lines.append([part, r[1], r[2]])
+	var h := 5.0 * K
+	for l in lines:
+		h += (7.0 if l[2] else 9.0) * K
+	h += 2.0 * K
+	var p := at
+	if not fixed:
+		# (over the game's half: to the left of the pointer while it is on the panel, on the right half)
+		p = at + Vector2(16, 0) if at.x < size.x / 2.0 else at - Vector2(w + 16.0, 0)
+		p.x = clampf(p.x, 4.0, size.x - w - 4)
+		p.y = clampf(p.y, 4.0, size.y - h - 4)
+	_gbox(Rect2(p, Vector2(w, h)), BOX, loot.RARITY_COLOR[int(it["rarity"])])
+	draw_rect(Rect2(p.x + 2.0 * K, p.y + 1, w - 4.0 * K, 1), PICK_LO)
+	var y := p.y + 5.0 * K
+	for l in lines:
+		_top(Vector2(p.x + 5.0 * K, y), l[0], SMALL if l[2] else NORMAL, l[1])
+		y += (7.0 if l[2] else 9.0) * K
+	return h
 
 
 # --- the plain drawing kit ---
 
 func _button(r: Rect2, label: String, action: String, arg, color: Color) -> void:
-	draw_rect(r, Color(color, 0.18))
-	draw_rect(r, color, false, 1.5)
+	_gbox(r, Color(color, 0.18), color)
 	_text(r.position + Vector2(6, r.size.y - 6), label, 10, color)
 	_hits.append([r, action, arg, null])
 
@@ -1510,13 +1895,36 @@ func _hud_pic(key: String, r: Rect2) -> void:
 	draw_texture_rect_region(_hud_tex, Rect2(r.position + ((r.size - d) / 2.0).floor(), d), src)
 
 
+## (the game's letters, engine/font.ts) The font and its scale for one of the sizes the screen was laid out with: the small
+## letters for a caption (SMALL and less), the normal ones for a line (NORMAL), twice and three times those for a name large.
+func _font_of(px: int) -> Array:
+	if px <= 10:
+		return ["small", 1]
+	return ["normal", maxi(1, roundi(px / float(NORMAL)))]
+
+
 func _text(at: Vector2, s: String, px: int, c: Color) -> void:
-	draw_string(_font, at, s, HORIZONTAL_ALIGNMENT_LEFT, -1, px, c)
+	# (the baseline the plain letters were placed by: the game's sit with their tops at it less their height)
+	var f := _font_of(px)
+	var y := at.y - (5.0 if f[0] == "small" else 7.0) * K * int(f[1])
+	# (a line that would run past the edge of its half is broken there, as the game's wrapText breaks it)
+	var W := size.x / 2.0
+	var limit := (2.0 * W if at.x >= W else W) - SIDE_M * K
+	if at.x + _width(s, px) > limit and limit - at.x > 40.0 * K:
+		for part in _wrap(s, limit - at.x, px):
+			_top(Vector2(at.x, y), part, px, c)
+			y += (6.0 if f[0] == "small" else 9.0) * K * int(f[1])
+		return
+	_top(Vector2(at.x, y), s, px, c)
 
 
-## Letters with their tops at `at.y` (as the game places its own).
+## Letters with their tops at `at.y` (as the game places its own), in the game's letters, two of the screen's pixels to one of
+## the game's.
 func _top(at: Vector2, s: String, px: int, c: Color) -> void:
-	draw_string(_font, Vector2(at.x, at.y + roundf(px * 0.8)), s, HORIZONTAL_ALIGNMENT_LEFT, -1, px, c)
+	var f := _font_of(px)
+	draw_set_transform(_xf, 0.0, Vector2(K, K))
+	PF.draw(self, s, at.x / K, at.y / K, c, {"font": f[0], "scale": int(f[1])})
+	draw_set_transform(_xf)
 
 
 ## A small caption, from the left at `at`, or ending there.
@@ -1524,17 +1932,23 @@ func _small(at: Vector2, s: String, c: Color, right := false) -> void:
 	_top(Vector2(at.x - (_width(s, SMALL) if right else 0.0), at.y), s, SMALL, c)
 
 
-## Letters in the middle of a box.
+## Letters in the middle of a box (ui.ts drawButton: the normal letters 8 high, the small 5).
 func _mid(r: Rect2, s: String, px: int, c: Color) -> void:
-	_top(Vector2(r.position.x + floorf((r.size.x - _width(s, px)) / 2.0), r.position.y + floorf((r.size.y - px * 0.8) / 2.0) - 1.0), s, px, c)
+	var f := _font_of(px)
+	var th := (5.0 if f[0] == "small" else 8.0) * int(f[1]) * K
+	_top(Vector2(r.position.x + floorf((r.size.x - _width(s, px)) / (2.0 * K)) * K, r.position.y + floorf((r.size.y - th) / (2.0 * K)) * K + (0.0 if f[0] == "small" else K)), s, px, c)
 
 
 func _width(s: String, px: int) -> float:
-	return _font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	var f := _font_of(px)
+	return PF.width(s, f[0], int(f[1])) * K
 
 
-## A sentence broken into lines no wider than `w`.
+## A sentence broken into lines no wider than `w` (engine/font.ts wrapText).
 func _wrap(s: String, w: float, px: int) -> Array:
+	var f := _font_of(px)
+	if int(f[1]) == 1:
+		return PF.wrap(s, w / K, f[0])
 	var out: Array = []
 	var line := ""
 	for word in s.split(" ", false):
@@ -1549,6 +1963,50 @@ func _wrap(s: String, w: float, px: int) -> Array:
 	return out
 
 
+## (ui.ts box) A box with its corners cut: a rim of `edge` half a game pixel wide (a pixel of the screen's), `fill` within.
+func _gbox(r: Rect2, fill: Color, edge: Color) -> void:
+	var x := r.position.x
+	var y := r.position.y
+	var w := r.size.x
+	var h := r.size.y
+	if w < 8.0 or h < 8.0:
+		draw_rect(r, edge)
+		draw_rect(Rect2(x + 1, y + 1, w - 2, h - 2), fill)
+		return
+	draw_rect(Rect2(x + 2, y, w - 4, h), edge)
+	draw_rect(Rect2(x, y + 2, w, h - 4), edge)
+	draw_rect(Rect2(x + 1, y + 1, w - 2, h - 2), edge)
+	draw_rect(Rect2(x + 2, y + 1, w - 4, h - 2), fill)
+	draw_rect(Rect2(x + 1, y + 2, w - 2, h - 4), fill)
+
+
+## (ui.ts drawButton) A button: pink for the one thing to press (lit: brighter, its rim white), else a plain one.
+func _gbutton(r: Rect2, label: String, primary := false, lit := false, small := false) -> void:
+	if primary:
+		_gbox(r, PRESS_HI if lit else PRESS, Color.WHITE if lit else PRESS_HI)
+	else:
+		_gbox(r, HOT if lit else BG2, PICK if lit else EDGE_HI)
+	_mid(r, label, SMALL if small else NORMAL, Color.WHITE if primary else TEXT)
+
+
+## THE PANEL ON THE RIGHT HALF OF THE SCREEN (ui/inventory.ts invRect), the service's on the left (gameRect). Everything is laid
+## out as before, the panel from 0 and the other half from W; it is drawn and pressed with the two halves changed round.
+func _to_panel(p: Vector2) -> Vector2:
+	var W := size.x / 2.0
+	return Vector2(p.x - W if p.x >= W else p.x + W, p.y)
+
+
+func _to_screen(p: Vector2) -> Vector2:
+	var W := size.x / 2.0
+	return Vector2(p.x + W if p.x < W else p.x - W, p.y)
+
+
+## Draw what follows in the panel's half (+1), the other half (-1), or as the screen is (0).
+func _half(which: int) -> void:
+	_xf = Vector2(size.x / 2.0 * which, 0.0)
+	draw_set_transform(_xf)
+
+
 func _short(s: String, n: int) -> String:
 	return s if s.length() <= n else s.substr(0, n - 1) + "."
 
@@ -1559,26 +2017,102 @@ func open_shop(id: String) -> void:
 		toggle()
 
 
-## The vendor's shelf, on the right half: each piece, its price; what he cannot afford dimmed.
+## A service's half (ui/town.ts sideFrame): its ground, and its title in the friend's cyan along its top. Returns where its own
+## things begin. Laid out in the other half's lay (from W: _half).
+func _side_frame(title: String) -> float:
+	var W := size.x / 2.0
+	draw_rect(Rect2(W, 0, W, size.y), PANEL)
+	_top(Vector2(W + (SIDE_M + 1.0) * K, (3.0 + floorf((16.0 - 3.0 - 8.0) / 2.0) + 1.0) * K), title, NORMAL, PICK)
+	return (2.0 + 16.0 + 2.0) * K
+
+
+## THE VENDOR'S HALF (ui/town.ts vendorSide, keeperSide): his title; FOR SALE, his shelf, and BUY BACK, what has been sold him on
+## this visit (TUNE.soldKept cells), each a cell ten to a row, the piece at its own size, its rim its rarity's colour; one he cannot
+## afford darkened. A piece pointed at is read on its card; pressed, it is picked (its rim the friend's cyan, its card with BUY);
+## pressed again, or carried across to the panel, or the right button on it, and it is bought. A piece of the bag sold to him the
+## same way (game.ts sell). How it is used, along the bottom.
+const SIDE_M := 6.0
+var _shelf_pick := []
+var _shelf_drag := {}
+var _piece_drag := {}
+## (WORD_ROOM, WORD_LEX: the tile that turns the bottom, and whether it shows every word; LEXICON, whether it is open, its panel)
+const SWAP_W := 22.0
+var _swap_r := Rect2()
+var _all := false
+var _lex_r := Rect2()
+var _lex := false
+var _lex_panel := Rect2()
+
+
 func _shelf() -> void:
-	var x0 := size.x / 2.0 + 12.0
-	var w := size.x / 2.0 - 24.0
-	draw_rect(Rect2(x0 - 12, 0, w + 24, size.y), PANEL)
-	_text(Vector2(x0, 22), "THE %s" % shop.to_upper(), 16, PICK)
-	_text(Vector2(x0 + 200, 22), "%d GOLD" % loot.gold, 13, GOLD)
-	_text(Vector2(x0, 42), "FOR SALE: click to buy. In the bag: click to sell.", 10, DIM)
-	var stock: Array = loot.shops.get(shop, [])
-	for i in stock.size():
-		var it: Dictionary = stock[i]
-		var r := Rect2(x0, 52 + i * 40, w, 36)
-		var can: bool = loot.gold >= int(it["value"])
-		draw_rect(r, BOX)
-		draw_rect(r, EDGE, false, 1.0)
-		_icon(it["icon"], Rect2(r.position + Vector2(3, 3), Vector2(30, 30)))
-		_text(r.position + Vector2(40, 15), it["name"], 11, loot.RARITY_COLOR[int(it["rarity"])] if can else Color(0.4, 0.42, 0.55))
-		_text(r.position + Vector2(40, 30), it["kind"], 9, DIM)
-		_text(r.position + Vector2(w - 60, 22), "%d g" % int(it["value"]), 12, GOLD if can else Color(0.45, 0.4, 0.3))
-		_hits.append([r, "buy", i, it])
+	var W := size.x / 2.0
+	var body_y := _side_frame(str(SHOP_NAME.get(shop, shop)).to_upper())
+	var cols := clampi(floori((W / K - 2.0 * SIDE_M + 2.0) / (PITCH / K)), 1, 10)
+	var gx := W + SIDE_M * K
+	var y := body_y
+	var shelves := [["FOR SALE", "buy", loot.shops.get(shop, []), (loot.shops.get(shop, []) as Array).size()], ["BUY BACK", "buyback", loot.sold, int(loot._tune.get("soldKept", 30))]]
+	for sh in shelves:
+		_small(Vector2(gx, y), sh[0], DIM)
+		y += 8.0 * K
+		var items: Array = sh[2]
+		for i in int(sh[3]):
+			var r := Rect2(gx + (i % cols) * PITCH, y + floorf(float(i) / cols) * PITCH, CELL, CELL)
+			var it = items[i] if i < items.size() else null
+			var away: bool = it != null and not _shelf_drag.is_empty() and _shelf_drag["moving"] and _shelf_drag["what"] == [sh[1], i]
+			var picked: bool = it != null and _shelf_pick == [sh[1], i]
+			var lit: bool = picked or (it != null and r.has_point(_mouse))
+			_gbox(r, BG2 if lit else SLOT, PICK if picked else (loot.RARITY_COLOR[int(it["rarity"])] if it != null else EDGE))
+			if it != null and not away:
+				_icon_at(it["icon"], r)
+				_pips(it, r)
+				var price: int = int(it["value"]) if sh[1] == "buy" else loot.sell_value(it)
+				if loot.gold < price:
+					draw_rect(Rect2(r.position + Vector2(K, K), r.size - Vector2(2.0 * K, 2.0 * K)), Color(Color("#6e1020"), 0.45))
+			if it != null:
+				_hits.append([r, sh[1], i, it])
+		y += ceilf(float(sh[3]) / cols) * PITCH + 2.0 * K
+	var grid_end := y - 4.0 * K
+	# (what is picked: its card under the cells, in line with it, and what pressing it again does)
+	if not _shelf_pick.is_empty():
+		var items: Array = loot.shops.get(shop, []) if _shelf_pick[0] == "buy" else loot.sold
+		var i: int = _shelf_pick[1]
+		if i >= items.size():
+			_shelf_pick = []
+		else:
+			var it: Dictionary = items[i]
+			var price: int = int(it["value"]) if _shelf_pick[0] == "buy" else loot.sell_value(it)
+			var label := "%s %d" % ["BUY" if _shelf_pick[0] == "buy" else "BUY BACK", price]
+			var poor: bool = loot.gold < price
+			var cw := 150.0 * K
+			var cx := clampf(gx + (i % cols) * PITCH, gx, 2.0 * W - SIDE_M * K - cw)
+			var h := _card(it, Vector2(cx, grid_end + 4.0 * K), true)
+			var br := Rect2(cx + 5.0 * K, grid_end + 4.0 * K + h + 3.0 * K, minf(cw - 10.0 * K, _width(label, NORMAL) + 16.0 * K), 15.0 * K)
+			if poor:
+				_gbox(br, BOX, EDGE)
+				_mid(br, label, NORMAL, FAINT)
+				_top(Vector2(br.end.x + 5.0 * K, br.position.y + 5.0 * K), "You have %d gold" % loot.gold, SMALL, BAD)
+			else:
+				_gbutton(br, label, true, br.has_point(_mouse))
+				_card_buttons.append([br, "shelf_take"])
+	# how it is used, along the bottom; or, while a piece out of the bag is carried over this half, what letting go will do
+	var foot := PF.wrap("RIGHT-CLICK A PIECE TO BUY OR SELL IT, OR DRAG IT ACROSS.", W / K - 2.0 * SIDE_M, "small")
+	var fy := size.y - 3.0 * K - foot.size() * 6.0 * K
+	if not _piece_drag.is_empty() and _piece_drag["moving"] and _mouse.x >= W and int(_piece_drag["i"]) < loot.bag.size():
+		var it: Dictionary = loot.bag[int(_piece_drag["i"])]
+		_frame_line(Rect2(W + 2.0 * K, 2.0 * K, W - 4.0 * K, size.y - 4.0 * K), PICK if sin(_t * 7.0) > 0.0 else PICK_LO)
+		var line := "LET GO TO SELL: %d GOLD" % loot.sell_value(it)
+		_top(Vector2(W + floorf((W - _width(line, NORMAL)) / 2.0), minf(fy - 2.0 * K, size.y - 14.0 * K)), line, NORMAL, PICK)
+	elif fy >= grid_end + 4.0 * K and _shelf_pick.is_empty() and _word == "" and _pending.is_empty():
+		for k in foot.size():
+			_top(Vector2(gx, fy + k * 6.0 * K), foot[k], SMALL, FAINT)
+
+
+## A frame of one game pixel round `r` (ui/town.ts: where letting go will put what is carried).
+func _frame_line(r: Rect2, c: Color) -> void:
+	draw_rect(Rect2(r.position.x, r.position.y, r.size.x, K), c)
+	draw_rect(Rect2(r.position.x, r.end.y - K, r.size.x, K), c)
+	draw_rect(Rect2(r.position.x, r.position.y, K, r.size.y), c)
+	draw_rect(Rect2(r.end.x - K, r.position.y, K, r.size.y), c)
 
 
 # --- THE ALTAR OF THE WORDS (act1/holds.gd; ui/town.ts altarSide): a stronghold's altar, at its door, on the right half beside the
@@ -1650,8 +2184,7 @@ func _altar_side(blink: bool) -> void:
 		else:
 			var here := i == next
 			var lit := here and ok
-			draw_rect(r, (PICK_BG if blink else Color(PICK_BG, 0.6)) if lit else INK)
-			draw_rect(r, (PICK if blink else PICK_LO) if lit else EDGE, false, 1.5)
+			_gbox(r, (PICK_BG if blink else Color(PICK_BG, 0.6)) if lit else INK, (PICK if blink else PICK_LO) if lit else EDGE)
 			var c := r.get_center().floor()
 			draw_rect(Rect2(c.x - 6, c.y, 14, 2), PICK if lit else EDGE)
 			draw_rect(Rect2(c.x, c.y - 6, 2, 14), PICK if lit else EDGE)
@@ -1670,8 +2203,7 @@ func _altar_side(blink: bool) -> void:
 	var bw := _width(label, NORMAL) + 48.0
 	var br := Rect2(x0 + w - bw, size.y - 52.0, bw, 30.0)
 	var can := not laid.is_empty()
-	draw_rect(br, Color(PRESS, (0.35 if blink else 0.18) if can else 0.06))
-	draw_rect(br, PRESS if can else FAINT, false, 1.5)
+	_gbox(br, Color(PRESS, (0.35 if blink else 0.18) if can else 0.06), PRESS if can else FAINT)
 	_mid(br, label, NORMAL, Color.WHITE if can else FAINT)
 	_hits.append([br, "altar_open", null, null])
 
@@ -1875,8 +2407,7 @@ func _ws_side(blink: bool) -> void:
 	if wsmith == "meld" or loot.meld == "open":
 		var bw := _width(label, SMALL) + 12.0 * K
 		var tab := Rect2(x0 + w - bw, 6, bw, 22)
-		draw_rect(tab, HOT if wsmith == "trade" else BOX)
-		draw_rect(tab, PICK if wsmith == "trade" else EDGE, false, 1.5)
+		_gbox(tab, HOT if wsmith == "trade" else BOX, PICK if wsmith == "trade" else EDGE)
 		_mid(tab, label, SMALL, PICK if wsmith == "trade" else TEXT)
 		_hits.append([tab, "ws_tab", null, null])
 	if wsmith == "trade":
@@ -1911,8 +2442,7 @@ func _ws_side(blink: bool) -> void:
 		else:
 			# (an empty hollow: a dark notch with a plus, lit while the word in hand could go in)
 			var lit := i == nx and ok
-			draw_rect(r, (PICK_BG if blink else Color(PICK_BG, 0.6)) if lit else INK)
-			draw_rect(r, (PICK if blink else PICK_LO) if lit else EDGE, false, 1.5)
+			_gbox(r, (PICK_BG if blink else Color(PICK_BG, 0.6)) if lit else INK, (PICK if blink else PICK_LO) if lit else EDGE)
 			var c := r.get_center().floor()
 			draw_rect(Rect2(c.x - 6, c.y, 14, 2), PICK if lit else EDGE)
 			draw_rect(Rect2(c.x, c.y - 6, 2, 14), PICK if lit else EDGE)
@@ -1931,12 +2461,10 @@ func _ws_side(blink: bool) -> void:
 	if not made.is_empty():
 		_tile(out, made["word"], "name", {"stone": true, "lit": true, "edge": loot.word_color(made["word"])})
 	elif up != "":
-		draw_rect(out, INK)
-		draw_rect(out, EDGE, false, 1.0)
+		_gbox(out, INK, EDGE)
 		_icon("word:" + up, Rect2(out.position + ((out.size - Vector2(12.0 * K, 12.0 * K)) / 2.0).floor(), Vector2(12.0 * K, 12.0 * K)), 0.45 if why != "" else 0.85)
 	else:
-		draw_rect(out, INK)
-		draw_rect(out, EDGE, false, 1.0)
+		_gbox(out, INK, EDGE)
 		_mid(out, "?", NORMAL, dc if a != null and b != null and why == "" else FAINT)
 	# under them: the word just made, or what two of a word make, or how it is done (none while a word of his is being read)
 	var reading := _word != "" or not _pending.is_empty() or not _result.is_empty() or _look != null
@@ -1970,8 +2498,7 @@ func _ws_side(blink: bool) -> void:
 	if why != "" and a != null and b != null:
 		_text(Vector2(br.position.x - 8.0 - _width(why, 10), br.position.y + 19), why, 10, BAD)
 	var can := why == ""
-	draw_rect(br, Color(PRESS, (0.35 if blink else 0.18) if can else 0.06))
-	draw_rect(br, PRESS if can else FAINT, false, 1.5)
+	_gbox(br, Color(PRESS, (0.35 if blink else 0.18) if can else 0.06), PRESS if can else FAINT)
 	_mid(br, label2, NORMAL, Color.WHITE if can else FAINT)
 	_hits.append([br, "ws_meld", null, null])
 
@@ -2050,8 +2577,7 @@ func _ws_trade(blink: bool, x0: float, w: float) -> void:
 		var r: Rect2 = c["r"]
 		var wd = _ws_cell_word(c["id"])
 		if wd == null:
-			draw_rect(r, INK)
-			draw_rect(r, EDGE, false, 1.0)
+			_gbox(r, INK, EDGE)
 			# (a place on his shelf that is empty is a word that has been bought)
 			if not c["bought"]:
 				_mid(r, "SOLD", SMALL, FAINT)
@@ -2068,8 +2594,7 @@ func _ws_trade(blink: bool, x0: float, w: float) -> void:
 		var half := Rect2(size.x / 2.0 + 2.0, 2.0, size.x / 2.0 - 4.0, size.y - 4.0)
 		draw_rect(half, PICK if blink else PICK_LO, false, 2.0)
 		var nr: Rect2 = T["next"]
-		draw_rect(nr, PICK_BG)
-		draw_rect(nr, PICK, false, 1.5)
+		_gbox(nr, PICK_BG, PICK)
 		_mid(Rect2(x0, page_y + 6.0, w, 16.0), "LET GO TO SELL: %d GOLD" % loot.word_sell_value(), NORMAL, PICK)
 		return
 	if ws_pick != "":
@@ -2082,8 +2607,7 @@ func _ws_trade(blink: bool, x0: float, w: float) -> void:
 		if poor:
 			var yh := "YOU HAVE %d" % loot.gold
 			_text(Vector2(br.position.x - 8.0 - _width(yh, 10), br.position.y + 19), yh, 10, BAD)
-		draw_rect(br, Color(PRESS, (0.35 if blink else 0.18) if not poor else 0.06))
-		draw_rect(br, PRESS if not poor else FAINT, false, 1.5)
+		_gbox(br, Color(PRESS, (0.35 if blink else 0.18) if not poor else 0.06), PRESS if not poor else FAINT)
 		_mid(br, o["label"], NORMAL, Color.WHITE if not poor else FAINT)
 		_hits.append([br, "ws_buy", null, null])
 		return
@@ -2272,8 +2796,7 @@ func _svc_side(blink: bool) -> void:
 func _svc_button(label: String, x0: float, w: float, action: String, can: bool, blink: bool) -> Rect2:
 	var bwid := _width(label, NORMAL) + 32.0
 	var br := Rect2(x0 + w - bwid, size.y - 52.0, bwid, 30.0)
-	draw_rect(br, Color(PRESS, (0.35 if blink else 0.18) if can else 0.06))
-	draw_rect(br, PRESS if can else FAINT, false, 1.5)
+	_gbox(br, Color(PRESS, (0.35 if blink else 0.18) if can else 0.06), PRESS if can else FAINT)
 	_mid(br, label, NORMAL, Color.WHITE if can else FAINT)
 	_hits.append([br, action, null, null])
 	return br
@@ -2289,8 +2812,7 @@ func _gm_side(blink: bool, x0: float, w: float) -> void:
 		var label := "GAMBLE" if gm_cards else "CARDS"
 		var tw := _width(label, SMALL) + 18.0
 		var tr := Rect2(x0 + w - tw, 8.0, tw, 20.0)
-		draw_rect(tr, HOT if tr.has_point(_mouse) else INK)
-		draw_rect(tr, EDGE, false, 1.0)
+		_gbox(tr, HOT if tr.has_point(_mouse) else INK, EDGE)
 		_mid(tr, label, SMALL, TEXT)
 		_hits.append([tr, "gm_tab", null, null])
 		if gm_cards:
@@ -2309,8 +2831,7 @@ func _gm_side(blink: bool, x0: float, w: float) -> void:
 	for k in kinds.size():
 		var r := Rect2(x0 + (k % cols) * PITCH, gy + floorf(k / float(cols)) * PITCH, CELL, CELL)
 		var on := k == gm_pick
-		draw_rect(r, HOT if on or r.has_point(_mouse) else INK)
-		draw_rect(r, PICK if on else EDGE, false, 1.5 if on else 1.0)
+		_gbox(r, HOT if on or r.has_point(_mouse) else INK, PICK if on else EDGE)
 		_icon(str(kinds[k]["icon"]), r.grow(-K))
 		if loot.gold < loot.gamble_price(k):
 			draw_rect(r.grow(-1.0), Color(INK, 0.45))
@@ -2402,8 +2923,7 @@ func _cd_side(blink: bool, x0: float, w: float) -> void:
 		var on := key == cd_pick
 		if on:
 			picked = h
-		draw_rect(rr, HOT if on or rr.has_point(_mouse) else INK)
-		draw_rect(rr, PICK if on else EDGE, false, 1.0)
+		_gbox(rr, HOT if on or rr.has_point(_mouse) else INK, PICK if on else EDGE)
 		_text(Vector2(x0 + 8.0, y + 13.0), RoyalCards.hand_name(h, R["names"]).to_upper(), 10, PICK if on else Color(R["label"][h["main"]]))
 		_text(Vector2(x0 + 8.0, y + 26.0), RoyalCards.pays_name(RoyalCards.hand_pays(h)), 9, DIM)
 		_hits.append([rr, "cd_hand", key, null])
@@ -2445,8 +2965,7 @@ func _st_side(x0: float, w: float) -> void:
 	for i in loot.stash.size():
 		var r := Rect2(x0 + (i % cols) * PITCH, 50.0 + floorf(i / float(cols)) * PITCH, CELL, CELL)
 		var it = loot.stash[i]
-		draw_rect(r, INK)
-		draw_rect(r, (loot.RARITY_COLOR[int(it["rarity"])] if it != null else EDGE), false, 1.0)
+		_gbox(r, INK, (loot.RARITY_COLOR[int(it["rarity"])] if it != null else EDGE))
 		if it != null:
 			_icon(it["icon"], r.grow(-K))
 			_hits.append([r, "st_take", i, it])
@@ -2473,8 +2992,7 @@ func _lx_side(blink: bool, x0: float, w: float) -> void:
 		var tw := _width(name, SMALL) + 12.0 * K
 		var tr := Rect2(tx, 30.0, tw, 20.0)
 		var on := i == lx_tab
-		draw_rect(tr, HOT if on else BOX)
-		draw_rect(tr, PICK if on else EDGE, false, 1.5 if on else 1.0)
+		_gbox(tr, HOT if on else BOX, PICK if on else EDGE)
 		_mid(tr, name, SMALL, PICK if on else TEXT)
 		_hits.append([tr, "lx_tab", i, null])
 		tx += tw + 2.0 * K
@@ -2484,8 +3002,7 @@ func _lx_side(blink: bool, x0: float, w: float) -> void:
 		var wd: String = words[i]
 		var r := Rect2(x0 + i * PITCH, 58.0, CELL, CELL)
 		if not _lx_found(wd):
-			draw_rect(r, INK)
-			draw_rect(r, EDGE, false, 1.0)
+			_gbox(r, INK, EDGE)
 			_mid(r, "?", NORMAL, FAINT)
 			continue
 		var on := wd == lx_sel

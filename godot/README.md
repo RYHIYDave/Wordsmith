@@ -846,6 +846,30 @@ What looked different but is the game's own: the piece he came out of behind him
 the ladder's foot on 12, the garden gate on 16), which the game draws too once its picture is painted, a moment after he comes in;
 and the cultists' raised fire and the circle under him, the game's same cast caught at another moment. `--only=compare`, pictured.
 
+## The gear screen and the shops in the game's own letters (the cloud chat, 21 Nov 2026)
+
+His pick: “Game's lettering in menus (Recommended)”. Set beside the game's own, the gear screen and the shops were Godot's plain
+letters and boxes, on the wrong half, and laid out otherwise. Now, as the game draws them (ui/inventory.ts, ui/town.ts, ui/ui.ts):
+- THE PANEL ON THE RIGHT HALF (invRect), the game seen in the left half with the hero in its middle (main.ts renderer.view; beside
+  a service the picture stays where it was), the HUD and the small map put by while it is up; a service (the vendors, the
+  wordsmith, the stash, the Lexicon, the stranger, a stronghold's altar) on the left half; what is read on a card over the game's
+  half, against the panel's edge.
+- THE GAME'S LETTERS (its normal and small pixel fonts) and colours (ui.ts THEME), its boxes with their corners cut, its tabs, DONE
+  pink; a line too long for its half broken as the game's wrapText breaks it.
+- GEAR: the hero as he stands, twice his size, his scarf moving, between two columns of slots in the order of the body (an empty
+  one shows faintly what goes there), his numbers at a glance beside him (the game's: DAMAGE is his weapon's, 7-11 for a new
+  Warrior, where Godot had shown it with his Strength's share); +5 to place after a level on a row of its own.
+- STATS, the game's fourth page: the attributes and the level, how far to the next, the defences and the attack.
+- A PIECE'S CARD in the game's words: its rarity and kind, a weapon's damage and pace, what it was made with, its properties, the
+  words burned in, the room left, the level it needs.
+- THE VENDOR'S HALF as the game's grid: FOR SALE and BUY BACK (what was sold him on this visit, thirty kept, for what he paid:
+  game.ts buyBack, new here), ten to a row; a piece pressed is picked (its card and BUY under the cells), pressed again, carried
+  across or right-clicked, bought; a piece of the bag right-clicked or carried across, sold; one he cannot afford darkened.
+- LEXICON beside the bag (WORD_LEX): every word he holds as its rune stone on a panel over the game's half. At a service, ALL
+  (WORD_ROOM): the bottom turned to every word, BAG back.
+`--only=menus` (check_glows.gd), pictured; the trades', services', melding, item words', skill trees', saved game's and words'
+checks run again on the new screen, all as before.
+
 ## Not in it yet
 
 Frenzied on the prison's bosses' own scripts
@@ -858,8 +882,7 @@ the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 
 and blows; what a boss says is shown, not spoken), the
 Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them; in the town: the
 stone floating from him to the slab, the letters
-swirling round the ring and its column of light, the camp's GATE service; uniques, magic find, the game's own
-lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
+swirling round the ring and its column of light, the camp's GATE service; uniques, magic find, the sparks as a pot
 breaks, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); a phone's own options (where an attack aims, the screen turned).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)

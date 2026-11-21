@@ -167,6 +167,8 @@ var royal := {}
 var _value := {}
 ## the vendors' shelves (Game.rollShop on his first day in town)
 var shops := {}
+## (what he has sold to the vendors on this visit, oldest first: game.ts `sold`)
+var sold: Array = []
 ## (what each word becomes on each kind of piece; which words are found where; the armourer's quest's own lines:
 ## tools/godot_loot.ts)
 var _imbue := {}
@@ -1697,16 +1699,42 @@ func buy(shop: String, i: int) -> void:
 	sfx.play("coin", -4.0)
 
 
-## Sell a piece from the bag (game.ts sell): a quarter of its worth.
+## What a piece sells for (game.ts sellValue): a quarter of its worth (TUNE.sellRate), never less than one.
+func sell_value(it: Dictionary) -> int:
+	return maxi(1, floori(float(it.get("value", 0)) * float(_tune.get("sellRate", 0.25))))
+
+
+## Sell a piece from the bag (game.ts sell): what it sells for. The vendor keeps it for the rest of this visit, to be bought back
+## for the same (`sold`, TUNE.soldKept of them; the oldest goes for good).
 func sell(i: int) -> void:
 	if i < 0 or i >= bag.size():
 		return
 	var it: Dictionary = bag[i]
-	var n := floori(float(it.get("value", 0)) * 0.25)
+	var n := sell_value(it)
 	bag.remove_at(i)
 	gold += n
+	sold.append(it)
+	if sold.size() > int(_tune.get("soldKept", 30)):
+		sold.remove_at(0)
 	say("Sold %s: +%d gold" % [it["name"], n], Color(1.0, 0.85, 0.4))
 	sfx.play("coin", -4.0)
+
+
+## Take back piece `i` of what was sold on this visit, for what was paid for it (game.ts buyBack). Why not, or "".
+func buy_back(i: int) -> String:
+	if i < 0 or i >= sold.size():
+		return "Nothing there"
+	var it: Dictionary = sold[i]
+	var price := sell_value(it)
+	if gold < price:
+		return "Not enough gold"
+	if bag.size() >= BAG:
+		return "Bag is full"
+	gold -= price
+	bag.append(it)
+	sold.remove_at(i)
+	sfx.play("coin", -4.0)
+	return ""
 
 
 # --- THE WORDSMITH'S TRADE IN WORDS (game.ts rollShop's lot of words, wordPrice, wordSellValue, buyWord, sellWord, buyBackWord;
@@ -1757,6 +1785,8 @@ func roll_word_stock(depth: int) -> void:
 		word_stock.append(pool[k])
 		pool.remove_at(k)
 	words_sold = []
+	# (and what was sold to the vendors is theirs for good once he has gone: game.ts `sold`, a visit's)
+	sold = []
 	# (and the stranger has thrown nothing for him yet on this visit: game.ts rollShop, `won`)
 	won = -1
 

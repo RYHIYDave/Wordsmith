@@ -175,3 +175,82 @@ func compare(main, hero, dir: String) -> void:
 	_line(q6.turn_in_for() == "wordsmith" and M.map.waypoint != null, "carrying the stone, the marker over floor 3's waypoint home (he brings it back for the %s)" % q6.turn_in_for())
 	M.loot.quest = ""
 	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## THE MENUS IN THE GAME'S OWN LETTERS AND FRAMES (--only=menus; ui/inventory.ts drawInventory, ui/town.ts vendorSide): a new
+## Warrior in town, his gear screen opened on each of its pages, and the armourer's shelf beside it. Pictured.
+func menus(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	await M._wait(0.8)
+	var inv = M._inv
+	inv.toggle()
+	await M._wait(0.4)
+	await M._snap(dir + "/u01_gear.png")
+	# (a level gained: its +5 asked on a row of its own under his numbers)
+	M.loot.points = 5
+	inv.queue_redraw()
+	await M._wait(0.2)
+	await M._snap(dir + "/u01b_points.png")
+	M.loot.points = 0
+	for pg in ["attacks", "stats", "talents"]:
+		inv._page = pg
+		inv.queue_redraw()
+		await M._wait(0.3)
+		await M._snap(dir + "/u02_%s.png" % pg)
+	inv._page = "gear"
+	# (his lexicon: a few words held, LEXICON pressed: every word on a panel over the game's half)
+	var lt = M.loot
+	lt.ring_lit = true
+	# (no new player's lesson waiting: his first word is long set)
+	lt.taught = true
+	for w in ["fire", "frost", "swift", "leech", "poison"]:
+		lt.words[w] = 1 + (1 if w == "frost" else 0)
+	lt.derive()
+	inv._press("lex", null)
+	await M._wait(0.3)
+	await M._snap(dir + "/u05_lexicon.png")
+	_line(inv._lex and inv._lex_panel.has_area() and inv._pouch.filter(func(c): return c.get("lex", false)).size() == lt.held().size(), "LEXICON: every word he holds (%d) on a panel over the game's half" % lt.held().size())
+	inv._press("lex", null)
+	inv.toggle()
+	await M._wait(0.3)
+	inv.open_shop("armourer")
+	await M._wait(0.4)
+	await M._snap(dir + "/u03_armourer.png")
+	_line(inv.visible and inv.shop == "armourer", "the gear screen and the armourer's shelf open")
+	# (a piece sold to him: on his BUY BACK shelf for what he paid; one of his picked, its card and BUY under the cells)
+	var loot = M.loot
+	loot.gold = 60
+	var stock: Array = loot.shops["armourer"]
+	loot.bag.append(stock[0].duplicate(true))
+	var before: int = loot.gold
+	inv._press("bag", loot.bag.size() - 1)
+	var paid: int = loot.gold - before
+	inv._shelf_pick = ["buy", 1]
+	await M._wait(0.3)
+	await M._snap(dir + "/u04_sold_and_picked.png")
+	_line(loot.sold.size() == 1 and paid == loot.sell_value(loot.sold[0]), "a piece sold for %d gold: on his BUY BACK shelf" % paid)
+	var why: String = loot.buy_back(0)
+	_line(why == "" and loot.sold.is_empty() and loot.gold == before, "bought back for the same: back in the bag, the gold as it was (%d)" % loot.gold)
+	# (at a service, ALL: the bottom turned to every word, the bag not there)
+	inv._shelf_pick = []
+	inv._press("swap", null)
+	await M._wait(0.3)
+	await M._snap(dir + "/u06_all_words.png")
+	_line(inv._all and inv._cells.filter(func(c): return not c["worn"]).is_empty(), "at the vendor's, ALL: every word in the bottom, the bag put by")
+	inv._press("swap", null)
+	# (the town's other services beside the gear screen, on the left half in the game's letters: the wordsmith, the stash, the
+	# Lexicon, the stranger)
+	inv.toggle()
+	await M._wait(0.2)
+	inv.open_wordsmith()
+	await M._wait(0.3)
+	await M._snap(dir + "/u07_wordsmith.png")
+	inv.toggle()
+	for k in ["stash", "lexicon", "stranger"]:
+		await M._wait(0.2)
+		inv.open_service(k)
+		await M._wait(0.3)
+		await M._snap(dir + "/u08_%s.png" % k)
+		inv.toggle()
+	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

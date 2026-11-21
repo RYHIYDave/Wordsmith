@@ -609,8 +609,9 @@ func draw_card(h, level: int, gold: int, in_town: bool, W: float, H: float) -> A
 		text_h += (6.0 if l["small"] else 9.0) + (2.0 if l["small"] else 1.0)
 	var pick_row := bh + 3.0 if took and d["pick"] != null else 0.0
 	var ch := 5.0 + text_h + 3.0 + pick_row + bh + 5.0
-	# (over the game's half: the panel is on the left, the card against its edge, level with the stone)
-	var cr := Rect2(W + 3.0, maxf(2.0, minf(H - ch - 2.0, n["c"].y - 12.0)), CARD, ch)
+	# (over the game's half: the panel is on the right, the card against its edge, level with the stone; laid out in the other
+	# half's own lay, from W: inventory.gd _half)
+	var cr := Rect2(2.0 * W - 3.0 - CARD, maxf(2.0, minf(H - ch - 2.0, n["c"].y - 12.0)), CARD, ch)
 	_box(cr.position.x, cr.position.y, cr.size.x, cr.size.y, T["bg"], T["edgeHi"])
 	_rect(cr.position.x + 1, cr.position.y + 1, cr.size.x - 2, 0.5, T["accentLo"])
 	var ly := cr.position.y + 5.0

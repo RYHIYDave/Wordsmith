@@ -317,7 +317,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -1267,6 +1267,8 @@ func _wu_lying() -> Array:
 ## (the words' check) The mouse as the gear screen gets it: its left button pressed ("down") or let go ("up") at a place of
 ## the screen, moved there with the button held ("move"), or its right button pressed ("right").
 func _wu_mouse(what: String, at: Vector2) -> void:
+	# (`at` is where a thing is laid out on the gear screen; on the screen, the panel is on the right half: inventory.gd _to_screen)
+	at = _inv._to_screen(at)
 	if what == "move":
 		var m := InputEventMouseMotion.new()
 		m.position = at
@@ -2286,6 +2288,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (SET BESIDE THE GAME: his facing as he comes in, the glass globe and its rim, the quest marker over the dark: check_glows.gd compare)
 	if _arg("only") == "compare":
 		await preload("res://scripts/check_glows.gd").new().compare(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "menus":
+		await preload("res://scripts/check_glows.gd").new().menus(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "glows":
