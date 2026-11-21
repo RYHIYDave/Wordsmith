@@ -19,7 +19,9 @@ const fake = (n: number): AnimSet => {
 test('every hero in every place the painter paints him is in one group, and the cards are one', () => {
   const g = bakeGroups(true);
   assert.deepEqual(g.cards.map(keyName), ['warrior:card', 'ranger:card', 'mage:card', 'warlock:card', 'tinkerer:card', 'brawler:card:vet']);
-  assert.deepEqual(g.warlock.map(keyName), ['warlock:town', 'warlock:dungeon', 'warlock:demon', 'warlock:blaze']);
+  // (his demon a group of its own since his unique tomes went on, art/heroes.ts TOME_SKINS, 15 Nov 2026: kept whatever book he wears)
+  assert.deepEqual(g.warlock.map(keyName), ['warlock:town', 'warlock:dungeon', 'warlock:blaze']);
+  assert.deepEqual(g['warlock-demon'].map(keyName), ['warlock:demon']);
   assert.deepEqual(g.brawler.map(keyName), ['brawler:town:vet', 'brawler:dungeon:vet']);
   const all = Object.values(g).flat().map(keyName);
   assert.equal(new Set(all).size, all.length, 'none twice');

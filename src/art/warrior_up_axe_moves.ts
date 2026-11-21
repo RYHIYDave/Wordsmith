@@ -223,7 +223,7 @@ function windOf(m: AxeMove, t: number): number {
  * HIM AT A MOMENT OF A MOVE WITH THE AXE, painted from one of his eight sides: with the figure a frame and three frames before
  * (his cloth follows), the wind, and in a strike the axe's smear (where it has been over the last two frames).
  */
-export function paintAxe(m: AxeMove, t: number, side: WuSide, rim: string | null | undefined = undefined): ArmedFrame {
+export function paintAxe(m: AxeMove, t: number, side: WuSide, rim: string | null | undefined = undefined, skin?: WeaponTake): ArmedFrame {
   const p = axePosed(m, t);
   // (the figure a frame and three frames before: where the game carries him, that much further back along his aim)
   const earlier = (back: number): Skeleton => {
@@ -246,10 +246,12 @@ export function paintAxe(m: AxeMove, t: number, side: WuSide, rim: string | null
     }
   }
   const more = { rightOn: p.rightOn, empty: !p.holding.axe, second: p.twin, trail: p.holding.axe ? trail : undefined, trail2: p.twin ? trail2 : undefined };
-  const f = paintArmed(m.take ?? AXE, p.s, p.q, side, B, around, rim === undefined ? undefined : rim, more);
+  // (THE WARRIOR'S UNIQUE AXES AND HAMMERS, art/heavy_skins.ts: the one in his hands, `skin`, in place of the war axe or the maul)
+  const take = skin ?? m.take ?? AXE;
+  const f = paintArmed(take, p.s, p.q, side, B, around, rim === undefined ? undefined : rim, more);
   if (!m.appear || t > (m.appear - 1) * FR + 1e-6) return f;
   // (the axe appearing: what is behind it, painted without it, where it has not yet gathered)
-  const bare = paintArmed(m.take ?? AXE, p.s, p.q, side, B, around, rim === undefined ? undefined : rim, { ...more, empty: true });
+  const bare = paintArmed(take, p.s, p.q, side, B, around, rim === undefined ? undefined : rim, { ...more, empty: true });
   return gatherIn(f, bare, Math.round(t / FR), m.appear);
 }
 
@@ -1106,8 +1108,8 @@ const FPS = 30;
 const AURA: Light = { x: CANVAS3.ax - 4, y: CANVAS3.ay - 30, r: 46, color: '#28dcf0', a: 0.2 };
 
 /** A frame of a move as the game holds it: cut down to him, with his lights, his pool of light and where his scarf's ends are fixed. */
-export function axeSprite(m: AxeMove, t: number, side: WuSide): Sprite {
-  const f = paintAxe(m, t, side);
+export function axeSprite(m: AxeMove, t: number, side: WuSide, skin?: WeaponTake): Sprite {
+  const f = paintAxe(m, t, side, undefined, skin);
   // (his pool of light where it is under every hero: on a side that faces left, as far the other way)
   const aura = { ...AURA, x: f.ax + (f.ax === CANVAS3.ax ? AURA.x - CANVAS3.ax : CANVAS3.ax - AURA.x) };
   return toSprite(f, aura, f.ax, f.ay);
@@ -1116,8 +1118,8 @@ export function axeSprite(m: AxeMove, t: number, side: WuSide): Sprite {
 /** How many pictures of the leap the game spreads over it, by how far through he is (as his Lunge's: art/warrior_up_art.ts). */
 export const AXE_LEAP_FRAMES = 16;
 
-function setOf(side: WuSide): AnimSet {
-  const at = (m: AxeMove, t: number): Sprite => axeSprite(m, t, side);
+function setOf(side: WuSide, skin?: WeaponTake): AnimSet {
+  const at = (m: AxeMove, t: number): Sprite => axeSprite(m, t, side, skin);
   const round = (m: AxeMove): Sprite[] => {
     const { end, from } = spanOf(m);
     const t0 = from ?? 0;
@@ -1183,10 +1185,10 @@ function setOf(side: WuSide): AnimSet {
  * very same lists, each side's made when first asked for and each frame painted when first read. What the main chat's bake and
  * rules take (docs/mockups/warrior_weapons/README.md, step 2). NOT DRAWN YET with the axe: struck, his fall, town and his card.
  */
-export function makeWarriorAxeArt(): Record<WuSide, AnimSet> {
+export function makeWarriorAxeArt(skin?: WeaponTake): Record<WuSide, AnimSet> {
   const out = {} as Record<WuSide, AnimSet>;
   for (const side of WU_SIDES) Object.defineProperty(out, side, { enumerable: true, configurable: true, get: () => {
-    const set = setOf(side);
+    const set = setOf(side, skin);
     Object.defineProperty(out, side, { value: set, enumerable: true });
     return set;
   } });

@@ -27,7 +27,7 @@ import { CANVAS3 } from './skin';
 import { bonesAt, solve } from './skeleton';
 import type { Posed, Skeleton } from './skeleton';
 import { paintRangerUp } from './ranger_up';
-import type { RuFrame, RuSide } from './ranger_up';
+import type { BowSkin, RuFrame, RuSide } from './ranger_up';
 import { WU_SIDES } from './warrior_up';
 import { RU_DRAW3, RU_FALL3, RU_LURCH3, RU_REEL3, RU_ROLL3, RU_RUN3, RU_SHOT3, RU_SIGHTING3, RU_SQUIRREL3, RU_STAND3, RU_TOWN3, RU_TOWN_RUN3, RU_TSIGHTING3, RU_TSQUIRREL3, RU_VOLLEY3, RU_SHOT_HIT, RU_VOLLEY_HIT, ruRunWays, ruSettle, ruStart } from './ranger_up_moves';
 
@@ -84,19 +84,20 @@ function before(m: Move3, t: number, back: number): number {
 
 /** HIM AT A MOMENT OF A MOVE, painted: with the figure a frame and three frames before (cloth follows), the wind, and at a
  * release the string and the arrow of the frame before as its after-image. */
-export function paintRuMove(m: Move3, t: number, view: RuSide, rim: string | null | undefined = undefined): RuFrame {
+export function paintRuMove(m: Move3, t: number, view: RuSide, rim: string | null | undefined = undefined, bow?: BowSkin): RuFrame {
   const { q, s } = ruPosed(m, t);
   const prev = ruPosed(m, before(m, t, FRAME));
   const past = ruPosed(m, before(m, t, 3 * FRAME)).s;
   const ghost = ruSmeared(m, t) ? { q: prev.q, s: prev.s } : undefined;
-  const f = paintRangerUp(s, q, view, m.build, { prev: prev.s, past, wind: windOf(m, t), ghost }, rim === undefined ? undefined : rim);
+  // (THE RANGER'S UNIQUE BOWS, art/bow_skins.ts: the bow in his hand, and the moment, for what of it moves of itself)
+  const f = paintRangerUp(s, q, view, m.build, { prev: prev.s, past, wind: windOf(m, t), ghost, ...(bow ? { bow, t } : {}) }, rim === undefined ? undefined : rim);
   if (q.out > 0.01) return { ...f, ...lightsOut(f, q.out) };
   return f;
 }
 
 /** A frame of a move as the game holds it: cut down to him, with his lights, his pool of light and where his feather is fixed. */
-export function ruSprite(m: Move3, t: number, view: RuSide): Sprite {
-  const f = paintRuMove(m, t, view);
+export function ruSprite(m: Move3, t: number, view: RuSide, bow?: BowSkin): Sprite {
+  const f = paintRuMove(m, t, view, undefined, bow);
   const out = ruPosed(m, t).q.out;
   const aura = { ...AURA, x: f.ax + (f.ax === CANVAS3.ax ? AURA.x - CANVAS3.ax : CANVAS3.ax - AURA.x) };
   const pool = out >= 0.98 ? null : out > 0.01 ? { ...aura, a: (aura.a ?? 1) * (1 - out) } : aura;
@@ -116,14 +117,14 @@ export function ruStartOf(stand: Move3, runM: Move3): { move: Move3; phase: numb
   return { move: { ...runM, name: `${runM.name}: setting off`, motion: st.motion, stride: undefined }, phase: st.phase };
 }
 
-function setOf(view: RuSide, place: 'dungeon' | 'town' | 'card', shared: Shared): AnimSet {
+function setOf(view: RuSide, place: 'dungeon' | 'town' | 'card', shared: Shared, bow?: BowSkin): AnimSet {
   const list = (key: string, make: () => Sprite[]): Sprite[] => {
     const k = `${view}:${key}`;
     let l = shared.get(k);
     if (!l) shared.set(k, (l = make()));
     return l;
   };
-  const at = (m: Move3, t: number): Sprite => ruSprite(m, t, view);
+  const at = (m: Move3, t: number): Sprite => ruSprite(m, t, view, bow);
   const round = (m: Move3, fps: number): Sprite[] =>
     list(`round:${m.name}:${fps}`, () => {
       const { end, from } = spanOf(m);
@@ -209,10 +210,10 @@ function setOf(view: RuSide, place: 'dungeon' | 'town' | 'card', shared: Shared)
 export type RuActorArt = ActorArt & { toward: AnimSet; frontL: AnimSet; sideL: AnimSet; backL: AnimSet; away: AnimSet; side: AnimSet };
 
 /** THE RANGER'S PICTURES, BROUGHT UP, for a place: what art/heroes3.ts gives in his place while RANGER_UP is on. */
-export function makeRangerUpArt(place: 'dungeon' | 'town' | 'card', shared: Shared = new Map()): RuActorArt {
+export function makeRangerUpArt(place: 'dungeon' | 'town' | 'card', shared: Shared = new Map(), bow?: BowSkin): RuActorArt {
   const out = {} as Record<RuSide, AnimSet>;
   for (const side of WU_SIDES) Object.defineProperty(out, side, { enumerable: true, configurable: true, get: () => {
-    const set = setOf(side, place, shared);
+    const set = setOf(side, place, shared, bow);
     Object.defineProperty(out, side, { value: set, enumerable: true });
     return set;
   } });

@@ -5,7 +5,8 @@
 //   node tools/playtest.mjs --file dist/staff_look.html --size 1126x520 --dpr 2 --scenario tools/scenarios/staff_skins_film.mjs \
 //     --out /dev/shm/staffs/x
 //   python3 tools/staff_skins_film.py /dev/shm/staffs docs/mockups/staff_skins/pictures/staves_in_game.mp4
-//   env: OUT (the frames' folder), ONLY (one staff: plain, crook, ebb, resonance, rod), TOWN=0 (no town stills), FILM=0 (no film)
+//   env: OUT (the frames' folder), ONLY (one staff: plain, crook, ebb, resonance, rod), TOWN=0 (no town stills), FILM=0 (no film),
+//   HERO=ranger (the Ranger with his unique bows, art/bow_skins.ts: ONLY plain, rainwalker, threefold, poachers, fledgling)
 // Each staff's frames, a picture every thirtieth of a second of the game's time: she stands, turns through her eight sides,
 // runs, and casts the Wave twice; in its own folder, with a note of what she was holding and what the game says she holds.
 import fs from 'node:fs';
@@ -21,20 +22,86 @@ const STAVES = [
   ['resonance', 'tuningstaff', 'Resonance'],
   ['rod', 'kindlingrod', 'The Kindling Rod'],
 ];
+// (HERO=tinkerer: the Tinkerer's unique wrenches, art/wrench_skins.ts, their switch art/heroes.ts WRENCH_SKINS put on here)
+const WRENCHES = [
+  ['plain', null, 'Her own wrench'],
+  ['secondwhistle', 'secondwhistle', 'The Second Whistle'],
+  ['stickywrench', 'stickywrench', 'Tarwrench'],
+  ['foremanswrench', 'foremanswrench', "The Foreman's Wrench"],
+  ['borrowedspanner', 'borrowedspanner', 'The Borrowed Spanner'],
+];
+// (HERO=warrior: the Warrior's unique weapons, art/sword_skins.ts and art/heavy_skins.ts, their switch art/heroes.ts WARRIOR_SKINS
+// put on here; TREE=battleaxe or warhammer: his tree's first point given him first, and his axes or hammers; none, his swords)
+const SWORDS = [
+  ['plain', null, 'His own great sword'],
+  ['millstone', 'millstone', 'Millstone'],
+  ['windcutter', 'windcutter', 'Windcutter'],
+  ['undertow', 'undertow', 'Undertow'],
+];
+const AXES = [
+  ['plain', null, 'His war axe'],
+  ['gyre', 'gyre', 'Gyre'],
+  ['redtithe', 'redtithe', 'Red Tithe'],
+  ['widowfall', 'widowfall', 'Widowfall'],
+  ['rotaxe', 'rotaxe', 'The Rot Axe'],
+];
+const HAMMERS = [
+  ['plain', null, 'His maul'],
+  ['deathknell', 'deathknell', 'Death Knell'],
+  ['deadweight', 'deadweight', 'Deadweight'],
+  ['starbreaker', 'starbreaker', 'Starbreaker'],
+];
+// (HERO=brawler: the Brawler's unique wraps, art/wrap_skins.ts; HERO=warlock: the Warlock's unique tomes, art/tome_skins.ts; their
+// switches art/heroes.ts WRAP_SKINS and TOME_SKINS put on here)
+const WRAPS = [
+  ['plain', null, 'His own wraps'],
+  ['lastround', 'lastround', 'The Last Round'],
+  ['fourthglobe', 'fourthglobe', 'The Fourth Globe'],
+  ['winningstreak', 'winningstreak', 'Hot Streak'],
+  ['tapedknuckles', 'tapedknuckles', 'Taped Knuckles'],
+];
+const TOMES = [
+  ['plain', null, 'His own book'],
+  ['ledgerofdebts', 'ledgerofdebts', 'The Ledger of Debts'],
+  ['restlesstome', 'restlesstome', 'The Restless Tome'],
+  ['burningverse', 'burningverse', 'The Burning Verse'],
+  ['hornbook', 'hornbook', 'The Hornbook'],
+];
+// (HERO=ranger: the Ranger's unique bows, art/bow_skins.ts, their switch art/heroes.ts BOW_SKINS put on here)
+const BOWS = [
+  ['plain', null, 'His own bow'],
+  ['rainwalker', 'rainwalker', 'The Rainwalker'],
+  ['threefold', 'fan', 'Threefold'],
+  ['poachers', 'poachersbow', "The Poacher's Bow"],
+  ['fledgling', 'fledgling', 'The Fledgling'],
+];
 
 export default async function (page, snap) {
+  const hero = process.env.HERO || 'mage';
+  const tree = process.env.TREE || '';
+  const WEAPONS = hero === 'ranger' ? BOWS : hero === 'tinkerer' ? WRENCHES : hero === 'brawler' ? WRAPS : hero === 'warlock' ? TOMES : hero === 'warrior' ? (tree === 'battleaxe' ? AXES : tree === 'warhammer' ? HAMMERS : SWORDS) : STAVES;
   const out = process.env.OUT || '/dev/shm/staffs';
   const only = process.env.ONLY || '';
   const [cw, ch] = [150, 110];
   const up = 22;
   fs.mkdirSync(out, { recursive: true });
   const bad = (s) => console.log(`  !! ${s}`);
-  await page.evaluate(() => {
+  await page.evaluate((hero) => {
     const d = window.__dbg; d.saving(false);
     if (d.paintDefer) d.paintDefer.on = false;
     d.staffSkins.on = true;
-    d.run('mage', 9); d.seasoned(20); d.autoLevel = false; d.autoWords = false; d.god = true;
-  });
+    d.bowSkins.on = true;
+    d.wrenchSkins.on = true;
+    d.warriorSkins.on = true;
+    if (d.wrapSkins) d.wrapSkins.on = true;
+    if (d.tomeSkins) d.tomeSkins.on = true;
+    if (d.set1) d.set1.on = true;
+    d.run(hero, 9); d.seasoned(20); d.autoLevel = false; d.autoWords = false; d.god = true;
+  }, hero);
+  if (hero === 'warrior' && tree) {
+    const took = await page.evaluate((w) => window.__dbg.game().takeTalent(w), tree);
+    if (took !== null) bad(`his tree's first point, ${tree}: ${took}`);
+  }
   await page.waitForTimeout(600);
   const raf = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
   const scr = await page.evaluate(() => ({ w: window.__dbg.screen.w, cw: window.innerWidth }));
@@ -65,7 +132,7 @@ export default async function (page, snap) {
 
   // ---- in town: a still of her with each staff, facing down and to the right ----
   if (process.env.TOWN !== '0') {
-    for (const [id, unique, name] of STAVES) {
+    for (const [id, unique, name] of WEAPONS) {
       if (only && only !== id) continue;
       const said = await hold(unique);
       if (said.why) bad(`${name}: ${said.why}`);
@@ -128,7 +195,7 @@ export default async function (page, snap) {
   add(1.0, { face: WAYS[1] });
   const total = Math.round(t * FPS);
   const notes = [];
-  for (const [id, unique, name] of STAVES) {
+  for (const [id, unique, name] of WEAPONS) {
     if (only && only !== id) continue;
     await page.evaluate(([x, y]) => { const d = window.__dbg; d.slowmo = 1; const h = d.game().hero; h.x = x; h.y = y; h.fx = 0.71; h.fy = 0.71; }, home);
     const said = await hold(unique);

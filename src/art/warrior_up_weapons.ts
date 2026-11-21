@@ -57,8 +57,18 @@ export type TakeId = 'axeA' | 'axeB' | 'axeC' | 'hammerA' | 'hammerB' | 'hammerC
 export const TAKE_IDS: readonly TakeId[] = ['axeA', 'axeB', 'axeC', 'hammerA', 'hammerB', 'hammerC'];
 export type P2 = readonly [number, number];
 
+/** (THE WARRIOR'S UNIQUE AXES AND HAMMERS, art/heavy_skins.ts) The takes made for them. */
+export type SkinTakeId = 'gyre' | 'redtithe' | 'widowfall' | 'rotaxe' | 'deathknell' | 'deadweight' | 'starbreaker';
+/** (THE WARRIOR'S UNIQUE AXES AND HAMMERS) A take's own stuffs, in place of the war axe's and the maul's (absent: theirs). */
+export interface TakeLook {
+  iron?: Ramp;
+  dark?: Ramp;
+  wood?: Ramp;
+  leather?: Ramp;
+}
+
 export interface WeaponTake {
-  id: TakeId;
+  id: TakeId | SkinTakeId;
   kind: 'axe' | 'hammer';
   letter: 'A' | 'B' | 'C';
   /** What it is, in a few plain words (for the sheet). */
@@ -77,6 +87,8 @@ export interface WeaponTake {
   head(sm: Smith): void;
   /** Where on the head the cyan glows, beyond the edges (a hammer's face, its runes), in its own space. */
   glow?(w: V3, prim: Prim): number;
+  /** (THE WARRIOR'S UNIQUE AXES AND HAMMERS, art/heavy_skins.ts) its own stuffs; absent, the war axe's and the maul's. */
+  look?: TakeLook;
 }
 
 /** The solids of a take being laid, and its stuffs. */
@@ -95,7 +107,7 @@ export interface Smith {
  * each seam between two of them would stand up as a ridge). `bevel`: the plate thinned toward its edge, from `t` at `from`
  * (how far out from the haft, Y, on the side `side`) to `tEdge` at `to`, so it is a wedge that turns in the light.
  */
-function plate(sm: Smith, mat: number, piece: string, pts: readonly P2[], t: number, z = 0, tag = 'plate', blend = 0.5, bevel?: { side: 1 | -1; from: number; to: number; tEdge: number }): void {
+export function plate(sm: Smith, mat: number, piece: string, pts: readonly P2[], t: number, z = 0, tag = 'plate', blend = 0.5, bevel?: { side: 1 | -1; from: number; to: number; tEdge: number }): void {
   let cuts: { n: V3; o: number }[] | undefined;
   if (bevel) {
     const k = (t - bevel.tEdge) / (bevel.to - bevel.from);
@@ -110,7 +122,7 @@ function plate(sm: Smith, mat: number, piece: string, pts: readonly P2[], t: num
   });
 }
 /** A polygon mirrored across the haft (Y to -Y), its points in the same turn. */
-const mirrorY = (pts: readonly P2[]): P2[] => pts.map(([x, y]) => [x, -y] as P2).reverse();
+export const mirrorY = (pts: readonly P2[]): P2[] => pts.map(([x, y]) => [x, -y] as P2).reverse();
 
 /** Cut a simple polygon into three-cornered pieces (ear clipping). */
 export function triangulate(pts: readonly P2[]): [number, number, number][] {
@@ -162,7 +174,7 @@ function lineDist(p: P2, line: readonly P2[]): number {
 }
 
 /** A ring round the haft (a collar, a band): `x` along it, `w` long, `r` round, its two sides cut flat. */
-function collar(sm: Smith, x: number, w: number, r: number, piece = 'collar'): void {
+export function collar(sm: Smith, x: number, w: number, r: number, piece = 'collar'): void {
   const cuts = [{ n: [1, 0, 0] as V3, o: x + w / 2 }, { n: [-1, 0, 0] as V3, o: -(x - w / 2) }];
   sm.sc.cone(sm.iron, piece, [x - w / 2 - r, 0, 0], [x + w / 2 + r, 0, 0], r, r, 0.25, { tag: 'collar', cuts });
 }
@@ -170,14 +182,14 @@ function collar(sm: Smith, x: number, w: number, r: number, piece = 'collar'): v
 // --- THE BATTLE AXES -------------------------------------------------------------------------------------------------
 
 /** The thinning of an axe's blade toward its edge: `t` at the eye, a third of a pixel either side at the edge. */
-const bev = (side: 1 | -1, to: number): { side: 1 | -1; from: number; to: number; tEdge: number } => ({ side, from: 2, to, tEdge: 0.3 });
+export const bev = (side: 1 | -1, to: number): { side: 1 | -1; from: number; to: number; tEdge: number } => ({ side, from: 2, to, tEdge: 0.3 });
 
 /**
  * AXE A, THE BEARDED AXE: one broad blade, its edge long and swept, its beard hooked far down toward his hands with the
  * hollow under it open; a thick cheek round the eye thinning to the edge; a short squared poll behind.
  */
-const AXE_A_EDGE: P2[] = [[34.6, 13.4], [33.0, 14.9], [30.0, 15.8], [26.0, 16.0], [22.0, 15.4], [18.2, 14.0], [14.8, 12.0], [11.6, 9.2]];
-const AXE_A_BLADE: P2[] = [
+export const AXE_A_EDGE: P2[] = [[34.6, 13.4], [33.0, 14.9], [30.0, 15.8], [26.0, 16.0], [22.0, 15.4], [18.2, 14.0], [14.8, 12.0], [11.6, 9.2]];
+export const AXE_A_BLADE: P2[] = [
   [23.6, 1.6], [30.8, 1.6], [31.0, 4.6], [31.8, 8.2], ...AXE_A_EDGE,
   [12.6, 7.6], [14.2, 6.4], [16.6, 5.8], [19.4, 5.6], [21.6, 4.6], [22.9, 2.8],
 ];
@@ -199,8 +211,8 @@ const AXE_A: WeaponTake = {
  * AXE B, THE WAR AXE, DOUBLE-BITTED: two flared bits, one each side of the haft, their edges swept out into horns, a narrow
  * waist at the eye, a four-edged spike standing on top.
  */
-const AXE_B_EDGE: P2[] = [[36.4, 10.2], [35.2, 11.8], [32.0, 13.1], [27.0, 13.5], [22.0, 13.1], [18.8, 11.8], [17.6, 10.2]];
-const AXE_B_BIT: P2[] = [[23.8, 1.6], [30.2, 1.6], [31.2, 3.8], [33.6, 7.2], ...AXE_B_EDGE, [20.4, 7.2], [22.8, 3.8]];
+export const AXE_B_EDGE: P2[] = [[36.4, 10.2], [35.2, 11.8], [32.0, 13.1], [27.0, 13.5], [22.0, 13.1], [18.8, 11.8], [17.6, 10.2]];
+export const AXE_B_BIT: P2[] = [[23.8, 1.6], [30.2, 1.6], [31.2, 3.8], [33.6, 7.2], ...AXE_B_EDGE, [20.4, 7.2], [22.8, 3.8]];
 const AXE_B: WeaponTake = {
   id: 'axeB', kind: 'axe', letter: 'B', name: 'The war axe: two bits, one each side, a spike on top',
   butt: -12.5, top: 31.0, hr: 1.05, grip: [-11.6, 2.2], heart: 22, edges: [AXE_B_EDGE, mirrorY(AXE_B_EDGE)],
@@ -389,7 +401,12 @@ export function buildTake(take: WeaponTake, toW: (p: V3) => V3 = (p) => p): Scul
     const w = toW(h.p);
     return Math.min(...take.edges.map((e) => lineDist([w[0], w[1]], e)));
   };
-  const iron = sc.mat({ ramp: WW_IRON, crease: 0.38, paint: (h) => {
+  // (a unique axe's or hammer's own stuffs, art/heavy_skins.ts; the war axe's and the maul's as ever)
+  const IRON = take.look?.iron ?? WW_IRON;
+  const WOOD = take.look?.wood ?? WW_WOOD;
+  const LEATHER = take.look?.leather ?? WW_LEATHER;
+  const DARK = take.look?.dark ?? WW_DARK;
+  const iron = sc.mat({ ramp: IRON, crease: 0.38, paint: (h) => {
     const d = take.edges.length ? edgeOf(h) : Infinity;
     // THE HONED EDGE, glowing the friend's cyan: a bright line at the very edge, a band of the blade's light behind it
     if (d < 0.75) return h.tone >= 2 ? WW_GLOW[4] : WW_GLOW[3];
@@ -400,24 +417,24 @@ export function buildTake(take: WeaponTake, toW: (p: V3) => V3 = (p) => p): Scul
       if (g >= 1) return h.tone >= 3 ? WW_GLOW[3] : WW_GLOW[2];
     }
     // (a band's or a collar's rolled edge, and a cap's crest: a lit line)
-    if ((h.prim.tag === 'band' || h.prim.tag === 'collar') && h.tone >= 3) return WW_IRON[4];
+    if ((h.prim.tag === 'band' || h.prim.tag === 'collar') && h.tone >= 3) return IRON[4];
     // (a round drum between dark bands lifted a tone, so it reads as bright iron bound in black)
-    if (h.prim.tag === 'drum') return WW_IRON[Math.min(4, h.tone + 1)];
+    if (h.prim.tag === 'drum') return IRON[Math.min(4, h.tone + 1)];
     return null;
   } });
-  const wood = sc.mat({ ramp: WW_WOOD, crease: 0.3, paint: (h) => {
+  const wood = sc.mat({ ramp: WOOD, crease: 0.3, paint: (h) => {
     // (the grain: a darker streak now and then along the haft)
     const w = toW(h.p);
-    return hash(Math.round(w[0] * 0.7), Math.round(Math.atan2(w[2], w[1]) * 2), 11) < 0.12 ? WW_WOOD[Math.max(0, h.tone - 1)] : null;
+    return hash(Math.round(w[0] * 0.7), Math.round(Math.atan2(w[2], w[1]) * 2), 11) < 0.12 ? WOOD[Math.max(0, h.tone - 1)] : null;
   } });
-  const leather = sc.mat({ ramp: WW_LEATHER, crease: 0.34, paint: (h) => {
+  const leather = sc.mat({ ramp: LEATHER, crease: 0.34, paint: (h) => {
     // THE GRIP WRAPPED: a dark line where each turn of the strap lies over the last, running round the haft at a slant
     const w = toW(h.p);
     const a = Math.atan2(w[2], w[1]) / (Math.PI * 2);
     const k = ((w[0] + a * 1.6) / 1.6) % 1;
-    return (k < 0 ? k + 1 : k) < 0.24 ? WW_LEATHER[Math.max(0, h.tone - 2)] : null;
+    return (k < 0 ? k + 1 : k) < 0.24 ? LEATHER[Math.max(0, h.tone - 2)] : null;
   } });
-  const dark = sc.mat({ ramp: WW_DARK, crease: 0.3 });
+  const dark = sc.mat({ ramp: DARK, crease: 0.3 });
   const sm: Smith = { sc, iron, wood, leather, dark };
   sc.cone(wood, 'haft', [take.butt + 0.6, 0, 0], [take.top, 0, 0], take.hr, take.hr * 0.92, 0.2, { tag: 'haft' });
   sc.cone(leather, 'grip', [take.grip[0], 0, 0], [take.grip[1], 0, 0], take.hr + 0.3, take.hr + 0.3, 0.2, { tag: 'grip' });

@@ -18,8 +18,7 @@ import { DOOR_WALLS, WHOLE_WALLS, BACK_STAND } from './render/walls';
 import { GROUNDS_ALL } from './render/grounds';
 import type { MonsterKind } from './game/types';
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useActionF1, useActionF2, useActionF3, useActionF4, useCensor2, useMonsterAttacks, useNewMonsters } from './art/bestiary';
-import { STAFF_PLACES, makeHeroArt } from './art/heroes';
-import { STAFF_SKINS, staffWorn } from './art/staff_skins';
+import { BOW_SKINS, STAFF_SKINS, TOME_SKINS, WARRIOR_SKINS, WRAP_SKINS, WRENCH_SKINS, makeHeroArt, wornSkin } from './art/heroes';
 import type { HeroPlace } from './art/heroes';
 import { makeHeroArt3, THRUST } from './art/heroes3';
 import { tinkererAhead } from './art/tinkerer_art';
@@ -36,7 +35,7 @@ import { makeGateArt } from './art/gates';
 import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
-import { SWAP_MOVES, TALENTS, TALENTS2, WARRIOR_TREE2 } from './game/talents';
+import { SWAP_MOVES, TALENTS, TALENTS2, WARRIOR_TREE2, heavyDrawn } from './game/talents';
 import { TWIN_AXES_SHOWN } from './render/figure';
 import { WEAPON_LEAPS } from './render/wild';
 import { QUEST_MARKS, SPEAK_NEW } from './game/quest_marks';
@@ -438,9 +437,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // ahead: render/veteran_fx.ts askAhead. Where he is not baked in packs, nothing is asked for.)
   if (painter.baked) {
     const b = painter.baked;
-    renderer.vetFx.packs = (move, side, now) => void b.want('brawler', move, side, now);
+    // (whichever of his groups he is in: his own, or his unique wraps' or tome's, art/heroes.ts WRAP_SKINS, TOME_SKINS)
+    renderer.vetFx.packs = (move, side, now) => void b.wantOf('brawler', move, side, now);
     // (and THE WARLOCK'S, render/baked.ts warlockPacksOf: his moves from each side, asked for ahead by render/warlock_packs.ts)
-    renderer.warlockPacks = (pack, side, now) => void b.want('warlock', pack, side, now);
+    renderer.warlockPacks = (pack, side, now) => void b.wantOf('warlock', pack, side, now);
     b.onLetGo = (s) => renderer.vetFx.forget(s);
   }
   // (THE TOWN'S PEOPLE BAKED, render/townsfolk_baked.ts: the sculpted four's pictures, painted when the game was built, beside
@@ -2160,12 +2160,18 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     let waiting = false;
     const b = painter.baked;
     if (b && art.heroes.give) {
-      // (THE MAGE'S STAFF, art/staff_skins.ts: holding a unique staff, her pictures with it)
-      const staff = g.hero.cls === 'mage' ? staffWorn(g.hero.gear.mainhand) : null;
-      const place: HeroPlace = staff ? (g.level.town ? STAFF_PLACES[staff].town : STAFF_PLACES[staff].dungeon) : g.level.town ? 'town' : 'dungeon';
+      // (THE UNIQUE WEAPON IN HIS HAND, art/heroes.ts wornSkin: holding a unique staff or bow, his pictures with it)
+      const skin = wornSkin(g.hero.cls, g.hero.gear.mainhand, heavyDrawn(g.hero.cls, g.hero.talents));
+      const place: HeroPlace = skin ? (g.level.town ? skin.places.town : skin.places.dungeon) : g.level.town ? 'town' : 'dungeon';
       painter.hero(g.hero.cls, place);
       const grp = b.group(g.hero.cls, place, g.hero.cls === 'brawler' && VETERAN.on);
       waiting = !!grp && !b.settled(grp);
+      // (THE WARLOCK'S BOOK, art/heroes.ts TOME_SKINS: while it is on his demon is a group of its own, waited for with him)
+      if (g.hero.cls === 'warlock' && TOME_SKINS.on && !g.level.town) {
+        painter.hero('warlock', 'demon');
+        const dg = b.group('warlock', 'demon', false);
+        if (dg && !b.settled(dg)) waiting = true;
+      }
     }
     // (and the town's people's, where they stand: render/townsfolk_baked.ts; a place without them lets them go)
     if (folkPictures(g)) waiting = true;
@@ -3567,6 +3573,16 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     set1Look: SET1_LOOK,
     /** (THE MAGE'S UNIQUE STAVES IN HER HANDS, art/staff_skins.ts) their switch, on at his yes (14 Nov 2026): `staffSkins.on`. */
     staffSkins: STAFF_SKINS,
+    /** (THE RANGER'S UNIQUE BOWS IN HIS HAND, art/bow_skins.ts) their switch, on at his yes (14 Nov 2026): `bowSkins.on`. */
+    bowSkins: BOW_SKINS,
+    /** (THE TINKERER'S UNIQUE WRENCHES IN HER HAND, art/wrench_skins.ts) their switch, on at his yes (14 Nov 2026): `wrenchSkins.on`. */
+    wrenchSkins: WRENCH_SKINS,
+    /** (THE WARRIOR'S UNIQUE WEAPONS IN HIS HANDS, art/sword_skins.ts, art/heavy_skins.ts) their switch, on at his yes (14 Nov 2026): `warriorSkins.on`. */
+    warriorSkins: WARRIOR_SKINS,
+    /** (THE BRAWLER'S UNIQUE WRAPS ON HIS FISTS, art/wrap_skins.ts) their switch, on at his yes (15 Nov 2026): `wrapSkins.on`. */
+    wrapSkins: WRAP_SKINS,
+    /** (THE WARLOCK'S UNIQUE TOMES AT HIS HIP, art/tome_skins.ts) their switch, on at his yes (15 Nov 2026): `tomeSkins.on`. */
+    tomeSkins: TOME_SKINS,
     /** (A UNIQUE'S PIPS, ui/panels.ts) which of its lines they count and their colour, for pictures of each: `uniquePips.count`, `.colour`, `.free`. */
     uniquePips: UNIQUE_PIPS,
     /** Game steps per frame while the test bot plays. */

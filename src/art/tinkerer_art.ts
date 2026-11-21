@@ -34,6 +34,8 @@ import type { GameView } from './skin';
 import { EIGHT_MORE, MORE_SIDES, MORE_TURN } from './sides_more';
 import type { MoreSide } from './sides_more';
 import type { Drawn } from '../dev/sculpt';
+import { TINK_WRENCH } from '../dev/sculpt_tinkerer';
+import type { WrenchSkin } from '../dev/sculpt_tinkerer';
 import { BJ, FR, TAP_GRAB, TAP_LET_GO, TRUN_ROUND, TSTAND_LONG, drawTinkerAt, tinkerMoves } from '../dev/tinkerer_moves';
 import type { TinkMove } from '../dev/tinkerer_moves';
 import { HOLD, drawTinkerHoldAt, tinkerHold } from '../dev/tinkerer_hold';
@@ -138,16 +140,31 @@ export function tinkererAhead(): LoadStep[] {
  * Her standing and running, in a view (her moves for these made at once). One list of each for each view, her class card's and
  * the game's alike: what is painted for the card is not painted again in the game.
  */
-const standRuns = new Map<MoreSide, { idle: Sprite[]; walk: Sprite[] }>();
-function standRun(view: MoreSide): { idle: Sprite[]; walk: Sprite[] } {
-  const had = standRuns.get(view);
+const standRuns = new Map<string, { idle: Sprite[]; walk: Sprite[] }>();
+/**
+ * (THE TINKERER'S UNIQUE WRENCHES, art/wrench_skins.ts) `f` painted with that wrench in her hand (dev/sculpt_tinkerer.ts
+ * TINK_WRENCH, set only while it paints); none, her own.
+ */
+function withWrench<T>(skin: WrenchSkin | undefined, f: () => T): T {
+  if (!skin) return f();
+  const was = TINK_WRENCH.skin;
+  TINK_WRENCH.skin = skin;
+  try {
+    return f();
+  } finally {
+    TINK_WRENCH.skin = was;
+  }
+}
+function standRun(view: MoreSide, skin?: WrenchSkin): { idle: Sprite[]; walk: Sprite[] } {
+  const key = skin ? `${view}:${skin.id}` : view;
+  const had = standRuns.get(key);
   if (had) return had;
   const moves = tinkerMoves();
   const stand = byName(moves, 'Standing');
   const run = byName(moves, 'Running');
-  const at = (m: TinkMove) => (t: number): Sprite => asSprite(drawTinkerAt('front', m, t, TURN[view]), AURA, m.tall ?? 0);
+  const at = (m: TinkMove) => (t: number): Sprite => withWrench(skin, () => asSprite(drawTinkerAt('front', m, t, TURN[view]), AURA, m.tall ?? 0));
   const made = { idle: round(TSTAND_LONG, IDLE_FPS, at(stand)), walk: round(TRUN_ROUND, RUN_FPS, at(run)) };
-  standRuns.set(view, made);
+  standRuns.set(key, made);
   return made;
 }
 
@@ -195,7 +212,7 @@ function sameAs(first: Clip, c: Clip, same: (i: number) => boolean): Clip {
   };
 }
 
-function herSet(view: MoreSide): AnimSet {
+function herSet(view: MoreSide, skin?: WrenchSkin): AnimSet {
   const turn = TURN[view];
   const moves = tinkerMoves();
   const stand = byName(moves, 'Standing');
@@ -206,8 +223,8 @@ function herSet(view: MoreSide): AnimSet {
   const fall = fallMove();
   const reel = tinkerReel();
   const lurch = tinkerLurch();
-  const at = (m: TinkMove, draw = drawTinkerAt) => (t: number): Sprite => asSprite(draw('front', m, t, turn), AURA, m.tall ?? 0);
-  const { idle, walk } = standRun(view);
+  const at = (m: TinkMove, draw = drawTinkerAt) => (t: number): Sprite => withWrench(skin, () => asSprite(draw('front', m, t, turn), AURA, m.tall ?? 0));
+  const { idle, walk } = standRun(view, skin);
   // (her Vial Toss: the throw with a vial of hers in her fist, from when she has it off her belt to when she lets it go)
   const toss: TinkMove = { ...tap, name: 'Tap: a vial tossed', hold: (t) => ({ wrench: 0, twirl: false, spin: 0, vial: t >= TAP_GRAB && t < TAP_LET_GO ? 1 : 0, held: null }) };
   const attack = clip(0, tap.long, CLIP_FPS, at(toss), TAP_LET_GO, true);
@@ -242,10 +259,10 @@ function herSet(view: MoreSide): AnimSet {
  * none a mirror (art/sides.ts: the game then shows the side for the way she faces, as it does the Warrior's). Her class card
  * keeps its two: a card shows her from in front.
  */
-export function makeTinkererArt(): ActorArt {
-  if (!EIGHT_MORE.tinkerer) return { front: herSet('front'), back: herSet('back') };
+export function makeTinkererArt(skin?: WrenchSkin): ActorArt {
+  if (!EIGHT_MORE.tinkerer) return { front: herSet('front', skin), back: herSet('back', skin) };
   const all = {} as Record<MoreSide, AnimSet>;
-  for (const side of MORE_SIDES) all[side] = herSet(side);
+  for (const side of MORE_SIDES) all[side] = herSet(side, skin);
   return all;
 }
 /**

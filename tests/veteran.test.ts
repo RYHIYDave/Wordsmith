@@ -66,6 +66,9 @@ const GAME_DOOR: Record<string, readonly string[]> = {
   // 25.3.12, the Reflections chat's art/reflections-up; this list had not been told, so tests 1 and 79 failed on 25.3.15 with his
   // switch on or off)
   'art/reflections_up.ts': ['sculpt_veteran', 'veteran_moves'],
+  // (his unique wraps, skins of his own laid on his fists by his own sculptor: the skins chat, 14 Nov 2026, art/wrap_skins.ts, read
+  // only by art/heroes3.ts, tests/wrap_skins.test.ts)
+  'art/wrap_skins.ts': ['sculpt_veteran'],
 };
 test('the game brings in the Veteran only through its own pictures of him (art/veteran_art.ts, art/veteran_fx_art.ts, render/veteran_fx.ts), never his sheet', () => {
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {

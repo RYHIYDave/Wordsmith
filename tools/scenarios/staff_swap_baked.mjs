@@ -47,7 +47,10 @@ export default async function (page, snap) {
         return;
       }
       if (o.img && typeof o.w === 'number') return;
-      for (const v of Object.values(o)) walk(v);
+      // (her making ready, `ready`, is her class card's only (art/heroes3.ts readyList): never shown in town, never baked with a
+      // place there; her own staff's town set shares it with her card's, given by the cards' group, a staff's does not. Not
+      // counted: on the 25.3.20 page it made a staff's town look 31 frames short of her own's, 79 to 48, the main chat found)
+      for (const [k, v] of Object.entries(o)) if (k !== 'ready') walk(v);
     };
     walk(heroes.of('mage', { twoHanded: true, town: true, ...(staff ? { staff } : {}) }));
     return { holds: u || 'her own', left, shown };
@@ -80,7 +83,7 @@ export default async function (page, snap) {
     await page.waitForTimeout(800);
     const now = { ...held(st), ...(await frames()) };
     log(`${unique || 'her own staff'}, come`, JSON.stringify(now));
-    // (79 of her town's frames are left to be painted with her own staff too: her own staff's count is the measure)
+    // (her own staff's count is the measure: some of her town's lists are painted only as they are shown)
     if (now.left > own.left) bad(`${now.left} of her frames with it still to be painted (with her own staff ${own.left})`);
     if (now.sheets > own.sheets + 1) bad(`${now.sheets} sheets held: more than one staff's`);
     await snap(unique || 'own_again');

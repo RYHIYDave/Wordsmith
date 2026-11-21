@@ -13,8 +13,7 @@
 import { bakeLists, cardLists, readyList } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroArt, HeroPlace } from '../art/heroes';
-import { HEAVY_PLACES, STAFF_IDS, STAFF_PLACES } from '../art/heroes';
-import { STAFF_SKINS } from '../art/staff_skins';
+import { BOW_IDS, BOW_PLACES, BOW_SKINS, HEAVY_PLACES, STAFF_IDS, STAFF_PLACES, STAFF_SKINS, TOME_IDS, TOME_PLACES, TOME_SKINS, WARRIOR_SKINS, WARRIOR_SKIN_IDS, WARRIOR_SKIN_KIND, WARRIOR_SKIN_PLACES, WRAP_IDS, WRAP_PLACES, WRAP_SKINS, WRENCH_IDS, WRENCH_PLACES, WRENCH_SKINS } from '../art/heroes';
 import { WARRIOR_TREE2 } from '../game/talents';
 import type { AnimSet } from '../art/actor_types';
 import { ASKED } from '../art/asked';
@@ -131,7 +130,8 @@ function warlockPacksOf(k: BakeKey, sides: readonly AnimSet[]): (PackOf | null)[
     };
     const c = side.clips;
     if (man) {
-      put(side.idle, k.place === 'blaze' ? 'standBlaze' : 'stand');
+      // (his arm blazing: in his place for it, or a unique tome's, art/heroes.ts TOME_PLACES)
+      put(side.idle, k.place === 'blaze' || lookOfPlace(k.place).blaze ? 'standBlaze' : 'stand');
       put(c?.attack?.frames, 'bolt');
       put(c?.heavy?.frames, 'curse');
       put(c?.leap?.frames, 'step');
@@ -160,6 +160,9 @@ function warlockPacksOf(k: BakeKey, sides: readonly AnimSet[]): (PackOf | null)[
   });
 }
 
+/** The class a group is of: its name before any '-' (`brawler-lastround`, `warlock-demon`, `warrior-axe`: the hero's). */
+export const classOfGroup = (g: string): string => (g.indexOf('-') < 0 ? g : g.slice(0, g.indexOf('-')));
+
 /** A pack's name in its group's file: the move and the side. */
 export const packName = (pack: string, side: number): string => `${pack}:${side}`;
 
@@ -184,7 +187,10 @@ export function bakeGroups(vet: boolean): Record<string, BakeKey[]> {
   const classes: ClassId[] = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler'];
   const k = (cls: ClassId, place: HeroPlace): BakeKey => ({ cls, place, vet: cls === 'brawler' && vet });
   const out: Record<string, BakeKey[]> = { cards: classes.map((c) => k(c, 'card')) };
-  for (const c of classes) out[c] = c === 'warlock' ? (['town', 'dungeon', 'demon', 'blaze'] as HeroPlace[]).map((p) => k(c, p)) : [k(c, 'town'), k(c, 'dungeon')];
+  // (THE WARLOCK'S BOOK, art/heroes.ts TOME_SKINS: while it is on, his demon is a group of its own, `warlock-demon`, kept whatever
+  // book he wears; the man, with his own book or a unique one, a group each, one held at a time)
+  for (const c of classes) out[c] = c === 'warlock' ? ((TOME_SKINS.on ? ['town', 'dungeon', 'blaze'] : ['town', 'dungeon', 'demon', 'blaze']) as HeroPlace[]).map((p) => k(c, p)) : [k(c, 'town'), k(c, 'dungeon')];
+  if (TOME_SKINS.on) out['warlock-demon'] = [k('warlock', 'demon')];
   // (THE WARRIOR'S WEAPON, game/talents.ts WARRIOR_TREE2: him with the war axe, and with the maul, each a group of its own, taken in
   // only where his weapon is that one; his great sword's group as it was. Baked only while the tree is on: off, nothing asks for them)
   if (WARRIOR_TREE2.on) for (const w of ['axe', 'hammer'] as const) out[`warrior-${w}`] = [k('warrior', HEAVY_PLACES[w].town), k('warrior', HEAVY_PLACES[w].dungeon)];
@@ -192,6 +198,18 @@ export function bakeGroups(vet: boolean): Record<string, BakeKey[]> {
   // 14 Nov 2026: “Bake each staff whole (Recommended)”), taken in only while she holds that staff. Baked only while the switch is
   // on: off, nothing asks for them)
   if (STAFF_SKINS.on) for (const id of STAFF_IDS) out[`mage-${id}`] = [k('mage', STAFF_PLACES[id].town), k('mage', STAFF_PLACES[id].dungeon)];
+  // (THE RANGER'S BOW, art/bow_skins.ts BOW_SKINS: him with each unique bow, each a group of its own, as her staves are)
+  if (BOW_SKINS.on) for (const id of BOW_IDS) out[`ranger-${id}`] = [k('ranger', BOW_PLACES[id].town), k('ranger', BOW_PLACES[id].dungeon)];
+  // (THE TINKERER'S WRENCH, art/wrench_skins.ts WRENCH_SKINS: her with each unique wrench, each a group of its own)
+  if (WRENCH_SKINS.on) for (const id of WRENCH_IDS) out[`tinkerer-${id}`] = [k('tinkerer', WRENCH_PLACES[id].town), k('tinkerer', WRENCH_PLACES[id].dungeon)];
+  // (THE WARRIOR'S UNIQUE WEAPONS, art/heroes.ts WARRIOR_SKINS: him with each, a group of its own; an axe's or a hammer's only while
+  // his tree may give him that weapon, as the war axe's and the maul's)
+  if (WARRIOR_SKINS.on) for (const id of WARRIOR_SKIN_IDS) if (WARRIOR_SKIN_KIND[id] === null || WARRIOR_TREE2.on) out[`warrior-${id}`] = [k('warrior', WARRIOR_SKIN_PLACES[id].town), k('warrior', WARRIOR_SKIN_PLACES[id].dungeon)];
+  // (THE BRAWLER'S WRAPS, art/heroes.ts WRAP_SKINS: the Veteran with each unique wraps, a group of its own, kept in packs as he is;
+  // only the Veteran wears them)
+  if (WRAP_SKINS.on && vet) for (const id of WRAP_IDS) out[`brawler-${id}`] = [k('brawler', WRAP_PLACES[id].town), k('brawler', WRAP_PLACES[id].dungeon)];
+  // (THE WARLOCK'S BOOK: the man with each unique tome, in town, a dungeon and his arm blazing, kept in packs as he is)
+  if (TOME_SKINS.on) for (const id of TOME_IDS) out[`warlock-${id}`] = [k('warlock', TOME_PLACES[id].town), k('warlock', TOME_PLACES[id].dungeon), k('warlock', TOME_PLACES[id].blaze)];
   return out;
 }
 
@@ -270,8 +288,13 @@ export interface BakeFile {
 export interface BakePack {
   /** The move and the side (packName). */
   name: string;
-  /** Its sheet's file (a PNG), beside the group's. */
+  /**
+   * Its sheet's file (a PNG), beside the group's; or, with `off` and `len`, the file all the group's packs are in, one after another
+   * (<group>-packs.png: tools/bake_heroes.mjs), and where its own bytes lie in it.
+   */
   sheet: string;
+  off?: number;
+  len?: number;
   /** Each frame on its sheet: [x, y, width, height, the index of its other parts in the group's `parts`]. */
   frames: [number, number, number, number, number][];
   /** Its frames' places, flat: the hero (his index in `keys`), side, list, frame, the frame's index in this pack's `frames`. */
@@ -298,6 +321,8 @@ interface Pack {
   used: number;
   /** How many times it would not unpack (three, and it is left to the painter). */
   failed: number;
+  /** Its group was let go of whole while it was being unpacked (letGoGroup): what comes of it is thrown away. */
+  gone?: boolean;
 }
 
 type Give = (cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite, vet?: boolean) => boolean;
@@ -381,6 +406,16 @@ export class BakedHeroes {
     return true;
   }
 
+  /**
+   * The same for a hero, whichever of his groups he is in (his own, or a unique weapon's: art/heroes.ts WRAP_SKINS, TOME_SKINS):
+   * only the groups in hand have packs.
+   */
+  wantOf(cls: ClassId, pack: string, side: number, now = true): boolean {
+    let had = false;
+    for (const g of this.state.keys()) if (classOfGroup(g) === cls && this.want(g, pack, side, now)) had = true;
+    return had;
+  }
+
   /** The game's drawing asked a list for a frame it has not got (art/asked.ts): its pack, if it is in one, is unpacked. */
   private asked(list: readonly Sprite[]): void {
     const p = this.packOf.get(list);
@@ -421,6 +456,12 @@ export class BakedHeroes {
     const S = this.stats.packs;
     try {
       const bmp = await createImageBitmap(p.blob, { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
+      // (its group let go of meanwhile: nothing of it is given)
+      if (p.gone) {
+        bmp.close();
+        p.state = 'packed';
+        return;
+      }
       const g0 = this.clock();
       const sheet: FrameSheet = { img: bmp };
       const sprites: (Sprite | undefined)[] = new Array<Sprite | undefined>(p.def.frames.length);
@@ -545,12 +586,24 @@ export class BakedHeroes {
     const defs = f.packs ?? [];
     const S = this.stats.packs;
     const AT = 24;
+    // (each file fetched once: the group's packs in one file, each read from its own bytes, a part of it and not a copy)
+    const files = new Map<string, Promise<Blob>>();
+    const fileOf = (name: string): Promise<Blob> => {
+      let b = files.get(name);
+      if (!b) {
+        b = this.get(name).then((r) => {
+          if (!r.ok) throw new Error(`${name}: ${r.status}`);
+          return r.blob();
+        });
+        files.set(name, b);
+      }
+      return b;
+    };
     for (let n = 0; n < defs.length; n += AT) {
       const part = defs.slice(n, n + AT);
       const blobs = await Promise.all(part.map(async (d) => {
-        const r = await this.get(d.sheet);
-        if (!r.ok) throw new Error(`${d.sheet}: ${r.status}`);
-        return r.blob();
+        const b = await fileOf(d.sheet);
+        return d.len !== undefined ? b.slice(d.off ?? 0, (d.off ?? 0) + d.len, 'image/png') : b;
       }));
       part.forEach((def, q) => {
         // (each place once: a hero who is the same in town and in a dungeon has the same lists in both)
@@ -604,8 +657,9 @@ export class BakedHeroes {
     const g = this.group(cls, place, vet);
     if (!g) return false;
     const st = this.state.get(g);
-    // (ANOTHER HERO IS PLAYED: a packed hero's packs in hand are let go; they are his own only while he is the one played)
-    if (g !== 'cards' && this.stats.packs.held) for (const [name, p] of this.packs) if (p.state === 'held' && !name.startsWith(`${g}/`)) this.letGo(p);
+    // (ANOTHER HERO IS PLAYED: a packed hero's packs in hand are let go; they are his own only while he is the one played. By the
+    // class: the Warlock's demon and the man with a unique tome are two groups of his, both shown in a run: art/heroes.ts TOME_SKINS)
+    if (g !== 'cards' && this.stats.packs.held) for (const [name, p] of this.packs) if (p.state === 'held' && classOfGroup(name.slice(0, name.indexOf('/'))) !== classOfGroup(g)) this.letGo(p);
     if (st === 'failed') return false;
     if (!st) void this.load(g);
     return true;
@@ -622,9 +676,22 @@ export class BakedHeroes {
     return this.state.get(group) === 'done';
   }
 
-  /** (THE MAGE'S STAFF) May this group be let go of whole: the Mage's, with her own staff or with a unique one, while STAFF_SKINS is on. */
+  /**
+   * (THE UNIQUE WEAPON IN HIS HAND) May this group be let go of whole: the Mage's, with her own staff or a unique one, while
+   * STAFF_SKINS is on; the Ranger's, with his own bow or a unique one, while BOW_SKINS is on; the Tinkerer's, with her own
+   * wrench or a unique one, while WRENCH_SKINS is on; the Warrior's, with his great sword, war axe or maul or a unique one, while
+   * WARRIOR_SKINS is on.
+   */
   private lettable(g: string): boolean {
-    return STAFF_SKINS.on && (g === 'mage' || g.startsWith('mage-'));
+    return (
+      (STAFF_SKINS.on && (g === 'mage' || g.startsWith('mage-'))) ||
+      (BOW_SKINS.on && (g === 'ranger' || g.startsWith('ranger-'))) ||
+      (WRENCH_SKINS.on && (g === 'tinkerer' || g.startsWith('tinkerer-'))) ||
+      (WARRIOR_SKINS.on && (g === 'warrior' || g.startsWith('warrior-'))) ||
+      // (the Brawler's wraps and the Warlock's books: the man's groups, never his demon's, which every book of his shares)
+      (WRAP_SKINS.on && (g === 'brawler' || g.startsWith('brawler-'))) ||
+      (TOME_SKINS.on && g !== 'warlock-demon' && (g === 'warlock' || g.startsWith('warlock-')))
+    );
   }
 
   /**
@@ -655,20 +722,34 @@ export class BakedHeroes {
       if (at >= 0) this.sheets.splice(at, 1);
       this.stats.sheets--;
     }
+    // (A HERO KEPT IN PACKS, the Brawler's and the Warlock's, PACKS: each pack of the group in hand let go of, and every one
+    // forgotten, its file's bytes given back; fetched again with the group)
+    const S = this.stats.packs;
+    for (const [name, p] of [...this.packs]) {
+      if (!name.startsWith(`${g}/`)) continue;
+      if (p.state === 'held') this.letGo(p);
+      p.gone = true;
+      this.packs.delete(name);
+      const at = this.queue.indexOf(p);
+      if (at >= 0) this.queue.splice(at, 1);
+      S.all--;
+      S.packed -= p.blob.size;
+    }
+    for (const [list, p] of [...this.packOf]) if (p.gone) this.packOf.delete(list);
     this.whole.delete(g);
     this.state.delete(g);
     return true;
   }
 
   /**
-   * (THE MAGE'S STAFF) She is in this place now: every other group of hers that may be let go of is (her own staff's while she
-   * holds a unique one, the last staff's as she takes up another). Her class card's group is not hers alone and is kept.
+   * (THE UNIQUE WEAPON IN HIS HAND) He is in this place now: every other group of his that may be let go of is (his own weapon's
+   * while he holds a unique one, the last one's as he takes up another). His class card's group is not his alone and is kept.
    */
   holdOnly(cls: ClassId, place: HeroPlace, vet: boolean): void {
-    if (!STAFF_SKINS.on || cls !== 'mage') return;
+    if (cls !== 'mage' && cls !== 'ranger' && cls !== 'tinkerer' && cls !== 'warrior' && cls !== 'brawler' && cls !== 'warlock') return;
     const g = this.group(cls, place, vet);
     if (!g || !this.lettable(g)) return;
-    for (const other of [...this.whole.keys()]) if (other !== g) this.letGoGroup(other);
+    for (const other of [...this.whole.keys()]) if (other !== g && (other === cls || other.startsWith(`${cls}-`))) this.letGoGroup(other);
   }
 
   private async load(g: string): Promise<void> {

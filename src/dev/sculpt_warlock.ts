@@ -15,7 +15,7 @@ import type { GameView, PaintView, Stage } from '../art/skin';
 import { add, buildOf, cross, lerp3, mul, norm, solve, standing, sub } from '../art/skeleton';
 import type { Bones, Build, Posed, Skeleton, V3 } from '../art/skeleton';
 import { Sculpt, draw, onBall, onCone } from './sculpt';
-import type { Cone, Drawn, Ell } from './sculpt';
+import type { Cone, Drawn, Ell, Hit } from './sculpt';
 import { BRASS, HIDE, SKIN_W, farSide, limbFrame, manBody, manHead, onHead, shadeOf, tailorFor } from './sculpt_classes';
 import type { Who } from './sculpt_classes';
 
@@ -35,6 +35,54 @@ export const DEMON_HAND = { k: 2.0 };
 export const IRON5: Ramp = ['#100e16', '#1e1b28', '#33303f', '#4f4a5c', '#77708a'];
 /** The book's red leather. */
 const BOOKRED: Ramp = ['#22040c', '#420a16', '#6e1420', '#a02a2c', '#c84a3e'];
+
+// HIS BOOK A SKIN (the skins chat, 14 Nov 2026: the unique tome he holds shown at his hip, art/tome_skins.ts; his words, 13 Nov
+// 2026, of the heroes' weapons: “How hard would it be to have weapon skins?”, and 14 Nov, of the Mage's staves done, “then do it
+// for the rest of the cast”). PLAIN_TOME his own red book (painted with it he is the very frame he was); WARLOCK_TOME.skin the
+// book he is painted with, set by art/warlock_up_art.ts only while it paints him with a unique one.
+
+/**
+ * Where his book hangs: its middle at his right hip, its ways (forward, out to his left, up: his chest's), the ring on his belt its
+ * chain hangs from; how big it is (1: his own; its half-lengths 2.4 forward, 1.1 through, 3.0 up, times this).
+ */
+export interface TomeAt {
+  k: number;
+  hipR: V3;
+  f: V3;
+  l: V3;
+  u: V3;
+  ring: V3;
+}
+/** A skin for his book. */
+export interface TomeSkin {
+  id: string;
+  name: string;
+  /** Its cover's colours (his own: red leather). */
+  cover: Ramp;
+  /**
+   * A colour of its own at a point of the book's stuff (null: the cover's tone), in place of his own book's (its pages' edge and
+   * its clasp): what the skin adds is of the book's stuff too, told apart by its tag, so that the change into the demon tears it
+   * away with the book (dev/warlock_change.ts tearsAt goes by the stuff's number).
+   */
+  paint?: (h: Hit) => string | null;
+  /** No book at his hip: only its chain, hanging empty (THE RESTLESS TOME: the book flies round him, render/unique_fx.ts). */
+  gone?: boolean;
+  /**
+   * How much further out from his hip it hangs, and how much bigger it is than his own (his own hangs half under the skirts of
+   * his coat, a corner of it seen: a unique one hangs out over them, to be seen).
+   */
+  out?: number;
+  big?: number;
+  /**
+   * What the skin adds to the book, laid with it, OF ITS STUFF AND THE CHAIN'S STEEL ONLY: a stuff of its own would put every
+   * stuff made after it (his demon's arm, ...) out of its number, and the change tears him away by those numbers.
+   */
+  extras?: (sc: Sculpt, at: TomeAt, mats: { book: number; steel: number }) => void;
+}
+/** HIS OWN BOOK: red leather, its pages' edge, a steel clasp. */
+export const PLAIN_TOME: TomeSkin = { id: 'plain', name: 'his own book', cover: BOOKRED };
+/** The book he is painted with (art/warlock_up_art.ts sets it while it paints him with a unique one, and puts it back). */
+export const WARLOCK_TOME: { skin: TomeSkin } = { skin: PLAIN_TOME };
 
 /** THE WARLOCK'S BODY: the knight's height, broad: a big man for one who reads. */
 export const WARLOCK_SCULPT_BODY: Build = buildOf(58, HEAD_B * 1.12, { shoulders: 1.16, chest: 1.1, waist: 1.0, hips: 1.0, depth: 1.05, limbs: 1.08, pad: 1.1 });
@@ -423,24 +471,40 @@ function warlockSculptOf(view: GameView, pose: Bones | undefined, turn: number, 
   // A BELT, and the red book chained at his right hip
   const belt = sc.mat({ ramp: HIDE, paint: (h) => (onBall(h.prim as Ell, h.p)[0] > 0.82 && Math.abs(onBall(h.prim as Ell, h.p)[1]) < 0.2 ? shadeOf(STEEL5, h.tone) : null) });
   t.waistBand(belt, 1.0, 1.5, 0.5);
+  const tome = WARLOCK_TOME.skin;
   const book = sc.mat({
-    ramp: BOOKRED,
-    paint: (h) => {
-      const b = onBall(h.prim as Ell, h.p);
-      // the pages' edge, and a clasp of steel
-      if (Math.abs(b[0]) > 0.7 && Math.abs(b[2]) < 0.75) return shadeOf(IVORY, h.tone - 1);
-      if (Math.abs(b[2]) < 0.18 && b[0] > 0.3) return shadeOf(STEEL5, h.tone);
-      return null;
-    },
+    ramp: tome.cover,
+    paint:
+      tome.paint ??
+      ((h) => {
+        const b = onBall(h.prim as Ell, h.p);
+        // the pages' edge, and a clasp of steel
+        if (Math.abs(b[0]) > 0.7 && Math.abs(b[2]) < 0.75) return shadeOf(IVORY, h.tone - 1);
+        if (Math.abs(b[2]) < 0.18 && b[0] > 0.3) return shadeOf(STEEL5, h.tone);
+        return null;
+      }),
   });
-  const hipR = add(t.belly.c, add(mul(l, -(t.belly.h[1] + 2.4)), add(mul(f, 0.6), mul(u, -t.belly.h[2] * 1.4))));
-  sc.box(book, 'book', hipR, [mul(f, 2.4), mul(l, 1.1), mul(u, 3.0)], 0.5, 0.2, { tag: 'book' });
+  const bk = tome.big ?? 1;
+  const hipR = add(t.belly.c, add(mul(l, -(t.belly.h[1] + 2.4 + (tome.out ?? 0))), add(mul(f, 0.6), mul(u, -t.belly.h[2] * 1.4))));
+  if (!tome.gone) sc.box(book, 'book', hipR, [mul(f, 2.4 * bk), mul(l, 1.1 * bk), mul(u, 3.0 * bk)], 0.5, 0.2, { tag: 'book' });
   const steel = sc.mat({ ramp: STEEL5 });
   const ring = add(t.belly.c, add(mul(l, -(t.belly.h[1] + 1.2)), add(mul(f, 1.4), mul(u, -t.belly.h[2] * 0.5))));
-  for (let i = 0; i < 4; i++) {
-    const p = lerp3(ring, add(hipR, mul(u, 3.0)), (i + 0.5) / 4);
-    sc.ell(steel, 'book', add(p, mul(f, (i % 2) * 0.3)), [mul(f, 0.55), mul(l, 0.55), mul(u, 0.7)], 0, { tag: 'link' });
+  if (!tome.gone) {
+    for (let i = 0; i < 4; i++) {
+      const p = lerp3(ring, add(hipR, mul(u, 3.0 * bk)), (i + 0.5) / 4);
+      sc.ell(steel, 'book', add(p, mul(f, (i % 2) * 0.3)), [mul(f, 0.55), mul(l, 0.55), mul(u, 0.7)], 0, { tag: 'link' });
+    }
+  } else {
+    // (its chain hanging empty from his belt, straight down, its last link broken open)
+    const end = add(ring, add(mul(u, -5.2), mul(l, -0.6 - (tome.out ?? 0))));
+    for (let i = 0; i < 4; i++) {
+      const p = lerp3(ring, end, (i + 0.5) / 4.5);
+      sc.ell(steel, 'book', add(p, mul(f, (i % 2) * 0.3)), [mul(f, 0.55), mul(l, 0.55), mul(u, 0.7)], 0, { tag: 'link' });
+    }
+    sc.ell(steel, 'book', add(end, mul(f, 0.5)), [mul(f, 0.3), mul(l, 0.4), mul(u, 0.55)], 0, { tag: 'link' });
+    sc.ell(steel, 'book', add(end, add(mul(f, -0.35), mul(u, -0.5))), [mul(f, 0.3), mul(l, 0.4), mul(u, 0.45)], 0, { tag: 'link' });
   }
+  if (tome.extras) tome.extras(sc, { k: bk, hipR, f, l, u, ring }, { book, steel });
   // THE DEMON'S ARM, his left: red hide from the shoulder, ridged with muscle, spines down the forearm, claws, cracks of cyan
   // light; the coat's sleeve torn off at the shoulder
   {

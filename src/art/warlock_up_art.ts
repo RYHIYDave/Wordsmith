@@ -27,7 +27,8 @@ import type { GameView } from './skin';
 import { GRIP_SPEED } from './moves3';
 import type { Bones } from './skeleton';
 import type { Drawn } from '../dev/sculpt';
-import { drawWarlockSculpt, warlockSculpt } from '../dev/sculpt_warlock';
+import { PLAIN_TOME, WARLOCK_TOME, drawWarlockSculpt, warlockSculpt } from '../dev/sculpt_warlock';
+import type { TomeSkin } from '../dev/sculpt_warlock';
 import { FR, RUN_ROUND, STAND_LONG, drawWarlockAt, warlockMoves, warlockPose, withWarlockAt } from '../dev/warlock_moves';
 import type { WarlockMove } from '../dev/warlock_moves';
 import { BOLT_HIT, CURSE_HIT, STEP_GONE, STEP_LONG, warlockSpells } from '../dev/warlock_spells';
@@ -106,9 +107,20 @@ export function paintWarlockGame(m: WarlockMove, t: number, side: WuSide): Drawn
   }
 }
 
+/** Painted with his book `tome` at his hip (THE UNIQUE TOMES, art/tome_skins.ts), and the book put back as it was. */
+function withTome<T>(tome: TomeSkin, paint: () => T): T {
+  const was = WARLOCK_TOME.skin;
+  WARLOCK_TOME.skin = tome;
+  try {
+    return paint();
+  } finally {
+    WARLOCK_TOME.skin = was;
+  }
+}
+
 /** A frame of a move as the game holds it: his pool of light under him, mirrored with his floor point for a side that faces left. */
-function manSprite(m: WarlockMove, t: number, side: WuSide): Sprite {
-  const d = paintWarlockUp(m, t, side);
+function manSprite(m: WarlockMove, t: number, side: WuSide, tome: TomeSkin = PLAIN_TOME): Sprite {
+  const d = tome === PLAIN_TOME ? paintWarlockUp(m, t, side) : withTome(tome, () => paintWarlockUp(m, t, side));
   const ax = WU_SPIN[side].ax;
   const aura = { ...AURA_MAN, x: ax + (ax === CANVAS3.ax ? AURA_MAN.x - CANVAS3.ax : CANVAS3.ax - AURA_MAN.x) };
   return toSprite({ px: d.px, lights: [] }, aura, ax, CANVAS3.ay);
@@ -158,21 +170,23 @@ const own = (c: Clip): Clip => ({ ...c });
  * (art/shadow_art.ts) while it is on, into the game's demon (dev/warlock_change.ts, its own length) while it is off; both at
  * his turn for the side, on the change's scene (it is wide enough for every side: its floor point is its middle).
  */
-function changeClip(side: WuSide): Clip {
+function changeClip(side: WuSide, tome: TomeSkin = PLAIN_TOME): Clip {
   const { spin } = WU_SPIN[side];
-  if (LIVING_SHADOW.on) return shadowChangeClipOf(spin);
+  const around = tome === PLAIN_TOME ? undefined : (paint: () => Sprite): Sprite => withTome(tome, paint);
+  if (LIVING_SHADOW.on) return shadowChangeClipOf(spin, around);
   const n = Math.round(CHANGE_ALL * WL_FPS.lists) + 1;
-  return spread(0, CHANGE_ALL, n, (t) => toSprite({ px: changeFrame('front', t, spin).d.px, lights: [] }, AURA_SCENE, CHANGE_SCENE.ax, CHANGE_SCENE.ay));
+  const frame = (t: number): Sprite => toSprite({ px: changeFrame('front', t, spin).d.px, lights: [] }, AURA_SCENE, CHANGE_SCENE.ax, CHANGE_SCENE.ay);
+  return spread(0, CHANGE_ALL, n, around ? (t) => around(() => frame(t)) : frame);
 }
 
-/** HIM, a man, from one side, in a place (with his pact full, `blaze`). */
-function manSet(side: WuSide, place: 'dungeon' | 'town' | 'card', blaze: boolean, share?: Share): AnimSet {
+/** HIM, a man, from one side, in a place (with his pact full, `blaze`; with a unique book at his hip, `tome`: a set of him of its own). */
+function manSet(side: WuSide, place: 'dungeon' | 'town' | 'card', blaze: boolean, share?: Share, tome: TomeSkin = PLAIN_TOME): AnimSet {
   const M = WL_MOVES();
   const stand = blaze ? blazing(M.stand) : M.stand;
   const run = blaze ? blazing(M.run) : M.run;
   const F = WL_FPS.lists;
-  const at = (m: WarlockMove) => (t: number): Sprite => manSprite(m, t, side);
-  const key = `up:${side}:`;
+  const at = (m: WarlockMove) => (t: number): Sprite => manSprite(m, t, side, tome);
+  const key = tome === PLAIN_TOME ? `up:${side}:` : `up:${tome.id}:${side}:`;
   const idle = shared(share, `${key}${blaze ? 'blaze:' : ''}idle`, () => round(STAND_LONG, F, at(stand)));
   const walk = shared(share, `${key}${blaze ? 'blaze:' : ''}walk`, () => round(RUN_ROUND, WL_FPS.run, at(run)));
   const attack = shared(share, key + 'attack', () => clip(0, M.bolt.long, F, at(M.bolt), BOLT_HIT, true));
@@ -199,13 +213,15 @@ function manSet(side: WuSide, place: 'dungeon' | 'town' | 'card', blaze: boolean
     return set;
   }
   // (CHANGING INTO THE DEMON: the same with his arm blazing or not; into the Living Shadow or the game's demon as its switch says)
-  set.clips!.change = own(shared(share, `up:change:${LIVING_SHADOW.on ? 'shadow' : 'demon'}:${side}`, () => changeClip(side)));
+  set.clips!.change = own(shared(share, `up:change:${LIVING_SHADOW.on ? 'shadow' : 'demon'}:${side}${tome === PLAIN_TOME ? '' : `:${tome.id}`}`, () => changeClip(side, tome)));
   return set;
 }
 
 /** THE WARLOCK, A MAN, BROUGHT UP: from all eight sides (art/sides.ts EightArt), in a place, his arm blazing or not. */
-export function makeWarlockUpArt(look: { place: 'dungeon' | 'town' | 'card'; blaze?: boolean }, share?: Share): ActorArt {
+export function makeWarlockUpArt(look: { place: 'dungeon' | 'town' | 'card'; blaze?: boolean; tome?: TomeSkin }, share?: Share): ActorArt {
   const out: Record<string, AnimSet> = {};
-  for (const side of EIGHT_ORDER) out[side] = manSet(side, look.place, !!look.blaze, share);
+  // (his class card: his own book, as ever)
+  const tome = look.place === 'card' ? PLAIN_TOME : (look.tome ?? PLAIN_TOME);
+  for (const side of EIGHT_ORDER) out[side] = manSet(side, look.place, !!look.blaze, share, tome);
   return out as unknown as ActorArt;
 }

@@ -34,8 +34,8 @@ import { lazyFrames, toSprite } from './kit';
 import type { GameView } from './skin';
 import { EIGHT_MORE, MORE_SIDES, MORE_TURN } from './sides_more';
 import type { MoreSide } from './sides_more';
-import { VET_CANVAS, paintVeteran } from '../dev/sculpt_veteran';
-import type { VetPose } from '../dev/sculpt_veteran';
+import { PLAIN_WRAPS, VET_CANVAS, VET_WRAPS, paintVeteran } from '../dev/sculpt_veteran';
+import type { VetPose, WrapSkin } from '../dev/sculpt_veteran';
 import { VET_RUN, VET_STAND, VET_TILE, VFPS, carryAt, motionById, spinAt, vetAt } from '../dev/veteran_moves';
 import type { VetMotion } from '../dev/veteran_moves';
 import { VET_FX_AFTER, paintVetFx, vetFxFrames } from './veteran_fx_art';
@@ -72,9 +72,10 @@ export function vetHalvesOf(m: VetMotion): [number, number] | null {
 
 /**
  * Him at a frame of a move (fractional frames for the half-frames), in a view: THE ART'S POSE PAINTED AS THE ART PAINTS IT.
- * The same pose is the same picture, painted once (the first frame of every move is his stance, still).
+ * The same pose is the same picture, painted once (the first frame of every move is his stance, still). (And with the same
+ * wraps: THE UNIQUE WRAPS ON HIS FISTS, art/wrap_skins.ts, each a set of him of its own.)
  */
-const madeIn = new Map<VetSide, Map<string, Sprite>>();
+const madeIn = new Map<string, Map<string, Sprite>>();
 const num = (v: unknown): string =>
   typeof v === 'number' ? (Object.is(v, -0) ? '-0' : String(v)) : Array.isArray(v) ? `[${v.map(num).join(',')}]` : v && typeof v === 'object' ? `{${Object.keys(v).sort().map((k) => `${k}:${num((v as Record<string, unknown>)[k])}`).join(',')}}` : JSON.stringify(v) ?? 'undefined';
 /** The pose and the turn a frame of his is painted from (the art's: vetAt, and the move's whole turn on the view's). */
@@ -82,14 +83,24 @@ export function vetPoseAt(view: VetSide, m: VetMotion, f: number): { pose: VetPo
   const p = vetAt(m, f);
   return { pose: p, turn: MORE_TURN[view] + spinAt(m, f) };
 }
-/** Him painted at a frame of a move, as a frame of the game's (a Sprite at the game's grain, his floor point its anchor). */
-export function vetFrame(view: VetSide, m: VetMotion, f: number): Sprite {
-  let made = madeIn.get(view);
-  if (!made) madeIn.set(view, (made = new Map()));
+/** Him painted at a frame of a move, as a frame of the game's (a Sprite at the game's grain, his floor point its anchor); in `wraps`. */
+export function vetFrame(view: VetSide, m: VetMotion, f: number, wraps: WrapSkin = PLAIN_WRAPS): Sprite {
+  const at = wraps === PLAIN_WRAPS ? view : `${view}:${wraps.id}`;
+  let made = madeIn.get(at);
+  if (!made) madeIn.set(at, (made = new Map()));
   const { pose, turn } = vetPoseAt(view, m, f);
   const key = num({ b: pose.bones, t: pose.trail, r: pose.ripple, p: pose.phase, a: !!pose.air, l: pose.palmL, h: pose.palmR, turn });
   let s = made.get(key);
-  if (!s) made.set(key, (s = toSprite({ px: paintVeteran(pose, turn).px, lights: [] }, AURA, VET_CANVAS.ax, VET_CANVAS.ay)));
+  if (!s) {
+    const was = VET_WRAPS.skin;
+    VET_WRAPS.skin = wraps;
+    try {
+      s = toSprite({ px: paintVeteran(pose, turn).px, lights: [] }, AURA, VET_CANVAS.ax, VET_CANVAS.ay);
+    } finally {
+      VET_WRAPS.skin = was;
+    }
+    made.set(key, s);
+  }
   return s;
 }
 
@@ -101,49 +112,50 @@ function readsOf(list: () => readonly Sprite[], picks: readonly number[]): Sprit
 }
 
 /** Each frame of a move, frame 0 to `long` - 1, at 30 a second; while none is painted where the game is played, `stand`. */
-function moveClip(view: VetSide, m: VetMotion, stand: () => readonly Sprite[] | undefined): Clip {
+function moveClip(view: VetSide, m: VetMotion, stand: () => readonly Sprite[] | undefined, wraps: WrapSkin = PLAIN_WRAPS): Clip {
   // (`asking`: his moves are kept packed where he is baked from eight sides, render/baked.ts PACKS: a frame asked for and not
   // there tells the bake, which unpacks the move; art/asked.ts)
-  const c: Clip = { frames: asking(lazyFrames(m.long, (i) => vetFrame(view, m, i), HEAVY_HIM, stand)), fps: VFPS };
+  const c: Clip = { frames: asking(lazyFrames(m.long, (i) => vetFrame(view, m, i, wraps), HEAVY_HIM, stand)), fps: VFPS };
   const at = m.strikes.length ? Math.min(...m.strikes.map((s) => s.at)) : undefined;
   if (at !== undefined) c.hit = at / VFPS;
   return c;
 }
 
 /** Him standing and running, in a view: one list of each for each view, his class card's and the game's alike. */
-const standRuns = new Map<VetSide, { idle: Sprite[]; walk: Sprite[] }>();
-function standRun(view: VetSide): { idle: Sprite[]; walk: Sprite[] } {
-  const had = standRuns.get(view);
+const standRuns = new Map<string, { idle: Sprite[]; walk: Sprite[] }>();
+function standRun(view: VetSide, wraps: WrapSkin = PLAIN_WRAPS): { idle: Sprite[]; walk: Sprite[] } {
+  const at = wraps === PLAIN_WRAPS ? view : `${view}:${wraps.id}`;
+  const had = standRuns.get(at);
   if (had) return had;
-  const idle = lazyFrames(VET_STAND.long, (i) => vetFrame(view, VET_STAND, i), HEAVY_HIM);
-  const walk = lazyFrames(VET_RUN.long, (i) => vetFrame(view, VET_RUN, i), HEAVY_HIM, () => idle);
+  const idle = lazyFrames(VET_STAND.long, (i) => vetFrame(view, VET_STAND, i, wraps), HEAVY_HIM);
+  const walk = lazyFrames(VET_RUN.long, (i) => vetFrame(view, VET_RUN, i, wraps), HEAVY_HIM, () => idle);
   const made = { idle, walk };
-  standRuns.set(view, made);
+  standRuns.set(at, made);
   return made;
 }
 
-function hisSet(view: VetSide): AnimSet {
-  const { idle, walk } = standRun(view);
+function hisSet(view: VetSide, wraps: WrapSkin = PLAIN_WRAPS): AnimSet {
+  const { idle, walk } = standRun(view, wraps);
   const stand = (): readonly Sprite[] => idle;
   const vet: Record<string, Clip> = {};
   const vetHalves: Record<string, { from: number; frames: Sprite[] }> = {};
   const vetFx: Record<string, Record<VetFxLayer, Sprite[]>> = {};
   for (const id of VET_LISTS) {
     const m = motionById(id);
-    const c = moveClip(view, m, stand);
+    const c = moveClip(view, m, stand, wraps);
     vet[id] = c;
     const hv = vetHalvesOf(m);
     if (hv) {
       const [from, n] = hv;
       // (while none of them is painted, the move's own frame half a frame on stands in)
       const own = readsOf(() => c.frames, Array.from({ length: n }, (_, k) => Math.min(m.long - 1, Math.ceil(from + k))));
-      vetHalves[id] = { from, frames: asking(lazyFrames(n, (k) => vetFrame(view, m, from + k), HEAVY_HIM, () => own)) };
+      vetHalves[id] = { from, frames: asking(lazyFrames(n, (k) => vetFrame(view, m, from + k, wraps), HEAVY_HIM, () => own)) };
     }
     const fxOf = (layer: VetFxLayer): Sprite[] => vetFxFrames(m.long + VET_FX_AFTER, (i) => paintVetFx(m, i, view, layer));
     vetFx[id] = { ground: fxOf('ground'), behind: fxOf('behind'), front: fxOf('front') };
   }
-  const reel = moveClip(view, motionById('hurt'), stand);
-  const fall = moveClip(view, motionById('fall'), stand);
+  const reel = moveClip(view, motionById('hurt'), stand, wraps);
+  const fall = moveClip(view, motionById('fall'), stand, wraps);
   const three = (c: Clip): Sprite[] => readsOf(() => c.frames, [0, Math.round((c.hit ?? 0) * c.fps), c.frames.length - 1]);
   return {
     idle,
@@ -160,12 +172,13 @@ function hisSet(view: VetSide): AnimSet {
 /**
  * The Veteran's pictures: both views; with art/sides_more.ts EIGHT_MORE.brawler on, ALL EIGHT SIDES, each truly painted and none
  * a mirror (art/sides.ts: the game then shows the side for the way he faces, as it does the Warrior's). His class card keeps
- * its two: a card shows him from in front.
+ * its two: a card shows him from in front. `wraps`: THE UNIQUE WRAPS ON HIS FISTS (art/wrap_skins.ts), a set of him of their own;
+ * absent, his own.
  */
-export function makeVeteranArt(): ActorArt {
-  if (!EIGHT_MORE.brawler) return { front: hisSet('front'), back: hisSet('back') };
+export function makeVeteranArt(wraps: WrapSkin = PLAIN_WRAPS): ActorArt {
+  if (!EIGHT_MORE.brawler) return { front: hisSet('front', wraps), back: hisSet('back', wraps) };
   const all = {} as Record<VetSide, AnimSet>;
-  for (const side of MORE_SIDES) all[side] = hisSet(side);
+  for (const side of MORE_SIDES) all[side] = hisSet(side, wraps);
   return all;
 }
 /** HIM ON HIS CLASS CARD (ui/panels.ts): standing and running, all a card shows. */
