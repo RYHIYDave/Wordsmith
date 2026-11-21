@@ -257,7 +257,7 @@ func _draw() -> void:
 
 	# ---- the Lunge: beside where the mana would be, as the flask is beside the life ----
 	var ready: Dictionary = hero.readiness()
-	var skills: Array = _data["skills"]
+	var skills: Array = _skills()
 	var ex := W - ps - 5
 	# (what the prompt points at, an attack's plate or the Lunge's button, and which of them is under the pointer)
 	var point: int = int(main.guide.point) if main != null else -1
@@ -315,7 +315,7 @@ func _draw() -> void:
 	var x0 := roundf((avail_l + avail_r - w0 - w1 - 5) / 2.0)
 	var plates := [Rect2(x0, H - PH - 4, w0, PH), Rect2(x0 + w0 + 5, H - PH - 4, w1, PH)]
 	_plates = plates
-	var keys := ["LEFT CLICK", "HOLD RIGHT CLICK"]
+	var keys := [str(skills[0].get("key", "LEFT CLICK")), str(skills[1].get("key", "HOLD RIGHT CLICK"))]
 	# (a plate is a button out of a fight: under the pointer it lights, and a press on it opens the gear screen at its move)
 	var button: bool = main != null and not main._in_fight()
 	for s in 2:
@@ -546,7 +546,7 @@ func _phrase(s: int, tight: int) -> Array:
 	var glow_b := _fits(behind)
 	for w in front:
 		out.append(_word_piece(w, "front", tight >= 2) if w != null else _empty(glow_f))
-	var name: String = String(_data["skills"][s]["name"]).to_upper()
+	var name: String = String(_skills()[s]["name"]).to_upper()
 	out.append({"kind": "name", "text": name, "color": P["white"], "w": _width(name)})
 	var first := true
 	for w in behind:
@@ -575,7 +575,7 @@ func _name_parts(s: int) -> Array:
 	var parts: Array = []
 	for w in hero.loadout.fronts(s):
 		parts.append([_data["words"][w]["front"], Color(_data["word_color"][w])])
-	parts.append([String(_data["skills"][s]["name"]).to_upper(), P["white"]])
+	parts.append([String(_skills()[s]["name"]).to_upper(), P["white"]])
 	var first := true
 	for w in hero.loadout.behinds(s):
 		parts.append(["of" if first else "and", T["dim"]])
@@ -918,3 +918,11 @@ func _rule(x0: float, x1: float, y: float, c: Color, tip: Color) -> void:
 	_rect(tx - 1, ty - 1, 3, 3, tip)
 	_rect(tx, ty - 2, 1, 5, tip)
 	_rect(tx - 2, ty, 5, 1, tip)
+
+
+## His three moves as the bar shows them: his class's own (hud.json skillsOf; tools/godot_hud.ts), the Warrior's where there is none.
+func _skills() -> Array:
+	var of: Dictionary = _data.get("skillsOf", {})
+	if hero != null and of.has(hero.cls):
+		return of[hero.cls]
+	return _data["skills"]

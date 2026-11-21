@@ -132,6 +132,10 @@ const LUNGE := {"range": 6.0, "radius": 1.6, "ahead": 1.0, "invuln": 0.06}
 const LEAP_LIST := 39
 const LAND_LIST := 45
 
+## HIS CLASS (game/defs.ts CLASSES): the Warrior's three moves are made here; any other class's by its own kit (scripts/heroes/
+## <class>.gd: his moves, what they send and leave, and his pictures through them), each step handed to it.
+var cls := "warrior"
+var kit = null
 var map: FloorMap
 var art: BakedHero
 var sfx: Sfx
@@ -886,37 +890,51 @@ func _process(dt: float) -> void:
 		held = maxf(0.0, held - dt)
 		way = Vector2.ZERO
 
-	# THE LUNGE: whatever he is doing, it breaks off (useEvasive), and he is in the air till he lands
-	var lunge_at := auto_lunge
-	auto_lunge = Vector2.INF
-	if Input.is_action_just_pressed("lunge") and scene_pace <= 0.0:
-		lunge_at = _pointer(way, LUNGE["range"])
-	if lunge_at != Vector2.INF and _lunge_cd <= 0.0 and _act != "lunge" and not hooked:
-		_begin_lunge(lunge_at)
-	if _act == "lunge":
-		_fly(dt)
-		_place()
-		_show()
-		queue_redraw()
-		return
+	# ANY OTHER CLASS: his moves made by his kit; true while what he does is all he does (a roll, a warp)
+	if kit != null:
+		if kit.step(dt, way, hooked):
+			_place()
+			_show()
+			queue_redraw()
+			return
+	else:
+		# THE LUNGE: whatever he is doing, it breaks off (useEvasive), and he is in the air till he lands
+		var lunge_at := auto_lunge
+		auto_lunge = Vector2.INF
+		if Input.is_action_just_pressed("lunge") and scene_pace <= 0.0:
+			lunge_at = _pointer(way, LUNGE["range"])
+		if lunge_at != Vector2.INF and _lunge_cd <= 0.0 and _act != "lunge" and not hooked:
+			_begin_lunge(lunge_at)
+		if _act == "lunge":
+			_fly(dt)
+			_place()
+			_show()
+			queue_redraw()
+			return
 
 	# (knocked: carried the way he was struck over 0.12 s, walls stopping him: game.ts knockHero, his `step`)
 	if _knock_t > 0.0:
 		_slide(_knock * (minf(dt, _knock_t) / 0.12))
 		_knock_t -= dt
 
-	var strike_asked := (Input.is_action_just_pressed("attack") and scene_pace <= 0.0) or auto_attack
-	var whirl_held := (Input.is_action_pressed("whirl") and scene_pace <= 0.0) or auto_whirl
-	auto_attack = false
-	if whirl_held and _whirl_cd <= 0.0 and (_act == "" or (_act == "strike" and _landed)):
-		_begin_whirl()
-	# (a Strike no sooner after the last was begun than his blows a second allow, whether he still stands in the last one or
-	# has walked out of it: game.ts useBasic, `swingT`)
-	elif strike_asked and ((_act == "" and _clock - _last_swing >= 1.0 / rate()) or (_act == "strike" and _act_t >= 1.0 / rate())):
-		_begin_strike()
-
 	var slow := 1.0
 	var can_walk := _act == ""
+	var whirl_held := false
+	if kit != null:
+		# (his kit's moves: he walks through them, slowed a moment as each begins, as the game has every hero: updateHero)
+		can_walk = not hooked
+		slow = kit.walk_slow()
+	else:
+		var strike_asked := (Input.is_action_just_pressed("attack") and scene_pace <= 0.0) or auto_attack
+		whirl_held = (Input.is_action_pressed("whirl") and scene_pace <= 0.0) or auto_whirl
+		auto_attack = false
+		if whirl_held and _whirl_cd <= 0.0 and (_act == "" or (_act == "strike" and _landed)):
+			_begin_whirl()
+		# (a Strike no sooner after the last was begun than his blows a second allow, whether he still stands in the last one or
+		# has walked out of it: game.ts useBasic, `swingT`)
+		elif strike_asked and ((_act == "" and _clock - _last_swing >= 1.0 / rate()) or (_act == "strike" and _act_t >= 1.0 / rate())):
+			_begin_strike()
+		can_walk = _act == ""
 	if _act != "":
 		_act_t += dt
 	match _act:
@@ -933,8 +951,10 @@ func _process(dt: float) -> void:
 			can_walk = true
 			slow = WHIRL["walk"]
 
+	if kit != null:
+		kit.walked_way = way if can_walk else Vector2.ZERO
 	if can_walk and way != Vector2.ZERO:
-		if _act == "":
+		if _act == "" and (kit == null or kit.turns_to_walk()):
 			_turn(way)
 		var was := world
 		var walk_was := world
@@ -1673,6 +1693,16 @@ func _show() -> void:
 	# (a whirlwind is seen from the front for as long as it goes round: the picture turns him itself, figure.ts `spins`)
 	var side := BakedHero.SIDES.find("front") if _act == "whirl" else _side
 	var n := art.count(side, _list)
+	# (any other class: his kit picks the picture, as the game's figure.ts does for him)
+	if kit != null:
+		var own: Array = kit.picture(side)
+		if not own.is_empty() and art.count(side, own[0]) > 0:
+			var g := art.frame(side, own[0], clampi(own[1], 0, art.count(side, own[0]) - 1))
+			_sprite.texture = g["tex"]
+			_sprite.offset = g["offset"]
+			_sprite.scale = Vector2.ONE * float(g["scale"])
+			_sprite.self_modulate = Color(2.0, 0.7, 0.7) if _flash > 0.0 else Color.WHITE
+			return
 	if n == 0:
 		return
 	var i := 0
@@ -1718,4 +1748,6 @@ func _draw() -> void:
 
 ## How soon each attack is ready again, 0 to 1 (the HUD).
 func readiness() -> Dictionary:
+	if kit != null:
+		return kit.readiness()
 	return {"whirl": 1.0 - _whirl_cd / maxf(0.01, _whirl_full), "lunge": 1.0 - _lunge_cd / maxf(0.01, _lunge_full)}

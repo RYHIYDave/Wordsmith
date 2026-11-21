@@ -1,0 +1,857 @@
+{
+ "warrior": {
+  "idleFps": 30,
+  "walkFps": 30,
+  "walkStride": null,
+  "startAt": 0,
+  "start": null,
+  "stops": [],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": true,
+    "n": 37
+   },
+   "19": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": true,
+    "n": 28
+   },
+   "20": {
+    "fps": 30,
+    "hit": 0.5,
+    "loop": null,
+    "tail": null,
+    "n": 35
+   },
+   "39": {
+    "fps": 32,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 16
+   },
+   "40": null,
+   "41": null,
+   "42": null,
+   "43": null,
+   "44": {
+    "fps": 30,
+    "hit": null,
+    "loop": 0,
+    "tail": null,
+    "n": 13
+   },
+   "45": {
+    "fps": 30,
+    "hit": 0,
+    "loop": null,
+    "tail": null,
+    "n": 16
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 47
+   }
+  }
+ },
+ "ranger": {
+  "idleFps": 30,
+  "walkFps": 60,
+  "walkStride": 1.9166666666666665,
+  "startAt": 0.09166666666666666,
+  "start": {
+   "fps": 60,
+   "hit": null,
+   "loop": null,
+   "tail": null,
+   "n": 9
+  },
+  "stops": [
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   }
+  ],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 27
+   },
+   "15": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 27
+   },
+   "16": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 27
+   },
+   "17": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 27
+   },
+   "18": {
+    "fps": 30,
+    "hit": 0.3333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 27
+   },
+   "19": null,
+   "20": {
+    "fps": 30,
+    "hit": 0.4,
+    "loop": null,
+    "tail": null,
+    "n": 33
+   },
+   "35": {
+    "fps": 30,
+    "hit": 0.4,
+    "loop": null,
+    "tail": null,
+    "n": 33
+   },
+   "36": {
+    "fps": 30,
+    "hit": 0.4,
+    "loop": null,
+    "tail": null,
+    "n": 33
+   },
+   "37": {
+    "fps": 30,
+    "hit": 0.4,
+    "loop": null,
+    "tail": null,
+    "n": 33
+   },
+   "38": {
+    "fps": 30,
+    "hit": 0.4,
+    "loop": null,
+    "tail": null,
+    "n": 33
+   },
+   "39": null,
+   "40": {
+    "fps": 35,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 14
+   },
+   "41": {
+    "fps": 30,
+    "hit": null,
+    "loop": 1.5,
+    "tail": null,
+    "n": 58
+   },
+   "42": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 13
+   },
+   "43": {
+    "fps": 30,
+    "hit": 0.03333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 19
+   },
+   "44": null,
+   "45": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 10
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "48": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "49": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "50": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "51": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "52": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "53": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "54": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "55": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 47
+   }
+  }
+ },
+ "mage": {
+  "idleFps": 30,
+  "walkFps": 60,
+  "walkStride": 1.7633333333333334,
+  "startAt": 0.7916666666666666,
+  "start": {
+   "fps": 60,
+   "hit": null,
+   "loop": null,
+   "tail": null,
+   "n": 9
+  },
+  "stops": [
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   },
+   {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 9
+   }
+  ],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.16666666666666666,
+    "loop": null,
+    "tail": null,
+    "n": 15
+   },
+   "19": null,
+   "20": {
+    "fps": 30,
+    "hit": 0.26666666666666666,
+    "loop": null,
+    "tail": null,
+    "n": 21
+   },
+   "39": null,
+   "40": null,
+   "41": {
+    "fps": 30,
+    "hit": null,
+    "loop": 0.13333333333333333,
+    "tail": null,
+    "n": 17
+   },
+   "42": {
+    "fps": 30,
+    "hit": 0.13333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 5
+   },
+   "43": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "44": null,
+   "45": null,
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 8
+   },
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 47
+   }
+  }
+ },
+ "warlock": {
+  "idleFps": 30,
+  "walkFps": 60,
+  "walkStride": 1.9933333333333332,
+  "startAt": 0,
+  "start": null,
+  "stops": [],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.5333333333333333,
+    "loop": null,
+    "tail": true,
+    "n": 45
+   },
+   "19": null,
+   "20": {
+    "fps": 30,
+    "hit": 0.8,
+    "loop": null,
+    "tail": true,
+    "n": 67
+   },
+   "39": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 10
+   },
+   "40": null,
+   "41": null,
+   "42": null,
+   "43": null,
+   "44": null,
+   "45": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 22
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 14
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 14
+   },
+   "56": {
+    "fps": 30.285714285714285,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 106
+   },
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 41
+   }
+  }
+ },
+ "tinkerer": {
+  "idleFps": 10,
+  "walkFps": 60,
+  "walkStride": 1.8399999999999999,
+  "startAt": 0,
+  "start": null,
+  "stops": [],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.5,
+    "loop": null,
+    "tail": true,
+    "n": 37
+   },
+   "19": null,
+   "20": {
+    "fps": 30,
+    "hit": 0.6666666666666666,
+    "loop": null,
+    "tail": true,
+    "n": 59
+   },
+   "39": {
+    "fps": 19.999999999999996,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 12
+   },
+   "40": null,
+   "41": null,
+   "42": null,
+   "43": null,
+   "44": null,
+   "45": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 23
+   },
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 14
+   },
+   "47": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 14
+   },
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 75
+   }
+  }
+ },
+ "brawler": {
+  "idleFps": 30,
+  "walkFps": 30,
+  "walkStride": 2.453333333333333,
+  "startAt": 0,
+  "start": null,
+  "stops": [],
+  "lists": {
+   "14": {
+    "fps": 30,
+    "hit": 0.4,
+    "loop": null,
+    "tail": null,
+    "n": 28
+   },
+   "19": null,
+   "20": {
+    "fps": 30,
+    "hit": 0.5333333333333333,
+    "loop": null,
+    "tail": null,
+    "n": 36
+   },
+   "39": null,
+   "40": null,
+   "41": null,
+   "42": null,
+   "43": null,
+   "44": null,
+   "45": null,
+   "46": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 16
+   },
+   "47": null,
+   "56": null,
+   "57": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 96
+   }
+  }
+ },
+ "tune": {
+  "heroSpeed": 4.6,
+  "heroRadius": 0.3,
+  "attackSlow": 0.4,
+  "attackSlowTime": 0.18,
+  "attackCut": 0.12,
+  "comboWindow": 0.5,
+  "swingStep": 0.33,
+  "swingStepTime": 0.12,
+  "beamWalk": 0.7,
+  "whirlWalk": 0.9,
+  "volleyDelay": 0.45,
+  "volleyLife": 2.4,
+  "volleyEvery": 0.1,
+  "volleyHit": 0.8,
+  "volleyLead": 0.75,
+  "trapArm": 0.12,
+  "trapTrigger": 1.2,
+  "trapLife": 25,
+  "trapMax": 3,
+  "waveFan": 0.3,
+  "orbLife": 5,
+  "orbEvery": 1,
+  "orbMax": 2,
+  "familiarLife": 6,
+  "familiarMax": 3
+ },
+ "rangerArrow": {
+  "on": true,
+  "from": 0.794,
+  "height": 22.25,
+  "long": 11,
+  "volleyFrom": 0.266,
+  "volleyHeight": 27.6
+ },
+ "swap": {
+  "ball": {
+   "r": 1.6,
+   "share": 0.6
+  },
+  "snare": {
+   "hold": 2,
+   "life": 10,
+   "share": 1,
+   "r": 1.3,
+   "max": 3
+  },
+  "snipe": {
+   "full": 1.5,
+   "least": 0.6,
+   "most": 2.6,
+   "wide": 2.3,
+   "fast": 0.7,
+   "push": 1.4
+  },
+  "rally": {
+   "secs": 5,
+   "atk": 30,
+   "dmg": 30
+  },
+  "aura": {
+   "secs": 6,
+   "wait": 10,
+   "r": 3.2,
+   "burn": 0.3,
+   "every": 0.8,
+   "bolt": 0.45,
+   "shield": 0.25,
+   "chill": 0.5
+  }
+ },
+ "volleySeen": 0.3,
+ "trackAim": {
+  "near": 0.9
+ },
+ "palette": {
+  "ink": "#120d18",
+  "black": "#07050a",
+  "white": "#ffffff",
+  "st1": "#1c1722",
+  "st2": "#2a2331",
+  "st3": "#3a3040",
+  "st4": "#4d4252",
+  "st5": "#655868",
+  "st6": "#857888",
+  "st7": "#a89cab",
+  "er1": "#2b2020",
+  "er2": "#3d2c28",
+  "er3": "#544038",
+  "er4": "#6f584a",
+  "er5": "#8c7460",
+  "bn1": "#6e6658",
+  "bn2": "#a39a82",
+  "bn3": "#d4cbb0",
+  "bn4": "#f2ecd8",
+  "sl1": "#2e3440",
+  "sl2": "#4a5466",
+  "sl3": "#7a879c",
+  "sl4": "#b4c0d0",
+  "sl5": "#e6edf5",
+  "wd1": "#2d1b12",
+  "wd2": "#4a2c1a",
+  "wd3": "#6e4526",
+  "wd4": "#96643a",
+  "wd5": "#c08a55",
+  "gd1": "#7a4a10",
+  "gd2": "#b87a1c",
+  "gd3": "#e8b030",
+  "gd4": "#ffe070",
+  "gd5": "#fff6c0",
+  "fr1": "#5c1408",
+  "fr2": "#a82810",
+  "fr3": "#e05018",
+  "fr4": "#ff8a2a",
+  "fr5": "#ffc24a",
+  "fr6": "#fff0a0",
+  "bl1": "#3a0a12",
+  "bl2": "#6e1020",
+  "bl3": "#a81c2c",
+  "bl4": "#e03c44",
+  "bl5": "#ff8a80",
+  "sk1": "#7a4a38",
+  "sk2": "#b07050",
+  "sk3": "#dc9c74",
+  "sk4": "#f4c8a0",
+  "pu1": "#22123a",
+  "pu2": "#3c1e62",
+  "pu3": "#62329a",
+  "pu4": "#9858d0",
+  "pu5": "#d09cf8",
+  "bu1": "#101c48",
+  "bu2": "#1c3a86",
+  "bu3": "#2e6cc8",
+  "bu4": "#58a8f0",
+  "bu5": "#b0e0ff",
+  "gn1": "#12301c",
+  "gn2": "#1e5a2a",
+  "gn3": "#3c9038",
+  "gn4": "#84c84c",
+  "gn5": "#d0f080",
+  "vn1": "#26300c",
+  "vn2": "#4c5e10",
+  "vn3": "#7c9416",
+  "vn4": "#b4cc24",
+  "vn5": "#e6f47a",
+  "tl1": "#0e3038",
+  "tl2": "#18545c",
+  "tl3": "#28868a",
+  "tl4": "#58c0b0",
+  "tl5": "#b0f0dc",
+  "lt1": "#6a5a10",
+  "lt2": "#c8b020",
+  "lt3": "#fff060",
+  "lt4": "#ffffd0"
+ },
+ "ramps": {
+  "phys": [
+   "#4a5466",
+   "#7a879c",
+   "#b4c0d0",
+   "#e6edf5"
+  ],
+  "fire": [
+   "#a82810",
+   "#e05018",
+   "#ff8a2a",
+   "#ffc24a",
+   "#fff0a0"
+  ],
+  "frost": [
+   "#1c3a86",
+   "#2e6cc8",
+   "#58a8f0",
+   "#b0e0ff",
+   "#ffffff"
+  ],
+  "lightning": [
+   "#6a5a10",
+   "#c8b020",
+   "#fff060",
+   "#ffffd0",
+   "#ffffff"
+  ],
+  "arcane": [
+   "#3c1e62",
+   "#62329a",
+   "#9858d0",
+   "#d09cf8",
+   "#ffffff"
+  ]
+ },
+ "crackle": [
+  "#ffffff",
+  "#b8fff8",
+  "#22d0e0",
+  "#0c6a80"
+ ]
+}

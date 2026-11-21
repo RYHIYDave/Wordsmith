@@ -36,6 +36,7 @@ const Wakes := preload("res://scripts/wakes.gd")
 const Town := preload("res://scripts/town.gd")
 ## THE SAVED GAME (save.gd: main.ts writeSave, readSave; game.ts save, restore)
 const Save := preload("res://scripts/save.gd")
+const Words := preload("res://scripts/words.gd")
 const Guide := preload("res://scripts/guide.gd")
 const Look := preload("res://scripts/look.gd")
 const Doors := preload("res://scripts/doors.gd")
@@ -287,11 +288,32 @@ func _ready() -> void:
 			Save.restore_run(self, file["run"])
 			_restored = file["run"]
 			first = home_place()
+	# (HIS CLASS: the saved hero's, or for a check the one asked for (--cls=ranger); a new game's the Warrior until the hero choice)
+	var cls := _arg("cls")
+	if cls == "":
+		cls = str(_restored.get("cls", "warrior"))
+	set_class(cls, _restored.is_empty())
 	_build(first, "start")
 	if not _restored.is_empty():
 		Save.restore_bought(self, _restored)
 	if shots != "":
 		_shoot(hero, shots)
+
+
+## HIS CLASS (game/defs.ts CLASSES): his pictures, his three moves (the Warrior's in hero.gd, any other's by its kit,
+## scripts/heroes/<class>.gd), the attribute they grow with; and for a new hero (`fresh`) his starting attributes and weapon
+## (items.ts starterWeapon).
+func set_class(c: String, fresh: bool) -> void:
+	if not Words.data()["classes"].has(c):
+		c = "warrior"
+	hero.cls = c
+	hero.art = BakedHero.new(HERO_DIR, c)
+	hero.loadout.cls = c
+	hero.loadout.refresh()
+	hero.kit = null
+	if c != "warrior" and ResourceLoader.exists("res://scripts/heroes/%s.gd" % c):
+		hero.kit = load("res://scripts/heroes/%s.gd" % c).new(hero)
+	loot.set_class(c, fresh)
 
 
 ## Lay a place out, and set him down in it: `arrive` says where (the town's start, the foot of floor 1's gate, the top of
@@ -340,6 +362,16 @@ func _build(where: String, arrive: String) -> void:
 	var perils := Perils.new()
 	perils.map = map
 	_place.add_child(perils)
+	# (a class's own look of what he sends and lays: heroes/<class>_look.gd)
+	if hero.kit != null:
+		hero.kit.clear()
+		var look_path := "res://scripts/heroes/%s_look.gd" % hero.cls
+		if ResourceLoader.exists(look_path):
+			var kl = load(look_path).new()
+			kl.kit = hero.kit
+			kl.loot = loot
+			_place.add_child(kl)
+			hero.kit.look = kl
 	var stands := Stands.new()
 	perils.stands = stands
 	stands.map = map
@@ -1947,6 +1979,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE ROYAL CARDS AND THE QUEST LINE OF FLOORS 16 TO 20: check_quest1620.gd)
 	if _arg("only") == "quests1620":
 		await preload("res://scripts/check_quest1620.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE OTHER HEROES: --only=heroes --cls=<class>: check_heroes.gd)
+	if _arg("only") == "heroes":
+		await preload("res://scripts/check_heroes.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (THE HIGH CITY'S SEVEN LAST WORDS: check_lastwords.gd)

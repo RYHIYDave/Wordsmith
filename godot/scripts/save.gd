@@ -24,6 +24,8 @@ static func run_of(main) -> Dictionary:
 	var q = main.quest610
 	var run := {
 		"v": V,
+		# (his class: game.ts save `cls`)
+		"cls": h.cls,
 		"level": loot.level, "xp": loot.xp, "points": loot.points, "attrs": loot.attrs.duplicate(),
 		"gear": loot.gear.duplicate(true), "bag": loot.bag.duplicate(true), "words": loot.words.duplicate(),
 		"front": h.loadout.front.duplicate(true), "behind": h.loadout.behind.duplicate(true),

@@ -151,6 +151,7 @@ var shops := {}
 var _imbue := {}
 var _words := {}
 var quest_text := {}
+var _starters := {}
 var _tune := {}
 var _attr := {}
 var _drops: Array = []  # {kind, at, node, age, amount?, item?, word?}
@@ -190,6 +191,7 @@ func _ready() -> void:
 	for s in EQUIP:
 		gear[s] = null
 	gear["mainhand"] = data["starter"].duplicate(true)
+	_starters = data.get("starters", {})
 	if data["body"] != null:
 		_body1 = Vector2(data["body"]["x"], data["body"]["y"])
 	derive()
@@ -296,9 +298,29 @@ func first_spare() -> String:
 	return h[0] if not h.is_empty() else ""
 
 
-## The Warrior's first word (defs.ts FIRST_WORD): the wordsmith's as his ring is lit, and the fallen wordsmith's satchel's.
+## His class's first word (defs.ts FIRST_WORD): the wordsmith's as his ring is lit, and the fallen wordsmith's satchel's.
 func first_word() -> String:
-	return _words["first"]
+	return str(_words.get("firstOf", {}).get(cls, {}).get("word", _words["first"]))
+
+
+## HIS CLASS (main.gd set_class): his first word and the armourer's word for him; a new hero's starting attributes and weapon.
+var cls := "warrior"
+
+
+func set_class(c: String, fresh: bool) -> void:
+	cls = c
+	var C: Dictionary = Words.data()["classes"][c]
+	if fresh:
+		for k in ["str", "dex", "int"]:
+			attrs[k] = float(C["attrs"][k])
+		var st = _starters.get(c)
+		if st != null:
+			gear["mainhand"] = st.duplicate(true)
+	if quest_text.has("wordOf"):
+		quest_text["word"] = quest_text["wordOf"].get(c, quest_text["word"])
+		quest_text["reward"] = quest_text["rewardOf"].get(c, quest_text["reward"])
+	derive()
+	hero.life = hero.max_life
 
 
 ## Do words fall here and now (game.ts wordsFall): not before the ring is lit, and not on floor 1.

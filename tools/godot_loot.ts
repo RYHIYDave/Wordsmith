@@ -39,7 +39,7 @@ import { royalCrests } from '../src/art/royal_crest';
 import { CARD_FACE } from '../src/render/royal_cards';
 import { keySprite, springSprite } from '../src/art/quest1620';
 import { ITEM_ROOM, STAT_INFO, flatPair, imbueItem, imbueLines, imbueOptions, imbueOptionsFor, itemMods, itemRoom, itemValue, kindName, modLines, rarityFor, starterWeapon, statGroup } from '../src/game/items';
-import { FIRST_WORD, WORDS, wordGrowth, wordsAt } from '../src/game/defs';
+import { CLASSES, FIRST_WORD, WORDS, wordGrowth, wordsAt } from '../src/game/defs';
 import { TUNE, ATTR_GIVES } from '../src/game/defs';
 import { FURNACE_WORD, QUEST_TEXT } from '../src/game/quests15';
 import { QUEST_MARKS, SPEAK_BACK, SPEAK_WHERE } from '../src/game/quest_marks';
@@ -49,7 +49,7 @@ import type { RNG } from '../src/engine/rng';
 import { PRISON_WORD_IDS, WORD_IDS } from '../src/game/types';
 import { wordIds } from '../src/game/melds';
 import type { ImbueOption } from '../src/game/items';
-import type { WeaponKind } from '../src/game/types';
+import type { ClassId, WeaponKind } from '../src/game/types';
 import { useMeldLooks } from './godot_meld_art';
 import type { Imbue, Item, Rarity, StatKey, WordId } from '../src/game/types';
 import { rangeText } from '../src/ui/inventory';
@@ -94,6 +94,8 @@ icons.gold.forEach((s, i) => pics.set(`gold:${i}`, s));
 pics.set('orb', icons.lifeOrb);
 pics.set('potion', icons.potion);
 pics.set('word:power', icons.word.power);
+// (THE RANGER'S TRAP lying on the floor, by its element: shut and, armed, open, art/icons.ts trapIcon; render.ts draws it)
+for (const [el, frames] of Object.entries(icons.trap)) (frames as Sprite[]).forEach((sp, k) => pics.set(`trap:${el}:${k}`, sp));
 // (the other words' rune stones: a word as it lies on the floor, and on the gear screen)
 for (const w of [...OURS, ...MADE]) if (w !== 'power') pics.set(`word:${w}`, icons.word[w]);
 // (the fallen wordsmith, before and after he is searched: art/body.ts)
@@ -275,6 +277,9 @@ for (let lv = 10; lv <= 15; lv++) {
   for (const sl of CLAPPER_REWARD.slots) fullRares[String(lv)][sl] = Array.from({ length: 8 }, () => plain(rollFullRare(lv, sl, frRng, { cls: 'warrior' })));
 }
 const starter = plain(starterWeapon('warrior'));
+// (EVERY HERO'S OWN: the weapon each class starts with, items.ts starterWeapon; since Version 12 no weapon belongs to a class, so the
+// rest of what is found is the same for every hero but the new classes' own weapons)
+const starters = Object.fromEntries((Object.keys(CLASSES) as ClassId[]).map((c) => [c, plain(starterWeapon(c))]));
 const stats: Record<string, { label: string; pct: boolean }> = {};
 for (const [k, v] of Object.entries(STAT_INFO)) stats[k] = { label: (v as { label: string }).label, pct: !!(v as { pct?: boolean }).pct };
 // (the vendors' shelves on a new Warrior's first day in town: Game.rollShop, as enterTown has it; each piece's price itemValue)
@@ -394,6 +399,8 @@ const words = {
   made: MADE,
   // (the Warrior's first word, the fallen wordsmith's and the wordsmith's: defs.ts FIRST_WORD)
   first: FIRST_WORD.warrior.word,
+  // (and every class's: the word, and the move it is set in)
+  firstOf: FIRST_WORD,
   // (the words that may be found on each floor, and how many times as likely a word is there: types.ts wordsAt, defs.ts wordGrowth)
   // (those the Godot version has: the High City's last words come with their port)
   at: Object.fromEntries(FLOORS.map((d) => [d, wordsAt(d).filter((w) => OURS.includes(w))])),
@@ -412,6 +419,9 @@ const quest = {
   furnaceAskPrompt: QUEST_TEXT.furnaceAskPrompt,
   rewardPrompt: QUEST_TEXT.rewardPrompt,
   reward: QUEST_TEXT.reward(WORDS[reward].name.toUpperCase()),
+  // (every class's word for it, and the line it is given with)
+  wordOf: FURNACE_WORD,
+  rewardOf: Object.fromEntries(Object.entries(FURNACE_WORD).map(([c, w]) => [c, QUEST_TEXT.reward(WORDS[w].name.toUpperCase())])),
   speakWhere: SPEAK_WHERE,
   speakBack: SPEAK_BACK,
   speakSecs: QUEST_MARKS.secs,
@@ -436,7 +446,7 @@ const quest = {
     },
   }));
 }
-writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, fullRares, value: VALUE, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble, royal }));
+writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, fullRares, value: VALUE, starter, starters, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble, royal }));
 tally.push(`words on gear: ${[...OURS, ...MADE].join(', ')} on ${kinds.size} kinds of piece by level, ${sizes} sizes in all`);
 
 // --- the pictures in one sheet: each at two picture pixels to a game pixel, its anchor kept ---

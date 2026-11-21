@@ -12,6 +12,8 @@ extends RefCounted
 const Words := preload("res://scripts/words.gd")
 
 ## (his level, and whether the wordsmith's ring is lit: what opens the slots)
+## His class (main.gd set_class): whose three moves these are, and what they grow with.
+var cls := "warrior"
 var level := 1
 var ring := false
 ## For each of his three moves: its slots in front and behind, a word's id or null where one is empty.
@@ -39,6 +41,11 @@ func set_level(lv: int, lit: bool) -> void:
 
 
 ## His numbers, as his gear, his levels and his attributes make them: {str, dex, int, area, aps, cdr}.
+## His moves made afresh (a class changed).
+func refresh() -> void:
+	_r = [null, null, null]
+
+
 func set_stats(d: Dictionary) -> void:
 	for k in _d:
 		if d.has(k):
@@ -119,7 +126,7 @@ func any() -> bool:
 func r(i: int) -> Dictionary:
 	if _r[i] == null:
 		var none := func(_w): return null
-		_r[i] = Words.resolve(Words.moves()[i], front[i].map(none) if hushed else front[i], behind[i].map(none) if hushed else behind[i], _d)
+		_r[i] = Words.resolve(Words.data()["classes"][cls]["moves"][i], front[i].map(none) if hushed else front[i], behind[i].map(none) if hushed else behind[i], _d, cls)
 	return _r[i]
 
 
