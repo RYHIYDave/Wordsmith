@@ -30,7 +30,8 @@ export default async function (page, snap) {
   await hands.press('class:warrior', 0, true);
   const c = await hands.mark('button:CONFIRM');
   if (c) await hands.pressAt(c.x, c.y);
-  await page.waitForTimeout(9000);
+  // (the waits for a place's music to come: longer since the fourteenth batch, 21 Nov 2026, whose files are two or three times as long)
+  await page.waitForTimeout(15000);
   const music = () => page.evaluate(() => window.__dbg.music());
   const r2 = (v) => (v === null ? null : Math.round(v * 100) / 100);
   const show = (m) => ({ place: m.place, walk: r2(m.walk), fight: r2(m.fight), started: m.started, held: m.held });
@@ -42,7 +43,7 @@ export default async function (page, snap) {
   check('the town: its walk, at its loudness', t.place === 'town' && near(t.walk, VOL) && t.fight === null && t.held.includes('music_town_walk_long.mp3'));
   // floor 1
   await page.evaluate(() => { const g = window.__dbg.game(); g.depth = 1; g.cleared = 0; g.enterDungeon('gate'); for (const m of g.monsters) { m.state = 'sleep'; } });
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(10000);
   const f1 = await music();
   log('floor 1, walking', show(f1));
   check("floor 1: its walk; its fight's come; the town's let go of", f1.place === 'f1' && near(f1.walk, VOL) && f1.fight === null && f1.held.includes('music_f1_walk_long.mp3') && f1.held.includes('music_f1_fight_long.mp3') && !f1.held.includes('music_town_walk_long.mp3'));
@@ -78,7 +79,7 @@ export default async function (page, snap) {
   check('the fight over: its music gone, the walk back', over.fight === null && near(over.walk, VOL));
   // floor 3
   await page.evaluate(() => { clearInterval(window.__away); const g = window.__dbg.game(); g.depth = 3; g.cleared = 2; g.wayDepth = 3; g.enterDungeon('way'); for (const m of g.monsters) m.state = 'sleep'; });
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(10000);
   const f3 = await music();
   log('floor 3, walking', show(f3));
   check("floor 3: its walk; floor 1's let go of", f3.place === 'f3' && near(f3.walk, VOL) && f3.held.includes('music_f3_walk_long.mp3') && !f3.held.some((f) => f.startsWith('music_f1_')));
