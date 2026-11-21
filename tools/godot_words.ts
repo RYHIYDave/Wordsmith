@@ -18,11 +18,11 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { gameSwitches } from './godot_switches';
 import { readFileSync } from 'node:fs';
-import { ARC_CHAIN, ATTR_GIVES, ATTR_SPLIT, BIND, CLASSES, FIRST_WORD, FLEETING, FRENZY, GUARD, HEAVY, HEX, LASTING, LEECH, MOVE_OPENS, PRECISE, PULL, SKILLS, SLOT_OPENS, SPLIT, STILL, TUNE, VAST, WORDS, skillsFor, wordsAt } from '../src/game/defs';
+import { ARC_CHAIN, ATTR_GIVES, ATTR_SPLIT, BIND, BLEED, CLASSES, CULL, FIRST_WORD, FLEETING, FRENZY, GUARD, HEAVY, HEX, HUSH_LEAVES, LASTING, LEECH, MIRRORING, MOVE_OPENS, PIERCE, PLUNDER, PRECISE, PULL, REAP, SKILLS, SLOT_OPENS, SPLIT, STILL, SURGE, TUNE, VAST, WORDS, skillsFor, wordsAt } from '../src/game/defs';
 import { MANA_AS_CDR } from '../src/game/items';
 import { FURNACE_WORD, MELDSTONE_WORDS } from '../src/game/quests15';
 import { resolveSkill, socketProblem } from '../src/game/words';
-import { DEEP_WORDS_FROM, DEEP_WORD_IDS, MELD8_IDS, MELD_IDS, MELD_OF, PRISON_WORD_IDS, RANK_IDS, RANK_OF, VOLT_MELD_IDS, WORD_IDS } from '../src/game/types';
+import { DEEP_WORDS_FROM, DEEP_WORD_IDS, LAST_WORDS_FROM, LAST_WORD_IDS, MELD8_IDS, MELD_IDS, MELD_OF, PRISON_WORD_IDS, RANK_IDS, RANK_OF, VOLT_MELD_IDS, WORD_IDS } from '../src/game/types';
 import { MELD_DUST_COLOR, MELD_TUNE, RANK_TUNE, wordIds } from '../src/game/melds';
 import { MELD8_TUNE } from '../src/game/melds8';
 import { gearLines, gearNote } from '../src/ui/lexicon';
@@ -40,7 +40,8 @@ const PRISON: WordId[] = [...PRISON_WORD_IDS, FURNACE_WORD.warrior];
 // (floors 6 to 10's: what may be found on any of them, not already among the prison's, in the game's order)
 const WILDS: WordId[] = WORD_IDS.filter((w) => !PRISON.includes(w) && [6, 7, 8, 9, 10].some((d) => wordsAt(d).includes(w)));
 // (THE CITY'S FIVE, found from floor 11 down: types.ts DEEP_WORD_IDS)
-const OURS: WordId[] = [...PRISON, ...WILDS, ...DEEP_WORD_IDS.filter((w) => !WILDS.includes(w) && !PRISON.includes(w))];
+// (THE HIGH CITY'S SEVEN LAST WORDS, found from floor 16 down: types.ts LAST_WORD_IDS)
+const OURS: WordId[] = [...PRISON, ...WILDS, ...DEEP_WORD_IDS.filter((w) => !WILDS.includes(w) && !PRISON.includes(w)), ...LAST_WORD_IDS.filter((w) => !WILDS.includes(w) && !PRISON.includes(w))];
 // (WORDMELDING: the words melding makes, in the order the game keeps a hero's words in: melds.ts wordIds)
 const MADE: WordId[] = wordIds().filter((w) => !WORD_IDS.includes(w));
 // (game.ts's own seconds for "of Echoes", kept in it unexported: read out of its source, not copied by hand)
@@ -130,6 +131,9 @@ writeFileSync(`${OUT}/words.json`, JSON.stringify({
   // (THE CITY'S FIVE WORDS, found from floor 11 down (types.ts DEEP_WORD_IDS, DEEP_WORDS_FROM): their ids and their numbers, defs.ts
   // PULL, SPLIT, HEX, STILL, BIND; on a monster's blow and in his moves)
   city: { ids: DEEP_WORD_IDS, from: DEEP_WORDS_FROM, pull: PULL, split: SPLIT, hex: HEX, still: STILL, bind: BIND },
+  // (THE HIGH CITY'S SEVEN LAST WORDS, found from floor 16 down (types.ts LAST_WORD_IDS, LAST_WORDS_FROM): their numbers, defs.ts
+  // PIERCE, BLEED, REAP, CULL, SURGE, PLUNDER, MIRRORING; and the kinds the Hush leaves alive, not cut in two by Culling)
+  last: { ids: LAST_WORD_IDS, from: LAST_WORDS_FROM, pierce: PIERCE, bleed: BLEED, reap: REAP, cull: CULL, surge: SURGE, plunder: PLUNDER, mirroring: MIRRORING, hushLeaves: [...HUSH_LEAVES], gold: [TUNE.goldMin, TUNE.goldMax] },
   // (each word's page as the wordsmith's half reads it, under the word just made and under a word of his picked to buy,
   // ui/lexicon.ts wordPage: what it becomes on gear, in the Lexicon's words, and the note under it)
   page: Object.fromEntries([...OURS, ...MADE].map((w) => [w, { gear: gearLines(w, 'cooldown'), note: gearNote(w) }])),
@@ -168,7 +172,9 @@ if (process.argv[2] === 'check') {
       count: r.count, countDmg: r.countDmg, echo: r.echo, leech: r.leech, orbChance: r.orbChance, volatile: r.volatile, rune: r.rune, precise: r.precise, mark: r.mark,
       frenzy: r.frenzy, frenzyFeed: r.frenzyFeed, shield: r.shield, ward: r.ward, last: r.last, pace: r.pace, boost: r.boost, vast: r.vast, wide: r.wide,
       // (WORDMELDING: the melded word in front and behind, whose twists the fight does)
-      meld: r.meld ?? null, meldBehind: r.meldBehind ?? null } });
+      meld: r.meld ?? null, meldBehind: r.meldBehind ?? null,
+      // (THE LAST WORDS)
+      through: r.through, lance: r.lance, bleed: r.bleed, thorns: r.thorns, reap: r.reap, spirit: r.spirit, cull: r.cull, cullMark: r.cullMark, surge: r.surge, dodgeSurge: r.dodgeSurge, plunder: r.plunder, plunderBurst: r.plunderBurst, mirror: r.mirror, mirrorLeave: r.mirrorLeave } });
   };
   for (const id of moves) {
     for (const d of heroes) {

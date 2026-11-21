@@ -343,6 +343,9 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 		# (THE CITY'S WORDS: in front, Splitting's copies, Hexing's curse, Stilling's slow, Binding's hold; behind, Splitting's shards,
 		# Hexing's circle, Stilling's bubble, Binding's snare)
 		"split": 0.0, "hex": 0.0, "still": 0.0, "bind": 0.0, "shards": 0.0, "hex_circle": 0.0, "bubble": 0.0, "snare": 0.0,
+		# (THE HIGH CITY'S SEVEN LAST WORDS: in front and behind)
+		"through": 0.0, "lance": 0.0, "bleed": 0.0, "thorns": 0.0, "reap": 0.0, "spirit": 0.0, "cull": 0.0, "cull_mark": 0.0,
+		"surge": 0.0, "dodge_surge": 0.0, "plunder": 0.0, "plunder_burst": 0.0, "mirror": 0.0, "mirror_leave": 0.0,
 	}
 	var frenzy: Dictionary = D["frenzy"]
 	var guard: Dictionary = D["guard"]
@@ -479,6 +482,37 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 		var k: float = rk.call(front, "binding")
 		r["bind"] = minf(float(BD["most"]) * k, float(BD["secs"]) * k + 0.004 * grows_by.call(front, "binding"))
 		lines.append("Binding: holds what it hits in place for %s s (an elite half as long, a boss not at all)." % _num(roundf(r["bind"] * 10.0) / 10.0))
+	# ----- THE LAST WORDS (8 Nov 2026; defs.ts PIERCE to MIRRORING), in front -----
+	var LW: Dictionary = D.get("last", {})
+	if has.call(front, "piercing"):
+		var PI_: Dictionary = LW["pierce"]
+		r["pierce"] = true
+		r["through"] = minf(float(PI_["throughMost"]), float(PI_["through"]) + 0.002 * grows_by.call(front, "piercing"))
+		lines.append("Piercing: goes through every enemy in its path (a blow goes on through the first, %s tiles, for %s)." % [_num(PI_["line"]), _pct(r["through"] * 100.0)])
+	if has.call(front, "bleeding"):
+		var BL: Dictionary = LW["bleed"]
+		r["bleed"] = minf(float(BL["dpsMost"]), float(BL["dps"]) + 0.001 * grows_by.call(front, "bleeding"))
+		lines.append("Bleeding: what it hits bleeds for %s of the hit a second for %s s, %s times as much while it moves." % [_pct(r["bleed"] * 100.0), _num(BL["secs"]), _num(BL["moving"])])
+	if has.call(front, "reaping"):
+		var RP: Dictionary = LW["reap"]
+		r["reap"] = minf(float(RP["secsMost"]), float(RP["secs"]) + 0.001 * grows_by.call(front, "reaping"))
+		lines.append("Reaping: an enemy it kills leaves a soul that takes %s s off every cooldown." % _num(roundf(r["reap"] * 10.0) / 10.0))
+	if has.call(front, "culling"):
+		var CU: Dictionary = LW["cull"]
+		r["cull"] = minf(float(CU["underMost"]), float(CU["under"]) + 0.0005 * grows_by.call(front, "culling"))
+		lines.append("Culling: an enemy it leaves under %s of its life dies outright (an elite under half that, a boss never)." % _pct(r["cull"] * 100.0))
+	if has.call(front, "surging"):
+		var SU: Dictionary = LW["surge"]
+		r["surge"] = minf(float(SU["dmgMost"]), float(SU["dmg"]) + 0.001 * grows_by.call(front, "surging"))
+		lines.append("Surging: every %srd use releases a shockwave round you for %s of a hit." % [_num(SU["every"]), _pct(r["surge"] * 100.0)])
+	if has.call(front, "plundering"):
+		var PL: Dictionary = LW["plunder"]
+		r["plunder"] = minf(float(PL["goldMost"]), float(PL["gold"]) + 0.005 * grows_by.call(front, "plundering"))
+		lines.append("Plundering: an enemy it kills drops %s more gold, and now and then an extra item." % _pct(r["plunder"] * 100.0))
+	if has.call(front, "mirroring"):
+		var MI: Dictionary = LW["mirroring"]
+		r["mirror"] = minf(float(MI["shareMost"]), float(MI["share"]) + 0.001 * grows_by.call(front, "mirroring"))
+		lines.append("Mirrored: a reflection of you makes the same attack beside you, for %s." % _pct(r["mirror"] * 100.0))
 
 	# ----- behind: the wake -----
 	var softer := false
@@ -568,6 +602,35 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 		var k: float = rk.call(behind, "binding")
 		r["snare"] = minf(float(BD["snareMost"]) * k, float(BD["snareSecs"]) * k + 0.004 * grows_by.call(behind, "binding"))
 		lines.append("of the Snare: leaves a snare; the next enemy to cross it is held in place for %s s." % _num(roundf(r["snare"] * 10.0) / 10.0))
+	# ----- THE LAST WORDS, behind -----
+	if has.call(behind, "piercing"):
+		var PI_: Dictionary = LW["pierce"]
+		r["lance"] = minf(float(PI_["lanceMost"]), float(PI_["lance"]) + 0.002 * grows_by.call(behind, "piercing"))
+		lines.append("of the Lance: a moment later a lance of light strikes down its line for %s of a hit." % _pct(r["lance"] * 100.0))
+	if has.call(behind, "bleeding"):
+		var BL: Dictionary = LW["bleed"]
+		r["thorns"] = minf(float(BL["thornsMost"]), float(BL["thorns"]) + 0.001 * grows_by.call(behind, "bleeding"))
+		lines.append("of Thorns: leaves thorns for %s s that cut whatever walks in them for %s of a hit a second, and make it bleed." % [_num(BL["thornLife"]), _pct(r["thorns"] * 100.0)])
+	if has.call(behind, "reaping"):
+		var RP: Dictionary = LW["reap"]
+		r["spirit"] = minf(float(RP["spiritDmgMost"]), float(RP["spiritDmg"]) + 0.001 * grows_by.call(behind, "reaping"))
+		lines.append("of Spirits: an enemy it kills rises as a spirit that fights for you for %s s, for %s of a hit." % [_num(RP["spiritSecs"]), _pct(r["spirit"] * 100.0)])
+	if has.call(behind, "culling"):
+		var CU: Dictionary = LW["cull"]
+		r["cull_mark"] = minf(float(CU["markMost"]), float(CU["markUnder"]) + 0.0005 * grows_by.call(behind, "culling"))
+		lines.append("of the Reaper: leaves a reaper's mark; the first enemy under %s of its life to cross it dies." % _pct(r["cull_mark"] * 100.0))
+	if has.call(behind, "surging"):
+		var SU: Dictionary = LW["surge"]
+		r["dodge_surge"] = minf(float(SU["dodgeMost"]), float(SU["dodge"]) + 0.001 * grows_by.call(behind, "surging"))
+		lines.append("of the Surge: your dodge releases a surge for %s of this attack's hit." % _pct(r["dodge_surge"] * 100.0))
+	if has.call(behind, "plundering"):
+		var PL: Dictionary = LW["plunder"]
+		r["plunder_burst"] = minf(float(PL["burstMost"]), float(PL["burst"]) + 0.005 * grows_by.call(behind, "plundering"))
+		lines.append("of Plunder: an enemy it kills bursts with gold that flies to you, %s more." % _pct(r["plunder_burst"] * 100.0))
+	if has.call(behind, "mirroring"):
+		var MI: Dictionary = LW["mirroring"]
+		r["mirror_leave"] = minf(float(MI["leaveMost"]), float(MI["leaveShare"]) + 0.001 * grows_by.call(behind, "mirroring"))
+		lines.append("of Mirrors: leaves a mirror where you stood; your next attack it makes again from there, for %s." % _pct(r["mirror_leave"] * 100.0))
 	if has.call(behind, "vast"):
 		var V: Dictionary = D["vast"]
 		r["vast"] = minf(float(V["splashMost"]), float(V["splash"]) + 0.001 * grows_by.call(behind, "vast"))

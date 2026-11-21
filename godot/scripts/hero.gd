@@ -108,12 +108,20 @@ var melds:
 		return _melds
 ## (THE CITY'S FIVE WORDS in his moves: their drag, copies, shards, holds and snares: city_words.gd)
 const CityWords := preload("res://scripts/city_words.gd")
+const LastWords := preload("res://scripts/last_words.gd")
 var _city = null
 var city:
 	get:
 		if _city == null:
 			_city = CityWords.new(self)
 		return _city
+## (THE HIGH CITY'S SEVEN LAST WORDS in his moves: last_words.gd)
+var _last = null
+var last:
+	get:
+		if _last == null:
+			_last = LastWords.new(self)
+		return _last
 
 ## (each move's share of the weapon's damage and its wait are the words' to change: loadout.r(i) `dmg_mult`, `cooldown`.
 ## `wake`, defs.ts TUNE.channelWake: how often the Whirlwind leaves what the words behind it leave, as it goes on)
@@ -270,6 +278,11 @@ var _kick := 0.0
 ## (game.ts slowT, slowBy: the Shade's rime underfoot, a while and how much slower he walks)
 var _slow_t := 0.0
 var _slow_by := 0.0
+## (THE LAST WORDS: a monster's Bleeding on him (game.ts heroBleedT, heroBleedDps): so much a second for so long, twice as much while
+## he walks (where he was at the last bite, `bleed_at`))
+var bleed_t := 0.0
+var bleed_dps := 0.0
+var bleed_at := Vector2.INF
 ## (THE HIGH CITY, FLOOR 16: in the Swan Gardens' nettles, and a moment after, his pace times this: act3/garden.gd)
 var nettle_k := 1.0
 ## (game.ts held: hooked by the Chained One, for so many seconds more he cannot walk or dodge: he goes where he is dragged.
@@ -511,6 +524,9 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 			var held_for: float = city.bind_monster(m, r["bind"])
 			if held_for > 0.0:
 				_tell({"t": "bind", "id": m.id, "m": m, "secs": held_for})
+		# THE LAST WORDS: BLEEDING in front makes what it hits bleed; CULLING in front takes one its hit left nearly dead
+		if float(r["bleed"]) > 0.0 or float(r["cull"]) > 0.0:
+			last.struck(m, i, dmg)
 		# HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too (its chance, 50% at most: none yet here)
 		var heavy: Dictionary = Words.data()["heavy"]
 		if r["stun"] > 0.0:
@@ -586,6 +602,8 @@ func killed(m) -> void:
 	# (WORDMELDING: Shatter in front, a frozen one bursts into shards; Rupture, a poisoned one bursts its poison: melds.gd)
 	if r["meld"] != null:
 		melds.killed(m, r, i)
+	# (THE LAST WORDS: Reaping's soul and spirit, Plundering's gold: last_words.gd)
+	last.killed(m, i)
 	if r["orb_chance"] > 0.0 and randf() < float(r["orb_chance"]):
 		if monsters != null and monsters.loot != null:
 			monsters.loot.orb_at(m.world)
@@ -701,6 +719,8 @@ func _wake(i: int, at: Vector2, rad: float, frac: float) -> void:
 		city.throw_shards(i, at, frac)
 	if float(r["snare"]) > 0.0:
 		city.lay_snare(i, at, r["snare"])
+	# (THE LAST WORDS behind: Piercing's lance down the line; Bleeding's thorns; Culling's reaper's mark)
+	last.leaves(i, at, rad, frac)
 
 
 ## ONE MELEE HIT of move `i` from `from` the way `way` (game.ts strike): the best one before him, nearest and most in front,
@@ -720,6 +740,9 @@ func _strike(i: int, from: Vector2, way: Vector2, frac: float, n := 0, echo := f
 		return
 	var at: Vector2 = best.world
 	hit_monster(best, i, frac, false)
+	# (THE LAST WORDS: PIERCING in front, the blow goes on through the first, to every enemy in a line behind it)
+	if float(r["through"]) > 0.0:
+		last.pierce_on(i, best, at, way, frac * float(r["through"]))
 	_landed_on(i)
 	if front.has("power"):
 		sfx.play("power", -6.0)
@@ -794,6 +817,8 @@ func _process(dt: float) -> void:
 	_shake = maxf(0.0, _shake - dt)
 	_kick = maxf(0.0, _kick - dt * 22.0)
 	_slow_t = maxf(0.0, _slow_t - dt)
+	if bleed_t > 0.0:
+		bleed_t = maxf(0.0, bleed_t - dt)
 	_invuln = maxf(0.0, _invuln - dt)
 	# (Frenzied: the frenzy makes every wait come round faster: game.ts updateHero)
 	_whirl_cd = maxf(0.0, _whirl_cd - dt * cd_pace())
@@ -807,6 +832,7 @@ func _process(dt: float) -> void:
 	# (WORDMELDING: Implode's bursts to come, Fervor's time: melds.gd)
 	melds.step(dt)
 	city.step(dt)
+	last.step(dt)
 	_cam.offset = Vector2(0, -24 - _lift) + lean + (Vector2(randf_range(-3, 3), randf_range(-3, 3)) if _shake > 0.0 else Vector2.ZERO)
 	if _kick > 0.3:
 		_cam.offset += Vector2(roundf(randf_range(-_kick, _kick)), roundf(randf_range(-_kick, _kick) * 0.6)) * 2.0
@@ -979,6 +1005,8 @@ func _deliver_strike(from: Vector2, way: Vector2, frac: float, primary: bool) ->
 			var delay: float = Words.data()["echo"]["delay"]
 			_tell({"t": "echo", "x": from.x, "y": from.y, "dx": way.x, "dy": way.y, "kind": "melee", "delay": delay})
 			_after(delay, func() -> void: _deliver_strike(from, way, frac * float(loadout.r(0)["echo"]), false))
+		# (THE LAST WORDS: Surging's shockwave, Mirroring's reflection and its mirrors)
+		last.cast(0, from, way, frac, func(at: Vector2, w: Vector2, f: float) -> void: _deliver_strike(at, w, f, false))
 
 
 # --- Whirl ---
@@ -1133,6 +1161,8 @@ func _begin_lunge(target: Vector2) -> void:
 	_cast(2, "leap", world, dir)
 	_boons(2)
 	_time_word_sound(2)
+	# (THE LAST WORDS: SURGING behind any of his moves, his dodge releases a surge where it begins)
+	last.dodge_surge(world)
 	sfx.play("lunge", -6.0)
 
 
@@ -1308,6 +1338,12 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	# (THE CITY'S WORDS: HEXING on a monster, a hero cursed by it takes more)
 	if hex_t > 0.0 and hex_more > 0.0:
 		dmg *= 1.0 + hex_more
+	# (THE LAST WORDS: CULLING, on a monster, its blows hit much harder while he is low)
+	var LW: Dictionary = Words.data().get("last", {})
+	if not LW.is_empty() and k.call("culling") > 0.0 and life < max_life * float(LW["cull"]["low"]):
+		dmg *= 1.0 + float(LW["cull"]["harder"]) * float(k.call("culling"))
+		if src != null and is_instance_valid(src):
+			_tell({"t": "cullBlow", "id": src.id, "x": src.world.x, "y": src.world.y})
 	dmg = maxf(1.0, roundf(dmg))
 	# HEAVY, on a monster: its blow knocks him back a step (game.ts knockHero)
 	var knocked := 0.0
@@ -1320,6 +1356,7 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	# while; STILLING makes the waits of his moves run slower for a while; BINDING roots him where he stands, then not again for a
 	# while (a minion, of its leader's words, at half)
 	_city_words(k, by)
+	_last_words(k, src)
 	# GUARDING in front: his shield takes the blow first; all of it taken, nothing reaches him
 	var soaked := 0.0
 	if shield > 0.0:
@@ -1412,6 +1449,34 @@ func _city_words(k: Callable, by: Vector2) -> void:
 		_tell({"t": "text", "x": world.x, "y": world.y, "text": "Rooted", "color": FOE})
 
 
+## (game.ts hurtHero) THE LAST WORDS on the blow that struck him, `k` each word's share of it: BLEEDING makes him bleed; PLUNDERING
+## steals some of his gold (the one who struck keeps it, dropped as it dies).
+func _last_words(k: Callable, src) -> void:
+	var LW: Dictionary = Words.data().get("last", {})
+	if LW.is_empty():
+		return
+	var FOE := "#ff8a80"
+	if k.call("bleeding") > 0.0:
+		var B: Dictionary = LW["bleed"]
+		if bleed_t <= 0.0:
+			_tell({"t": "heroBleed", "x": world.x, "y": world.y, "secs": B["heroSecs"]})
+			last.rec("bleed_open")
+			_tell({"t": "text", "x": world.x, "y": world.y, "text": "Bleeding", "color": FOE})
+		bleed_dps = maxf(bleed_dps if bleed_t > 0.0 else 0.0, max_life * float(B["heroDps"]) * float(k.call("bleeding")))
+		bleed_t = B["heroSecs"]
+	var loot = monsters.loot if monsters != null else null
+	if k.call("plundering") > 0.0 and src != null and is_instance_valid(src) and loot != null and int(loot.gold) > 0:
+		var P: Dictionary = LW["plunder"]
+		var power: int = monsters.map.depth if monsters.map != null else 1
+		var gold: int = loot.gold
+		var n := mini(gold, maxi(1, roundi(minf(gold * float(P["steal"]), float(P["stealMost"]) * maxf(1.0, power)) * float(k.call("plundering")))))
+		loot.gold -= n
+		src.stolen += n
+		_tell({"t": "goldStolen", "x": world.x, "y": world.y, "n": n})
+		last.rec("plunder_steal")
+		_tell({"t": "text", "x": world.x, "y": world.y, "text": "-%d" % n, "color": FOE})
+
+
 ## WHAT BURNS AND POISONS HIM BITES (game.ts updateDots, twice a second, on the monsters' clock: monsters.gd _dots): his
 ## burning half its burning a second, his poison half its poison a second, 1 at least; neither is less for his armour.
 func dots() -> void:
@@ -1430,6 +1495,17 @@ func dots() -> void:
 		if not unhurt:
 			life -= p
 		_tell({"t": "hit", "x": world.x, "y": world.y, "amount": p, "crit": false, "el": "phys", "onHero": true, "poison": true})
+		if life <= 0.0:
+			_fall()
+			return
+	# (THE LAST WORDS: a monster's Bleeding, more while he walks)
+	if bleed_t > 0.0 and bleed_dps > 0.0:
+		var moved: bool = bleed_at != Vector2.INF and world.distance_to(bleed_at) > 0.15
+		bleed_at = world
+		var b := maxf(1.0, roundf(bleed_dps * 0.5 * (float(Words.data()["last"]["bleed"]["moving"]) if moved else 1.0)))
+		if not unhurt:
+			life -= b
+		_tell({"t": "hit", "x": world.x, "y": world.y, "amount": b, "crit": false, "el": "phys", "onHero": true})
 		if life <= 0.0:
 			_fall()
 
@@ -1456,7 +1532,16 @@ func hush(secs := HUSH_FOR) -> void:
 	loadout.set_hushed(true)
 
 
+## (game.ts lastWordsKill, REAPING in front) Every wait of his moves that is running shortened by `secs`.
+func cool_by(secs: float) -> void:
+	if _whirl_cd > 0.0:
+		_whirl_cd = maxf(0.01, _whirl_cd - secs)
+	if _lunge_cd > 0.0:
+		_lunge_cd = maxf(0.01, _lunge_cd - secs)
+
+
 func fresh_place() -> void:
+	last.fresh_place()
 	might = 0.0
 	might_t = 0.0
 	haste = 0.0

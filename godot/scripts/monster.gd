@@ -172,6 +172,17 @@ var still_t := 0.0
 var still_k := 0.0
 var bind_t := 0.0
 var bind_again := 0.0
+## (THE HIGH CITY'S SEVEN LAST WORDS: BLEEDING in his moves, it bleeds `bleed_dps` for `bleed_t`, `bleed_move` times as much while it
+## walks (where it was at the last bite, `bleed_at`); and its own words: MIRRORING's wait before harm goes back again, SURGING's
+## shockwave's clock, the gold PLUNDERING stole from him, and whether REAPING has stood it up once already: last_words.gd)
+var bleed_t := 0.0
+var bleed_dps := 0.0
+var bleed_move := 0.0
+var bleed_at := Vector2.INF
+var mirror_t := 0.0
+var surge_t := -1.0
+var stolen := 0
+var risen := false
 var life := 1.0
 var max_life := 1.0
 var dmg_min := 1.0
@@ -1214,6 +1225,16 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 	# (WORDMELDING, BLIGHT behind: a poisoned enemy it has touched takes more from everything)
 	if blight_t > 0.0 and poison_t > 0.0:
 		dmg = maxf(1.0, roundf(dmg * (1.0 + float(Words.data()["melds"]["tune"]["blight"]["more"]))))
+	# (THE LAST WORDS: MIRRORING, on it, a share of the harm he does it comes back at him; not what burns or bleeds, nor often)
+	if skill >= 0 and not dot and not poison and mirror_t <= 0.0:
+		var mk := word_share("mirroring")
+		if mk > 0.0 and mgr.hero != null and is_instance_valid(mgr.hero):
+			var MI: Dictionary = Words.data()["last"]["mirroring"]
+			mirror_t = MI["backEvery"]
+			var back := maxf(1.0, roundf(dmg * float(MI["back"]) * mk))
+			_tell({"t": "mirrorBack", "x0": world.x, "y0": world.y, "x1": mgr.hero.world.x, "y1": mgr.hero.world.y, "n": back})
+			mgr.hero.last.rec("mirror_back")
+			mgr.hero.hurt_by(back, "phys", [], {}, null, world)
 	# (GUARDING, on it: its shield takes the harm first)
 	if shield > 0.0:
 		var soak := minf(shield, dmg)
@@ -1331,6 +1352,16 @@ func _afflicted(dt: float) -> bool:
 		bite_dps = 0.0
 	if sunder_t > 0.0:
 		sunder_t = maxf(0.0, sunder_t - dt)
+	# (THE LAST WORDS: its bleeding runs out; Mirroring's wait; SURGING's shockwave every few seconds while he is near, after a
+	# warning: game.ts updateMonsters)
+	if bleed_t > 0.0:
+		bleed_t = maxf(0.0, bleed_t - dt)
+		if bleed_t <= 0.0:
+			bleed_move = 0.0
+	if mirror_t > 0.0:
+		mirror_t = maxf(0.0, mirror_t - dt)
+	if frozen_t <= 0.0 and stun_t <= 0.0:
+		_surge(dt)
 	if burn_t > 0.0:
 		burn_t -= dt
 	if chill_t > 0.0:
@@ -1457,7 +1488,58 @@ func break_off() -> void:
 
 
 ## All that the hero's words had done to it is gone (the hero fallen and come back: hero.gd _back; its body carries none).
+## SURGING, on it (game.ts updateMonsters): every SURGE.monsterEvery seconds that he is within SURGE.monsterNear of it, a shockwave
+## SURGE.monsterRadius round it after a warning (a minion's, of its leader's Surging, for less).
+func _surge(dt: float) -> void:
+	var sk := word_share("surging")
+	if sk <= 0.0:
+		return
+	var S: Dictionary = Words.data()["last"]["surge"]
+	if surge_t < 0.0:
+		surge_t = S["monsterEvery"]
+	surge_t -= dt
+	if surge_t > 0.0:
+		return
+	surge_t = S["monsterEvery"]
+	var h = mgr.hero
+	if h == null or not is_instance_valid(h) or h.world.distance_to(world) > float(S["monsterNear"]) or mgr.shut_in(self):
+		return
+	var by := blow()
+	by["sound"] = "surge_foe"
+	mgr.perils.warn(world.x, world.y, S["monsterRadius"], S["monsterWarn"], (dmg_min + dmg_max) / 2.0 * float(S["monsterDmg"]) * sk, null, by)
+	h.last.rec("surge_warn")
+
+
+## REAPING, on it (game.ts riseAgain): it rises once, REAP.riseAfter seconds after it died, where it fell, with REAP.riseLife of its
+## life and no words (a boss never).
+func _rise_again() -> void:
+	var R: Dictionary = Words.data()["last"]["reap"]
+	var at := world
+	var whole := max_life
+	var pack := pack_id
+	var k := kind
+	var f := face
+	_tell({"t": "rise", "id": id, "x": at.x, "y": at.y})
+	var M = mgr
+	M.after(maxf(0.0, float(R["riseAfter"]) - 1.0), func() -> void:
+		if M.hero != null and is_instance_valid(M.hero) and M.hero.alive:
+			M.hero.last.rec("reap_rise"))
+	M.after(float(R["riseAfter"]), func() -> void:
+		if M.hero == null or not is_instance_valid(M.hero) or not M.hero.alive:
+			return
+		var o = M.call_up(k, at, pack, f)
+		if o == null:
+			return
+		o.max_life = maxf(1.0, roundf(whole * float(R["riseLife"])))
+		o.life = o.max_life
+		o.words = []
+		o.risen = true)
+
+
 func clear_afflictions() -> void:
+	bleed_t = 0.0
+	bleed_dps = 0.0
+	bleed_move = 0.0
 	burn_t = 0.0
 	burn_dps = 0.0
 	chill_t = 0.0
@@ -1545,6 +1627,14 @@ func _die() -> void:
 	# (THE CITY'S WORDS, Version 23.8: one carrying Splitting splits in two at half its life, a minion, of its leader's, too)
 	if word_share("splitting") > 0.0 and not split and not boss:
 		_split()
+	# THE LAST WORDS, on it: one carrying Reaping rises once; one carrying Plundering drops all it stole
+	if word_share("reaping") > 0.0 and not risen and not boss:
+		_rise_again()
+	if stolen > 0 and mgr.loot != null:
+		mgr.loot._gold(world, stolen)
+		stolen = 0
+		if mgr.hero != null and is_instance_valid(mgr.hero):
+			mgr.hero.last.rec("plunder_spray")
 	if mgr.loot != null:
 		mgr.loot.on_kill(self)
 	if boss and h2 != null and h2.has_method("hurt_voice"):

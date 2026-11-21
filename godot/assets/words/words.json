@@ -20,7 +20,14 @@
   "splitting",
   "hexing",
   "stilling",
-  "binding"
+  "binding",
+  "piercing",
+  "bleeding",
+  "reaping",
+  "culling",
+  "surging",
+  "plundering",
+  "mirroring"
  ],
  "words": {
   "power": {
@@ -295,6 +302,97 @@
    "frontText": "Holds the enemies it hits in place.",
    "behindText": "Leaves a snare for the next enemy to cross.",
    "monsterText": "Its blows root you to the spot."
+  },
+  "piercing": {
+   "id": "piercing",
+   "kind": "shape",
+   "name": "Piercing",
+   "front": "Piercing",
+   "behind": "of the Lance",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of the point. Nothing stands in its way.",
+   "frontText": "Goes through everything in its path.",
+   "behindText": "A lance of light strikes down its line a moment later.",
+   "monsterText": "Its shots fly through walls to reach you."
+  },
+  "bleeding": {
+   "id": "bleeding",
+   "kind": "shape",
+   "name": "Bleeding",
+   "front": "Bleeding",
+   "behind": "of Thorns",
+   "attr": "str",
+   "element": null,
+   "about": "The word of the open wound. It does not close.",
+   "frontText": "Makes enemies bleed, worse while they move.",
+   "behindText": "Leaves thorns that cut whatever walks through.",
+   "monsterText": "Its blows make you bleed."
+  },
+  "reaping": {
+   "id": "reaping",
+   "kind": "shape",
+   "name": "Reaping",
+   "front": "Reaping",
+   "behind": "of Spirits",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the harvest. What falls is gathered in.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns.",
+   "behindText": "Kills raise a spirit that fights for you for a while.",
+   "monsterText": "Rises once after it dies."
+  },
+  "culling": {
+   "id": "culling",
+   "kind": "shape",
+   "name": "Culling",
+   "front": "Culling",
+   "behind": "of the Reaper",
+   "attr": "str",
+   "element": null,
+   "about": "The word of the end. The weak are taken.",
+   "frontText": "Enemies left nearly dead by its hit die outright.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it.",
+   "monsterText": "Hits much harder when you are low."
+  },
+  "surging": {
+   "id": "surging",
+   "kind": "shape",
+   "name": "Surging",
+   "front": "Surging",
+   "behind": "of the Surge",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the swell. It gathers, then breaks.",
+   "frontText": "Every third use releases a shockwave round you.",
+   "behindText": "Your dodge releases a surge.",
+   "monsterText": "Sends out a shockwave every few seconds."
+  },
+  "plundering": {
+   "id": "plundering",
+   "kind": "shape",
+   "name": "Plundering",
+   "front": "Plundering",
+   "behind": "of Plunder",
+   "attr": "dex",
+   "element": null,
+   "about": "The word of the taking. What is theirs is yours.",
+   "frontText": "Kills drop more gold, and sometimes an extra item.",
+   "behindText": "Gold bursts from kills and flies to you.",
+   "monsterText": "Each blow steals some of your gold, dropped when it dies."
+  },
+  "mirroring": {
+   "id": "mirroring",
+   "kind": "shape",
+   "name": "Mirroring",
+   "front": "Mirrored",
+   "behind": "of Mirrors",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the reflection. Two of you, where there was one.",
+   "frontText": "A reflection of you makes the same attack beside you, weaker.",
+   "behindText": "Leaves a mirror that repeats your next attack from where you stood.",
+   "monsterText": "Sends part of the harm you do it back at you."
   },
   "eruption": {
    "id": "eruption",
@@ -1404,6 +1502,122 @@
    "rootAgain": 3
   }
  },
+ "last": {
+  "ids": [
+   "piercing",
+   "bleeding",
+   "reaping",
+   "culling",
+   "surging",
+   "plundering",
+   "mirroring"
+  ],
+  "from": 16,
+  "pierce": {
+   "through": 0.6,
+   "throughMost": 0.9,
+   "line": 3,
+   "lanceDelay": 0.5,
+   "lance": 0.8,
+   "lanceMost": 1.4,
+   "lanceW": 0.55,
+   "lanceEvery": 0.4,
+   "lanceLead": 1.5
+  },
+  "bleed": {
+   "dps": 0.15,
+   "dpsMost": 0.3,
+   "secs": 4,
+   "moving": 2,
+   "thorns": 0.25,
+   "thornsMost": 0.45,
+   "thornLife": 5,
+   "thornR": 1.4,
+   "thornEvery": 0.5,
+   "heroDps": 0.012,
+   "heroSecs": 3
+  },
+  "reap": {
+   "secs": 1,
+   "secsMost": 1.5,
+   "spiritSecs": 6,
+   "spiritEvery": 1,
+   "spiritDmg": 0.5,
+   "spiritDmgMost": 0.8,
+   "spiritSpeed": 6,
+   "spiritReach": 1,
+   "spirits": 3,
+   "riseAfter": 1.5,
+   "riseLife": 0.5
+  },
+  "cull": {
+   "under": 0.15,
+   "underMost": 0.22,
+   "elite": 0.5,
+   "markLife": 8,
+   "markR": 1,
+   "markUnder": 0.3,
+   "markMost": 0.4,
+   "markEvery": 0.5,
+   "low": 0.35,
+   "harder": 0.6,
+   "hushedWhole": true
+  },
+  "surge": {
+   "every": 3,
+   "dmg": 0.8,
+   "dmgMost": 1.2,
+   "radius": 2.6,
+   "dodge": 0.6,
+   "dodgeMost": 0.9,
+   "dodgeRadius": 2.2,
+   "monsterEvery": 5,
+   "monsterNear": 6,
+   "monsterRadius": 2.4,
+   "monsterWarn": 0.8,
+   "monsterDmg": 1
+  },
+  "plunder": {
+   "gold": 0.5,
+   "goldMost": 1,
+   "item": 0.05,
+   "eliteItem": 0.2,
+   "burst": 0.4,
+   "burstMost": 0.8,
+   "steal": 0.02,
+   "stealMost": 6
+  },
+  "mirroring": {
+   "share": 0.4,
+   "shareMost": 0.6,
+   "side": 2.4,
+   "leaveShare": 0.6,
+   "leaveMost": 0.8,
+   "leaveLife": 8,
+   "back": 0.15,
+   "backEvery": 0.4
+  },
+  "hushLeaves": [
+   "hushed",
+   "watch",
+   "fieldhand",
+   "carter",
+   "patient",
+   "orderly",
+   "gardener",
+   "groom",
+   "pguard",
+   "footman",
+   "dancer",
+   "lady",
+   "kknight",
+   "xbow"
+  ],
+  "gold": [
+   3,
+   8
+  ]
+ },
  "page": {
   "power": {
    "gear": [
@@ -1557,6 +1771,55 @@
   "binding": {
    "gear": [
     "At the bench: a second piece of the same kind bound into the first, four properties in all."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "piercing": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "bleeding": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "reaping": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "culling": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "surging": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "plundering": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Gold Find or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Magic Find or Dexterity."
+   ],
+   "note": "Both at once, each a little weaker than its word alone."
+  },
+  "mirroring": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Chance to Block or Intelligence."
    ],
    "note": "Both at once, each a little weaker than its word alone."
   },

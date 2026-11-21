@@ -66,7 +66,8 @@ useMeldLooks(icons);
 // rest of what may be found there, in the game's order: tools/godot_words.ts)
 const PRISON: WordId[] = [...PRISON_WORD_IDS, FURNACE_WORD.warrior];
 // (and the city's five, found from floor 11 down: types.ts DEEP_WORD_IDS)
-const OURS: WordId[] = [...PRISON, ...WORD_IDS.filter((w) => !PRISON.includes(w) && [6, 7, 8, 9, 10, 11].some((d) => wordsAt(d).includes(w)))];
+// (and the High City's seven last words, found from floor 16: types.ts LAST_WORD_IDS)
+const OURS: WordId[] = [...PRISON, ...WORD_IDS.filter((w) => !PRISON.includes(w) && [6, 7, 8, 9, 10, 11, 16].some((d) => wordsAt(d).includes(w)))];
 // (WORDMELDING: the words melding makes, in the game's order: tools/godot_words.ts)
 const MADE: WordId[] = wordIds().filter((w) => !WORD_IDS.includes(w));
 

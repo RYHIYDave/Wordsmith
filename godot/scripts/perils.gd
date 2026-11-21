@@ -763,7 +763,12 @@ func _process(dt: float) -> void:
 			"warn":
 				if p["t"] >= p["dur"]:
 					if not p.get("mark", false):
-						sfx.play("slam", -2.0)
+						# (a monster's surge, its wave as its warning runs out: the word's own sound)
+						var snd: String = str(p["by"].get("sound", "")) if p.get("by") is Dictionary else ""
+						if snd != "" and hero != null and is_instance_valid(hero):
+							hero.last.rec(snd)
+						else:
+							sfx.play("slam", -2.0)
 						hero.shake()
 						if hero.alive and hero.world.distance_to(Vector2(p["x"], p["y"])) <= p["r"] + 0.1:
 							_hurt(p, p["dmg"])

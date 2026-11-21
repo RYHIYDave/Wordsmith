@@ -14,7 +14,11 @@ const NUMBERS := {"dmgMult": "dmg_mult", "size": "size", "rate": "rate", "cooldo
 	"cloud": "cloud", "cracks": "cracks",
 	# (floors 6 to 10's words)
 	"count": "count", "countDmg": "count_dmg", "echo": "echo", "leech": "leech", "orbChance": "orb_chance", "volatile": "volatile", "rune": "rune",
-	"shield": "shield", "ward": "ward", "last": "last", "pace": "pace", "boost": "boost", "vast": "vast", "wide": "wide"}
+	"shield": "shield", "ward": "ward", "last": "last", "pace": "pace", "boost": "boost", "vast": "vast", "wide": "wide",
+	# (the High City's seven last words)
+	"through": "through", "lance": "lance", "bleed": "bleed", "thorns": "thorns", "reap": "reap", "spirit": "spirit", "cull": "cull",
+	"cullMark": "cull_mark", "surge": "surge", "dodgeSurge": "dodge_surge", "plunder": "plunder", "plunderBurst": "plunder_burst",
+	"mirror": "mirror", "mirrorLeave": "mirror_leave"}
 ## (what is said yes or no: floors 6 to 10's Precise in front and behind, Frenzied in front and behind)
 const FLAGS := {"precise": "precise", "mark": "mark", "frenzy": "frenzy", "frenzyFeed": "frenzy_feed"}
 

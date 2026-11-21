@@ -1933,6 +1933,9 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE CITY'S FIVE WORDS: check_citywords.gd)
 	if _arg("only") == "citywords":
 		await preload("res://scripts/check_citywords.gd").new().run(self, hero, dir)
+	# (THE HIGH CITY'S SEVEN LAST WORDS: check_lastwords.gd)
+	if _arg("only") == "lastwords":
+		await preload("res://scripts/check_lastwords.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "meldstone":

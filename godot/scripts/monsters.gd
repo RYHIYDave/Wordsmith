@@ -262,6 +262,11 @@ func _dots(dt: float) -> void:
 		# (WORDMELDING, FROSTBITE in front: a chilled enemy loses life, a frozen one twice as fast)
 		if not m.dead and m.bite_dps > 0.0 and (m.chill_t > 0.0 or m.frozen_t > 0.0):
 			m.damage(maxf(1.0, roundf(m.bite_dps * 0.5 * (2.0 if m.frozen_t > 0.0 else 1.0))), "frost", false, false, [], false, true)
+		# (THE LAST WORDS: Bleeding's, more while it walks)
+		if not m.dead and m.bleed_t > 0.0 and m.bleed_dps > 0.0:
+			var moved: bool = m.bleed_at != Vector2.INF and m.world.distance_to(m.bleed_at) > 0.15
+			m.bleed_at = m.world
+			m.damage(maxf(1.0, roundf(m.bleed_dps * 0.5 * ((m.bleed_move if m.bleed_move > 0.0 else 1.0) if moved else 1.0))), "phys", false, false, [], false, true, m.last_skill)
 	# (and what burns and poisons the hero, on the same clock)
 	if hero != null and is_instance_valid(hero):
 		hero.dots()
@@ -485,7 +490,8 @@ func shoot(from: Monster, dir: Vector2, speed: float, reach: float, dmg: float, 
 	node.dir = dir
 	node.look = look
 	stands.add_child(node)
-	_arrows.append({"pos": from.world + dir * (from.r + 0.1), "dir": dir, "speed": speed, "left": reach, "dmg": dmg, "node": node, "r": r, "pierce": pierce, "hit": false, "by": from.blow()})
+	# (THE LAST WORDS: PIERCING, on it, its shots fly on through walls, to the map's edge)
+	_arrows.append({"pos": from.world + dir * (from.r + 0.1), "dir": dir, "speed": speed, "left": reach, "dmg": dmg, "node": node, "r": r, "pierce": pierce, "hit": false, "by": from.blow(), "walls": from.words.has("piercing")})
 
 
 ## THE BONEWARD'S SPEAR (game.ts throwSpear): from its hand `at`, the way `dir`, as far as `reach` (where the hero stood); where
@@ -656,7 +662,8 @@ func _fly(dt: float) -> void:
 		a["pos"] += a["dir"] * step
 		a["left"] -= step
 		var p: Vector2 = a["pos"]
-		var gone: bool = a["left"] <= 0.0 or not map.open_at(floori(p.x), floori(p.y))
+		var walls: bool = a.get("walls", false) and p.x >= 0.0 and p.y >= 0.0 and p.x < map.w and p.y < map.h
+		var gone: bool = a["left"] <= 0.0 or (not map.open_at(floori(p.x), floori(p.y)) and not walls)
 		if not gone and not a["hit"] and hero.alive and p.distance_to(hero.world) <= a["r"] + HERO_R:
 			# (with its monster's words, from a second back along its flight: game.ts updateProjectiles, hurtHero's (ox, oy))
 			var by: Dictionary = a["by"]
