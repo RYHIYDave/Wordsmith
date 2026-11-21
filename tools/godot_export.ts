@@ -284,6 +284,11 @@ if (level.land) {
   // its tile and its picture's `variant` (its face & 1, its frame >> 1): act3/gallery.gd, gqueen.gd)
   const G18 = level.land.gallery;
   const gallery = G18 ? { hall: G18.hall ? { x: G18.hall.x, y: G18.hall.y, alongX: G18.hall.alongX, mirror: { x: G18.hall.mirror.x, y: G18.hall.mirror.y } } : null, mirrors: level.props.filter((p) => p.kind === 'piece' && p.name === 'a tall mirror').map((p) => ({ tx: p.tx, ty: p.ty, variant: p.variant ?? 0 })) } : null;
-  writeFileSync(`${OUT}/land.json`, JSON.stringify({ kind: level.land.kind, areas, lanes, ...(garden ? { garden } : {}), ...(masque ? { masque } : {}), ...(gallery ? { gallery } : {}) }, null, 1));
+  // (FLOOR 19: the Keep's portcullises, each a row of tiles right across a hall (its first tile, along x or y, how many), and the
+  // throne hall's broken songbird: act3/keep.gd, gking.gd)
+  const K19 = level.land.kind === 'keep' ? level.land.keep : null;
+  const bird = level.props.find((p) => p.kind === 'piece' && p.name === 'the clockwork songbird, broken');
+  const keep = K19 ? { portcullises: K19.portcullises.map((q) => ({ x: q.x, y: q.y, n: q.n, alongX: q.alongX })), bird: bird ? { x: bird.x, y: bird.y } : null } : null;
+  writeFileSync(`${OUT}/land.json`, JSON.stringify({ kind: level.land.kind, areas, lanes, ...(garden ? { garden } : {}), ...(masque ? { masque } : {}), ...(gallery ? { gallery } : {}), ...(keep ? { keep } : {}) }, null, 1));
   console.log(`land: ${level.land.kind}, ${areas.length} areas (${areas.map((a) => a.role).join(', ')}), ${lanes.length} lanes`);
 }

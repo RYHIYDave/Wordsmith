@@ -153,6 +153,8 @@ var garden = null
 var masque = null
 ## (THE HIGH CITY, FLOOR 18: the Glass Gallery's tall mirrors: act3/gallery.gd)
 var gallery = null
+## (THE HIGH CITY, FLOOR 19: the Keep's portcullises: act3/keep.gd)
+var keep = null
 var holds:
 	get:
 		return quest610.holds if quest610 != null else null
@@ -256,6 +258,9 @@ func _ready() -> void:
 	gallery = preload("res://scripts/act3/gallery.gd").new()
 	gallery.main = self
 	add_child(gallery)
+	keep = preload("res://scripts/act3/keep.gd").new()
+	keep.main = self
+	add_child(keep)
 
 	var shots := _arg("shots")
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
@@ -623,6 +628,8 @@ func _build(where: String, arrive: String) -> void:
 		masque.enter(where)
 	if gallery != null:
 		gallery.enter(where)
+	if keep != null:
+		keep.enter(where)
 
 
 ## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.

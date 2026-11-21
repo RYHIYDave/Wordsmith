@@ -4008,5 +4008,38 @@
     "fps": 30
    }
   ]
+ },
+ "kknight_1": {
+  "sides": 2,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 10
+   },
+   {
+    "name": "walk",
+    "fps": 30
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "die",
+    "fps": 20
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "setOff",
+    "fps": 30
+   },
+   {
+    "name": "halt",
+    "fps": 30
+   }
+  ]
  }
 }

@@ -144,6 +144,8 @@ import { RUSH as OD_RUSH, rushCarry } from '../src/art/silent_order_moves';
 import { DANCE_CANVAS as PC_DANCE_CANVAS, DANCE_FX as PC_DANCE_FX, MASKS_FX as PC_MASKS_FX, MASK_CANVAS as PC_MASK_CANVAS, MASK_FLIGHT as PC_MASK_FLIGHT, dancePainted as pcDance, flungMask, maskPainted as pcMask } from '../src/art/prince_fx';
 import { TILE3 as T3 } from '../src/art/new_mobs3';
 import { FLASH_CANVAS as LD_FLASH_CANVAS, FLASH_FX as LD_FLASH_FX, flashPainted as ldFlash } from '../src/art/gallery_ladies_fx';
+import { RALLY_CANVAS as KK_RALLY_CANVAS, STANDING_CANVAS as KK_STANDING_CANVAS, bannerPainted, rallyPainted } from '../src/art/action_f16_knight';
+import { BANNER_N, bannerSprite } from '../src/art/act1_figs/kknight';
 import { CLOUD_CANVAS as QN_CLOUD_CANVAS, CLOUD_FX as QN_CLOUD_FX, HALL_MIRROR_CANVAS, SHATTER_FX as QN_SHATTER_FX, TALK_CANVAS as QN_TALK_CANVAS, TALK_FX as QN_TALK_FX, cloudPainted as qnCloud, hallMirrorPainted, shardsAt as qnShardsAt, talkingMirrorPainted } from '../src/art/queen_fx';
 import { BOULDER, HAMMER, SMASH_CANVAS, smashPainted } from '../src/art/action_f6_golem';
 import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, RING_CANVAS as CH_RING_CANVAS, STATIC_CANVAS, blazePainted, makeFlyingPotArt, potShadowPainted, ringPainted as chRing, staticPainted } from '../src/art/action_f6_cult';
@@ -725,6 +727,23 @@ for (const view of ['front', 'back'] as const) {
   tables.gq_shards = Array.from({ length: Math.ceil((QN_SHATTER_FX.lie[1] - b0) * 15) + 1 }, (_, k) => qnShardsAt(b0 + k / 15).map((q) => [+q.p[0].toFixed(1), +q.p[1].toFixed(1), +(q.p[2] ?? 0).toFixed(1)]));
 }
 
+// FLOOR 19, THE KEEP (godot/scripts/act3/marks19.gd), as the game starts with its new moves on (render/act1_fx/kknight.ts, the
+// rallying banner: KNIGHT_BANNER):
+//   kk_banner_<view>  the banner standing, its cloth stirring, round and round (art/films.ts things:kknight, bannerSprite)
+//   kk_plant_<view>   driven in, its first 0.2 s; kk_struck_<view>, shuddering as a blow lands (0.4 s); kk_cut_<view>, cut down
+//                     (1.6 s): bannerPainted, as it comes; thirty frames a second
+//   kk_splinters      its splinters as it is cut (rallyPainted 'air', 1 s)
+{
+  for (const view of ['front', 'back'] as const) {
+    const sp = (t: number, struck: number, cut: number): number => pic(toSprite(bannerPainted(t, view, struck, cut), null, KK_STANDING_CANVAS.ax, KK_STANDING_CANVAS.ay));
+    films[`kk_banner_${view}`] = { fps: 0, n: BANNER_N, k0: 0, layers: { stand: Array.from({ length: BANNER_N }, (_, i) => pic(bannerSprite(i, view))) } };
+    films[`kk_plant_${view}`] = { fps: FPS, n: 6, k0: 0, layers: { stand: Array.from({ length: 6 }, (_, k) => sp(k / FPS, -1, -1)) } };
+    films[`kk_struck_${view}`] = { fps: FPS, n: 12, k0: 0, layers: { stand: Array.from({ length: 12 }, (_, k) => sp(1.0, k / FPS, -1)) } };
+    films[`kk_cut_${view}`] = { fps: FPS, n: 48, k0: 0, layers: { stand: Array.from({ length: 48 }, (_, k) => sp(2.0 + k / FPS, -1, k / FPS)) } };
+  }
+  films.kk_splinters = { fps: FPS, n: 30, k0: 0, layers: { stand: Array.from({ length: 30 }, (_, k) => pic(toSprite(rallyPainted(2.0 + k / FPS, 'air', k / FPS), null, KK_RALLY_CANVAS.ax, KK_RALLY_CANVAS.ay))) } };
+}
+
 // floors 6 to 8's common monsters, as the game starts with their new moves on (render/act1_fx/qgolem.ts, firepot.ts, chanter.ts,
 // devil.ts, scorpion.ts: each painted afresh a frame at a time by the art's own painter, render/act1_fx/live.ts)
 {
@@ -1064,7 +1083,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the city's)
   watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'], bookwarden: ['wb'],
   // (the High City's)
-  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['gq'],
+  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['gq'], kknight: ['kk'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

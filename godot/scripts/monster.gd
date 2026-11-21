@@ -102,6 +102,8 @@ const BOSS_AI := {
 	# (floor 18's: the ladies-in-waiting, your reflections, the queen's guard, and the Queen)
 	"lady": preload("res://scripts/act3/lady.gd"), "reflection": preload("res://scripts/act3/reflection.gd"),
 	"qguard": preload("res://scripts/act3/qguard.gd"), "gqueen": preload("res://scripts/act3/gqueen.gd"),
+	# (floor 19's: the crossbowmen on the walls, the king's knights; the Order's armed last are the Order's)
+	"xbow": preload("res://scripts/act3/xbow.gd"), "kknight": preload("res://scripts/act3/kknight.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -1054,7 +1056,8 @@ func _turn_to(to: Vector2, dist: float) -> void:
 
 
 func _roll() -> float:
-	return randf_range(dmg_min, dmg_max)
+	# (THE HIGH CITY, FLOOR 19: within the reach of a king's knight's standing banner, a third harder: act3/kknight.gd rally_of)
+	return randf_range(dmg_min, dmg_max) * KK.rally_of(self)
 
 
 # --- its own words ---
@@ -1453,6 +1456,7 @@ func clear_afflictions() -> void:
 
 
 const PF := preload("res://scripts/pixel_font.gd")
+const KK := preload("res://scripts/act3/kknight.gd")
 const SAY_GOLD := Color("#ffd27a")
 const SAY_INK := Color("#120d18")
 ## (render/fx.ts BOSS_SAY_LIFT: game pixels over where he stands)

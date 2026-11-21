@@ -156,6 +156,8 @@ func run(main, hero, out: String) -> void:
 		await _mirrors()
 	if depth == 18 and (M._arg("kind") == "" or M._arg("kind").split(",").has("gqueen")):
 		await _gqueen()
+	if depth == 19 and (M._arg("kind") == "" or M._arg("kind").split(",").has("ports")):
+		await _ports()
 	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
 
 
@@ -163,10 +165,10 @@ func run(main, hero, out: String) -> void:
 const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"], 12: ["rat", "dredger", "scribe", "hushed", "ratking"],
 	13: ["fieldhand", "carter", "hushed", "scraper", "quill"], 14: ["patient", "orderly", "hushed", "physician"],
 	15: ["inkling", "bookwarden", "scribe", "hushed", "censor"], 16: ["swan", "gardener", "groom", "pguard"],
-	17: ["dancer", "footman", "order", "prince"], 18: ["lady", "reflection", "qguard", "gqueen"]}
+	17: ["dancer", "footman", "order", "prince"], 18: ["lady", "reflection", "qguard", "gqueen"], 19: ["xbow", "order", "kknight", "gking"]}
 const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"], 13: ["fieldhand", "carter"], 14: ["patient", "orderly"],
 	15: ["inkling", "bookwarden"], 16: ["swan", "gardener", "groom", "pguard"], 17: ["dancer", "footman", "order"],
-	18: ["lady", "reflection", "qguard"]}
+	18: ["lady", "reflection", "qguard"], 19: ["xbow", "order", "kknight"]}
 
 
 var chosen := {}
@@ -417,6 +419,42 @@ func _common(kind: String) -> void:
 			var out: bool = await _run(3.0, func(): return _is_act(m, "qguard:stepOut"))
 			await _run(0.7)
 			_line(went and out and m.world.distance_to(h.world) < 2.5, "farther off, he steps into the glass and out of another beside him (%.1f tiles from him)" % m.world.distance_to(h.world))
+		"xbow":
+			h.world = M._spot_near(m.world, 6.0, h.world)
+			var aimed: bool = await _run(5.0, func(): return _is_act(m, "xbow:shot") and float(m.h2.act["t"]) >= 1.25)
+			var lane: bool = not _a1("xbow:show").is_empty()
+			await _snap("xbow_red_line")
+			await _run(0.12)
+			await _snap("xbow_bolt")
+			var reload: bool = await _run(2.0, func(): return _is_act(m, "xbow:reload"))
+			_line(aimed and lane and struck > 0 and reload, "the crossbowman holds his spot: the red aim line drawn out and held; the bolt down it, the hero struck (%d); the reload after" % struck)
+		"kknight":
+			h.world = M._spot_near(m.world + m.face * 3.5, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var cleave: bool = await _run(6.0, func(): return not _a1("kknight:crack").is_empty())
+			await _run(0.2)
+			await _snap("kknight_crack")
+			await _run(1.5, func(): return m.h2.act == null)
+			_line(cleave and struck > 0, "the king's knight's cleave: the floor cracked on out before him, the hero struck (%d)" % struck)
+			struck = 0
+			h.world = M._spot_near(m.world + m.face * 2.5, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 1)
+			var planted: bool = await _run(6.0, func(): return not _a1("kknight:banner").is_empty())
+			await _run(1.0)
+			await _snap("kknight_banner_rally")
+			var bp: Dictionary = _a1("kknight:banner")
+			var rally: float = m.h2.rally_of(m)
+			var looked: String = m.art.name
+			for k in 3:
+				h._break_props(0, Vector2(bp.get("x", 0.0), bp.get("y", 0.0)), 0.5)
+				await _run(0.2)
+			var cut: bool = float(bp.get("d", -1.0)) >= 0.0
+			await _run(0.3)
+			await _snap("kknight_banner_cut_down")
+			_line(planted and struck > 0 and rally > 1.2 and looked == "kknight_1" and cut and M._wu_said("The banner is cut down") != "",
+				"the rallying banner: driven in, its shockwave striking the hero (%d); while it stands those near it hit harder (x%.1f); he without it (%s); three blows cut it down" % [struck, rally, looked])
 		"hushed":
 			h.world = M._spot_near(m.world, 0.9, h.world)
 			_ready_only(m, 0)
@@ -1812,4 +1850,29 @@ func _gqueen() -> void:
 	await _snap("gqueen_falls")
 	var P0: Dictionary = _a1("gqueen:hall")
 	_line(fell and not P0.is_empty() and int(P0["c"]) == 2 and str(P0.get("say", "")) == "The king is dying. Something sits on his chest.", "the Queen falls: her mirror cracks across and tells the truth: \"%s\"" % str(P0.get("say", "")))
+
+
+## FLOOR 19'S PORTCULLISES (act3/keep.gd): one near him shakes, falls and slams: he under it struck and thrown clear; its row not walked
+## while it is down; wound up again.
+func _ports() -> void:
+	var K = M.keep
+	if K == null or not K.on():
+		_line(false, "floor 19 has no portcullises")
+		return
+	var s: Dictionary = K.ports[0]
+	var tiles: Array = K.tiles_of(s)
+	var t0: int = tiles[int(s["n"]) / 2]
+	h.world = Vector2(t0 % M.map.w + 0.5, t0 / M.map.w + 0.5)
+	s["phase"] = "up"
+	s["t"] = 0.05
+	var shook: bool = await _run(1.0, func(): return s["phase"] == "warn")
+	await _snap("portcullis_shakes")
+	struck = 0
+	var slammed: bool = await _run(2.0, func(): return s["phase"] == "slam")
+	await _run(0.2)
+	await _snap("portcullis_slammed")
+	var thrown: bool = not K.under(s, h.world)
+	var shut: bool = M.map.walk[t0] == 0
+	var up: bool = await _run(7.0, func(): return s["phase"] == "up")
+	_line(shook and slammed and thrown and shut and struck > 0 and up and M.map.walk[t0] == 1, "a portcullis near him shakes, falls and slams: he under it thrown clear and struck (%d); its row cut off while it is down; wound up again" % struck)
 

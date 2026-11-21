@@ -1114,6 +1114,25 @@
       if (r.err) { note[`jar${i}`] = r.err; return; }
       out[`jar${i}`] = { kind: 'jar', at: { tx: p.tx, ty: p.ty, variant: p.variant ?? 0 }, frames: [none(), r.frames[0]] };
     });
+    // THE HIGH CITY, FLOOR 19, THE KEEP (game/act2/keep_rules.ts): each portcullis, `port<j>` in the plan's order, its row's pieces at
+    // each of its frames [up, the warning, falling, slammed, down] (`variant`: five along x, then five along y)
+    if (L.land && L.land.kind === 'keep' && L.land.keep) {
+      L.land.keep.portcullises.forEach((at, j) => {
+        const pieces = [];
+        for (let k = 0; k < at.n; k++) {
+          const x = at.alongX ? at.x + k : at.x;
+          const y = at.alongX ? at.y : at.y + k;
+          const q = L.props.find((p) => p.kind === 'piece' && p.name === 'a portcullis' && p.tx === x && p.ty === y);
+          if (q) pieces.push(q);
+        }
+        if (!pieces.length) return;
+        const was = pieces.map((p) => p.variant);
+        const base = at.alongX ? 0 : 5;
+        const r = REC.variant(T0, W, H, [1, 2, 3, 4], (v) => { for (const p of pieces) p.variant = base + v; }, () => { pieces.forEach((p, i) => { p.variant = was[i]; }); });
+        if (r.err) { note[`port${j}`] = r.err; return; }
+        out[`port${j}`] = { kind: 'port', at: { x: at.x, y: at.y, n: at.n, alongX: at.alongX }, frames: [none(), ...r.frames] };
+      });
+    }
     // THE HIGH CITY, FLOOR 16, THE SWAN GARDENS (game/act2/garden_rules.ts): each patch of nettles stirred, `nettle<i>` (its steps:
     // still, stirred: the art's two pictures, `variant` 0 and 1); her vine in the yew, `yew<i>` (its four pictures, `variant` 0 to
     // 3: the first until he comes near, then the rest once, the last kept)
