@@ -21,7 +21,8 @@ const PORTED := {
 	"mage": [],
 	"warlock": [],
 	"tinkerer": [],
-	"brawler": [],
+	"brawler": ["vstiffjab", "vviperjab", "vguardup", "vknockdown", "vlauncher", "vlightfeet", "vfirestarter", "vstoke", "vhangtime",
+		"vfullset", "vswitchkick", "vlonglegs", "vwallslam", "vaftershock", "vthunderknee"],
 }
 
 

@@ -1488,6 +1488,9 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 			_tell({"t": "cullBlow", "id": src.id, "x": src.world.x, "y": src.world.y})
 	# (THE SKILL TREES REMADE: Bulwark, the more close round him the less each blow; Thick Skin, below half his life, less)
 	dmg *= _talent_guard()
+	# (THE VETERAN'S TREE: Guard Up, between his blows his fists are up: heroes/brawler.gd)
+	if kit != null and kit.has_method("guard_k"):
+		dmg *= kit.guard_k(by)
 	dmg = maxf(1.0, roundf(dmg))
 	# HEAVY, on a monster: its blow knocks him back a step (game.ts knockHero)
 	var knocked := 0.0

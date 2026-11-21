@@ -87,6 +87,8 @@ func run(main, hero, d: String) -> void:
 		"the greatsword not undone while Sweeping Cut hangs on it ('%s'), Sweeping Cut undone (''); a save's list made safe at level 7: %s" % [u1, cl])
 	# THE WARRIOR'S TALENTS IN PLAY (game.ts, TALENTS2's rules)
 	await _warrior()
+	# THE VETERAN'S TALENTS
+	await _veteran()
 	# THE PAGE, for each class
 	var inv = M._inv
 	for cls in ["warrior", "ranger", "mage", "warlock", "tinkerer", "brawler"]:
@@ -235,4 +237,58 @@ func _warrior() -> void:
 	m = _foe(1.0)
 	h.killed(m)
 	_line(h._lunge_cd == 0.0, "Footwork: a kill makes the Lunge ready again at once")
+	h.talents = []
+
+
+func _veteran() -> void:
+	M.set_class("brawler", true)
+	M.loot.level = 50
+	h.life = h.max_life
+	h.face = Vector2(1, 0)
+	await _run(0.3)
+	var kit = h.kit
+	var T: Dictionary = Talents.D["vetTalents"]
+	# Light on His Feet: his jump's wait a third shorter
+	h.talents = ["vlightfeet"]
+	kit.cd[2] = 0.0
+	kit.charges[2] = 1
+	kit._press("swipe", h.world + h.face)
+	var wait_l: float = kit.cd[2]
+	kit.mv = {}
+	kit.queue = []
+	kit.globes = []
+	kit.done = []
+	h.talents = []
+	kit.cd[2] = 0.0
+	kit.charges[2] = 1
+	kit._press("swipe", h.world + h.face)
+	var wait_0: float = kit.cd[2]
+	kit.mv = {}
+	kit.queue = []
+	kit.globes = []
+	kit.done = []
+	_line(absf(wait_l - wait_0 * float(T["lightFeet"]["wait"])) < 0.01, "Light on His Feet: his jump's wait %.2f s, a third less than %.2f s" % [wait_l, wait_0])
+	# Fire Starter: landed from a dodge jump, his next tap comes out in fire
+	h.talents = ["vlightfeet", "vfirestarter"]
+	kit.fire_ready = true
+	kit._press("tap", h.world + h.face)
+	var fired: bool = not kit.globes.is_empty() and kit.globes[0] == "punchFire" and not kit.fire_ready
+	kit.queue = []
+	kit.globes = []
+	_line(fired, "Fire Starter: after the dodge jump his next tap is in fire (%s), the jump not spent" % [kit.globes])
+	# Guard Up: between blows a blow from in front does half harm, from behind full
+	h.talents = ["vstiffjab", "vguardup"]
+	kit.mv = {}
+	var front: float = kit.guard_k(h.world + h.face)
+	var back: float = kit.guard_k(h.world - h.face)
+	_line(front == 0.5 and back == 1.0, "Guard Up: a blow from in front does half harm (%.1f), from behind all of it (%.1f)" % [front, back])
+	# Long Legs: his kicks reach a tile further
+	var m: Dictionary = kit.R["roundkick"]
+	var o: Vector2 = h.world
+	var a: Vector2 = h.face
+	var left := Vector2(a.y, -a.x)
+	var far: float = float(m["force"]["reach"]) + 0.6 + 0.3
+	var no_legs: float = kit._reach(m, o, a, left, o + a * far, 0.3, 0.0)
+	var legs: float = kit._reach(m, o, a, left, o + a * far, 0.3, float(T["longLegs"]["more"]))
+	_line(no_legs < 0.0 and legs >= 0.0, "Long Legs: a round kick reaches one %.1f tiles off with them (frame %.1f), not without (%.1f)" % [far, legs, no_legs])
 	h.talents = []

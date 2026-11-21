@@ -603,7 +603,9 @@ IRON's Thick Skin, Shieldwall (the shield breaking bursts, throwing back and stu
 near, a second untouchable), Bulwark; the joins Honed Edge (a critical bleeds), Giant Slayer (an elite's or a boss's guard
 cracked, 3% more a crack, ten at most), Resolute, Executioner, Master Stroke and Unbreakable (once a dungeon). Not yet: the
 Whirlwind talent (his Whirlwind is his from the start here, at his pick of 14 Nov 2026) and the battle axe's and the warhammer's
-paths (their own moves).
+paths (their own moves). THE VETERAN'S, ALL FIFTEEN: Stiff Jab, Viper Jab, Guard Up, Knockdown, Launcher; Light on His Feet, Fire
+Starter, Stoke, Hang Time, The Full Set; Switch Kick, Long Legs, Wall Slam, Aftershock, Thunder Knee (heroes/brawler.gd, by game.ts
+vetHit and its neighbours, VET_TALENTS' numbers).
 
 ## The shadows under the figures, and the named ones' rings (the cloud chat, 21 Nov 2026)
 

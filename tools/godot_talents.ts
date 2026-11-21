@@ -31,6 +31,7 @@ import {
   talentWord,
 } from '../src/game/talents';
 import type { ClassId } from '../src/game/types';
+import { VET_TALENTS } from '../src/game/veteran';
 
 gameSwitches();
 
@@ -76,6 +77,7 @@ writeFileSync(
     unlearnPerLevel: TALENT_TUNE.unlearnPerLevel,
     tune: TALENT_TUNE,
     warriorTune: WARRIOR_TUNE,
+    vetTalents: VET_TALENTS,
     weapons: { picks: ['greatsword', 'battleaxe', 'warhammer'], kits: WARRIOR_KITS, paths: { axe: 'battleaxe', gsword: 'greatsword', hammer: 'warhammer' } },
     trees,
     words,

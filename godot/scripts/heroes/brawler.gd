@@ -48,8 +48,23 @@ const VET_LIST0 := 58
 const HERO_R := 0.3
 
 
+## (THE VETERAN'S TREE: Fire Starter, landed from his dodge jump: his next tap or hold comes out in fire)
+var fire_ready := false
+const Talents := preload("res://scripts/talents.gd")
+
+
+## THE VETERAN'S TREE (game/talents.ts VETERAN_TREE; game.ts, his moves; veteran.ts VET_TALENTS): `id` his, and its numbers.
+func _has(id: String) -> bool:
+	return h.has(id)
+
+
+func _T() -> Dictionary:
+	return Talents.D["vetTalents"]
+
+
 func _init(hero) -> void:
 	super(hero, "brawler")
+	Talents.ready_up()
 	V = JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/veteran.json"))
 	R = V["rules"]
 	TUNE = V["tune"]
@@ -150,6 +165,7 @@ func step(dt: float, way: Vector2, hooked: bool) -> bool:
 		queue = []
 		globes = []
 		done = []
+		fire_ready = false
 		_tap = false
 		_hold = false
 		_swipe = {}
@@ -220,16 +236,29 @@ func _press(kind: String, at := Vector2.ZERO) -> bool:
 			queue = []
 			globes = []
 			done = []
+			fire_ready = false
 		charges[2] -= 1
 		h.uses[2] += 1
+		# (THE VETERAN'S TREE: Light on His Feet, his jump comes back a third sooner)
 		if cd[2] <= 0.0:
-			cd[2] = float(h.loadout.r(2)["cooldown"])
+			cd[2] = float(h.loadout.r(2)["cooldown"]) * (float(_T()["lightFeet"]["wait"]) if _has("vlightfeet") else 1.0)
 			full[2] = maxf(0.01, cd[2])
+		fire_ready = false
 		globes.append("jump")
 		queue.append({"id": "dodge", "globe": globes.size() - 1, "tx": at.x, "ty": at.y})
 		idle = 0.0
 		return true
 	var i := 0 if kind == "tap" else 1
+	# (THE VETERAN'S TREE: Fire Starter, landed from a dodge jump, his next tap or hold is in fire already, the jump not spent)
+	if fire_ready and not _full():
+		fire_ready = false
+		globes.append("punchFire" if kind == "tap" else "kickFire")
+		var fq := {"id": fire_for(kind, before), "globe": globes.size() - 1}
+		fq.merge(_aim_of(kind))
+		queue.append(fq)
+		h.uses[i] += 1
+		idle = 0.0
+		return true
 	# (set in fire: the swipe's jump waiting its turn, or begun and not yet off the floor)
 	var last_q = queue.back() if not queue.is_empty() else null
 	var jumping: bool = last_q == null and not mv.is_empty() and mv["id"] == "dodge" and float(mv["f"]) < float(R["dodge"]["air"][0])
@@ -321,7 +350,12 @@ func _start() -> void:
 			a = f
 	h._turn(f)
 	_plays += 1
-	mv = {"id": id, "f": 0.0, "x0": h.world.x, "y0": h.world.y, "fx": f.x, "fy": f.y, "ax": a.x, "ay": a.y, "carried": Vector2.ZERO, "hit": [], "globe": q["globe"],
+	# (THE VETERAN'S TREE: Switch Kick, a round kick straight after a punch with half its wind-up: begun half way through it)
+	var prev: String = done.back() if not done.is_empty() else ""
+	var f0 := 0.0
+	if id == "roundkick" and prev != "" and is_punch(prev) and idle < float(TUNE["gap"]) and _has("vswitchkick"):
+		f0 = floorf(float(R["roundkick"]["strike"]["from"]) * float(_T()["switchKick"]["skip"]))
+	mv = {"id": id, "f": f0, "x0": h.world.x, "y0": h.world.y, "fx": f.x, "fy": f.y, "ax": a.x, "ay": a.y, "carried": Vector2.ZERO, "hit": [], "globe": q["globe"],
 		"wx": 0.0, "wy": 0.0, "props": false, "n": _plays, "tid": null}
 	if id != "dodge":
 		if h.monsters != null:
@@ -400,7 +434,8 @@ func _play(dt: float, way: Vector2) -> void:
 		var left := Vector2(fw.y, -fw.x)
 		h.world = h.map.slide(h.world, HERO_R, fw * dc.x + left * dc.y)
 	# (his dodging jump: nothing touches him while he is off the floor)
-	if m["air"] != null and id == "dodge" and f >= float(m["air"][0]) and f <= float(m["air"][1]):
+	# (THE VETERAN'S TREE: Hang Time, nor through any move of his in the air)
+	if m["air"] != null and (id == "dodge" or _has("vhangtime")) and f >= float(m["air"][0]) and f <= float(m["air"][1]):
 		h._invuln = maxf(h._invuln, 0.06)
 	if S != null and f >= float(S["at"]):
 		_strike(m)
@@ -408,6 +443,9 @@ func _play(dt: float, way: Vector2) -> void:
 		done.append(id)
 		mv = {}
 		idle = 0.0
+		# (THE VETERAN'S TREE: Fire Starter, landed from his dodge jump: his next tap or hold is in fire)
+		if id == "dodge" and _has("vfirestarter"):
+			fire_ready = true
 		# (the combo locked and played out: its globes go out)
 		if _full() and queue.is_empty():
 			globes = []
@@ -416,13 +454,13 @@ func _play(dt: float, way: Vector2) -> void:
 
 ## (veteran.ts vetReach) The frame a blow's force reaches one standing at `p`, radius `r` (from where he stood as it began, along
 ## the way his blow goes), or -1 if it never does. Its front goes out over `long` frames, fast then slowing.
-func _reach(m: Dictionary, o: Vector2, a: Vector2, left: Vector2, p: Vector2, r: float) -> float:
+func _reach(m: Dictionary, o: Vector2, a: Vector2, left: Vector2, p: Vector2, r: float, more := 0.0) -> float:
 	var F: Dictionary = m["force"]
 	var from: float = float(F.get("from", m["strike"]["at"]))
 	var d := p - o
 	var dist := d.length()
 	var near := maxf(0.0, dist - r - float(TUNE["body"]))
-	var reach: float = F["reach"]
+	var reach: float = float(F["reach"]) + more
 	if near > reach:
 		return -1.0
 	if F["shape"] != "round":
@@ -453,9 +491,11 @@ func _strike(m: Dictionary) -> void:
 	# (his left about the way his blow goes: never a mirror, from all eight sides)
 	var left := Vector2(a.y, -a.x)
 	var skill := 0 if is_punch(mv["id"]) else 1
+	# (THE VETERAN'S TREE: Long Legs, his kicks reach a tile further)
+	var more: float = float(_T()["longLegs"]["more"]) if S["kind"] == "kick" and _has("vlonglegs") else 0.0
 	if not mv["props"] and f >= from:
 		mv["props"] = true
-		var reach: float = F["reach"]
+		var reach: float = float(F["reach"]) + more
 		if F["shape"] == "round":
 			h._break_props(skill, b, reach)
 		else:
@@ -468,7 +508,7 @@ func _strike(m: Dictionary) -> void:
 	for o in h.monsters.list:
 		if not is_instance_valid(o) or o.dead or (mv["hit"] as Array).has(o) or o.state == "rise" or h.monsters.shut_in(o):
 			continue
-		var at := _reach(m, b, a, left, o.world, o.r)
+		var at := _reach(m, b, a, left, o.world, o.r, more)
 		if at < 0.0 or f < at:
 			continue
 		(mv["hit"] as Array).append(o)
@@ -483,7 +523,30 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	var rc: Dictionary = V["react"][m["force"]["react"]]
 	var first: bool = (mv["hit"] as Array).size() == 1
 	var share: float = m["share"]
+	var T := _T()
+	var fire: bool = m.get("globe") == "punchFire" or m.get("globe") == "kickFire"
+	var kicked: bool = m["strike"]["kind"] == "kick"
+	# (THE VETERAN'S TREE: Launcher, his blows on one hanging in the air land twice as hard)
+	if _has("vlauncher"):
+		for u in up:
+			if u["m"] == o:
+				share *= float(T["launcher"]["mult"])
+				break
+	# (The Full Set: the last blow of a combo locked with a punch, a kick and a fire globe in it, a finisher)
+	var finisher: bool = int(mv["globe"]) == 2 and _has("vfullset") and globes.has("punch") and globes.has("kick") and (globes.has("punchFire") or globes.has("kickFire"))
+	if finisher:
+		share *= float(T["fullSet"]["mult"])
 	h.hit_monster(o, i, share, n >= 3)
+	# (Stoke: a fire move that lands takes two seconds off his jump's wait)
+	if first and fire and _has("vstoke") and charges[2] < 1:
+		cd[2] = maxf(0.01, cd[2] - float(T["stoke"]["secs"]))
+	# (Thunder Knee: his flying knee and spinning jump kicks crack with lightning, on to three more near each one they hit)
+	if id in ["knee", "spinkick", "spinkickClose"] and _has("vthunderknee"):
+		_thunder(o, m)
+	if finisher:
+		_shake(5.0)
+		if not o.dead:
+			o.throw_from(Vector2(float(mv["x0"]) + float(mv["wx"]), float(mv["y0"]) + float(mv["wy"])), float(T["fullSet"]["throw"]), 0.3)
 	if first:
 		h._landed_on(i)
 		# (what the words behind it leave, his blow leaves where it first lands, once a move)
@@ -497,16 +560,89 @@ func _hit(o, m: Dictionary, n: int) -> void:
 			_shake(1.8)
 	if o.dead:
 		return
+	# (Viper Jab: his jab poisons; Stiff Jab: it breaks off what the one it hits is winding up)
+	if id == "jab" and _has("vviperjab"):
+		var hit: float = (float(h.stats["dmg_min"]) + float(h.stats["dmg_max"])) / 2.0 * float(h.loadout.r(0)["dmg_mult"]) * share
+		var secs: float = Words.data()["poison"]["time"]
+		o.dose(hit * float(T["viperJab"]["dose"]) / secs, secs)
+	if id == "jab" and _has("vstiffjab"):
+		o.break_off()
+	# (Aftershock: every kick that lands knocks down everything near the one it hit)
+	if kicked and _has("vaftershock"):
+		_aftershock(o)
 	if rc.has("up") and _pop_up(o):
 		o.stun_t = float(V["up"]["up"]) + float(rc.get("stun", 0.0))
 		return
 	var from := Vector2(float(mv["x0"]) + float(mv["wx"]), float(mv["y0"]) + float(mv["wy"]))
-	if rc.has("back"):
+	if rc.has("back") and not finisher:
+		# (Wall Slam: one his kick drives into a wall or into another enemy is stunned)
+		if kicked and _has("vwallslam") and _slams(o, from, float(rc["back"])):
+			o.stun_t = maxf(o.stun_t, float(T["wallSlam"]["stun"]))
 		o.throw_from(from, float(rc["back"]), float(TUNE["driveSecs"]))
 	if rc.has("stagger"):
 		o.stagger_t = maxf(o.stagger_t, float(rc["stagger"]))
 	if rc.has("stun"):
 		o.stun_t = maxf(o.stun_t, float(rc["stun"]))
+	# (Knockdown: the third punch of a combo knocks it off its feet)
+	if int(mv["globe"]) == 2 and is_punch(id) and _has("vknockdown") and not o.boss:
+		o.stun_t = maxf(o.stun_t, float(T["knockdown"]["down"]))
+
+
+## (Wall Slam) Is the way it is driven blocked by a wall or another monster, within how far it is driven? (game.ts vetSlams)
+func _slams(o, from: Vector2, back: float) -> bool:
+	var d: Vector2 = o.world - from
+	var u := d / d.length() if d.length() > 0.0 else Vector2(1, 0)
+	var dd := 0.25
+	while dd <= back + 0.01:
+		var p: Vector2 = o.world + u * dd
+		if not h.map.fits(p.x, p.y, minf(o.r, 0.42)):
+			return true
+		for q in h.monsters.list:
+			if is_instance_valid(q) and q != o and not q.dead and q.world.distance_to(p) < q.r + o.r * 0.8:
+				return true
+		dd += 0.25
+	return false
+
+
+## (Aftershock) A ring of force through the floor round the one he kicked: everything near it falls (game.ts vetAftershock).
+func _aftershock(o) -> void:
+	var A: Dictionary = _T()["aftershock"]
+	h._tell({"t": "burst", "x": o.world.x, "y": o.world.y, "r": A["r"], "el": "phys", "style": "shock"})
+	for q in h.monsters.list:
+		if not is_instance_valid(q) or q == o or q.dead or q.boss or h.monsters.shut_in(q):
+			continue
+		if q.world.distance_to(o.world) <= float(A["r"]) + q.r:
+			q.stun_t = maxf(q.stun_t, float(A["down"]))
+
+
+## (Thunder Knee) Lightning off the one his fire kick hit, on to the three nearest it: struck and stunned (game.ts vetThunder).
+func _thunder(o, m: Dictionary) -> void:
+	var K: Dictionary = _T()["thunderKnee"]
+	var near: Array = []
+	for q in h.monsters.list:
+		if not is_instance_valid(q) or q == o or q.dead or (mv["hit"] as Array).has(q) or h.monsters.shut_in(q):
+			continue
+		if q.world.distance_to(o.world) <= float(K["far"]):
+			near.append(q)
+	near.sort_custom(func(a, b): return a.world.distance_to(o.world) < b.world.distance_to(o.world))
+	for q in near.slice(0, int(K["n"])):
+		h._tell({"t": "arc", "x0": o.world.x, "y0": o.world.y, "x1": q.world.x, "y1": q.world.y})
+		h.hit_monster(q, 1, float(m["share"]) * float(K["share"]), true)
+		if not q.dead and not q.boss:
+			q.stun_t = maxf(q.stun_t, float(K["stun"]))
+	if not o.dead and not o.boss:
+		o.stun_t = maxf(o.stun_t, float(K["stun"]))
+
+
+## (Guard Up) Between his blows his fists are up: a blow from in front of him does half harm (game.ts hurtHero). What is left.
+func guard_k(by: Vector2) -> float:
+	if not mv.is_empty() or not _has("vguardup"):
+		return 1.0
+	var G: Dictionary = _T()["guardUp"]
+	var g: Vector2 = by - h.world
+	if g.length() < 0.01 or g.dot(h.face) / g.length() >= float(G["cos"]):
+		return 1.0 - float(G["less"])
+	return 1.0
 
 
 ## (game.ts popUp) Thrown up in the air, stunned while it is up and two seconds after it comes down.
