@@ -109,6 +109,10 @@ var way_depth := 1
 var saving := false
 var _save_t := 0.0
 var _restored := {}
+## THE CLASS CARDS while they are up (their layer), and the mode the hero was made in (game/modes.ts: "normal" or "hardcore", kept
+## in the save; what a death does in each is not in the port yet)
+var _cards: CanvasLayer = null
+var hero_mode := "normal"
 ## (the last floor he was on: game.ts `depth`, which is still that floor's while he is in town; a new game's is floor 1)
 var last_floor := 1
 ## (the town's gate to be unbarred as he comes in sight of it, the next time the town is laid: the ride up from floor 5 with the
@@ -296,8 +300,48 @@ func _ready() -> void:
 	_build(first, "start")
 	if not _restored.is_empty():
 		Save.restore_bought(self, _restored)
+	# (A NEW GAME, no hero saved: the class cards first (class_cards.gd), the game waiting behind them till a hero is picked)
+	if saving and _restored.is_empty() and _arg("cls") == "" and _arg("only") == "":
+		cards_up(first)
 	if shots != "":
 		_shoot(hero, shots)
+
+
+## THE CLASS CARDS over everything, the game held behind them (main.ts, mode 'title'); the hero picked begins the run where `first`
+## is, warping in (main.ts enter: fx.arrive, the portal's sound). Returns the cards.
+func cards_up(first: String) -> Node:
+	var layer := CanvasLayer.new()
+	layer.layer = 50
+	var cc := preload("res://scripts/class_cards.gd").new()
+	cc.main = self
+	cc.sfx = sfx
+	layer.add_child(cc)
+	add_child(layer)
+	_cards = layer
+	sfx.process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().paused = true
+	cc.picked.connect(func(c: String, m: String) -> void: _picked(c, m, first))
+	return cc
+
+
+func _picked(c: String, m: String, first: String) -> void:
+	if _cards != null:
+		_cards.queue_free()
+		_cards = null
+	sfx.process_mode = Node.PROCESS_MODE_INHERIT
+	get_tree().paused = false
+	set_class(c, true)
+	hero_mode = m
+	_build(first, "start")
+	# (main.ts enter: they warp in where the run begins: fx.arrive, the ring and the motes of a warp, the figure coming together)
+	hero.arrive()
+	if fx != null:
+		var C := preload("res://scripts/fx_looks.gd").P
+		var cols := PackedColorArray([C["tl5"], C["tl4"], C["white"]])
+		fx.ring(hero.world.x, hero.world.y, 0.9, 0.3, cols, false)
+		for i in 18:
+			fx.mote(hero.world.x, hero.world.y, cols)
+	sfx.play("portal")
 
 
 ## HIS CLASS (game/defs.ts CLASSES): his pictures, his three moves (the Warrior's in hero.gd, any other's by its kit,
@@ -307,7 +351,10 @@ func set_class(c: String, fresh: bool) -> void:
 	if not Words.data()["classes"].has(c):
 		c = "warrior"
 	hero.cls = c
-	hero.art = BakedHero.new(HERO_DIR, c)
+	# (in his town, the camp and the rim, his weapon on his back: render.ts, the heroes' art `town: game.level.town`; the bake's
+	# `town` key, art/heroes3.ts; anywhere else, the dungeon's)
+	hero.arts = {"dungeon": BakedHero.new(HERO_DIR, c), "town": BakedHero.new(HERO_DIR, c, "town")}
+	hero.art = hero.arts["town" if is_home(place) else "dungeon"]
 	hero.loadout.cls = c
 	hero.loadout.refresh()
 	hero.kit = null
@@ -327,6 +374,8 @@ func _build(where: String, arrive: String) -> void:
 	if _place != null:
 		_place.free()
 	place = where
+	if not hero.arts.is_empty():
+		hero.art = hero.arts["town" if is_home(where) else "dungeon"]
 	_place = Node2D.new()
 	add_child(_place)
 	move_child(_place, 0)
@@ -1979,6 +2028,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE ROYAL CARDS AND THE QUEST LINE OF FLOORS 16 TO 20: check_quest1620.gd)
 	if _arg("only") == "quests1620":
 		await preload("res://scripts/check_quest1620.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE CLASS CARDS: --only=cards: check_cards.gd)
+	if _arg("only") == "cards":
+		await preload("res://scripts/check_cards.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (THE OTHER HEROES: --only=heroes --cls=<class>: check_heroes.gd)

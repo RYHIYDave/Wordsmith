@@ -84,6 +84,8 @@ extends Node2D
 const Iso := preload("res://scripts/iso.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
 const BakedHero := preload("res://scripts/baked_hero.gd")
+const Tails := preload("res://scripts/tails.gd")
+const Glow := preload("res://scripts/figure_glow.gd")
 const Sfx := preload("res://scripts/sfx.gd")
 const Words := preload("res://scripts/words.gd")
 
@@ -138,6 +140,8 @@ var cls := "warrior"
 var kit = null
 var map: FloorMap
 var art: BakedHero
+## (his pictures for each kind of place: "dungeon", and "town", his weapon on his back; main.gd set_class, _build)
+var arts := {}
 var sfx: Sfx
 var monsters  # monsters.gd
 ## (what the fight shows of his blows and words: the rules tell it with fx.event, fx.gd draws it; null where a place has none)
@@ -247,6 +251,23 @@ var _knock := Vector2.ZERO
 var _knock_t := 0.0
 var _invuln := 0.0
 var _sprite: Sprite2D
+## WHAT IS DRAWN WITH HIS PICTURE (render.ts, the hero drawn): the pool of light behind him (px.ts drawAura: his frame's `aura`,
+## added); his scarf, feather or braids (engine/tails.ts: tails.gd), those that hang behind him and those in front.
+var tails: Tails
+var _aura: Sprite2D
+var _tails_back: Node2D
+var _tails_front: Node2D
+## (the seconds since his tails were last moved on: they are moved once a frame, however often his picture is chosen)
+var _tails_dt := 0.0
+## WARPED IN (main.ts enter; render.ts `coming`, ARRIVE_IN): a hero just come into the world, picked on a class card, comes together
+## out of slices pulled apart, faint (1 - coming^2 x 0.85), over ARRIVE_IN seconds: how long since, -1 when not; and the picture so
+## drawn in place of his own (render.ts stand, `phase`: slices two game pixels tall, each pulled the other way from the one above).
+const ARRIVE_IN := 0.4
+const PHASE_APART := 7.0
+var _arrive_t := -1.0
+var _coming := 0.0
+var _shown := {}
+var _phased: Node2D
 var _cam: Camera2D
 ## (how high the ground he stands on lifts him on the screen, picture pixels: floor_map.gd lift_at)
 var _lift := 0.0
@@ -296,9 +317,24 @@ var _down_for := 0.0
 
 
 func _ready() -> void:
+	tails = Tails.new(JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/clips.json"))["tails"])
+	_aura = Sprite2D.new()
+	_aura.texture = Glow.tex()
+	_aura.material = Glow.added()
+	_aura.visible = false
+	add_child(_aura)
+	_tails_back = Node2D.new()
+	_tails_back.draw.connect(func(): tails.draw_on(_tails_back, 0.0, -_lift, false, 2.0, _tails_mod()))
+	add_child(_tails_back)
 	_sprite = Sprite2D.new()
 	_sprite.centered = false
 	add_child(_sprite)
+	_phased = Node2D.new()
+	_phased.draw.connect(_draw_phased)
+	add_child(_phased)
+	_tails_front = Node2D.new()
+	_tails_front.draw.connect(func(): tails.draw_on(_tails_front, 0.0, -_lift, true, 2.0, _tails_mod()))
+	add_child(_tails_front)
 	_cam = Camera2D.new()
 	# (render.ts: the hero stands 12 game pixels below the middle of the screen)
 	_cam.offset = Vector2(0, -24)
@@ -817,6 +853,11 @@ func heal_flat(n: float) -> void:
 
 func _process(dt: float) -> void:
 	_clock += dt
+	_tails_dt += dt
+	if _arrive_t >= 0.0:
+		_arrive_t += dt
+		if _arrive_t >= ARRIVE_IN:
+			_arrive_t = -1.0
 	_flash = maxf(0.0, _flash - dt)
 	_shake = maxf(0.0, _shake - dt)
 	_kick = maxf(0.0, _kick - dt * 22.0)
@@ -1702,6 +1743,7 @@ func _show() -> void:
 			_sprite.offset = g["offset"]
 			_sprite.scale = Vector2.ONE * float(g["scale"])
 			_sprite.self_modulate = Color(2.0, 0.7, 0.7) if _flash > 0.0 else Color.WHITE
+			_with(g, side)
 			return
 	if n == 0:
 		return
@@ -1721,6 +1763,59 @@ func _show() -> void:
 	_sprite.offset = f["offset"]
 	_sprite.scale = Vector2.ONE * float(f["scale"])
 	_sprite.self_modulate = Color(2.0, 0.7, 0.7) if _flash > 0.0 else Color.WHITE
+	_with(f, side)
+
+
+## What is drawn with the frame shown (render.ts: drawAura, then the tails behind, the picture, the tails in front): the pool of
+## light behind him, only while he is whole (`st.alpha === 1`); his tails moved on and painted, hung the way his side faces
+## (warrior_up_art.ts wuTailsFacing: the three sides that face screen-left, -1), his feet where he stands on the screen.
+func _with(f: Dictionary, side: int) -> void:
+	if tails == null:
+		return
+	_shown = f
+	_coming = 1.0 - _arrive_t / ARRIVE_IN if _arrive_t >= 0.0 else 0.0
+	_sprite.visible = _coming <= 0.0
+	_phased.queue_redraw()
+	var p: Dictionary = f["part"]
+	var ax := float(p["ax"])
+	var ay := float(p["ay"])
+	var au = p.get("aura")
+	_aura.visible = au != null and _sprite.modulate.a >= 1.0 and visible and _coming <= 0.0
+	if _aura.visible:
+		_aura.position = Vector2((float(au["x"]) - ax) * 2.0, (float(au["y"]) - ay) * 2.0 - _lift)
+		_aura.scale = Vector2.ONE * float(au["r"]) * 4.0 / 64.0
+		_aura.modulate = Glow.tint(au)
+	var way := -1.0 if BakedHero.SIDES[side] in ["frontL", "sideL", "backL"] else 1.0
+	tails.step(_tails_dt, p.get("tails", []), ax, ay, way, position.x / 2.0, (position.y - _lift) / 2.0)
+	_tails_dt = 0.0
+	tails.refresh()
+	_tails_back.queue_redraw()
+	_tails_front.queue_redraw()
+
+
+## Warped in: his tails as faint as he is.
+func _tails_mod() -> Color:
+	return Color(1, 1, 1, _sprite.modulate.a * (1.0 - _coming * _coming * 0.85 if _coming > 0.0 else 1.0))
+
+
+## Coming together out of slices (render.ts stand with `phase`), as he warps in.
+func _draw_phased() -> void:
+	if _coming <= 0.0 or _shown.is_empty():
+		return
+	var tex: AtlasTexture = _shown["tex"]
+	var p: Dictionary = _shown["part"]
+	var d := float(p.get("density", 1))
+	var w := float(p["w"])
+	var h := float(p["h"])
+	var left := -float(p["ax"]) * 2.0
+	var top := -float(p["ay"]) * 2.0 - _lift
+	var mod := Color(1, 1, 1, _tails_mod().a)
+	var j := 0
+	while j * 2 < h:
+		var tall := minf(2.0, h - j * 2)
+		var off := roundf((1.0 if j % 2 == 0 else -1.0) * _coming * (PHASE_APART - (j % 3) * 2.0))
+		_phased.draw_texture_rect_region(tex.atlas, Rect2(left + off * 2.0, top + j * 4.0, w * 2.0, tall * 2.0), Rect2(tex.region.position + Vector2(0, j * 2 * d), Vector2(w * d, tall * d)), mod)
+		j += 1
 
 
 ## His life over his head in a fight or when he is hurt (Version 11.2). Its edge takes the colour of what ails him (render.ts,
@@ -1744,6 +1839,11 @@ func _draw() -> void:
 		edge = Color("#fff060")
 	draw_rect(Rect2(-w / 2 - 1, top - 1, w + 2, 7), edge)
 	draw_rect(Rect2(-w / 2, top, w * clampf(life / max_life, 0.0, 1.0), 5), Color(0.86, 0.16, 0.24))
+
+
+## (main.gd _picked: he has just warped in where the run begins)
+func arrive() -> void:
+	_arrive_t = 0.0
 
 
 ## How soon each attack is ready again, 0 to 1 (the HUD).

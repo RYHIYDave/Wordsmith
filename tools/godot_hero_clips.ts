@@ -12,7 +12,15 @@ import { writeFileSync } from 'node:fs';
 import { paintWithoutCanvas } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { makeHeroArt3 } from '../src/art/heroes3';
-import { lookOfPlace } from '../src/art/heroes';
+import { HERO_TAILS, lookOfPlace } from '../src/art/heroes';
+import { VETERAN } from '../src/game/veteran';
+import { WARLOCK, playableClasses } from '../src/game/warlock';
+import { TINKERER } from '../src/game/tinkerer';
+import { BRAWLER } from '../src/game/brawler';
+import { ATTR_COLOR, ENTER_OUT } from '../src/ui/panels';
+import { MODE_LINE } from '../src/game/modes';
+import { PHASE_APART } from '../src/render/figure';
+import { RING_H, RING_HEAD, RING_LIFT, RING_LIP, RING_W } from '../src/art/title_ring';
 import { heroSides } from '../src/render/baked';
 import { CLASSES, RANGER_ARROW, TUNE } from '../src/game/defs';
 import { SWAP_TUNE } from '../src/game/swap_moves';
@@ -24,6 +32,10 @@ import type { ClassId } from '../src/game/types';
 
 paintWithoutCanvas();
 gameSwitches();
+// (the three heroes the release puts on with its defines, tools/lib.mjs RELEASE_DEFINES: on its class cards, all six)
+WARLOCK.on = true;
+TINKERER.on = true;
+BRAWLER.on = true;
 const art = makeHeroArt3();
 const one = (c: Clip | undefined): Record<string, unknown> | null =>
   c ? { fps: c.fps, hit: c.hit ?? null, loop: c.loop ?? null, tail: c.tail ?? null, n: c.frames.length } : null;
@@ -52,8 +64,30 @@ for (const cls of Object.keys(CLASSES) as ClassId[]) {
   (c?.heavyWalk ?? []).forEach((w, k) => (lists[35 + k] = one(w)));
   (c?.reelWalk ?? []).forEach((w, k) => (lists[48 + k] = one(w)));
   (c?.lurchWalk ?? []).forEach((w, k) => (lists[52 + k] = one(w)));
-  out[cls] = { idleFps: s.idleFps ?? 2, walkFps: s.walkFps ?? 8, walkStride: s.walkStride ?? null, startAt: s.startAt ?? 0, start: one(s.start), stops: (s.stops ?? []).map((x) => one(x)), lists };
+  // (ON HIS CLASS CARD, ui/panels.ts drawTitle: his front, in town dress, the weapon on his back (art/heroes.ts lookOfPlace('card'));
+  // standing, running on the spot by the clock, coming to a stand, what he does left standing (idleA, idleB), making ready: the
+  // cards bake's lists 0, 2, 6 to 13, 113, 114 and 115)
+  const card = heroSides(art.of(cls, { ...lookOfPlace('card'), vet: cls === 'brawler' && VETERAN.on }))[0] as AnimSet & { idleFps?: number; walkFps?: number };
+  const cc = card.clips;
+  const cardOut = { idleFps: card.idleFps ?? 2, walkFps: card.walkFps ?? 8, idle: card.idle.length, walk: card.walk.length, stops: (card.stops ?? []).map((x) => one(x)), idleA: one(cc?.idleA), idleB: one(cc?.idleB), ready: one(cc?.ready) };
+  out[cls] = { idleFps: s.idleFps ?? 2, walkFps: s.walkFps ?? 8, walkStride: s.walkStride ?? null, startAt: s.startAt ?? 0, start: one(s.start), stops: (s.stops ?? []).map((x) => one(x)), lists, card: cardOut };
 }
+// (THE SCARF, THE FEATHER, THE BRAIDS: engine/tails.ts, each kind as art/heroes.ts HERO_TAILS has it)
+out.tails = HERO_TAILS;
+// (THE CLASS CARDS, ui/panels.ts drawTitle with CARDS3: the classes in their order, each card's name, words and numbers, the
+// colour of its attribute; what the two modes say; the title; how the picked one warps away (ENTER_OUT, render/figure.ts
+// PHASE_APART); the start screen's picture, art/title_ring.ts, where it lies)
+out.cards = {
+  title: 'WORDSMITH',
+  order: playableClasses(),
+  classes: Object.fromEntries(playableClasses().map((c) => [c, { name: CLASSES[c].name, blurb: CLASSES[c].blurb, primary: CLASSES[c].primary, attrs: CLASSES[c].attrs, starts: CLASSES[c].starts }])),
+  attrColor: ATTR_COLOR,
+  modeLine: MODE_LINE,
+  enterOut: ENTER_OUT,
+  phaseApart: PHASE_APART,
+  smithNight: '#05040f',
+  ring: { w: RING_W, h: RING_H, lip: RING_LIP, lift: RING_LIFT, headTop: RING_HEAD, least: 26, under: 24, most: 7 },
+};
 // (THE HEROES' MOVES' OWN NUMBERS, defs.ts TUNE: an attack's slowing of his walk, how long, and the follow-through a quick attack may
 // cut into; the Ranger's arrow (RANGER_ARROW), his volley's and his traps'; the Mage's wave's fan and her orb's; a held move's walk;
 // and game.ts's VOLLEY_SEEN and TRACK_AIM, read out of it as it is written)

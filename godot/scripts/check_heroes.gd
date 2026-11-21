@@ -60,6 +60,8 @@ func run(main, hero, d: String) -> void:
 	print("HEROES: the %s, %s; his moves %s" % [h.cls, "his own kit" if h.kit != null else "the Warrior's", h.loadout.r(0)["name"] + ", " + h.loadout.r(1)["name"] + ", " + h.loadout.r(2)["name"]])
 	if h.cls == "ranger":
 		await _ranger()
+	# (every hero: what is drawn with him, the pool of light behind him and his scarf, feather or braids; and in town his own look)
+	await _looks()
 	print("HEROES: the %s, %d steps, %d as the game's%s" % [h.cls, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
 
 
@@ -171,3 +173,36 @@ func _ranger() -> void:
 	await _snap("ranger_trap_burst")
 	_line(rolled and untouchable and not pic2.is_empty() and int(pic2[0]) == 40 and away > 2.0 and laid and burst and A.life < a0 and K.charges[2] == charges0 - 1,
 		"Trap: his roll (%.1f tiles, nothing reaching him, his rolling picture); the trap left where it began; one come onto it, it bursts (%.0f to %.0f); a charge spent (%d of 2 left) [rolled %s, untouchable %s, picture %s, laid %s, burst %s]" % [away, a0, A.life, K.charges[2], rolled, untouchable, pic2, laid, burst])
+
+
+## WHAT IS DRAWN WITH HIM (render.ts: drawAura, the tails): the pool of light behind him, his scarf (the Warrior), feather (the
+## Ranger) or braids (the Mage) hanging from where his frame fixes them and moving; standing, striking, walking; then in his town,
+## his weapon on his back (the bake's `town` pictures).
+func _looks() -> void:
+	var want := {"warrior": ["w-scarf-a", "w-scarf-b"], "ranger": ["r-feather"], "mage": ["m-braid-a", "m-braid-b"]}
+	var ids: Array = want.get(h.cls, [])
+	h.auto_attack = false
+	h.auto_whirl = false
+	await _run(0.5)
+	var hung := true
+	for id in ids:
+		hung = hung and h.tails.chains.has(id)
+	var before: Array = []
+	for id in ids:
+		before.append(h.tails.chains[id]["p"].duplicate() if h.tails.chains.has(id) else PackedFloat32Array())
+	await _snap("%s_standing" % h.cls)
+	h.auto_dir = Vector2(1, 0)
+	await _run(0.6)
+	h.auto_dir = Vector2.ZERO
+	await _snap("%s_walked" % h.cls)
+	var moved := ids.is_empty()
+	for k in ids.size():
+		if h.tails.chains.has(ids[k]) and h.tails.chains[ids[k]]["p"] != before[k]:
+			moved = true
+	var glow: bool = h._aura.visible and h._aura.modulate.a > 0.0
+	_line(hung and moved and glow, "the %s's pool of light behind him (%s); his %s hanging where his frames fix them and moving as he walks" % [h.cls, "on" if glow else "OFF", ", ".join(ids) if not ids.is_empty() else "(none of his own)"])
+	M.go_to("town", "start")
+	await M._wait(1.0)
+	await _run(0.3)
+	await _snap("%s_town" % h.cls)
+	_line(h.art == h.arts["town"], "in his town, his town pictures (his weapon on his back)")

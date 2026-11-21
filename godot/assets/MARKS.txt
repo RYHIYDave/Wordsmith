@@ -1,4 +1,4 @@
-heroes=1232d77721dc
+heroes=7f0180f8449d
 monsters=fe60947db695
 sounds=c2516687bc3e
 colossus=f133999cbf23

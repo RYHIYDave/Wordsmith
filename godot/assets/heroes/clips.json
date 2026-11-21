@@ -75,6 +75,28 @@
     "tail": null,
     "n": 47
    }
+  },
+  "card": {
+   "idleFps": 10,
+   "walkFps": 30,
+   "idle": 12,
+   "walk": 15,
+   "stops": [],
+   "idleA": {
+    "fps": 20,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 73
+   },
+   "idleB": null,
+   "ready": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 41
+   }
   }
  },
  "ranger": {
@@ -334,6 +356,91 @@
     "tail": null,
     "n": 47
    }
+  },
+  "card": {
+   "idleFps": 30,
+   "walkFps": 60,
+   "idle": 72,
+   "walk": 25,
+   "stops": [
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    }
+   ],
+   "idleA": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 109
+   },
+   "idleB": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 109
+   },
+   "ready": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 36
+   }
   }
  },
  "mage": {
@@ -469,6 +576,91 @@
     "tail": null,
     "n": 47
    }
+  },
+  "card": {
+   "idleFps": 30,
+   "walkFps": 60,
+   "idle": 72,
+   "walk": 23,
+   "stops": [
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    },
+    {
+     "fps": 30,
+     "hit": null,
+     "loop": null,
+     "tail": null,
+     "n": 9
+    }
+   ],
+   "idleA": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 109
+   },
+   "idleB": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 109
+   },
+   "ready": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 31
+   }
   }
  },
  "warlock": {
@@ -541,6 +733,22 @@
     "tail": null,
     "n": 41
    }
+  },
+  "card": {
+   "idleFps": 30,
+   "walkFps": 60,
+   "idle": 198,
+   "walk": 26,
+   "stops": [],
+   "idleA": null,
+   "idleB": null,
+   "ready": {
+    "fps": 30,
+    "hit": null,
+    "loop": null,
+    "tail": null,
+    "n": 43
+   }
   }
  },
  "tinkerer": {
@@ -607,6 +815,16 @@
     "tail": null,
     "n": 75
    }
+  },
+  "card": {
+   "idleFps": 10,
+   "walkFps": 60,
+   "idle": 60,
+   "walk": 24,
+   "stops": [],
+   "idleA": null,
+   "idleB": null,
+   "ready": null
   }
  },
  "brawler": {
@@ -655,6 +873,397 @@
     "tail": null,
     "n": 96
    }
+  },
+  "card": {
+   "idleFps": 30,
+   "walkFps": 30,
+   "idle": 60,
+   "walk": 16,
+   "stops": [],
+   "idleA": null,
+   "idleB": null,
+   "ready": null
+  }
+ },
+ "tails": {
+  "w-scarf-a": {
+   "n": 9,
+   "seg": 1.75,
+   "w0": 5.2,
+   "w1": 2.8,
+   "dark": "#3c0818",
+   "mid": "#8e1428",
+   "light": "#c83040",
+   "gravity": 45,
+   "wind": 380,
+   "flutter": 460,
+   "rate": 2,
+   "drag": 5
+  },
+  "w-scarf-b": {
+   "n": 7,
+   "seg": 1.7,
+   "w0": 4.4,
+   "w1": 2.4,
+   "dark": "#3c0818",
+   "mid": "#650e20",
+   "light": "#8e1428",
+   "gravity": 125,
+   "wind": 330,
+   "flutter": 400,
+   "rate": 2.3,
+   "drag": 5
+  },
+  "r-feather": {
+   "n": 8,
+   "seg": 1.95,
+   "w0": 2.2,
+   "w1": 1.4,
+   "belly": 2.2,
+   "dark": "#0c6a80",
+   "mid": "#22d0e0",
+   "light": "#b8fff8",
+   "rest": [
+    [
+     0.25,
+     -1
+    ],
+    [
+     0.2,
+     -1
+    ],
+    [
+     0,
+     -1
+    ],
+    [
+     -0.45,
+     -0.9
+    ],
+    [
+     -0.8,
+     -0.6
+    ],
+    [
+     -1,
+     -0.2
+    ],
+    [
+     -1,
+     0.3
+    ],
+    [
+     -0.8,
+     0.65
+    ]
+   ],
+   "stiff": 1,
+   "gravity": 40,
+   "wind": 90,
+   "flutter": 70,
+   "rate": 1.9,
+   "drag": 9,
+   "glow": {
+    "color": "#b8fff8",
+    "r": 6,
+    "a": 0.4,
+    "at": 0.55
+   }
+  },
+  "m-scarf": {
+   "n": 7,
+   "seg": 1.6,
+   "w0": 4.8,
+   "w1": 3.2,
+   "dark": "#0c3a52",
+   "mid": "#157a8c",
+   "light": "#3cc4c0",
+   "tip": "#22d0e0",
+   "gravity": 150,
+   "wind": 290,
+   "flutter": 120,
+   "rate": 1.2,
+   "drag": 5
+  },
+  "m-feather": {
+   "n": 5,
+   "seg": 1.45,
+   "w0": 3,
+   "w1": 1.6,
+   "dark": "#0c6a80",
+   "mid": "#22d0e0",
+   "light": "#b8fff8",
+   "rest": [
+    [
+     0.8,
+     -1
+    ],
+    [
+     1,
+     -0.7
+    ],
+    [
+     1,
+     -0.3
+    ],
+    [
+     1,
+     0.1
+    ],
+    [
+     0.8,
+     0.5
+    ]
+   ],
+   "stiff": 1,
+   "gravity": 30,
+   "wind": 110,
+   "flutter": 60,
+   "rate": 2.1,
+   "drag": 9
+  },
+  "m-tress-a": {
+   "n": 5,
+   "seg": 1.1,
+   "w0": 3.2,
+   "w1": 1.5,
+   "dark": "#4a2c1a",
+   "mid": "#7e4f2c",
+   "light": "#b67e4a",
+   "rest": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "stiff": 0.1,
+   "gravity": 300,
+   "wind": 14,
+   "flutter": 10,
+   "rate": 0.9,
+   "drag": 8
+  },
+  "m-tress-b": {
+   "n": 5,
+   "seg": 1.1,
+   "w0": 3.2,
+   "w1": 1.5,
+   "dark": "#35200f",
+   "mid": "#4a2c1a",
+   "light": "#7e4f2c",
+   "rest": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "stiff": 0.1,
+   "gravity": 300,
+   "wind": 14,
+   "flutter": 10,
+   "rate": 0.9,
+   "drag": 8
+  },
+  "m-braid-a": {
+   "n": 4,
+   "seg": 1.05,
+   "w0": 3.2,
+   "w1": 2.6,
+   "dark": "#7a1058",
+   "mid": "#e0287a",
+   "light": "#ff7aa8",
+   "tip": "#22d0e0",
+   "rest": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "stiff": 0.14,
+   "gravity": 300,
+   "wind": 14,
+   "flutter": 10,
+   "rate": 0.9,
+   "drag": 8
+  },
+  "m-braid-b": {
+   "n": 4,
+   "seg": 1.05,
+   "w0": 3.2,
+   "w1": 2.6,
+   "dark": "#520a3c",
+   "mid": "#7a1058",
+   "light": "#e0287a",
+   "tip": "#22d0e0",
+   "rest": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ]
+   ],
+   "stiff": 0.14,
+   "gravity": 300,
+   "wind": 14,
+   "flutter": 10,
+   "rate": 0.9,
+   "drag": 8
+  }
+ },
+ "cards": {
+  "title": "WORDSMITH",
+  "order": [
+   "warrior",
+   "ranger",
+   "mage",
+   "warlock",
+   "tinkerer",
+   "brawler"
+  ],
+  "classes": {
+   "warrior": {
+    "name": "Warrior",
+    "blurb": "Up close and hard to kill.",
+    "primary": "str",
+    "attrs": {
+     "str": 14,
+     "dex": 8,
+     "int": 6
+    },
+    "starts": "greatsword"
+   },
+   "ranger": {
+    "name": "Ranger",
+    "blurb": "Fast, sharp and far away.",
+    "primary": "dex",
+    "attrs": {
+     "str": 8,
+     "dex": 14,
+     "int": 6
+    },
+    "starts": "bow"
+   },
+   "mage": {
+    "name": "Mage",
+    "blurb": "Raw power. Handle with care.",
+    "primary": "int",
+    "attrs": {
+     "str": 6,
+     "dex": 8,
+     "int": 14
+    },
+    "starts": "staff"
+   },
+   "warlock": {
+    "name": "Warlock",
+    "blurb": "A demon inside. It wants out.",
+    "primary": "int",
+    "attrs": {
+     "str": 11,
+     "dex": 6,
+     "int": 11
+    },
+    "starts": "tome"
+   },
+   "tinkerer": {
+    "name": "Tinkerer",
+    "blurb": "Gadgets, a Golem. Mostly bombs.",
+    "primary": "int",
+    "attrs": {
+     "str": 6,
+     "dex": 11,
+     "int": 11
+    },
+    "starts": "wrench"
+   },
+   "brawler": {
+    "name": "Brawler",
+    "blurb": "Bare knuckles. Bad attitude.",
+    "primary": "str",
+    "attrs": {
+     "str": 11,
+     "dex": 11,
+     "int": 6
+    },
+    "starts": "wraps"
+   }
+  },
+  "attrColor": {
+   "str": "#e03c44",
+   "dex": "#84c84c",
+   "int": "#58a8f0"
+  },
+  "modeLine": {
+   "normal": "Normal: a death sends the hero back to town, without what was found in that dungeon.",
+   "hardcore": "Hardcore: a death is the end of the hero. The Lexicon and the stash stay."
+  },
+  "enterOut": 0.4,
+  "phaseApart": 7,
+  "smithNight": "#05040f",
+  "ring": {
+   "w": 640,
+   "h": 360,
+   "lip": 312,
+   "lift": 30,
+   "headTop": 150,
+   "least": 26,
+   "under": 24,
+   "most": 7
   }
  },
  "tune": {

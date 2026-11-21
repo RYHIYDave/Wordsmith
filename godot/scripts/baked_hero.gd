@@ -21,7 +21,9 @@ var _lists: Array = []  # [side][list] -> PackedInt32Array of frame indices
 var _cache := {}
 
 
-func _init(dir: String, group: String, place := "dungeon") -> void:
+## `cls`: of a group that holds several heroes (the class cards, `cards`), which. The Brawler is baked only as the veteran
+## (game/veteran.ts VETERAN, on): a place with no other key takes its veteran's.
+func _init(dir: String, group: String, place := "dungeon", cls := "") -> void:
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("%s/%s.json" % [dir, group]))
 	for s in data["sheets"]:
 		sheets.append(load("%s/%s" % [dir, s]))
@@ -29,7 +31,7 @@ func _init(dir: String, group: String, place := "dungeon") -> void:
 	_parts = data["parts"]
 	var key: Dictionary = {}
 	for k in data["keys"]:
-		if k["place"] == place and not k["vet"]:
+		if k["place"] == place and (cls == "" or k.get("cls", "") == cls) and (key.is_empty() or (key["vet"] and not k["vet"])):
 			key = k
 	var lens: Array = key["lens"]
 	for side in lens.size():
@@ -60,6 +62,8 @@ func frame(side: int, list: int, i: int) -> Dictionary:
 	var tex := AtlasTexture.new()
 	tex.atlas = sheets[int(f[0])]
 	tex.region = Rect2(f[1], f[2], f[3], f[4])
-	var out := {"tex": tex, "offset": -Vector2(p["ax"], p["ay"]) * d, "scale": 2.0 / d}
+	# (`part`: the frame's own numbers, game pixels: its anchor (ax, ay), where its scarf or feather is fixed (`tails`), the pool of
+	# light behind it (`aura`))
+	var out := {"tex": tex, "offset": -Vector2(p["ax"], p["ay"]) * d, "scale": 2.0 / d, "part": p}
 	_cache[idx] = out
 	return out
