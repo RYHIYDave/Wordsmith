@@ -29,7 +29,9 @@ import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { DARK_RING, Game } from '../src/game/game';
-import { rollItem } from '../src/game/items';
+import { rollFullRare, rollItem } from '../src/game/items';
+import { RNG as LootRNG } from '../src/engine/rng';
+import { CLAPPER_REWARD, PAGES, QUEST1115_TEXT, QUESTS1115, jarWords } from '../src/game/quests1115';
 import { ITEM_ROOM, STAT_INFO, flatPair, imbueItem, imbueLines, imbueOptions, imbueOptionsFor, itemMods, itemRoom, itemValue, kindName, modLines, rarityFor, starterWeapon, statGroup } from '../src/game/items';
 import { FIRST_WORD, WORDS, wordGrowth, wordsAt } from '../src/game/defs';
 import { TUNE, ATTR_GIVES } from '../src/game/defs';
@@ -234,7 +236,7 @@ for (const [q, n] of POOLS) {
 // (ANY FLOOR: the same pools rolled by the game on each of floors 2 to 10, a new Warrior's game set down there: the deeper, the
 // better the gear, as the game's rollGear has it by the floor; loot.gd takes the pool of the floor he is on)
 const byDepth: Record<string, Record<string, unknown[]>> = { '1': pools };
-for (let depth = 2; depth <= 10; depth++) {
+for (let depth = 2; depth <= 15; depth++) {
   const deep = new Game('warrior', seed);
   deep.depth = depth;
   deep.enterDungeon();
@@ -244,6 +246,15 @@ for (let depth = 2; depth <= 10; depth++) {
   byDepth[String(depth)] = here;
   const lv = (here['0'] as { ilvl: number }[]).reduce((a, it) => a + it.ilvl, 0) / here['0'].length;
   tally.push(`floor ${depth}: ${POOLS.map(([q, n]) => `${n} of quality ${q}`).join(', ')}; an ordinary piece's level ${lv.toFixed(1)} on average`);
+}
+// (QUESTS1115: THE ARMOURER'S PICK for the clapper, game.ts handIn1115: a fully modded rare of each of CLAPPER_REWARD.slots (gloves,
+// boots, a helm: two prefixes and two suffixes, items.ts rollFullRare), rolled at the level the game rolls them at, max(1, power,
+// min(15, floors cleared)): for each level the city may give, eight of each)
+const fullRares: Record<string, Record<string, unknown[]>> = {};
+const frRng = new LootRNG(1115);
+for (let lv = 10; lv <= 15; lv++) {
+  fullRares[String(lv)] = {};
+  for (const sl of CLAPPER_REWARD.slots) fullRares[String(lv)][sl] = Array.from({ length: 8 }, () => plain(rollFullRare(lv, sl, frRng, { cls: 'warrior' })));
 }
 const starter = plain(starterWeapon('warrior'));
 const stats: Record<string, { label: string; pct: boolean }> = {};
@@ -325,7 +336,27 @@ const quest = {
   speakBack: SPEAK_BACK,
   speakSecs: QUEST_MARKS.secs,
 };
-writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble }));
+// THE QUEST LINE OF FLOORS 11 TO 15 (game/quests1115.ts QUESTS1115; godot/scripts/act2/quest1115.gd): its switch, its numbers
+// (PAGES, CLAPPER_REWARD), the jar's reward (jarWords), and its lines, those that take a number or a word with `{n}` or `{w}`
+{
+  const T = QUEST1115_TEXT;
+  const N = 7777;
+  const n = (s: string): string => s.split(String(N)).join('{n}');
+  mkdirSync('godot/assets/act2', { recursive: true });
+  writeFileSync('godot/assets/act2/quest1115.json', JSON.stringify({
+    on: QUESTS1115.on,
+    pages: { ...PAGES },
+    clapper: { slots: [...CLAPPER_REWARD.slots], apart: CLAPPER_REWARD.apart, before: CLAPPER_REWARD.before },
+    jarWords: [...jarWords()],
+    text: {
+      jarAsk: T.jarAsk, jarAskPrompt: T.jarAskPrompt, jarHere: T.jarHere, jarGot: T.jarGot, jarLabel: T.jarLabel, jarGivePrompt: T.jarGivePrompt,
+      jarGiven: T.jarGiven('{w}'), pagesHere: T.pagesHere(13), pageGot: n(T.pageGot(N)), pageLabel: T.pageLabel, pagePrompt: n(T.pagePrompt(N)),
+      pageLaid: n(T.pageLaid(N)), clapperAsk: T.clapperAsk, clapperAskPrompt: T.clapperAskPrompt, clapperGot: T.clapperGot, clapperLabel: T.clapperLabel,
+      clapperGivePrompt: T.clapperGivePrompt, clapperGiven: T.clapperGiven, offerAgainArmourer: T.offerAgain('armourer'), offerTakenArmourer: T.offerTaken('armourer'),
+    },
+  }));
+}
+writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, fullRares, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble }));
 tally.push(`words on gear: ${[...OURS, ...MADE].join(', ')} on ${kinds.size} kinds of piece by level, ${sizes} sizes in all`);
 
 // --- the pictures in one sheet: each at two picture pixels to a game pixel, its anchor kept ---

@@ -181,9 +181,11 @@ func givers() -> Array:
 	var out: Array = []
 	if loot.quest != "" or loot.meld == "stone" or (not loot.ring_lit and not loot.quest_given) or loot.meld_ask_due():
 		out.append("wordsmith")
-	if loot.armourer_due() != "":
+	# (QUESTS1115: the armourer's clapper, the mystic's jar: act2/quest1115.gd)
+	var q11 = main.quest1115
+	if loot.armourer_due() != "" or (q11 != null and q11.clapper_due() != ""):
 		out.append("armourer")
-	if mystic_due() != "":
+	if mystic_due() != "" or (q11 != null and q11.jar_due() != ""):
 		out.append("mystic")
 	return out
 
@@ -197,6 +199,12 @@ func turn_in_for() -> String:
 		return "armourer"
 	if on() and feather == "got":
 		return "mystic"
+	# (QUESTS1115)
+	if main.quest1115 != null and main.quest1115.on():
+		if main.quest1115.jar == "got":
+			return "mystic"
+		if main.quest1115.clapper == "got":
+			return "armourer"
 	return ""
 
 

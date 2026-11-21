@@ -1105,6 +1105,43 @@
       if (r.err) { note[`prop${i}`] = r.err; return; }
       out[`prop${i}`] = { kind: p.kind, frames: [none(), r.frames[0]] };
     });
+    // QUESTS1115, FLOOR 12: THE CRIER'S JAR in the Rat King's nest (game/act2/undercity.ts CRIERS_JAR), taken (render.ts drawProps,
+    // act1_pieces.ts: a jar of it whose state is 1 is not drawn): steps 0 and 1
+    L.props.forEach((p, i) => {
+      if (p.kind !== 'piece' || p.name !== "the jar of the Crier's voice") return;
+      const was = p.state;
+      const r = REC.variant(T0, W, H, [1], () => { p.state = 1; }, () => { p.state = was; });
+      if (r.err) { note[`jar${i}`] = r.err; return; }
+      out[`jar${i}`] = { kind: 'jar', at: { tx: p.tx, ty: p.ty, variant: p.variant ?? 0 }, frames: [none(), r.frames[0]] };
+    });
+    // ACT 2, THE BELLS (floors 11 to 15; game/bells.ts, render/act1_pieces.ts bellFrame, by the game's clock): each bell to ring,
+    // `bell<k>` in the plan's order, its steps [as it stands asleep, awake, ringing (its two frames, a third of a second each),
+    // rung out and hanging still]; the Muffled Bell, `muffled`, its steps [gagged, torn loose (its three frames: 1, 2 and 3 of
+    // [1, 2, 1, 3] at four a second), hanging still]. A frame by the clock is taken at a moment of the recording that shows it.
+    if (L.bells) {
+      const Bl = L.bells;
+      const at = (want) => { for (let s = 0; s < 90; s++) if (want(REC.time0 + s / 30)) return s; return 0; };
+      const small = [0, 0, at((t) => Math.floor(t * 3) % 2 === 0), at((t) => Math.floor(t * 3) % 2 === 1), 0];
+      Bl.props.forEach((k, j) => {
+        if (k < 0) return;
+        const p = L.props[k];
+        const was = p.state;
+        const states = [0, 1, 2, 2, 3];
+        const r = REC.variant(T0, W, H, [0, 1, 2, 3, 4], (v) => { p.state = states[v]; }, () => { p.state = was; }, (v) => small[v]);
+        if (r.err) { note[`bell${j}`] = r.err; return; }
+        out[`bell${j}`] = { kind: 'bell', at: { tx: p.tx, ty: p.ty, name: p.name }, frames: r.frames };
+      });
+      if (Bl.muffled >= 0) {
+        const p = L.props[Bl.muffled];
+        const was = p.state;
+        const ph = (n) => at((t) => Math.floor(t * 4) % 4 === n);
+        const samples = [0, ph(0), ph(1), ph(3), 0];
+        const states = [0, 1, 1, 1, 3];
+        const r = REC.variant(T0, W, H, [0, 1, 2, 3, 4], (v) => { p.state = states[v]; }, () => { p.state = was; }, (v) => samples[v]);
+        if (r.err) note.muffled = r.err;
+        else out.muffled = { kind: 'muffled', at: { tx: p.tx, ty: p.ty, name: p.name }, frames: r.frames };
+      }
+    }
     // THE CULT'S STRONGHOLDS (floors 6 to 10; game/act1_holds.ts, game.ts openHold): each one's door, its seal broken (its gatehouse
     // open, game/act1_dress.ts HOLD.gate at the gate's foot), and with ALTAR_GOES (`consts.altarGoes`) its altar gone: steps 0 and 1
     for (const q of (L.land && L.land.holds) || []) {

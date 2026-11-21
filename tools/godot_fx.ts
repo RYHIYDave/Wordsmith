@@ -131,7 +131,8 @@ import { CRACK_STEPS, STONE_FPS, STONE_FRAMES, STONE_SPIN, makeMeldDropsArt } fr
 // (floors 6 to 10 besides their fights: runedust, the ward-stone's piece, the muster roll's page)
 import { SPILL_FRAMES, WHIRL_FRAMES } from '../src/art/meld_drops';
 import { makeIconArt } from '../src/art/icons';
-import { rollSprite } from '../src/art/quest1115';
+import { clapperSprite, pageSprite, rollSprite } from '../src/art/quest1115';
+import { shrineBellFrames } from '../src/art/floor11';
 import { BOULDER, HAMMER, SMASH_CANVAS, smashPainted } from '../src/art/action_f6_golem';
 import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, RING_CANVAS as CH_RING_CANVAS, STATIC_CANVAS, blazePainted, makeFlyingPotArt, potShadowPainted, ringPainted as chRing, staticPainted } from '../src/art/action_f6_cult';
 import { markRing } from '../src/art/action_f6_fx';
@@ -559,6 +560,12 @@ for (const view of ['front', 'back'] as const) {
   stills('rd_icon', [I.runedust]);
   stills('q6_piece', [I.meldstone]);
   stills('q6_roll', [rollSprite()]);
+  // (QUESTS1115, godot/scripts/act2/quest1115.gd: AN UNSTRUCK PAGE and THE CLAPPER lying, art/quest1115.ts pageSprite, clapperSprite;
+  // THE CAMP'S BELL with the clapper hung in it, still and its two swings, floor 11's wayside shrine's bell, art/floor11.ts
+  // shrineBellFrames, render.ts its campBell)
+  stills('q11_page', [pageSprite()]);
+  stills('q11_clapper', [clapperSprite()]);
+  stills('q11_bell', shrineBellFrames());
 }
 
 // floors 6 to 8's common monsters, as the game starts with their new moves on (render/act1_fx/qgolem.ts, firepot.ts, chanter.ts,

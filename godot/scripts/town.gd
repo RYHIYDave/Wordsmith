@@ -442,17 +442,30 @@ func _use() -> void:
 		"armourer":
 			# (THE ARMOURER'S QUEST, game.ts handInNear, interactHint: while he has a quest to give or its reward, his prompt
 			# says so, and using him gives it in place of his shelves; used again, his shelves)
+			# (QUESTS1115: and his clapper, act2/quest1115.gd; what he brings back first, before any new ask)
 			var due: String = loot.armourer_due()
-			if due == "furnace":
-				prompt = ["E: " + str(loot.quest_text["furnaceAskPrompt"]), "task"]
-			elif due == "reward":
+			var clap: String = main.quest1115.clapper_due() if main.quest1115 != null else ""
+			if due == "reward":
 				prompt = ["E: " + str(loot.quest_text["rewardPrompt"]), "task"]
+			elif clap == "clapperGive":
+				prompt = ["E: " + main.quest1115.prompt_of(clap), "clapper"]
+			elif due == "furnace":
+				prompt = ["E: " + str(loot.quest_text["furnaceAskPrompt"]), "task"]
+			elif clap != "":
+				prompt = ["E: " + main.quest1115.prompt_of(clap), "clapper"]
 			else:
 				prompt = ["E: Armourer", "armourer"]
 		"mystic":
 			# (QUESTS610, game.ts handInNear, mysticDue: her ask for the Queen's feather, or the feather taken from him: act1/quest610.gd)
-			var task: String = main.quest610.mystic_prompt() if main.quest610 != null else ""
-			prompt = ["E: " + task, "feather"] if task != "" else ["E: Mystic", "mystic"]
+			# (QUESTS1115: and her jar, act2/quest1115.gd; what he brings back first, before any new ask)
+			var feather: String = main.quest610.mystic_due() if main.quest610 != null else ""
+			var jar: String = main.quest1115.jar_due() if main.quest1115 != null else ""
+			if feather == "featherGive" or (feather != "" and jar != "jarGive"):
+				prompt = ["E: " + main.quest610.mystic_prompt(), "feather"]
+			elif jar != "":
+				prompt = ["E: " + main.quest1115.prompt_of(jar), "jar"]
+			else:
+				prompt = ["E: Mystic", "mystic"]
 		"stash", "lexicon", "stranger":
 			# (his half beside the gear screen: the stranger's gamble, the stash, the Lexicon: inventory.gd)
 			prompt = ["E: %s" % best.capitalize(), best]
@@ -507,6 +520,10 @@ func _do(what: String) -> void:
 			main.open_shop(what)
 		"feather":
 			main.quest610.mystic_hand_in()
+		"jar":
+			main.quest1115.hand_in(main.quest1115.jar_due(), hero.world)
+		"clapper":
+			main.quest1115.hand_in(main.quest1115.clapper_due(), hero.world)
 		"later":
 			loot.say("Not in the Godot version yet.", Color(0.55, 0.6, 0.8))
 		"stash", "lexicon", "stranger":

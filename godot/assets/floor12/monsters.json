@@ -98,7 +98,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 2,
@@ -150,7 +154,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 3,
@@ -202,7 +210,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 4,
@@ -254,7 +266,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 5,
@@ -306,7 +322,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 6,
@@ -358,7 +378,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 7,
@@ -410,7 +434,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 8,
@@ -462,7 +490,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 9,
@@ -514,7 +546,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 10,
@@ -566,7 +602,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 11,
@@ -618,7 +658,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 12,
@@ -670,7 +714,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 13,
@@ -722,7 +770,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 14,
@@ -774,7 +826,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 15,
@@ -826,7 +883,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 16,
@@ -878,7 +940,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 17,
@@ -930,7 +997,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 18,
@@ -982,7 +1054,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 19,
@@ -1034,7 +1111,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 20,
@@ -1086,7 +1168,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 21,
@@ -1138,7 +1225,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 22,
@@ -1190,7 +1282,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 23,
@@ -1242,7 +1339,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 24,
@@ -1294,7 +1396,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 25,
@@ -1346,7 +1453,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 26,
@@ -1398,7 +1510,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 27,
@@ -1450,7 +1567,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 28,
@@ -1502,7 +1624,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 29,
@@ -1554,7 +1681,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 30,
@@ -1606,7 +1738,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 31,
@@ -1658,7 +1795,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 32,
@@ -1710,7 +1852,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 33,
@@ -1762,7 +1909,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 34,
@@ -1814,7 +1966,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 35,
@@ -1869,7 +2026,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 36,
@@ -1924,7 +2085,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 37,
@@ -1979,7 +2144,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 38,
@@ -2034,7 +2203,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 39,
@@ -2089,7 +2262,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 40,
@@ -2144,7 +2321,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 41,
@@ -2199,7 +2380,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 42,
@@ -2254,7 +2439,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 43,
@@ -2309,7 +2498,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 44,
@@ -2364,7 +2557,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 45,
@@ -2419,7 +2616,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 46,
@@ -2474,7 +2675,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 47,
@@ -2529,7 +2734,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 48,
@@ -2584,7 +2793,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 49,
@@ -2639,7 +2852,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 50,
@@ -2694,7 +2911,11 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 51,
@@ -2750,7 +2971,8 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 52,
@@ -2806,7 +3028,8 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 53,
@@ -2862,7 +3085,8 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 54,
@@ -2918,7 +3142,8 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 55,
@@ -2974,7 +3199,8 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 56,
@@ -3030,7 +3256,8 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 57,
@@ -3086,7 +3313,8 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 58,
@@ -3142,7 +3370,8 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 59,
@@ -3198,7 +3427,8 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 60,
@@ -3253,7 +3483,12 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 61,
@@ -3308,7 +3543,12 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 62,
@@ -3363,7 +3603,12 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 63,
@@ -3418,7 +3663,12 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 64,
@@ -3473,7 +3723,12 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 65,
@@ -3528,7 +3783,12 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 66,
@@ -3583,7 +3843,12 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 67,
@@ -3638,7 +3903,12 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 68,
@@ -3693,7 +3963,12 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 69,
@@ -3748,7 +4023,12 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 70,
@@ -3803,7 +4083,12 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 71,
@@ -3858,7 +4143,12 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 72,
@@ -3913,7 +4203,12 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 73,
@@ -3968,7 +4263,12 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 74,
@@ -4023,7 +4323,12 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 75,
@@ -4078,7 +4383,12 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 76,
@@ -4136,7 +4446,8 @@
    "half": [],
    "carries": [
     "frost"
-   ]
+   ],
+   "a1": null
   },
   {
    "id": 77,
@@ -4195,7 +4506,8 @@
     "power",
     "frost"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 78,
@@ -4254,7 +4566,8 @@
     "power",
     "frost"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 79,
@@ -4313,7 +4626,8 @@
     "power",
     "frost"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 80,
@@ -4372,7 +4686,8 @@
     "power",
     "frost"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 81,
@@ -4431,7 +4746,8 @@
     "power",
     "frost"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 82,
@@ -4490,7 +4806,8 @@
     "power",
     "frost"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 83,
@@ -4549,7 +4866,8 @@
     "power",
     "frost"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 84,
@@ -4608,7 +4926,8 @@
     "power",
     "frost"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 85,
@@ -4667,7 +4986,8 @@
     "power",
     "frost"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 86,
@@ -4726,7 +5046,8 @@
     "power",
     "frost"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 87,
@@ -4781,7 +5102,11 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 88,
@@ -4836,7 +5161,11 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 89,
@@ -4891,7 +5220,11 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 90,
@@ -4946,7 +5279,11 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 91,
@@ -5001,7 +5338,11 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 92,
@@ -5056,7 +5397,11 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 93,
@@ -5111,7 +5456,11 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 94,
@@ -5166,7 +5515,11 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 95,
@@ -5221,7 +5574,11 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 96,
@@ -5276,7 +5633,11 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 97,
@@ -5331,7 +5692,11 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 98,
@@ -5386,7 +5751,11 @@
     "splitting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 99,
@@ -5438,7 +5807,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 100,
@@ -5490,7 +5864,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 101,
@@ -5542,7 +5921,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 102,
@@ -5594,7 +5978,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 103,
@@ -5646,7 +6035,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 104,
@@ -5698,7 +6092,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 105,
@@ -5754,7 +6153,8 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 106,
@@ -5810,7 +6210,8 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 107,
@@ -5866,7 +6267,8 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 108,
@@ -5922,7 +6324,8 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 109,
@@ -5978,7 +6381,8 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 110,
@@ -6034,7 +6438,8 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 111,
@@ -6090,7 +6495,8 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 112,
@@ -6146,7 +6552,8 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 113,
@@ -6202,7 +6609,8 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 114,
@@ -6258,7 +6666,8 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 115,
@@ -6310,7 +6719,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 116,
@@ -6362,7 +6775,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 117,
@@ -6414,7 +6831,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 118,
@@ -6466,7 +6887,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 119,
@@ -6518,7 +6943,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 120,
@@ -6570,7 +6999,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 121,
@@ -6622,7 +7055,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 122,
@@ -6674,7 +7111,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 123,
@@ -6726,7 +7167,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 124,
@@ -6778,7 +7223,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 125,
@@ -6830,7 +7279,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 126,
@@ -6882,7 +7335,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 127,
@@ -6934,7 +7391,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 128,
@@ -6986,7 +7447,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 129,
@@ -7038,7 +7503,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 130,
@@ -7090,7 +7559,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 131,
@@ -7146,7 +7619,12 @@
     "fire"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 132,
@@ -7205,7 +7683,12 @@
     "frenzied",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 133,
@@ -7264,7 +7747,12 @@
     "frenzied",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 134,
@@ -7323,7 +7811,12 @@
     "frenzied",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 135,
@@ -7382,7 +7875,12 @@
     "frenzied",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 136,
@@ -7441,7 +7939,12 @@
     "frenzied",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 137,
@@ -7496,7 +7999,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 138,
@@ -7551,7 +8055,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 139,
@@ -7606,7 +8111,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 140,
@@ -7661,7 +8167,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 141,
@@ -7716,7 +8223,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 142,
@@ -7771,7 +8279,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 143,
@@ -7826,7 +8335,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 144,
@@ -7881,7 +8391,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 145,
@@ -7936,7 +8447,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 146,
@@ -7991,7 +8503,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 147,
@@ -8046,7 +8559,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 148,
@@ -8098,7 +8612,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 149,
@@ -8150,7 +8669,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 150,
@@ -8202,7 +8726,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 151,
@@ -8254,7 +8783,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 152,
@@ -8306,7 +8840,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 153,
@@ -8358,7 +8897,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 154,
@@ -8410,7 +8950,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 155,
@@ -8462,7 +9003,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 156,
@@ -8514,7 +9056,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 157,
@@ -8566,7 +9109,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 158,
@@ -8618,7 +9162,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 159,
@@ -8670,7 +9215,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 160,
@@ -8722,7 +9268,8 @@
    "figure": "scribe",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 161,
@@ -8774,7 +9321,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 162,
@@ -8826,7 +9377,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 163,
@@ -8878,7 +9433,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 164,
@@ -8930,7 +9489,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 165,
@@ -8982,7 +9545,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 166,
@@ -9034,7 +9601,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 167,
@@ -9086,7 +9657,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 168,
@@ -9138,7 +9713,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 169,
@@ -9190,7 +9769,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 170,
@@ -9242,7 +9825,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 171,
@@ -9294,7 +9881,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 172,
@@ -9346,7 +9937,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 173,
@@ -9398,7 +9993,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 174,
@@ -9450,7 +10049,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 175,
@@ -9505,7 +10108,12 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 176,
@@ -9560,7 +10168,12 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 177,
@@ -9615,7 +10228,12 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 178,
@@ -9670,7 +10288,12 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 179,
@@ -9725,7 +10348,12 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 180,
@@ -9780,7 +10408,12 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 181,
@@ -9835,7 +10468,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 182,
@@ -9890,7 +10527,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 183,
@@ -9945,7 +10586,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 184,
@@ -10000,7 +10645,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 185,
@@ -10055,7 +10704,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 186,
@@ -10110,7 +10763,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 187,
@@ -10165,7 +10822,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 188,
@@ -10220,7 +10881,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 189,
@@ -10275,7 +10940,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 190,
@@ -10330,7 +10999,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 191,
@@ -10385,7 +11058,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 192,
@@ -10440,7 +11117,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 193,
@@ -10495,7 +11176,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 194,
@@ -10550,7 +11235,11 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 195,
@@ -10602,7 +11291,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 196,
@@ -10654,7 +11347,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 197,
@@ -10706,7 +11403,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 198,
@@ -10758,7 +11459,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 199,
@@ -10810,7 +11515,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 200,
@@ -10862,7 +11571,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 201,
@@ -10914,7 +11627,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 202,
@@ -10966,7 +11683,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 203,
@@ -11018,7 +11739,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 204,
@@ -11070,7 +11795,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 205,
@@ -11122,7 +11851,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 206,
@@ -11174,7 +11907,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 207,
@@ -11226,7 +11963,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 208,
@@ -11278,7 +12019,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 209,
@@ -11330,7 +12075,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 210,
@@ -11382,7 +12131,11 @@
    "figure": "rat",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 211,
@@ -11437,7 +12190,11 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 212,
@@ -11492,7 +12249,11 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 213,
@@ -11547,7 +12308,11 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 214,
@@ -11602,7 +12367,11 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 215,
@@ -11657,7 +12426,11 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 216,
@@ -11712,7 +12485,11 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 217,
@@ -11767,7 +12544,11 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 218,
@@ -11822,7 +12603,11 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 219,
@@ -11877,7 +12662,11 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "look": -1,
+    "woke": 0
+   }
   },
   {
    "id": 220,
@@ -11935,7 +12724,12 @@
    "half": [],
    "carries": [
     "twin"
-   ]
+   ],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 221,
@@ -11991,7 +12785,12 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 222,
@@ -12047,7 +12846,12 @@
     "vast"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 223,
@@ -12103,7 +12907,12 @@
     "fire"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 224,
@@ -12159,7 +12968,12 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 225,
@@ -12215,7 +13029,12 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 226,
@@ -12267,7 +13086,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 227,
@@ -12319,7 +13143,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 228,
@@ -12371,7 +13200,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 229,
@@ -12423,7 +13257,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 230,
@@ -12475,7 +13314,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 231,
@@ -12527,7 +13371,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 232,
@@ -12579,7 +13428,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 233,
@@ -12631,7 +13485,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 234,
@@ -12683,7 +13542,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 235,
@@ -12735,7 +13599,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 236,
@@ -12787,7 +13656,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 237,
@@ -12839,7 +13713,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 238,
@@ -12891,7 +13770,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 239,
@@ -12943,7 +13827,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 240,
@@ -12995,7 +13884,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 241,
@@ -13047,7 +13941,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 242,
@@ -13099,7 +13998,12 @@
    "figure": "dredger",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 243,
@@ -13154,7 +14058,12 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 244,
@@ -13209,7 +14118,12 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 245,
@@ -13264,7 +14178,12 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 246,
@@ -13319,7 +14238,12 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 247,
@@ -13374,7 +14298,12 @@
     "lasting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": {
+    "hooked": 0,
+    "ox": 0,
+    "oy": 0
+   }
   },
   {
    "id": 248,
@@ -13432,7 +14361,15 @@
    "carries": [
     "fleeting",
     "lightning"
-   ]
+   ],
+   "a1": {
+    "word": 0,
+    "turns": 0,
+    "stuck": 0,
+    "sx": 0,
+    "sy": 0,
+    "bit": -1
+   }
   }
  ],
  "defs": {
@@ -13540,6 +14477,604 @@
    "minDepth": 99,
    "weight": 0,
    "size": "boss"
+  }
+ },
+ "bells": {
+  "plan": {
+   "muffled": {
+    "x": 87.5,
+    "y": 52.5
+   },
+   "bells": [
+    {
+     "x": 99.5,
+     "y": 60.5
+    },
+    {
+     "x": 72.5,
+     "y": 52.5
+    },
+    {
+     "x": 85.5,
+     "y": 36.5
+    },
+    {
+     "x": 72.5,
+     "y": 39.5
+    },
+    {
+     "x": 99.5,
+     "y": 36.5
+    }
+   ],
+   "hush": {
+    "x": 87.5,
+    "y": 52.5,
+    "r": 24
+   }
+  },
+  "limit": 75,
+  "props": [
+   {
+    "i": 31,
+    "tx": 99,
+    "ty": 60,
+    "name": "an alarm bell at a sluice"
+   },
+   {
+    "i": 32,
+    "tx": 72,
+    "ty": 52,
+    "name": "an alarm bell at a sluice"
+   },
+   {
+    "i": 33,
+    "tx": 85,
+    "ty": 36,
+    "name": "an alarm bell at a sluice"
+   },
+   {
+    "i": 34,
+    "tx": 72,
+    "ty": 39,
+    "name": "an alarm bell at a sluice"
+   },
+   {
+    "i": 35,
+    "tx": 99,
+    "ty": 36,
+    "name": "an alarm bell at a sluice"
+   }
+  ],
+  "muffled": {
+   "i": 30,
+   "tx": 87,
+   "ty": 52,
+   "name": "the diver's bell (the Muffled Bell)"
+  },
+  "tune": {
+   "perBell": 15,
+   "strike": 0.55,
+   "gap0": 5.5,
+   "gapFall": 0.045,
+   "gapMin": 1.8,
+   "size0": 2,
+   "sizeEvery": 22,
+   "sizeMost": 5,
+   "lifeRamp": 0.006,
+   "most": 16,
+   "near": 6,
+   "far": 13,
+   "tough": 0.35,
+   "chip": 0.42,
+   "chipMin": 6,
+   "knockR": 3.5,
+   "knock": 2.2,
+   "ringOut": 4,
+   "dust": 2,
+   "gold": 14,
+   "word": 0.5
+  },
+  "still": 3,
+  "tough": [
+   [
+    {
+     "id": 249,
+     "kind": "dredger",
+     "name": "Heavy Dredger",
+     "x": 99.5,
+     "y": 61.5,
+     "r": 0.47040000000000004,
+     "fx": -0.9993628543475496,
+     "fy": -0.03569153051241249,
+     "life": 582,
+     "maxLife": 582,
+     "dmgMin": 47.879999999999995,
+     "dmgMax": 71.82,
+     "speed": 0.85,
+     "elite": true,
+     "champion": false,
+     "boss": false,
+     "state": "chase",
+     "t": 0,
+     "cd": 0,
+     "packId": 8901,
+     "anim": "idle",
+     "animT": 2.851254175649956,
+     "flash": 0,
+     "burnT": 0,
+     "burnDps": 0,
+     "chillT": 0,
+     "chill": 0,
+     "frozenT": 0,
+     "freezeImmune": 0,
+     "poisonT": 0,
+     "poisonDps": 0,
+     "poisonN": 0,
+     "stunT": 0,
+     "staggerT": 0,
+     "staggerCd": 0,
+     "markT": 0,
+     "shockT": 0,
+     "shield": 0,
+     "lastSkill": -1,
+     "seen": false,
+     "barT": 0,
+     "phase": 0,
+     "atk": 0,
+     "dead": false,
+     "xp": 210,
+     "seed": 0.39461734681390226,
+     "rarity": "leader",
+     "figure": "dredger",
+     "words": [
+      "heavy"
+     ],
+     "half": [],
+     "carries": [],
+     "a1": {
+      "hooked": 0,
+      "ox": 0,
+      "oy": 0
+     },
+     "dx": 0,
+     "dy": 0
+    }
+   ],
+   [
+    {
+     "id": 250,
+     "kind": "dredger",
+     "name": "Twin Dredger",
+     "x": 72.5,
+     "y": 53.5,
+     "r": 0.47040000000000004,
+     "fx": -0.996174723949222,
+     "fy": 0.08738374771484404,
+     "life": 786,
+     "maxLife": 786,
+     "dmgMin": 47.879999999999995,
+     "dmgMax": 71.82,
+     "speed": 0.85,
+     "elite": true,
+     "champion": false,
+     "boss": false,
+     "state": "chase",
+     "t": 0,
+     "cd": 0,
+     "packId": 8902,
+     "anim": "idle",
+     "animT": 2.811739278724417,
+     "flash": 0,
+     "burnT": 0,
+     "burnDps": 0,
+     "chillT": 0,
+     "chill": 0,
+     "frozenT": 0,
+     "freezeImmune": 0,
+     "poisonT": 0,
+     "poisonDps": 0,
+     "poisonN": 0,
+     "stunT": 0,
+     "staggerT": 0,
+     "staggerCd": 0,
+     "markT": 0,
+     "shockT": 0,
+     "shield": 0,
+     "lastSkill": -1,
+     "seen": false,
+     "barT": 0,
+     "phase": 0,
+     "atk": 0,
+     "dead": false,
+     "xp": 210,
+     "seed": 0.7049783142283559,
+     "rarity": "leader",
+     "figure": "dredger",
+     "words": [
+      "twin"
+     ],
+     "half": [],
+     "carries": [],
+     "a1": {
+      "hooked": 0,
+      "ox": 0,
+      "oy": 0
+     },
+     "dx": 0,
+     "dy": 0
+    }
+   ],
+   [
+    {
+     "id": 251,
+     "kind": "dredger",
+     "name": "Heavy Frenzied Dredger",
+     "x": 85.5,
+     "y": 37.5,
+     "r": 0.47040000000000004,
+     "fx": -0.9578262852211513,
+     "fy": 0.2873478855663454,
+     "life": 989,
+     "maxLife": 989,
+     "dmgMin": 47.879999999999995,
+     "dmgMax": 71.82,
+     "speed": 0.85,
+     "elite": true,
+     "champion": false,
+     "boss": false,
+     "state": "chase",
+     "t": 0,
+     "cd": 0,
+     "packId": 8903,
+     "anim": "idle",
+     "animT": 1.3875721986405551,
+     "flash": 0,
+     "burnT": 0,
+     "burnDps": 0,
+     "chillT": 0,
+     "chill": 0,
+     "frozenT": 0,
+     "freezeImmune": 0,
+     "poisonT": 0,
+     "poisonDps": 0,
+     "poisonN": 0,
+     "stunT": 0,
+     "staggerT": 0,
+     "staggerCd": 0,
+     "markT": 0,
+     "shockT": 0,
+     "shield": 0,
+     "lastSkill": -1,
+     "seen": false,
+     "barT": 0,
+     "phase": 0,
+     "atk": 0,
+     "dead": false,
+     "xp": 210,
+     "seed": 0.43475174787454307,
+     "rarity": "leader",
+     "figure": "dredger",
+     "words": [
+      "heavy",
+      "frenzied"
+     ],
+     "half": [],
+     "carries": [],
+     "a1": {
+      "hooked": 0,
+      "ox": 0,
+      "oy": 0
+     },
+     "dx": 0,
+     "dy": 0
+    }
+   ],
+   [
+    {
+     "id": 252,
+     "kind": "dredger",
+     "name": "Binding Guarding Dredger",
+     "x": 72.5,
+     "y": 40.5,
+     "r": 0.47040000000000004,
+     "fx": -0.9535826651341417,
+     "fy": 0.3011313679370974,
+     "life": 1193,
+     "maxLife": 1193,
+     "dmgMin": 47.879999999999995,
+     "dmgMax": 71.82,
+     "speed": 0.85,
+     "elite": true,
+     "champion": false,
+     "boss": false,
+     "state": "chase",
+     "t": 0,
+     "cd": 0,
+     "packId": 8904,
+     "anim": "idle",
+     "animT": 1.7925497791729867,
+     "flash": 0,
+     "burnT": 0,
+     "burnDps": 0,
+     "chillT": 0,
+     "chill": 0,
+     "frozenT": 0,
+     "freezeImmune": 0,
+     "poisonT": 0,
+     "poisonDps": 0,
+     "poisonN": 0,
+     "stunT": 0,
+     "staggerT": 0,
+     "staggerCd": 0,
+     "markT": 0,
+     "shockT": 0,
+     "shield": 116,
+     "lastSkill": -1,
+     "seen": false,
+     "barT": 0,
+     "phase": 0,
+     "atk": 0,
+     "dead": false,
+     "xp": 210,
+     "seed": 0.5925141177140176,
+     "rarity": "leader",
+     "figure": "dredger",
+     "words": [
+      "binding",
+      "guarding"
+     ],
+     "half": [],
+     "carries": [],
+     "a1": {
+      "hooked": 0,
+      "ox": 0,
+      "oy": 0
+     },
+     "dx": 0,
+     "dy": 0
+    }
+   ]
+  ],
+  "own": [
+   {
+    "kind": "rat",
+    "weight": 5
+   },
+   {
+    "kind": "dredger",
+    "weight": 5
+   },
+   {
+    "kind": "hushed",
+    "weight": 2
+   },
+   {
+    "kind": "scribe",
+    "weight": 1.5
+   }
+  ],
+  "rise": {
+   "rat": {
+    "id": 253,
+    "kind": "rat",
+    "name": "King's Rat",
+    "x": 87.5,
+    "y": 52.5,
+    "r": 0.22,
+    "fx": 0.7071,
+    "fy": 0.7071,
+    "life": 34,
+    "maxLife": 34,
+    "dmgMin": 10.26,
+    "dmgMax": 17.1,
+    "speed": 2.8,
+    "elite": false,
+    "champion": false,
+    "boss": false,
+    "state": "sleep",
+    "t": 0,
+    "cd": 0,
+    "packId": 8000,
+    "anim": "idle",
+    "animT": 2.5517414496280253,
+    "flash": 0,
+    "burnT": 0,
+    "burnDps": 0,
+    "chillT": 0,
+    "chill": 0,
+    "frozenT": 0,
+    "freezeImmune": 0,
+    "poisonT": 0,
+    "poisonDps": 0,
+    "poisonN": 0,
+    "stunT": 0,
+    "staggerT": 0,
+    "staggerCd": 0,
+    "markT": 0,
+    "shockT": 0,
+    "shield": 0,
+    "lastSkill": -1,
+    "seen": false,
+    "barT": 0,
+    "phase": 0,
+    "atk": 0,
+    "dead": false,
+    "xp": 11,
+    "seed": 0.47327134292572737,
+    "figure": "rat",
+    "words": [],
+    "half": [],
+    "carries": [],
+    "a1": {
+     "look": -1,
+     "woke": 0
+    }
+   },
+   "dredger": {
+    "id": 254,
+    "kind": "dredger",
+    "name": "Dredger",
+    "x": 87.5,
+    "y": 52.5,
+    "r": 0.42,
+    "fx": 0.7071,
+    "fy": 0.7071,
+    "life": 194,
+    "maxLife": 194,
+    "dmgMin": 34.2,
+    "dmgMax": 51.3,
+    "speed": 0.85,
+    "elite": false,
+    "champion": false,
+    "boss": false,
+    "state": "sleep",
+    "t": 0,
+    "cd": 0,
+    "packId": 8000,
+    "anim": "idle",
+    "animT": 1.4879452467430383,
+    "flash": 0,
+    "burnT": 0,
+    "burnDps": 0,
+    "chillT": 0,
+    "chill": 0,
+    "frozenT": 0,
+    "freezeImmune": 0,
+    "poisonT": 0,
+    "poisonDps": 0,
+    "poisonN": 0,
+    "stunT": 0,
+    "staggerT": 0,
+    "staggerCd": 0,
+    "markT": 0,
+    "shockT": 0,
+    "shield": 0,
+    "lastSkill": -1,
+    "seen": false,
+    "barT": 0,
+    "phase": 0,
+    "atk": 0,
+    "dead": false,
+    "xp": 53,
+    "seed": 0.10323643288575113,
+    "figure": "dredger",
+    "words": [],
+    "half": [],
+    "carries": [],
+    "a1": {
+     "hooked": 0,
+     "ox": 0,
+     "oy": 0
+    }
+   },
+   "hushed": {
+    "id": 255,
+    "kind": "hushed",
+    "name": "Hushed",
+    "x": 87.5,
+    "y": 52.5,
+    "r": 0.3,
+    "fx": 0.7071,
+    "fy": 0.7071,
+    "life": 97,
+    "maxLife": 97,
+    "dmgMin": 20.52,
+    "dmgMax": 30.78,
+    "speed": 0.9,
+    "elite": false,
+    "champion": false,
+    "boss": false,
+    "state": "sleep",
+    "t": 0,
+    "cd": 0,
+    "packId": 8000,
+    "anim": "idle",
+    "animT": 2.7066890224814415,
+    "flash": 0,
+    "burnT": 0,
+    "burnDps": 0,
+    "chillT": 0,
+    "chill": 0,
+    "frozenT": 0,
+    "freezeImmune": 0,
+    "poisonT": 0,
+    "poisonDps": 0,
+    "poisonN": 0,
+    "stunT": 0,
+    "staggerT": 0,
+    "staggerCd": 0,
+    "markT": 0,
+    "shockT": 0,
+    "shield": 0,
+    "lastSkill": -1,
+    "seen": false,
+    "barT": 0,
+    "phase": 0,
+    "atk": 0,
+    "dead": false,
+    "xp": 26,
+    "seed": 0.2695582255255431,
+    "form": 0,
+    "figure": "hushed",
+    "words": [],
+    "half": [],
+    "carries": [],
+    "a1": null
+   },
+   "scribe": {
+    "id": 256,
+    "kind": "scribe",
+    "name": "Silent Scribe",
+    "x": 87.5,
+    "y": 52.5,
+    "r": 0.3,
+    "fx": 0.7071,
+    "fy": 0.7071,
+    "life": 73,
+    "maxLife": 73,
+    "dmgMin": 17.1,
+    "dmgMax": 27.36,
+    "speed": 1,
+    "elite": false,
+    "champion": false,
+    "boss": false,
+    "state": "sleep",
+    "t": 0,
+    "cd": 0,
+    "packId": 8000,
+    "anim": "idle",
+    "animT": 0.653692441759631,
+    "flash": 0,
+    "burnT": 0,
+    "burnDps": 0,
+    "chillT": 0,
+    "chill": 0,
+    "frozenT": 0,
+    "freezeImmune": 0,
+    "poisonT": 0,
+    "poisonDps": 0,
+    "poisonN": 0,
+    "stunT": 0,
+    "staggerT": 0,
+    "staggerCd": 0,
+    "markT": 0,
+    "shockT": 0,
+    "shield": 0,
+    "lastSkill": -1,
+    "seen": false,
+    "barT": 0,
+    "phase": 0,
+    "atk": 0,
+    "dead": false,
+    "xp": 34,
+    "seed": 0.5395342011470348,
+    "figure": "scribe",
+    "words": [],
+    "half": [],
+    "carries": [],
+    "a1": null
+   }
   }
  }
 }

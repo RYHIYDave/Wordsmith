@@ -872,11 +872,58 @@ func _handle(e: Dictionary) -> void:
 		"channelEnd":
 			if e.get("kind", "") == "whirl":
 				wild.whirl_end(e["x"], e["y"])
+		"bells":
+			_bells(e)
+		"spark":
+			spray(e["x"], e["y"], int(e.get("n", 10)), _ramp(str(e.get("el", "phys"))), 2.4, 60.0, 10.0)
 		_:
 			# (floors 6 to 10's words' own tellings: echo, mark, leech, orb, markOn, markSpent, frenzy, frenzyFed, shield,
 			# guarded, blocked)
 			if not city3.handle(e):
 				w610.handle(e)
+
+
+## THE BELLS (fx.ts 'bells'; game/bells.ts): the Hush pouring out of the Muffled Bell (`start`); a bell's ring, the friend's cyan
+## (his to ring), knocking back what is near it, its count over it (`ring`; an unstruck page laid rings so too, act2/quest1115.gd);
+## one of the Hush rising out of its fog (`rise`); the Hush shattering in the explosion (`won`), or lifting as the clock runs out
+## (`lost`).
+const HUSH_GREY := ["#e2dfe8", "#b8b4c6", "#8e8aa0", "#6a6680"]
+const BELL_CYAN := ["#22d0e0", "#b8fff8", "#0c6a80"]
+const BELL_BURST := ["#ffffff", "#b8fff8", "#22d0e0"]
+
+
+func _bells(e: Dictionary) -> void:
+	var x: float = e["x"]
+	var y: float = e["y"]
+	var hush := PackedColorArray(HUSH_GREY.map(func(c): return Color(c)))
+	var cyan := PackedColorArray(BELL_CYAN.map(func(c): return Color(c)))
+	var burst := PackedColorArray(BELL_BURST.map(func(c): return Color(c)))
+	match str(e.get("what", "")):
+		"start":
+			ring(x, y, 2.6, 0.7, hush, true, {"heavy": true})
+			ring(x, y, 5.0, 1.1, hush, false, {"delay": 0.15})
+			for i in 4:
+				spray(x, y, 10, hush, 1.6 + i * 0.4, 40.0 + i * 20.0, 20.0)
+			kick(3.0)
+		"ring":
+			ring(x, y, 1.4, 0.35, cyan, true, {"heavy": true})
+			ring(x, y, 3.5, 0.55, cyan, false, {"delay": 0.05})
+			ring(x, y, 5.5, 0.8, cyan, false, {"delay": 0.18})
+			spray(x, y, 14, cyan, 3.0, 90.0, 22.0)
+			if int(e.get("k", 0)) > 0 and int(e.get("n", 0)) > 0:
+				float_text(x, y, "%d / %d" % [int(e["k"]), int(e["n"])], cyan[1], true, 40.0)
+			kick(2.5)
+		"rise":
+			spray(x, y, 8, hush, 1.2, 60.0, 6.0)
+		"won":
+			ring(x, y, 3.0, 0.4, burst, true, {"heavy": true})
+			ring(x, y, 7.0, 0.9, cyan, false, {"delay": 0.1})
+			for i in 5:
+				spray(x, y, 14, cyan if i % 2 == 1 else burst, 3.0 + i, 120.0 + i * 30.0, 26.0)
+			kick(6.0)
+			hold(0.08)
+		"lost":
+			ring(x, y, 4.0, 1.4, hush, false)
 
 
 ## The monster a telling is of: its `id` the monster itself or its instance id; failing both, the one nearest (x, y).

@@ -25,6 +25,11 @@ import { figureOf } from '../src/art/bestiary';
 import { bakeName } from '../src/render/monsters_bake_list';
 import { PATIENT, bedPlace } from '../src/game/act1_rules/patient';
 import { STOLEN_BOOK, censorGround } from '../src/game/act1_rules/censor';
+import { CRIERS_JAR } from '../src/game/act2/undercity';
+import { BELLS_TUNE, BELL_STILL } from '../src/game/bells';
+import { ACT2_OWN, act2Ready } from '../src/game/act2_mobs';
+import { cityFloor } from '../src/game/act1';
+import { RNG } from '../src/engine/rng';
 
 declare const process: { argv: string[] };
 paintWithoutCanvas();
@@ -142,6 +147,14 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
   // floor 3's forge crank, a lever by kind, named 'crank')
   props: level.props.map((p, i) => ({ i, kind: p.kind, x: p.x, y: p.y, tx: p.tx, ty: p.ty, state: p.state, solid: p.solid, ...(p.name ? { name: p.name } : {}) }))
     .filter((p) => p.kind === 'chest' || p.kind === 'barrel' || p.kind === 'urn' || p.kind === 'lever'),
+  // (QUESTS1115, floor 12: THE CRIER'S JAR in the Rat King's nest, game/act2/undercity.ts CRIERS_JAR: its tile, solid until it is
+  // taken (game.ts jarTick), and its place among the level's props (the look's state `jar<i>`); godot/scripts/act2/quest1115.gd)
+  jar: (() => {
+    const i = level.props.findIndex((p) => p.kind === 'piece' && p.name === CRIERS_JAR);
+    if (i < 0) return null;
+    const p = level.props[i];
+    return { i, x: p.x, y: p.y, tx: p.tx, ty: p.ty, solid: p.solid };
+  })(),
   // (THE MIX: each lever's tile and the room whose way in its gate bars: types.ts LeverSpot)
   levers: (L.levers ?? []).map((l) => ({ ...l })),
   // (the room each pack is of, by the pack's id: a room that locks counts the living of its own packs inside it, game.ts updateLocks)
@@ -188,6 +201,50 @@ const monsters = game.monsters.map((m, i) => {
   // (`a1`: what its kind's rules keep about it as it comes into the world: floor 14's patients lying in their beds)
   return { ...plain(m), figure: bakeName(figureOf(m)), words: [...m.words], half: [...(m.half ?? [])], carries: [...lit.monsters[i].carries], a1: m.a1 ? plain(m.a1) : null };
 });
+// (ACT 2, THE BELLS, floors 11 to 15 (game/bells.ts, Game's "ACT 2: THE BELLS"; godot/scripts/act2/bells.gd): the plan (the
+// Muffled Bell, the bells to ring, the Hush's circle), its numbers; THE TOUGH ONE each bell rung calls, as the game itself makes
+// it on this floor for the k-th bell (game.ts bellTough: a yellow pack's leader of the floor's guard kind with its words, its
+// life `tough` more for each bell before it); and WHAT THE HUSH RAISES, the floor's own kinds by their weights (act2Pack 'normal'),
+// a plain one of each as the game makes it here, rising in the Hush (none of floor 14's lying down in a bed); none elsewhere)
+const mon = (m: (typeof game.monsters)[number]) => ({ ...plain(m), figure: bakeName(figureOf(m)), words: [...m.words], half: [...(m.half ?? [])], carries: [] as string[], a1: m.a1 ? plain(m.a1) : null });
+let bells: Record<string, unknown> | null = null;
+if (level.bells) {
+  const bg = new Game('warrior', seed);
+  bg.depth = depth;
+  bg.hero.ring = true;
+  bg.enterDungeon();
+  const BB = bg.level.bells!;
+  BB.phase = 'on';
+  const G = bg as unknown as { bellTough(x: number, y: number, k: number): void; spawn(...a: unknown[]): (typeof game.monsters)[number]; risingInHush: boolean };
+  const n = BB.plan.bells.length;
+  const tough = [];
+  // (each the leader and what comes with it, the Hushed Watch's sergeant his brace of hounds: ARRIVALS, kept among the risers
+  // until they are up out of their rifts)
+  const R = (bg as unknown as { risers: { m: (typeof game.monsters)[number] }[] }).risers;
+  for (let k = 1; k < n; k++) {
+    const from = bg.monsters.length;
+    const was = R.length;
+    G.bellTough(BB.plan.bells[k - 1].x, BB.plan.bells[k - 1].y, k);
+    const come = [...bg.monsters.slice(from), ...R.slice(was).map((r) => r.m)];
+    come.sort((a, b) => (b.rarity === 'leader' ? 1 : 0) - (a.rarity === 'leader' ? 1 : 0));
+    for (const m of come) kinds.add(m.kind);
+    tough.push(come.map((m) => ({ ...mon(m), dx: m.x - come[0].x, dy: m.y - come[0].y })));
+  }
+  const own = (ACT2_OWN[cityFloor(depth) || 11] ?? []).filter((o) => o.kind !== 'rshade').map((o) => ({ kind: act2Ready(o.kind) ? o.kind : 'hushed', weight: o.weight }));
+  const rise: Record<string, unknown> = {};
+  const rng = new RNG(depth * 7919);
+  for (const o of own) {
+    if (rise[o.kind]) continue;
+    G.risingInHush = true;
+    const m = G.spawn(o.kind, BB.plan.muffled.x, BB.plan.muffled.y, 8000, 0, false, rng);
+    G.risingInHush = false;
+    kinds.add(m.kind);
+    rise[o.kind] = mon(m);
+  }
+  const p = (k: number) => (k >= 0 ? { i: k, tx: level.props[k].tx, ty: level.props[k].ty, name: level.props[k].name } : null);
+  bells = { plan: structuredClone(level.bells.plan), limit: level.bells.limit, props: level.bells.props.map(p), muffled: p(level.bells.muffled), tune: { ...BELLS_TUNE }, still: BELL_STILL, tough, own, rise };
+  console.log(`the Bells: ${n} bells, the Hush ${level.bells.first} tiles; the tough ones ${tough.map((g) => g.map((m) => `${m.name} (${m.maxLife})`).join(' + ')).join(', ')}; it raises ${own.map((o) => `${o.kind} ${o.weight}`).join(', ')}`);
+}
 const defs: Record<string, Record<string, number | string | boolean>> = {};
 for (const k of kinds) defs[k] = plain(MONSTERS[k as keyof typeof MONSTERS]);
 // (FLOOR 14, THE HOUSE OF QUIET: its ward beds, each where one lying in it lies, the way it faces (game/act1_rules/patient.ts
@@ -201,7 +258,7 @@ const beds = level.props
 const censor = game.monsters.find((m) => m.kind === 'censor');
 const book = level.props.find((p) => p.kind === 'piece' && p.name === STOLEN_BOOK);
 const ground = censor ? { censor: { ground: censorGround(level, censor.x, censor.y), book: book ? { x: book.x, y: book.y } : null } } : {};
-writeFileSync(`${OUT}/monsters.json`, JSON.stringify({ hero: plain(game.hero), monsters, defs, ...(beds.length ? { beds } : {}), ...ground }, null, 1));
+writeFileSync(`${OUT}/monsters.json`, JSON.stringify({ hero: plain(game.hero), monsters, defs, ...(beds.length ? { beds } : {}), ...ground, ...(bells ? { bells } : {}) }, null, 1));
 const tally: Record<string, number> = {};
 for (const m of monsters) tally[`${m.kind}/${m.figure}`] = (tally[`${m.kind}/${m.figure}`] ?? 0) + 1;
 console.log(`monsters: ${monsters.length}: ${Object.entries(tally).map(([k, n]) => `${n} ${k}`).join(', ')}`);

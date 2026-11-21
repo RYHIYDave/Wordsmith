@@ -134,6 +134,8 @@ var stat_info := {}
 var _pools := {}
 ## (any floor: the same pools as the game rolls them on each floor, tools/godot_loot.ts; floor 1's where a floor has none)
 var _by_depth := {}
+## (QUESTS1115: the armourer's pick for the clapper, fully modded rares by level and slot: tools/godot_loot.ts fullRares)
+var _full_rares := {}
 ## the vendors' shelves (Game.rollShop on his first day in town)
 var shops := {}
 ## (what each word becomes on each kind of piece; which words are found where; the armourer's quest's own lines:
@@ -161,6 +163,7 @@ func _ready() -> void:
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/items.json"))
 	_pools = data["pools"]
 	_by_depth = data.get("byDepth", {})
+	_full_rares = data.get("fullRares", {})
 	shops = data["shops"]
 	_imbue = data["imbue"]
 	_words = data["words"]
@@ -366,6 +369,9 @@ func on_kill(m) -> void:
 	# (FLOORS 6 TO 10: a piece of the ward-stone it carried, the Queen's feather and her eyrie's scene: act1/quest610.gd)
 	if main != null and main.quest610 != null:
 		main.quest610.killed(m)
+	# (FLOORS 11 TO 15: an unstruck page, as the last of floor 13's pair falls and as the Physician does: act2/quest1115.gd)
+	if main != null and main.quest1115 != null:
+		main.quest1115.killed(m)
 	if m.summoned:
 		return
 	# (FLOOR 13'S DOUBLE BOSS: the first of the pair to fall leaves part of a boss's hoard, the last the whole of it; the other
@@ -511,6 +517,23 @@ func _item(at: Vector2, quality: int) -> void:
 	_drop("gear", _scatter(at), it["icon"], {"item": it})
 
 
+## (QUESTS1115, game.ts layOut) A piece of a pick of three laid out before `by` (the armourer), at `at`: taken, the others go back.
+func lay_pick(at: Vector2, it: Dictionary, by: String) -> void:
+	_drop("gear", at, it["icon"], {"item": it, "choice": by})
+
+
+## (the same) What of `by`'s pick lies laid out is taken away.
+func take_back(by: String) -> void:
+	var keep: Array = []
+	for d in _drops:
+		if str(d.get("choice", "")) == by:
+			if is_instance_valid(d["node"]):
+				d["node"].queue_free()
+		else:
+			keep.append(d)
+	_drops = keep
+
+
 ## A WORD FALLS (game.ts addDrop 'word'; the event wordDrop): within 0.7 of where it fell, or just there; it is heard.
 func _word(at: Vector2, w: String, just_there := false) -> void:
 	# (a word that is not one of floors 1 to 5's has no rune stone here yet)
@@ -591,6 +614,7 @@ func _process(dt: float) -> void:
 	_tell_carrier()
 	_offer(dt)
 	var keep: Array = []
+	var picked := ""
 	for d in _drops:
 		d["age"] += dt
 		var take := false
@@ -605,7 +629,10 @@ func _process(dt: float) -> void:
 		# bursts up and comes down to hang)
 		if d["age"] >= (float(_tune["wordStands"]) if d["kind"] == "word" else STONE_STANDS if d["kind"] == "stone" else WAIT):
 			if d["kind"] == "gear":
-				take = dist <= GEAR_TAKE and _take_item(d["item"])
+				take = picked == "" and dist <= GEAR_TAKE and _take_item(d["item"])
+				# (QUESTS1115: one of the armourer's pick taken: the others laid with it go back, game.ts pickTaken)
+				if take and d.has("choice"):
+					picked = str(d["choice"])
 			else:
 				if dist <= PULL:
 					d["at"] = d["at"].move_toward(hero.world, FLY * dt)
@@ -630,6 +657,10 @@ func _process(dt: float) -> void:
 		else:
 			keep.append(d)
 	_drops = keep
+	if picked != "":
+		take_back(picked)
+		if main != null and main.quest1115 != null:
+			main.quest1115.pick_taken(picked)
 
 
 ## (main.ts `quiet`, `offer`) A word come by that has somewhere to go is offered its place at the first quiet moment: nothing

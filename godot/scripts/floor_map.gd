@@ -70,6 +70,8 @@ var fence = null
 ## carried across to it from {x, y}: game/act1_layout.ts. Null elsewhere.)
 var stone = null
 var landing = null
+## (floor 12, QUESTS1115: THE CRIER'S JAR in the Rat King's nest, {i, x, y, tx, ty, solid}: act2/quest1115.gd)
+var jar = null
 
 
 func _init(path: String) -> void:
@@ -115,6 +117,7 @@ func _init(path: String) -> void:
 	heaps = data.get("heaps")
 	stone = data.get("stone")
 	landing = data.get("landing")
+	jar = data.get("jar")
 	shut.resize(w * h)
 	pier.resize(w * h)
 	for d in doors:

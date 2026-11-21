@@ -143,6 +143,10 @@ var wakes: Wakes
 ## (FLOORS 6 TO 10 BESIDES THEIR FIGHTS: the quest line, what lies of it, the quest marks, floor 10's pillars: act1/quest610.gd,
 ## the hero's own and kept from place to place; the floor's strongholds: act1/holds.gd, its own)
 var quest610
+## (FLOORS 11 TO 15 BESIDES THEIR FIGHTS: the Crier's jar, the unstruck pages, the clapper: act2/quest1115.gd)
+var quest1115
+## (ACT 2, THE BELLS, the city floors' event: act2/bells.gd)
+var bells
 var holds:
 	get:
 		return quest610.holds if quest610 != null else null
@@ -231,6 +235,12 @@ func _ready() -> void:
 	quest610 = preload("res://scripts/act1/quest610.gd").new()
 	quest610.main = self
 	add_child(quest610)
+	quest1115 = preload("res://scripts/act2/quest1115.gd").new()
+	quest1115.main = self
+	add_child(quest1115)
+	bells = preload("res://scripts/act2/bells.gd").new()
+	bells.main = self
+	add_child(bells)
 
 	var shots := _arg("shots")
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
@@ -587,6 +597,10 @@ func _build(where: String, arrive: String) -> void:
 	# (FLOORS 6 TO 10 BESIDES THEIR FIGHTS: the floor's strongholds, its part of the quest line, the quest marks: act1/quest610.gd)
 	if quest610 != null:
 		quest610.enter(where)
+	if quest1115 != null:
+		quest1115.enter(where)
+	if bells != null:
+		bells.enter(where)
 
 
 ## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.
@@ -698,6 +712,9 @@ func prompt() -> Array:
 	# (a stronghold's altar; an obelisk in the Fen: act1/quest610.gd)
 	if quest610 != null and str(quest610.prompt()[0]) != "":
 		return quest610.prompt()
+	# (an unstruck page, in the Censor's fight: act2/quest1115.gd)
+	if quest1115 != null and str(quest1115.prompt()[0]) != "":
+		return quest1115.prompt()
 	return town.prompt if town != null else ["", ""]
 
 
@@ -1857,6 +1874,16 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE CITY'S FLOORS' MONSTERS, floors 11 to 15: check_city.gd)
 	if _arg("only") == "city":
 		await preload("res://scripts/check_city.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE BELLS, the city floors' event: check_bells.gd, `--floor=N`)
+	if _arg("only") == "bells":
+		await preload("res://scripts/check_bells.gd").new().run(self, hero, dir, int(_arg("floor")) if _arg("floor") != "" else 11)
+		get_tree().quit()
+		return
+	# (THE QUEST LINE OF FLOORS 11 TO 15: check_quest1115.gd)
+	if _arg("only") == "quests1115":
+		await preload("res://scripts/check_quest1115.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (THE CITY'S FIVE WORDS: check_citywords.gd)

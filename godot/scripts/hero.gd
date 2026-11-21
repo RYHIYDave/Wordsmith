@@ -138,6 +138,8 @@ var props  # props.gd, on a floor that has chests, barrels or urns (null in town
 ## PLAYING, the eyrie's (game.ts sceneStep): above 0, the player's hands off him, he walks where auto_dir takes him at that share
 ## of his pace; the picture's lean out over the drop (render.ts sceneLean), picture pixels)
 var pillars = null
+## (ACT 2, THE BELLS, floors 11 to 15: his blows ring them: act2/bells.gd)
+var bells = null
 var scene_pace := 0.0
 var lean := Vector2.ZERO
 var world := Vector2.ZERO
@@ -648,6 +650,9 @@ func _break_props(i: int, at: Vector2, rad: float) -> void:
 		props.strike(at, rad)
 	if pillars != null and is_instance_valid(pillars):
 		pillars.struck(at, rad)
+	# (ACT 2, THE BELLS: a hit at a bell rings it; at the Muffled Bell, it starts the Hush)
+	if bells != null and is_instance_valid(bells) and bells.on():
+		bells.struck(at, rad)
 	if doors != null and is_instance_valid(doors):
 		doors.unseal({"front": loadout.wfronts(i), "behind": loadout.wbehinds(i)}, at, rad)
 

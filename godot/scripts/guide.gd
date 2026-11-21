@@ -129,6 +129,12 @@ func _givers_now() -> Array:
 	# (QUESTS610: the mystic, her ask for the Queen's feather and the feather brought: act1/quest610.gd)
 	if main.quest610 != null and main.quest610.mystic_due() != "":
 		out.append("mystic")
+	# (QUESTS1115: the armourer's clapper, the mystic's jar: act2/quest1115.gd)
+	var q11 = main.quest1115
+	if q11 != null and q11.clapper_due() != "" and not out.has("armourer"):
+		out.append("armourer")
+	if q11 != null and q11.jar_due() != "" and not out.has("mystic"):
+		out.append("mystic")
 	return out
 
 
@@ -141,6 +147,12 @@ func _back_now() -> String:
 		return "armourer"
 	if main.quest610 != null and main.quest610.on() and main.quest610.feather == "got":
 		return "mystic"
+	# (QUESTS1115)
+	if main.quest1115 != null and main.quest1115.on():
+		if main.quest1115.jar == "got":
+			return "mystic"
+		if main.quest1115.clapper == "got":
+			return "armourer"
 	return ""
 
 

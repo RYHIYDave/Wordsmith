@@ -102,7 +102,8 @@
     "power"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 2,
@@ -158,7 +159,8 @@
     "power"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 3,
@@ -214,7 +216,8 @@
     "power"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 4,
@@ -270,7 +273,8 @@
     "power"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 5,
@@ -326,7 +330,8 @@
     "power"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 6,
@@ -382,7 +387,8 @@
     "power"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 7,
@@ -438,7 +444,8 @@
     "power"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 8,
@@ -494,7 +501,8 @@
     "power"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 9,
@@ -549,7 +557,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 10,
@@ -604,7 +613,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 11,
@@ -659,7 +669,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 12,
@@ -714,7 +725,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 13,
@@ -769,7 +781,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 14,
@@ -824,7 +837,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 15,
@@ -879,7 +893,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 16,
@@ -935,7 +950,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 17,
@@ -991,7 +1007,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 18,
@@ -1047,7 +1064,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 19,
@@ -1103,7 +1121,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 20,
@@ -1159,7 +1178,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 21,
@@ -1215,7 +1235,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 22,
@@ -1271,7 +1292,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 23,
@@ -1327,7 +1349,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 24,
@@ -1383,7 +1406,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 25,
@@ -1436,7 +1460,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 26,
@@ -1489,7 +1514,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 27,
@@ -1542,7 +1568,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 28,
@@ -1595,7 +1622,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 29,
@@ -1648,7 +1676,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 30,
@@ -1701,7 +1730,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 31,
@@ -1754,7 +1784,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 32,
@@ -1807,7 +1838,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 33,
@@ -1860,7 +1892,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 34,
@@ -1913,7 +1946,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 35,
@@ -1965,7 +1999,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 36,
@@ -2017,7 +2052,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 37,
@@ -2069,7 +2105,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 38,
@@ -2121,7 +2158,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 39,
@@ -2173,7 +2211,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 40,
@@ -2225,7 +2264,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 41,
@@ -2282,7 +2322,8 @@
     "fire"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 42,
@@ -2342,7 +2383,8 @@
     "leech",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 43,
@@ -2402,7 +2444,8 @@
     "leech",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 44,
@@ -2462,7 +2505,8 @@
     "leech",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 45,
@@ -2522,7 +2566,8 @@
     "leech",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 46,
@@ -2582,7 +2627,8 @@
     "leech",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 47,
@@ -2642,7 +2688,8 @@
     "leech",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 48,
@@ -2702,7 +2749,8 @@
     "leech",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 49,
@@ -2762,7 +2810,8 @@
     "leech",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 50,
@@ -2822,7 +2871,8 @@
     "leech",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 51,
@@ -2882,7 +2932,8 @@
     "leech",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 52,
@@ -2942,7 +2993,8 @@
     "leech",
     "fire"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 53,
@@ -2998,7 +3050,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 54,
@@ -3054,7 +3107,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 55,
@@ -3110,7 +3164,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 56,
@@ -3166,7 +3221,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 57,
@@ -3222,7 +3278,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 58,
@@ -3278,7 +3335,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 59,
@@ -3334,7 +3392,8 @@
     "frost"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 60,
@@ -3387,7 +3446,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 61,
@@ -3440,7 +3500,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 62,
@@ -3493,7 +3554,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 63,
@@ -3546,7 +3608,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 64,
@@ -3599,7 +3662,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 65,
@@ -3652,7 +3716,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 66,
@@ -3705,7 +3770,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 67,
@@ -3758,7 +3824,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 68,
@@ -3811,7 +3878,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 69,
@@ -3864,7 +3932,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 70,
@@ -3917,7 +3986,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 71,
@@ -3973,7 +4043,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 72,
@@ -4029,7 +4100,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 73,
@@ -4085,7 +4157,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 74,
@@ -4141,7 +4214,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 75,
@@ -4197,7 +4271,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 76,
@@ -4253,7 +4328,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 77,
@@ -4309,7 +4385,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 78,
@@ -4365,7 +4442,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 79,
@@ -4418,7 +4496,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 80,
@@ -4471,7 +4550,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 81,
@@ -4524,7 +4604,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 82,
@@ -4577,7 +4658,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 83,
@@ -4630,7 +4712,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 84,
@@ -4683,7 +4766,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 85,
@@ -4736,7 +4820,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 86,
@@ -4789,7 +4874,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 87,
@@ -4842,7 +4928,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 88,
@@ -4895,7 +4982,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 89,
@@ -4948,7 +5036,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 90,
@@ -5001,7 +5090,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 91,
@@ -5054,7 +5144,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 92,
@@ -5107,7 +5198,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 93,
@@ -5160,7 +5252,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 94,
@@ -5213,7 +5306,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 95,
@@ -5266,7 +5360,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 96,
@@ -5319,7 +5414,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 97,
@@ -5374,7 +5470,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 98,
@@ -5429,7 +5526,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 99,
@@ -5484,7 +5582,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 100,
@@ -5539,7 +5638,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 101,
@@ -5594,7 +5694,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 102,
@@ -5649,7 +5750,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 103,
@@ -5704,7 +5806,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 104,
@@ -5759,7 +5862,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 105,
@@ -5812,7 +5916,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 106,
@@ -5865,7 +5970,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 107,
@@ -5918,7 +6024,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 108,
@@ -5971,7 +6078,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 109,
@@ -6024,7 +6132,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 110,
@@ -6077,7 +6186,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 111,
@@ -6132,7 +6242,8 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 112,
@@ -6187,7 +6298,8 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 113,
@@ -6242,7 +6354,8 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 114,
@@ -6297,7 +6410,8 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 115,
@@ -6352,7 +6466,8 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 116,
@@ -6407,7 +6522,8 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 117,
@@ -6462,7 +6578,8 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 118,
@@ -6517,7 +6634,8 @@
     "lightning"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 119,
@@ -6573,7 +6691,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 120,
@@ -6629,7 +6748,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 121,
@@ -6685,7 +6805,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 122,
@@ -6741,7 +6862,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 123,
@@ -6797,7 +6919,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 124,
@@ -6853,7 +6976,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 125,
@@ -6910,7 +7034,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 126,
@@ -6970,7 +7095,8 @@
     "pulling",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 127,
@@ -7030,7 +7156,8 @@
     "pulling",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 128,
@@ -7090,7 +7217,8 @@
     "pulling",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 129,
@@ -7150,7 +7278,8 @@
     "pulling",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 130,
@@ -7210,7 +7339,8 @@
     "pulling",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 131,
@@ -7270,7 +7400,8 @@
     "pulling",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 132,
@@ -7330,7 +7461,8 @@
     "pulling",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 133,
@@ -7390,7 +7522,8 @@
     "pulling",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 134,
@@ -7450,7 +7583,8 @@
     "pulling",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 135,
@@ -7510,7 +7644,8 @@
     "pulling",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 136,
@@ -7570,7 +7705,8 @@
     "pulling",
     "binding"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 137,
@@ -7623,7 +7759,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 138,
@@ -7676,7 +7813,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 139,
@@ -7729,7 +7867,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 140,
@@ -7782,7 +7921,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 141,
@@ -7835,7 +7975,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 142,
@@ -7888,7 +8029,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 143,
@@ -7941,7 +8083,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 144,
@@ -7994,7 +8137,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 145,
@@ -8047,7 +8191,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 146,
@@ -8100,7 +8245,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 147,
@@ -8153,7 +8299,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 148,
@@ -8209,7 +8356,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 149,
@@ -8265,7 +8413,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 150,
@@ -8321,7 +8470,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 151,
@@ -8377,7 +8527,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 152,
@@ -8433,7 +8584,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 153,
@@ -8489,7 +8641,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 154,
@@ -8545,7 +8698,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 155,
@@ -8601,7 +8755,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 156,
@@ -8657,7 +8812,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 157,
@@ -8713,7 +8869,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 158,
@@ -8769,7 +8926,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 159,
@@ -8825,7 +8983,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 160,
@@ -8881,7 +9040,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 161,
@@ -8937,7 +9097,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 162,
@@ -8993,7 +9154,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 163,
@@ -9049,7 +9211,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 164,
@@ -9105,7 +9268,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 165,
@@ -9161,7 +9325,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 166,
@@ -9217,7 +9382,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 167,
@@ -9273,7 +9439,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 168,
@@ -9329,7 +9496,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 169,
@@ -9385,7 +9553,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 170,
@@ -9441,7 +9610,8 @@
     "guarding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 171,
@@ -9494,7 +9664,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 172,
@@ -9547,7 +9718,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 173,
@@ -9600,7 +9772,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 174,
@@ -9653,7 +9826,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 175,
@@ -9706,7 +9880,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 176,
@@ -9759,7 +9934,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 177,
@@ -9812,7 +9988,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 178,
@@ -9865,7 +10042,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 179,
@@ -9918,7 +10096,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 180,
@@ -9971,7 +10150,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 181,
@@ -10024,7 +10204,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 182,
@@ -10077,7 +10258,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 183,
@@ -10130,7 +10312,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 184,
@@ -10183,7 +10366,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 185,
@@ -10236,7 +10420,8 @@
    "figure": "hushed_2",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 186,
@@ -10289,7 +10474,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 187,
@@ -10342,7 +10528,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 188,
@@ -10395,7 +10582,8 @@
    "figure": "hushed_2",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 189,
@@ -10448,7 +10636,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 190,
@@ -10501,7 +10690,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 191,
@@ -10554,7 +10744,8 @@
    "figure": "hushed_2",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 192,
@@ -10607,7 +10798,8 @@
    "figure": "hushed",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 193,
@@ -10660,7 +10852,8 @@
    "figure": "hushed_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 194,
@@ -10713,7 +10906,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 195,
@@ -10766,7 +10960,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 196,
@@ -10819,7 +11014,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 197,
@@ -10872,7 +11068,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 198,
@@ -10925,7 +11122,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 199,
@@ -10978,7 +11176,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 200,
@@ -11031,7 +11230,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 201,
@@ -11084,7 +11284,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 202,
@@ -11137,7 +11338,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 203,
@@ -11190,7 +11392,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 204,
@@ -11243,7 +11446,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 205,
@@ -11296,7 +11500,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 206,
@@ -11349,7 +11554,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 207,
@@ -11402,7 +11608,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 208,
@@ -11455,7 +11662,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 209,
@@ -11508,7 +11716,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 210,
@@ -11561,7 +11770,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 211,
@@ -11614,7 +11824,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 212,
@@ -11667,7 +11878,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 213,
@@ -11720,7 +11932,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 214,
@@ -11773,7 +11986,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 215,
@@ -11826,7 +12040,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 216,
@@ -11878,7 +12093,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 217,
@@ -11930,7 +12146,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 218,
@@ -11982,7 +12199,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 219,
@@ -12034,7 +12252,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 220,
@@ -12086,7 +12305,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 221,
@@ -12138,7 +12358,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 222,
@@ -12190,7 +12411,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 223,
@@ -12242,7 +12464,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 224,
@@ -12294,7 +12517,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 225,
@@ -12346,7 +12570,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 226,
@@ -12398,7 +12623,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 227,
@@ -12450,7 +12676,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 228,
@@ -12502,7 +12729,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 229,
@@ -12558,7 +12786,8 @@
     "twin"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 230,
@@ -12614,7 +12843,8 @@
     "twin"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 231,
@@ -12670,7 +12900,8 @@
     "twin"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 232,
@@ -12726,7 +12957,8 @@
     "twin"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 233,
@@ -12782,7 +13014,8 @@
     "twin"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 234,
@@ -12838,7 +13071,8 @@
     "twin"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 235,
@@ -12894,7 +13128,8 @@
     "twin"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 236,
@@ -12950,7 +13185,8 @@
     "twin"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 237,
@@ -13006,7 +13242,8 @@
     "twin"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 238,
@@ -13062,7 +13299,8 @@
     "twin"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 239,
@@ -13118,7 +13356,8 @@
     "twin"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 240,
@@ -13171,7 +13410,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 241,
@@ -13224,7 +13464,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 242,
@@ -13277,7 +13518,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 243,
@@ -13330,7 +13572,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 244,
@@ -13383,7 +13626,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 245,
@@ -13436,7 +13680,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 246,
@@ -13489,7 +13734,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 247,
@@ -13545,7 +13791,8 @@
     "fleeting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 248,
@@ -13601,7 +13848,8 @@
     "fleeting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 249,
@@ -13657,7 +13905,8 @@
     "fleeting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 250,
@@ -13713,7 +13962,8 @@
     "fleeting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 251,
@@ -13769,7 +14019,8 @@
     "fleeting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 252,
@@ -13825,7 +14076,8 @@
     "fleeting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 253,
@@ -13881,7 +14133,8 @@
     "fleeting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 254,
@@ -13937,7 +14190,8 @@
     "fleeting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 255,
@@ -13993,7 +14247,8 @@
     "fleeting"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 256,
@@ -14046,7 +14301,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 257,
@@ -14099,7 +14355,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 258,
@@ -14152,7 +14409,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 259,
@@ -14205,7 +14463,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 260,
@@ -14258,7 +14517,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 261,
@@ -14311,7 +14571,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 262,
@@ -14364,7 +14625,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 263,
@@ -14417,7 +14679,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 264,
@@ -14470,7 +14733,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 265,
@@ -14523,7 +14787,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 266,
@@ -14576,7 +14841,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 267,
@@ -14629,7 +14895,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 268,
@@ -14682,7 +14949,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 269,
@@ -14735,7 +15003,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 270,
@@ -14788,7 +15057,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 271,
@@ -14841,7 +15111,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 272,
@@ -14894,7 +15165,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 273,
@@ -14951,7 +15223,8 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 274,
@@ -15011,7 +15284,8 @@
     "precise",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 275,
@@ -15071,7 +15345,8 @@
     "precise",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 276,
@@ -15131,7 +15406,8 @@
     "precise",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 277,
@@ -15191,7 +15467,8 @@
     "precise",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 278,
@@ -15251,7 +15528,8 @@
     "precise",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 279,
@@ -15311,7 +15589,8 @@
     "precise",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 280,
@@ -15371,7 +15650,8 @@
     "precise",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 281,
@@ -15431,7 +15711,8 @@
     "precise",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 282,
@@ -15491,7 +15772,8 @@
     "precise",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 283,
@@ -15548,7 +15830,8 @@
     "pulling"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 284,
@@ -15608,7 +15891,8 @@
     "binding",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 285,
@@ -15668,7 +15952,8 @@
     "binding",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 286,
@@ -15728,7 +16013,8 @@
     "binding",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 287,
@@ -15788,7 +16074,8 @@
     "binding",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 288,
@@ -15848,7 +16135,8 @@
     "binding",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 289,
@@ -15908,7 +16196,8 @@
     "binding",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 290,
@@ -15968,7 +16257,8 @@
     "binding",
     "pulling"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 291,
@@ -16024,7 +16314,8 @@
     "leech"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 292,
@@ -16083,7 +16374,8 @@
     "twin",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 293,
@@ -16142,7 +16434,8 @@
     "twin",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 294,
@@ -16201,7 +16494,8 @@
     "twin",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 295,
@@ -16260,7 +16554,8 @@
     "twin",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 296,
@@ -16319,7 +16614,8 @@
     "twin",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 297,
@@ -16378,7 +16674,8 @@
     "twin",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 298,
@@ -16437,7 +16734,8 @@
     "twin",
     "leech"
    ],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 299,
@@ -16490,7 +16788,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 300,
@@ -16543,7 +16842,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 301,
@@ -16596,7 +16896,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 302,
@@ -16649,7 +16950,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 303,
@@ -16702,7 +17004,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 304,
@@ -16755,7 +17058,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 305,
@@ -16808,7 +17112,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 306,
@@ -16861,7 +17166,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 307,
@@ -16914,7 +17220,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 308,
@@ -16967,7 +17274,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 309,
@@ -17020,7 +17328,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 310,
@@ -17073,7 +17382,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 311,
@@ -17126,7 +17436,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 312,
@@ -17179,7 +17490,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 313,
@@ -17232,7 +17544,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 314,
@@ -17285,7 +17598,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 315,
@@ -17338,7 +17652,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 316,
@@ -17391,7 +17706,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 317,
@@ -17444,7 +17760,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 318,
@@ -17500,7 +17817,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 319,
@@ -17556,7 +17874,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 320,
@@ -17612,7 +17931,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 321,
@@ -17668,7 +17988,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 322,
@@ -17724,7 +18045,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 323,
@@ -17780,7 +18102,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 324,
@@ -17836,7 +18159,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 325,
@@ -17892,7 +18216,8 @@
     "binding"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 326,
@@ -17948,7 +18273,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 327,
@@ -18004,7 +18330,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 328,
@@ -18060,7 +18387,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 329,
@@ -18116,7 +18444,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 330,
@@ -18172,7 +18501,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 331,
@@ -18228,7 +18558,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 332,
@@ -18284,7 +18615,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 333,
@@ -18340,7 +18672,8 @@
     "frenzied"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 334,
@@ -18392,7 +18725,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 335,
@@ -18444,7 +18778,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 336,
@@ -18496,7 +18831,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 337,
@@ -18548,7 +18884,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 338,
@@ -18600,7 +18937,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 339,
@@ -18652,7 +18990,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 340,
@@ -18704,7 +19043,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 341,
@@ -18756,7 +19096,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 342,
@@ -18809,7 +19150,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 343,
@@ -18862,7 +19204,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 344,
@@ -18915,7 +19258,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 345,
@@ -18968,7 +19312,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 346,
@@ -19021,7 +19366,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 347,
@@ -19074,7 +19420,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 348,
@@ -19127,7 +19474,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 349,
@@ -19180,7 +19528,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 350,
@@ -19233,7 +19582,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 351,
@@ -19286,7 +19636,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 352,
@@ -19339,7 +19690,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 353,
@@ -19392,7 +19744,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 354,
@@ -19445,7 +19798,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 355,
@@ -19498,7 +19852,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 356,
@@ -19551,7 +19906,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 357,
@@ -19604,7 +19960,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 358,
@@ -19657,7 +20014,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 359,
@@ -19713,7 +20071,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 360,
@@ -19769,7 +20128,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 361,
@@ -19825,7 +20185,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 362,
@@ -19881,7 +20242,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 363,
@@ -19937,7 +20299,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 364,
@@ -19993,7 +20356,8 @@
     "hexing"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 365,
@@ -20046,7 +20410,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 366,
@@ -20099,7 +20464,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 367,
@@ -20152,7 +20518,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 368,
@@ -20205,7 +20572,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 369,
@@ -20258,7 +20626,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 370,
@@ -20311,7 +20680,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 371,
@@ -20364,7 +20734,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 372,
@@ -20417,7 +20788,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 373,
@@ -20470,7 +20842,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 374,
@@ -20522,7 +20895,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 375,
@@ -20574,7 +20948,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 376,
@@ -20626,7 +21001,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 377,
@@ -20678,7 +21054,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 378,
@@ -20730,7 +21107,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 379,
@@ -20782,7 +21160,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 380,
@@ -20834,7 +21213,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 381,
@@ -20886,7 +21266,8 @@
    "figure": "carter",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 382,
@@ -20939,7 +21320,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 383,
@@ -20992,7 +21374,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 384,
@@ -21045,7 +21428,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 385,
@@ -21098,7 +21482,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 386,
@@ -21151,7 +21536,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 387,
@@ -21204,7 +21590,8 @@
    "figure": "fieldhand_1",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 388,
@@ -21257,7 +21644,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 389,
@@ -21310,7 +21698,8 @@
    "figure": "fieldhand",
    "words": [],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 390,
@@ -21365,7 +21754,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 391,
@@ -21420,7 +21810,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 392,
@@ -21475,7 +21866,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 393,
@@ -21530,7 +21922,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 394,
@@ -21585,7 +21978,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 395,
@@ -21640,7 +22034,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 396,
@@ -21695,7 +22090,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 397,
@@ -21750,7 +22146,8 @@
     "volatile"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 398,
@@ -21808,7 +22205,8 @@
    "half": [],
    "carries": [
     "swift"
-   ]
+   ],
+   "a1": null
   },
   {
    "id": 399,
@@ -21864,7 +22262,8 @@
     "precise"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 400,
@@ -21920,7 +22319,8 @@
     "twin"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 401,
@@ -21976,7 +22376,8 @@
     "leech"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 402,
@@ -22032,7 +22433,8 @@
     "heavy"
    ],
    "half": [],
-   "carries": []
+   "carries": [],
+   "a1": null
   },
   {
    "id": 403,
@@ -22090,7 +22492,18 @@
    "carries": [
     "guarding",
     "lightning"
-   ]
+   ],
+   "a1": {
+    "combo": 12,
+    "heal": 16,
+    "ult": 0,
+    "round": 0,
+    "plan": 0,
+    "ux": 1,
+    "uy": 0,
+    "waited": 0,
+    "written": 0
+   }
   },
   {
    "id": 404,
@@ -22148,7 +22561,20 @@
    "carries": [
     "pulling",
     "precise"
-   ]
+   ],
+   "a1": {
+    "mode": 0,
+    "what": 0,
+    "tx": 0,
+    "ty": 0,
+    "tfx": 1,
+    "tfy": 0,
+    "ox": 0,
+    "oy": 0,
+    "carry": 0,
+    "wrote": 0,
+    "told": -1
+   }
   }
  ],
  "defs": {
@@ -22256,6 +22682,525 @@
    "minDepth": 99,
    "weight": 0,
    "size": "boss"
+  }
+ },
+ "bells": {
+  "plan": {
+   "muffled": {
+    "x": 38.5,
+    "y": 35.5
+   },
+   "bells": [
+    {
+     "x": 63.5,
+     "y": 41.5
+    },
+    {
+     "x": 47.5,
+     "y": 58.5
+    },
+    {
+     "x": 38.5,
+     "y": 59.5
+    },
+    {
+     "x": 44.5,
+     "y": 45.5
+    },
+    {
+     "x": 58.5,
+     "y": 52.5
+    }
+   ],
+   "hush": {
+    "x": 38.5,
+    "y": 35.5,
+    "r": 31
+   }
+  },
+  "limit": 75,
+  "props": [
+   {
+    "i": 60,
+    "tx": 63,
+    "ty": 41,
+    "name": "a farm bell on its post"
+   },
+   {
+    "i": 61,
+    "tx": 47,
+    "ty": 58,
+    "name": "a farm bell on its post"
+   },
+   {
+    "i": 62,
+    "tx": 38,
+    "ty": 59,
+    "name": "a farm bell on its post"
+   },
+   {
+    "i": 63,
+    "tx": 44,
+    "ty": 45,
+    "name": "a farm bell on its post"
+   },
+   {
+    "i": 64,
+    "tx": 58,
+    "ty": 52,
+    "name": "a farm bell on its post"
+   }
+  ],
+  "muffled": {
+   "i": 42,
+   "tx": 38,
+   "ty": 35,
+   "name": "the mill bell on its gable (the Muffled Bell)"
+  },
+  "tune": {
+   "perBell": 15,
+   "strike": 0.55,
+   "gap0": 5.5,
+   "gapFall": 0.045,
+   "gapMin": 1.8,
+   "size0": 2,
+   "sizeEvery": 22,
+   "sizeMost": 5,
+   "lifeRamp": 0.006,
+   "most": 16,
+   "near": 6,
+   "far": 13,
+   "tough": 0.35,
+   "chip": 0.42,
+   "chipMin": 6,
+   "knockR": 3.5,
+   "knock": 2.2,
+   "ringOut": 4,
+   "dust": 2,
+   "gold": 14,
+   "word": 0.5
+  },
+  "still": 3,
+  "tough": [
+   [
+    {
+     "id": 405,
+     "kind": "carter",
+     "name": "Power Night Carter",
+     "x": 63.5,
+     "y": 42.5,
+     "r": 0.47040000000000004,
+     "fx": -0.43627350651936947,
+     "fy": 0.8998141071961995,
+     "life": 811,
+     "maxLife": 811,
+     "dmgMin": 71.344,
+     "dmgMax": 107.01599999999999,
+     "speed": 0.85,
+     "elite": true,
+     "champion": false,
+     "boss": false,
+     "state": "chase",
+     "t": 0,
+     "cd": 0,
+     "packId": 8901,
+     "anim": "idle",
+     "animT": 1.379042680375278,
+     "flash": 0,
+     "burnT": 0,
+     "burnDps": 0,
+     "chillT": 0,
+     "chill": 0,
+     "frozenT": 0,
+     "freezeImmune": 0,
+     "poisonT": 0,
+     "poisonDps": 0,
+     "poisonN": 0,
+     "stunT": 0,
+     "staggerT": 0,
+     "staggerCd": 0,
+     "markT": 0,
+     "shockT": 0,
+     "shield": 0,
+     "lastSkill": -1,
+     "seen": false,
+     "barT": 0,
+     "phase": 0,
+     "atk": 0,
+     "dead": false,
+     "xp": 224,
+     "seed": 0.4087390631902963,
+     "rarity": "leader",
+     "figure": "carter",
+     "words": [
+      "power"
+     ],
+     "half": [],
+     "carries": [],
+     "a1": null,
+     "dx": 0,
+     "dy": 0
+    }
+   ],
+   [
+    {
+     "id": 406,
+     "kind": "carter",
+     "name": "Hexing Night Carter",
+     "x": 47.5,
+     "y": 59.5,
+     "r": 0.47040000000000004,
+     "fx": -0.31040178171134053,
+     "fy": 0.9506054564909804,
+     "life": 842,
+     "maxLife": 842,
+     "dmgMin": 50.96,
+     "dmgMax": 76.44,
+     "speed": 0.85,
+     "elite": true,
+     "champion": false,
+     "boss": false,
+     "state": "chase",
+     "t": 0,
+     "cd": 0,
+     "packId": 8902,
+     "anim": "idle",
+     "animT": 0.3132414899300784,
+     "flash": 0,
+     "burnT": 0,
+     "burnDps": 0,
+     "chillT": 0,
+     "chill": 0,
+     "frozenT": 0,
+     "freezeImmune": 0,
+     "poisonT": 0,
+     "poisonDps": 0,
+     "poisonN": 0,
+     "stunT": 0,
+     "staggerT": 0,
+     "staggerCd": 0,
+     "markT": 0,
+     "shockT": 0,
+     "shield": 0,
+     "lastSkill": -1,
+     "seen": false,
+     "barT": 0,
+     "phase": 0,
+     "atk": 0,
+     "dead": false,
+     "xp": 224,
+     "seed": 0.6328138534445316,
+     "rarity": "leader",
+     "figure": "carter",
+     "words": [
+      "hexing"
+     ],
+     "half": [],
+     "carries": [],
+     "a1": null,
+     "dx": 0,
+     "dy": 0
+    }
+   ],
+   [
+    {
+     "id": 407,
+     "kind": "carter",
+     "name": "Heavy Swift Night Carter",
+     "x": 38.5,
+     "y": 60.5,
+     "r": 0.47040000000000004,
+     "fx": -0.14430689307172856,
+     "fy": 0.9895329810632816,
+     "life": 1061,
+     "maxLife": 1061,
+     "dmgMin": 50.96,
+     "dmgMax": 76.44,
+     "speed": 1.1475,
+     "elite": true,
+     "champion": false,
+     "boss": false,
+     "state": "chase",
+     "t": 0,
+     "cd": 0,
+     "packId": 8903,
+     "anim": "idle",
+     "animT": 0.9592209127731621,
+     "flash": 0,
+     "burnT": 0,
+     "burnDps": 0,
+     "chillT": 0,
+     "chill": 0,
+     "frozenT": 0,
+     "freezeImmune": 0,
+     "poisonT": 0,
+     "poisonDps": 0,
+     "poisonN": 0,
+     "stunT": 0,
+     "staggerT": 0,
+     "staggerCd": 0,
+     "markT": 0,
+     "shockT": 0,
+     "shield": 0,
+     "lastSkill": -1,
+     "seen": false,
+     "barT": 0,
+     "phase": 0,
+     "atk": 0,
+     "dead": false,
+     "xp": 224,
+     "seed": 0.15602550492621958,
+     "rarity": "leader",
+     "figure": "carter",
+     "words": [
+      "heavy",
+      "swift"
+     ],
+     "half": [],
+     "carries": [],
+     "a1": null,
+     "dx": 0,
+     "dy": 0
+    }
+   ],
+   [
+    {
+     "id": 408,
+     "kind": "carter",
+     "name": "Pulling Volatile Night Carter",
+     "x": 44.5,
+     "y": 46.5,
+     "r": 0.47040000000000004,
+     "fx": -0.20521484429728795,
+     "fy": 0.9787169497255271,
+     "life": 1279,
+     "maxLife": 1279,
+     "dmgMin": 50.96,
+     "dmgMax": 76.44,
+     "speed": 0.85,
+     "elite": true,
+     "champion": false,
+     "boss": false,
+     "state": "chase",
+     "t": 0,
+     "cd": 0,
+     "packId": 8904,
+     "anim": "idle",
+     "animT": 1.1305307142902166,
+     "flash": 0,
+     "burnT": 0,
+     "burnDps": 0,
+     "chillT": 0,
+     "chill": 0,
+     "frozenT": 0,
+     "freezeImmune": 0,
+     "poisonT": 0,
+     "poisonDps": 0,
+     "poisonN": 0,
+     "stunT": 0,
+     "staggerT": 0,
+     "staggerCd": 0,
+     "markT": 0,
+     "shockT": 0,
+     "shield": 0,
+     "lastSkill": -1,
+     "seen": false,
+     "barT": 0,
+     "phase": 0,
+     "atk": 0,
+     "dead": false,
+     "xp": 224,
+     "seed": 0.24714738549664617,
+     "rarity": "leader",
+     "figure": "carter",
+     "words": [
+      "pulling",
+      "volatile"
+     ],
+     "half": [],
+     "carries": [],
+     "a1": null,
+     "dx": 0,
+     "dy": 0
+    }
+   ]
+  ],
+  "own": [
+   {
+    "kind": "fieldhand",
+    "weight": 6
+   },
+   {
+    "kind": "carter",
+    "weight": 5
+   },
+   {
+    "kind": "hushed",
+    "weight": 1
+   }
+  ],
+  "rise": {
+   "fieldhand": {
+    "id": 409,
+    "kind": "fieldhand",
+    "name": "Hushed Gleaner",
+    "x": 38.5,
+    "y": 35.5,
+    "r": 0.3,
+    "fx": 0.7071,
+    "fy": 0.7071,
+    "life": 104,
+    "maxLife": 104,
+    "dmgMin": 21.84,
+    "dmgMax": 32.76,
+    "speed": 0.9,
+    "elite": false,
+    "champion": false,
+    "boss": false,
+    "state": "sleep",
+    "t": 0,
+    "cd": 0,
+    "packId": 8000,
+    "anim": "idle",
+    "animT": 2.1349729725625366,
+    "flash": 0,
+    "burnT": 0,
+    "burnDps": 0,
+    "chillT": 0,
+    "chill": 0,
+    "frozenT": 0,
+    "freezeImmune": 0,
+    "poisonT": 0,
+    "poisonDps": 0,
+    "poisonN": 0,
+    "stunT": 0,
+    "staggerT": 0,
+    "staggerCd": 0,
+    "markT": 0,
+    "shockT": 0,
+    "shield": 0,
+    "lastSkill": -1,
+    "seen": false,
+    "barT": 0,
+    "phase": 0,
+    "atk": 0,
+    "dead": false,
+    "xp": 28,
+    "seed": 0.8377168793231249,
+    "form": 1,
+    "figure": "fieldhand_1",
+    "words": [],
+    "half": [],
+    "carries": [],
+    "a1": null
+   },
+   "carter": {
+    "id": 410,
+    "kind": "carter",
+    "name": "Night Carter",
+    "x": 38.5,
+    "y": 35.5,
+    "r": 0.42,
+    "fx": 0.7071,
+    "fy": 0.7071,
+    "life": 208,
+    "maxLife": 208,
+    "dmgMin": 36.4,
+    "dmgMax": 54.6,
+    "speed": 0.85,
+    "elite": false,
+    "champion": false,
+    "boss": false,
+    "state": "sleep",
+    "t": 0,
+    "cd": 0,
+    "packId": 8000,
+    "anim": "idle",
+    "animT": 1.4983623682055622,
+    "flash": 0,
+    "burnT": 0,
+    "burnDps": 0,
+    "chillT": 0,
+    "chill": 0,
+    "frozenT": 0,
+    "freezeImmune": 0,
+    "poisonT": 0,
+    "poisonDps": 0,
+    "poisonN": 0,
+    "stunT": 0,
+    "staggerT": 0,
+    "staggerCd": 0,
+    "markT": 0,
+    "shockT": 0,
+    "shield": 0,
+    "lastSkill": -1,
+    "seen": false,
+    "barT": 0,
+    "phase": 0,
+    "atk": 0,
+    "dead": false,
+    "xp": 56,
+    "seed": 0.7134168979246169,
+    "figure": "carter",
+    "words": [],
+    "half": [],
+    "carries": [],
+    "a1": null
+   },
+   "hushed": {
+    "id": 411,
+    "kind": "hushed",
+    "name": "Hushed",
+    "x": 38.5,
+    "y": 35.5,
+    "r": 0.3,
+    "fx": 0.7071,
+    "fy": 0.7071,
+    "life": 104,
+    "maxLife": 104,
+    "dmgMin": 21.84,
+    "dmgMax": 32.76,
+    "speed": 0.9,
+    "elite": false,
+    "champion": false,
+    "boss": false,
+    "state": "sleep",
+    "t": 0,
+    "cd": 0,
+    "packId": 8000,
+    "anim": "idle",
+    "animT": 2.198848203755915,
+    "flash": 0,
+    "burnT": 0,
+    "burnDps": 0,
+    "chillT": 0,
+    "chill": 0,
+    "frozenT": 0,
+    "freezeImmune": 0,
+    "poisonT": 0,
+    "poisonDps": 0,
+    "poisonN": 0,
+    "stunT": 0,
+    "staggerT": 0,
+    "staggerCd": 0,
+    "markT": 0,
+    "shockT": 0,
+    "shield": 0,
+    "lastSkill": -1,
+    "seen": false,
+    "barT": 0,
+    "phase": 0,
+    "atk": 0,
+    "dead": false,
+    "xp": 28,
+    "seed": 0.6814799821004272,
+    "form": 0,
+    "figure": "hushed",
+    "words": [],
+    "half": [],
+    "carries": [],
+    "a1": null
+   }
   }
  }
 }

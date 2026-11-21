@@ -294,6 +294,15 @@ func _small(x: float, y: float, w: float, h: float) -> void:
 	var cx := x + floorf(w / 2.0)
 	var cy := y + floorf(h / 2.0)
 	var marks := _marks()
+	# (ACT 2, THE BELLS: his word, 18 Oct 2026, 05:31: "I’d like the affected area of the hush to be visible on the minimap
+	# somehow": the Hush's ground and the bells still to ring, act2/bells.gd on_map)
+	if main.bells != null and main.bells.on() and not main.is_home(main.place):
+		var veil := func(tx: int, ty: int, c: Color, a: float) -> void:
+			var px: float = cx + (tx - ty) - (hx - hy)
+			var py: float = cy + floorf(((tx + ty) - (hx + hy)) / 2.0)
+			if px >= x + 1 and py >= y + 1 and px < x + w - 1 and py < y + h - 1:
+				_rect(px, py, 1, 1, Color(c, a))
+		marks.append_array(main.bells.on_map(hx, hy, maxi(iw, ih), veil, _seen_at))
 	marks.append([hx, hy, P["white"], 2, 0, false])
 	for m in marks:
 		var s: float = m[3]
@@ -407,6 +416,11 @@ func _large(W: float, H: float) -> void:
 	draw_texture_rect(_chart_tex, Rect2(ox, oy, _chart.get_width() * k, _chart.get_height() * k), false)
 	var marks := _marks()
 	var down := false
+	# (ACT 2, THE BELLS: the Hush's ground and the bells still to ring, as on the small map)
+	if main.bells != null and main.bells.on() and not main.is_home(main.place):
+		var veil := func(tx: int, ty: int, c: Color, a: float) -> void:
+			_rect(ox + (tx - ty + map.h - 1) * k, oy + ((tx + ty) >> 1) * k, k, k, Color(c, a))
+		marks.append_array(main.bells.on_map(hx, hy, maxi(map.w, map.h), veil, _seen_at))
 	# (himself last: a dark square, and on it one that blinks)
 	marks.append([hx, hy, ink, 0, 6, false])
 	marks.append([hx, hy, P["white"] if int(floorf(_t * 3.0)) % 2 == 0 else P["tl5"], 0, 4, false])

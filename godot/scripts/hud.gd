@@ -460,14 +460,20 @@ func _draw() -> void:
 		_rect(bx, by + 11, bw, 4, T["lifeLo"])
 		_rect(bx, by + 11, roundf(bw * maxf(0.0, b2.life) / b2.max_life), 4, T["life"])
 
+	# ---- THE BELLS' CLOCK, under the boss's bar where that is up (act2/bells.gd clock) ----
+	var rows := 0
+	for i in shown.size():
+		rows = maxi(rows, 1 + (0 if side else i))
+	var bells_up: bool = main != null and main.bells != null and main.bells.on() and main.bells.clock(self, W, 4.0 + 20.0 * rows if boss_up else 4.0, ink, T["ink"])
+
 	# ---- the prompt, and the word just found ----
 	# (a word found is the bigger news: for its moment it takes the prompt's place, under the boss's bar where that is up; it
 	# is not shown while the game is held)
 	var toast_up: bool = loot != null and not loot.toast.is_empty() and not get_tree().paused
 	var b: Dictionary = main.guide.banner(not boss_up and not toast_up) if main != null else {}
 	if toast_up:
-		_toast(loot.toast["word"], loot.toast["t"], 4.0 + (20.0 if boss_up else 0.0), loot.toast["big"], W)
-	elif not b.is_empty() and not boss_up:
+		_toast(loot.toast["word"], loot.toast["t"], 4.0 + (20.0 * rows if boss_up else 0.0) + (22.0 if bells_up else 0.0), loot.toast["big"], W)
+	elif not b.is_empty() and not boss_up and not bells_up:
 		_banner(b, W)
 
 	# ---- what has just happened: above the flask, the newest lowest ----

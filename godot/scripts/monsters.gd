@@ -65,6 +65,8 @@ var beds: Array = []
 ## (FLOOR 15, THE GREAT LIBRARY: the Censor's ground (`ground`: its tiles) and the book of stolen words (`book`: where it lies, or
 ## null): monsters.json `censor`, game/act1_rules/censor.ts censorGround, STOLEN_BOOK)
 var censor: Dictionary = {}
+## (ACT 2, THE BELLS, floors 11 to 15: the plan, its numbers, its tough ones and what the Hush raises: act2/bells.gd)
+var bells: Dictionary = {}
 ## A THING OF A QUEST TAKEN UP WHERE IT LAY (game.ts furnaceGearTaken, templeKeyTaken): what ("gear": the forge crank's, the
 ## Stoker's; "key": one of the temple door's, a keybearer's) and where. The monster's own script lays it down as it falls and
 ## says so when the hero takes it; the floor's quest scripts listen.
@@ -78,6 +80,7 @@ func load_floor(path: String, figures_dir: String) -> void:
 	_info = info
 	beds = data.get("beds", [])
 	censor = data.get("censor", {})
+	bells = data.get("bells", {})
 	_figures_dir = figures_dir
 	for m in data["monsters"]:
 		var figure: String = m["figure"]
@@ -528,6 +531,20 @@ func call_up(kind: String, at: Vector2, pack: int, face: Vector2, a1 := {}) -> M
 	var d: Dictionary = _plain[kind].duplicate(true)
 	# (`a1`: what its kind's rules keep about it as it comes: one laid in a ward bed, lying there: act2/physician.gd rounds)
 	d["a1"] = a1 if not a1.is_empty() else null
+	d.erase("xp")
+	if kind == "hushed":
+		var form := (_called + 1) % 3
+		d["figure"] = "hushed" if form == 0 else "hushed_%d" % form
+	return call_up_as(d, at, pack, face)
+
+
+## One as the game made it (`d`, a monster of the export's: act2/bells.gd's tough ones and what the Hush raises), come into the
+## world now at `at`, awake and at him.
+func call_up_as(d: Dictionary, at: Vector2, pack: int, face: Vector2) -> Monster:
+	var kind: String = d["kind"]
+	if not _defs.has(kind):
+		return null
+	d = d.duplicate(true)
 	_called += 1
 	d["id"] = 100000 + _called
 	d["x"] = at.x
@@ -537,10 +554,6 @@ func call_up(kind: String, at: Vector2, pack: int, face: Vector2, a1 := {}) -> M
 	d["fy"] = f.y
 	d["packId"] = pack
 	d["state"] = "chase"
-	d.erase("xp")
-	if kind == "hushed":
-		var form := int(d["id"]) % 3
-		d["figure"] = "hushed" if form == 0 else "hushed_%d" % form
 	var figure: String = d["figure"]
 	if not _figures.has(figure):
 		_figures[figure] = BakedFigure.new(_figures_dir, figure, _info)

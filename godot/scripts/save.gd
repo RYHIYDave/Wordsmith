@@ -37,6 +37,15 @@ static func run_of(main) -> Dictionary:
 		"pieces": q.pieces if q != null else 0, "rollPages": q.roll_pages if q != null else 0,
 		"wordsBought": range(loot.word_stock.size()).filter(func(i): return loot.word_stock[i] == null),
 	}
+	# (FLOORS 11 TO 15's quests: the jar, the pages, the clapper, and the armourer's pick laid out and not yet taken: game.ts save,
+	# act2/quest1115.gd)
+	var q11 = main.quest1115
+	if q11 != null and q11.on():
+		run["jar"] = q11.jar
+		run["pages"] = q11.pages
+		run["clapper"] = q11.clapper
+		if not q11.laid_out.is_empty():
+			run["laidOut"] = {"armourer": q11.laid_out.duplicate(true)}
 	# (FLOOR 14: a word the Physician holds is written into the save where it would go back to, as if beaten out of him: game.ts
 	# save, inTheSave; the game itself goes on as it is)
 	load("res://scripts/act2/physician.gd").in_the_save(run)
@@ -131,6 +140,17 @@ static func restore_run(main, s: Dictionary) -> void:
 		q.city_seen = s.get("citySeen", false) == true
 		q.pieces = clampi(int(_num(s.get("pieces"), 0)), 0, 7)
 		q.roll_pages = maxi(0, int(_num(s.get("rollPages"), 0)))
+	# (FLOORS 11 TO 15's quests: game.ts restore, cleanLaidOut: up to three pieces of the armourer's pick)
+	var q11 = main.quest1115
+	if q11 != null:
+		var step := func(v) -> String: return str(v) if v in ["asked", "got", "given"] else ""
+		q11.jar = step.call(s.get("jar", ""))
+		q11.pages = clampi(int(_num(s.get("pages"), 0)), 0, 7)
+		q11.clapper = step.call(s.get("clapper", ""))
+		var lo = s.get("laidOut")
+		q11.laid_out = []
+		if lo is Dictionary and lo.get("armourer") is Array:
+			q11.laid_out = lo["armourer"].filter(func(it): return it is Dictionary).slice(0, 3)
 	# his moves' slots: the words set in each, as they were (a word no longer one of the game's is let go)
 	for side in ["front", "behind"]:
 		var got = s.get(side)

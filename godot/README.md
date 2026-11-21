@@ -514,10 +514,44 @@ first lessons he is, the words bought from the wordsmith on that visit. The chec
 the game's automated tests switch saving off. Checked in two runs of the app, as he would close it and open it again:
 `--only=save_write`, then `--only=save_read` (`check_save.gd`): 10 things, all back as written (the check deletes its save).
 
+## The city, floors 11 to 15 (the cloud chat, 20 and 21 Nov 2026)
+
+His pick, asked what to build next: “The city, floors 11 to 15”. Each floor exported from the game (`tools/godot_export.ts 1
+<n>`: its layout, its monsters, its land, its Bells) and its look recorded from the game itself (`tools/godot_record.mjs <n>`,
+its ground in blocks loaded near him): the Gate Ward, the Undercity, the Millrace, the House of Quiet, the Great Library. The
+ways through it as the game's: the camp's barricaded street down into floor 11, each floor on to the next, from the Great Library
+home to the camp, the camp's waypoint to the city's floors he has reached.
+- THE MONSTERS, each by its kind's own rules (`scripts/act2/`), with the art's own pictures and painters: floor 11's Hushed, watch
+  hounds, scribes and the Hushed Watch, and the Crier (the toll, the shout off the walls, the decree, his call); floor 12's plague
+  rats and dredgers, and the Rat King (the bite, his stolen words, the roll, unknot and the swarm, the sluices); floor 13's
+  fieldhands and carters, and its double boss, the Scraper and the Quill, and their Palimpsest; floor 14's patients in their ward
+  beds and orderlies, and the Physician (the rap, the Draw, the Diagnosis and the operation, his rounds); floor 15's inklings and
+  bookwardens, and the Censor (the slash, Strike-Through, Redaction, the Hush across his room, his ink staying on the floor, the
+  book of stolen words bursting as he dies). `--only=city --floor=N` (`check_city.gd`): 13, 11, 13, 14 and 16 steps.
+- THE CITY'S FIVE WORDS (Pulling, Splitting, Hexing, Stilling, Binding), found from floor 11 on: on monsters (Pulling drags him a
+  step, Hexing curses him, Stilling slows his moves' waits, Binding roots him, Splitting splits in two at half its life) and in his
+  moves, in front and behind, with their looks (the art's own, render/words3.ts, binding3.ts). Not yet: burning Splitting or
+  Binding into gear at the wordsmith's bench (refused there, with a word why). `--only=citywords` (`check_citywords.gd`): 16 steps.
+- THE QUEST LINE (`scripts/act2/quest1115.gd`; game/quests1115.ts): the mystic's ask once floor 11 is cleared, the Crier's jar
+  taken from the Rat King's nest (gone from it: the look's state `jar<i>`), brought for one of the city's words; the three
+  unstruck pages (the last of floor 13's pair to fall, the Physician, the library's stacks), one laid in the Censor's fight with
+  E drying away all his ink at once; the armourer's ask once floor 10 is cleared, the clapper falling with the first Bells won,
+  brought (hung in the camp's bell, floor 11's shrine bell, ringing; his pick of three fully modded rares, gloves, boots and a
+  helm, rolled by the game itself: one taken, the others go back, laid out again until then). In the saved game. The armourer
+  lays them out nearest the hero first, as the game does, so one may lie within his reach and be his at once.
+  `--only=quests1115` (`check_quest1115.gd`).
+- THE BELLS, each city floor's event (`scripts/act2/bells.gd`; game/bells.ts, Game's "ACT 2: THE BELLS"): the Muffled Bell struck,
+  the Hush pours out over its fixed ground and every bell wakes, 15 s on the clock a bell; the Hush raising the floor's own round
+  him in it, more and more; each bell rung by a blow, knocking back what is near, chipping the Hush back, calling its tough one
+  (the game's own yellow pack's leader); all rung, the Hush shatters with what it raised and the loot bursts out of the last bell
+  (the clapper with it the first time); the clock run out, it lifts. Seen: the bells by their states (recorded from the game:
+  `bell<k>`, `muffled`), the Hush's grey veil with its wall of mist, the arrows at the screen's edge, the clock across the top,
+  its ground and the bells on the maps. `--only=bells --floor=N` (`check_bells.gd`).
+
 ## Not in it yet
 
-The city's words and the last words (floors 11 and 16), the city itself (floors 11 on; from the camp its way on and its
-waypoint wait on it),
+The last words (floor 16), the rifts the Bells' monsters come up out of (the game's ARRIVALS: here they come up in a puff of
+the Hush's grey), burning Splitting or Binding into gear,
 Frenzied on the prison's bosses' own scripts
 (the mini fleshmancer's), the trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
 above), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched
