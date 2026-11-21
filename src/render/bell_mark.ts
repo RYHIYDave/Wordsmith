@@ -1,4 +1,4 @@
-// THE MUFFLED BELL MADE EASIER TO SEE (behind BELL_MARK, off until his yes to the game's pictures of it). The owner, 21 Nov 2026
+// THE MUFFLED BELL MADE EASIER TO SEE (behind BELL_MARK: on, at his word having seen its pictures). The owner, 21 Nov 2026
 // (to the Godot cloud chat): “Make sure it's easier to see the starting bell.  Have a label above it”.
 //
 // So, while it is gagged (the Bells not yet begun, game/bells.ts: the Muffled Bell struck starts them), on floors 11 to 15:
@@ -13,8 +13,11 @@ import type { Level } from '../game/state';
 import type { Cam } from './fx';
 import { wx, wy } from './fx';
 
-/** THE SWITCH, and its parts. */
-export const BELL_MARK = { on: false, ring: true, hint: true, light: true };
+/**
+ * THE SWITCH, and its parts. ON: shown its pictures (the Muffled Bell now and marked, near and from further off), his word again,
+ * 21 Nov 2026: “Make sure it's easier to see the starting bell.  Have a label above it”.
+ */
+export const BELL_MARK = { on: true, ring: true, hint: true, light: true };
 
 /** The friend's cyan (art/kit.ts CYAN), and its light. */
 const CYAN = '#22d0e0';
