@@ -143,6 +143,8 @@ import { KNIFE_CANVAS as OD_KNIFE_CANVAS, PALM_WAVE, WAVE_CANVAS as OD_WAVE_CANV
 import { RUSH as OD_RUSH, rushCarry } from '../src/art/silent_order_moves';
 import { DANCE_CANVAS as PC_DANCE_CANVAS, DANCE_FX as PC_DANCE_FX, MASKS_FX as PC_MASKS_FX, MASK_CANVAS as PC_MASK_CANVAS, MASK_FLIGHT as PC_MASK_FLIGHT, dancePainted as pcDance, flungMask, maskPainted as pcMask } from '../src/art/prince_fx';
 import { TILE3 as T3 } from '../src/art/new_mobs3';
+import { FLASH_CANVAS as LD_FLASH_CANVAS, FLASH_FX as LD_FLASH_FX, flashPainted as ldFlash } from '../src/art/gallery_ladies_fx';
+import { CLOUD_CANVAS as QN_CLOUD_CANVAS, CLOUD_FX as QN_CLOUD_FX, HALL_MIRROR_CANVAS, SHATTER_FX as QN_SHATTER_FX, TALK_CANVAS as QN_TALK_CANVAS, TALK_FX as QN_TALK_FX, cloudPainted as qnCloud, hallMirrorPainted, shardsAt as qnShardsAt, talkingMirrorPainted } from '../src/art/queen_fx';
 import { BOULDER, HAMMER, SMASH_CANVAS, smashPainted } from '../src/art/action_f6_golem';
 import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, RING_CANVAS as CH_RING_CANVAS, STATIC_CANVAS, blazePainted, makeFlyingPotArt, potShadowPainted, ringPainted as chRing, staticPainted } from '../src/art/action_f6_cult';
 import { markRing } from '../src/art/action_f6_fx';
@@ -661,6 +663,68 @@ for (const view of ['front', 'back'] as const) {
   tables.pc_ways = Array.from({ length: PC_MASKS_FX.n }, (_, i) => flungMask(i, 0).way.slice(0, 2));
 }
 
+// FLOOR 18, THE GLASS GALLERY (godot/scripts/act3/marks18.gd, gqueen_hall.gd), as the game starts with its new moves on
+// (render/act1_fx/lady.ts, gqueen.ts):
+//   ld_flash_<view>  the lady's flash on the floor before her, from its spot of light skittering through her warning to the cone
+//                    of cold light held and gone (flashPainted), a frame each thirtieth of a second from FLASH_FX.warn before her
+//                    blow (k0); layer `floor`
+//   qn_glass_<i>     the Queen's hall's pier glass `i` (hallMirrorPainted): still (0), awake (1), and through her Shatter at each
+//                    of its painted moments (2 to 10: SHATTER_KEYS); layer `stand`
+//   qn_mask_<i>      where the glass of pier glass `i` is in its still picture (its cold blue: render/act1_fx/gqueen.ts glassOf),
+//                    white, for her picture laid in it in the ring of mirrors
+//   qn_talk_<mode>   her talking mirror at the hall's end, eight frames a second: still (its fog drifting, round in 4 s),
+//                    speaking (3.8 s), the truth as she dies (TALK_FX.long)
+//   qn_cloud         her poison where the comb struck, eight frames a second (cloudPainted); layer `floor`
+// and the table qn_shards: Shatter's glass in flight across the hall, fifteen frames a second from its burst, each piece where it
+// is (her own lengths along the hall, across it, up), [] once lying.
+{
+  const nf = Math.ceil((LD_FLASH_FX.warn + LD_FLASH_FX.hold + LD_FLASH_FX.fade) * FPS) + 1;
+  const k0 = Math.round(LD_FLASH_FX.warn * FPS);
+  for (const view of ['front', 'back'] as const) films[`ld_flash_${view}`] = { fps: FPS, n: nf, k0: -k0, layers: { floor: Array.from({ length: nf }, (_, k) => pic(toSprite(ldFlash((k - k0) / FPS, view), null, LD_FLASH_CANVAS.ax, LD_FLASH_CANVAS.ay))) } };
+  const KEYS = [0.45, 0.8, 1.1, 1.3, 1.4, 1.9, 2.7, 3.0, 3.3];
+  for (let i = 0; i < 12; i++) {
+    const glass = (t: number | null, awake: boolean): Sprite => toSprite(hallMirrorPainted(i, t, awake), null, HALL_MIRROR_CANVAS.ax, HALL_MIRROR_CANVAS.ay);
+    films[`qn_glass_${i}`] = { fps: 0, n: 2 + KEYS.length, k0: 0, layers: { stand: [pic(glass(null, false)), pic(glass(null, true)), ...KEYS.map((k) => pic(glass(k, false)))] } };
+    // (where its glass is: every pixel of the cold blue of its glass, white)
+    const still = glass(null, false);
+    const pp = paintingOf(still);
+    const md = new Uint8ClampedArray(pp.d.length);
+    for (let q = 0; q < pp.w * pp.h; q++) {
+      const r = pp.d[q * 4];
+      const gg = pp.d[q * 4 + 1];
+      const b = pp.d[q * 4 + 2];
+      if (pp.d[q * 4 + 3] < 200 || !(b > r + 12 && b > gg + 6)) continue;
+      md[q * 4] = 255;
+      md[q * 4 + 1] = 255;
+      md[q * 4 + 2] = 255;
+      md[q * 4 + 3] = 255;
+    }
+    films[`qn_mask_${i}`] = { fps: 0, n: 1, k0: 0, layers: { stand: [rawPic({ w: pp.w, h: pp.h, d: md }, 2 / (still.density ?? 1), still.ax * 2, still.ay * 2)] } };
+    // (where her picture's floor point goes in it: the glass's middle across, its foot, and two of the game's pixels down; picture
+    // pixels from the glass's own floor point)
+    let sx = 0;
+    let n = 0;
+    let low = 0;
+    for (let q = 0; q < pp.w * pp.h; q++) {
+      if (md[q * 4 + 3] === 0) continue;
+      sx += q % pp.w;
+      n++;
+      low = Math.max(low, Math.floor(q / pp.w));
+    }
+    const dens = pp.w / Math.max(1, still.w);
+    ((tables.qn_spots ??= []) as number[][])[i] = n > 20 ? [2 * (sx / n / dens - still.ax), 2 * (low / dens - still.ay + 2)] : [0, 0];
+  }
+  const talk = (mode: 'still' | 'speaking' | 'truth', n: number): number[] => Array.from({ length: n }, (_, j) => pic(toSprite(talkingMirrorPainted(mode, j / 8), null, QN_TALK_CANVAS.ax, QN_TALK_CANVAS.ay)));
+  films.qn_talk_still = { fps: 8, n: 32, k0: 0, layers: { stand: talk('still', 32) } };
+  films.qn_talk_speaking = { fps: 8, n: Math.round(3.8 * 8), k0: 0, layers: { stand: talk('speaking', Math.round(3.8 * 8)) } };
+  const nt = Math.floor(QN_TALK_FX.long * 8) + 1;
+  films.qn_talk_truth = { fps: 8, n: nt, k0: 0, layers: { stand: talk('truth', nt) } };
+  const nc = Math.round(QN_CLOUD_FX.long * 8);
+  films.qn_cloud = { fps: 8, n: nc, k0: 0, layers: { floor: Array.from({ length: nc }, (_, j) => pic(toSprite(qnCloud(j / 8), null, QN_CLOUD_CANVAS.ax, QN_CLOUD_CANVAS.ay))) } };
+  const b0 = QN_SHATTER_FX.burst[0];
+  tables.qn_shards = Array.from({ length: Math.ceil((QN_SHATTER_FX.lie[1] - b0) * 15) + 1 }, (_, k) => qnShardsAt(b0 + k / 15).map((q) => [+q.p[0].toFixed(1), +q.p[1].toFixed(1), +(q.p[2] ?? 0).toFixed(1)]));
+}
+
 // floors 6 to 8's common monsters, as the game starts with their new moves on (render/act1_fx/qgolem.ts, firepot.ts, chanter.ts,
 // devil.ts, scorpion.ts: each painted afresh a frame at a time by the art's own painter, render/act1_fx/live.ts)
 {
@@ -1000,7 +1064,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the city's)
   watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'], bookwarden: ['wb'],
   // (the High City's)
-  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'],
+  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['qn'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

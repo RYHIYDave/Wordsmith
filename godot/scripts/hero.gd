@@ -659,6 +659,9 @@ func _break_props(i: int, at: Vector2, rad: float) -> void:
 		bells.struck(at, rad)
 	if doors != null and is_instance_valid(doors):
 		doors.unseal({"front": loadout.wfronts(i), "behind": loadout.wbehinds(i)}, at, rad)
+	# (THE HIGH CITY, FLOOR 18: a blow near a tall mirror cracks it, or bursts one cracked: act3/gallery.gd)
+	if monsters != null and is_instance_valid(monsters) and monsters.main != null and monsters.main.gallery != null and monsters.main.gallery.on():
+		monsters.main.gallery.strike(at, rad)
 	# (what a kind of its own has lying on the floor there takes his blow too: the Princess's snare, game.ts floorBlow)
 	if monsters != null and is_instance_valid(monsters) and monsters.perils != null:
 		monsters.perils.floor_blow(at, rad)
@@ -1253,6 +1256,9 @@ func resist(el: String) -> float:
 func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null, from := Vector2.INF, bare := false) -> void:
 	if not alive or _invuln > 0.0:
 		return
+	# (THE HIGH CITY, FLOOR 18: a monster's blow landing on him by a tall mirror cracks it too: act3/gallery.gd)
+	if src != null and is_instance_valid(src) and monsters != null and is_instance_valid(monsters) and monsters.main != null and monsters.main.gallery != null and monsters.main.gallery.on():
+		monsters.main.gallery.strike(world, 0.3)
 	var by: Vector2 = world + face
 	if src != null and is_instance_valid(src):
 		by = src.world

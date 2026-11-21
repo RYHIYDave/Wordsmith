@@ -280,6 +280,10 @@ if (level.land) {
   const garden = level.land.garden ? { nettles: level.land.garden.nettles.map((r) => [...r]) } : null;
   // (FLOOR 17: the Masque's great ebony clock, where it stands (the Prince's Midnight rings roll out from it): act3/masque.gd, prince.gd)
   const masque = level.land.masque ? { clock: { x: level.land.masque.clock.x, y: level.land.masque.clock.y } } : null;
-  writeFileSync(`${OUT}/land.json`, JSON.stringify({ kind: level.land.kind, areas, lanes, ...(garden ? { garden } : {}), ...(masque ? { masque } : {}) }, null, 1));
+  // (FLOOR 18: the Glass Gallery's Mirror Hall, the Queen's (its middle, along x or y, her talking mirror), and its tall mirrors, each
+  // its tile and its picture's `variant` (its face & 1, its frame >> 1): act3/gallery.gd, gqueen.gd)
+  const G18 = level.land.gallery;
+  const gallery = G18 ? { hall: G18.hall ? { x: G18.hall.x, y: G18.hall.y, alongX: G18.hall.alongX, mirror: { x: G18.hall.mirror.x, y: G18.hall.mirror.y } } : null, mirrors: level.props.filter((p) => p.kind === 'piece' && p.name === 'a tall mirror').map((p) => ({ tx: p.tx, ty: p.ty, variant: p.variant ?? 0 })) } : null;
+  writeFileSync(`${OUT}/land.json`, JSON.stringify({ kind: level.land.kind, areas, lanes, ...(garden ? { garden } : {}), ...(masque ? { masque } : {}), ...(gallery ? { gallery } : {}) }, null, 1));
   console.log(`land: ${level.land.kind}, ${areas.length} areas (${areas.map((a) => a.role).join(', ')}), ${lanes.length} lanes`);
 }

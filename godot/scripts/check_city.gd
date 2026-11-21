@@ -152,6 +152,10 @@ func run(main, hero, out: String) -> void:
 		await _princess()
 	if depth == 17 and (M._arg("kind") == "" or M._arg("kind").split(",").has("prince")):
 		await _prince()
+	if depth == 18 and (M._arg("kind") == "" or M._arg("kind").split(",").has("mirrors")):
+		await _mirrors()
+	if depth == 18 and (M._arg("kind") == "" or M._arg("kind").split(",").has("gqueen")):
+		await _gqueen()
 	print("CITY: floor %d, %d steps, %d as the game's%s" % [depth, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
 
 
@@ -159,9 +163,10 @@ func run(main, hero, out: String) -> void:
 const KINDS := {11: ["hushed", "hound", "scribe", "watch", "crier"], 12: ["rat", "dredger", "scribe", "hushed", "ratking"],
 	13: ["fieldhand", "carter", "hushed", "scraper", "quill"], 14: ["patient", "orderly", "hushed", "physician"],
 	15: ["inkling", "bookwarden", "scribe", "hushed", "censor"], 16: ["swan", "gardener", "groom", "pguard"],
-	17: ["dancer", "footman", "order", "prince"]}
+	17: ["dancer", "footman", "order", "prince"], 18: ["lady", "reflection", "qguard", "gqueen"]}
 const COMMON := {11: ["hushed", "hound", "scribe", "watch"], 12: ["rat", "dredger"], 13: ["fieldhand", "carter"], 14: ["patient", "orderly"],
-	15: ["inkling", "bookwarden"], 16: ["swan", "gardener", "groom", "pguard"], 17: ["dancer", "footman", "order"]}
+	15: ["inkling", "bookwarden"], 16: ["swan", "gardener", "groom", "pguard"], 17: ["dancer", "footman", "order"],
+	18: ["lady", "reflection", "qguard"]}
 
 
 var chosen := {}
@@ -331,6 +336,87 @@ func _common(kind: String) -> void:
 			var rushed: bool = await _run(3.0, func(): return _is_act(m, "order:rush"))
 			await _run(0.8, func(): return m.h2.act == null)
 			_line(rushed and m.world.distance_to(h.world) < d0 - 3.5, "still, then sudden: the rush from %.1f tiles off, flung at him to %.1f" % [d0, m.world.distance_to(h.world)])
+		"lady":
+			h.world = M._spot_near(m.world + m.face * 5.0, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var flashed: bool = await _run(5.0, func(): return _is_act(m, "lady:flash") and float(m.h2.act["t"]) >= 0.85)
+			await _run(0.1)
+			await _snap("lady_flash")
+			await _run(1.0, func(): return m.h2.act == null)
+			_line(flashed and struck > 0, "the lady's flash from range: her mirror swept up, the cone of cold light before her: the hero struck (%d)" % struck)
+			# (he comes near: she glides back; at her distance, she circles him)
+			_ready_only(m, -1)
+			h.world = M._spot_near(m.world, 2.0, h.world)
+			var d0: float = m.world.distance_to(h.world)
+			var back: bool = await _run(3.0, func(): return _is_act(m, "lady:back"))
+			await _run(0.8)
+			var d1: float = m.world.distance_to(h.world)
+			h.world = M._spot_near(m.world, 5.2, h.world)
+			var a0: float = (m.world - h.world).angle()
+			var round_: bool = await _run(3.0, func(): return _is_act(m, "lady:left") or _is_act(m, "lady:right"))
+			await _run(1.0)
+			var turned: float = absf(angle_difference(a0, (m.world - h.world).angle()))
+			await _snap("lady_circles")
+			_line(back and d1 > d0 + 0.5 and round_ and turned > 0.15, "she keeps her distance: gliding back from %.1f to %.1f tiles; circling him (%.2f radians round)" % [d0, d1, turned])
+		"reflection":
+			# (as it wakes: out of the nearest mirror; one laid further than 9 tiles from any has none, so it is stood near one)
+			var G = M.gallery
+			if G != null:
+				for q in G.mirrors:
+					var f := Vector2(q["x"], q["y"]) + Vector2(q["fx"], q["fy"]) * 3.0
+					if int(q["frame"]) == 0 and not q["taken"] and M.map.walkable(floori(f.x), floori(f.y)):
+						m.world = f
+						m.h2.a1.erase("out_done")
+						h.world = M._spot_near(f, 5.0, h.world)
+						break
+			var stepped: bool = await _run(4.0, func(): return _is_act(m, "reflection:out"))
+			await _run(0.3)
+			await _snap("reflection_steps_out")
+			await _run(2.0, func(): return m.h2.act == null)
+			_line(stepped, "your reflection steps out of a tall mirror, a glassy copy of the Warrior (form %d)" % int(m.form))
+			struck = 0
+			h.world = M._spot_near(m.world + m.face * 1.4, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			var cut: bool = await _run(5.0, func(): return _is_act(m, "reflection:tap0") and float(m.h2.act["t"]) >= 0.3)
+			await _snap("reflection_cut_marked")
+			await _run(1.5, func(): return m.h2.act == null)
+			_line(cut and struck > 0, "its Strike, held a moment and marked, then the cut: the hero struck (%d)" % struck)
+			struck = 0
+			h.world = M._spot_near(m.world + m.face * 1.3, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 1)
+			var slam: bool = await _run(5.0, func(): return _is_act(m, "reflection:hold0") and float(m.h2.act["t"]) >= 0.6)
+			await _snap("reflection_slam_marked")
+			await _run(1.8, func(): return m.h2.act == null)
+			_line(slam and struck > 0, "its Slam, held and marked, brought down before it: the hero struck (%d)" % struck)
+		"qguard":
+			h.world = M._spot_near(m.world + m.face * 1.2, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 0)
+			m.h2.a1["next"] = 999.0
+			var slashed: bool = await _run(5.0, func(): return _is_act(m, "qguard:slash") and float(m.h2.act["t"]) >= 1.0)
+			await _snap("qguard_x")
+			await _run(1.0, func(): return m.h2.act == null)
+			_line(slashed and struck >= 1, "the queen's guard's double slash: the X before him, the hero struck (%d)" % struck)
+			struck = 0
+			h.world = M._spot_near(m.world + m.face * 4.0, 0.0, h.world)
+			m.face = (h.world - m.world).normalized()
+			_ready_only(m, 1)
+			var fanned: bool = await _run(5.0, func(): return not _a1("qguard:fan").is_empty())
+			await _run(0.15)
+			await _snap("qguard_shards")
+			await _run(0.6)
+			_line(fanned and struck > 0, "the shard fan: five slivers of glass flung, the hero struck (%d)" % struck)
+			# (he far off: into the glass, and out of another beside him)
+			_ready_only(m, -1)
+			h.world = M._spot_near(m.world, 8.0, h.world)
+			m.h2.a1["next"] = 0.0
+			var went: bool = await _run(4.0, func(): return _is_act(m, "qguard:stepIn"))
+			var out: bool = await _run(3.0, func(): return _is_act(m, "qguard:stepOut"))
+			await _run(0.7)
+			_line(went and out and m.world.distance_to(h.world) < 2.5, "farther off, he steps into the glass and out of another beside him (%.1f tiles from him)" % m.world.distance_to(h.world))
 		"hushed":
 			h.world = M._spot_near(m.world, 0.9, h.world)
 			_ready_only(m, 0)
@@ -1603,4 +1689,127 @@ func _prince() -> void:
 	await _run(0.6)
 	await _snap("prince_falls")
 	_line(fell and _a1("prince:chime", func(p): return int(p["done"]) == 0).is_empty(), "the Prince falls: his mask cracks; what of his was still to come does not come")
+
+
+## FLOOR 18'S TALL MIRRORS (act3/gallery.gd): a blow near one cracks it; another bursts it, its shards across the floor before it.
+func _mirrors() -> void:
+	var G = M.gallery
+	if G == null or not G.on():
+		_line(false, "floor 18 has no tall mirrors")
+		return
+	var mr = null
+	for q in G.mirrors:
+		if int(q["frame"]) == 0 and str(q["state"]) != "":
+			var f := Vector2(q["x"], q["y"]) + Vector2(q["fx"], q["fy"]) * 1.0
+			if M.map.walkable(floori(f.x), floori(f.y)):
+				mr = q
+				break
+	if mr == null:
+		_line(false, "no whole mirror to strike")
+		return
+	var at: Vector2 = Vector2(mr["x"], mr["y"]) + Vector2(mr["fx"], mr["fy"]) * 1.0
+	h.world = at
+	struck = 0
+	h._break_props(0, at, 0.5)
+	await _run(0.3)
+	var cracked: bool = int(mr["frame"]) == 1
+	await _snap("mirror_cracked")
+	h._break_props(0, at, 0.5)
+	var burst: bool = await _run(1.0, func(): return int(mr["frame"]) == 2)
+	await _run(0.2)
+	await _snap("mirror_bursts")
+	_line(cracked and burst and struck > 0, "a tall mirror: struck near, it cracks; again, it bursts, its shards across the floor before it: the hero struck (%d)" % struck)
+
+
+## FLOOR 18'S BOSS, THE QUEEN (act3/gqueen.gd, marks18.gd): her hall and her mirror; the comb and its poison; Looking Glass; her
+## Reflections; Shatter; the ring of mirrors, her found and stunned; her death, her mirror telling the truth.
+func _gqueen() -> void:
+	var boss = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.boss and o.kind == "gqueen":
+			boss = o
+	if boss == null:
+		_line(false, "floor 18 has no Queen")
+		return
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o != boss:
+			o.queue_free()
+	await M._wait(0.1)
+	P.list.clear()
+	struck = 0
+	h.world = M._spot_near(boss.world, 5.0, h.world)
+	var met: bool = await _run(8.0, func(): return boss.state != "sleep" and not boss.waits)
+	var hall: bool = await _run(1.0, func(): return not _a1("gqueen:hall").is_empty())
+	await _snap("gqueen_met")
+	_line(met and hall, "the Queen met in the Mirror Hall: %s, %.0f life; her hall's pier glasses and her mirror" % [boss.title, boss.max_life])
+	# THE COMB
+	h.world = M._spot_near(boss.world + boss.face * 2.0, 0.0, h.world)
+	boss.face = (h.world - boss.world).normalized()
+	_ready_only(boss, 0)
+	var stab: bool = await _run(5.0, func(): return _is_act(boss, "gqueen:comb") and float(boss.h2.act["t"]) >= 0.85)
+	var cloud: bool = await _run(0.5, func(): return not _a1("gqueen:cloud").is_empty())
+	await _run(0.3)
+	await _snap("gqueen_comb_poison")
+	await _run(1.5)
+	_line(stab and cloud and struck > 0, "the comb: its stab, her poison left where it struck, biting: the hero struck (%d)" % struck)
+	# LOOKING GLASS
+	struck = 0
+	await _run(1.0, func(): return boss.h2.act == null)
+	h.world = M._spot_near(boss.world, 6.0, h.world)
+	_ready_only(boss, 1)
+	var into: bool = await _run(5.0, func(): return _is_act(boss, "gqueen:glass"))
+	var out: bool = await _run(4.0, func(): return _is_act(boss, "gqueen:out") and float(boss.h2.act["t"]) >= 0.5)
+	await _snap("gqueen_out_of_glass")
+	await _run(1.5, func(): return boss.h2.act == null)
+	_line(into and out and struck > 0, "Looking Glass: into a glass, out of one behind him, her stab: the hero struck (%d)" % struck)
+	# REFLECTIONS
+	_ready_only(boss, 2)
+	var copies := 0
+	var made: bool = await _run(5.0, func(): return _is_act(boss, "gqueen:reflect") and float(boss.h2.act["t"]) >= 1.05)
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and o.kind == "reflection":
+			copies += 1
+	await _run(0.5)
+	await _snap("gqueen_reflections")
+	_line(made and copies >= 1, "Reflections: copies of him stepping out of her awake pier glasses (%d)" % copies)
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.kind == "reflection":
+			o.queue_free()
+	await _run(1.5, func(): return boss.h2.act == null)
+	# SHATTER
+	struck = 0
+	var F: Dictionary = boss.h2.hall_frame(M)
+	h.world = Vector2(F["x"], F["y"]) + F["u"] * 1.5
+	_ready_only(boss, 3)
+	var trembling: bool = await _run(5.0, func(): return _is_act(boss, "gqueen:shatter") and float(boss.h2.act["t"]) >= 1.0)
+	await _snap("gqueen_shatter_lanes")
+	await _run(0.45)
+	await _snap("gqueen_shatter_flies")
+	await _run(1.5, func(): return boss.h2.act == null)
+	_line(trembling and struck > 0, "Shatter: every pier glass trembling, its lane lit; burst at once, their glass flying across the hall: the hero in a lane struck (%d)" % struck)
+	# THE RING OF MIRRORS: her found, stunned
+	struck = 0
+	h.world = M._spot_near(boss.world, 4.0, h.world)
+	_ready_only(boss, 4)
+	var ring: bool = await _run(6.0, func(): return not _a1("gqueen:ring").is_empty())
+	await _run(1.0)
+	await _snap("gqueen_ring_of_mirrors")
+	var rp: Dictionary = _a1("gqueen:ring")
+	var stunned := false
+	if not rp.is_empty():
+		var spot: Vector2 = boss.h2.ring_spots(M.map, rp)[int(rp["a"])]
+		for k in 3:
+			h._break_props(0, spot, 0.5)
+			await _run(0.4)
+		stunned = await _run(1.0, func(): return _is_act(boss, "gqueen:stunned"))
+		await _snap("gqueen_found_stunned")
+	_line(ring and stunned and boss.hex_t > 0.0, "the ring of mirrors: six round him, her in every one, each with its bar of life; her own broken in three blows: found, STUNNED")
+	await _run(3.5, func(): return boss.h2.act == null)
+	# HER DEATH
+	boss.hurt(boss.life + 1e6)
+	var fell: bool = await _run(2.0, func(): return boss.dead)
+	await _run(1.0)
+	await _snap("gqueen_falls")
+	var P0: Dictionary = _a1("gqueen:hall")
+	_line(fell and not P0.is_empty() and int(P0["c"]) == 2 and str(P0.get("say", "")) == "The king is dying. Something sits on his chest.", "the Queen falls: her mirror cracks across and tells the truth: \"%s\"" % str(P0.get("say", "")))
 

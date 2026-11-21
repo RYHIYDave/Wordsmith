@@ -254,7 +254,7 @@ func _step_act(m, A: Array, dt: float, hero) -> void:
 	# (`rate`: an act made quicker, the Troll Chieftain's in his rage: act.rate)
 	act["t"] = minf(float(a["long"]), t0 + dt * float(act.get("rate", 1.0)) * ((0.6 + 0.4 * m.slow()) if t0 < float(a["hit"]) else 1.0))
 	var t1: float = act["t"]
-	m._anim_t = t1
+	m._anim_t = act_clock(a, t1)
 	var was = act
 	acting(m, a, t0, t1, dt, hero)
 	# (the act itself may have ended it)
@@ -262,6 +262,17 @@ func _step_act(m, A: Array, dt: float, hero) -> void:
 		return
 	if t1 >= float(a["long"]):
 		_end(m, a, hero)
+
+
+## actClock (game/bosses.ts): where in its pictures an act `t` seconds in is, its `loop` ({at, span, extra}) played round and round
+## (the ladies' glides, a whirl held).
+static func act_clock(a: Dictionary, t: float) -> float:
+	var L = a.get("loop")
+	if L == null or t < float(L["at"]) + float(L["span"]):
+		return t
+	if t < float(L["at"]) + float(L["span"]) + float(L["extra"]):
+		return float(L["at"]) + fmod(t - float(L["at"]), float(L["span"]))
+	return t - float(L["extra"])
 
 
 ## endAct: it stands as its pictures leave it, and waits its moment (Swift: shorter).

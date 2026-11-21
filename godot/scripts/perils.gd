@@ -190,6 +190,8 @@ func floor_blow(at: Vector2, rad: float) -> void:
 	for p in list:
 		if p["kind"] == "a1" and str(p.get("a1", "")).begins_with("princess:"):
 			PRM.floor_blow(self, p, at, rad)
+		elif p["kind"] == "a1" and str(p.get("a1", "")) == "gqueen:ring":
+			M18.floor_blow(self, p, at, rad)
 
 
 func drop(src: Object, kinds := ["warn", "lane", "aim"]) -> void:
@@ -3077,6 +3079,7 @@ func _spots_of(p: Dictionary) -> void:
 
 const A1M := preload("res://scripts/act1/marks.gd")
 const PRM := preload("res://scripts/act3/pr_marks.gd")
+const M18 := preload("res://scripts/act3/marks18.gd")
 
 
 ## The picture of a film's layer that is a set of stills (its `fps` 0: one picked by the mark's own clock), by its number.

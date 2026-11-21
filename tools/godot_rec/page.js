@@ -1124,6 +1124,12 @@
         const r = REC.variant(T0, W, H, [1], () => { p.variant = 1; }, () => { p.variant = was; });
         if (r.err) { note[`nettle${i}`] = r.err; return; }
         out[`nettle${i}`] = { kind: 'nettle', at: { tx: p.tx, ty: p.ty }, frames: [none(), r.frames[0]] };
+      } else if (p.name === 'a tall mirror') {
+        // (THE HIGH CITY, FLOOR 18: a tall mirror, `mirror<i>`: its steps whole, cracked, burst, its face kept: its frame `variant` >> 1)
+        const face = (was ?? 0) & 1;
+        const r = REC.variant(T0, W, H, [1, 2], (v) => { p.variant = face | (v << 1); }, () => { p.variant = was; });
+        if (r.err) { note[`mirror${i}`] = r.err; return; }
+        out[`mirror${i}`] = { kind: 'mirror', at: { tx: p.tx, ty: p.ty }, frames: [none(), ...r.frames] };
       } else if (p.name === 'the great ebony clock') {
         // (THE HIGH CITY, FLOOR 17: the Masque's great ebony clock striking, `clock<i>`: its state 1, its hammer and bell drawn)
         const ws = p.state;

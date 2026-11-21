@@ -151,6 +151,8 @@ var bells
 var garden = null
 ## (THE HIGH CITY, FLOOR 17: the Masque's great ebony clock: act3/masque.gd)
 var masque = null
+## (THE HIGH CITY, FLOOR 18: the Glass Gallery's tall mirrors: act3/gallery.gd)
+var gallery = null
 var holds:
 	get:
 		return quest610.holds if quest610 != null else null
@@ -251,6 +253,9 @@ func _ready() -> void:
 	masque = preload("res://scripts/act3/masque.gd").new()
 	masque.main = self
 	add_child(masque)
+	gallery = preload("res://scripts/act3/gallery.gd").new()
+	gallery.main = self
+	add_child(gallery)
 
 	var shots := _arg("shots")
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
@@ -616,6 +621,8 @@ func _build(where: String, arrive: String) -> void:
 		garden.enter(where)
 	if masque != null:
 		masque.enter(where)
+	if gallery != null:
+		gallery.enter(where)
 
 
 ## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.
