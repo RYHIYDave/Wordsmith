@@ -331,7 +331,7 @@ func _snare(z: Dictionary) -> void:
 			continue
 		var held: float = monsters.hero.city.bind_monster(o, z["dmg"])
 		if held > 0.0:
-			_tell({"t": "snareSprung", "id": o.id, "x": at.x, "y": at.y, "secs": held})
+			_tell({"t": "snareSprung", "id": o.id, "m": o, "x": at.x, "y": at.y, "secs": held})
 			z["dur"] = z["t"]
 		return
 

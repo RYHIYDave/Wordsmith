@@ -63,6 +63,9 @@ const Figures := preload("res://scripts/fx_figures.gd")
 const Monster := preload("res://scripts/monster.gd")
 ## (floors 6 to 10's words at work: Twin's, Leech's, Volatile's, Precise's, Frenzied's and Guarding's looks: fx_words610.gd)
 const Words610 := preload("res://scripts/fx_words610.gd")
+## (the city's five words at work, their looks: Pulling's, Splitting's, Hexing's, Stilling's and Binding's: fx_city3.gd)
+const City3 := preload("res://scripts/fx_city3.gd")
+var city3: City3
 var w610: Words610
 ## (LASTING'S, FLEETING'S AND VAST'S OWN LOOKS, render/words10.ts: fx_words10.gd, handed on from its own lines below, each marked w10)
 const Words10 := preload("res://scripts/fx_words10.gd")
@@ -222,6 +225,8 @@ func _init() -> void:
 	ground.fx = self
 	figures = Figures.new()
 	figures.fx = self
+	city3 = City3.new()
+	city3.fx = self
 	w610 = Words610.new()
 	w610.fx = self
 	w10 = Words10.new()
@@ -261,6 +266,7 @@ func _exit_tree() -> void:
 	words3.clear()
 	figures.clear()
 	w610.clear()
+	city3.clear()
 	w10.clear()
 	m3.clear()
 	v3.clear()
@@ -417,6 +423,7 @@ func clear() -> void:
 	ground.clear()
 	figures.clear()
 	w610.clear()
+	city3.clear()
 	w10.clear()
 	m3.clear()
 	v3.clear()
@@ -868,7 +875,8 @@ func _handle(e: Dictionary) -> void:
 		_:
 			# (floors 6 to 10's words' own tellings: echo, mark, leech, orb, markOn, markSpent, frenzy, frenzyFed, shield,
 			# guarded, blocked)
-			w610.handle(e)
+			if not city3.handle(e):
+				w610.handle(e)
 
 
 ## The monster a telling is of: its `id` the monster itself or its instance id; failing both, the one nearest (x, y).
@@ -1440,6 +1448,7 @@ func update(dt: float, real: float) -> void:
 			bolts.remove_at(k)
 	wild.update(dt)
 	words3.tick(dt)
+	city3.tick(dt)
 	figures.tick(dt)
 	w610.update(dt)
 	w10.update(dt)
@@ -1473,6 +1482,7 @@ func _spots() -> void:
 	for l: Dictionary in glows:
 		look.spot(Vector2(gx(l["x"], l["y"]), gy(l["x"], l["y"]) - 8.0), l["r"], 0.9 * (1.0 - l["t"] / l["dur"]))
 	words3.lights()
+	city3.lights(wakes.list if wakes != null and is_instance_valid(wakes) else [])
 	ground.lights()
 	w10.lights()
 	# (m3: render.ts lightsM3)
@@ -1575,7 +1585,7 @@ static func pline(c: CanvasItem, x0f: float, y0f: float, x1f: float, y1f: float,
 
 ## Whether anything is alive to be drawn; the layers are drawn again while there is, and once more after.
 func _alive() -> bool:
-	return pn > 0 or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or w10.alive() or m3.alive() or v3.alive() or m8.alive()
+	return pn > 0 or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or city3.alive() or w10.alive() or m3.alive() or v3.alive() or m8.alive()
 
 
 func _redraw() -> void:
@@ -1613,6 +1623,7 @@ func _paint(c: CanvasItem, pass_id: int) -> void:
 func _paint_ground(c: CanvasItem) -> void:
 	var P: Dictionary = L.P
 	words3.draw_floor(c)
+	city3.draw_floor(c)
 	# (m3: the melded words' patches, scars, Blight's brand and Eruption's heat, with the floor: render.ts floorM3)
 	m3.paint(c, 0)
 	# (v3: Volatile's five melds' runes, their marks and their ground, with the floor: render.ts floorV3; m8: the eight's, fx.ts drawGround)
@@ -1804,6 +1815,7 @@ func _paint_air(c: CanvasItem) -> void:
 	# (Volatile's rune's column of light, Leeching's wisps, Precise's pins and sights, Frenzied's sparks, Guarding's shell and the
 	# motes of its ward: fx_words610.gd. Left out: the wand's beams, the Mage's)
 	w610.draw_air(c, wakes.list if wakes != null and is_instance_valid(wakes) else [])
+	city3.draw_air(c, wakes.list if wakes != null and is_instance_valid(wakes) else [])
 	for f: Dictionary in flashes:
 		# a burst of light: a bright core with four rays
 		var k: float = f["t"] / f["dur"]

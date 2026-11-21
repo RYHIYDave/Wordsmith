@@ -209,6 +209,11 @@ func _tint(q: Array) -> Color:
 		if t3.a > 0.0 and (base.a <= 0.0 or t3.a > base.a):
 			base = t3
 	# (v3: lit white as a blast, shard or arc of Volatile's five strikes it, crackling: render.ts tintV3, `tn[1] > overA`)
+	# (the city's words: the cursed drained grey, the slowed mint, a held one white as its bands snap tight: fx_city3.gd)
+	if fx.city3 != null:
+		var tc: Color = fx.city3.tint(m, fx.wakes.list if fx.wakes != null and is_instance_valid(fx.wakes) else [])
+		if tc.a > 0.0 and (base.a <= 0.0 or tc.a > base.a):
+			base = tc
 	if fx.v3 != null:
 		var tv: Array = fx.v3.tint_of(m.id, fx.v3.clock)
 		if not tv.is_empty() and float(tv[1]) > 0.0 and (base.a <= 0.0 or float(tv[1]) > base.a):

@@ -449,7 +449,7 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 		_tell({"t": "markSpent", "id": m.id, "x": at.x, "y": at.y, "dx": at.x - world.x, "dy": at.y - world.y})
 	# (THE CITY'S WORDS: a cursed one struck, its curse flares)
 	if not quiet and m.hex_t > 0.0:
-		_tell({"t": "hexFlare", "id": m.id})
+		_tell({"t": "hexFlare", "id": m.id, "m": m})
 	m.damage(dmg, el, crit, not quiet and front.has("power"), front, false, false, i)
 	# (THE CITY'S WORDS: SPLITTING in front, its first hit each use breaks into copies that fly on: city_words.gd)
 	if float(r["split"]) > 0.0 and not quiet:
@@ -494,17 +494,17 @@ func hit_monster(m, i: int, frac: float, quiet: bool) -> void:
 			m.hex_more = maxf(m.hex_more if m.hex_t > 0.0 else 0.0, float(r["hex"]))
 			m.hex_t = CW["hex"]["secs"]
 			if fresh:
-				_tell({"t": "hexOn", "id": m.id, "x": at.x, "y": at.y, "secs": m.hex_t})
+				_tell({"t": "hexOn", "id": m.id, "m": m, "x": at.x, "y": at.y, "secs": m.hex_t})
 		if float(r["still"]) > 0.0:
 			var fresh: bool = m.still_t < 0.5
 			m.still_k = maxf(m.still_k if m.still_t > 0.0 else 0.0, float(r["still"]))
 			m.still_t = CW["still"]["secs"]
 			if fresh:
-				_tell({"t": "stillOn", "id": m.id, "x": at.x, "y": at.y, "secs": m.still_t})
+				_tell({"t": "stillOn", "id": m.id, "m": m, "x": at.x, "y": at.y, "secs": m.still_t})
 		if float(r["bind"]) > 0.0:
 			var held_for: float = city.bind_monster(m, r["bind"])
 			if held_for > 0.0:
-				_tell({"t": "bind", "id": m.id, "secs": held_for})
+				_tell({"t": "bind", "id": m.id, "m": m, "secs": held_for})
 		# HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too (its chance, 50% at most: none yet here)
 		var heavy: Dictionary = Words.data()["heavy"]
 		if r["stun"] > 0.0:

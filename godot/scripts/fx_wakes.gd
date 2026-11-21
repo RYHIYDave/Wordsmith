@@ -235,6 +235,9 @@ func draw(c: CanvasItem, p: Dictionary) -> void:
 	# (floors 6 to 10's words: Volatile's rune and Guarding's ward, fx_words610.gd)
 	if fx.w610 != null and fx.w610.draw_patch(c, p):
 		return
+	# (the city's words: Pulling's vortex, Hexing's circle, Stilling's bubble, Binding's snare, fx_city3.gd)
+	if fx.city3 != null and fx.city3.draw_patch(c, p):
+		return
 	if not kind in KINDS or _owned(p):
 		return
 	var P: Dictionary = L.P
