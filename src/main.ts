@@ -156,6 +156,8 @@ import type { HudIn, HudOut } from './ui/hud';
 import { guideAttack, guideBanner, huntBanner, questBanner } from './ui/guide';
 import { WORD_HALF, WORD_LEX, WORD_ROOM, drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
 import { EXIT_LABELS, exitLabels } from './game/exit_labels';
+import { BELL_MARK } from './render/bell_mark';
+import { HALL_LOOK } from './game/act1_dress';
 import { LOW_STACKS } from './art/low_stacks';
 import { FLOW } from './art/flowing';
 import { AISLES_CLEAR } from './game/act2/library';
@@ -3341,6 +3343,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     groundsAll: GROUNDS_ALL,
     /** (THE EXITS' NAMES, behind EXIT_LABELS in game/exit_labels.ts) Its switch. */
     exitLabels: EXIT_LABELS,
+    /** (THE MUFFLED BELL MADE EASIER TO SEE, behind BELL_MARK in render/bell_mark.ts, off until his yes) Its switch: `bellMark.on`. */
+    bellMark: BELL_MARK,
+    /** (THE STRONGHOLDS' HALLS GIVEN MORE TO THEM, behind HALL_LOOK in game/act1_dress.ts, off until his yes) Its switch: `hallLook.on` (a level made after it is set). */
+    hallLook: HALL_LOOK,
     /** (A LITTLE HALLWAY INTO EACH STRONGHOLD'S HALL, behind HOLD_HALLWAY in game/act1_layout.ts) Its switch: set it before the floor is made. */
     holdHallway: HOLD_HALLWAY,
     /** (ENEMIES COMING IN UP OUT OF RIFTS, behind ARRIVALS in game/arrivals.ts) Its switch. */
