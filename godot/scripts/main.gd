@@ -314,7 +314,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -2269,6 +2269,14 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "trial":
 		await preload("res://scripts/check_title.gd").new().trial_run(self, hero, dir)
+		return
+	if _arg("only") == "townnames":
+		await preload("res://scripts/check_glows.gd").new().town(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "glows":
+		await preload("res://scripts/check_glows.gd").new().run(self, hero, dir)
+		get_tree().quit()
 		return
 	if _arg("only") == "mana":
 		await preload("res://scripts/check_title.gd").new().mana_check(self, hero, dir)

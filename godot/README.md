@@ -810,6 +810,18 @@ The rest of the options, his pick: “Rest of Options (Recommended)”:
 - THE PAUSE PANEL: ABILITIES over its three buttons, and its third, "End run" (the run given up, the Lexicon and the stash kept: the
   start screen next) or, for a test hero or the practice room, "Leave".
 
+## What glows, and the town's names (the cloud chat, 21 Nov 2026)
+
+His pick: “Town lights & glows (Recommended)”. Held beside the game's own pictures, the town's light was already the game's (its
+look recorded from it: the sun through the windows, the motes, the braziers, the ring); what was missing:
+- WHAT THE MONSTERS' PICTURES GIVE OFF (render.ts monsterLit; engine/px.ts drawLights): every monster's frame carries its lights in
+  the game's bake (the eyes in the dark, a cultist's fire, the Warden's maul going hot, the Stoker's furnace, a wolf's eyes), laid
+  on over the place's dark, added; a light 7 or more across cuts a pool in the dark round it (2.6 times its reach, MONSTER_LIGHT_MIN);
+  none while it is frozen. And the hero's own lights (a lit crystal, a feather) over the dark too, as the game draws them after it.
+- THE TOWN'S SERVICES' NAMES (render.ts STATION_NAME, NAME_LIFT): GATE, WORDSMITH, LEXICON, STASH, MYSTIC, ARMOURER, STRANGER over
+  each, in the town and the camp, on a dark plate in the small letters, white for the one he stands at.
+`--only=glows` (floor 2's cultists, pictured), `--only=townnames` (`check_glows.gd`).
+
 ## Not in it yet
 
 Frenzied on the prison's bosses' own scripts
@@ -818,7 +830,7 @@ above), a phone's thrift with the side bosses' films (the Troll Chieftain's and 
 as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), what a red circle or the
 Headsman's vault sends up as it lands and a bone arrow and the Warden's bolts in flight (plain drawings: the game's
 general effects are brought over only for the words so far), the glow that burning things and some figures give off (the game adds it over them; here only the
-places' own lights glow, and the moves cut their light in the dark), the bosses' spoken lines aloud (the Chained One and
+places' own lights, the moves' and the monsters' pictures' lights glow), the bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
 and blows; what a boss says is shown, not spoken), the
 Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: the

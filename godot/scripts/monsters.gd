@@ -127,10 +127,13 @@ func _process(dt: float) -> void:
 	for m in list:
 		if is_instance_valid(m) and not m.dead and m.bind_t > 0.0:
 			pins.append([m, m.world])
+	var dark = perils.look if perils != null else null
 	for m in list:
 		if is_instance_valid(m):
 			m.step(dt, hero)
 			standing.append(m)
+			# (what its picture gives off lights the floor round it: render.ts light, monsterLit)
+			m.cut_lights(dark)
 	list = standing
 	for q in pins:
 		if is_instance_valid(q[0]):

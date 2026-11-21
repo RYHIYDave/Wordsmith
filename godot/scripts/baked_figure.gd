@@ -116,7 +116,13 @@ func frame(fx: float, fy: float, list: String, i: int) -> Dictionary:
 	var anchor := Vector2(p["ax"], p["ay"]) * d
 	# (mirrored about its anchor: what was ax from the left edge is ax from the right)
 	var offset := Vector2(anchor.x - float(f[3]), -anchor.y) if left else -anchor
-	var out := {"tex": tex, "offset": offset, "flip": left, "scale": 2.0 / d, "sheet": int(f[0])}
+	# (what its picture gives off, the bake's part `lights` ({x, y, r, color, a}, game pixels from its top left), each as far from its
+	# anchor as it is in the picture, mirrored with it: engine/px.ts flipped, its lights at `w - x` and its anchor at `w - 1/d - ax`)
+	var lights: Array = []
+	for l in p.get("lights", []):
+		var dx: float = float(p["ax"]) - float(l["x"]) + 1.0 / d if left else float(l["x"]) - float(p["ax"])
+		lights.append({"dx": dx, "dy": float(l["y"]) - float(p["ay"]), "r": float(l["r"]), "color": l["color"], "a": l.get("a", 0.5)})
+	var out := {"tex": tex, "offset": offset, "flip": left, "scale": 2.0 / d, "sheet": int(f[0]), "lights": lights}
 	_cache[key] = out
 	return out
 

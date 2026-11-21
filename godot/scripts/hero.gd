@@ -369,6 +369,8 @@ func _ready() -> void:
 	add_child(_tails_front)
 	_lights = Node2D.new()
 	_lights.material = Glow.added()
+	# (over the place's dark, as the game draws what shines on him after it: render.ts heroLit)
+	_lights.z_index = 51
 	_lights.draw.connect(_draw_lights)
 	add_child(_lights)
 	_cam = Camera2D.new()

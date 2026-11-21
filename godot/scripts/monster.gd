@@ -36,6 +36,7 @@
 ##     it carries over an elite's or a boss's head, bobbing: what its death will leave (`_Over`).
 extends Node2D
 
+const Glow := preload("res://scripts/figure_glow.gd")
 const Iso := preload("res://scripts/iso.gd")
 const BakedFigure := preload("res://scripts/baked_figure.gd")
 const MM := preload("res://scripts/monster_moves.gd")
@@ -327,6 +328,9 @@ var _flash := 0.0
 var _bar := 0.0
 var _dead_for := 0.0
 var _weave := randf() * TAU
+## (what its picture gives off, over the dark: _draw_lights; the frame shown, with its lights)
+var _lights: Node2D
+var _lit_f := {}
 var _sprite: Sprite2D
 ## (how high the ground it stands on lifts it on the screen, picture pixels)
 var _lift := 0.0
@@ -408,6 +412,12 @@ func _ready() -> void:
 	_sprite = Sprite2D.new()
 	_sprite.centered = false
 	add_child(_sprite)
+	# (what its picture gives off, over the place's dark: render.ts monsterLit, drawLights)
+	_lights = Node2D.new()
+	_lights.z_index = 51
+	_lights.material = Glow.added()
+	_lights.draw.connect(_draw_lights)
+	add_child(_lights)
 	_over = _Over.new()
 	_over.m = self
 	add_child(_over)
@@ -1849,6 +1859,10 @@ func _show() -> void:
 		list = own["list"]
 		i = clampi(int(own["i"]), 0, art.count(0, list) - 1)
 	var f := art.frame(face.x, face.y, list, i)
+	var had: bool = not (_lit_f.get("lights", []) as Array).is_empty()
+	_lit_f = f
+	if had or not (f.get("lights", []) as Array).is_empty():
+		_lights.queue_redraw()
 	_sprite.texture = f["tex"]
 	_sprite.offset = f["offset"]
 	_sprite.flip_h = f["flip"]
@@ -1875,6 +1889,32 @@ func _show() -> void:
 	# (THE LAST WORDS' LOOKS, render/words7.ts lookW7: its own picture changed by a word: tinted, held, cut in two)
 	if mgr.fx != null and mgr.fx.get("w7") != null:
 		mgr.fx.w7.look_on(self, _sprite)
+
+
+## WHAT ITS PICTURE GIVES OFF (render.ts monsterLit; engine/px.ts drawLights): eyes in the dark, a cultist's fire, the Warden's maul
+## going hot, the Stoker's furnace: each light of its frame (the bake's `lights`) laid on, ADDED, over the place's dark, a soft pool
+## its reach across in its colour and strength. Not while it is frozen (ice gives off no light), nor dead, nor unseen.
+func _draw_lights() -> void:
+	var ls: Array = _lit_f.get("lights", [])
+	if ls.is_empty() or dead or frozen_t > 0.0 or not _sprite.visible or not _arrive.is_empty() and state == "rise":
+		return
+	var k: float = 2.0 * look
+	for l in ls:
+		var r: float = float(l["r"]) * k
+		var at: Vector2 = _sprite.position + Vector2(float(l["dx"]), float(l["dy"])) * k
+		_lights.draw_texture_rect(Glow.tex(), Rect2(at.x - r, at.y - r, r * 2.0, r * 2.0), false, Glow.tint(l))
+
+
+## What of it lights the floor round it (render.ts light, MONSTER_LIGHT_MIN): a light of its picture 7 or more across cuts a pool in
+## the dark, 2.6 times its reach, a little stronger, a little below it: the floor round a cultist's flame, the Warden's maul.
+func cut_lights(dark) -> void:
+	var ls: Array = _lit_f.get("lights", [])
+	if ls.is_empty() or dark == null or dead or frozen_t > 0.0 or not visible or not _sprite.visible:
+		return
+	var at: Vector2 = (position + _sprite.position) / 2.0
+	for l in ls:
+		if float(l["r"]) >= 7.0:
+			dark.spot(at + Vector2(float(l["dx"]), float(l["dy"]) * 1.0 + 6.0 / look) * look, float(l["r"]) * 2.6 * look, float(l.get("a", 0.5)) * 1.1)
 
 
 ## Its life over its head for a while after it is struck (game.ts barT).

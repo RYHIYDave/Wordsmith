@@ -54,6 +54,10 @@ const FOLK_DIR := "res://assets/townsfolk"
 const FPS := 30.0
 const TURN_TO := 1.45
 const TURN_BACK := 1.95
+## THE TOWN'S SERVICES' NAMES (render.ts STATION_NAME, NAME_LIFT): over each, so a newcomer can see what is where
+const STATION_NAME := {"gate": "GATE", "wordsmith": "WORDSMITH", "armourer": "ARMOURER", "mystic": "MYSTIC", "lexicon": "LEXICON", "stash": "STASH", "stranger": "STRANGER"}
+const NAME_LIFT := {"gate": 74.0, "stash": 26.0, "lexicon": 40.0, "mystic": 86.0, "wordsmith": 44.0, "armourer": 50.0, "stranger": 40.0}
+const PF := preload("res://scripts/pixel_font.gd")
 const USE := 1.9
 ## (townscene.ts: each person's clock, how many times his loop goes round before he does his thing, the way he works)
 const FOLK := {
@@ -85,6 +89,7 @@ var _folk_sheets: Array[Texture2D] = []
 var _folk_cache := {}
 var _things: Array = []  # {kind, node, variant, x, y}
 var _folk: Array = []  # {kind, node, x, y, to, last_act}
+var _names: Node2D
 var _t := 0.0
 var _ring := {}
 var _word_due := -1.0
@@ -113,6 +118,11 @@ const CAMP_DIR := "res://assets/camp"
 
 func _ready() -> void:
 	data = JSON.parse_string(FileAccess.get_file_as_string((CAMP_DIR if camp else DIR) + "/layout.json"))
+	# (the services' names, over everything: render.ts, its labels drawn last)
+	_names = Node2D.new()
+	_names.z_index = 60
+	_names.draw.connect(_draw_names)
+	add_child(_names)
 	_sheet = load(DIR + "/pics.png")
 	for p in JSON.parse_string(FileAccess.get_file_as_string(DIR + "/pics.json")):
 		_pics[p["name"]] = {"rect": Rect2(p["x"], p["y"], p["w"], p["h"]), "anchor": Vector2(p["ax"], p["ay"]), "tex": _sheet}
@@ -230,6 +240,7 @@ func _process(dt: float) -> void:
 	else:
 		_camp_onward()
 	_use()
+	_names.queue_redraw()
 	_step_gate(dt)
 	_show_gate()
 	_show_kept()
@@ -242,6 +253,40 @@ func _process(dt: float) -> void:
 		var across: float = hero.world.y - st["y"]
 		if along >= -0.1 and along < 0.95 and across >= 0.05 and across < float(st["wide"]) - 0.05:
 			main.go_to("floor1", "stairs")
+
+
+## THE SERVICES' NAMES (render.ts: each station's name `lift` game pixels over it, NAME_LIFT or the place's own; in the friend's pale
+## cyan, white for the one he is near enough to use; on a dark plate, in the small letters; one that would lie on another put up
+## over it, eight at a time: the labels' own rule).
+func _draw_names() -> void:
+	var near := ""
+	var best := USE
+	for s in data["stations"]:
+		var d := Vector2(s["x"], s["y"]).distance_to(hero.world) if hero != null else INF
+		if d <= best:
+			best = d
+			near = str(s["kind"])
+	var labels: Array = []
+	for s in data["stations"]:
+		var k := str(s["kind"])
+		if not STATION_NAME.has(k):
+			continue
+		var at: Vector2 = Iso.to_screen(float(s["x"]), float(s["y"])) / 2.0
+		labels.append({"x": at.x, "y": at.y - float(s.get("lift", NAME_LIFT[k])), "text": STATION_NAME[k], "color": Color.WHITE if k == near else Color("#b0f0dc")})
+	labels.sort_custom(func(a, b): return a["y"] > b["y"])
+	_names.draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))
+	var placed: Array = []
+	for l in labels:
+		var w: float = PF.width(l["text"], "small") + 4.0
+		var x: float = roundf(l["x"] - w / 2.0)
+		var y: float = roundf(l["y"])
+		for tries in 12:
+			if not placed.any(func(p): return absf(p[1] - y) < 8.0 and x < p[0] + p[2] and p[0] < x + w):
+				break
+			y -= 8.0
+		placed.append([x, y, w])
+		_names.draw_rect(Rect2(x, y - 1.0, w, 7.0), Color(Color("#07050a"), 0.78))
+		PF.draw(_names, l["text"], x + 2.0, y, l["color"], {"font": "small"})
 
 
 # --- what each thing shows now ---
