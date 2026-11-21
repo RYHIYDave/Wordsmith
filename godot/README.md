@@ -556,7 +556,7 @@ home to the camp, the camp's waypoint to the city's floors he has reached.
 
 ## Not in it yet
 
-The last words (floor 16), the rifts for anything but the Bells' monsters (the strongholds' waves come in as before),
+The last words (floor 16),
 Frenzied on the prison's bosses' own scripts
 (the mini fleshmancer's), the trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
 above), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched
