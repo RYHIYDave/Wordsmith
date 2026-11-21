@@ -32,6 +32,12 @@ import { DARK_RING, Game } from '../src/game/game';
 import { rollFullRare, rollItem } from '../src/game/items';
 import { RNG as LootRNG } from '../src/engine/rng';
 import { CLAPPER_REWARD, PAGES, QUEST1115_TEXT, QUESTS1115, jarWords } from '../src/game/quests1115';
+import { ROYALS, ROYAL_NAMES, ROYAL_TUNE } from '../src/game/royal_cards';
+import { BIRD_ALL, BIRD_BODY, BIRD_KEY, BIRD_SPRING, CAPTAIN_WHERE, QUEST1620_TEXT, QUESTS1620, SONG, birdWords } from '../src/game/quests1620';
+import { ROYAL_LOOK, royalCard } from '../src/art/high_city_set';
+import { royalCrests } from '../src/art/royal_crest';
+import { CARD_FACE } from '../src/render/royal_cards';
+import { keySprite, springSprite } from '../src/art/quest1620';
 import { ITEM_ROOM, STAT_INFO, flatPair, imbueItem, imbueLines, imbueOptions, imbueOptionsFor, itemMods, itemRoom, itemValue, kindName, modLines, rarityFor, starterWeapon, statGroup } from '../src/game/items';
 import { FIRST_WORD, WORDS, wordGrowth, wordsAt } from '../src/game/defs';
 import { TUNE, ATTR_GIVES } from '../src/game/defs';
@@ -43,6 +49,7 @@ import type { RNG } from '../src/engine/rng';
 import { PRISON_WORD_IDS, WORD_IDS } from '../src/game/types';
 import { wordIds } from '../src/game/melds';
 import type { ImbueOption } from '../src/game/items';
+import type { WeaponKind } from '../src/game/types';
 import { useMeldLooks } from './godot_meld_art';
 import type { Imbue, Item, Rarity, StatKey, WordId } from '../src/game/types';
 import { rangeText } from '../src/ui/inventory';
@@ -282,6 +289,7 @@ for (const [id, list] of Object.entries(shopsOf)) shops[id] = list.filter((it): 
 // TUNE.gambleOdds.unique: the uniques are not in the Godot version.)
 const GAMBLE_N = 8;
 const gambleKindsList = inTown.gambleKinds();
+
 const gamble = {
   kinds: gambleKindsList.map((k) => {
     const key = `${k.icon}:0`;
@@ -302,6 +310,66 @@ for (let depth = 1; depth <= 20; depth++) {
   );
 }
 tally.push(`the stranger: ${gambleKindsList.length} kinds (${gambleKindsList.map((k) => k.name).join(', ')}), a throw ${gamble.price['1'].join('/')} gold coming up from floor 1, ${gamble.price['10'].join('/')} from floor 10; ${GAMBLE_N} pieces of each quality for each kind and floor`);
+// (QUESTS1620: THE WHOLE COURT, the stranger's, and THE CAPTAIN'S VOICE, the knight-captain's, game.ts handIn1620 and captainUsed:
+// a unique of his pool, or where there is none a fully modded rare, an amulet, a ring or a belt (the court's), a weapon of the kind
+// in his hand (the captain's), at max(1, power, min(20, floors cleared)). The uniques are not in the Godot version: the rares, for
+// each level the High City may give, eight of each)
+for (let lv = 10; lv <= 20; lv++) {
+  fullRares[String(lv)] ??= {};
+  for (const sl of ['amulet', 'ring', 'belt'] as const) fullRares[String(lv)][sl] = Array.from({ length: 8 }, () => plain(rollFullRare(lv, sl, frRng, { cls: 'warrior' })));
+  for (const wk of [...new Set(gambleKindsList.filter((k) => k.weapon).map((k) => k.weapon as WeaponKind))]) fullRares[String(lv)][`mainhand:${wk}`] = Array.from({ length: 8 }, () => plain(rollFullRare(lv, 'mainhand', frRng, { cls: 'warrior', forWeapon: wk })));
+}
+// THE ROYAL CARDS (game/royal_cards.ts, the High City's event; godot/scripts/loot.gd, inventory.gd): the four royals, their names, the
+// colour each card is named in (render/royal_cards.ts royalLabelColor: its royal's trim, lit), how many packs a royal touches and
+// which (ROYAL_TUNE: game.ts spawns it; the floors' exports carry each monster's `royal`), where a card's face lies on its picture
+// (CARD_FACE); their pictures (the card lying face up, art/high_city_set.ts royalCard; the crest over a touched one,
+// art/royal_crest.ts) as `card:<royal>` and `crest:<royal>`; and what a hand pays (game.ts handInCards): pieces of each rarity a hand
+// may pay (1 magic, 2 rare) rolled by the game's own rollItem at each level a hand may pay at (his power, 1 to 20, and up to five
+// over it), eight of each
+for (const r of ROYALS) {
+  pics.set(`card:${r}`, royalCard(r));
+  pics.set(`crest:${r}`, royalCrests()[r]);
+}
+// (QUESTS1620: the songbird's key and spring, as they lie: art/quest1620.ts)
+pics.set('quest:key', keySprite());
+pics.set('quest:spring', springSprite());
+const royalRng = new LootRNG(1620);
+const royalForHim = (it: Item): Item => (inTown as unknown as { forHim(i: Item): Item }).forHim(it);
+const royal = {
+  royals: [...ROYALS],
+  names: ROYAL_NAMES,
+  label: Object.fromEntries(ROYALS.map((r) => [r, ROYAL_LOOK[r].trim[4]])),
+  tune: ROYAL_TUNE,
+  face: CARD_FACE,
+  pieces: {} as Record<string, Record<string, unknown[]>>,
+};
+for (let lv = 1; lv <= 25; lv++) {
+  royal.pieces[String(lv)] = {};
+  for (const rarity of [1, 2] as const) royal.pieces[String(lv)][String(rarity)] = Array.from({ length: 8 }, () => plain(royalForHim(rollItem(lv, royalRng, { rarity, cls: 'warrior' }))));
+}
+// THE QUEST LINE OF FLOORS 16 TO 20 (game/quests1620.ts QUESTS1620; godot/scripts/act3/quest1620.gd): its switch, the songbird's
+// parts' bits, its numbers (SONG), the mended bird's reward (birdWords), and its lines, those that take a number or a word with
+// `{k}` or `{w}`
+{
+  const T = QUEST1620_TEXT;
+  const N = 7777;
+  const k = (t: string): string => t.split(String(N)).join('{k}');
+  writeFileSync('godot/assets/act2/quest1620.json', JSON.stringify({
+    on: QUESTS1620.on,
+    bits: { key: BIRD_KEY, spring: BIRD_SPRING, body: BIRD_BODY, all: BIRD_ALL },
+    song: { ...SONG },
+    birdWords: [...birdWords()],
+    captainWhere: CAPTAIN_WHERE,
+    text: {
+      birdAsk: T.birdAsk, birdAskPrompt: T.birdAskPrompt, partGotKey: k(T.partGot('key', N)), partGotSpring: k(T.partGot('spring', N)), partGotBody: k(T.partGot('body', N)),
+      birdGivePrompt: T.birdGivePrompt, birdMended: T.birdMended('{w}', false), birdMendedTower: T.birdMended('{w}', true), towerShut: T.towerShut,
+      songPrompt: T.songPrompt, sang: T.sang, keyLabel: T.keyLabel, springLabel: T.springLabel, birdLabel: T.birdLabel, captainLabel: T.captainLabel,
+      courtAsk: T.courtAsk, courtAskPrompt: T.courtAskPrompt, courtGivePrompt: T.courtGivePrompt, courtGiven: T.courtGiven, captainJarLabel: T.captainJarLabel,
+      captainJarGot: T.captainJarGot, captainSilent: T.captainSilent, captainPrompt: T.captainPrompt, captainGivePrompt: T.captainGivePrompt,
+      captainSpeaks: T.captainSpeaks, captainAgain: T.captainAgain,
+    },
+  }));
+}
 const body = game.level.body;
 // (what each word becomes on each kind of piece: once every piece that is written has been seen)
 const imbue: Record<string, Record<string, unknown[]>> = {};
@@ -368,7 +436,7 @@ const quest = {
     },
   }));
 }
-writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, fullRares, value: VALUE, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble }));
+writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, fullRares, value: VALUE, starter, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble, royal }));
 tally.push(`words on gear: ${[...OURS, ...MADE].join(', ')} on ${kinds.size} kinds of piece by level, ${sizes} sizes in all`);
 
 // --- the pictures in one sheet: each at two picture pixels to a game pixel, its anchor kept ---

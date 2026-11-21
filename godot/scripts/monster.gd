@@ -202,6 +202,8 @@ var a1_in := {}
 var words: Array = []
 var half: Array = []
 var carries: Array = []
+## THE ROYAL CARDS (act3/royal_cards.gd): the royal that touched its pack ("princess", "prince", "queen", "king"), or "".
+var royal := ""
 ## (MONSTER PACKS: "blue", a blue pack's; "leader", a yellow pack's leader; "minion", one he leads; "" for any other. And how
 ## long a minion's leader's words are whole yet since the skeleton champion's cry: game.ts rallyT)
 var rarity := ""
@@ -311,6 +313,8 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	words = m.get("words", [])
 	half = m.get("half", [])
 	carries = m.get("carries", [])
+	# (THE ROYAL CARDS, the High City's: the royal that touched its pack, its crest over its head, its card as it dies: game.ts spawn)
+	royal = str(m.get("royal", "")) if m.get("royal") != null else ""
 	rarity = str(m.get("rarity", ""))
 	def = kind_def
 	art = figure
@@ -1784,7 +1788,12 @@ func _shows_over() -> bool:
 	# (nothing of one hidden, as an inkling going about as a pool of ink is, not its bar nor its name: render.ts `hidden`)
 	if dead or not seen or not _sprite.visible or boss and carries.is_empty() or state == "rise":
 		return false
-	return _bar > 0.0 or named() or ((elite or boss) and not carries.is_empty())
+	return _bar > 0.0 or named() or ((elite or boss) and not carries.is_empty()) or _crest()
+
+
+## (THE ROYAL CARDS: one a royal touched wears that royal's crest over its head, on the High City's floors: render.ts)
+func _crest() -> bool:
+	return royal != "" and mgr.loot != null and mgr.loot.royal_floor() and mgr.loot.pics.has("crest:" + royal)
 
 
 ## What is over its head, in game pixels from the floor point under it (render.ts drawBars):
@@ -1833,6 +1842,16 @@ func _draw_over(c: CanvasItem) -> void:
 			var pic: Dictionary = mgr.loot.pics.get("word:" + w, {})
 			if not pic.is_empty():
 				c.draw_texture_rect_region(mgr.loot.sheet, Rect2(x, iy, 12.0, 12.0), pic["rect"])
+	# (THE HIGH CITY, THE ROYAL CARDS: the crest of the royal that touched it over its head, above the word it carries, a slow bob of
+	# one pixel: render.ts, render/royal_cards.ts drawRoyalCrest)
+	if _crest():
+		var words: bool = (elite or boss) and not carries.is_empty()
+		var top := roundf(-_head() - lift) - ((6.0 if boss else 15.0) + 16.0 if words else 5.0)
+		var bob := roundf(sin(Time.get_ticks_msec() / 1000.0 * 2.4 + id * 1.7))
+		var cp: Dictionary = mgr.loot.pics["crest:" + royal]
+		# (its picture in our pixels, two to a game pixel; its anchor its foot)
+		var a: Vector2 = cp["anchor"] / 2.0
+		c.draw_texture_rect_region(mgr.loot.sheet, Rect2(roundf(-a.x), roundf(top - a.y + bob), cp["rect"].size.x / 2.0, cp["rect"].size.y / 2.0), cp["rect"])
 	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 

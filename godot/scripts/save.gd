@@ -46,6 +46,16 @@ static func run_of(main) -> Dictionary:
 		run["clapper"] = q11.clapper
 		if not q11.laid_out.is_empty():
 			run["laidOut"] = {"armourer": q11.laid_out.duplicate(true)}
+	# (THE ROYAL CARDS: the cards he holds, once he has any: game.ts save `cards`)
+	if not loot.cards.is_empty():
+		run["cards"] = loot.cards.duplicate()
+	# (FLOORS 16 TO 20's quests: the songbird, the whole court, the captain's voice: game.ts save, act3/quest1620.gd)
+	var q16 = main.get("quest1620")
+	if q16 != null and q16.on():
+		run["bird"] = q16.bird
+		run["birdParts"] = q16.bird_parts
+		run["court"] = q16.court
+		run["captainJar"] = q16.captain_jar
 	# (FLOOR 14: a word the Physician holds is written into the save where it would go back to, as if beaten out of him: game.ts
 	# save, inTheSave; the game itself goes on as it is)
 	load("res://scripts/act2/physician.gd").in_the_save(run)
@@ -151,6 +161,15 @@ static func restore_run(main, s: Dictionary) -> void:
 		q11.laid_out = []
 		if lo is Dictionary and lo.get("armourer") is Array:
 			q11.laid_out = lo["armourer"].filter(func(it): return it is Dictionary).slice(0, 3)
+	# (THE ROYAL CARDS: game.ts restore, cleanCards)
+	loot.cards = load("res://scripts/act3/royal_cards.gd").clean(s.get("cards"))
+	# (FLOORS 16 TO 20's quests: game.ts restore)
+	var q16 = main.get("quest1620")
+	if q16 != null:
+		q16.bird = str(s.get("bird", "")) if s.get("bird", "") in ["asked", "mended"] else ""
+		q16.bird_parts = clampi(int(_num(s.get("birdParts"), 0)), 0, 7)
+		q16.court = str(s.get("court", "")) if s.get("court", "") in ["asked", "given"] else ""
+		q16.captain_jar = str(s.get("captainJar", "")) if s.get("captainJar", "") in ["got", "given"] else ""
 	# his moves' slots: the words set in each, as they were (a word no longer one of the game's is let go)
 	for side in ["front", "behind"]:
 		var got = s.get(side)

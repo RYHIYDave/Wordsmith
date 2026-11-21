@@ -136,6 +136,12 @@ var _pools := {}
 var _by_depth := {}
 ## (QUESTS1115: the armourer's pick for the clapper, fully modded rares by level and slot: tools/godot_loot.ts fullRares)
 var _full_rares := {}
+## THE ROYAL CARDS (act3/royal_cards.gd; items.json `royal`): the cards he holds, by royal (game.ts Hero.cards: kept for good,
+## save.gd); where in the bag the pieces the last hand handed in brought lie (game.ts wonHand); the deck's names, colours, numbers
+## and what a hand may pay.
+var cards := {}
+var won_hand: Array = []
+var royal := {}
 ## (items.ts VALUE_BY_RARITY, VALUE_PER_AFFIX, VALUE_IMBUED: a piece's price from its own, `vbase`: tools/godot_loot.ts VALUE)
 var _value := {}
 ## the vendors' shelves (Game.rollShop on his first day in town)
@@ -174,6 +180,7 @@ func _ready() -> void:
 	stat_info = data["stats"]
 	_tune = data["tune"]
 	_gamble = data.get("gamble", {})
+	royal = data.get("royal", {})
 	stash = []
 	stash.resize(int(_tune["stashSize"]))
 	_attr = data["attr"]
@@ -369,12 +376,19 @@ func on_kill(m) -> void:
 	if words_fall():
 		for w in m.carries:
 			_word(at, w)
+	# (THE ROYAL CARDS, the High City's: one a royal touched drops that royal's card: game.ts kill)
+	var r: String = str(m.get("royal")) if m.get("royal") != null else ""
+	if r != "" and royal_floor():
+		_card(at, r)
 	# (FLOORS 6 TO 10: a piece of the ward-stone it carried, the Queen's feather and her eyrie's scene: act1/quest610.gd)
 	if main != null and main.quest610 != null:
 		main.quest610.killed(m)
 	# (FLOORS 11 TO 15: an unstruck page, as the last of floor 13's pair falls and as the Physician does: act2/quest1115.gd)
 	if main != null and main.quest1115 != null:
 		main.quest1115.killed(m)
+	# (FLOORS 16 TO 20: the songbird's key as the Prince falls, its spring as the Queen does: act3/quest1620.gd)
+	if main != null and main.get("quest1620") != null:
+		main.quest1620.killed(m)
 	if m.summoned:
 		return
 	# (FLOOR 13'S DOUBLE BOSS: the first of the pair to fall leaves part of a boss's hoard, the last the whole of it; the other
@@ -520,6 +534,11 @@ func _item(at: Vector2, quality: int) -> void:
 	_drop("gear", _scatter(at), it["icon"], {"item": it})
 
 
+## A piece given him, laid at his feet (game.ts addDrop 'item': QUESTS1620's whole court and the knight-captain's gift).
+func lay_item(at: Vector2, it: Dictionary) -> void:
+	_drop("gear", _scatter(at), it["icon"], {"item": it})
+
+
 ## (QUESTS1115, game.ts layOut) A piece of a pick of three laid out before `by` (the armourer), at `at`: taken, the others go back.
 func lay_pick(at: Vector2, it: Dictionary, by: String) -> void:
 	_drop("gear", at, it["icon"], {"item": it, "choice": by})
@@ -652,6 +671,8 @@ func _process(dt: float) -> void:
 					elif d["kind"] == "word":
 						gain_word(d["word"])
 						sfx.play("word")
+					elif d["kind"] == "card":
+						_card_taken(d["royal"], d["at"])
 					else:
 						hero.heal(ORB_HEAL)
 						sfx.play("pickup", -6.0)
@@ -1713,13 +1734,15 @@ class _Tag extends Node2D:
 	const PF := preload("res://scripts/pixel_font.gd")
 	var text := ""
 	var color := Color.WHITE
+	## (how high over the floor point it hangs, game pixels: a piece's 20, a royal's card's 14)
+	var up := 20.0
 
 	func _draw() -> void:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))
 		var t := text if text.length() <= 30 else text.substr(0, 29) + "."
 		var w := PF.width(t, "small") + 4.0
 		var x := roundf(-w / 2.0)
-		var y := -20.0
+		var y := -up
 		draw_rect(Rect2(x, y - 1.0, w, 7.0), Color(Color("#07050a"), 0.78))
 		PF.draw(self, t, x + 2.0, y, color, {"font": "small"})
 
@@ -1936,4 +1959,104 @@ func withdraw_word(w: String) -> String:
 	words[w] = int(words.get(w, 0)) + 1
 	_know(w)["found"] = true
 	sfx.play("word")
+	return ""
+
+
+
+# =====================================================================================================================
+# THE ROYAL CARDS (game/royal_cards.ts; act3/royal_cards.gd): a royal's card dropped, taken, and hands handed in to the stranger.
+
+const RoyalCards := preload("res://scripts/act3/royal_cards.gd")
+
+
+## Whether this floor's packs may be touched by the royals: a floor of the High City (royalFloor).
+func royal_floor() -> bool:
+	return map != null and int(map.depth) >= 16 and int(map.depth) <= 20 and main != null and not main.is_home(main.place)
+
+
+## A royal's card lying face up where a touched one died (render.ts: the card, popping up as it lands; named in its royal's colour,
+## render/royal_cards.ts royalLabelColor).
+func _card(at: Vector2, r: String) -> void:
+	if not pics.has("card:" + r):
+		return
+	var p := _scatter(at)
+	_drop("card", p, "card:" + r, {"royal": r})
+	var d: Dictionary = _drops[-1]
+	var tag := _Tag.new()
+	tag.text = "The %s's card" % royal["names"][r]["one"]
+	tag.color = Color(royal["label"][r])
+	tag.up = 14.0
+	tag.z_index = 60
+	d["node"].add_child(tag)
+	d["tag"] = tag
+	var pop := _CardPop.new()
+	pop.pic = d["node"].get_child(0)
+	d["node"].add_child(pop)
+
+
+## (the card hopping up as it lands, 9 game pixels over 0.4 s: render.ts `pop`)
+class _CardPop extends Node:
+	var pic: Sprite2D
+	var age := 0.0
+	var base := 0.0
+
+	func _ready() -> void:
+		base = pic.position.y
+
+	func _process(dt: float) -> void:
+		age += dt
+		var pop := sin(age / 0.4 * PI) * 9.0 if age < 0.4 else 0.0
+		pic.position.y = base - roundf(pop) * 2.0
+		if age >= 0.4:
+			set_process(false)
+
+
+## A royal's card walked over: his for good, for the stranger's hands (game.ts updateDrops, `card`).
+func _card_taken(r: String, at: Vector2) -> void:
+	cards[r] = int(cards.get(r, 0)) + 1
+	if main != null and main.fx != null:
+		main.fx.event({"t": "cardGot", "royal": r, "x": at.x, "y": at.y})
+		main.fx.event({"t": "text", "x": hero.world.x, "y": hero.world.y, "text": "THE %s'S CARD" % str(royal["names"][r]["one"]).to_upper(), "color": "#e8dcc0"})
+	sfx.play("word", linear_to_db(0.6))
+
+
+## Every hand his cards make, best first (handsFrom).
+func hands() -> Array:
+	return RoyalCards.hands_from(cards)
+
+
+## Why hand `h` cannot be handed in just now, or "" (ui/royal_cards.ts problem).
+func hand_problem(h: Dictionary) -> String:
+	var n: int = RoyalCards.hand_pays(h)["n"]
+	var free := BAG - bag.size()
+	if free < n:
+		return "Bag is full" if n == 1 else "Bag needs %d free places" % n
+	return ""
+
+
+## THE ROYAL CARDS (game.ts handInCards): hand `h` in to the stranger, in town: its cards are his no more, and what it pays is in his
+## bag: so many pieces of that rarity (rolled by the game's own rollItem: items.json royal.pieces), so many levels over what the
+## stranger throws for. "" if it was handed in; else why not.
+func hand_in(h: Dictionary) -> String:
+	if main == null or not main.is_home(main.place):
+		return "Only in town"
+	if not RoyalCards.can_make(cards, h):
+		return "You do not hold that hand"
+	var pays := RoyalCards.hand_pays(h)
+	var n: int = pays["n"]
+	if BAG - bag.size() < n:
+		return "Bag is full" if n == 1 else "Bag needs %d free places" % n
+	for r in RoyalCards.hand_cards(h):
+		cards[r] = int(cards.get(r, 0)) - 1
+	for r in RoyalCards.ROYALS:
+		if int(cards.get(r, 0)) <= 0:
+			cards.erase(r)
+	won_hand = []
+	var lv := clampi(_town_power() + int(pays["plus"]), 1, 25)
+	var pool: Array = royal["pieces"][str(lv)][str(int(pays["rarity"]))]
+	for k in n:
+		var it: Dictionary = pool[randi() % pool.size()].duplicate(true)
+		bag.append(it)
+		won_hand.append(bag.size() - 1)
+	sfx.play("rare" if int(pays["rarity"]) >= 2 else "buy")
 	return ""

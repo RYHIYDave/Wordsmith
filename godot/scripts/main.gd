@@ -145,6 +145,8 @@ var wakes: Wakes
 var quest610
 ## (FLOORS 11 TO 15 BESIDES THEIR FIGHTS: the Crier's jar, the unstruck pages, the clapper: act2/quest1115.gd)
 var quest1115
+## (FLOORS 16 TO 20 BESIDES THEIR FIGHTS: the clockwork songbird, the whole court, the captain's voice: act3/quest1620.gd)
+var quest1620
 ## (ACT 2, THE BELLS, the city floors' event: act2/bells.gd)
 var bells
 ## (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds and her vine in the yew: act3/garden.gd)
@@ -248,6 +250,9 @@ func _ready() -> void:
 	quest1115 = preload("res://scripts/act2/quest1115.gd").new()
 	quest1115.main = self
 	add_child(quest1115)
+	quest1620 = preload("res://scripts/act3/quest1620.gd").new()
+	quest1620.main = self
+	add_child(quest1620)
 	bells = preload("res://scripts/act2/bells.gd").new()
 	bells.main = self
 	add_child(bells)
@@ -625,6 +630,9 @@ func _build(where: String, arrive: String) -> void:
 		quest610.enter(where)
 	if quest1115 != null:
 		quest1115.enter(where)
+	# (after the city's: floor 12's second jar is these quests')
+	if quest1620 != null:
+		quest1620.enter(where)
 	if bells != null:
 		bells.enter(where)
 	if garden != null:
@@ -751,6 +759,9 @@ func prompt() -> Array:
 	# (an unstruck page, in the Censor's fight: act2/quest1115.gd)
 	if quest1115 != null and str(quest1115.prompt()[0]) != "":
 		return quest1115.prompt()
+	# (the knight-captain; the songbird in the Moth's fight: act3/quest1620.gd)
+	if quest1620 != null and str(quest1620.prompt()[0]) != "":
+		return quest1620.prompt()
 	return town.prompt if town != null else ["", ""]
 
 
@@ -1933,6 +1944,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE CITY'S FIVE WORDS: check_citywords.gd)
 	if _arg("only") == "citywords":
 		await preload("res://scripts/check_citywords.gd").new().run(self, hero, dir)
+	# (THE ROYAL CARDS AND THE QUEST LINE OF FLOORS 16 TO 20: check_quest1620.gd)
+	if _arg("only") == "quests1620":
+		await preload("res://scripts/check_quest1620.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE HIGH CITY'S SEVEN LAST WORDS: check_lastwords.gd)
 	if _arg("only") == "lastwords":
 		await preload("res://scripts/check_lastwords.gd").new().run(self, hero, dir)

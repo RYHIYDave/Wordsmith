@@ -321,6 +321,15 @@ func _go() -> void:
 			main.unbar_due = true
 		main.loot.say("%s cleared" % str(map.title.get("level", "")), good)
 		main.go_to("town", "cage")
+	elif main.get("quest1620") != null and main.quest1620.tower_shut():
+		# (QUESTS1620, game.ts takeWay 'on': from the Keep, the Quiet Tower's door opens only to the songbird's song: not mended, home
+		# to the camp)
+		main.loot.cleared = maxi(int(main.loot.cleared), n)
+		if sfx != null:
+			sfx.play("portal")
+		main.loot.say("%s cleared." % str(map.title.get("level", "")), good)
+		main.loot.say(main.quest1620._t("towerShut"), main.quest1620.MSG_QUEST)
+		main.go_to(main.home_place(), "start")
 	elif (way_kind() == "onward" or way_kind() == "plain") and (n == 10 or n == 15 or not main.has_floor(n + 1)):
 		# (game.ts takeWay 'on' from the Fen: the siege broken, in through the gate; from the fifteenth, the Great Library, home too
 		# (HIGH_CITY, on as the game starts): the stolen words flying home, the High City's gates shut)

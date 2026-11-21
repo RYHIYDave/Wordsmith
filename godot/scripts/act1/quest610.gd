@@ -187,6 +187,12 @@ func givers() -> Array:
 		out.append("armourer")
 	if mystic_due() != "" or (q11 != null and q11.jar_due() != ""):
 		out.append("mystic")
+	# (QUESTS1620: the armourer's songbird, the stranger's whole court: act3/quest1620.gd)
+	var q16 = main.get("quest1620")
+	if q16 != null and q16.bird_due() != "" and not out.has("armourer"):
+		out.append("armourer")
+	if q16 != null and q16.court_due() != "":
+		out.append("stranger")
 	return out
 
 
@@ -205,6 +211,13 @@ func turn_in_for() -> String:
 			return "mystic"
 		if main.quest1115.clapper == "got":
 			return "armourer"
+	# (QUESTS1620)
+	var q16 = main.get("quest1620")
+	if q16 != null and q16.on():
+		if q16.bird != "mended" and q16.bird_parts == int(q16.Q["bits"]["all"]):
+			return "armourer"
+		if q16.court_due() == "courtGive":
+			return "stranger"
 	return ""
 
 

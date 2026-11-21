@@ -2054,6 +2054,9 @@ func _ws_page(w: String, x: float, y: float, pw: float, end: float) -> void:
 ## (the service whose half is open: "stranger", "stash", "lexicon"; "": none)
 var svc := ""
 var gm_pick := -1
+## (THE ROYAL CARDS: the stranger's half on his second page, his cards (ui/royal_cards.ts cardsSide), and the hand picked there)
+var gm_cards := false
+var cd_pick := ""
 var lx_tab := 0
 var lx_sel := ""
 var lx_pick := ""
@@ -2069,6 +2072,8 @@ func open_service(kind: String) -> void:
 		toggle()
 	svc = kind
 	gm_pick = -1
+	gm_cards = false
+	cd_pick = ""
 	lx_pick = ""
 	if kind == "lexicon":
 		lx_sel = ""
@@ -2096,6 +2101,23 @@ func _svc_press(action: String, arg) -> void:
 		"gm_kind":
 			gm_pick = int(arg)
 			_word = ""
+		"gm_tab":
+			gm_cards = not gm_cards
+			cd_pick = ""
+			gm_pick = -1
+		"cd_hand":
+			cd_pick = str(arg)
+			_word = ""
+		"cd_in":
+			for h in loot.hands():
+				if RoyalCards.key_of(h) == cd_pick:
+					var why: String = loot.hand_problem(h)
+					if why == "":
+						why = loot.hand_in(h)
+					_say(why)
+					if why == "":
+						cd_pick = ""
+					break
 		"gm_throw":
 			if gm_pick >= 0:
 				var why: String = loot.gamble_problem(gm_pick)
@@ -2159,6 +2181,21 @@ func _svc_button(label: String, x0: float, w: float, action: String, can: bool, 
 
 func _gm_side(blink: bool, x0: float, w: float) -> void:
 	_text(Vector2(x0, 22), "THE STRANGER", 16, PICK)
+	# (THE ROYAL CARDS: the tab at the right of his title that turns his half to his cards page, once a card is held: ui/royal_cards.ts
+	# cardsTab, cardsOpen)
+	if _cards_open():
+		var label := "GAMBLE" if gm_cards else "CARDS"
+		var tw := _width(label, SMALL) + 18.0
+		var tr := Rect2(x0 + w - tw, 8.0, tw, 20.0)
+		draw_rect(tr, HOT if tr.has_point(_mouse) else INK)
+		draw_rect(tr, EDGE, false, 1.0)
+		_mid(tr, label, SMALL, TEXT)
+		_hits.append([tr, "gm_tab", null, null])
+		if gm_cards:
+			_cd_side(blink, x0, w)
+			return
+	else:
+		gm_cards = false
 	var y := 42.0
 	for l in _wrap("Pay, and take what comes: most often plain, sometimes better.", w, 10):
 		_text(Vector2(x0, y), l, 10, TEXT)
@@ -2199,6 +2236,102 @@ func _gm_side(blink: bool, x0: float, w: float) -> void:
 	if why != "":
 		var t := ("YOU HAVE %d" % loot.gold) if why == "Not enough gold" else why.to_upper()
 		_text(Vector2(br.position.x - 8.0 - _width(t, 10), br.position.y + 19), t, 10, BAD)
+
+
+# --- THE STRANGER'S CARDS (ui/royal_cards.ts cardsSide; loot.gd hand_in; act3/royal_cards.gd) ---
+
+const RoyalCards := preload("res://scripts/act3/royal_cards.gd")
+
+
+## Whether the stranger has the CARDS page: a card held (or a hand just handed in, to read what came) (cardsOpen).
+func _cards_open() -> bool:
+	for r in RoyalCards.ROYALS:
+		if RoyalCards.held(loot.cards, r) > 0:
+			return true
+	return not loot.won_hand.is_empty()
+
+
+## His cards: the four royals' faces with how many of each he holds; every hand they make, best first, each with what it pays; one
+## pressed is picked; HAND IN: the hand's cards are the stranger's, the pieces it pays are in the bag, and named here.
+func _cd_side(blink: bool, x0: float, w: float) -> void:
+	var R: Dictionary = loot.royal
+	var y := 42.0
+	for l in _wrap("Bring me the royals\u2019 cards. A pair, two pair, three of a kind, a full house, four of a kind: the better the hand, the better what I give.", w, 10):
+		_text(Vector2(x0, y), l, 10, TEXT)
+		y += 13.0
+	_text(Vector2(x0, y + 4.0), "YOUR CARDS", 10, DIM)
+	# the four faces in a row, each with its count at its corner
+	var face: Dictionary = R["face"]
+	var fw := float(face["w"]) * K
+	var fh := float(face["h"]) * K
+	var gap := maxf(4.0 * K, minf(14.0 * K, floorf((w - 4.0 * fw) / 3.0)))
+	var fy := y + 12.0
+	for i in RoyalCards.ROYALS.size():
+		var r: String = RoyalCards.ROYALS[i]
+		var n := RoyalCards.held(loot.cards, r)
+		var fr := Rect2(x0 + i * (fw + gap), fy, fw, fh)
+		var pic: Dictionary = loot.pics.get("card:" + r, {})
+		if not pic.is_empty():
+			# (CARD_FACE is in the card's own picture pixels: the sheet holds it at its own grain)
+			var src := Rect2(pic["rect"].position + Vector2(float(face["x"]), float(face["y"])), Vector2(float(face["w"]), float(face["h"])))
+			draw_texture_rect_region(loot.sheet, fr, src, Color(1, 1, 1, 1.0 if n > 0 else 0.28))
+		var label := str(n)
+		var lw := _width(label, SMALL) + 8.0
+		draw_rect(Rect2(fr.end.x - lw, fr.end.y - 14.0, lw, 14.0), INK)
+		_text(Vector2(fr.end.x - lw + 4.0, fr.end.y - 3.0), label, SMALL, Color(R["label"][r]) if n > 0 else FAINT)
+	y = fy + fh + 20.0
+	# (something of the inventory's is being read: its card lies over the foot of this half)
+	if _word != "" or not _pending.is_empty() or not _result.is_empty():
+		return
+	var hands: Array = loot.hands()
+	_text(Vector2(x0, y), "HANDS TO HAND IN" if not hands.is_empty() else "NO HAND YET", 10, DIM)
+	y += 8.0
+	if hands.is_empty():
+		for l in _wrap("A pair is the least I take: two of one royal.", w, 9):
+			_text(Vector2(x0, y + 10.0), l, 9, FAINT)
+			y += 12.0
+	var row_h := 34.0
+	var room := maxi(1, int(floorf((size.y - 60.0 - y) / row_h)))
+	var picked = null
+	for i in mini(room, hands.size()):
+		var h: Dictionary = hands[i]
+		var key := RoyalCards.key_of(h)
+		var rr := Rect2(x0, y, w, row_h - 4.0)
+		var on := key == cd_pick
+		if on:
+			picked = h
+		draw_rect(rr, HOT if on or rr.has_point(_mouse) else INK)
+		draw_rect(rr, PICK if on else EDGE, false, 1.0)
+		_text(Vector2(x0 + 8.0, y + 13.0), RoyalCards.hand_name(h, R["names"]).to_upper(), 10, PICK if on else Color(R["label"][h["main"]]))
+		_text(Vector2(x0 + 8.0, y + 26.0), RoyalCards.pays_name(RoyalCards.hand_pays(h)), 9, DIM)
+		_hits.append([rr, "cd_hand", key, null])
+		y += row_h
+	if hands.size() > room:
+		var more := "+%d MORE" % (hands.size() - room)
+		_text(Vector2(x0 + w - _width(more, 9), fy + fh + 20.0), more, 9, DIM)
+	if cd_pick != "" and picked == null:
+		cd_pick = ""
+	# what the last hand brought (when nothing is picked)
+	if picked == null:
+		var won: Array = []
+		for i in loot.won_hand:
+			if int(i) < loot.bag.size():
+				won.append(loot.bag[int(i)])
+		if not won.is_empty():
+			_text(Vector2(x0, y + 12.0), "YOU GOT", 9, DIM)
+			y += 16.0
+			for it in won:
+				_text(Vector2(x0, y + 12.0), str(it["name"]).to_upper(), NORMAL, loot.RARITY_COLOR[int(it["rarity"])])
+				y += 16.0
+			var said := ("A %s piece" % RARITY_WORD[clampi(int(won[0]["rarity"]), 0, 3)]) if won.size() == 1 else ("%d pieces" % won.size())
+			_text(Vector2(x0, y + 9.0), said + ". In your bag.", 10, DIM)
+		elif not hands.is_empty():
+			_text(Vector2(x0, y + 12.0), "Click a hand to hand it in.", 9, FAINT)
+		return
+	var why: String = loot.hand_problem(picked)
+	var br := _svc_button("HAND IN", x0, w, "cd_in", why == "", blink)
+	if why != "":
+		_text(Vector2(br.position.x - 8.0 - _width(why.to_upper(), 10), br.position.y + 19), why.to_upper(), 10, BAD)
 
 
 # --- THE STASH ---

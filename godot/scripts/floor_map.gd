@@ -72,6 +72,10 @@ var stone = null
 var landing = null
 ## (floor 12, QUESTS1115: THE CRIER'S JAR in the Rat King's nest, {i, x, y, tx, ty, solid}: act2/quest1115.gd)
 var jar = null
+## (QUESTS1620: floor 12's second jar, the knight-captain's voice, {i, x, y, tx, ty}; floor 19's knight-captain at his post, {x, y}:
+## act3/quest1620.gd)
+var captain_jar = null
+var captain = null
 
 
 func _init(path: String) -> void:
@@ -118,6 +122,8 @@ func _init(path: String) -> void:
 	stone = data.get("stone")
 	landing = data.get("landing")
 	jar = data.get("jar")
+	captain_jar = data.get("captainJar")
+	captain = data.get("captain")
 	shut.resize(w * h)
 	pier.resize(w * h)
 	for d in doors:

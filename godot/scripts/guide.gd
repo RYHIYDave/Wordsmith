@@ -59,6 +59,9 @@ func banner(seen := true) -> Dictionary:
 		_speak["t"] -= dt
 	var who: String = _speak["who"]
 	var where: String = main.loot.quest_text["speakWhere"].get(who, "") if main.is_home(main.place) else main.loot.quest_text["speakBack"]
+	# (QUESTS1620: the knight-captain, where he stands: quests1620.ts CAPTAIN_WHERE)
+	if who == "knight-captain" and main.quest1620 != null:
+		where = str(main.quest1620.Q.get("captainWhere", ""))
 	return {"caption": "QUEST", "text": "%s the %s" % ["Return to" if _speak["back"] else "Speak to", who.to_upper()], "sub": where}
 
 
@@ -135,6 +138,12 @@ func _givers_now() -> Array:
 		out.append("armourer")
 	if q11 != null and q11.jar_due() != "" and not out.has("mystic"):
 		out.append("mystic")
+	# (QUESTS1620: the armourer's songbird, the stranger's whole court: act3/quest1620.gd)
+	var q16 = main.quest1620
+	if q16 != null and q16.bird_due() != "" and not out.has("armourer"):
+		out.append("armourer")
+	if q16 != null and q16.court_due() != "":
+		out.append("stranger")
 	return out
 
 
@@ -153,6 +162,13 @@ func _back_now() -> String:
 			return "mystic"
 		if main.quest1115.clapper == "got":
 			return "armourer"
+	# (QUESTS1620)
+	var q16 = main.quest1620
+	if q16 != null and q16.on():
+		if q16.bird != "mended" and q16.bird_parts == int(q16.Q["bits"]["all"]):
+			return "armourer"
+		if q16.court_due() == "courtGive":
+			return "stranger"
 	return ""
 
 
@@ -177,5 +193,7 @@ func _speak_step() -> void:
 	_givers = due
 	_back = back
 	_place = main.place
-	if not _speak.is_empty() and (_speak["t"] <= 0.0 or not due.has(_speak["who"])):
+	# (QUESTS1620: the knight-captain's line stays while his voice is in hand: game.ts updateSpeak)
+	var kept: bool = not _speak.is_empty() and _speak["who"] == "knight-captain" and main.quest1620 != null and main.quest1620.captain_jar == "got" and not main.is_home(main.place)
+	if not _speak.is_empty() and (_speak["t"] <= 0.0 or (not due.has(_speak["who"]) and not kept)):
 		_speak = {}

@@ -443,16 +443,22 @@ func _use() -> void:
 			# (THE ARMOURER'S QUEST, game.ts handInNear, interactHint: while he has a quest to give or its reward, his prompt
 			# says so, and using him gives it in place of his shelves; used again, his shelves)
 			# (QUESTS1115: and his clapper, act2/quest1115.gd; what he brings back first, before any new ask)
+			# (QUESTS1620: and the songbird, act3/quest1620.gd)
 			var due: String = loot.armourer_due()
 			var clap: String = main.quest1115.clapper_due() if main.quest1115 != null else ""
+			var song: String = main.quest1620.bird_due() if main.quest1620 != null else ""
 			if due == "reward":
 				prompt = ["E: " + str(loot.quest_text["rewardPrompt"]), "task"]
 			elif clap == "clapperGive":
 				prompt = ["E: " + main.quest1115.prompt_of(clap), "clapper"]
+			elif song == "birdGive":
+				prompt = ["E: " + main.quest1620.prompt_of(song), "bird"]
 			elif due == "furnace":
 				prompt = ["E: " + str(loot.quest_text["furnaceAskPrompt"]), "task"]
 			elif clap != "":
 				prompt = ["E: " + main.quest1115.prompt_of(clap), "clapper"]
+			elif song != "":
+				prompt = ["E: " + main.quest1620.prompt_of(song), "bird"]
 			else:
 				prompt = ["E: Armourer", "armourer"]
 		"mystic":
@@ -468,7 +474,12 @@ func _use() -> void:
 				prompt = ["E: Mystic", "mystic"]
 		"stash", "lexicon", "stranger":
 			# (his half beside the gear screen: the stranger's gamble, the stash, the Lexicon: inventory.gd)
-			prompt = ["E: %s" % best.capitalize(), best]
+			# (QUESTS1620: the stranger's whole court, asked for or brought, before his half: game.ts handInNear)
+			var court: String = main.quest1620.court_due() if best == "stranger" and main.quest1620 != null else ""
+			if court != "":
+				prompt = ["E: " + main.quest1620.prompt_of(court), "court"]
+			else:
+				prompt = ["E: %s" % best.capitalize(), best]
 		"gate":
 			prompt = ["E: %s" % best.capitalize(), "later"]
 	if prompt[1] != "" and Input.is_action_just_pressed("interact"):
@@ -524,6 +535,10 @@ func _do(what: String) -> void:
 			main.quest1115.hand_in(main.quest1115.jar_due(), hero.world)
 		"clapper":
 			main.quest1115.hand_in(main.quest1115.clapper_due(), hero.world)
+		"bird":
+			main.quest1620.hand_in(main.quest1620.bird_due(), hero.world)
+		"court":
+			main.quest1620.hand_in(main.quest1620.court_due(), hero.world)
 		"later":
 			loot.say("Not in the Godot version yet.", Color(0.55, 0.6, 0.8))
 		"stash", "lexicon", "stranger":

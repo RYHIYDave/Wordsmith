@@ -155,6 +155,18 @@ writeFileSync(`${OUT}/layout.json`, JSON.stringify({
     const p = level.props[i];
     return { i, x: p.x, y: p.y, tx: p.tx, ty: p.ty, solid: p.solid };
   })(),
+  // (QUESTS1620, floor 12: THE KNIGHT-CAPTAIN'S VOICE, the second jar of the sewers (the Crier's jar's picture, `variant` 1), laid in
+  // the side chamber nearest the Rat King's cistern (game.ts quests1620Made): its tile, and its place among the level's props (the
+  // look's state `jar<i>`); godot/scripts/act3/quest1620.gd)
+  captainJar: (() => {
+    const i = level.props.findIndex((p) => p.kind === 'piece' && p.name === CRIERS_JAR && p.variant === 1);
+    if (i < 0) return null;
+    const p = level.props[i];
+    return { i, x: p.x, y: p.y, tx: p.tx, ty: p.ty };
+  })(),
+  // (QUESTS1620, floor 19: THE KNIGHT-CAPTAIN, silent at his post at the middle of the barracks, the knights' lair (game.ts
+  // quests1620Made, Level.captain; his tile out of the walk grid))
+  captain: (level as unknown as { captain?: { x: number; y: number } }).captain ?? null,
   // (THE MIX: each lever's tile and the room whose way in its gate bars: types.ts LeverSpot)
   levers: (L.levers ?? []).map((l) => ({ ...l })),
   // (the room each pack is of, by the pack's id: a room that locks counts the living of its own packs inside it, game.ts updateLocks)
