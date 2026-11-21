@@ -10,6 +10,7 @@ extends SceneTree
 
 const Words := preload("res://scripts/words.gd")
 const NUMBERS := {"dmgMult": "dmg_mult", "size": "size", "rate": "rate", "cooldown": "cooldown", "splash": "splash", "splashDmg": "splash_dmg",
+	"projSpeed": "proj_speed",
 	"ignite": "ignite", "chill": "chill", "arcs": "arcs", "arcDmg": "arc_dmg", "poison": "poison", "stun": "stun", "might": "might", "haste": "haste",
 	"cloud": "cloud", "cracks": "cracks",
 	# (floors 6 to 10's words)
@@ -33,7 +34,7 @@ func _init() -> void:
 	var bad := 0
 	var said := 0
 	for row in c["rows"]:
-		var got: Dictionary = Words.resolve(row["id"], row["front"], row["behind"], row["d"])
+		var got: Dictionary = Words.resolve(row["id"], row["front"], row["behind"], row["d"], row.get("cls", "warrior"))
 		var want: Dictionary = row["r"]
 		var why := ""
 		for k in NUMBERS:

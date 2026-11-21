@@ -909,9 +909,378 @@
    "verb": "LUNGE",
    "windup": 0,
    "follow": 0
+  },
+  "shot": {
+   "id": "shot",
+   "name": "Shot",
+   "kind": "projectile",
+   "icon": "shot",
+   "dmg": 1,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 11,
+   "radius": 0.25,
+   "speed": 16,
+   "sockets": true,
+   "desc": "Loose an arrow at one enemy.",
+   "verb": "SHOOT",
+   "windup": 0.333,
+   "follow": 0.32
+  },
+  "volley": {
+   "id": "volley",
+   "name": "Volley",
+   "kind": "volley",
+   "icon": "volley",
+   "dmg": 0.7,
+   "cooldown": 5,
+   "mana": 14,
+   "range": 9,
+   "radius": 2.2,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Loose arrows at the sky: they rain on the spot you point at for a few seconds.",
+   "verb": "RAIN ARROWS",
+   "windup": 0.4,
+   "follow": 0.36
+  },
+  "trap": {
+   "id": "trap",
+   "name": "Trap",
+   "kind": "roll",
+   "icon": "trap",
+   "dmg": 1.2,
+   "cooldown": 3,
+   "mana": 0,
+   "range": 3.4,
+   "radius": 2,
+   "speed": 0,
+   "sockets": true,
+   "desc": "A quick roll that nothing can hit, and you leave a trap where you stood: it bursts when an enemy steps on it. Holds two charges.",
+   "verb": "ROLL AND TRAP",
+   "windup": 0,
+   "follow": 0
+  },
+  "wave": {
+   "id": "wave",
+   "name": "Wave",
+   "kind": "wave",
+   "icon": "wave",
+   "dmg": 0.65,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 6,
+   "radius": 1,
+   "speed": 9,
+   "sockets": true,
+   "desc": "Swing the staff: a wide wave of force that passes through every enemy in its path.",
+   "verb": "SEND A WAVE",
+   "windup": 0.16,
+   "follow": 0.32
+  },
+  "orb": {
+   "id": "orb",
+   "name": "Orb",
+   "kind": "orb",
+   "icon": "orb",
+   "dmg": 0.6,
+   "cooldown": 5,
+   "mana": 14,
+   "range": 6.5,
+   "radius": 2.2,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Slam the staff down: an orb appears where you point and sends out waves of force for a few seconds.",
+   "verb": "SET AN ORB",
+   "windup": 0.26,
+   "follow": 0.38
+  },
+  "warp": {
+   "id": "warp",
+   "name": "Warp",
+   "kind": "warp",
+   "icon": "warp",
+   "dmg": 0.5,
+   "cooldown": 5,
+   "mana": 0,
+   "range": 6,
+   "radius": 1.6,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Vanish and reappear at a spot, instantly, in a burst that hurts what stands there.",
+   "verb": "WARP",
+   "windup": 0,
+   "follow": 0
+  },
+  "hellbolt": {
+   "id": "hellbolt",
+   "name": "Hellfire Bolt",
+   "kind": "projectile",
+   "icon": "hellbolt",
+   "dmg": 0.8,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 9,
+   "radius": 0.3,
+   "speed": 14,
+   "sockets": true,
+   "desc": "Hurl a bolt of hellfire at one enemy. It burns, hard.",
+   "verb": "HURL HELLFIRE",
+   "windup": 0.24,
+   "follow": 0.4
+  },
+  "curse": {
+   "id": "curse",
+   "name": "Curse",
+   "kind": "curse",
+   "icon": "curse",
+   "dmg": 0.3,
+   "cooldown": 5,
+   "mana": 14,
+   "range": 0,
+   "radius": 4.5,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Chains of smoke curse every enemy near you. The cursed smoulder, and when one dies every burn on it spreads to those near it.",
+   "verb": "CURSE",
+   "windup": 0.3,
+   "follow": 0.45
+  },
+  "smokestep": {
+   "id": "smokestep",
+   "name": "Smoke Step",
+   "kind": "smoke",
+   "icon": "smokestep",
+   "dmg": 0.4,
+   "cooldown": 4,
+   "mana": 0,
+   "range": 6,
+   "radius": 1,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Break into smoke and streak to a spot. Nothing can hit you, and whoever you pass through is cursed.",
+   "verb": "SMOKE STEP",
+   "windup": 0,
+   "follow": 0
+  },
+  "vialtoss": {
+   "id": "vialtoss",
+   "name": "Vial Toss",
+   "kind": "vialtoss",
+   "icon": "vialtoss",
+   "dmg": 0.75,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 6.5,
+   "radius": 1.1,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Lob a vial off your belt. It bursts where it lands, hurting everything near.",
+   "verb": "TOSS A VIAL",
+   "windup": 0.22,
+   "follow": 0.34
+  },
+  "golem": {
+   "id": "golem",
+   "name": "Golem",
+   "kind": "golem",
+   "icon": "golem",
+   "dmg": 1.6,
+   "cooldown": 5,
+   "mana": 16,
+   "range": 0,
+   "radius": 2.4,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Whistle your Golem out: it follows you, punches what is near and shoots its cannon at what is far. Whistle again, and it ground pounds.",
+   "verb": "WHISTLE",
+   "windup": 0.28,
+   "follow": 0.5
+  },
+  "blastjump": {
+   "id": "blastjump",
+   "name": "Blast Jump",
+   "kind": "blastjump",
+   "icon": "blastjump",
+   "dmg": 0.8,
+   "cooldown": 4,
+   "mana": 0,
+   "range": 6,
+   "radius": 1.6,
+   "speed": 0,
+   "sockets": true,
+   "desc": "Slap a bomb down at your feet and ride the blast to a spot. Whatever is by you is blown away.",
+   "verb": "BLAST JUMP",
+   "windup": 0,
+   "follow": 0
+  },
+  "vpunch": {
+   "id": "vpunch",
+   "name": "Punch",
+   "kind": "vblow",
+   "icon": "vetpunch",
+   "dmg": 1,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 2.5,
+   "radius": 0,
+   "speed": 0,
+   "sockets": true,
+   "desc": "A tap fills a green globe: the jab, the cross, the hook, the spinning elbow, as his combo comes to them.",
+   "verb": "PUNCH",
+   "windup": 0,
+   "follow": 0
+  },
+  "vkick": {
+   "id": "vkick",
+   "name": "Kick",
+   "kind": "vblow",
+   "icon": "vetkick",
+   "dmg": 1,
+   "cooldown": 0,
+   "mana": 0,
+   "range": 2.5,
+   "radius": 0,
+   "speed": 0,
+   "sockets": true,
+   "desc": "A hold fills an orange globe: the round kick, then the push kick.",
+   "verb": "KICK",
+   "windup": 0,
+   "follow": 0
+  },
+  "vjump": {
+   "id": "vjump",
+   "name": "Jump",
+   "kind": "vjump",
+   "icon": "vetjump",
+   "dmg": 1,
+   "cooldown": 4,
+   "mana": 0,
+   "range": 1,
+   "radius": 0,
+   "speed": 0,
+   "sockets": true,
+   "desc": "A swipe is his dodging jump. A swipe then a tap or a hold sets the globe in fire: the flying uppercut, the flying knee, the spinning jump kick.",
+   "verb": "JUMP",
+   "windup": 0,
+   "follow": 0
   }
  },
  "grows": "str",
+ "classes": {
+  "warrior": {
+   "name": "Warrior",
+   "blurb": "Up close and hard to kill.",
+   "primary": "str",
+   "two": null,
+   "attrs": {
+    "str": 14,
+    "dex": 8,
+    "int": 6
+   },
+   "starts": "greatsword",
+   "moves": [
+    "strike",
+    "whirlwind",
+    "leap"
+   ]
+  },
+  "ranger": {
+   "name": "Ranger",
+   "blurb": "Fast, sharp and far away.",
+   "primary": "dex",
+   "two": null,
+   "attrs": {
+    "str": 8,
+    "dex": 14,
+    "int": 6
+   },
+   "starts": "bow",
+   "moves": [
+    "shot",
+    "volley",
+    "trap"
+   ]
+  },
+  "mage": {
+   "name": "Mage",
+   "blurb": "Raw power. Handle with care.",
+   "primary": "int",
+   "two": null,
+   "attrs": {
+    "str": 6,
+    "dex": 8,
+    "int": 14
+   },
+   "starts": "staff",
+   "moves": [
+    "wave",
+    "orb",
+    "warp"
+   ]
+  },
+  "warlock": {
+   "name": "Warlock",
+   "blurb": "A demon inside. It wants out.",
+   "primary": "int",
+   "two": [
+    "str",
+    "int"
+   ],
+   "attrs": {
+    "str": 11,
+    "dex": 6,
+    "int": 11
+   },
+   "starts": "tome",
+   "moves": [
+    "hellbolt",
+    "curse",
+    "smokestep"
+   ]
+  },
+  "tinkerer": {
+   "name": "Tinkerer",
+   "blurb": "Gadgets, a Golem. Mostly bombs.",
+   "primary": "int",
+   "two": [
+    "dex",
+    "int"
+   ],
+   "attrs": {
+    "str": 6,
+    "dex": 11,
+    "int": 11
+   },
+   "starts": "wrench",
+   "moves": [
+    "vialtoss",
+    "golem",
+    "blastjump"
+   ]
+  },
+  "brawler": {
+   "name": "Brawler",
+   "blurb": "Bare knuckles. Bad attitude.",
+   "primary": "str",
+   "two": [
+    "str",
+    "dex"
+   ],
+   "attrs": {
+    "str": 11,
+    "dex": 11,
+    "int": 6
+   },
+   "starts": "wraps",
+   "moves": [
+    "vpunch",
+    "vkick",
+    "vjump"
+   ]
+  }
+ },
+ "hybridLess": 8,
  "heavy": {
   "slower": 1.25,
   "stun": 0.8,
@@ -1077,6 +1446,40 @@
   "skill": 0
  },
  "furnace": "heavy",
+ "firstOf": {
+  "warrior": {
+   "word": "power",
+   "skill": 0
+  },
+  "ranger": {
+   "word": "poison",
+   "skill": 2
+  },
+  "mage": {
+   "word": "frost",
+   "skill": 0
+  },
+  "warlock": {
+   "word": "fire",
+   "skill": 0
+  },
+  "tinkerer": {
+   "word": "lightning",
+   "skill": 0
+  },
+  "brawler": {
+   "word": "swift",
+   "skill": 0
+  }
+ },
+ "furnaceOf": {
+  "warrior": "heavy",
+  "ranger": "precise",
+  "mage": "fire",
+  "warlock": "poison",
+  "tinkerer": "volatile",
+  "brawler": "power"
+ },
  "meldstone": [
   "fire",
   "frost"

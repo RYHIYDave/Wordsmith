@@ -284,7 +284,7 @@ static func _num(n: float) -> String:
 
 ## A MOVE WITH ITS WORDS (resolveSkill), for a hero whose numbers are `d`: {str, dex, int, area, aps, cdr} (stats.ts derive).
 ## `front`, `behind`: the words in its slots, null where one is empty.
-static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> Dictionary:
+static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls := "warrior") -> Dictionary:
 	var D := data()
 	var def: Dictionary = D["skills"][id]
 	# (WORDMELDING: a melded word does the work of both its words, so for all that follows it is both of them; a ranked word is its
@@ -305,9 +305,13 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 		if w != null and D["words"][w]["element"] != null:
 			element = D["words"][w]["element"]
 			break
-	# (what the move grows with: the Warrior's own attribute, his Strength)
-	var attr: String = D["grows"]
+	# (what the move grows with: the class's own attribute (the Warrior's Strength, the Ranger's Dexterity, ...); a class of two, the
+	# Warlock, their sum less HYBRID_LESS)
+	var CL: Dictionary = D["classes"][cls]
+	var attr: String = CL["primary"]
 	var prim: float = d[attr]
+	if CL["two"] != null:
+		prim = maxf(0.0, float(d[CL["two"][0]]) + float(d[CL["two"][1]]) - float(D["hybridLess"]))
 	# (HOW MUCH A WORD HERE GROWS, defs.ts ATTR_SPLIT: by the attribute of the melded word it is a part of, on that side; fire, frost
 	# and lightning set alone, by the move's own attribute; any other word by its own)
 	var grows_by := func(side: Array, w: String) -> float:
@@ -328,6 +332,8 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 	var size: float = d["area"]
 	var rate: float = d["aps"]
 	var cooldown: float = float(def["cooldown"]) * (1.0 - float(d["cdr"]))
+	# (how fast what the move sends flies: an arrow, a wave; Swift in front, faster)
+	var proj_speed: float = float(def["speed"])
 	var waits: bool = float(def["cooldown"]) > 0.0
 	var heavy: Dictionary = D["heavy"]
 	var r := {
@@ -372,16 +378,33 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 			var fast := 25.0 + 0.5 * a
 			rate *= 1.0 + fast / 100.0
 			lines.append("Swift: +%s attack speed." % _pct(fast))
+		proj_speed *= 1.3
 	if has.call(front, "twin"):
 		# (the owner's rule for words that add: they take something too. Two of everything, each the weaker for it)
 		var each := minf(80.0, 55.0 + 0.25 * grows_by.call(front, "twin"))
 		r["count"] = 2
 		r["count_dmg"] = each / 100.0
 		match def["kind"]:
+			"projectile":
+				lines.append("Twin: two shots, each for %s. One enemy takes only one of them." % _pct(each))
+			"beam":
+				lines.append("Twin: two beams side by side, each for %s. One enemy takes only one of them." % _pct(each))
+			"wave":
+				lines.append("Twin: two waves, fanned apart, each for %s. One enemy takes only one of them." % _pct(each))
+			"summon":
+				lines.append("Twin: every familiar shoots two bolts, each for %s. One enemy takes only one of them." % _pct(each))
+			"orb":
+				lines.append("Twin: every wave comes twice, each for %s." % _pct(each))
 			"whirl":
 				lines.append("Twin: every turn cuts twice, each for %s." % _pct(each))
+			"volley":
+				lines.append("Twin: the arrows come down in pairs, each for %s." % _pct(each))
+			"roll":
+				lines.append("Twin: a second trap where the roll ends, each for %s." % _pct(each))
 			"leap":
 				lines.append("Twin: lands with two shocks, each for %s." % _pct(each))
+			"warp":
+				lines.append("Twin: arrives with two bursts, each for %s." % _pct(each))
 			_:
 				lines.append("Twin: hits twice, each for %s." % _pct(each))
 	if has.call(front, "fire"):
@@ -795,4 +818,5 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary) -> D
 	r["size"] = size
 	r["rate"] = rate
 	r["cooldown"] = cooldown
+	r["proj_speed"] = proj_speed
 	return r
