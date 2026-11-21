@@ -10,7 +10,7 @@ import path from 'node:path';
 
 const HEROES = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler'];
 const CORE = new Set(['swing', 'hit', 'crit', 'slam', 'monster_die', 'hurt', 'pickup', 'gold', 'word', 'rare', 'potion', 'level_up', 'portal', 'door', 'gate_rise', 'gate_fall', 'click', 'equip', 'buy', 'deny', 'imbue', 'death', 'echo', 'might', 'orb', 'boss_roar']);
-const TOWN = new Set(['anvil', 'owl_hoot', 'owl_ruffle', 'crystal', 'rune_write', 'rune_drive', 'ring_power', 'coin', 'page_turn', 'notch', 'trophy_hang', 'amb_hall', 'amb_camp']);
+const TOWN = new Set(['anvil', 'owl_hoot', 'owl_ruffle', 'crystal', 'rune_write', 'rune_drive', 'ring_power', 'coin', 'page_turn', 'notch', 'trophy_hang', 'amb_hall', 'amb_camp', 'breeze']);
 // (the eleventh batch's brazier pop, heard by any brazier: with the world's)
 const WORLD = /^(break_|chest$|rift_|trap_|sealed_door$|fire_pop$)/;
 /**

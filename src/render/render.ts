@@ -192,7 +192,7 @@ import { WILD } from '../art/moves3';
 import { THRUST } from '../art/heroes3';
 import { HUSH } from '../art/crier';
 import { UNIQUE_PLAY } from './unique_play';
-import { LEAP_LIFT, THRUST_LIFT, drawWildArrow, drawWildWave } from './wild';
+import { LEAP_LIFT, drawWildArrow, drawWildWave, leapLiftOf } from './wild';
 import { golemCharge, makeContraptionArt, makeGolemArt } from '../art/tinkerer_art';
 // (THE GOLEM'S ROCKET JUMP AND ITS RUN, the art chat's, behind GOLEM_ROCKET: off until he has seen them in the game and said yes)
 import { GOLEM_ROCKET, ROCKET, RUN_STRIDE, golemRocketFrames, golemRocketFx, golemRunFrames, rocketShadow, rocketUp } from '../art/golem_rocket_fx';
@@ -531,6 +531,17 @@ export function fallenLift(f: { lift?: number; away?: boolean; t: number }): { u
   if (!f.away) return { up: L * (1 - Math.min(1, k) * Math.min(1, k)), alpha: 1 };
   return { up: L * (1 - k * k), alpha: Math.max(0, Math.min(1, 1 - (f.t - FALL.fade) / (FALL.gone - FALL.fade))) };
 }
+
+/**
+ * THE CHAINED ONE'S LAG (15 Nov 2026; his words to the main chat: “Also got a big lag spike in the chained one’s fight”). On a
+ * phone a boss's pictures are not taken in from the bake (render/monsters_baked.ts: too many for a phone's room); they are the
+ * painter's worker's, beside the game, and it takes minutes over a floor's boss (the Chained One's three forms: 236 s on a cloud
+ * machine's phone screen). A frame of his the worker had not come to yet was painted here as he was shown: up to 0.6 s a frame,
+ * twelve frames over 0.1 s in his first 30 s (tools/scenarios/chained_lag.mjs). So, as his fall already was and as a figure whose
+ * baked pictures are still coming is, such a frame is shown as the nearest of its move that is painted (art/kit.ts
+ * LEFT_TO_PAINTER; the worker paints the first frame of every move first), never painted where the game is played. Off: as before.
+ */
+export const PAINTER_STANDS_IN = { on: true };
 
 export class Renderer {
   /** ACT 2, THE BELLS: the Hush's fog and the bells' arrows (render/bells.ts). */
@@ -2792,7 +2803,7 @@ export class Renderer {
       // (a hero in the air is further from their shadow: it is smaller and fainter at the top of a leap)
       // (THE VETERAN off the floor in a move: as high as the art has him, render/veteran_fx.ts)
       const vetUp = this.vetFx.liftOf(game);
-      const up = vetUp > 0 ? Math.min(1, vetUp / 40) : h.move && h.move.kind === 'leap' ? Math.sin(Math.PI * Math.min(1, h.move.t / h.move.dur)) * (THRUST.on && h.cls === 'warrior' ? THRUST_LIFT / LEAP_LIFT : 1) : 0;
+      const up = vetUp > 0 ? Math.min(1, vetUp / 40) : h.move && h.move.kind === 'leap' ? Math.sin(Math.PI * Math.min(1, h.move.t / h.move.dur)) * (leapLiftOf(h) / LEAP_LIFT) : 0;
       this.shadow(g, wx(cam, h.x, h.y), wy(cam, h.x, h.y), 0.36 * (1 - 0.3 * up), SHADOW * (1 - 0.35 * up));
     }
     for (const o of game.orbs) if (here(o.x, o.y)) this.shadow(g, wx(cam, o.x, o.y), wy(cam, o.x, o.y), 0.42, SHADOW * 0.85);
@@ -3110,9 +3121,13 @@ export class Renderer {
     // art/kit.ts LEFT_TO_PAINTER. A list with none here yet paints the one asked for, as ever.)
     // (A FIGURE KEPT PACKED, THE MOTH: likewise, its moves unpacked as they are shown; each picture of it shown told to the
     // painter, render/painter.ts PACKED, which unpacks its move and keeps what is unpacked within its budget)
+    // (ONE THE PAINTER'S WORKER IS PAINTING, as a boss is on a phone (render/monsters_baked.ts: his pictures too many to take in
+    // whole there): likewise, a frame of his not painted yet shown as the nearest that is, as his fall already was, never painted
+    // here as he is shown: PAINTER_STANDS_IN)
     const f = figureOf(m);
     const packed = !!this.painter && this.painter.packs(f);
-    if (!packed && (!this.bakedMobs || !this.bakedMobs.coming(f))) return this.monsterSpriteNow(m);
+    const byPainter = PAINTER_STANDS_IN.on && !!this.painter && this.painter.paints(f);
+    if (!packed && !byPainter && (!this.bakedMobs || !this.bakedMobs.coming(f))) return this.monsterSpriteNow(m);
     const left = LEFT_TO_PAINTER.on;
     LEFT_TO_PAINTER.on = true;
     const stood = HEAVY.deferred;
@@ -4089,7 +4104,8 @@ export class Renderer {
       let sy = relief ? wyFlat(cam, h.x, h.y) - heroLift : wy(cam, h.x, h.y);
       // (big and wild, art/moves3.ts WILD: higher: render/wild.ts, LEAP_LIFT)
       // (the warrior's diving thrust, in place of his leap: low over the floor, art/heroes3.ts THRUST)
-      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * (THRUST.on && h.cls === 'warrior' ? THRUST_LIFT : WILD.on ? LEAP_LIFT : 24);
+      // (his swipe with the axe a leap of the game's own height, with the maul along the floor: render/wild.ts WEAPON_LEAPS)
+      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * leapLiftOf(h);
       // (a roll that goes over a ledge or a pit is a dive: it leaves the floor, a little)
       else if (h.move && h.move.over) sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 10;
       const heroArt = this.heroArt(game);
@@ -4164,7 +4180,7 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackMove: SWAP_MOVES.on ? h.skills[h.attackSkill]?.id : undefined, attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0, ...(crouchT >= 0 ? { crouchT } : {}), ...(heavyDrawn(h.cls, h.talents) === 'axe' ? { axe: { empty: !!h.handsEmpty, caughtT: h.caughtAt !== undefined ? game.time - h.caughtAt : -1, appear: !!h.appear } } : {}) }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackMove: SWAP_MOVES.on ? h.skills[h.attackSkill]?.id : undefined, attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0, ...(crouchT >= 0 ? { crouchT } : {}), ...(heavyDrawn(h.cls, h.talents) === 'axe' ? { axe: { empty: !!h.handsEmpty, caughtT: h.caughtAt !== undefined ? game.time - h.caughtAt : -1, appear: !!h.appear, twin: game.has('twinaxes') } } : {}) }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       // (THE VETERAN in a move: its frame, turned as he faced as it began: render/veteran_fx.ts. Not narrowed in a turn.)
       const vetSp = this.vetFx.shown(game, heroArt);
       if (vetSp) sp = vetSp;

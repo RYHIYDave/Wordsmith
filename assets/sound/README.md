@@ -628,3 +628,66 @@ mode's final boss, fights to the title theme (“i want to use the main theme fo
 as it is, no new file.
 
 Wired in by the main chat for 25.3.20 (14 Nov 2026): engine/audio.ts MUSIC_PLACES f6 to f10, game/level_music.ts musicPlace (floors 1 to 10).
+
+## Fifteenth batch: no constant sound but the music (the sound chat, 15 Nov 2026)
+
+His words, 15 Nov 2026, Eastern:
+- 14:18, “The fire sound is too much. It’s coming off of every torch and brazier and only gets stronger when you’re close. They overlap on top of each other and it seems like the levels and towns are crackling non-stop. It’s all you hear”.
+- His picks: “Only right beside one (Recommended)” and, for the castle hall, “Quieter hearth too (Recommended)”.
+- Then, on try-out 20 (Wordsmith Quieter Fires, https://claude.ai/artifact/SzwS1FB11nfPJairxg4gz4), as it went:
+  - “Something is still making a crackling noise way too often”;
+  - “the wind is a little too much. It sounds like a constant gale as opposed to a gentle breeze coming in”;
+  - “The hearth is too much as well. Just take it out”;
+  - “The breeze is too constant”;
+  - “Gusts too often”.
+- For the camp: “Same as the hall (Recommended)”.
+- Then, 14:43: **“The only constant sound I want in levels or towns is the music. Everything else is sound effects.”**
+- Shown that on try-out 20: “All good, hand over (Recommended)”.
+
+This batch has 3 files, `breeze_1.mp3` to `breeze_3.mp3`, and no name clashes. It replaces the fourteenth batch's third part (the minute-long loops), which is withdrawn.
+
+### 1. No loops in the levels and towns
+
+The game's only constant sounds are the world's loops (`loopWants` → `setLoops`) and the music. Turn the loops off:
+- `loopWants` returns `{}` everywhere, or main.ts calls `setLoops({})` always.
+- That covers all 31: the castle hall's and the camp's air, every floor's background, the torches' and braziers' crackle (`fire_small`), the forge (`fire_big`), the Wordsmith's ring (`ring_hum`), the water, floor 3's furnace, floor 10's burning pillars, and the Shaft's Rim's rumble, draught and torch.
+- The 31 `<name>_loop.wav` files can come out of assets/sound and its packs. That frees about 2 MB each decoded. tests/steady_backgrounds.test.ts test 1, which checks the loops' sizes, goes with them.
+
+What is not a loop stays as it is: combat, footsteps, doors, the floors' scene events (the furnace going out, the pillars kindling and toppling), the town's people's sounds, and the Rim's notch.
+
+Floors 5, 13 and 17 lose their pulse, mill and clock with their backgrounds. They could come back as sounds now and then if he wants them.
+
+### 2. What's left: sounds now and then
+
+Each sound runs on its own countdown, as the owl's hoot does now (`ambientWants`):
+
+| Where | Sound | Every (s, at random) | Volume | What |
+|---|---|---|---|---|
+| The castle hall | `breeze` | 13 to 30 | 0.9 | a gust of breeze coming in through the door (new, 3 takes) |
+| The camp | `breeze` | 13 to 30 | 0.9 | the same |
+| Near a brazier | `fire_pop` | 10 to 25 | 2.15 × the nearest brazier's nearness, `byNearness(d, 1, 2.5)` | a pop, only right beside one |
+| Floor 1 | `amb_f1` | 10 to 30 | 1 | a drip, or a far door |
+| Floor 2 | `amb_f2` | 16 to 40 | 1 | the rope creaking |
+| Floor 3 | `amb_f3` | 12 to 32 | 1 | chains clinking |
+| Floor 4 | `amb_f4` | 16 to 40 | 1.13 | a timber creaking, or bones settling |
+| Floor 6 | `amb_f6` | 20 to 48 | 1 | the far chisel striking three times, or rubble |
+| Floor 7 | `amb_f7` | 20 to 50 | 1 | a vulture far off |
+| Floor 8 | `amb_f8` | 50 to 100 | 1 | a rockfall echoing down the gorge |
+| Floor 10 | `amb_f10` | 6 to 20 | 2.36 | a frog |
+| Floor 10 | `amb_f10_bog` | 12 to 30 | 1.16 | the bog bubbling |
+| Floor 14 | `amb_f14` | 16 to 40 | 1.28 | the ward creaking |
+
+What changes:
+- **The hearth is gone from the hall and the camp.** `AMBIENT.hall` (`amb_hall`) and `AMBIENT.camp` (`amb_camp`) come out, and their files can go.
+- **`breeze`** is in their place: `AMBIENT.hall = { name: 'breeze', from: 13, to: 30, vol: 0.9 }` (castle hall, not the Rim) and `AMBIENT.camp` the same.
+  - It has three takes, `breeze_1` to `breeze_3`: with the fourteenth batch's `takesOf`, `takesOf('breeze')` is 3. Without it, use `_1` and `_2`.
+  - The three takes are each a whole gust, 4.7 to 5.6 s: it rises over about 2 s and dies away over 3 or 4, as soft air.
+  - They are cut from the hall's breeze he said yes to: three gusts a minute, with the hall still in between. The takes are MP3, 48 kHz mono, 128 kbps.
+- **`fire_pop`:** every 10 to 25 s, and only within 2.5 tiles of a brazier (full within 1). It was 3 to 9 s and 1.5 to 7 tiles. Change both `AMBIENT.fire` and the reach in `ambientWants`.
+- **The floors' sounds and `OWL_HOOT`** come half as often, as in the fourteenth batch: `OWL_HOOT = { from: 40, to: 80 }`.
+- `ambientWants` adds a floor's own sounds “wherever the floor's own loop plays, as loopWants's bedOf”. Keep that test as it is (`bedOf(d)`), now without the loop.
+- tests/steady_backgrounds.test.ts test 2 reads the eleventh batch's table. It should read this one, from `## Fifteenth batch`: 13 rows, the first two `breeze`.
+
+### Cost
+
+No credits. The breeze is cut from the Shaft's Rim's draught, which we already had.

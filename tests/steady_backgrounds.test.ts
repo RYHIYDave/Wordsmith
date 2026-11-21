@@ -7,6 +7,9 @@
 //   2. each standout's times and loudness the batch's table's, to the figure;
 //   3. where each is heard: the castle hall's in the town (not the Rim), the camp's in the camp, the brazier's pop by its
 //      nearness, each floor's on its floor, two on floor 10, none on 5, 13 and 17.
+// SINCE THE FIFTEENTH BATCH (15 Nov 2026, his “The only constant sound I want in levels or towns is the music.  Everything else is
+// sound effects.”): no loop at all; the hall's and the camp's hearth gone, a breeze now and then in their place (three takes);
+// the times the fifteenth batch's table's.
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
 // @ts-ignore
@@ -16,7 +19,8 @@ import fs from 'node:fs';
 import { makeCamp } from '../src/game/camp';
 import { Game } from '../src/game/game';
 import { makeRim } from '../src/game/rim';
-import { AMBIENT, AMBIENT_FLOORS, ambientWants } from '../src/game/world_sounds';
+import { AMBIENT, AMBIENT_FLOORS, ambientWants, loopWants } from '../src/game/world_sounds';
+import { takesOf } from '../src/engine/audio';
 import type { Ambient } from '../src/game/world_sounds';
 // @ts-ignore - a tool of the build, plain JavaScript
 import { packOf } from '../tools/sound_packs.mjs';
@@ -35,18 +39,17 @@ function onFloor(depth: number, seed = 5): Game {
 }
 const names = (g: Game, hall = true): string[] => ambientWants(g, hall).map((w) => w.a.name);
 
-test('1. the steady loops in place, as long as before; the standouts two takes each, packed with their place', () => {
-  for (const l of LOOPS) {
-    const f = `${DIR}/${l}_loop.wav`;
-    assert.ok(fs.existsSync(f), f);
-    // (the same length as the loops they replace: the hall's, the camp's and the floors' 10 s, the fire's and the water's 8 s, at 32 kHz, 16-bit mono)
-    const want = l === 'fire_small' || l === 'water' ? 512078 : 640078;
-    assert.equal(fs.statSync(f).size, want, `${l}: as long as before`);
-  }
-  assert.equal(all.length, 13, 'thirteen standouts');
-  for (const a of all) for (const k of [1, 2]) assert.ok(fs.existsSync(`${DIR}/${a.name}_${k}.mp3`), `${a.name}_${k}.mp3`);
-  assert.equal(packOf('amb_hall'), 'town');
-  assert.equal(packOf('amb_camp'), 'town');
+test('1. no loop anywhere, their files gone; the sounds now and then each with its takes, packed with their place', () => {
+  for (const l of LOOPS) assert.ok(!fs.existsSync(`${DIR}/${l}_loop.wav`), `${l}: none now`);
+  const g = new Game('warrior', 3);
+  assert.deepEqual(loopWants(g, true), {}, 'the town: no loop');
+  g.level = makeCamp(11, true);
+  assert.deepEqual(loopWants(g, true), {}, 'the camp: none');
+  for (let d = 1; d <= 20; d++) assert.deepEqual(loopWants(onFloor(d), true), {}, `floor ${d}: none`);
+  assert.equal(all.length, 13, 'thirteen sounds now and then');
+  for (const a of all) for (let k = 1; k <= takesOf(a.name); k++) assert.ok(fs.existsSync(`${DIR}/${a.name}_${k}.mp3`), `${a.name}_${k}.mp3`);
+  assert.equal(takesOf('breeze'), 3, 'the breeze: three takes');
+  assert.equal(packOf('breeze'), 'town');
   assert.equal(packOf('fire_pop'), 'world');
   assert.equal(packOf('amb_f1'), 'scene-1');
   assert.equal(packOf('amb_f10_bog'), 'scene-2');
@@ -55,10 +58,11 @@ test('1. the steady loops in place, as long as before; the standouts two takes e
 
 test("2. each standout's times and loudness are the batch's table's", () => {
   const readme = fs.readFileSync(`${DIR}/README.md`, 'utf8');
-  const from = readme.indexOf('## Eleventh batch');
-  assert.ok(from >= 0, 'the eleventh batch in the README');
+  const from = readme.indexOf('## Fifteenth batch');
+  assert.ok(from >= 0, 'the fifteenth batch in the README');
   const rows = [...readme.slice(from).matchAll(/^\| [^|\n]+ \| `([a-z0-9_]+)` \| (\d+) to (\d+) \| ([\d.]+)/gm)];
   assert.equal(rows.length, 13, 'thirteen rows');
+  assert.deepEqual([rows[0][1], rows[1][1]], ['breeze', 'breeze'], 'the hall\'s and the camp\'s: the breeze');
   for (const r of rows) {
     const a = all.find((q) => q.name === r[1]);
     if (!a) throw new Error(`${r[1]}: not played`);
@@ -68,12 +72,14 @@ test("2. each standout's times and loudness are the batch's table's", () => {
 
 test('3. where each is heard: the hall in town (not the Rim), the camp, a brazier by nearness, each floor its own', () => {
   const g = new Game('warrior', 3);
-  assert.ok(names(g).includes('amb_hall'), 'the castle hall');
-  assert.ok(!names(g, false).includes('amb_hall'), 'no hall, none of its');
+  assert.ok(names(g).includes('breeze'), 'the castle hall');
+  assert.ok(!names(g).includes('amb_hall'), 'its hearth gone');
+  assert.ok(!names(g, false).includes('breeze'), 'no hall, none of its');
   g.level = makeRim(11, true);
-  assert.ok(!names(g).includes('amb_hall'), 'the Rim: none');
+  assert.ok(!names(g).includes('breeze'), 'the Rim: none');
   g.level = makeCamp(11, true);
-  assert.ok(names(g).includes('amb_camp'), 'the camp');
+  assert.ok(names(g).includes('breeze'), 'the camp');
+  assert.ok(!names(g).includes('amb_camp'), 'its hearth gone');
   for (let d = 1; d <= 20; d++) {
     const own = names(onFloor(d)).filter((n) => n.startsWith('amb_'));
     const want = (AMBIENT_FLOORS[d] ?? []).map((a) => a.name);

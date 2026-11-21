@@ -22,7 +22,7 @@ import { CRANK_TIMES } from '../src/game/quests15';
 import { CRANK_SOUND, MOMENT_SOUND, PORT_SOUND_LEAD, SCENE_SOUNDS, SINGING, TRAP_SOUND, bedOf, momentSound, sceneAct, sceneSoundsOf, trapSound } from '../src/game/scene_sounds';
 import type { GameEvent, Level, PropInst } from '../src/game/state';
 import { SHAFT } from '../src/game/ways';
-import { loopWants } from '../src/game/world_sounds';
+import { WORLD_LOOPS, loopWants } from '../src/game/world_sounds';
 // @ts-ignore - a tool of the build, plain JavaScript
 import { packOf } from '../tools/sound_packs.mjs';
 
@@ -50,8 +50,8 @@ test('the batch: every one-shot the floors play has its two takes, every loop it
   for (const d of FLOORS) for (const n of sceneSoundsOf(d)) names.add(n);
   assert.equal(names.size, 41, `${names.size} names (82 files, two takes each)`);
   for (const n of names) for (const t of [1, 2]) assert.ok(has(`${n}_${t}.mp3`), `${n}_${t}.mp3`);
-  for (const d of FLOORS) assert.ok(has(`${bedOf(d)}_loop.wav`), `floor ${d}'s background`);
-  assert.ok(has('furnace_loop.wav') && has('pillar_fire_loop.wav'), 'the furnace and the pillars');
+  // (the floors' backgrounds, the furnace's and the pillars' loops: gone with the fifteenth batch, no constant sound but the music)
+  for (const d of FLOORS) assert.ok(!has(`${bedOf(d)}_loop.wav`), `floor ${d}'s background: none now`);
   assert.equal(bedOf(0), null);
   assert.equal(bedOf(21), null);
   // (the README's own list, by its file names: each is one the game asks for)
@@ -126,6 +126,11 @@ test('the moments\' sounds are in the art\'s order: the piece each plays at is t
 });
 
 test('a floor\'s background goes round at full volume on its floor, and not in town; the furnace is heard near it while it burns', () => {
+  // (NO CONSTANT SOUND BUT THE MUSIC, the fifteenth batch: no loops at all; the rules kept, were they on again)
+  assert.equal(WORLD_LOOPS.on, false, 'off, at his word');
+  assert.deepEqual(loopWants(onFloor(3), false), {}, 'floor 3: no loop');
+  WORLD_LOOPS.on = true;
+  try {
   const g = onFloor(3);
   const want = loopWants(g, false);
   assert.equal(want.bed_f3, 1, 'floor 3\'s background');
@@ -142,6 +147,9 @@ test('a floor\'s background goes round at full volume on its floor, and not in t
   const t = new Game('warrior', 5);
   assert.equal(t.level.town, true);
   assert.equal(Object.keys(loopWants(t, false)).some((k) => k.startsWith('bed_f')), false, 'none in town');
+  } finally {
+    WORLD_LOOPS.on = false;
+  }
 });
 
 test('the strongholds: a word set into the altar and the seal burning away are heard by their own sounds', () => {
