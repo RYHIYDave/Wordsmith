@@ -586,12 +586,15 @@ through them in their own opening pictures.
   Quiet Tower and singing in the Moth's fight), the whole court, the captain's voice. In the saved game. `--only=quests1620`
   (`check_quest1620.gd`): 21 steps.
 
-## The shadows under the figures (the cloud chat, 21 Nov 2026)
+## The shadows under the figures, and the named ones' rings (the cloud chat, 21 Nov 2026)
 
 `scripts/shadows.gd`, as the game's render.ts `shadow`: one soft black oval (mage_look.gd `blot`) on the floor under every
 monster in sight (its `r` x 0.75 tiles round, at 0.7) and under the hero (0.36 round), smaller and fainter the higher he is off
 the floor (the Warrior's Lunge, 9 pixels at its middle; the Veteran as high as his frame lifts him, brawler.gd `lift_now`). Over
-the floor and its marks, under everything that stands. (The Golem's and the Mage's orbs' are their own looks'.)
+the floor and its marks, under everything that stands. (The Golem's and the Mage's orbs' are their own looks'.) And with
+them the ring of single dots round the feet of a named one (an elite, each of a blue pack, a boss: render.ts ringDots), m.r x
+1.5 round and breathing, in its first word's colour (orange with none). (The game's pack marks are behind a switch that is off;
+the ring round the one locked onto is the touch screen's.)
 
 ## The other heroes (the cloud chat, 21 Nov 2026)
 
