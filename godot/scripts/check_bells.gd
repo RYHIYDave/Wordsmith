@@ -135,6 +135,9 @@ func _rung() -> void:
 	var left0: int = B.left
 	var tough_ok := true
 	var knocked := true
+	var won_said := ""
+	var clap := 0
+	var lying := 0
 	for i in nb:
 		var b: Dictionary = plan["bells"][i]
 		var at := Vector2(b["x"], b["y"])
@@ -156,6 +159,11 @@ func _rung() -> void:
 			await _snap("before_the_first_bell")
 		B.struck(at, 1.0)
 		await _run(0.2)
+		# (the moment it is won, before he picks anything up: the clapper lying, the line said)
+		if i == nb - 1:
+			won_said = _said("Every bell peals at once")
+			clap = M.quest1115._things.filter(func(t): return t["what"] == "clapper").size()
+			lying = M.loot._drops.size()
 		if near != null and i < nb - 1 and is_instance_valid(near) and not near.dead:
 			knocked = knocked and near.world.distance_to(at) > was + 0.5
 		if i < nb - 1:
@@ -173,16 +181,14 @@ func _rung() -> void:
 				m.world = M._spot_near(h.world, 6.0, m.world)
 	_line(tough_ok, "each bell but the last calls a tough one, a yellow pack's leader of the floor's guard kind, tougher each time, with what comes with it (%s)" % [str(B.D["tough"].map(func(g): return "%s %d + %d" % [g[0]["name"], int(g[0]["maxLife"]), g.size() - 1]))])
 	_line(knocked, "the ring knocks back what is near the bell")
-	var lying: int = M.loot._drops.size()
 	var risen_alive := 0
 	await _run(0.3)
 	for m in M._monsters.list:
 		if is_instance_valid(m) and not m.dead and m.state != "dead":
 			risen_alive += 1
 	await _snap("every_bell_peals")
-	var clap: int = M.quest1115._things.filter(func(t): return t["what"] == "clapper").size()
-	_line(B.phase == "won" and lying >= nb + 1 and risen_alive == 0 and clap == 1 and _said("Every bell peals at once") != "",
-		"all %d rung in time: won (%s), the Hush shattered with all it raised (%d left up), the loot burst out of the last bell (%d things lying), the clapper with it (%d); '%s'" % [nb, B.phase, risen_alive, lying, clap, _said("Every bell peals")])
+	_line(B.phase == "won" and lying >= nb + 1 and risen_alive == 0 and clap == 1 and won_said != "",
+		"all %d rung in time: won (%s), the Hush shattered with all it raised (%d left up), the loot burst out of the last bell (%d things lying), the clapper with it (%d); '%s'" % [nb, B.phase, risen_alive, lying, clap, won_said])
 	await _run(4.3)
 	await _snap("hanging_still")
 	_line(B.states.all(func(s): return s == 3) and B.muffled == 3, "four seconds on, the bells ring out and hang still (%s, the Muffled Bell %d)" % [B.states, B.muffled])

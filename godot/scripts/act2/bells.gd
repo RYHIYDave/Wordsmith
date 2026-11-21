@@ -255,8 +255,8 @@ func _won(last: Vector2) -> void:
 		states[i] = 2
 	for m in ids:
 		if is_instance_valid(m) and not m.dead:
-			# (its life and shield over many times: no armour or resistance of its own keeps it up)
-			m.damage((m.life + m.shield) * 100.0 + 1000.0, "phys", false, false, [], false, false, -1)
+			# (its life and shield and one more, as the game's: what its armour keeps off it, below)
+			m.damage(m.life + m.shield + 1.0, "phys", false, false, [], false, false, -1)
 			# (one that nothing reaches just now, a pool of ink or one rising: it goes down all the same)
 			if is_instance_valid(m) and not m.dead:
 				m._die()
