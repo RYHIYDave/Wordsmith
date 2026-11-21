@@ -62,6 +62,8 @@ var over_pic := false
 var note := ""
 ## (asked before a hero picked makes ready: false, not yet: title.gd, a saved hero's warning)
 var gate := Callable()
+## (a test hero's cards, the level select's: no mode, a test hero is Normal; main.ts `mode: ... !titleUi.practice`)
+var no_mode := false
 
 
 func _ready() -> void:
@@ -242,7 +244,7 @@ func _layout() -> Dictionary:
 	var voice_x := W - 4.0  # (VOICE_TOGGLE off: no voice button; its place the screen's edge)
 	var beside := back_w + mode_w + 0.0 + 24.0 + confirm_w + 12.0 <= W
 	var mode_r := Rect2(back.position.x + back_w + 6.0, Hh - 22, mode_w, 18) if beside else Rect2(floorf((W - mode_w) / 2.0), Hh - 44, mode_w, 18)
-	var lo := mode_r.end.x + 6.0 if beside else back.position.x + back_w + 6.0
+	var lo := mode_r.end.x + 6.0 if beside and not no_mode else back.position.x + back_w + 6.0
 	var hi := voice_x - 6.0
 	var cx := maxf(lo, minf(hi - confirm_w, floorf((W - confirm_w) / 2.0)))
 	return {"cards": cards, "cw": cw, "ch": ch, "rows": rows, "gap": gap, "y0": y0, "end": y0 + rows * ch + gap * (rows - 1), "mode": mode_r, "confirm": Rect2(cx, Hh - 22, confirm_w, 18), "back": back}
@@ -348,7 +350,7 @@ func _process(dt: float) -> void:
 					_click()
 				p = null
 				break
-	if p != null and entering.is_empty() and L["mode"].has_point(p):
+	if p != null and entering.is_empty() and not no_mode and L["mode"].has_point(p):
 		mode = "normal" if mode == "hardcore" else "hardcore"
 		_click()
 		p = null
@@ -524,8 +526,9 @@ func _draw_front() -> void:
 	_button(ci, L["back"], "BACK")
 	_button(ci, L["confirm"], "CONFIRM", {"primary": true, "lit": true} if chosen != "" and entering.is_empty() else {"disabled": true})
 	var mr: Rect2 = L["mode"]
-	_button(ci, mr, "MODE: HARDCORE" if mode == "hardcore" else "MODE: NORMAL", {"color": T["bad"]} if mode == "hardcore" else {})
-	for part in ([] if note != "" else PF.wrap(str(K["modeLine"][mode]), W - 16.0, "small")):
+	if not no_mode:
+		_button(ci, mr, "MODE: HARDCORE" if mode == "hardcore" else "MODE: NORMAL", {"color": T["bad"]} if mode == "hardcore" else {})
+	for part in ([] if note != "" or no_mode else PF.wrap(str(K["modeLine"][mode]), W - 16.0, "small")):
 		if hy + 6.0 > mr.position.y - 2.0:
 			break
 		_text(ci, part, floorf(W / 2.0), hy, T["bad"] if mode == "hardcore" else T["dim"], {"align": "center", "font": "small"})

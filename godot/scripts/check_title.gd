@@ -12,6 +12,11 @@
 ## Ranger made and saved; started again, CONTINUE offered for him; a Mage picked over him, warned, picked again: the game begins
 ## again from its save with the Mage in town, warping in, the Ranger gone; started again, CONTINUE carries the Mage on. Then the
 ## save is deleted, as the check's own.
+## THE LEVEL SELECT (--only=trial, in four runs of the game as it begins again): OPTIONS, LEVEL SELECT: the floors' page, a row
+## for each part of the way down; floor 6 pressed: the class cards with no mode, their BACK back to the floors; floor 6 again, the
+## Ranger: the game begun again with a test hero on floor 6, the game's own (level, gear, words: assets/loot/trials.json), told so,
+## never saved; fallen, he wakes in town a test hero still, from what was kept in memory; the pause panel's "Leave": the game begun
+## again with no test hero.
 ## A line a thing; then the sum, TITLE.
 extends RefCounted
 
@@ -257,3 +262,76 @@ func live(main, hero, d: String) -> void:
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(Save.PATH))
 			print("TITLE LIVE: done")
 			M.get_tree().quit()
+
+
+## THE LEVEL SELECT, as it is played: the game begun again between the steps.
+func trial_run(main, hero, d: String) -> void:
+	M = main
+	h = hero
+	dir = d
+	shot = 20 + stage * 2
+	n = 40 + stage * 10
+	await _frames(10)
+	match stage:
+		0:
+			var ts = M.title_up(M.place)
+			ts.pointer = Vector2(-50, -50)
+			await _frames(3)
+			await _press(ts, "options")
+			await _press(ts, "floors")
+			await _frames(2)
+			await _snap("level_select")
+			var L: Dictionary = ts._floors_layout()
+			_line(ts.page == "floors" and (L["floors"] as Array).size() == ts._last_floor() and (L["heads"] as Array).size() == 4,
+				"OPTIONS, LEVEL SELECT: the floors' page, %d floors in %d rows (%s)" % [(L["floors"] as Array).size(), (L["heads"] as Array).size(), ", ".join((L["heads"] as Array).map(func(x): return x[0]))])
+			var six: Vector2 = (L["floors"][5][1] as Rect2).get_center()
+			ts.press_at(six)
+			await M._wait(0.4)
+			await _snap("test_hero_cards")
+			var cc = ts.cards
+			_line(cc != null and cc.no_mode and ts.trial == 6, "floor 6 pressed: the class cards for a test hero there, with no mode")
+			cc.press_at((cc._layout()["back"] as Rect2).get_center())
+			await _frames(3)
+			_line(ts.cards == null and ts.page == "floors", "their BACK: the floors again")
+			ts.press_at(six)
+			await M._wait(0.3)
+			cc = ts.cards
+			cc.press_at(_card(cc, "ranger"))
+			await _frames(3)
+			stage = 1
+			cc.press_at(_confirm(cc))
+			# (he makes ready and warps away; the game begins again with him)
+		1:
+			await M._wait(0.6)
+			await _snap("test_hero_floor6")
+			var T: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/loot/trials.json"))["trials"]["ranger"]["6"]
+			var worn: int = M.loot.gear.values().filter(func(it): return it is Dictionary).size()
+			var said: bool = M.loot.msgs.any(func(m): return str(m["text"]).begins_with("Test hero, level %d. Not saved." % int(T["level"])))
+			_line(M.trial == 6 and M.place == "floor6" and M.hero.cls == "ranger" and M.loot.level == int(T["level"]) and worn == 10 and M.loot.ring_lit and not M.saving and said,
+				"the game begun again with a test hero on floor 6: a Ranger, level %d, %d pieces worn, the ring lit, %d words in his pouch; told so; not saved (%s)" % [M.loot.level, worn, M.loot.words.size(), not M.saving])
+			M.hero.life = 0.0
+			M.hero._fall()
+			var t := 0.0
+			while t < 4.0 and M._mini.open != "death":
+				await M.get_tree().process_frame
+				t += 1.0 / 60.0
+			_line(M._mini.open == "death" and M.death_info()["title"] == "YOU FELL" and not M.trial_file.is_empty(), "fallen: YOU FELL; as he will wake kept in memory, not in the save")
+			stage = 2
+			M._mini._press("death")
+		2:
+			await M._wait(0.6)
+			await _snap("test_hero_woke")
+			_line(M.trial == 6 and M.is_home(M.place) and M.hero.alive and M.hero.cls == "ranger" and M._title == null and not M.saving,
+				"he wakes in %s, a test hero still (floor %d), never saved" % [M.place, M.trial])
+			M._mini.show_panel("pause")
+			await _frames(3)
+			await _snap("test_hero_pause")
+			var quit: Array = M._mini._hits.filter(func(x): return x[1] == "quit")
+			_line(not quit.is_empty(), "paused: its third button, \"Leave\"")
+			stage = 3
+			M._mini._press("quit")
+		3:
+			_line(M.trial == 0 and M.trial_file.is_empty(), "Leave: the game begun again, no test hero")
+			print("TITLE TRIAL: done")
+			M.get_tree().quit()
+

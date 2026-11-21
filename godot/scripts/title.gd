@@ -7,7 +7,12 @@
 ## over it ("Warrior, level 3, dungeon 2", and ", Hardcore"); NEW GAME; LEXICON; OPTIONS. The one to press is the pink one,
 ## blinking: CONTINUE where there is a hero to go on with, else NEW GAME. Enter continues a saved hero.
 ##   OPTIONS: SOUND: ON or OFF; PROMPTS: ON or OFF (the first dungeon's prompts: whether a new hero is shown how to play; loot.gd
-## `taught`, kept with the Lexicon); BACK (Escape too). The picture put back a little behind them, in three thin steps.
+## `taught`, kept with the Lexicon); LEVEL SELECT; BACK (Escape too). The picture put back a little behind them, in three thin
+## steps.
+##   THE LEVEL SELECT (ui/panels.ts drawFloors; defs.ts LEVEL_SELECT, his: “Test hero, any floor (Recommended)”): over the picture put
+## back into the dark, "Level select: choose a floor", "A test hero, levelled and geared for the floor. Not saved.", and the floors
+## five to a row, each row a part of the way down with its name over it; a floor pressed opens the class cards for a test hero
+## there (no mode: a test hero is Normal), their BACK back to the floors; BACK (Escape) to the options.
 ##   NEW GAME: the class cards (class_cards.gd) over the picture put back into the dark; their BACK, or Escape, back to the menu. A
 ## hero saved, CONFIRM first warns that the saved hero will be lost, and starts over only pressed again within 5 s (main.ts
 ## pickClass `confirm`).
@@ -44,6 +49,10 @@ var saved_cls := ""
 var mode := "normal"
 ## (a hero saved: CONFIRM pressed once, for whom and when: main.ts confirm)
 var confirm := {}
+## THE LEVEL SELECT: the floor a test hero is picked for (0: none)
+var trial := 0
+## (ui/panels.ts FLOOR_ROWS: the floors' rows, each a part of the way down; as many floors as are built)
+const FLOOR_ROWS := [["THE PRISON", 1, 5], ["DOWN THE MOUNTAIN", 6, 10], ["THE CITY OF VELLUM", 11, 15], ["THE HIGH CITY", 16, 20]]
 var lex_open := false
 var lx_tab := -1
 var lx_sel := ""
@@ -136,6 +145,9 @@ func _unhandled_key_input(e: InputEvent) -> void:
 	if k == KEY_ESCAPE and page == "options":
 		page = "menu"
 		get_viewport().set_input_as_handled()
+	elif k == KEY_ESCAPE and page == "floors":
+		page = "options"
+		get_viewport().set_input_as_handled()
 	elif (k == KEY_ENTER or k == KEY_KP_ENTER) and page == "menu" and resume != "":
 		_click()
 		resumed.emit()
@@ -150,6 +162,7 @@ func _items() -> Array:
 		return [
 			["mute", "SOUND: OFF" if AudioServer.is_bus_mute(0) else "SOUND: ON", "", false, false],
 			["guide", "PROMPTS: OFF" if main != null and main.loot.taught else "PROMPTS: ON", "", false, false],
+			["floors", "LEVEL SELECT", "", false, false],
 			["back", "BACK", "", false, false],
 		]
 	var out: Array = []
@@ -168,7 +181,7 @@ func layout() -> Dictionary:
 	var Hh := _H()
 	var R: Dictionary = K["ring"]
 	var menu_page := page == "menu"
-	var count := _items().size() if page != "class" else 4
+	var count := _items().size() if page in ["menu", "options"] else 4
 	var wide := W >= 400.0 or W >= Hh * 1.3
 	var gap := 4.0
 	var bh := 22.0 if wide else 24.0
@@ -223,6 +236,8 @@ func _process(dt: float) -> void:
 	if p != null and cards == null:
 		if lex_open:
 			_lex_press(p)
+		elif page == "floors":
+			_floors_press(p)
 		else:
 			var items := _items()
 			for i in items.size():
@@ -245,6 +260,8 @@ func _pressed(id: String) -> void:
 			open_lexicon()
 		"options":
 			page = "options"
+		"floors":
+			page = "floors"
 		"back":
 			page = "menu"
 		"mute":
@@ -260,15 +277,17 @@ func _class_name(c: String) -> String:
 	return str(K["classes"][c]["name"]) if K["classes"].has(c) else c.capitalize()
 
 
-## NEW GAME: the class cards, over the picture put back into the dark.
-func open_cards() -> void:
+## NEW GAME: the class cards, over the picture put back into the dark. (`floor`: a test hero's, for the level select)
+func open_cards(floor := 0) -> void:
 	page = "class"
+	trial = floor
 	confirm = {}
 	cards = Cards.new()
 	cards.main = main
 	cards.sfx = sfx
 	cards.over_pic = true
 	cards.mode = mode
+	cards.no_mode = trial > 0
 	cards.gate = _gate
 	if pointer != null:
 		cards.pointer = pointer
@@ -284,13 +303,14 @@ func _cards_back() -> void:
 	mode = cards.mode
 	cards.queue_free()
 	cards = null
-	page = "menu"
+	page = "floors" if trial > 0 else "menu"
+	trial = 0
 	confirm = {}
 
 
 ## (main.ts pickClass: a hero saved, the first CONFIRM only warns; pressed again within 5 s, the new hero begins)
 func _gate(cls: String) -> bool:
-	if saved_cls != "" and not (not confirm.is_empty() and confirm["cls"] == cls and t - float(confirm["t"]) < 5.0):
+	if trial == 0 and saved_cls != "" and not (not confirm.is_empty() and confirm["cls"] == cls and t - float(confirm["t"]) < 5.0):
 		confirm = {"cls": cls, "t": t}
 		_click()
 		return false
@@ -355,6 +375,9 @@ func _draw_flash() -> void:
 func _draw_front() -> void:
 	if page == "class":
 		return
+	if page == "floors":
+		_draw_floors()
+		return
 	var ci := _front
 	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))
 	var W := _W()
@@ -380,6 +403,84 @@ func _draw_front() -> void:
 		if sub != "" and page == "menu" and sw <= W - 8.0:
 			var sx := maxf(4.0 + ceilf(sw / 2.0), minf(W - 4.0 - ceilf(sw / 2.0), r.position.x + floorf(r.size.x / 2.0)))
 			_text(ci, sub, sx, r.position.y - 8.0, T["text"], {"align": "center", "font": "small", "shadow": P["black"]})
+
+
+# --- THE LEVEL SELECT'S PAGE (ui/panels.ts drawFloors) -------------------------------------------------------------------------
+
+func _last_floor() -> int:
+	var n := 1
+	while n < 20 and main != null and main.has_floor(n + 1):
+		n += 1
+	return n
+
+
+## Where the floors' page puts things: the lines over them, each row's name and its floors' buttons, BACK.
+func _floors_layout() -> Dictionary:
+	var W := _W()
+	var Hh := _H()
+	var big := 3 if W >= 380.0 else 2
+	var y := 6.0 + 9.0 * big + 1.0
+	var pitch := "Level select: choose a floor"
+	var head_y := y
+	y += 11.0
+	var lines := PF.wrap("A test hero, levelled and geared for the floor. Not saved.", W - 16.0, "small")
+	var lines_y := y
+	y += 7.0 * lines.size() + 6.0
+	var last := _last_floor()
+	var rows: Array = FLOOR_ROWS.filter(func(r): return int(r[1]) <= last)
+	var per := 5
+	var gap := 4.0
+	var head_h := 9.0
+	var row_gap := 7.0
+	var room := Hh - 28.0 - y
+	var bh := maxf(16.0, minf(32.0, floorf((room - rows.size() * head_h - (rows.size() - 1) * row_gap) / rows.size())))
+	var bw := maxf(18.0, minf(52.0, floorf((W - 16.0 - (per - 1) * gap) / per)))
+	var x0 := floorf((W - per * bw - (per - 1) * gap) / 2.0)
+	y += maxf(0.0, floorf((room - rows.size() * (head_h + bh) - (rows.size() - 1) * row_gap) / 2.0))
+	var heads: Array = []
+	var floors: Array = []
+	for r in rows:
+		heads.append(["%s  %d-%d" % [r[0], r[1], mini(int(r[2]), last)], y])
+		y += head_h
+		for d in range(int(r[1]), mini(int(r[2]), last) + 1):
+			floors.append([d, Rect2(x0 + (d - int(r[1])) * (bw + gap), y, bw, bh)])
+		y += bh + row_gap
+	return {"big": big, "pitch": pitch, "headY": head_y, "lines": lines, "linesY": lines_y, "heads": heads, "floors": floors,
+		"back": Rect2(4, Hh - 22, PF.width("BACK") + 20.0, 18)}
+
+
+func _floors_press(p: Vector2) -> void:
+	var L := _floors_layout()
+	if (L["back"] as Rect2).has_point(p):
+		_click()
+		page = "options"
+		return
+	for f in L["floors"]:
+		if (f[1] as Rect2).has_point(p):
+			_click()
+			open_cards(int(f[0]))
+			return
+
+
+func _draw_floors() -> void:
+	var ci := _front
+	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))
+	var W := _W()
+	var Hh := _H()
+	var L := _floors_layout()
+	# (over the picture put back into the dark, as the class cards are)
+	_rect(ci, 0, 0, W, Hh, Color(Color(K["smithNight"]), 0.74))
+	_text(ci, str(K["title"]), floorf(W / 2.0), 6, T["text"], {"align": "center", "scale": L["big"], "shadow": T["call"]})
+	_text(ci, L["pitch"], floorf(W / 2.0), L["headY"], T["accent"], {"align": "center", "font": "normal" if PF.width(L["pitch"]) <= W - 8.0 else "small"})
+	var y: float = L["linesY"]
+	for line in L["lines"]:
+		_text(ci, line, floorf(W / 2.0), y, T["dim"], {"align": "center", "font": "small"})
+		y += 7.0
+	for h in L["heads"]:
+		_text(ci, h[0], floorf(W / 2.0), h[1], T["text"], {"align": "center", "font": "small"})
+	for f in L["floors"]:
+		_button(ci, f[1], str(f[0]))
+	_button(ci, L["back"], "BACK")
 
 
 # --- THE LEXICON (ui/lexicon.ts drawLexicon) --------------------------------------------------------------------------------

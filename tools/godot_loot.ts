@@ -375,6 +375,31 @@ for (let lv = 1; lv <= 25; lv++) {
     },
   }));
 }
+// THE START SCREEN'S TEST HEROES (godot/assets/loot/trials.json; main.gd's level select and practice room):
+//   THE LEVEL SELECT (game.ts forTrial, readyFor): for each class and each floor from the second, the test hero the game makes
+//     for it: the level a hero comes there at (LEVEL_SELECT.level), those levels' points spent (two of every three on his class's
+//     own attribute), the wordsmith's ring lit, a full set of magic gear of the floor's item level, and in the pouch every word
+//     that can be found down to that floor, with the made words, six of each. (On floor 1, a new hero as any.)
+//   THE PRACTICE ROOM (game.ts forPractice, beginPractice): for each class, its seasoned throwaway: level 10, the ring lit, its
+//     attributes raised, a full set of magic gear, one of every other weapon (and a piece for the other hand) in the bag, and
+//     six of every word.
+const heroOf = (g: Game): Record<string, unknown> => {
+  const h = g.hero;
+  const gear: Record<string, unknown> = {};
+  for (const [slot, it] of Object.entries(h.gear)) gear[slot] = it ? plain(it as Item) : null;
+  return {
+    level: h.level, attrs: { ...h.attrs }, gear, bag: h.bag.map((it) => (it ? plain(it) : null)),
+    words: Object.fromEntries(Object.entries(h.words).filter(([, n]) => (n as number) > 0)),
+  };
+};
+const trials: Record<string, Record<string, unknown>> = {};
+const practice: Record<string, unknown> = {};
+for (const c of Object.keys(CLASSES) as ClassId[]) {
+  trials[c] = {};
+  for (let d = 2; d <= Game.trialFloors(); d++) trials[c][String(d)] = heroOf(Game.forTrial(c, seed, d));
+  practice[c] = heroOf(Game.forPractice(c, seed));
+}
+tally.push(`test heroes: ${Object.keys(trials).length} classes, floors 2 to ${Game.trialFloors()}; practice heroes: ${Object.keys(practice).length}`);
 const body = game.level.body;
 // (what each word becomes on each kind of piece: once every piece that is written has been seen)
 const imbue: Record<string, Record<string, unknown[]>> = {};
@@ -455,6 +480,7 @@ const warriorArms = Object.fromEntries(armsKinds.map((w) => {
   for (const r of [0, 1, 2] as Rarity[]) if (!pics.has(`${tiers[0].icon}:${r}`)) pics.set(`${tiers[0].icon}:${r}`, itemPic(icons, tiers[0].icon, r));
   return [w, { kind: kindName({ weapon: w, offhand: null, slot: 'mainhand' } as unknown as Item), names: tiers.map((b) => b.name), icon: tiers[0].icon }];
 }));
+writeFileSync(`${OUT}/trials.json`, JSON.stringify({ trials, practice }));
 writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, fullRares, value: VALUE, starter, starters, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble, royal, warriorArms }));
 tally.push(`words on gear: ${[...OURS, ...MADE].join(', ')} on ${kinds.size} kinds of piece by level, ${sizes} sizes in all`);
 

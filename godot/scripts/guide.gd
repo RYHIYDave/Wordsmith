@@ -65,8 +65,10 @@ func banner(seen := true) -> Dictionary:
 	return {"caption": "QUEST", "text": "%s the %s" % ["Return to" if _speak["back"] else "Speak to", who.to_upper()], "sub": where}
 
 
-## The first dungeon's own prompts.
+## The first dungeon's own prompts. (None for a test hero: the game's forTrial makes its Game without a guide.)
 func _lesson() -> Dictionary:
+	if int(main.get("trial")) > 0:
+		return {}
 	var hero = main.hero
 	var loot = main.loot
 	var town: bool = main.is_home(main.place)

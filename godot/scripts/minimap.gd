@@ -145,6 +145,9 @@ func _press(what: String) -> void:
 			main.death_done()
 		"sound":
 			AudioServer.set_bus_mute(0, not AudioServer.is_bus_mute(0))
+		"quit":
+			open = ""
+			main.end_run()
 
 
 # --- the game's drawing kit (ui/ui.ts), in game pixels, as hud.gd has it ---
@@ -177,14 +180,14 @@ func _text(s: String, x: float, y: float, c: Color, opts := {}) -> float:
 
 
 ## ui.ts drawButton: a pink block for the one thing to press, else a plain one (brighter under the pointer); its label.
-func _button(x: float, y: float, w: float, h: float, label: String, small := false, primary := false) -> void:
+func _button(x: float, y: float, w: float, h: float, label: String, small := false, primary := false, color = null) -> void:
 	var hot := Rect2(x, y, w, h).has_point(get_viewport().get_mouse_position() / 2.0)
 	if primary:
 		_box(x, y, w, h, T["callHi"] if hot else T["call"], P["white"] if hot else T["callHi"])
 	else:
 		_box(x, y, w, h, T["hot"] if hot else T["bg2"], T["accent"] if hot else T["edgeHi"])
 	var th := 5.0 if small else 8.0
-	_text(label, x + floorf(w / 2.0), y + floorf((h - th) / 2.0) + (0.0 if small else 1.0), P["white"] if primary else T["text"], {"align": "center", "font": "small" if small else "normal"})
+	_text(label, x + floorf(w / 2.0), y + floorf((h - th) / 2.0) + (0.0 if small else 1.0), P["white"] if primary else (color if color != null else T["text"]), {"align": "center", "font": "small" if small else "normal"})
 
 
 # --- the screen ---
@@ -481,7 +484,7 @@ func _pause(W: float, H: float) -> void:
 	var ph := minf(H - 6, 18 + HELP.size() * 7 + 8 + bh + 6)
 	var px := floorf((W - pw) / 2.0)
 	var py := maxf(3.0, floorf((H - ph) / 2.0))
-	var bw := floorf((pw - 14) / 2.0)
+	var bw := floorf((pw - 16) / 3.0)
 	var by := py + ph - bh - 5
 	_rect(0, 0, W, H, Color(P["black"], 0.6))
 	# (ui.ts panel: its shadow, its box, and a hair of light where its top edge catches the accent)
@@ -495,9 +498,11 @@ func _pause(W: float, H: float) -> void:
 		_text(r[0], tx, y, T["dim"], {"font": "small"})
 		_text(r[1], tx + key_w, y, T["text"], {"font": "small"})
 		y += 7
-	_hits = [[Rect2(px + 6, by, bw, bh), "resume"], [Rect2(px + 8 + bw, by, bw, bh), "sound"]]
+	_hits = [[Rect2(px + 6, by, bw, bh), "resume"], [Rect2(px + 8 + bw, by, bw, bh), "sound"], [Rect2(px + 10 + bw * 2, by, bw, bh), "quit"]]
 	_button(px + 6, by, bw, bh, "Resume", false, true)
 	_button(px + 8 + bw, by, bw, bh, "Sound off" if AudioServer.is_bus_mute(0) else "Sound on")
+	# (ui/panels.ts drawPause, its third: "End run" gives a hero of one's own up; a test hero's "Leave" leaves the save as it was)
+	_button(px + 10 + bw * 2, by, bw, bh, "Leave" if main.trial > 0 else "End run", false, false, T["bad"])
 
 
 ## (ui/panels.ts drawDeath) A FALLEN HERO'S SCREEN: YOU FELL (a Normal hero, who wakes in town) or YOU DIED (a Hardcore hero, lost),

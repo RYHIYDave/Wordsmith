@@ -117,8 +117,13 @@ var _cards: CanvasLayer = null
 var _title: CanvasLayer = null
 ## NORMAL OR HARDCORE for the next hero made: the class cards remember it (main.ts meta.mode), kept with the Lexicon
 var next_mode := "normal"
-## (A NEW HERO OVER A SAVED ONE: the game begun again from its save, the saved run dropped, with this hero, {cls, mode}; once)
+## (A NEW HERO OVER A SAVED ONE: the game begun again from its save, the saved run dropped, with this hero, {cls, mode}; once. A TEST
+## HERO, the level select's: {cls, trial: the floor})
 static var new_hero := {}
+## THE LEVEL SELECT'S TEST HERO (game.ts forTrial, trial): the floor he was made for (0: a hero of one's own). Never saved: a fall
+## wakes him in town from `trial_file`, kept in memory as the game began again, never from the save; his Lexicon and stash his own.
+var trial := 0
+static var trial_file := {}
 var hero_mode := "normal"
 ## NORMAL OR HARDCORE (game/modes.ts; game.ts die, wakes, wakeSave, losses; main.ts wake; ui/panels.ts drawDeath, wakeLine): his
 ## rulebook's “Every hero is made in one of two modes, picked at the start and kept for life.” A NORMAL hero who falls in a dungeon
@@ -306,11 +311,17 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
 	new_hero = {}
+	# (a test hero: never saved, and nothing of the save read; one fallen, woken from what was kept of him in memory)
+	var tf := trial_file.duplicate()
+	trial_file = {}
+	trial = int(fresh.get("trial", tf.get("trial", 0)))
+	if trial > 0:
+		saving = false
 	if saving and _arg("only") != "save_write" and not (_arg("only") == "fall_live" and preload("res://scripts/check_fall.gd").stage == 0) \
 			and not (_arg("only") == "title_live" and preload("res://scripts/check_title.gd").stage == 0):
 		var file := Save.read()
@@ -320,6 +331,21 @@ func _ready() -> void:
 			Save.restore_run(self, file["run"])
 			_restored = file["run"]
 			first = home_place()
+	if not tf.is_empty():
+		Save.restore_meta(self, tf["meta"])
+		if tf.get("run") is Dictionary:
+			Save.restore_run(self, tf["run"])
+			_restored = tf["run"]
+			first = home_place()
+	elif trial >= 2:
+		_restored = trial_run(str(fresh["cls"]), trial)
+		Save.restore_run(self, _restored)
+		first = "floor%d" % trial
+	elif trial == 1:
+		first = "floor1"
+	if trial > 0 and tf.is_empty():
+		# (a test hero is not taught: the game's forTrial has no lessons, its Game made without a guide)
+		loot.taught = true
 	# (HIS CLASS: the saved hero's, or for a check the one asked for (--cls=ranger); a new game's the Warrior until the hero choice)
 	var cls := _arg("cls")
 	# (a check of the Tinkerer's Golem in its new look, its switch left off: --look=wheel, heroes/tinkerer_look.gd WHEEL_LOOK)
@@ -345,7 +371,7 @@ func _ready() -> void:
 		Save.restore_bought(self, _restored)
 	# (NORMAL OR HARDCORE: fallen, he stays down and the screen says what comes of it; in a check of something else he is up again
 	# where he came in. Woken in town from a fall, the line of what it cost: main.ts wake)
-	hero.stays_down = saving or _arg("only") in ["fall", "fall_live"]
+	hero.stays_down = saving or trial > 0 or _arg("only") in ["fall", "fall_live"]
 	if wake_note != "":
 		loot.say(wake_note, hud.T.get("text", Color.WHITE) if hud != null and hud.T is Dictionary else Color.WHITE)
 		wake_note = ""
@@ -356,6 +382,9 @@ func _ready() -> void:
 		_warp_in()
 		if saving:
 			Save.write(self)
+		if trial > 0:
+			# (game.ts readyFor: what he is told)
+			loot.say("Test hero, level %d. Not saved. Your words are in the INVENTORY." % loot.level if trial >= 2 else "Test hero. Not saved.", Color("#7af8f0"))
 	elif saving and _arg("cls") == "" and _arg("only") in ["", "title_live"] and wake_note == "" and not woke:
 		title_up(first)
 	woke = false
@@ -384,7 +413,7 @@ func title_up(first: String) -> Node:
 	sfx.process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().paused = true
 	ts.resumed.connect(_resume)
-	ts.picked.connect(func(c: String, m: String) -> void: _title_picked(c, m, first))
+	ts.picked.connect(func(c: String, m: String) -> void: _title_picked(c, m, first, ts.trial))
 	return ts
 
 
@@ -405,7 +434,13 @@ func _resume() -> void:
 
 ## A new hero picked on the start screen's class cards (main.ts pickClass, newRun): with no hero saved, the run begins here; over a
 ## saved one, the save keeps the Lexicon and the stash and drops his run, and the game begins again from it with the new hero.
-func _title_picked(c: String, m: String, first: String) -> void:
+func _title_picked(c: String, m: String, first: String, floor := 0) -> void:
+	if floor > 0:
+		# (THE LEVEL SELECT: the game begun again with the test hero made ready for the floor picked, straight to it; never saved)
+		new_hero = {"cls": c, "trial": floor}
+		get_tree().paused = false
+		get_tree().reload_current_scene()
+		return
 	next_mode = m
 	if _restored.is_empty():
 		_title_down()
@@ -419,6 +454,28 @@ func _title_picked(c: String, m: String, first: String) -> void:
 	new_hero = {"cls": c, "mode": m}
 	if saving:
 		Save.write(self, null)
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
+
+## THE LEVEL SELECT'S TEST HERO for a class and a floor from the second (game.ts forTrial, readyFor: made by the game itself,
+## assets/loot/trials.json), as a run to be put back: his level, his points spent, the ring lit, his gear, every word down to the
+## floor in his pouch; the floors before it cleared, the way open to it.
+func trial_run(c: String, d: int) -> Dictionary:
+	var T: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/loot/trials.json"))["trials"]
+	var h: Dictionary = T.get(c, T["warrior"]).get(str(d), {})
+	return {"cls": c, "mode": "normal", "level": h.get("level", 1), "xp": 0, "points": 0, "attrs": h.get("attrs", {}), "gear": h.get("gear", {}),
+		"bag": [], "words": h.get("words", {}), "gold": 0, "depth": d, "cleared": d - 1, "way": d, "ring": true}
+
+
+## THE PAUSE PANEL'S THIRD BUTTON (main.ts: "End run", or for a test hero "Leave"): back to the start screen. A hero of one's own is
+## given up (main.ts clearSave: the run gone from the save, the Lexicon and the stash kept); a test hero leaves the save as it was.
+func end_run() -> void:
+	if saving and trial == 0:
+		Save.write(self, null)
+	trial_file = {}
+	new_hero = {}
+	wake_note = ""
 	get_tree().paused = false
 	get_tree().reload_current_scene()
 
@@ -2162,6 +2219,9 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE START SCREEN: check_title.gd; and the real way of it, a saved hero, CONTINUE, and a new hero over him: title_live)
 	if _arg("only") == "title_live":
 		await preload("res://scripts/check_title.gd").new().live(self, hero, dir)
+		return
+	if _arg("only") == "trial":
+		await preload("res://scripts/check_title.gd").new().trial_run(self, hero, dir)
 		return
 	if _arg("only") == "title":
 		await preload("res://scripts/check_title.gd").new().run(self, hero, dir)
@@ -6442,6 +6502,9 @@ func _fallen(dt: float) -> void:
 		if saving:
 			var run = wake_save() if w else null
 			Save.write(self, run)
+		elif trial > 0:
+			# (a test hero: as he will wake, kept in memory, not in the save: game.ts wake, `g.trial`)
+			trial_file = {"trial": trial, "run": wake_save() if w else null, "meta": Save.meta_of(self)}
 		return
 	if _mini == null or _mini.open == "death":
 		return
@@ -6474,7 +6537,7 @@ func death_done() -> void:
 	if not fall_lost.is_empty():
 		wake_note = ("You wake in town. " + wake_line(fall_lost, fall_depth)).strip_edges()
 	get_tree().paused = false
-	if saving:
+	if saving or trial > 0:
 		get_tree().reload_current_scene()
 	else:
 		# (a check, saving nothing: he is up again where he came in, and the fall is over)
