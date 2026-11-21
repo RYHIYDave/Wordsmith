@@ -193,6 +193,8 @@ func _use_skill(i: int, at: Vector2) -> void:
 
 
 func _begin(i: int, at: Vector2, wind: float) -> void:
+	# (his voice, now and then, as he attacks: game.ts begin, engine/audio.ts heroVoice)
+	h.sfx.voice(h.cls, "attack")
 	var def := _def(i)
 	attack = {"skill": i, "age": 0.0, "wind": wind, "t": wind + float(def["follow"])}
 	_anim_t = 0.0
@@ -605,7 +607,7 @@ func picture(side: int) -> Array:
 ## How soon each of his moves is ready again, 0 to 1, by its place (the HUD: "whirl" the hold, "lunge" the dodge).
 func readiness() -> Dictionary:
 	var k := func(i: int) -> float: return 1.0 if charges[i] >= 1 else 1.0 - cd[i] / maxf(0.01, full[i])
-	return {"whirl": k.call(1), "lunge": k.call(2), "charges": charges[2]}
+	return {"whirl": k.call(1), "lunge": k.call(2), "charges": charges[2], "have": charges.duplicate(), "max": max_charges.duplicate()}
 
 
 ## A new place: what he sent and laid is gone with the old one.

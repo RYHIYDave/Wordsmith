@@ -281,6 +281,8 @@ func _draw() -> void:
 	var lunge_cover := clampf(1.0 - float(ready["lunge"]), 0.0, 1.0)
 	if lunge_cover > 0.0:
 		_rect(ex + 1, py + 1, ps - 2, ceilf((ps - 2) * lunge_cover), Color(P["black"], 0.72))
+	if ready.has("max") and int(ready["max"][2]) > 1:
+		_text(str(int(ready["have"][2])), ex + ps - 2, py + ps - 7, P["white"], {"align": "right", "font": "small", "shadow": ink})
 	_text("SPACE", ex + floorf(ps / 2.0), py - 7, T["accent"] if point == 2 else T["dim"], {"align": "center", "font": "small", "shadow": ink})
 	# (its name with its words, in the small letters over its button, once it has any)
 	var lunge_named: bool = not hero.loadout.fronts(2).is_empty() or not hero.loadout.behinds(2).is_empty()
@@ -339,6 +341,9 @@ func _draw() -> void:
 				var left := clampf(1.0 - hero._spun / float(skills[1]["channel"]), 0.0, 1.0)
 				_rect(r.position.x + 1, iy + 15, 18, 4, ink)
 				_rect(r.position.x + 2, iy + 16, roundf(16 * left), 2, T["accent"])
+		# (a move that holds more than one charge: how many it has now, small, in its picture's corner: hud.ts maxCharges)
+		if ready.has("max") and int(ready["max"][s]) > 1:
+			_text(str(int(ready["have"][s])), r.position.x + 18, iy + 13, P["white"], {"align": "right", "font": "small", "shadow": ink})
 		_draw_phrase(pieces[s], r.position.x + 20 + PAD, r.position.y, PH, pulse)
 		_text(keys[s], r.position.x + 1, r.position.y - 6, T["dim"], {"font": "small", "shadow": ink})
 		if asked:

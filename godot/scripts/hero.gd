@@ -1028,6 +1028,8 @@ func _process(dt: float) -> void:
 
 func _begin_strike() -> void:
 	_aim_at_foe()
+	# (his voice, now and then, as he attacks: game.ts begin, engine/audio.ts heroVoice)
+	sfx.voice(cls, "attack")
 	var combo := _clock - _last_swing <= 1.0 / rate() + STRIKE["combo"] and not _combo_next
 	_combo_next = combo
 	_last_swing = _clock
@@ -1081,6 +1083,7 @@ func channel() -> Dictionary:
 
 
 func _begin_whirl() -> void:
+	sfx.voice(cls, "attack")
 	_whirl_cd = float(loadout.r(1)["cooldown"])
 	_whirl_full = _whirl_cd
 	_bites = 0
@@ -1438,6 +1441,7 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	_tell({"t": "hit", "x": world.x, "y": world.y, "amount": dmg, "crit": false, "el": el, "onHero": true})
 	kick(minf(5.0, 1.0 + dmg / 8.0))
 	sfx.play("hurt", -6.0)
+	sfx.voice(cls, "hurt")
 	# LASTING and FLEETING, on a monster: its poison, burning and chill on him last longer, as hard a second; its poison and
 	# burning hurt him sooner, the same in all (a minion's, of its leader's words, at half)
 	var LA: Dictionary = Words.data()["lasting"]
@@ -1575,6 +1579,7 @@ func dots() -> void:
 func _fall() -> void:
 	life = 0.0
 	alive = false
+	sfx.voice(cls, "death")
 	_down_for = 0.0
 	_end_act()
 

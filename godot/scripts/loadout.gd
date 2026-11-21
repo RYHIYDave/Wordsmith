@@ -123,6 +123,11 @@ func any() -> bool:
 
 
 ## MOVE `i` WITH ITS WORDS (words.gd resolve; the game's Resolved), as his numbers stand; hushed, as if none were in it.
+## His move in place i, its id (game/defs.ts skillsFor: his class's three).
+func id(i: int) -> String:
+	return str(Words.data()["classes"][cls]["moves"][i])
+
+
 func r(i: int) -> Dictionary:
 	if _r[i] == null:
 		var none := func(_w): return null

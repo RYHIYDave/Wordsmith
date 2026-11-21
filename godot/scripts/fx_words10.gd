@@ -1925,7 +1925,7 @@ func read() -> void:
 	var skills: Array = []
 	for i in 3:
 		var r: Dictionary = h.loadout.r(i)
-		var def: Dictionary = Words.skill(Words.moves()[i])
+		var def: Dictionary = Words.skill(h.loadout.id(i))
 		skills.append({"id": r["id"], "kind": def["kind"], "radius": float(def.get("radius", 0.0)), "channel": float(def.get("channel", 2.4)),
 			"last": r["last"], "pace": r["pace"], "size": r["size"], "wide": r["wide"], "might": r["might"], "haste": r["haste"], "frenzy": r["frenzy"], "shield": r["shield"]})
 	var ch: Dictionary = h.channel() if h.has_method("channel") else {}

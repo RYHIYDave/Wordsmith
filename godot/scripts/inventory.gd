@@ -678,7 +678,7 @@ func _lay() -> void:
 
 
 func _skill(i: int) -> Dictionary:
-	return Words.skill(Words.moves()[i])
+	return Words.skill(hero.loadout.id(i))
 
 
 # --- the screen ---

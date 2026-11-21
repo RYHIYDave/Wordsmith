@@ -79,7 +79,7 @@ func _lesson() -> Dictionary:
 		return {"caption": "WORDSMITHING", "text": "%s: %s" % [PRESS[at], str(L.r(at)["name"]).to_upper()], "sub": says}
 	if loot.lesson():
 		var held: String = loot.first_spare()
-		var strike: String = str(Words.skill(Words.moves()[0])["name"]).to_upper()
+		var strike: String = str(Words.skill(main.hero.loadout.id(0))["name"]).to_upper()
 		if held != "":
 			var name: String = str(Words.word(held)["name"]).to_upper()
 			if main._in_fight():
