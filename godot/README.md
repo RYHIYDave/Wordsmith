@@ -829,8 +829,7 @@ Frenzied on the prison's bosses' own scripts
 above), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched
 as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), what a red circle or the
 Headsman's vault sends up as it lands and a bone arrow and the Warden's bolts in flight (plain drawings: the game's
-general effects are brought over only for the words so far), the glow that burning things and some figures give off (the game adds it over them; here only the
-places' own lights, the moves' and the monsters' pictures' lights glow), the bosses' spoken lines aloud (the Chained One and
+general effects are brought over only for the words so far), the bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
 and blows; what a boss says is shown, not spoken), the
 Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: the
