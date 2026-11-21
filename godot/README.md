@@ -609,8 +609,13 @@ Starter, Stoke, Hang Time, The Full Set; Switch Kick, Long Legs, Wall Slam, Afte
 vetHit and its neighbours, VET_TALENTS' numbers). THE WARLOCK'S: Hunger, Feast, Bloodlust (the demon's kills), Branded, Hex
 Chain, Withering, Pyre, Blazing Arm, Soul Debt and Last Rites (heroes/warlock.gd: game.ts warlockHit, warlockKill, hexChain,
 blaze, pyre, lastRites; WARLOCK_TUNE.talents), and Phantom Step (his shadow left where he stepped from, gone dark with an edge of
-cyan, a decoy for two seconds: render.ts drawShadows). Not yet: Terrible Roar (the roar's runners), Hellwave, Damned Souls and the
-Bound Demon (their own figures). THE TINKERER'S: Bombs Away, Fortune, Cluster Vials, Tar, Mad Mixture (her vials' bursts
+cyan, a decoy for two seconds: render.ts drawShadows); Terrible Roar (the change's roar curses all it throws back, and they run
+from him two seconds: monster.gd `flee_t`, game.ts runFrom), Hellwave (every third rake, the demon's or the Bound Demon's, throws a
+row of his fires on ahead, five tiles, burning what it meets), Damned Souls (one the demon kills rises as a burning soul that flies
+into the nearest enemy, cursing it and setting it alight) and the BOUND DEMON (with his pact full, a tap on him tears the demon out
+beside him, roaring, while he stays a man: it goes for the nearest awake enemy near him and rakes it, cursing as the demon does,
+its kills the demon's for Hunger, Feast, Bloodlust and the souls; the pact runs dry as the demon's would, and it burns out, Last
+Rites going off round it; drawn with the demon's own pictures among the figures, warlock_look.gd `_place_bound`). THE TINKERER'S: Bombs Away, Fortune, Cluster Vials, Tar, Mad Mixture (her vials' bursts
 in their brew's colours, baked by tools/godot_tinkerer.ts), Alchemy, The Big One, Lightning Rod (the decoys: monsters.gd
 `decoys`, monster.gd _drawn_to_decoy, as game.ts drawnToDecoy), Shrapnel, Prospector and Overdrive (heroes/tinkerer.gd,
 tinkerer_look.gd: the tar puddles, the big vial's ring, the little vials). Not yet: the Contraption, the Gun Arm, Mark II and

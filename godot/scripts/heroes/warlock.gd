@@ -124,6 +124,9 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 				h._strike(i, from, way, each, 0, echo, float(def["range"]))
 			else:
 				_after(0.13 * k, func() -> void: h._strike(i, from if echo else h.world, way, each, k, echo, float(def["range"])))
+		# (HIS TREE: Hellwave, every third rake throws a wave of hellfire on ahead: game.ts release, rakeDone)
+		if primary and h.loadout.id(i) == "rake":
+			_rake_done(h.world, h.face, 1.0)
 	elif kind == "damning":
 		# (every cursed or burning enemy near it struck, and all its burns paid out at once; Twin, a second eruption a moment later)
 		if primary:
@@ -218,11 +221,12 @@ func _damning_all(i: int, at: Vector2, rad: float, frac: float, n := 0, echo := 
 ## his pact, filled by his hits as a man, a little put back by the demon's.
 func on_hit(m, i: int, dmg: float) -> void:
 	var id: String = h.loadout.id(i)
-	var bolt := id == "hellbolt"
+	# (HIS TREE: the Bound Demon's rakes are struck as the hits of his first place, and curse as the demon's do; a Hellwave burns)
+	var bolt: bool = id == "hellbolt" and _by != "bound"
 	var was_cursed: bool = m.curse_t > 0.0
-	if not m.dead and bolt:
+	if not m.dead and (bolt or _by == "wave"):
 		_hell_on(m, dmg)
-	if not m.dead and id in ["curse", "smokestep", "rake", "demonstep"]:
+	if not m.dead and (_by == "bound" or id in ["curse", "smokestep", "rake", "demonstep"]):
 		_curse_one(m, dmg)
 	# (HIS TREE: Branded, every Hellfire Bolt curses what it hits)
 	if not m.dead and bolt and h.has("branded"):
@@ -230,13 +234,13 @@ func on_hit(m, i: int, dmg: float) -> void:
 	# (HIS TREE: Hex Chain, a bolt on one cursed leaps on to the next; Blazing Arm, with his pact full his bolt bursts)
 	if bolt and _by == "" and was_cursed and h.has("hexchain"):
 		_hex_chain(m, i)
-	if bolt and (_by == "" or _by == "chain") and form != "demon" and pact >= float(W["pact"]["full"]) and h.has("blazingarm"):
+	if bolt and (_by == "" or _by == "chain") and form != "demon" and bound.is_empty() and pact >= float(W["pact"]["full"]) and h.has("blazingarm"):
 		_blaze(m, i, dmg)
 	var full: float = W["pact"]["full"]
 	var was := pact
-	if form == "demon":
+	if form == "demon" or _by == "bound":
 		pact = minf(full, was + float(W["pact"]["demonHit"]))
-	elif change.is_empty():
+	elif change.is_empty() and bound.is_empty():
 		pact = minf(full, was + float(W["pact"]["hit"]))
 		if was < full and pact >= full:
 			_say({"t": "pactFull", "x": h.world.x, "y": h.world.y})
@@ -414,11 +418,21 @@ func _step_pact(dt: float) -> void:
 		if pact <= 0.0:
 			_begin_change("man")
 		return
+	# (HIS TREE: Bound Demon, while it is out the pact runs dry as the demon's would; empty, it burns out)
+	if not bound.is_empty():
+		if bound["act"] != "out":
+			pact = maxf(0.0, pact - float(P["full"]) / float(P["demonSecs"]) * dt)
+			if pact <= 0.0:
+				_bound_burns_out()
+		return
 	var asked: bool = Input.is_action_just_pressed("change") or h.get("auto_change") == true
 	if h.get("auto_change") == true:
 		h.auto_change = false
 	if asked and pact >= float(P["full"]) and move.is_empty():
-		_begin_change("demon")
+		if h.has("bounddemon"):
+			_tear_out()
+		else:
+			_begin_change("demon")
 
 
 ## He begins to change, into the demon or back: whatever he was doing is broken off.
@@ -460,6 +474,7 @@ func _step_change(dt: float) -> void:
 			for m in h.monsters.list:
 				if is_instance_valid(m) and not m.dead and m.world.distance_to(h.world) <= R + m.r:
 					m.throw_from(h.world, 1.5, 0.25)
+		_terrible_roar(h.world, R)
 	else:
 		# (HIS TREE: Last Rites, as the demon burns out, Damning goes off by itself round him)
 		if form == "demon" and h.has("lastrites"):
@@ -539,6 +554,9 @@ func _clear_own() -> void:
 		if is_instance_valid(sh["node"]):
 			sh["node"].queue_free()
 	_shadows.clear()
+	# (HIS TREE: what he threw and raised is gone with the place; the Bound Demon is torn out beside him again where he arrives)
+	hellwaves.clear()
+	souls.clear()
 
 
 ## (Phantom Step) His shadows standing where he stepped from: {d: its decoy, node}.
@@ -570,6 +588,8 @@ func _shadow_of(d: Dictionary) -> void:
 
 ## His shadows: each flickering, fading as its time runs out, gone with it; his decoys (not a Golem's) run out.
 func _step_own(dt: float) -> void:
+	if not hellwaves.is_empty() or not souls.is_empty() or not bound.is_empty():
+		_step_tree(dt)
 	if h.monsters != null:
 		for k in range(h.monsters.decoys.size() - 1, -1, -1):
 			var d: Dictionary = h.monsters.decoys[k]
@@ -651,7 +671,8 @@ func _blaze(m, i: int, dmg: float) -> void:
 func on_kill(m) -> void:
 	var T := _T()
 	var P: Dictionary = W["pact"]
-	if form == "demon":
+	# (the demon's kills: everything that dies while he is the demon, and what the Bound Demon's own rakes kill)
+	if form == "demon" or _by == "bound":
 		if h.has("hunger"):
 			pact = minf(float(P["full"]), pact + float(T["hunger"]["secs"]) * (float(P["full"]) / float(P["demonSecs"])))
 		if h.has("feast"):
@@ -660,6 +681,8 @@ func on_kill(m) -> void:
 			_say({"t": "heal", "amount": roundi(n)})
 		if h.has("bloodlust"):
 			lust += 1
+		if h.has("damnedsouls"):
+			_raise_soul(m)
 	if m.curse_t > 0.0:
 		if h.has("souldebt"):
 			pact = minf(float(P["full"]), pact + float(P["full"]) * float(T["soulDebt"]["share"]))
@@ -687,3 +710,264 @@ func rate_k() -> float:
 		var B: Dictionary = _T()["bloodlust"]
 		return minf(float(B["most"]), 1.0 + lust * float(B["each"]))
 	return 1.0
+
+
+# --- HIS TREE: Terrible Roar, Hellwave, Damned Souls, the Bound Demon (game.ts terribleRoar, runFrom, rakeDone, raiseSoul, tearOut,
+# boundBurnsOut, updateWarlockTree) ---
+
+## (Hellwave: his rakes counted, the demon's and the Bound Demon's; its waves running on ahead; Damned Souls' souls flying to the ones
+## they go for; THE BOUND DEMON out beside him: {x, y, fx, fy, act ("arrive", "stand", "walk", "rake", "out"), t, target, did, walked,
+## rake_cd})
+var rakes := 0
+var hellwaves: Array = []
+var souls: Array = []
+var bound := {}
+
+
+## (his first place's hit made the demon's rake's, as a man: for what the Bound Demon and the souls strike with)
+func _rake_k() -> float:
+	return 1.0 if form == "demon" else float(Words.skill("rake")["dmg"]) / float(Words.skill(h.loadout.id(0))["dmg"])
+
+
+## TERRIBLE ROAR: the demon's roar (or the Bound Demon's, torn out) curses all it throws back, and they run from him two seconds.
+func _terrible_roar(at: Vector2, rad: float) -> void:
+	if not h.has("terribleroar") or h.monsters == null:
+		return
+	var dmg: float = h.avg_hit(0, _rake_k())
+	for m in h.monsters.list:
+		if not is_instance_valid(m) or m.dead or h.monsters.shut_in(m) or m.world.distance_to(at) > rad + m.r:
+			continue
+		_curse_one(m, dmg)
+		if not m.boss:
+			m.flee_t = float(_T()["roar"]["flee"])
+
+
+## A rake of the demon's (or the Bound Demon's): every third, with Hellwave, throws a wave of hellfire on ahead.
+func _rake_done(at: Vector2, way: Vector2, frac: float) -> void:
+	rakes += 1
+	var T: Dictionary = _T()["hellwave"]
+	if not h.has("hellwave") or rakes % int(T["every"]) != 0:
+		return
+	var o: Vector2 = at + way * 0.6
+	hellwaves.append({"x": o.x, "y": o.y, "dx": way.x, "dy": way.y, "left": float(T["far"]), "hit": [], "frac": frac * float(T["share"])})
+	_say({"t": "hellwave", "x": o.x, "y": o.y, "dx": way.x, "dy": way.y, "far": T["far"], "speed": T["speed"]})
+	h.sfx.play("fire", linear_to_db(0.8))
+
+
+## DAMNED SOULS: one the demon killed rises as a burning soul, and goes for the nearest enemy left.
+func _raise_soul(d) -> void:
+	var T: Dictionary = _T()["souls"]
+	var to = _nearest_to(d.world, float(T["reach"]), d)
+	if to == null:
+		return
+	souls.append({"x": d.world.x, "y": d.world.y, "to": to, "t": 0.0, "dmg": h.avg_hit(0, _rake_k() * float(T["share"]))})
+	_say({"t": "soul", "x": d.world.x, "y": d.world.y, "id": to.id})
+
+
+## The nearest enemy to `at` within `reach` (to its edge), alive and not shut in; not `not_this`.
+func _nearest_to(at: Vector2, reach: float, not_this = null):
+	var best = null
+	var bd := reach
+	if h.monsters == null:
+		return null
+	for q in h.monsters.list:
+		if not is_instance_valid(q) or q == not_this or q.dead or h.monsters.shut_in(q):
+			continue
+		var d: float = q.world.distance_to(at) - q.r
+		if d < bd:
+			bd = d
+			best = q
+	return best
+
+
+## BOUND DEMON: with his pact full, a tap on him tears the demon out beside him, roaring; he stays a man.
+func _tear_out() -> void:
+	var T: Dictionary = _T()["bound"]
+	var s: Vector2 = h.world + Vector2(h.face.y * 1.3 + h.face.x * 0.4, -h.face.x * 1.3 + h.face.y * 0.4)
+	var p: Vector2 = s if _open(s) else h.world
+	bound = {"x": p.x, "y": p.y, "fx": h.face.x, "fy": h.face.y, "act": "arrive", "t": 0.0, "target": null, "did": false, "walked": 0.0, "rake_cd": float(T["arrive"])}
+	lust = 0
+	rakes = 0
+	_say({"t": "bound", "x": p.x, "y": p.y})
+	var R: float = W["change"]["roar"]
+	_say({"t": "roar", "x": p.x, "y": p.y, "r": R})
+	h.kick(4.0)
+	h.sfx.play("explode", linear_to_db(0.7))
+	if h.monsters != null:
+		for m in h.monsters.list:
+			if is_instance_valid(m) and not m.dead and m.world.distance_to(p) <= R + m.r:
+				m.throw_from(p, 1.5, 0.25)
+	_terrible_roar(p, R)
+
+
+## The Bound Demon's pact run dry: it burns out where it stands (Last Rites: Damning goes off round it).
+func _bound_burns_out() -> void:
+	if bound.is_empty() or bound["act"] == "out":
+		return
+	bound["act"] = "out"
+	bound["t"] = 0.0
+	pact = 0.0
+	var at := Vector2(bound["x"], bound["y"])
+	_say({"t": "boundOut", "x": at.x, "y": at.y})
+	h.sfx.play("deny", linear_to_db(0.8))
+	if h.has("lastrites"):
+		var r1: Dictionary = h.loadout.r(1)
+		var k: float = float(Words.skill("damning")["dmg"]) / float(Words.skill(h.loadout.id(1))["dmg"])
+		_damning_all(1, at, float(Words.skill("damning")["radius"]) * float(r1["size"]), float(r1["count_dmg"]) * k)
+	lust = 0
+	rakes = 0
+
+
+## His tree's things that go on by themselves: Hellwave's waves, Damned Souls' souls, the Bound Demon.
+func _step_tree(dt: float) -> void:
+	var T := _T()
+	# (HELLWAVE: each wave's front goes on, striking and setting burning what it comes to, each once, till a wall or its end)
+	for k in range(hellwaves.size() - 1, -1, -1):
+		var w: Dictionary = hellwaves[k]
+		var stp: float = minf(float(w["left"]), float(T["hellwave"]["speed"]) * dt)
+		w["x"] = float(w["x"]) + float(w["dx"]) * stp
+		w["y"] = float(w["y"]) + float(w["dy"]) * stp
+		w["left"] = float(w["left"]) - stp
+		var at := Vector2(w["x"], w["y"])
+		_by = "wave"
+		if h.monsters != null:
+			for m in h.monsters.list:
+				if not is_instance_valid(m) or m.dead or (w["hit"] as Array).has(m) or h.monsters.shut_in(m):
+					continue
+				if m.world.distance_to(at) > float(T["hellwave"]["width"]) + m.r:
+					continue
+				(w["hit"] as Array).append(m)
+				h.hit_monster(m, 0, float(w["frac"]), (w["hit"] as Array).size() > 3)
+		_by = ""
+		if float(w["left"]) <= 0.0 or not _open(at):
+			hellwaves.remove_at(k)
+	# (DAMNED SOULS: each flies to the one it goes for; if that one is gone, to the nearest left; in, it curses it and sets it burning)
+	for k in range(souls.size() - 1, -1, -1):
+		var s: Dictionary = souls[k]
+		s["t"] = float(s["t"]) + dt
+		var to = s["to"]
+		var here := Vector2(s["x"], s["y"])
+		if not is_instance_valid(to) or to.dead:
+			to = _nearest_to(here, float(T["souls"]["reach"]))
+			if to == null or float(s["t"]) > 4.0:
+				souls.remove_at(k)
+				continue
+			s["to"] = to
+		var d: float = to.world.distance_to(here)
+		var stp: float = float(T["souls"]["speed"]) * dt
+		if d <= stp + to.r * 0.5:
+			souls.remove_at(k)
+			_say({"t": "soulIn", "x": to.world.x, "y": to.world.y})
+			h.sfx.play("fire", linear_to_db(0.5))
+			_curse_one(to, float(s["dmg"]))
+			_hell_on(to, float(s["dmg"]))
+			continue
+		var u: Vector2 = (to.world - here) / d
+		s["x"] = here.x + u.x * stp
+		s["y"] = here.y + u.y * stp
+	_step_bound(dt)
+
+
+## (THE BOUND DEMON, game.ts updateWarlockTree) It arrives; stands by him; goes for the nearest awake enemy near him that it can see,
+## and rakes it (the quicker for his kills with Bloodlust); left far behind, or in another place, it is torn out beside him again.
+func _step_bound(dt: float) -> void:
+	var b := bound
+	if b.is_empty():
+		return
+	var B: Dictionary = _T()["bound"]
+	b["t"] = float(b["t"]) + dt
+	var lk: float = minf(float(_T()["bloodlust"]["most"]), 1.0 + lust * float(_T()["bloodlust"]["each"])) if h.has("bloodlust") else 1.0
+	b["rake_cd"] = float(b["rake_cd"]) - dt * lk
+	if b["act"] == "out":
+		if float(b["t"]) >= float(B["out"]):
+			bound = {}
+		return
+	if b["act"] == "arrive":
+		if float(b["t"]) >= float(B["arrive"]):
+			b["act"] = "stand"
+			b["t"] = 0.0
+		return
+	var at := Vector2(b["x"], b["y"])
+	if at.distance_to(h.world) > 12.0 or not _open(at):
+		var p := Vector2(h.world.x + h.face.y * 1.3, h.world.y - h.face.x * 1.3)
+		if not _open(p):
+			p = h.world
+		b["x"] = p.x
+		b["y"] = p.y
+		b["act"] = "arrive"
+		b["t"] = float(B["arrive"]) * 0.5
+		_say({"t": "bound", "x": p.x, "y": p.y})
+		return
+	if b["act"] == "rake":
+		if not b["did"] and float(b["t"]) >= float(B["hit"]) / lk:
+			b["did"] = true
+			var m = b["target"]
+			if m != null and is_instance_valid(m) and not m.dead and m.world.distance_to(at) <= float(B["reach"]) + m.r + 0.6:
+				var frac: float = float(Words.skill("rake")["dmg"]) / float(Words.skill(h.loadout.id(0))["dmg"])
+				_say({"t": "boundRake", "x": m.world.x, "y": m.world.y, "dx": b["fx"], "dy": b["fy"]})
+				h.sfx.play("swing", linear_to_db(0.8))
+				_by = "bound"
+				h.hit_monster(m, 0, frac, false)
+				_by = ""
+				_rake_done(at, Vector2(b["fx"], b["fy"]), frac)
+		if float(b["t"]) >= (float(B["hit"]) + 0.35) / lk:
+			b["act"] = "stand"
+			b["t"] = 0.0
+		return
+	# (what to go for: the nearest awake enemy near him that it can see)
+	var best = null
+	var bd := 1e9
+	if h.monsters != null:
+		for m in h.monsters.list:
+			if not is_instance_valid(m) or m.dead or not m.seen or m.state == "sleep" or h.monsters.shut_in(m):
+				continue
+			if m.world.distance_to(h.world) > float(B["hunt"]):
+				continue
+			var d: float = m.world.distance_to(at) - m.r
+			if d < bd and h.monsters.sees(at, m.world):
+				bd = d
+				best = m
+	var face_to := func(p: Vector2) -> void:
+		var dd: float = p.distance_to(Vector2(b["x"], b["y"]))
+		if dd > 0.05:
+			b["fx"] = (p.x - float(b["x"])) / dd
+			b["fy"] = (p.y - float(b["y"])) / dd
+	if best != null and bd <= float(B["reach"]) and float(b["rake_cd"]) <= 0.0:
+		face_to.call(best.world)
+		b["act"] = "rake"
+		b["t"] = 0.0
+		b["did"] = false
+		b["target"] = best
+		b["rake_cd"] = float(B["every"])
+		return
+	var goal: Vector2
+	var stop: float
+	if best != null and bd > float(B["reach"]) * 0.8:
+		goal = best.world
+		stop = float(B["reach"]) * 0.7 + best.r
+	elif best != null:
+		face_to.call(best.world)
+		goal = at
+		stop = 1.0
+	else:
+		goal = Vector2(h.world.x + h.face.y * float(B["near"]) - h.face.x * 0.4, h.world.y - h.face.x * float(B["near"]) - h.face.y * 0.4)
+		stop = 0.5
+	var dist: float = goal.distance_to(at)
+	if dist > stop:
+		var stp: float = minf(dist - stop, float(B["speed"]) * dt)
+		var mv: Vector2 = (goal - at) / dist * stp
+		var was := at
+		if h.monsters.clear(at.x + mv.x, at.y, 0.45):
+			b["x"] = at.x + mv.x
+		if h.monsters.clear(float(b["x"]), at.y + mv.y, 0.45):
+			b["y"] = at.y + mv.y
+		var went: float = Vector2(b["x"], b["y"]).distance_to(was)
+		b["walked"] = float(b["walked"]) + went
+		if went > 1e-4:
+			face_to.call(goal)
+		if b["act"] != "walk":
+			b["act"] = "walk"
+			b["t"] = 0.0
+	elif b["act"] != "stand":
+		b["act"] = "stand"
+		b["t"] = 0.0

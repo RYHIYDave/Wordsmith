@@ -185,6 +185,8 @@ var bind_again := 0.0
 ## shockwave's clock, the gold PLUNDERING stole from him, and whether REAPING has stood it up once already: last_words.gd)
 var bleed_t := 0.0
 var bleed_dps := 0.0
+## (THE WARLOCK's tree: Terrible Roar, how long it runs from him yet)
+var flee_t := 0.0
 ## (THE WARRIOR'S WARHAMMER: Smash's daze toward a stun, and when it was last added to, on his clock: hero.gd smashed)
 var daze := 0.0
 var daze_at := 0.0
@@ -1442,12 +1444,37 @@ func _afflicted(dt: float) -> bool:
 			_tell({"t": "shatter", "x": world.x, "y": world.y})
 			mgr.sfx.play("shatter", linear_to_db(0.5))
 		return true
+	# (THE WARLOCK's tree: Terrible Roar, it runs from him, and does nothing else: game.ts runFrom)
+	if flee_t > 0.0:
+		flee_t = maxf(0.0, flee_t - dt)
+		_run_from(dt)
+		return true
 	if stun_t > 0.0 or stagger_t > 0.0:
 		stun_t = maxf(0.0, stun_t - dt)
 		stagger_t = maxf(0.0, stagger_t - dt)
 		_set_list("idle")
 		return true
 	return false
+
+
+## (THE WARLOCK's tree: Terrible Roar, game.ts runFrom) Straight away from him at its own pace, as far as the floor lets it; what it
+## was winding up broken off.
+func _run_from(dt: float) -> void:
+	break_off()
+	var h = mgr.hero if mgr != null else null
+	if h == null:
+		return
+	var d: Vector2 = world - h.world
+	var way: Vector2 = d / d.length() if d.length() > 0.0 else Vector2(1, 0)
+	var step: Vector2 = way * speed * dt
+	var rr := minf(r, 0.42)
+	var fly := kind == "bat"
+	if mgr.clear(world.x + step.x, world.y, rr, fly):
+		world.x += step.x
+	if mgr.clear(world.x, world.y + step.y, rr, fly):
+		world.y += step.y
+	face = way
+	_set_list("walk" if step.length() > 0.0 else "idle")
 
 
 ## (game.ts throwMonster) Flung away from `from`, `far` tiles in `secs`: never a boss, nor one shut in a room he is not in.

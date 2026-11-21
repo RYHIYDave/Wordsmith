@@ -16,6 +16,7 @@
 extends Node2D
 
 const L := preload("res://scripts/fx_looks.gd")
+const Iso := preload("res://scripts/iso.gd")
 
 var kit
 var loot
@@ -32,6 +33,10 @@ var bursts: Array = []
 var erupts: Array = []
 var rings: Array = []
 var embers: Array = []
+var waves: Array = []
+## (the Bound Demon, standing among the figures: render.ts drawBound)
+var _bound_node: Sprite2D = null
+const WAVE_AFTER := 0.25
 
 const CHAIN := {"reach": 0.33, "hold": 0.6, "gone": 0.87}
 const RIVER := 1.1
@@ -87,6 +92,14 @@ func on_event(e: Dictionary, _fx) -> void:
 			rings.append({"x": e["x"], "y": e["y"], "r": e["r"], "t": 0.0})
 		"change":
 			embers.append({"x": e["x"], "y": e["y"], "t": 0.0})
+		# (HIS TREE: Hellwave's row of fires running on ahead; a soul going in, the Bound Demon's rake: a burst; the Bound Demon torn
+		# out and burnt out: embers)
+		"hellwave":
+			waves.append({"x": e["x"], "y": e["y"], "dx": e["dx"], "dy": e["dy"], "far": e["far"], "speed": e["speed"], "t": 0.0})
+		"soulIn", "boundRake":
+			bursts.append({"x": e["x"], "y": e["y"], "t": 0.0})
+		"bound", "boundOut":
+			embers.append({"x": e["x"], "y": e["y"], "t": 0.0})
 
 
 ## (the spreading of a cursed one's burns is told by monsters.gd, not by him: fx.gd hands it on here)
@@ -103,8 +116,70 @@ func _process(dt: float) -> void:
 			list[i]["t"] = float(list[i]["t"]) + dt
 			if float(list[i]["t"]) >= float(pair[1]):
 				list.remove_at(i)
+	for i in range(waves.size() - 1, -1, -1):
+		var w: Dictionary = waves[i]
+		w["t"] = float(w["t"]) + dt
+		if float(w["t"]) >= float(w["far"]) / float(w["speed"]) + WAVE_AFTER:
+			waves.remove_at(i)
+	_place_bound()
 	queue_redraw()
 	air.queue_redraw()
+
+
+func _exit_tree() -> void:
+	if _bound_node != null and is_instance_valid(_bound_node):
+		_bound_node.queue_free()
+
+
+## THE BOUND DEMON (render.ts drawBound): the demon's own pictures, standing among the figures a hair nearer than one on its spot,
+## its rake when it rakes, its walk by the floor it covers, its stand; coming in as it is torn out, fading as it burns out.
+func _place_bound() -> void:
+	var b: Dictionary = kit.bound if kit != null else {}
+	var holder = kit.h.get_parent() if kit != null else null
+	var art = kit.h.arts.get("demon") if kit != null else null
+	if b.is_empty() or holder == null or art == null:
+		if _bound_node != null and is_instance_valid(_bound_node):
+			_bound_node.queue_free()
+		_bound_node = null
+		return
+	if _bound_node == null or not is_instance_valid(_bound_node) or _bound_node.get_parent() != holder:
+		if _bound_node != null and is_instance_valid(_bound_node):
+			_bound_node.queue_free()
+		_bound_node = Sprite2D.new()
+		_bound_node.centered = false
+		holder.add_child(_bound_node)
+	var B: Dictionary = kit._T()["bound"]
+	var C: Dictionary = kit.clips["warlock:demon"]
+	var fx: float = b["fx"]
+	var fy: float = b["fy"]
+	var side := 1 if fx + fy < -0.2 else 0
+	var flip := fx - fy < 0.0
+	var act: String = b["act"]
+	var t: float = b["t"]
+	var list := 14 if act == "rake" else (2 if act == "walk" else 0)
+	var n: int = art.count(side, list)
+	if n == 0:
+		list = 0
+		n = art.count(side, 0)
+	var i := 0
+	if list == 14:
+		i = mini(n - 1, kit.attack_frame(C["lists"]["14"], t, float(B["hit"])))
+	elif list == 2:
+		var stride = C.get("walkStride")
+		i = posmod(roundi(float(b["walked"]) / float(stride) * n) if stride != null else floori(t * float(C["walkFps"])), maxi(1, n))
+	else:
+		i = floori(t * float(C["idleFps"])) % maxi(1, n)
+	var f: Dictionary = art.frame(side, list, clampi(i, 0, maxi(0, n - 1)))
+	_bound_node.texture = f["tex"]
+	_bound_node.offset = f["offset"]
+	_bound_node.scale = Vector2(-1.0 if flip else 1.0, 1.0) * float(f["scale"])
+	_bound_node.position = Iso.to_screen(float(b["x"]), float(b["y"])) + Vector2(0, 0.32)
+	var a := 1.0
+	if act == "arrive":
+		a = minf(1.0, t / float(B["arrive"]))
+	elif act == "out":
+		a = maxf(0.0, 1.0 - t / float(B["out"]))
+	_bound_node.modulate = Color(1, 1, 1, a)
 
 
 func _gx(x: float, y: float) -> float:
@@ -216,6 +291,27 @@ func draw_air(c: CanvasItem) -> void:
 		var y := float(l["y0"]) + (float(l["y1"]) - float(l["y0"])) * k
 		var up := sin(PI * k) * 26.0 + 14.0
 		_piece(c, "ball:%d" % (floori(_t * 20.0) % 4), _gx(x, y), _gy(x, y) - up)
+	# (HIS TREE: Hellwave, a row of his fires running on ahead along the floor, guttering at its end)
+	for w in waves:
+		var run: float = float(w["far"]) / float(w["speed"])
+		var d: float = minf(float(w["far"]), float(w["speed"]) * float(w["t"]))
+		var fade: float = 1.0 - (float(w["t"]) - run) / WAVE_AFTER if float(w["t"]) > run else 1.0
+		for i in range(-2, 3):
+			for back in [0.0, 0.45]:
+				var along: float = maxf(0.0, d - back - absi(i) * 0.12)
+				var x: float = float(w["x"]) + float(w["dx"]) * along - float(w["dy"]) * i * 0.38
+				var y: float = float(w["y"]) + float(w["dy"]) * along + float(w["dx"]) * i * 0.38
+				if back > 0.0 and _hash(i + 7) < 0.4:
+					continue
+				_piece(c, "ball:%d" % (posmod(floori(_t * 20.0 + i * 2 + back * 10.0), 4)), _gx(x, y), _gy(x, y) - (4.0 if back > 0.0 else 8.0), maxf(0.0, fade))
+	# (HIS TREE: Damned Souls, each a ball of his fire flying low, trailing embers)
+	if kit != null:
+		for so in kit.souls:
+			var x := roundf(_gx(so["x"], so["y"]))
+			var y := roundf(_gy(so["x"], so["y"]) - 22.0 - sin(float(so["t"]) * 9.0) * 3.0)
+			for i in range(1, 6):
+				c.draw_rect(Rect2((x - roundf(sin(float(so["t"]) * 7.0 + i) * 2.0)) * 2.0, (y + i * 2) * 2.0, 2, 2), Color(HELL[2] if i < 3 else HELL[1], 0.8 - i * 0.14))
+			_piece(c, "ball:%d" % (floori(_t * 20.0) % 4), x, y + 8.0)
 	# embers whirling up round him as he changes
 	for e in embers:
 		var k := float(e["t"]) / EMBERS

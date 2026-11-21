@@ -634,6 +634,85 @@ func _warlock() -> void:
 	kit.pact = 0.0
 	h.life = h.max_life
 	h.talents = []
+	await _warlock_tree()
+
+
+## The Warlock's last four: Terrible Roar, Hellwave, Damned Souls, the Bound Demon.
+func _warlock_tree() -> void:
+	M.set_class("warlock", true)
+	M.loot.level = 50
+	h.life = h.max_life
+	await _run(0.2)
+	var start: Vector2 = h.world
+	_open_ground()
+	M._kit_look()
+	await _run(0.2)
+	var kit = h.kit
+	var full: float = kit.W["pact"]["full"]
+	# TERRIBLE ROAR: the change's roar curses all it throws back, and they run from him
+	_take(["hunger", "terribleroar"])
+	var two := _foes([[1.2, 0.0], [0.0, 1.4]])
+	kit.pact = full
+	h.auto_change = true
+	await _run(float(kit.W["change"]["secs"]) + 0.15)
+	var d0: float = two[0].world.distance_to(h.world)
+	var cursed: bool = two[0].curse_t > 0.0 and two[1].curse_t > 0.0
+	var fleeing: bool = two[0].flee_t > 0.0 and two[1].flee_t > 0.0
+	await _run(0.5)
+	await _snap("warlock_terrible_roar")
+	_line(kit.form == "demon" and cursed and fleeing and two[0].world.distance_to(h.world) > d0 + 0.3,
+		"Terrible Roar: changed, his roar curses both it threw back (%s), and they run from him (%s; %.1f tiles to %.1f)" % [cursed, fleeing, d0, two[0].world.distance_to(h.world)])
+	# HELLWAVE: every third rake throws a wave of hellfire on ahead, burning what it meets
+	_take(["hunger", "terribleroar", "hellwave"])
+	var m = _foes([[3.0, 0.0]], true)[0]
+	m.hell_t = 0.0
+	var life0: float = m.life
+	kit.rakes = 0
+	for k in 3:
+		kit._rake_done(h.world, h.face, 1.0)
+	var waves: int = kit.hellwaves.size()
+	await _run(0.35)
+	await _snap("warlock_hellwave")
+	_line(waves == 1 and m.life < life0 and m.hell_t > 0.0, "Hellwave: the third rake throws a wave of hellfire (%d), the one ahead struck and burning (%.1f s)" % [waves, m.hell_t])
+	# DAMNED SOULS: one the demon kills rises as a burning soul that flies into the nearest enemy
+	_take(["hunger", "feast", "damnedsouls"])
+	two = _foes([[1.0, 0.0], [3.0, 1.0]], true)
+	two[1].curse_t = 0.0
+	two[1].hell_t = 0.0
+	kit.on_kill(two[0])
+	var raised: int = kit.souls.size()
+	await _run(0.15)
+	await _snap("warlock_damned_soul")
+	await _run(0.5)
+	_line(raised == 1 and kit.souls.is_empty() and two[1].curse_t > 0.0 and two[1].hell_t > 0.0, "Damned Souls: the demon's kill rises as a soul (%d) that flew into the one near, cursing it and setting it alight" % raised)
+	# THE BOUND DEMON: the demon tears out beside him and fights while he stays a man, till the pact runs dry
+	kit._become("man")
+	kit.change = {}
+	_take(["hunger", "feast", "bloodlust", "bounddemon"])
+	kit.pact = full
+	h.auto_change = true
+	await _run(0.1)
+	var out: bool = not kit.bound.is_empty() and kit.form == "man"
+	m = _foes([[2.5, 1.0]], true)[0]
+	m.curse_t = 0.0
+	life0 = m.life
+	await _run(1.6)
+	await _snap("warlock_bound_demon")
+	var struck: bool = m.life < life0 and m.curse_t > 0.0
+	var drawn: bool = kit.look != null and kit.look._bound_node != null and is_instance_valid(kit.look._bound_node)
+	kit.pact = 0.05
+	await _run(0.3)
+	var burnt: bool = not kit.bound.is_empty() and kit.bound["act"] == "out"
+	await _run(1.2)
+	_line(out and struck and drawn and burnt and kit.bound.is_empty() and kit.pact == 0.0,
+		"Bound Demon: torn out beside him while he stays a man (%s), drawn among the figures (%s), it went for the one near, struck and cursed it (%s); its pact dry, it burnt out (%s) and was gone" % [out, drawn, struck, burnt])
+	_take([])
+	kit.pact = 0.0
+	h.world = start
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead:
+			o.stun_t = 0.0
+			o.flee_t = 0.0
 
 
 func _tinkerer() -> void:
