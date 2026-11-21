@@ -138,7 +138,7 @@ func _act(dt: float, way: Vector2, hooked: bool) -> bool:
 	h.auto_lunge = Vector2.INF
 	if Input.is_action_just_pressed("lunge"):
 		dodge = h._pointer(way, float(_def(2)["range"]))
-	if dodge != Vector2.INF and not hooked:
+	if dodge != Vector2.INF and not hooked and h.move_open(2):
 		_use_evasive(dodge, way)
 		if not move.is_empty():
 			return true
@@ -264,6 +264,9 @@ func _use_basic(at: Vector2) -> void:
 
 
 func _use_skill(i: int, at: Vector2) -> void:
+	# (THE FIRST LEVELS: not before its level)
+	if not h.move_open(i):
+		return
 	# (one that is being held is already being made: the button held down does not ask for another)
 	if not channel.is_empty() or charges[i] < 1:
 		return

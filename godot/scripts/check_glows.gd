@@ -87,3 +87,54 @@ func town(main, hero, dir: String) -> void:
 	_line(T.prompt[1] == "lexicon", "by the Lexicon: its name in white, his use the Lexicon's (%s)" % T.prompt[0])
 	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
+
+## THE FIRST LEVELS (--only=openings; defs.ts FIRST_LEVELS, MOVE_OPENS; game.ts moveOpen, gainXp; ui/hud.ts OPENING, drawMoveToast): a
+## new Warrior has his Strike alone, in the middle where the two plates would be, no dodge; the Whirlwind and the Lunge cannot be used.
+## Level 2: the Whirlwind opens, its moment: the Strike's plate sliding over, the new one opening out from its middle with its
+## flourish, NEW MOVE at the top, "A new move: WHIRLWIND."; then it can be used. Level 5: the Lunge's button, the same. Pictured.
+func openings(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	var loot = M.loot
+	var hud = M._hud
+	await M._wait(0.6)
+	await M._snap(dir + "/o01_level1_strike_alone.png")
+	h.auto_whirl = true
+	h.auto_lunge = h.world + h.face * 3.0
+	await M._wait(0.3)
+	var used: bool = h._act in ["whirl", "lunge"]
+	h.auto_whirl = false
+	_line(h.first_levels and hud._plates.size() == 1 and hud._lunge.size == Vector2.ZERO and not used,
+		"level 1: his Strike alone in the middle, no Whirlwind's plate, no dodge's button; the Whirlwind and the Lunge asked for: nothing")
+	await M._wait(0.6)
+	loot.gain_xp(loot.xp_to_next(1) - loot.xp + 0.5)
+	var said: bool = loot.msgs.any(func(m): return str(m["text"]) == "A new move: WHIRLWIND.")
+	_line(loot.level == 2 and not M.move_toast.is_empty() and int(M.move_toast["skill"]) == 1 and said, "level 2: the Whirlwind opens: \"A new move: WHIRLWIND.\", its moment begun")
+	while float(M.move_toast.get("t", 9.0)) < 0.42:
+		await M.get_tree().process_frame
+	await M._snap(dir + "/o02_whirlwind_opening.png")
+	while float(M.move_toast.get("t", 9.0)) < 1.0:
+		await M.get_tree().process_frame
+	await M._snap(dir + "/o03_whirlwind_flourish.png")
+	while not M.move_toast.is_empty():
+		await M.get_tree().process_frame
+	await M._snap(dir + "/o04_whirlwind_open.png")
+	h.auto_whirl = true
+	await M._wait(0.4)
+	var whirled: bool = h._act == "whirl"
+	h.auto_whirl = false
+	_line(hud._plates.size() == 2 and whirled, "its plate beside the Strike's; held, he whirls")
+	await M._wait(1.5)
+	while loot.level < 5:
+		loot.gain_xp(loot.xp_to_next(loot.level) - loot.xp + 0.5)
+	_line(not M.move_toast.is_empty() and int(M.move_toast["skill"]) == 2, "level 5: the Lunge opens, its moment begun")
+	while float(M.move_toast.get("t", 9.0)) < 0.5:
+		await M.get_tree().process_frame
+	await M._snap(dir + "/o05_lunge_opening.png")
+	while not M.move_toast.is_empty():
+		await M.get_tree().process_frame
+	h.auto_lunge = h.world + h.face * 3.0
+	await M._wait(0.1)
+	_line(hud._lunge.size != Vector2.ZERO and h._act == "lunge", "its button at the right; pressed, he lunges")
+	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+

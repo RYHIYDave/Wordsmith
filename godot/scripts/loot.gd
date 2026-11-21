@@ -882,6 +882,13 @@ func gain_xp(n: float) -> void:
 		hero.life = hero.max_life
 		say("Level %d!" % level, Color(0.35, 0.9, 1.0))
 		sfx.play("levelup")
+		# THE FIRST LEVELS: a move opens with this level (game.ts gainXp, `moveOpen`): its moment on the HUD, and the news
+		if hero.first_levels and not hero.practice and main != null:
+			var opens: Array = Words.data()["moveOpens"]
+			for i in range(1, opens.size()):
+				if int(opens[i]) == level:
+					main.move_toast = {"skill": i, "t": 0.0}
+					say("A new move: %s." % str(Words.skill(hero.loadout.id(i))["name"]).to_upper(), MSG_WORD)
 		# (a new slot has opened on his attacks: say so, and if a word he holds fits it, offer it a place: game.ts gainXp)
 		var has: Array = Words.socket_count(level) if ring_lit else [0, 0]
 		if int(has[0]) > int(had[0]) or int(has[1]) > int(had[1]):

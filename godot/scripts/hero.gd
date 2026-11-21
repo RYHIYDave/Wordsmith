@@ -104,6 +104,9 @@ const Loadout := preload("res://scripts/loadout.gd")
 const Melds := preload("res://scripts/melds.gd")
 ## (THE PRACTICE ROOM: nothing there can kill him: main.gd, practice.gd)
 ## HIS MANA (ABILITIES: MANA, loot.gd `limit`): what is left, how much he holds, how fast it comes back (loot.gd derive)
+## THE FIRST LEVELS (defs.ts FIRST_LEVELS, MOVE_OPENS): his moves open by level, the slow one at 2, the evasive one at 5; till then
+## they cannot be used and are not shown. (In play and for a test hero; a check of something else has them all, as before.)
+var first_levels := false
 var mana := 40.0
 var max_mana := 40.0
 var mana_regen := 2.5
@@ -1122,7 +1125,7 @@ func _process(dt: float) -> void:
 		auto_lunge = Vector2.INF
 		if Input.is_action_just_pressed("lunge") and scene_pace <= 0.0:
 			lunge_at = _pointer(way, LUNGE["range"])
-		if lunge_at != Vector2.INF and _lunge_cd <= 0.0 and _act != "lunge" and not hooked:
+		if lunge_at != Vector2.INF and _lunge_cd <= 0.0 and _act != "lunge" and not hooked and move_open(2):
 			if mana < float(loadout.r(2)["mana"]):
 				no_mana()
 			else:
@@ -1150,6 +1153,8 @@ func _process(dt: float) -> void:
 		var strike_asked := (Input.is_action_just_pressed("attack") and scene_pace <= 0.0) or auto_attack
 		whirl_held = (Input.is_action_pressed("whirl") and scene_pace <= 0.0) or auto_whirl
 		auto_attack = false
+		if not move_open(1):
+			whirl_held = false
 		if whirl_held and _whirl_cd <= 0.0 and (_act == "" or (_act == "strike" and _landed)) and mana < mana_to_begin(1):
 			if Input.is_action_just_pressed("whirl") or auto_whirl:
 				no_mana()
@@ -1792,6 +1797,11 @@ func dots() -> void:
 		_tell({"t": "hit", "x": world.x, "y": world.y, "amount": b, "crit": false, "el": "phys", "onHero": true})
 		if life <= 0.0:
 			_fall()
+
+
+## (game.ts moveOpen) Is move `i` open to him: always in the practice room; by his level while THE FIRST LEVELS hold.
+func move_open(i: int) -> bool:
+	return practice or not first_levels or Words.move_open(i, loadout.level)
 
 
 ## Is mana what limits his moves (ABILITIES: MANA)?

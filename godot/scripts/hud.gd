@@ -52,6 +52,18 @@ var _banner_at := -9.0
 ## one of them; and, in shot mode, where the pointer is taken to be, null for the mouse itself)
 var _plates: Array = []
 var _lunge := Rect2()
+## THE FIRST LEVELS' MOMENT (hud.ts OPENING): the quick attack's plate slides over (`slide` s); the new plate opens out from its
+## middle (`revealAt`, over `reveal`), with a flash, rings, rays and sparks in the friend's cyan and white (`flourish`, to `end`)
+const OPEN_SLIDE := 0.45
+const OPEN_REVEAL_AT := 0.3
+const OPEN_REVEAL := 0.3
+const OPEN_END := 1.8
+## (what is drawn on: the HUD itself, or for a move opening out from its middle, the clipped layer over it: _wipe)
+var _ci: CanvasItem
+var _wipe: Control
+var _over: Control
+var _wipe_job := {}
+var _flourishes: Array = []
 var _inv_button := Rect2()
 ## (THE SKILL TREES: NEW TALENT, while a point waits to be spent: hud.ts; pressed, the gear screen on TALENTS)
 var _talent_button := Rect2()
@@ -63,6 +75,19 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_ci = self
+	# (a move opening: drawn on a layer cut to the middle of it that is open so far, and its flourish over that: hud.ts wipeOpen)
+	_wipe = Control.new()
+	_wipe.clip_contents = true
+	_wipe.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_wipe.visible = false
+	_wipe.draw.connect(_draw_wipe)
+	add_child(_wipe)
+	_over = Control.new()
+	_over.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_over.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_over.draw.connect(_draw_over)
+	add_child(_over)
 	_data = JSON.parse_string(FileAccess.get_file_as_string(DIR + "hud.json"))
 	_tex = load(DIR + "hud.png")
 	for k in _data["theme"]:
@@ -75,6 +100,11 @@ func _ready() -> void:
 
 func _process(dt: float) -> void:
 	_t += dt
+	# (THE FIRST LEVELS: a move just opened, its moment running: main.ts moveToast, gone after 3.4 s)
+	if main != null and not main.move_toast.is_empty() and not get_tree().paused:
+		main.move_toast["t"] = float(main.move_toast["t"]) + dt
+		if float(main.move_toast["t"]) > 3.4:
+			main.move_toast = {}
 	if not card.is_empty():
 		if not get_tree().paused:
 			card["t"] += dt
@@ -123,7 +153,7 @@ func _input(e: InputEvent) -> void:
 
 func _rect(x: float, y: float, w: float, h: float, c: Color) -> void:
 	if w > 0.0 and h > 0.0:
-		draw_rect(Rect2(x, y, w, h), c)
+		_ci.draw_rect(Rect2(x, y, w, h), c)
 
 
 ## ui.ts block: a block with its corners cut by half a game pixel.
@@ -152,7 +182,7 @@ func _pic(key: String, x: float, y: float, w := -1.0, h := -1.0, mod := Color.WH
 	if p.is_empty():
 		return
 	var src := Rect2(p[0], p[1], p[2], p[3])
-	draw_texture_rect_region(_tex, Rect2(x, y, w if w > 0 else p[2] / 2.0, h if h > 0 else p[3] / 2.0), src, mod)
+	_ci.draw_texture_rect_region(_tex, Rect2(x, y, w if w > 0 else p[2] / 2.0, h if h > 0 else p[3] / 2.0), src, mod)
 
 
 func _pic_size(key: String) -> Vector2:
@@ -179,7 +209,7 @@ func _button(x: float, y: float, w: float, h: float, label: String, small := fal
 
 
 func _text(s: String, x: float, y: float, c: Color, opts := {}) -> float:
-	return PF.draw(self, s, x, y, c, opts)
+	return PF.draw(_ci, s, x, y, c, opts)
 
 
 func _width(s: String, font := "normal") -> float:
@@ -275,44 +305,22 @@ func _draw() -> void:
 	var point: int = int(main.guide.point) if main != null else -1
 	var mouse: Vector2 = pointer if pointer != null else get_viewport().get_mouse_position() / 2.0
 	var hover_skill := -1
-	_lunge = Rect2(ex, py, ps, ps)
-	if _lunge.has_point(mouse):
+	# (THE FIRST LEVELS: a move not open yet is not shown at all, and the moment it opens is a moment: hud.ts OPENING)
+	var opening: Dictionary = main.move_toast if main != null and not main.move_toast.is_empty() and float(main.move_toast["t"]) < OPEN_END else {}
+	var dodge_shown: bool = hero.move_open(2)
+	var slow_shown: bool = hero.move_open(1)
+	var dodge_in: float = float(opening["t"]) if not opening.is_empty() and int(opening["skill"]) == 2 else -1.0
+	_lunge = Rect2(ex, py, ps, ps) if dodge_shown else Rect2()
+	if dodge_shown and _lunge.has_point(mouse):
 		hover_skill = 2
-	_slot(ex, py, ps, "ability:" + skills[2]["icon"], T["edgeHi"])
-	# (its words: a pip for each in its colour, those in front along the top of the button and those behind along the bottom)
-	var fi := 0
-	for w in hero.loadout.fronts(2):
-		_rect(ex + 1 + fi * 5, py + 1, 5, 5, ink)
-		_rect(ex + 2 + fi * 5, py + 2, 3, 3, Color(_data["word_color"][w]))
-		fi += 1
-	var bi := 0
-	for w in hero.loadout.behinds(2):
-		_rect(ex + 1 + bi * 5, py + ps - 6, 5, 5, ink)
-		_rect(ex + 2 + bi * 5, py + ps - 5, 3, 3, Color(_data["word_color"][w]))
-		bi += 1
-	var lunge_cover := clampf(1.0 - float(ready["lunge"]), 0.0, 1.0)
-	if lunge_cover > 0.0:
-		_rect(ex + 1, py + 1, ps - 2, ceilf((ps - 2) * lunge_cover), Color(P["black"], 0.72))
-	if ready.has("max") and int(ready["max"][2]) > 1:
-		_text(str(int(ready["have"][2])), ex + ps - 2, py + ps - 7, P["white"], {"align": "right", "font": "small", "shadow": ink})
-	_text("SPACE", ex + floorf(ps / 2.0), py - 7, T["accent"] if point == 2 else T["dim"], {"align": "center", "font": "small", "shadow": ink})
-	# (its name with its words, in the small letters over its button, once it has any)
-	var lunge_named: bool = not hero.loadout.fronts(2).is_empty() or not hero.loadout.behinds(2).is_empty()
-	if lunge_named:
-		var parts := _name_parts(2)
-		var nw := 0.0
-		for i in parts.size():
-			nw += _width(parts[i][0], "small") + (3.0 if i > 0 else 0.0)
-		var nx := W - 3 - nw
-		for p in parts:
-			nx += _text(p[0], nx, py - 14, p[1], {"font": "small", "shadow": ink}) + 3
-	if point == 2:
-		if pulse:
-			_rect(ex, py, ps, 1, T["accent"])
-			_rect(ex, py + ps - 1, ps, 1, T["accent"])
-			_rect(ex, py, 1, ps, T["accent"])
-			_rect(ex + ps - 1, py, 1, ps, T["accent"])
-		_arrow(ex + floorf(ps / 2.0), py - (17 if lunge_named else 9), T["accent"])
+	_wipe_job = {}
+	_flourishes = []
+	if dodge_shown and dodge_in >= 0.0:
+		# (the swipe's button opens out from its middle, at once, with its flourish)
+		_wipe_on(Rect2(ex, py, ps, ps), minf(1.0, dodge_in / OPEN_REVEAL), _draw_dodge.bind(ex, py, ps, ready, skills, point, pulse, ink, W))
+		_flourishes.append([ex + ps / 2.0, py + ps / 2.0, ps, ps, dodge_in])
+	elif dodge_shown:
+		_draw_dodge(ex, py, ps, ready, skills, point, pulse, ink, W)
 
 	# ---- the two attacks, written out with their word sockets ----
 	var PH := 20.0
@@ -328,38 +336,38 @@ func _draw() -> void:
 	var w1 := _plate_w(pieces[1])
 	var x0 := roundf((avail_l + avail_r - w0 - w1 - 5) / 2.0)
 	var plates := [Rect2(x0, H - PH - 4, w0, PH), Rect2(x0 + w0 + 5, H - PH - 4, w1, PH)]
-	_plates = plates
+	# (THE FIRST LEVELS: the quick one alone, in the middle where the two would be, till the slow one opens; then it slides over)
+	var alone := Rect2(roundf((avail_l + avail_r - w0) / 2.0), H - PH - 4, w0, PH)
+	if not slow_shown:
+		plates[0] = alone
+	var slow_in: float = float(opening["t"]) if not opening.is_empty() and int(opening["skill"]) == 1 and slow_shown else -1.0
+	if slow_in >= 0.0:
+		var k := _ease_in_out(minf(1.0, slow_in / OPEN_SLIDE))
+		plates[0] = Rect2(roundf(alone.position.x + (plates[0].position.x - alone.position.x) * k), plates[0].position.y, w0, PH)
+	_plates = plates if slow_shown else [plates[0]]
 	var keys := [str(skills[0].get("key", "LEFT CLICK")), str(skills[1].get("key", "HOLD RIGHT CLICK"))]
 	# (a plate is a button out of a fight: under the pointer it lights, and a press on it opens the gear screen at its move)
 	var button: bool = main != null and not main._in_fight()
 	for s in 2:
+		if s == 1 and not slow_shown:
+			continue
 		var r: Rect2 = plates[s]
 		var asked: bool = point == s
 		var hot: bool = (button or asked) and r.has_point(mouse)
 		if hot:
 			hover_skill = s
-		_box(r.position.x, r.position.y, r.size.x, r.size.y, T["hot"] if hot or (asked and pulse) else T["bg2"], ((T["accent"] if pulse else T["accentLo"]) if asked else (T["accent"] if hot else T["edge"])))
-		var iy := r.position.y + floorf((PH - 20) / 2.0)
-		# (a move whose words have given it an element: its picture rimmed in that element's colour)
-		var el: String = hero.loadout.r(s)["element"]
-		_slot(r.position.x, iy, 20, "ability:" + skills[s]["icon"], Color(_data["element_ramp"][el][2]) if el != "phys" else T["edgeHi"])
-		if s == 1:
-			var cover := clampf(1.0 - float(ready["whirl"]), 0.0, 1.0)
-			var going: bool = hero._act == "whirl" and hero._spun >= 0.0
-			if cover > 0.0 and not going:
-				_rect(r.position.x + 1, iy + 1, 18, ceilf(18 * cover), Color(P["black"], 0.72))
-			if going:
-				# (one that is being held: how much of its length is left, as a bar that runs down)
-				var left := clampf(1.0 - hero._spun / float(skills[1]["channel"]), 0.0, 1.0)
-				_rect(r.position.x + 1, iy + 15, 18, 4, ink)
-				_rect(r.position.x + 2, iy + 16, roundf(16 * left), 2, T["accent"])
-		# (a move that holds more than one charge: how many it has now, small, in its picture's corner: hud.ts maxCharges)
-		if ready.has("max") and int(ready["max"][s]) > 1:
-			_text(str(int(ready["have"][s])), r.position.x + 18, iy + 13, P["white"], {"align": "right", "font": "small", "shadow": ink})
-		_draw_phrase(pieces[s], r.position.x + 20 + PAD, r.position.y, PH, pulse)
-		_text(keys[s], r.position.x + 1, r.position.y - 6, T["dim"], {"font": "small", "shadow": ink})
-		if asked:
-			_arrow(r.position.x + floorf(r.size.x / 2.0), r.position.y - 8, T["accent"])
+		if s == 1 and slow_in >= 0.0:
+			# (and the slow one comes in after it, opening out from its middle, with a flourish)
+			var rk := (slow_in - OPEN_REVEAL_AT) / OPEN_REVEAL
+			if rk <= 0.0:
+				continue
+			_wipe_on(r, minf(1.0, rk), _draw_plate.bind(s, r, pieces, keys, ready, skills, asked, hot, pulse, ink, PH, PAD))
+			_flourishes.append([r.position.x + r.size.x / 2.0, r.position.y + r.size.y / 2.0, r.size.x, r.size.y, slow_in - OPEN_REVEAL_AT])
+			continue
+		_draw_plate(s, r, pieces, keys, ready, skills, asked, hot, pulse, ink, PH, PAD)
+	_wipe.visible = not _wipe_job.is_empty()
+	_wipe.queue_redraw()
+	_over.queue_redraw()
 	var bar_top: float = plates[0].position.y
 	if hover_skill >= 0 and not get_tree().paused:
 		# what the move under the pointer does, words included
@@ -502,6 +510,8 @@ func _draw() -> void:
 	var b: Dictionary = main.guide.banner(not boss_up and not toast_up) if main != null else {}
 	if toast_up:
 		_toast(loot.toast["word"], loot.toast["t"], 4.0 + (20.0 * rows if boss_up else 0.0) + (22.0 if bells_up else 0.0), loot.toast["big"], W)
+	elif main != null and not main.move_toast.is_empty() and not get_tree().paused:
+		_move_toast(int(main.move_toast["skill"]), float(main.move_toast["t"]), 4.0 + (20.0 * rows if boss_up else 0.0) + (22.0 if bells_up else 0.0), W)
 	elif not b.is_empty() and not boss_up and not bells_up:
 		_banner(b, W)
 
@@ -631,6 +641,181 @@ func _plate_w(ps: Array) -> float:
 	for p in ps:
 		n += float(p["w"])
 	return 20.0 + 4.0 + n + maxf(0.0, ps.size() - 1) * float(_data["sizes"]["piece_gap"]) + 4.0
+
+
+## THE LUNGE'S BUTTON (hud.ts): its picture, its words' pips, its wait, SPACE over it, its name with its words, the prompt's arrow.
+func _draw_dodge(ex: float, py: float, ps: float, ready: Dictionary, skills: Array, point: int, pulse: bool, ink: Color, W: float) -> void:
+	_slot(ex, py, ps, "ability:" + skills[2]["icon"], T["edgeHi"])
+	# (its words: a pip for each in its colour, those in front along the top of the button and those behind along the bottom)
+	var fi := 0
+	for w in hero.loadout.fronts(2):
+		_rect(ex + 1 + fi * 5, py + 1, 5, 5, ink)
+		_rect(ex + 2 + fi * 5, py + 2, 3, 3, Color(_data["word_color"][w]))
+		fi += 1
+	var bi := 0
+	for w in hero.loadout.behinds(2):
+		_rect(ex + 1 + bi * 5, py + ps - 6, 5, 5, ink)
+		_rect(ex + 2 + bi * 5, py + ps - 5, 3, 3, Color(_data["word_color"][w]))
+		bi += 1
+	var lunge_cover := clampf(1.0 - float(ready["lunge"]), 0.0, 1.0)
+	if lunge_cover > 0.0:
+		_rect(ex + 1, py + 1, ps - 2, ceilf((ps - 2) * lunge_cover), Color(P["black"], 0.72))
+	if ready.has("max") and int(ready["max"][2]) > 1:
+		_text(str(int(ready["have"][2])), ex + ps - 2, py + ps - 7, P["white"], {"align": "right", "font": "small", "shadow": ink})
+	_text("SPACE", ex + floorf(ps / 2.0), py - 7, T["accent"] if point == 2 else T["dim"], {"align": "center", "font": "small", "shadow": ink})
+	# (its name with its words, in the small letters over its button, once it has any)
+	var lunge_named: bool = not hero.loadout.fronts(2).is_empty() or not hero.loadout.behinds(2).is_empty()
+	if lunge_named:
+		var parts := _name_parts(2)
+		var nw := 0.0
+		for i in parts.size():
+			nw += _width(parts[i][0], "small") + (3.0 if i > 0 else 0.0)
+		var nx := W - 3 - nw
+		for p in parts:
+			nx += _text(p[0], nx, py - 14, p[1], {"font": "small", "shadow": ink}) + 3
+	if point == 2:
+		if pulse:
+			_rect(ex, py, ps, 1, T["accent"])
+			_rect(ex, py + ps - 1, ps, 1, T["accent"])
+			_rect(ex, py, 1, ps, T["accent"])
+			_rect(ex + ps - 1, py, 1, ps, T["accent"])
+		_arrow(ex + floorf(ps / 2.0), py - (17 if lunge_named else 9), T["accent"])
+
+
+## AN ATTACK'S PLATE (hud.ts): its picture rimmed in its element's colour, its wait, its charges, its name with its word sockets,
+## what makes it over it, the prompt's arrow.
+func _draw_plate(s: int, r: Rect2, pieces: Array, keys: Array, ready: Dictionary, skills: Array, asked: bool, hot: bool, pulse: bool, ink: Color, PH: float, PAD: float) -> void:
+	_box(r.position.x, r.position.y, r.size.x, r.size.y, T["hot"] if hot or (asked and pulse) else T["bg2"], ((T["accent"] if pulse else T["accentLo"]) if asked else (T["accent"] if hot else T["edge"])))
+	var iy := r.position.y + floorf((PH - 20) / 2.0)
+	# (a move whose words have given it an element: its picture rimmed in that element's colour)
+	var el: String = hero.loadout.r(s)["element"]
+	_slot(r.position.x, iy, 20, "ability:" + skills[s]["icon"], Color(_data["element_ramp"][el][2]) if el != "phys" else T["edgeHi"])
+	if s == 1:
+		var cover := clampf(1.0 - float(ready["whirl"]), 0.0, 1.0)
+		var going: bool = hero._act == "whirl" and hero._spun >= 0.0
+		if cover > 0.0 and not going:
+			_rect(r.position.x + 1, iy + 1, 18, ceilf(18 * cover), Color(P["black"], 0.72))
+		if going:
+			# (one that is being held: how much of its length is left, as a bar that runs down)
+			var left := clampf(1.0 - hero._spun / float(skills[1]["channel"]), 0.0, 1.0)
+			_rect(r.position.x + 1, iy + 15, 18, 4, ink)
+			_rect(r.position.x + 2, iy + 16, roundf(16 * left), 2, T["accent"])
+	# (a move that holds more than one charge: how many it has now, small, in its picture's corner: hud.ts maxCharges)
+	if ready.has("max") and int(ready["max"][s]) > 1:
+		_text(str(int(ready["have"][s])), r.position.x + 18, iy + 13, P["white"], {"align": "right", "font": "small", "shadow": ink})
+	_draw_phrase(pieces[s], r.position.x + 20 + PAD, r.position.y, PH, pulse)
+	_text(keys[s], r.position.x + 1, r.position.y - 6, T["dim"], {"font": "small", "shadow": ink})
+	if asked:
+		_arrow(r.position.x + floorf(r.size.x / 2.0), r.position.y - 8, T["accent"])
+
+
+static func _ease_in_out(k: float) -> float:
+	return 2.0 * k * k if k < 0.5 else 1.0 - pow(-2.0 * k + 2.0, 2.0) / 2.0
+
+
+## (hud.ts wipeOpen) What is drawn next for rect `r` cut to the middle `k` of its width (it opens out from its middle): its drawing
+## handed to the clipped layer.
+func _wipe_on(r: Rect2, k: float, job: Callable) -> void:
+	var ww := maxf(1.0, roundf(r.size.x * (1.0 - pow(1.0 - maxf(0.0, k), 3.0))))
+	var cut := Rect2(roundf(r.position.x + (r.size.x - ww) / 2.0) - 1.0, r.position.y - 12.0, ww + 2.0, r.size.y + 14.0)
+	_wipe.position = cut.position * 2.0
+	_wipe.size = cut.size * 2.0
+	_wipe_job = {"job": job}
+
+
+func _draw_wipe() -> void:
+	if _wipe_job.is_empty():
+		return
+	_ci = _wipe
+	_wipe.draw_set_transform(-_wipe.position, 0.0, Vector2(2, 2))
+	(_wipe_job["job"] as Callable).call()
+	_ci = self
+
+
+func _draw_over() -> void:
+	if _flourishes.is_empty():
+		return
+	_ci = _over
+	_over.draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))
+	for f in _flourishes:
+		_flourish(f[0], f[1], f[2], f[3], f[4])
+	_ci = self
+
+
+## (hud.ts flourish) The flourish a move comes in with: a flash over it, two rings thrown out flattened as the floor is, turning
+## rays, sparks that fly and fall, and its edge lit, pulsing as it settles. `age` in seconds.
+func _flourish(cx: float, cy: float, w: float, h: float, age: float) -> void:
+	if age < 0.0 or age > OPEN_END:
+		return
+	var k := age / OPEN_END
+	var fade := 1.0 - k
+	var wide := sqrt(maxf(1.0, w / maxf(1.0, h)))
+	if age < 0.3:
+		_rect(roundf(cx - w / 2.0), roundf(cy - h / 2.0), roundf(w), roundf(h), Color(P["white"], (1.0 - age / 0.3) * 0.85))
+	for ring in [[0.0, 110.0], [0.18, 70.0]]:
+		var a: float = age - float(ring[0])
+		if a < 0.0 or a > 0.9:
+			continue
+		var r: float = 8.0 + float(ring[1]) * (1.0 - pow(1.0 - a / 0.9, 3.0))
+		var col := Color(P["white"] if float(ring[0]) > 0.0 else T["accent"], (1.0 - a / 0.9) * 0.9)
+		for i in 72:
+			var t := float(i) / 72.0 * TAU
+			_rect(roundf(cx + cos(t) * r * wide), roundf(cy + sin(t) * r * 0.5), 2, 1, col)
+	for i in 14:
+		var t := float(i) / 14.0 * TAU + age * 1.8
+		var r0 := 6.0 + 46.0 * k
+		var r1 := r0 + 34.0 * fade
+		var col := Color(P["white"] if i % 2 == 1 else T["accent"], fade * 0.9)
+		for f in 13:
+			var r := r0 + (r1 - r0) * f / 12.0
+			_rect(roundf(cx + cos(t) * r * wide), roundf(cy + sin(t) * r * 0.55), 1, 1, col)
+	for i in 40:
+		var r1 := fmod(absf(sin(i * 12.9898) * 43758.5453), 1.0)
+		var r2 := fmod(absf(sin(i * 78.233) * 12345.678), 1.0)
+		var t := r1 * TAU
+		var sp := 50.0 + 110.0 * r2
+		var x := cx + cos(t) * sp * age * wide
+		var y := cy + sin(t) * sp * age * 0.6 - 40.0 * age + 90.0 * age * age
+		var sz := 2.0 if i % 5 == 0 else 1.0
+		_rect(roundf(x), roundf(y), sz, sz, Color(P["white"] if i % 3 == 0 else T["accent"], clampf(fade * (1.2 - r2 * 0.4), 0.0, 1.0)))
+	var pk := maxf(0.0, sin(age * 14.0)) * fade
+	if pk > 0.0:
+		var c := Color(T["accent"], pk)
+		var x0 := roundf(cx - w / 2.0) - 1.0
+		var y0 := roundf(cy - h / 2.0) - 1.0
+		_rect(x0, y0, roundf(w) + 2.0, 1, c)
+		_rect(x0, y0 + roundf(h) + 1.0, roundf(w) + 2.0, 1, c)
+		_rect(x0, y0, 1, roundf(h) + 2.0, c)
+		_rect(x0 + roundf(w) + 1.0, y0, 1, roundf(h) + 2.0, c)
+
+
+## (hud.ts drawMoveToast) "NEW MOVE": a move just opened with a level, at the top of the screen for a moment: its picture and its
+## name large, and how it is made ("HOLD RIGHT CLICK to WHIRL"). Returns where it ends.
+func _move_toast(skill: int, age: float, top: float, W: float) -> float:
+	var skills: Array = _skills()
+	var sk: Dictionary = Words.skill(hero.loadout.id(skill))
+	var name: String = str(sk["name"]).to_upper()
+	var scale := 3 if W >= 380.0 else 2
+	var nw := _width(name) * scale
+	var key: String = "SPACE" if skill == 2 else str(skills[skill].get("key", "RIGHT CLICK"))
+	var line := "%s to %s" % [key, str(sk.get("verb", name))]
+	var icon: String = "ability:" + str(skills[skill]["icon"])
+	var isz := _pic_size(icon)
+	var bw := minf(W - 8.0, maxf(isz.x * 2.0 + 8.0 + nw + 24.0, _width(line) + 20.0))
+	var row_h := maxf(9.0 * scale, isz.y * 2.0)
+	var bh := 14.0 + row_h + 14.0
+	var bx := floorf((W - bw) / 2.0)
+	var by := top - roundf((1.0 - minf(1.0, age / 0.18)) * 10.0)
+	var fade := maxf(0.0, 1.0 - (age - 2.8) / 0.5) if age > 2.8 else 1.0
+	_box(bx, by, bw, bh, Color(P["white"] if age < 0.1 else T["bg"], 0.92 * fade), Color(T["accent"], 0.92 * fade))
+	_text("NEW MOVE", floorf(W / 2.0), by + 4, Color(T["accent"], fade), {"align": "center", "font": "small"})
+	var tw := isz.x * 2.0 + 8.0 + nw
+	var x := floorf((W - tw) / 2.0)
+	_pic(icon, x, by + 12.0 + floorf((row_h - isz.y * 2.0) / 2.0), isz.x * 2.0, isz.y * 2.0, Color(1, 1, 1, fade))
+	var lit := age < 0.6 and int(floorf(age * 12.0)) % 2 == 0
+	_text(name, x + isz.x * 2.0 + 8.0, by + 12.0 + floorf((row_h - 9.0 * scale) / 2.0), Color(P["white"] if lit else T["accent"], fade), {"scale": scale, "shadow": Color(P["ink"], fade)})
+	_text(line, floorf(W / 2.0), by + 14.0 + row_h, Color(T["text"], fade), {"align": "center", "shadow": Color(P["ink"], fade)})
+	return by + bh
 
 
 func _draw_phrase(ps: Array, x0: float, y: float, h: float, pulse: bool) -> void:

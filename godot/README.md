@@ -822,6 +822,14 @@ look recorded from it: the sun through the windows, the motes, the braziers, the
   each, in the town and the camp, on a dark plate in the small letters, white for the one he stands at.
 `--only=glows` (floor 2's cultists, pictured), `--only=townnames` (`check_glows.gd`).
 
+Held beside the game's own town, one more difference turned up, and is the game's now: THE FIRST LEVELS (defs.ts FIRST_LEVELS,
+MOVE_OPENS; game.ts moveOpen): a hero's slow move opens at level 2 and the evasive one at 5; till then they cannot be used and are
+not shown (the quick attack's plate alone in the middle). The level that opens one says "A new move: WHIRLWIND." and gives it its
+moment (ui/hud.ts OPENING, drawMoveToast): the quick attack's plate sliding over, the new one opening out from its middle with a
+flash, two rings, turning rays and sparks in the friend's cyan and white, the dodge's button the same; NEW MOVE at the top of the
+screen, its picture, its name large and how it is made. In play and for a test hero; the practice room has every move open, and so
+do the checks of anything else. `--only=openings`, pictured.
+
 ## Not in it yet
 
 Frenzied on the prison's bosses' own scripts

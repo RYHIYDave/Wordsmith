@@ -127,6 +127,9 @@ static var trial_file := {}
 ## THE PRACTICE ROOM (game.ts forPractice, practice): a seasoned throwaway hero in the arena, packs coming on and on; nothing there
 ## can kill him, nothing drops but life orbs, nothing is saved (practice.gd)
 var practice := false
+## THE FIRST LEVELS' MOMENT: a move just opened with a level, {skill, t} (main.ts moveToast: the HUD's NEW MOVE and its plate's
+## reveal), {} none
+var move_toast := {}
 var hero_mode := "normal"
 ## NORMAL OR HARDCORE (game/modes.ts; game.ts die, wakes, wakeSave, losses; main.ts wake; ui/panels.ts drawDeath, wakeLine): his
 ## rulebook's “Every hero is made in one of two modes, picked at the start and kept for life.” A NORMAL hero who falls in a dungeon
@@ -325,6 +328,8 @@ func _ready() -> void:
 	trial = int(fresh.get("trial", tf.get("trial", 0)))
 	practice = fresh.get("practice", false) == true
 	hero.practice = practice
+	# (THE FIRST LEVELS: in play, for a test hero, and in their own check; a check of anything else has every move open)
+	hero.first_levels = saving or trial > 0 or _arg("only") in ["openings"]
 	hero.loadout.practice = practice
 	if trial > 0 or practice:
 		saving = false
@@ -2269,6 +2274,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "trial":
 		await preload("res://scripts/check_title.gd").new().trial_run(self, hero, dir)
+		return
+	if _arg("only") == "openings":
+		await preload("res://scripts/check_glows.gd").new().openings(self, hero, dir)
+		get_tree().quit()
 		return
 	if _arg("only") == "townnames":
 		await preload("res://scripts/check_glows.gd").new().town(self, hero, dir)
