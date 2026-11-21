@@ -26,6 +26,10 @@ const WALL_TALL := 80.0
 var map: FloorMap
 var art: GroundArt
 var hero: Hero
+## (the floor's monsters, monsters.gd: one in sight behind a wall sees it through too, render.ts wallVeil)
+var foes = null
+## (render.ts wallVeil: for a monster in sight, a narrower stretch round it, 30 game pixels either side, wholly within half of it)
+const FOE_ACROSS := 60.0
 ## (false where the place's recorded look brings its own walls: look.gd adds them with add_wall)
 var build_walls := true
 ## (true where every wall stands and those between the eye and the hero fade: floors 1 to 5, WHOLE_WALLS; not the town's hall)
@@ -119,6 +123,26 @@ func _stand(p: Dictionary, tx: int, ty: int) -> void:
 	_backs.append(_back_of(top))
 
 
+## render.ts wallVeil's `want`: how much of the wall whose tile's top corner is `top` (picture px) is drawn for a figure whose feet are
+## at `fp` (picture px), at depth `d`, standing at `w` (tiles): wholly, unless the figure is behind it (its depth short of the wall's
+## by half a tile), not looking at it as a back wall, and near it on the screen (from 30 game pixels below its foot to 72 above
+## its top, and within `half` either side counted from 16 beyond its middle): then faint wholly within `full` of `half`, fading
+## back to whole at `half`.
+func _want(top: Vector2, bk: Vector3i, depth: float, fp: Vector2, d: float, w: Vector2, half: float, full: float) -> float:
+	if d >= depth - 0.5:
+		return 1.0
+	if (bk.z & FACE_LEFT and w.y >= bk.y + 1) or (bk.z & FACE_RIGHT and w.x >= bk.x + 1):
+		return 1.0
+	if top.y - WALL_TALL > fp.y + 60.0 or top.y + 32.0 < fp.y - 144.0:
+		return 1.0
+	var off := maxf(0.0, absf(top.x - fp.x) - 32.0)
+	if off >= half:
+		return 1.0
+	if off <= half * full:
+		return FAINT
+	return FAINT + (1.0 - FAINT) * (off - half * full) / (half * (1.0 - full))
+
+
 ## render.ts wallVeil, for the hero: a wall he is behind (his depth short of its own by half a tile) and near on the screen is
 ## seen through, faint wholly within 60% of 96 game pixels either side of him (counted from 16 beyond his middle), fading back
 ## to whole at 96; a back wall to him never.
@@ -128,15 +152,21 @@ func _process(dt: float) -> void:
 	var hd: float = hero.world.x + hero.world.y
 	var hp := hero.position
 	var step := dt * (1.0 - FAINT) / SECS
+	# (and every monster in sight, alive, near enough the screen to stand behind a wall on it: its feet, its depth, where it is)
+	var them: Array = []
+	if foes != null and is_instance_valid(foes):
+		for m in foes.list:
+			if is_instance_valid(m) and not m.dead and m.seen and m.visible and absf(m.position.x - hp.x) < 1200.0 and absf(m.position.y - hp.y) < 800.0:
+				them.append([m.position, m.world.x + m.world.y, m.world])
 	for i in _walls.size():
-		var want := 1.0
 		var top := _tops[i]
 		var bk := _backs[i]
-		var back := (bk.z & FACE_LEFT and hero.world.y >= bk.y + 1) or (bk.z & FACE_RIGHT and hero.world.x >= bk.x + 1)
-		if hd < _depths[i] - 0.5 and not back and top.y - WALL_TALL <= hp.y + 60.0 and top.y + 32.0 >= hp.y - 144.0:
-			var off := maxf(0.0, absf(top.x - hp.x) - 32.0)
-			if off < ACROSS:
-				want = FAINT if off <= ACROSS * 0.6 else FAINT + (1.0 - FAINT) * (off - ACROSS * 0.6) / (ACROSS * 0.4)
+		var want := _want(top, bk, _depths[i], hp, hd, hero.world, ACROSS, 0.6)
+		if want > FAINT:
+			for f in them:
+				want = minf(want, _want(top, bk, _depths[i], f[0], f[1], f[2], FOE_ACROSS, 0.5))
+				if want <= FAINT:
+					break
 		var s := _walls[i]
 		if s.modulate.a != want:
 			s.modulate.a = move_toward(s.modulate.a, want, step)

@@ -689,3 +689,61 @@ func voices(main, hero, dir: String) -> void:
 	h.unhurt = false
 	print("VOICES: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
+
+## THE WALLS SEEN THROUGH FOR THE MONSTERS BEHIND THEM (--only=wallsee; render.ts wallVeil): on floors 1 to 5 a wall between the eye
+## and a monster in sight, near it on the screen, fades to faint as it does for him (narrower: 30 game pixels either side of it);
+## out of sight, it does not, and the wall comes back whole. On floor 4, he in front of it; pictured.
+func wallsee(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	M.way_depth = maxi(M.way_depth, 4)
+	await M.go_to("floor4", "down")
+	await M._wait(0.8)
+	var st = M.look.stands if M.look != null else M._monsters.stands
+	var mon = null
+	for m in M._monsters.list:
+		if is_instance_valid(m) and not m.dead and not m.boss:
+			mon = m
+			break
+	for m in M._monsters.list:
+		if is_instance_valid(m):
+			m.process_mode = Node.PROCESS_MODE_DISABLED
+	# (a wall with open floor behind it and before it: the monster a tile and a half behind its face, he four tiles before it)
+	var pick := -1
+	var mw := Vector2.ZERO
+	var hw := Vector2.ZERO
+	for i in st._walls.size():
+		var top: Vector2 = st._tops[i]
+		var d: float = st._depths[i]
+		var dif: float = top.x / 32.0
+		var w := Vector2((d - 1.5 + dif) / 2.0, (d - 1.5 - dif) / 2.0)
+		var f := w + Vector2(3.0, 3.0)
+		if M.map.walkable(floori(w.x), floori(w.y)) and M.map.walkable(floori(f.x), floori(f.y)) and st._backs[i].z == 0:
+			pick = i
+			mw = w
+			hw = f
+			break
+	_line(pick >= 0 and mon != null, "a wall with floor behind it (%d of %d walls), and a monster (%s)" % [pick, st._walls.size(), mon.kind if mon != null else "-"])
+	if pick < 0 or mon == null:
+		return
+	var wall: Sprite2D = st._walls[pick]
+	# (in sight, as it would be to him from beside it in the room behind the wall: his sight held still while he stands before it)
+	if M.sight != null:
+		M.sight.process_mode = Node.PROCESS_MODE_DISABLED
+	h.world = hw
+	mon.world = mw
+	mon.position = Vector2((mw.x - mw.y) * 32.0, (mw.x + mw.y) * 16.0)
+	mon.seen = true
+	mon.visible = true
+	await M._wait(0.6)
+	var a_seen: float = wall.modulate.a
+	await M._snap(dir + "/ws_behind_the_wall.png")
+	_line(absf(a_seen - st.FAINT) < 1e-3, "the monster in sight behind it, he in front: the wall faint (%.2f; the game's 0.2)" % a_seen)
+	mon.seen = false
+	await M._wait(0.6)
+	var a_unseen: float = wall.modulate.a
+	_line(absf(a_unseen - 1.0) < 1e-3, "out of sight: the wall whole again (%.2f)" % a_unseen)
+	h.unhurt = false
+	print("WALLSEE: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+

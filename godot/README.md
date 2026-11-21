@@ -953,9 +953,16 @@ lights over the dark (town.gd `_ring_moments`):
   within 5 s, a basic blow's line not within 20 s): the Warden (his slam, his lockdown, his bolts), the Rat King, the Physician,
   the Prince, the Queen and the King (`act1.gd` start_act). `--only=voices` (`check_glows.gd`): 10 checks.
 
+## The walls seen through for the monsters behind them (the cloud chat, 21 Nov 2026)
+
+- **Walls** (render.ts wallVeil): on floors 1 to 5 a wall between the eye and a monster in sight, near it on the screen, fades to
+  faint as it does for him, over a narrower stretch (30 game pixels either side of it, wholly faint within half of that), and
+  comes back whole once it is not; never a wall that is a back wall to it. `stands.gd` `_want`. `--only=wallsee`
+  (`check_glows.gd`): 3 checks on floor 4, pictured.
+
 ## Not in it yet
 
-The wall's see-through for the monsters behind it; uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+Uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); a phone's own options (where an attack aims, the screen turned).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
