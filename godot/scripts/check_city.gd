@@ -1386,11 +1386,16 @@ func _censor() -> void:
 	# WHAT HE LAYS STAYS: standing on it, hurt
 	struck = 0
 	var map = M._monsters.map
+	# (on his newest ink: the oldest dries away as more is laid, and what has dried hurts no more)
 	var inked_at := Vector2.INF
-	for i in (M._monsters.censor.get("ground", []) as Array):
-		var q := Vector2(int(i) % map.w + 0.5, int(i) / map.w + 0.5)
-		if CER.inked(map, q.x, q.y) and q.distance_to(boss.world) > 3.0:
-			inked_at = q
+	var pool: Array = CER._pool_of(map)["list"]
+	for e in range(pool.size() - 1, -1, -1):
+		for i in (pool[e].get("tiles", []) as Array):
+			var q := Vector2(int(i) % map.w + 0.5, int(i) / map.w + 0.5)
+			if CER.inked(map, q.x, q.y) and q.distance_to(boss.world) > 3.0:
+				inked_at = q
+				break
+		if inked_at != Vector2.INF:
 			break
 	boss.rise(1e9)
 	if inked_at != Vector2.INF:

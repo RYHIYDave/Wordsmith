@@ -637,8 +637,8 @@ hero, who wakes in town; here he is back where the last save left him), the camp
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
 breaks, what stands behind raised ground cut off by it, menus (a new hero is picked on the class cards; there is no title menu to
 go BACK to), the title screen's music and the ring's moving light; the heroes' skill trees and talents (the Tinkerer's Golem has its
-cannon arm, as he picked it), the modes' rules for a fallen hero, the soft shadows under the hero and the monsters (render.ts shadow: here drawn only under the Golem and the Mage's orbs); and the
-monsters' bake of the released game 25.3.21 (b982b7f72ca4: the port's is still fe60947db695).
+cannon arm, as he picked it), the modes' rules for a fallen hero, and the soft shadows under the hero and the monsters (render.ts shadow: here drawn only under the Golem and the Mage's orbs).
+(The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made
 
