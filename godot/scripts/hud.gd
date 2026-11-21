@@ -228,20 +228,84 @@ func _disc(cx: float, cy: float, r: float, c: Color, top := -1e9, bottom := 1e9)
 		y += 0.5
 
 
-## hud.ts globe: a flat disc of deep indigo, the liquid in one flat colour with a line of light along its surface, a thin rim.
+## hud.ts globe (ART_TWEAKS.globe, on in the game since 12 Nov 2026: THE GLOBE AS GLASS IN AN IRON BAND, hud.ts globeGlass): the
+## liquid, its line of light and the thin ring that tells what ails the hero as they were; the side of the liquid away from the
+## light a shade deeper, a glint on the glass toward the light, and round it a band of iron (lit from the upper left) with four
+## rivets. One game pixel wider each way than the plain globe. Painted once for each level of the liquid and kept, in picture
+## pixels (two to a game pixel).
+const GLOBE_IRON := [Color("#1c1836"), Color("#3a3560"), Color("#6f6a96"), Color("#bcb8d8")]
+var _globes := {}
+
+
+## hud.ts mixHex: a to b by t, each channel rounded.
+static func _mix_hex(a: Color, b: Color, t: float) -> Color:
+	return Color8(roundi(a.r8 + (b.r8 - a.r8) * t), roundi(a.g8 + (b.g8 - a.g8) * t), roundi(a.b8 + (b.b8 - a.b8) * t))
+
+
 func _globe(cx: float, cy: float, r: float, frac: float, fill: Color, light: Color, rim: Color) -> void:
-	var mx := cx + 0.5
-	var my := cy + 0.5
-	var R := r + 0.5
-	_disc(mx, my, R + 1.0, rim)
-	_disc(mx, my, R, T["ink"])
 	var f := clampf(frac, 0.0, 1.0)
-	if f <= 0.0:
-		return
-	var level := roundf((my + R - f * 2.0 * R) * 2.0) / 2.0
-	_disc(mx, my, R, fill, level)
-	if f < 1.0:
-		_disc(mx, my, R, light, level, level + 1.0)
+	# (the glass's reach, and the picture's, game pixels from its middle)
+	var R := r - 0.5
+	var half := r + 3.0
+	# (in picture pixels: the picture's side, its middle, the glass's reach, the row of the liquid's surface)
+	var N := int(half * 4.0)
+	var mid := N / 2.0
+	var Rp := R * 2.0
+	var level: int = N if f <= 0.0 else roundi(mid + Rp - f * 2.0 * Rp)
+	var key := "%s|%d|%s|%s|%s" % [r, level, fill.to_html(false), light.to_html(false), rim.to_html(false)]
+	var tex: Texture2D = _globes.get(key)
+	if tex == null:
+		if _globes.size() > 96:
+			_globes.clear()
+		var img := Image.create(N, N, false, Image.FORMAT_RGBA8)
+		var deep := _mix_hex(fill, T["ink"], 0.4)
+		var glint := _mix_hex(fill, Color.WHITE, 0.72)
+		for y in N:
+			for x in N:
+				var dx := x + 0.5 - mid
+				var dy := y + 0.5 - mid
+				var d := sqrt(dx * dx + dy * dy)
+				# (1 on the side away from the light, lower right; -1 toward it)
+				var away := (dx + dy) / (sqrt(2.0) * maxf(1.0, d))
+				var col := Color(0, 0, 0, 0)
+				if d <= Rp:
+					var wet := y >= level
+					# (the side away from the light: a crescent, what lies outside a ring set toward the light)
+					var far := Vector2(dx + Rp * 0.26, dy + Rp * 0.26).length() > Rp * 0.99
+					col = T["ink"] if not wet else (light if f < 1.0 and y < level + 2 else (deep if far else fill))
+					# (the glint: a short arc just inside the glass, toward the light)
+					if d > Rp - 8.0 and d <= Rp - 5.0 and away < -0.8 and col != light:
+						col = glint if wet else GLOBE_IRON[1]
+				elif d <= Rp + 2.0:
+					col = rim
+				elif d <= Rp + 6.0:
+					col = GLOBE_IRON[2] if away < -0.3 else (GLOBE_IRON[0] if away > 0.4 else GLOBE_IRON[1])
+				if col.a > 0.0:
+					img.set_pixel(x, y, col)
+		# (four rivets on the band: a lit head, its shade under it)
+		var br := (Rp + 4.0) * sqrt(0.5)
+		for a in [[-1, -1], [1, -1], [1, 1], [-1, 1]]:
+			var rx := roundi(mid + a[0] * br - 1.5)
+			var ry := roundi(mid + a[1] * br - 1.5)
+			img.fill_rect(Rect2i(rx, ry, 4, 4), GLOBE_IRON[0])
+			img.fill_rect(Rect2i(rx, ry, 3, 3), GLOBE_IRON[3])
+			img.fill_rect(Rect2i(rx + 1, ry + 1, 2, 2), GLOBE_IRON[2])
+		tex = ImageTexture.create_from_image(img)
+		_globes[key] = tex
+	_ci.draw_texture_rect(tex, Rect2(cx + 0.5 - half, cy + 0.5 - half, half * 2.0, half * 2.0), false)
+
+
+## hud.ts lifeRim: the thin ring round the life globe takes the colour of what ails him (burning, poisoned, chilled, shocked).
+func _life_rim() -> Color:
+	if hero.burn_t > 0.0:
+		return P["fr4"]
+	if hero.poison_t > 0.0:
+		return P["vn4"]
+	if hero.chill_t > 0.0:
+		return P["bu4"]
+	if hero.shock_t > 0.0:
+		return P["lt3"]
+	return T["edgeHi"]
 
 
 ## ui/words.ts arrow: pointing down at (x, y), bobbing, with its shadow.
@@ -277,7 +341,7 @@ func _draw() -> void:
 	# ---- the life globe ----
 	var gy := H - 19
 	var life_x := 19.0
-	_globe(life_x, gy, 14, hero.life / hero.max_life, T["life"], T["lifeHi"], T["edgeHi"])
+	_globe(life_x, gy, 14, hero.life / hero.max_life, T["life"], T["lifeHi"], _life_rim())
 	_text("%d" % ceili(hero.life), life_x, gy - 3, P["white"], {"align": "center", "font": "small", "shadow": ink})
 	# (mana is only there to be seen when it is what limits the slow abilities: hud.ts, its globe at the right)
 	var by_mana: bool = hero.by_mana()

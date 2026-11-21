@@ -16,7 +16,7 @@
 ## guide has nothing to say: "Speak to the ARMOURER" the moment he has a quest to give (the ring lit), and "Return to the
 ## ARMOURER" the moment the furnace is out and as the hero comes into a place with that done; the same for the wordsmith
 ## and his stone. Under it, where they are (in town) or the way back to them (on a floor). It goes when it has been seen 6 s,
-## or they have been seen to. (The rune that floats over the one it names is the game's art, not brought over.)
+## or they have been seen to. (The rune that floats over the one it names: act1/quest610.gd _Marks.)
 extends RefCounted
 
 const Words := preload("res://scripts/words.gd")

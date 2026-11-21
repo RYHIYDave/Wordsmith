@@ -176,7 +176,13 @@ var scene_pace := 0.0
 var lean := Vector2.ZERO
 var world := Vector2.ZERO
 var home := Vector2.ZERO
-var face := Vector2(1, 0)
+## (render.ts: his picture's side is read from fx, fy as he is drawn, so it follows his facing however it is set: on coming into
+## a place too, where it is set straight; wuFacing below)
+var face := Vector2(1, 0):
+	set(v):
+		face = v
+		if v != Vector2.ZERO:
+			_side = BakedHero.SIDES.find(FACING[posmod(roundi(rad_to_deg(atan2(v.y, v.x)) / 45.0), 8)])
 var alive := true
 ## how far he has walked (the guide's first prompt goes once he has walked 3 tiles)
 var walked := 0.0
@@ -1927,8 +1933,6 @@ func _set_list(list: int) -> void:
 
 func _turn(way: Vector2) -> void:
 	face = way
-	var k := posmod(roundi(rad_to_deg(atan2(way.y, way.x)) / 45.0), 8)
-	_side = BakedHero.SIDES.find(FACING[k])
 
 
 ## The game's slide: the step along x kept if the body is clear there, then the step along y.

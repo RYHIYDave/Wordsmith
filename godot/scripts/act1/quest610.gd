@@ -106,7 +106,8 @@ func enter(where: String) -> void:
 	var place: Node2D = main._place
 	_marks = _Marks.new()
 	_marks.q = self
-	_marks.z_index = 49
+	# (drawn last in the game, after the services' names: over the place's dark and over the names, z 60)
+	_marks.z_index = 61
 	place.add_child(_marks)
 	_quip = _Quip.new()
 	_quip.q = self
@@ -667,6 +668,26 @@ class _Marks extends Node2D:
 	static func _half(v: float) -> float:
 		return roundf(v * 2.0) / 2.0
 
+	## The glow's picture (the canvas's radial gradient): its middle the friend's cyan, or white-hot in a flash, fading straight
+	## out to nothing at its rim; its strength laid on as it is drawn.
+	var _glows := {}
+
+	func _glow(hot: bool) -> Texture2D:
+		if _glows.has(hot):
+			return _glows[hot]
+		var g := Gradient.new()
+		g.set_color(0, Color8(224, 255, 252, 255) if hot else Color8(122, 248, 240, 255))
+		g.set_color(1, Color8(122, 248, 240, 0))
+		var tex := GradientTexture2D.new()
+		tex.gradient = g
+		tex.fill = GradientTexture2D.FILL_RADIAL
+		tex.fill_from = Vector2(0.5, 0.5)
+		tex.fill_to = Vector2(1.0, 0.5)
+		tex.width = 64
+		tex.height = 64
+		_glows[hot] = tex
+		return tex
+
 	func _flash(t: float) -> float:
 		var F: Dictionary = q.Q["marks"]["flash"]
 		var every: float = F["every"]
@@ -689,11 +710,7 @@ class _Marks extends Node2D:
 		# (its glow, soft, breathing a little; thrown wide in its flash)
 		var r := 12.0 + float(M["flash"]["glow"]) / 2.0 * f * 2.0
 		var a := minf(0.9, 0.3 + 0.08 * sin(t * 3.2 + 1.0) + 0.45 * f)
-		var c0 := Color("#e0fffc") if f > 0.5 else Color("#7af8f0")
-		var steps := 10
-		for i in range(steps, 0, -1):
-			var k := float(i) / steps
-			draw_circle(Vector2(cx, cy), r * k, Color(c0, a * (1.0 - k) * 0.35))
+		draw_texture_rect(_glow(f > 0.5), Rect2(cx - r, cy - r, r * 2.0, r * 2.0), false, Color(1, 1, 1, a))
 		# (its rays, in its flash: up, down and to its sides, long; between them, short)
 		if f > 0.04:
 			var from := minf(w, h) / 2.0 + 1.0

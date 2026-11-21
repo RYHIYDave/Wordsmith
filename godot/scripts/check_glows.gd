@@ -4,6 +4,8 @@
 ## Pictured. A line a thing; then the sum, GLOWS.
 extends RefCounted
 
+const BakedHero := preload("res://scripts/baked_hero.gd")
+
 var M
 var h
 var n := 0
@@ -138,3 +140,38 @@ func openings(main, hero, dir: String) -> void:
 	_line(hud._lunge.size != Vector2.ZERO and h._act == "lunge", "its button at the right; pressed, he lunges")
 	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
+
+
+## SET BESIDE THE GAME (--only=compare): what setting Godot's pictures beside the game's turned up, each as the game has it.
+##   THE QUEST MARKER over whoever has a quest for him, drawn last (render.ts questMarks, after the services' names): over the
+##     place's dark (z 50) and the names (z 60). A new game: over the wordsmith. Pictured.
+##   THE LIFE GLOBE as glass in an iron band (hud.ts globeGlass, ART_TWEAKS.globe on), its thin ring the colour of what ails him
+##     (hud.ts lifeRim): burning, the fire's. Pictured.
+##   COMING INTO A FLOOR he faces down and to the right, his face to the one playing (game.ts enterDungeon: fx 1, fy 0), and his
+##     picture is the one that faces so (render.ts: the side read from fx, fy as he is drawn), whichever way he last faced. Pictured.
+##   ON A FLOOR, carrying something back: the marker over the floor's waypoint home, 40 game pixels up. Pictured.
+func compare(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	await M._wait(1.0)
+	var q6 = M.quest610
+	await M._snap(dir + "/c01_town_marker_over_the_wordsmith.png")
+	_line(q6 != null and q6._marks.z_index > 60 and q6.givers().has("wordsmith"), "a new game: the marker over the wordsmith (%s), drawn over the dark and the names (z %d)" % [str(q6.givers()), q6._marks.z_index])
+	var hud = M._hud
+	h.burn_t = 2.0
+	await M._wait(0.2)
+	await M._snap(dir + "/c02_globe_burning.png")
+	_line(not hud._globes.is_empty() and hud._life_rim() == hud.P["fr4"], "the life globe painted as glass in its iron band (%d kept); burning, its ring the fire's" % hud._globes.size())
+	h.burn_t = 0.0
+	h._turn(Vector2(-0.7071, -0.7071))
+	var was: String = BakedHero.SIDES[h._side]
+	M.go_to("floor3", "down")
+	await M._wait(1.6)
+	await M._snap(dir + "/c03_floor3_facing_in.png")
+	_line(h.face.distance_to(Vector2(1, 0)) < 0.01 and BakedHero.SIDES[h._side] == "front", "facing %s in town, he comes into floor 3 facing down and to the right %s, his picture the one that faces so (%s)" % [was, str(h.face), BakedHero.SIDES[h._side]])
+	M.loot.quest = "heart"
+	await M._wait(0.6)
+	await M._snap(dir + "/c04_marker_over_the_waypoint.png")
+	_line(q6.turn_in_for() == "wordsmith" and M.map.waypoint != null, "carrying the stone, the marker over floor 3's waypoint home (he brings it back for the %s)" % q6.turn_in_for())
+	M.loot.quest = ""
+	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

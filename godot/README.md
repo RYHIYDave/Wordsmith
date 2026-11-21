@@ -830,6 +830,22 @@ flash, two rings, turning rays and sparks in the friend's cyan and white, the do
 screen, its picture, its name large and how it is made. In play and for a test hero; the practice room has every move open, and so
 do the checks of anything else. `--only=openings`, pictured.
 
+## Set beside the game: floors and fights (the cloud chat, 21 Nov 2026)
+
+His pick: “Compare more of the game (Recommended)”. Godot's pictures set beside the game's own on floors 3, 7, 12, 16 and 19 (where he
+comes in, the biggest room's fight, the bosses' halls) and in the town as a new game begins. What differed, and is the game's now:
+- HIS FACING AS HE COMES IN (game.ts enterDungeon: fx 1, fy 0, the owner's “always have the come down into the dungeon looking down
+  right”): he was set facing so, but his picture kept the side he last faced, so he stood with his back to the screen. His picture's
+  side is now read from his facing however it is set, as the game reads fx, fy as he is drawn (hero.gd `face`).
+- THE LIFE GLOBE (and the mana globe) AS GLASS IN AN IRON BAND (hud.ts globeGlass; ART_TWEAKS.globe, on in the game since 12 Nov):
+  the liquid's far side a shade deeper, a glint toward the light, a band of iron lit from the upper left, four rivets; the same as
+  the game's to the pixel. And its thin ring takes the colour of what ails him (hud.ts lifeRim: burning, poisoned, chilled, shocked).
+- THE QUEST MARKER (act1/quest610.gd `_Marks`) drawn last, as the game draws it after the names: over the place's dark and the
+  services' names (it lay under the dark), and its glow the game's smooth fade in place of rings.
+What looked different but is the game's own: the piece he came out of behind him on floors 6 to 16 (the stair down the spur on 7,
+the ladder's foot on 12, the garden gate on 16), which the game draws too once its picture is painted, a moment after he comes in;
+and the cultists' raised fire and the circle under him, the game's same cast caught at another moment. `--only=compare`, pictured.
+
 ## Not in it yet
 
 Frenzied on the prison's bosses' own scripts
@@ -840,9 +856,9 @@ Headsman's vault sends up as it lands and a bone arrow and the Warden's bolts in
 general effects are brought over only for the words so far), the bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
 and blows; what a boss says is shown, not spoken), the
-Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them, the moves' level locks, talents; in the town: the
+Headsman's gate's own fall and slam, the wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them; in the town: the
 stone floating from him to the slab, the letters
-swirling round the ring and its column of light, the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
+swirling round the ring and its column of light, the camp's GATE service; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
 breaks, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); a phone's own options (where an attack aims, the screen turned).
