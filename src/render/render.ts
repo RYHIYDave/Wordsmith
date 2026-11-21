@@ -180,6 +180,7 @@ import { onTop } from '../game/act2/quiettower';
 const MOTH_LEAN = { share: 0.5, most: 0.3, up: 120, perched: 60, glide: 3 } as const;
 import { BellsLook } from './bells';
 import { redoubtGround } from '../art/redoubt';
+import { sanctumGround } from '../art/cult_sanctum';
 import type { Painter } from './painter';
 import type { BakedMonsters } from './monsters_baked';
 import { QUEEN_ACTION } from '../art/carrion_queen_action';
@@ -2414,11 +2415,7 @@ export class Renderer {
         if (r > 0 && ART_TWEAKS.cast) this.shadow(g, Math.round(sx + r * 22), Math.round(sy + r * 6), r * 1.3, SHADOW * 0.85);
         if (a.lies(p) || ((p.kind === 'barrel' || p.kind === 'urn') && p.state === 1)) {
           const sp = a.sprite(p, t);
-          // (HALL_LOOK: a stronghold hall's processional way, the court's pale flagstones laid half sunk into the hall's dim)
-          const sunk = p.kind === 'piece' && p.name === "the court's flagstones";
-          if (sunk) g.globalAlpha = 0.5;
           if (sp) g.drawImage(sp.img, Math.round(sx) - sp.ax, Math.round(sy) - sp.ay, sp.w, sp.h);
-          if (sunk) g.globalAlpha = 1;
           continue;
         }
         if (p.kind === 'piece' || p.kind === 'barrel' || p.kind === 'urn') continue;
@@ -3340,7 +3337,8 @@ export class Renderer {
     const h = game.hero;
     // (ACT 1: inside a stronghold's hall the floor and walls are the redoubt's stone: art/redoubt.ts)
     const inHall = !!L.land && L.land.holds.some((q) => inHold(q, h.x, h.y));
-    const art = inHall ? { ...this.art, ground: redoubtGround() } : this.art;
+    // (HALL_LOOK: the cult's sanctum's own stone, black-violet, its joints glowing: art/cult_sanctum.ts)
+    const art = inHall ? { ...this.art, ground: HALL_LOOK.on ? sanctumGround() : redoubtGround() } : this.art;
     // (magic with no element word on it is violet, where a blade's blow is steel: a mage's, and
     // anyone's who carries a staff or a wand)
     const held = game.weapon();
@@ -5586,8 +5584,7 @@ export class Renderer {
       else if (p.kind === 'forge') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 6, 60 + Math.sin(t * 9) * 3, 0.9);
       else if (p.kind === 'tentTable') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 18, 56, 0.8);
       else if (p.kind === 'runeSlab') spot(wx(cam, p.x, p.y) + 8, wy(cam, p.x, p.y) - 12, 64 + Math.sin(t * 2) * 3, 0.75);
-      // (HALL_LOOK: a stronghold's ring of magic lights its hall, its glow breathing: game/act1_dress.ts)
-      else if (HALL_LOOK.on && p.kind === 'piece' && p.name === "the cult's ring of magic") spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 6, 120 + Math.sin(t * 2) * 6, 0.7);
+
     }
     for (const p of game.projectiles) if (p.look !== 'dart') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? (WILD.on ? 52 : 34) : WILD.on && p.look === 'arrow' ? 40 : 26, 0.8);
     // What a monster's own fire lights: the floor round a cultist's flame (and far more of it as
