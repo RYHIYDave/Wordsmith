@@ -124,5 +124,11 @@
     "fightIn": 0.006
    }
   }
+ },
+ "title": {
+  "file": "music_title.ogg",
+  "loopStart": 94.024,
+  "loopEnd": 162.275,
+  "vol": 0.8
  }
 }

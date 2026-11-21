@@ -67,6 +67,9 @@ func _process(dt: float) -> void:
 	_t += dt
 	if main == null or main.hero == null:
 		return
+	# (the start screen, or the class cards, over everything: nothing of the game's own answers)
+	if main._title != null or main._cards != null:
+		return
 	# (a press that closed a panel lets the game go on the frame after, so that it is not a blow as well)
 	if _resume_at >= 0 and Engine.get_process_frames() > _resume_at:
 		_resume_at = -1

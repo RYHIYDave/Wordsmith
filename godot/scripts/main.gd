@@ -113,6 +113,12 @@ var _restored := {}
 ## THE CLASS CARDS while they are up (their layer), and the mode the hero was made in (game/modes.ts: "normal" or "hardcore", kept
 ## in the save; what a death does in each is not in the port yet)
 var _cards: CanvasLayer = null
+## THE START SCREEN up over the game held behind it (title.gd), or null
+var _title: CanvasLayer = null
+## NORMAL OR HARDCORE for the next hero made: the class cards remember it (main.ts meta.mode), kept with the Lexicon
+var next_mode := "normal"
+## (A NEW HERO OVER A SAVED ONE: the game begun again from its save, the saved run dropped, with this hero, {cls, mode}; once)
+static var new_hero := {}
 var hero_mode := "normal"
 ## NORMAL OR HARDCORE (game/modes.ts; game.ts die, wakes, wakeSave, losses; main.ts wake; ui/panels.ts drawDeath, wakeLine): his
 ## rulebook's “Every hero is made in one of two modes, picked at the start and kept for life.” A NORMAL hero who falls in a dungeon
@@ -123,6 +129,8 @@ var hero_mode := "normal"
 var entry := {}
 var deaths := 0
 static var wake_note := ""
+## (he has just woken in town from a fall: no start screen)
+var woke := false
 var _fell_for := -1.0
 var fall_lost := {}
 var fall_depth := 0
@@ -298,14 +306,17 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
-	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live"]
-	if saving and _arg("only") != "save_write" and not (_arg("only") == "fall_live" and preload("res://scripts/check_fall.gd").stage == 0):
+	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
+	var fresh := new_hero.duplicate()
+	new_hero = {}
+	if saving and _arg("only") != "save_write" and not (_arg("only") == "fall_live" and preload("res://scripts/check_fall.gd").stage == 0) \
+			and not (_arg("only") == "title_live" and preload("res://scripts/check_title.gd").stage == 0):
 		var file := Save.read()
 		if file.get("meta") is Dictionary:
 			Save.restore_meta(self, file["meta"])
-		if file.get("run") is Dictionary:
+		if file.get("run") is Dictionary and fresh.is_empty():
 			Save.restore_run(self, file["run"])
 			_restored = file["run"]
 			first = home_place()
@@ -315,7 +326,9 @@ func _ready() -> void:
 	if _arg("look") == "wheel":
 		preload("res://scripts/heroes/tinkerer_look.gd").wheel_look_now = true
 	if cls == "":
-		cls = str(_restored.get("cls", "warrior"))
+		cls = str(_restored.get("cls", fresh.get("cls", "warrior")))
+	if not fresh.is_empty():
+		hero_mode = str(fresh.get("mode", "normal"))
 	set_class(cls, _restored.is_empty())
 	# (THE SKILL TREES: his talents put back once his class is his: game.ts restore, cleanTalents; the picks made on them)
 	if not _restored.is_empty():
@@ -336,11 +349,78 @@ func _ready() -> void:
 	if wake_note != "":
 		loot.say(wake_note, hud.T.get("text", Color.WHITE) if hud != null and hud.T is Dictionary else Color.WHITE)
 		wake_note = ""
-	# (A NEW GAME, no hero saved: the class cards first (class_cards.gd), the game waiting behind them till a hero is picked)
-	if saving and _restored.is_empty() and _arg("cls") == "" and _arg("only") == "":
-		cards_up(first)
+		woke = true
+	# (THE START SCREEN, every time the game begins (title.gd): the game waiting behind it, a saved hero in his town, till CONTINUE
+	# or a new hero; not as a fallen hero wakes, nor as a new hero picked over a saved one begins, warping in)
+	if not fresh.is_empty():
+		_warp_in()
+		if saving:
+			Save.write(self)
+	elif saving and _arg("cls") == "" and _arg("only") in ["", "title_live"] and wake_note == "" and not woke:
+		title_up(first)
+	woke = false
 	if shots != "":
 		_shoot(hero, shots)
+
+
+## THE START SCREEN over everything (title.gd), the game held behind it (main.ts mode 'title'), its theme playing: CONTINUE, where a
+## hero is saved, takes him on from his town; a new hero picked (NEW GAME, the class cards) begins the run where `first` is,
+## warping in, or, over a saved hero, the game begins again from its save without him. Returns the screen.
+func title_up(first: String) -> Node:
+	var layer := CanvasLayer.new()
+	layer.layer = 50
+	var ts := preload("res://scripts/title.gd").new()
+	ts.main = self
+	ts.sfx = sfx
+	ts.music = music
+	ts.mode = next_mode
+	if not _restored.is_empty():
+		var cn: Dictionary = Words.data()["classes"].get(hero.cls, {})
+		ts.saved_cls = hero.cls
+		ts.resume = "%s, level %d, dungeon %d%s" % [cn.get("name", hero.cls.capitalize()), loot.level, maxi(1, last_floor), ", Hardcore" if hero_mode == "hardcore" else ""]
+	layer.add_child(ts)
+	add_child(layer)
+	_title = layer
+	sfx.process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().paused = true
+	ts.resumed.connect(_resume)
+	ts.picked.connect(func(c: String, m: String) -> void: _title_picked(c, m, first))
+	return ts
+
+
+func _title_down() -> void:
+	if _title != null:
+		_title.queue_free()
+		_title = null
+	music.title_music(false)
+	sfx.process_mode = Node.PROCESS_MODE_INHERIT
+	get_tree().paused = false
+
+
+## CONTINUE (main.ts continueRun): the saved hero carries on from his town, told where the gate leads.
+func _resume() -> void:
+	_title_down()
+	loot.say("Welcome back. The gate leads to dungeon %d." % maxi(1, last_floor), _hud.T.get("text", Color.WHITE) if _hud != null and _hud.T is Dictionary else Color.WHITE)
+
+
+## A new hero picked on the start screen's class cards (main.ts pickClass, newRun): with no hero saved, the run begins here; over a
+## saved one, the save keeps the Lexicon and the stash and drops his run, and the game begins again from it with the new hero.
+func _title_picked(c: String, m: String, first: String) -> void:
+	next_mode = m
+	if _restored.is_empty():
+		_title_down()
+		set_class(c, true)
+		hero_mode = m
+		_build(first, "start")
+		_warp_in()
+		if saving:
+			Save.write(self)
+		return
+	new_hero = {"cls": c, "mode": m}
+	if saving:
+		Save.write(self, null)
+	get_tree().paused = false
+	get_tree().reload_current_scene()
 
 
 ## THE CLASS CARDS over everything, the game held behind them (main.ts, mode 'title'); the hero picked begins the run where `first`
@@ -369,7 +449,11 @@ func _picked(c: String, m: String, first: String) -> void:
 	set_class(c, true)
 	hero_mode = m
 	_build(first, "start")
-	# (main.ts enter: they warp in where the run begins: fx.arrive, the ring and the motes of a warp, the figure coming together)
+	_warp_in()
+
+
+## (main.ts enter: they warp in where the run begins: fx.arrive, the ring and the motes of a warp, the figure coming together)
+func _warp_in() -> void:
 	hero.arrive()
 	if fx != null:
 		var C := preload("res://scripts/fx_looks.gd").P
@@ -2073,6 +2157,14 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE WORDSMITH'S TRADE IN WORDS: his half's first page: check_trade.gd)
 	if _arg("only") == "trade":
 		await preload("res://scripts/check_trade.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE START SCREEN: check_title.gd; and the real way of it, a saved hero, CONTINUE, and a new hero over him: title_live)
+	if _arg("only") == "title_live":
+		await preload("res://scripts/check_title.gd").new().live(self, hero, dir)
+		return
+	if _arg("only") == "title":
+		await preload("res://scripts/check_title.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (A FALLEN HERO, Normal and Hardcore: check_fall.gd; and the real way of it, the game begun again from its save: fall_live)

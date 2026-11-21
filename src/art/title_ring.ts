@@ -882,3 +882,64 @@ export function makeRingTitle(): RingTitle {
   };
   return { w: W, h: H, lip: RING_LIP, lift: RING_LIFT, headTop: RING_HEAD, still, life, flash };
 }
+
+/**
+ * THE GODOT PORT (tools/godot_title.mjs; godot/scripts/title_ring.gd): the layers makeRingTitle lays the picture up from, each as
+ * it paints them, and what its life is drawn with (the stars that twinkle, the curtains, the stones' runes, the runes). Nothing in
+ * the game calls it.
+ */
+export function ringPort(): { layers: Record<string, HTMLCanvasElement>; data: Record<string, unknown> } {
+  const sky = new Paint();
+  paintSky(sky, 0, false);
+  const lightA = new Paint();
+  const frontA = new Paint(true, lightA);
+  paintLand(frontA);
+  for (const st of STONES) paintStoneShadow(frontA, st);
+  for (const st of BACK) paintStone(frontA, st);
+  paintSlab(frontA);
+  const column = new Paint();
+  paintColumn(column);
+  const lightB = new Paint();
+  const frontB = new Paint(true, lightB);
+  for (const st of FRONT) paintStone(frontB, st);
+  const edges = new Paint(true);
+  sinkEdges(edges);
+  const NS = 16;
+  const SH = 48;
+  const strips = document.createElement('canvas');
+  strips.width = NS;
+  strips.height = SH + 1;
+  {
+    const g = strips.getContext('2d') as CanvasRenderingContext2D;
+    g.fillStyle = '#000';
+    g.fillRect(0, 0, NS, SH + 1);
+    for (let k = 0; k < NS; k++) {
+      const strong = (k + 0.5) / NS;
+      for (let r = 0; r < SH; r++) {
+        const [c, a] = curtainLight(strong, 1 - r / (SH - 1));
+        if (a <= 0) continue;
+        g.fillStyle = css(c, a);
+        g.fillRect(k, r, 1, 1);
+      }
+      if (strong > 0.3) {
+        g.fillStyle = css(CY_HI, strong * 0.3);
+        g.fillRect(k, SH, 1, 1);
+      }
+    }
+  }
+  const hex = (c: C): string => `#${c.toString(16).padStart(6, '0')}`;
+  const stone = (st: Stone): { i: number; rune: Pt } => ({ i: st.i, rune: stoneRune(st) });
+  return {
+    layers: {
+      sky: sky.canvas(), lightA: lightA.canvas(), frontA: frontA.canvas(), column: column.canvas(), lightB: lightB.canvas(), frontB: frontB.canvas(),
+      edges: edges.canvas(), strips, runeGlow: glowSprite(13, 13, CY, 0.32, 3), surgeBlob: glowSprite(20, 22, CY_HI, 1, 4),
+    },
+    data: {
+      w: W, h: H, cx: CX, lip: RING_LIP, lift: RING_LIFT, headTop: RING_HEAD, slabX: SLAB_X, slabY: SLAB_Y, ringRX: RING_RX, ringRY: RING_RY,
+      ns: NS, sh: SH, surge: { first: SURGE_FIRST, every: SURGE_EVERY, up: SURGE_UP, skyFor: SURGE_SKY_FOR, ringFor: SURGE_RING_FOR },
+      stars: STARS.filter((s) => s.k > 0.85).map((s) => ({ x: s.x, y: s.y, i: s.i, white: s.k > 0.985 })),
+      curtains: CURTAINS, back: BACK.map(stone), front: FRONT.map(stone), runes: RUNES,
+      colors: { white: hex(WHITE), cyHi: hex(CY_HI), cy: hex(CY), cyLo: hex(CY_LO), star: hex(h('#d8e0ff')) },
+    },
+  };
+}

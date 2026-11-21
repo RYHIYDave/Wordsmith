@@ -156,7 +156,7 @@ func _ready() -> void:
 
 
 func _process(dt: float) -> void:
-	if Input.is_action_just_pressed("inventory"):
+	if Input.is_action_just_pressed("inventory") and not (main != null and (main._title != null or main._cards != null)):
 		toggle()
 	if not visible:
 		return

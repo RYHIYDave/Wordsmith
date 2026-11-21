@@ -2,7 +2,9 @@
 // assets/sound/music_*.mp3 (.mp4 before; Godot plays neither as the game loops them) made into Ogg Vorbis in
 // godot/assets/music, each cut at its loop's end (engine/audio.ts MUSIC_PLACES: the game loops each from 0 to `loop` seconds,
 // the rest of the file unheard), so that Godot's own looping (back to the start at the file's end) is the game's. And
-// music.json: each place's two, the fight's "fight in at", and the fades (MUSIC), read from engine/audio.ts as it stands.
+// music.json: each place's two, the fight's "fight in at", and the fades (MUSIC), read from engine/audio.ts as it stands. And THE
+// TITLE THEME (engine/audio.ts TITLE, titleMusic: from its start once, then round between its two loop points for ever), cut at
+// its loop's end, its loop's start kept in music.json `title` (Godot loops it from there).
 // A track already made is kept as it is (`--all` makes every one again).
 //   node tools/godot_music.mjs [--all]    (from the repository's root; needs ffmpeg: winget install Gyan.FFmpeg)
 import { execFileSync } from 'node:child_process';
@@ -60,5 +62,15 @@ for (const line of table.split('\n')) {
   places[place[1]] = entry;
 }
 
-writeFileSync(join(OUT, 'music.json'), JSON.stringify({ music: MUSIC, places }, null, 1) + '\n');
+// THE TITLE THEME
+const tm = /export const TITLE = \{ file: '([^']+)', loop: \[([\d.]+), ([\d.]+)\][^}]*vol: ([\d.]+)/.exec(audio);
+const title = { file: tm[1].replace(/\.(mp4|mp3)$/, '.ogg').replace(/^/, 'music_'), loopStart: Number(tm[2]), loopEnd: Number(tm[3]), vol: Number(tm[4]) };
+if (existsSync(join(OUT, title.file)) && !process.argv.includes('--all')) console.log(`title: ${title.file} kept`);
+else {
+  execFileSync(ffmpeg(), ['-y', '-v', 'error', '-i', join(SRC, tm[1]), '-af', `atrim=end_sample=${Math.round(title.loopEnd * RATE)}`,
+    '-ar', String(RATE), '-c:a', 'libvorbis', '-q:a', '6', join(OUT, title.file)], { stdio: 'inherit' });
+  console.log(`title: ${tm[1]} -> ${title.file} (loops ${title.loopStart} to ${title.loopEnd} s)`);
+}
+
+writeFileSync(join(OUT, 'music.json'), JSON.stringify({ music: MUSIC, places, title }, null, 1) + '\n');
 console.log('music.json:', JSON.stringify(MUSIC));

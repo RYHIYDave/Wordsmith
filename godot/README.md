@@ -763,6 +763,31 @@ did, what the Lexicon and the stash keep; "New run" begins again at the class ca
 the lost counted (`deaths`). `--only=fall` (check_fall.gd) checks both, pictured; `--only=fall_live` the real way of it, the game
 begun again from its save.
 
+## The start screen (the cloud chat, 21 Nov 2026)
+
+His pick, asked what to build next: “Title screen and menus (Recommended)”. The game begins at the start screen every time, as the
+game's does (ui/panels.ts drawTitle, drawSmithMenu; main.ts mode 'title'; `scripts/title.gd`), its title theme playing (the
+game's own, `assets/music/music_title.ogg`: from its start once, then round between the game's two loop points):
+- THE RING ON THE HILL, ALIVE (`scripts/title_ring.gd`; art/title_ring.ts makeRingTitle): laid up out of the game's own layers
+  (`assets/title/ring_*.png`, `ring.json`, painted by the game: `node tools/godot_title.mjs`), with its life drawn over them as the
+  game draws it: the stars twinkling, the aurora's two curtains drifting with letters in them, the letters climbing the column,
+  the runes swelling in a wave round the ring, motes rising off the hill, and every 8 s THE SURGE (light up the column, a wave
+  across the sky, a ring across the hill, every rune flaring, a faint flash). Held to the game's own picture at ten moments of its
+  life, surges included: within one level of colour everywhere (`node tools/godot_title.mjs --life <dir>`, then
+  `xvfb-run -a godot --path godot --rendering-driver opengl3 -s res://checks/title_ring_check.gd -- --dir=<dir>`).
+- THE MENU along the foot: CONTINUE where a hero is saved (pink, blinking; his line over it, "Warrior, level 3, dungeon 2"),
+  NEW GAME (pink where there is no hero), LEXICON, OPTIONS; Enter continues. CONTINUE takes him on from his town, "Welcome back.
+  The gate leads to dungeon N."
+- OPTIONS: SOUND, PROMPTS (whether a new hero is shown how to play), BACK.
+- THE LEXICON over the menu (ui/lexicon.ts drawLexicon): its five pages' tabs, each page's words (or "? ? ?"), the open word's page,
+  the words kept for the next hero.
+- NEW GAME: the class cards over the living picture put back into the dark, BACK (or Escape) to the menu. A hero saved, CONFIRM
+  first warns "Press CONFIRM again to start over. Your saved Warrior will be lost."; pressed again, the game begins again from its
+  save with the new hero, the old one's run dropped, the Lexicon and the stash kept. The cards remember Normal or Hardcore.
+- Not as a fallen Normal hero wakes in town (he carries straight on), as the game has it.
+`--only=title` (`check_title.gd`) checks it all, pictured; `--only=title_live` the real way of it, the game saving and begun again
+between the steps.
+
 ## Not in it yet
 
 Frenzied on the prison's bosses' own scripts
@@ -778,9 +803,9 @@ Headsman's gate's own fall and slam, the wall's see-through for the monsters beh
 stone floating from him to the slab, the letters
 swirling round the ring and its column of light, the camp's GATE service, the town's own lighting and music; uniques, magic find, the game's own
 lettering and frames for the gear screen and the vendors' (these still use Godot's plain letters), the sparks as a pot
-breaks, what stands behind raised ground cut off by it, menus (a new hero is picked on the class cards; there is no title menu to
-go BACK to), the title screen's music and the ring's moving light; the Warrior's Whirlwind talent (his Whirlwind is his from the
-start, at his pick).
+breaks, what stands behind raised ground cut off by it, the start screen's options the game has besides SOUND and PROMPTS
+(ABILITIES: cooldowns or mana, the PRACTICE ROOM, the LEVEL SELECT's test hero on any floor); the Warrior's Whirlwind talent (his
+Whirlwind is his from the start, at his pick).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made
@@ -798,7 +823,7 @@ start, at his pick).
 | `assets/town` | the town a new game begins in, its pictures, floor 1's gate up: `npx tsx tools/godot_town.ts 1` |
 | `assets/camp` | the camp inside Vellum's gate, his town from floor 10 on (game/camp.ts makeCamp, as he comes in from the Fen): `npx tsx tools/godot_town.ts 1` too; its look `assets/looks/camp*`: `node tools/godot_record.mjs camp` |
 | `assets/looks` | floor 1 as THE KING'S TOMB, floor 2 as THE PRISON'S GROUNDS AT NIGHT and the town as THE CASTLE'S HALL, recorded from the game's own renderer and painters with its startup switches on (every picture, where, how deep, its light; the stairwell's opening film in `<place>_stair.png`; floor 2's skies and dark by where he is; the traps' and the waypoint's pictures): `npx tsx tools/godot_looks.ts town`, `... floor1`, `... floor2` (all the tools put the game's startup switches on first: tools/godot_switches.ts) |
-| `assets/music` | the town's and floors 1 to 5's tracks from `assets/sound` made into `.ogg` (Godot does not play `.mp4`), each cut where the game loops it, and the game's table of them: `node tools/godot_music.mjs` (needs ffmpeg) |
+| `assets/music` | the town's and the floors' tracks and the title theme from `assets/sound` made into `.ogg` (Godot does not play `.mp4`), each cut where the game loops it, and the game's table of them: `node tools/godot_music.mjs` (needs ffmpeg) |
 | `assets/words/melds3.json` | the ten melds' colours, beats and runes (render/melds3.ts): `npx tsx tools/godot_melds3.ts`; with `check`, the game's own painter on its moments, for `godot --headless --path godot -s res://checks/melds3_check.gd` (not kept) |
 | `assets/words/vmelds.json` | Volatile's five melds' and the eight's colours, times and runes (render/volatile3.ts, melds8.ts): `npx tsx tools/godot_vmelds.ts`; with `check`, the game's own painters on 42 scenes, for `godot --headless --path godot -s res://checks/vmelds_check.gd` (not kept) |
 | `assets/words/looks10.json` | Lasting's, Fleeting's and Vast's colours, beats and numbers (render/words10.ts): `npx tsx tools/godot_words10.ts`; with `check`, the game's own painter on 60 moments and 8 s of its clock, for `godot --headless --path godot -s res://checks/looks10_check.gd` (not kept) |
@@ -809,7 +834,7 @@ start, at his pick).
 | `assets/looks/floor<N>_hold<n>` | a stronghold's hall as it is drawn from in it: `node tools/godot_record.mjs <N> --hold <n>` |
 | `assets/floor6/boss.json`, `floor7/boss.json` | a boss's ground out on the open floors (his area and what is well inside it, where his rules stand him, the drop round him), from the game's own map-maker: `npx tsx tools/godot_boss_ground.ts 1 6` (`1 7`) |
 | `assets/heroes/clips.json` | every hero's pictures' own times, his moves' lists as the bake numbers them, the cards' and the tails' numbers: `npx tsx tools/godot_hero_clips.ts` |
-| `assets/title/ring.png` | the ring on the hill the class cards lie over, painted by the game in a headless browser: `node tools/godot_title.mjs` |
+| `assets/title` | the ring on the hill: its still (`ring.png`, under the cards in `--only=cards`), the layers it is laid up from and what its life is drawn with (`ring_*.png`, `ring.json`), painted by the game in a headless browser: `node tools/godot_title.mjs` |
 | `assets/heroes/spells.*` | the Mage's orb in each element's colours, her tones and her power's crackle: `npx tsx tools/godot_spells.ts` |
 | `assets/heroes/warlock_fx.*` | the Warlock's effects' pieces (render/warlock_fx.ts): `npx tsx tools/godot_warlock_fx.ts` |
 | `assets/heroes/golem*`, `tinkerer_fx*` | the Tinkerer's Golem (its moves, run, rocket jump and everything at it) and her effects' pieces, with her tune: `npx tsx tools/godot_tinkerer.ts` (about half a minute) |

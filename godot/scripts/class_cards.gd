@@ -15,11 +15,15 @@
 ## heard as they begin to go; a press lets them go at once. The run begins, and they warp in where it begins (main.gd). A hero with
 ## no such picture (the Tinkerer, the Brawler) begins at once.
 ##   Each hero's scarf, feather or braids moves on their card (tails.gd), and the pool of light behind them (figure_glow.gd).
-##   Not here: the start screen's menu (CONTINUE, NEW GAME, LEXICON, OPTIONS: a saved hero carries straight on) and so BACK, which
-## goes back to it; the picture's own life (its aurora, its surge: it stands still, in the dark).
+##   BACK, at the foot's left, goes back to the start screen's menu (title.gd), as Escape does; Escape while a hero makes ready
+## stands them down, the cards as they were. Laid over the start screen (title.gd, `over_pic`) the picture behind is the start
+## screen's own, alive (title_ring.gd), put back into the dark; a check of the cards alone has its still. A hero saved, CONFIRM
+## asks first (`gate`, main.ts pickClass: "Press CONFIRM again to start over. Your saved <class> will be lost.", `note`, said
+## above the foot in the colour of what is lost, in place of what the mode means).
 extends Control
 
 signal picked(cls: String, mode: String)
+signal back
 
 const PF := preload("res://scripts/pixel_font.gd")
 const BakedHero := preload("res://scripts/baked_hero.gd")
@@ -52,6 +56,12 @@ var _press = null
 var _back: Control
 var _front: Control
 var _clip_rects := {}
+## (laid over the start screen, whose living picture is behind: title.gd)
+var over_pic := false
+## (a line of warning over the foot, or ""; a hero saved: title.gd)
+var note := ""
+## (asked before a hero picked makes ready: false, not yet: title.gd, a saved hero's warning)
+var gate := Callable()
 
 
 func _ready() -> void:
@@ -235,7 +245,7 @@ func _layout() -> Dictionary:
 	var lo := mode_r.end.x + 6.0 if beside else back.position.x + back_w + 6.0
 	var hi := voice_x - 6.0
 	var cx := maxf(lo, minf(hi - confirm_w, floorf((W - confirm_w) / 2.0)))
-	return {"cards": cards, "cw": cw, "ch": ch, "rows": rows, "gap": gap, "y0": y0, "end": y0 + rows * ch + gap * (rows - 1), "mode": mode_r, "confirm": Rect2(cx, Hh - 22, confirm_w, 18)}
+	return {"cards": cards, "cw": cw, "ch": ch, "rows": rows, "gap": gap, "y0": y0, "end": y0 + rows * ch + gap * (rows - 1), "mode": mode_r, "confirm": Rect2(cx, Hh - 22, confirm_w, 18), "back": back}
 
 
 func _width(s: String, font := "normal") -> float:
@@ -264,10 +274,19 @@ func press_at(p: Vector2) -> void:
 func _unhandled_key_input(e: InputEvent) -> void:
 	if not (e is InputEventKey and e.pressed and not e.echo):
 		return
+	var k: int = e.keycode
+	if k == KEY_ESCAPE:
+		# (Escape: a hero making ready stands down, the cards as they were; else back to the start screen's menu)
+		if not entering.is_empty():
+			entering = {}
+		else:
+			_click()
+			back.emit()
+		get_viewport().set_input_as_handled()
+		return
 	if not entering.is_empty():
 		return
 	var ids: Array = K["order"]
-	var k: int = e.keycode
 	if k >= KEY_1 and k < KEY_1 + ids.size():
 		chosen = ids[k - KEY_1]
 		_click()
@@ -284,6 +303,8 @@ func _click() -> void:
 
 ## main.ts pickClass: the warp, where the art has a picture of the hero making ready; else the run begins at once.
 func _pick(cls: String) -> void:
+	if gate.is_valid() and not gate.call(cls):
+		return
 	_click()
 	var ready = D[cls]["card"]["ready"]
 	if ready != null:
@@ -333,6 +354,10 @@ func _process(dt: float) -> void:
 		p = null
 	if p != null and entering.is_empty() and chosen != "" and L["confirm"].has_point(p):
 		_pick(chosen)
+		p = null
+	if p != null and entering.is_empty() and L["back"].has_point(p):
+		_click()
+		back.emit()
 	# each card's hero
 	var hp := _pointer()
 	for i in ids.size():
@@ -414,17 +439,19 @@ func _draw_back() -> void:
 	var W := _W()
 	var Hh := _H()
 	var night := Color(K["smithNight"])
-	_rect(ci, 0, 0, W, Hh, night)
-	# the start screen's picture where its layout puts it (smithLayout: the row under the ring's front stones `lift` above the foot),
-	# put back into the dark for the cards
-	var R: Dictionary = K["ring"]
-	var wide := W >= 400.0 or W >= Hh * 1.3
-	var head_room := float(R["lip"]) - float(R["headTop"]) + 9.0 * 2.0 + 6.0
-	var lift := maxf(float(R["least"]), minf(float(R["lift"]), Hh - head_room))
-	if not wide:
-		lift = maxf(float(R["least"]), minf(float(R["under"]) + float(R["most"]) * 24.0 + (float(R["most"]) - 1.0) * 4.0 + 6.0, Hh - head_room))
-	var oy := Hh - lift - float(R["lip"])
-	ci.draw_texture(_ring, Vector2(floorf((W - float(R["w"])) / 2.0), oy))
+	if not over_pic:
+		_rect(ci, 0, 0, W, Hh, night)
+		# the start screen's picture where its layout puts it (smithLayout: the row under the ring's front stones `lift` above the
+		# foot)
+		var R: Dictionary = K["ring"]
+		var wide := W >= 400.0 or W >= Hh * 1.3
+		var head_room := float(R["lip"]) - float(R["headTop"]) + 9.0 * 2.0 + 6.0
+		var lift := maxf(float(R["least"]), minf(float(R["lift"]), Hh - head_room))
+		if not wide:
+			lift = maxf(float(R["least"]), minf(float(R["under"]) + float(R["most"]) * 24.0 + (float(R["most"]) - 1.0) * 4.0 + 6.0, Hh - head_room))
+		var oy := Hh - lift - float(R["lip"])
+		ci.draw_texture(_ring, Vector2(floorf((W - float(R["w"])) / 2.0), oy))
+	# (the picture put back into the dark for the cards)
 	var veil := night
 	veil.a = 0.74
 	_rect(ci, 0, 0, W, Hh, veil)
@@ -494,13 +521,18 @@ func _draw_front() -> void:
 			_rect(ci, x, cy, cw, ch, Color(P["black"], 0.62))
 	# the foot: CONFIRM, lit once a card is chosen; the MODE, and what it means under the cards
 	var hy: float = L["end"] + 5.0
+	_button(ci, L["back"], "BACK")
 	_button(ci, L["confirm"], "CONFIRM", {"primary": true, "lit": true} if chosen != "" and entering.is_empty() else {"disabled": true})
 	var mr: Rect2 = L["mode"]
 	_button(ci, mr, "MODE: HARDCORE" if mode == "hardcore" else "MODE: NORMAL", {"color": T["bad"]} if mode == "hardcore" else {})
-	for part in PF.wrap(str(K["modeLine"][mode]), W - 16.0, "small"):
+	for part in ([] if note != "" else PF.wrap(str(K["modeLine"][mode]), W - 16.0, "small")):
 		if hy + 6.0 > mr.position.y - 2.0:
 			break
 		_text(ci, part, floorf(W / 2.0), hy, T["bad"] if mode == "hardcore" else T["dim"], {"align": "center", "font": "small"})
+		hy += 6.0
+	# (a hero saved: the warning, in place of what the mode means)
+	for part in (PF.wrap(note, W - 16.0, "small") if note != "" else []):
+		_text(ci, part, floorf(W / 2.0), hy + 2.0, T["bad"], {"align": "center", "font": "small"})
 		hy += 6.0
 
 

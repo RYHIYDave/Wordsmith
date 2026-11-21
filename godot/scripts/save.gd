@@ -74,7 +74,9 @@ static func run_of(main) -> Dictionary:
 static func meta_of(main) -> Dictionary:
 	var loot = main.loot
 	# (and the heroes lost: game.ts die, `meta.deaths`, the Lexicon's count of the fallen)
-	return {"known": loot.known.duplicate(true), "lexicon": loot.lexicon.duplicate(), "stash": loot.stash.duplicate(true), "taught": loot.taught, "deaths": main.deaths}
+	return {"known": loot.known.duplicate(true), "lexicon": loot.lexicon.duplicate(), "stash": loot.stash.duplicate(true), "taught": loot.taught, "deaths": main.deaths,
+		# (the mode the next hero is made in: the class cards remember it, main.ts meta.mode)
+		"mode": main.next_mode}
 
 
 ## Written (main.ts writeSave). Not while he is down, nor between places: the run as it stands at a quiet moment. A FALLEN HERO
@@ -119,6 +121,7 @@ static func restore_meta(main, m: Dictionary) -> void:
 			loot.stash[i] = m["stash"][i] if m["stash"][i] is Dictionary else null
 	loot.taught = m.get("taught", false) == true
 	main.deaths = maxi(0, int(_num(m.get("deaths"), 0)))
+	main.next_mode = "hardcore" if m.get("mode") == "hardcore" else "normal"
 
 
 ## The run put back (game.ts restore), before his town is laid out.

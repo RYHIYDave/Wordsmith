@@ -7,6 +7,9 @@
 ##   THE FIGHT IS OVER (4 s after the last of them has died or lost him, FIGHT_MUSIC.calm): the fight faded out over 1.5 s and
 ##   stopped; the walk faded back up over 1.5 s, where it had got to. Never in town.
 ## Each track's loudness is ramped as the game ramps its gain (straight from one to the other), and turned into decibels.
+##   THE TITLE THEME (engine/audio.ts titleMusic), on while the start screen is up: from its start once, then round between its
+## two loop points for ever (music.json `title`: the file cut at the loop's end, Godot looping it back to the loop's start), at the
+## game's gain for it; the start screen gone, let go of over 0.6 s.
 extends Node
 
 const DIR := "res://assets/music/"
@@ -21,6 +24,8 @@ var _walk: _Track
 var _fight: _Track
 var _fight_on := false
 var _calm := INF
+var _title: _Track
+var _title_d := {}
 
 
 func _ready() -> void:
@@ -28,6 +33,33 @@ func _ready() -> void:
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "music.json"))
 	_table = data["places"]
 	_fades = data["music"]
+	_title_d = data.get("title", {})
+
+
+## THE TITLE THEME on (the start screen up) or off (call it each frame, or once as it goes).
+func title_music(on: bool) -> void:
+	if not on:
+		if _title != null:
+			_stop(_title, 0.6)
+			_title = null
+		return
+	if _title != null or _title_d.is_empty():
+		return
+	var s: AudioStreamOggVorbis = load(DIR + str(_title_d["file"]))
+	s.loop = true
+	s.loop_offset = float(_title_d["loopStart"])
+	_title = _Track.new()
+	_title.gain = float(_title_d["vol"])
+	_title.target = _title.gain
+	add_child(_title)
+	_title.stream = s
+	_title.apply()
+	_title.play(0.0)
+
+
+## Is the title theme playing (for the checks)?
+func title_playing() -> bool:
+	return _title != null and _title.playing
 
 
 ## Each frame: `place` a key of the table ("town", "f1" ... "f10": the Wilds' too, floors 6 to 10; "" none), `fight` whether
