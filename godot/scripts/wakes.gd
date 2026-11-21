@@ -130,6 +130,15 @@ func add_patch(skill: int, kind: String, at: Vector2, rad: float, dur: float, dp
 	_tell(_melded({"t": "zone", "kind": kind, "x": at.x, "y": at.y, "r": rad, "el": el}, look))
 
 
+## (THE RANGER'S TREE: Venom, game.ts venomCloud) A poisoned enemy dies in a cloud of its poison, `rad` round `at` for `dur` seconds,
+## poisoning those in it as it was poisoned (`dps` a second): laid as it is, whatever lies there already.
+func add_venom(skill: int, at: Vector2, rad: float, dur: float, dps: float) -> void:
+	if not _room() or not _on_floor(at):
+		return
+	list.append({"kind": "venom", "x": at.x, "y": at.y, "r": rad, "t": 0.0, "dur": dur, "element": "phys", "dmg": dps, "slow": 0.0, "tick": 0.2, "skill": skill})
+	_tell({"t": "zone", "kind": "venom", "x": at.x, "y": at.y, "r": rad, "el": "phys"})
+
+
 ## (a telling marked with the melded word it is of, where it is of one)
 static func _melded(e: Dictionary, meld) -> Dictionary:
 	if meld != null:

@@ -44,7 +44,27 @@ var quick_n := 0
 var _was := Vector2.INF
 
 
+## (THE RALLY: its seconds left)
+var rally_t := 0.0
+
+
+## (THE RALLY, game.ts rallyNow) While it lasts: its seconds left, and since he called; {} after.
+func rally_now() -> Dictionary:
+	return {"left": rally_t, "since": float(T["swap"]["rally"]["secs"]) - rally_t} if rally_t > 0.0 else {}
+
+
+## (THE SNIPE, game.ts snipeDraw) While he draws it: where he aims, how full the draw (0 to 1), how long he has held it, and how
+## long since it came full (less than 0, not yet); {} while he is not drawing.
+func snipe_draw() -> Dictionary:
+	if channel.is_empty() or h.loadout.id(int(channel["skill"])) != "snipe":
+		return {}
+	var full: float = T["swap"]["snipe"]["full"]
+	return {"tx": channel["tx"], "ty": channel["ty"], "power": minf(1.0, float(channel["t"]) / full), "held": channel["t"], "since_full": float(channel["t"]) - full}
+
+
 func _step_own(dt: float) -> void:
+	if rally_t > 0.0:
+		rally_t = maxf(0.0, rally_t - dt)
 	# (Steady Aim: how long he has stood still, not moving nor rolling: game.ts stillT)
 	still_t = 0.0 if (_was != Vector2.INF and h.world.distance_to(_was) > 0.001) or not move.is_empty() else still_t + dt
 	_was = h.world
@@ -100,6 +120,39 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 					if h.alive and h.loadout.id(i) == "shot":
 						quick_n += 1
 						loose.call(h.world, []))
+	elif def["kind"] == "snare":
+		# (HIS MOVES TO LEARN, game/swap_moves.ts: THE SNARE, thrown where he aimed, no further than its reach; what walks in is held,
+		# then it bursts; a few lie at once, one more taking the place of the oldest)
+		if primary:
+			var p := _reach_point(to, float(def["range"]))
+			traps.append({"x": p.x, "y": p.y, "arm": float(T["tune"]["trapArm"]), "life": float(T["swap"]["snare"]["life"]), "skill": i, "frac": each,
+				"element": r["element"], "snare": true, "from": h.world, "born": _clock})
+			while traps.filter(func(q): return q.get("snare", false)).size() > int(T["swap"]["snare"]["max"]):
+				for k in traps.size():
+					if traps[k].get("snare", false):
+						traps.remove_at(k)
+						break
+			h.sfx.play("trapSet")
+	elif def["kind"] == "snipe":
+		# (THE SNIPE: one arrow, through everything in its line, the harder, wider and faster the longer he drew, knocking back what
+		# it hits)
+		var S: Dictionary = T["swap"]["snipe"]
+		var k: float = snipe_power
+		var a := atan2(way.y, way.x)
+		var sp: float = float(r["proj_speed"]) * (1.0 + float(S["fast"]) * k)
+		var u := Vector2(cos(a), sin(a))
+		shots.append({"x": from.x + u.x * 0.4, "y": from.y + u.y * 0.4, "vx": u.x * sp, "vy": u.y * sp, "r": float(def["radius"]) * float(r["size"]) * (1.0 + float(S["wide"]) * k),
+			"dist": float(def["range"]), "dmg": each * (float(S["least"]) + (float(S["most"]) - float(S["least"])) * k), "element": r["element"], "pierce": true,
+			"hit": [], "volley": false, "skill": i, "trail": 0.0, "words": words, "age": 0.0, "n": 0, "flown": 0.0, "look": "arrow", "snipe": k})
+		h.sfx.play("shot", linear_to_db(0.9))
+		if k >= 1.0:
+			h.sfx.play("power", linear_to_db(0.6))
+	elif def["kind"] == "rally":
+		# (THE RALLY: his companions near him attack faster and harder for a few seconds)
+		if primary:
+			rally_t = float(T["swap"]["rally"]["secs"])
+			h.sfx.play("equip", linear_to_db(0.9))
+			h._tell({"t": "spark", "x": h.world.x, "y": h.world.y, "el": "phys", "n": 12})
 	elif def["kind"] == "volley":
 		# (up from the bow, and a moment later coming down round where it was aimed: as near there as he can see, within reach)
 		var p := _reach_point(to, float(def["range"]))
@@ -206,7 +259,25 @@ func _step_traps(dt: float) -> void:
 				if is_instance_valid(m) and not m.dead and m.world.distance_to(at) <= float(T["tune"]["trapTrigger"]) + m.r:
 					go = true
 					break
-		if go:
+		if go and t.get("snare", false):
+			# (THE SNARE: what is on it held fast, then it bursts)
+			traps.remove_at(i)
+			var S: Dictionary = T["swap"]["snare"]
+			var rad: float = float(S["r"]) * float(h.loadout.r(int(t["skill"]))["size"])
+			var sat := Vector2(t["x"], t["y"])
+			h.sfx.play("trapSet")
+			for m in h.monsters.list:
+				if not is_instance_valid(m) or m.dead or m.world.distance_to(sat) > rad + m.r:
+					continue
+				m.stun_t = maxf(m.stun_t, float(S["hold"]))
+				h._tell({"t": "bind", "id": m.id, "m": m, "secs": S["hold"]})
+			var sk: int = t["skill"]
+			var fr: float = float(t["frac"]) * float(S["share"])
+			_say({"t": "snareSprung", "x": sat.x, "y": sat.y, "r": rad, "secs": S["hold"]})
+			_after(float(S["hold"]), func() -> void:
+				h.sfx.play("trapBoom")
+				h._blast(sk, sat, rad, fr, "blast", true, -4.0))
+		elif go:
 			traps.remove_at(i)
 			h.sfx.play("trapBoom")
 			h.kick(2.0)
@@ -320,3 +391,4 @@ func _own_picture(side: int) -> Array:
 func _clear_own() -> void:
 	volleys.clear()
 	traps.clear()
+	rally_t = 0.0

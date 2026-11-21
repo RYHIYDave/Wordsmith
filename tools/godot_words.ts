@@ -72,7 +72,10 @@ const demonKit = [...DEMON_KIT];
 // (THE WARRIOR'S BATTLE AXE AND WARHAMMER, game/talents.ts WARRIOR_KITS: their three each, his in place of the greatsword's once
 // his tree's first point picks one)
 const warriorArms = [...WARRIOR_KITS.battleaxe, ...WARRIOR_KITS.warhammer];
-const allMoves = [...new Set([...CLASS_IDS.flatMap((c) => classes[c].moves), ...demonKit, ...warriorArms])];
+// (THE MAGE'S AND THE RANGER'S MOVES TO LEARN, game/swap_moves.ts: hers Ball, Spear and Beam, his Snare, Snipe and Rally, each in
+// the place of one of their own once their tree gives it)
+const swapMoves: Record<string, string[]> = { mage: ['ball', 'spear', 'beam'], ranger: ['snare', 'snipe', 'rally'] };
+const allMoves = [...new Set([...CLASS_IDS.flatMap((c) => classes[c].moves), ...demonKit, ...warriorArms, ...Object.values(swapMoves).flat()])];
 const words = Object.fromEntries([...OURS, ...MADE].map((w) => [w, WORDS[w]]));
 const skills = Object.fromEntries(allMoves.map((id) => [id, SKILLS[id]]));
 writeFileSync(`${OUT}/words.json`, JSON.stringify({
@@ -239,7 +242,7 @@ if (process.argv[2] === 'check') {
   // first all, the others every third); every pair the sockets allow against nothing (the first all, the others every fifth), and
   // against one word a sample (every 29th); the words melding makes alone, against nothing
   for (const c of CLASS_IDS) {
-    for (const id of c === 'warlock' ? [...classes[c].moves, ...demonKit] : c === 'warrior' ? warriorArms : classes[c].moves) {
+    for (const id of c === 'warlock' ? [...classes[c].moves, ...demonKit] : c === 'warrior' ? warriorArms : [...classes[c].moves, ...(swapMoves[c] ?? [])]) {
       for (const d of heroes) {
         const first = d === heroes[0];
         let n = 0;

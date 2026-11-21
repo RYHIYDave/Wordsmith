@@ -50,7 +50,7 @@ func _init(hero, c := "") -> void:
 	clips = all
 	C = all[cls]
 	T = {"tune": all["tune"]}
-	for k in ["rangerArrow", "volleySeen", "trackAim", "palette", "ramps", "crackle"]:
+	for k in ["rangerArrow", "volleySeen", "trackAim", "palette", "ramps", "crackle", "swap"]:
 		T[k] = all[k]
 	# (game.ts refresh: a roll holds two charges while the moves wait their turns; anything else one)
 	for i in 3:
@@ -81,6 +81,8 @@ func step(dt: float, way: Vector2, hooked: bool) -> bool:
 func _tick(dt: float) -> void:
 	_clock += dt
 	_anim_t += dt
+	if let_go_t >= 0.0:
+		let_go_t += dt
 	swing_t = maxf(0.0, swing_t - dt)
 	combo_t = maxf(0.0, combo_t - dt)
 	if not swing_step.is_empty():
@@ -138,7 +140,10 @@ func _act(dt: float, way: Vector2, hooked: bool) -> bool:
 		windup["t"] = float(windup["t"]) - dt
 		if float(windup["t"]) <= 0.0:
 			_release()
-	if Input.is_action_just_pressed("whirl") or h.auto_whirl:
+	# (one held goes on while it is held: the Mage's Beam, the Ranger's Snipe)
+	if not channel.is_empty():
+		_update_channel(dt)
+	if (Input.is_action_just_pressed("whirl") or h.auto_whirl) and channel.is_empty():
 		h.auto_whirl = false
 		var at := _aim(float(_def(1)["range"]), str(_def(1)["kind"]))
 		_use_skill(1, at)
@@ -155,7 +160,7 @@ func _act(dt: float, way: Vector2, hooked: bool) -> bool:
 	if fire:
 		# (not in another attack's wind-up, nor on top of a slow attack only just landed: its follow-through seen out, all but the
 		# last moment of it)
-		var busy: bool = not windup.is_empty() or (not attack.is_empty() and int(attack["skill"]) != 0 and float(attack["t"]) > float(T["tune"]["attackCut"]))
+		var busy: bool = not windup.is_empty() or not channel.is_empty() or (not attack.is_empty() and int(attack["skill"]) != 0 and float(attack["t"]) > float(T["tune"]["attackCut"]))
 		if swing_t <= 0.0 and not busy:
 			_use_basic(_aim(float(_def(0)["range"]), str(_def(0)["kind"])))
 	return false
@@ -173,6 +178,9 @@ func _move_step(_dt: float) -> void:
 
 ## How his walk is slowed now: an attack slows him for a moment from when it is begun (game.ts updateHero).
 func walk_slow() -> float:
+	# (one being held slows him for as long as it is: a beam to a walk: game.ts, TUNE.beamWalk)
+	if not channel.is_empty():
+		return float(T["tune"]["beamWalk"])
 	# (THE RANGER'S TREE: Fleet, he shoots on the run: loosing an arrow no longer slows him)
 	if h.has("fleet") and not attack.is_empty() and str(_def(int(attack.get("skill", 0)))["kind"]) in ["projectile", "volley"]:
 		return 1.0
@@ -249,7 +257,8 @@ func _use_basic(at: Vector2) -> void:
 
 
 func _use_skill(i: int, at: Vector2) -> void:
-	if charges[i] < 1:
+	# (one that is being held is already being made: the button held down does not ask for another)
+	if not channel.is_empty() or charges[i] < 1:
 		return
 	if not windup.is_empty():
 		# (another attack is being made: this one waits its turn, briefly; it is not lost)
@@ -264,6 +273,7 @@ func _begin(i: int, at: Vector2, wind: float) -> void:
 	h.sfx.voice(h.cls, "attack")
 	var def := _def(i)
 	attack = {"skill": i, "age": 0.0, "wind": wind, "t": wind + float(def["follow"]), "second": i == 0 and combo == 1}
+	let_go_t = -1.0
 	_anim_t = 0.0
 	windup = {"skill": i, "tx": at.x, "ty": at.y, "t": wind}
 	# (the bow drawn for a shot or a volley)
@@ -304,12 +314,147 @@ func _release() -> void:
 	# (what it needs may have gone in the meantime: then nothing happens, and nothing is paid)
 	if charges[i] < 1:
 		return
+	# (an attack that goes on while it is held begins here: it is paid for when it ends)
+	if float(def.get("channel", 0.0)) > 0.0:
+		_begin_channel(i, Vector2(w["tx"], w["ty"]))
+		return
 	charges[i] -= 1
 	h.uses[i] += 1
 	if cd[i] <= 0.0:
 		cd[i] = float(r["cooldown"])
 		full[i] = maxf(0.01, cd[i])
 	_deliver(i, h.world, Vector2(w["tx"], w["ty"]), 1.0, true)
+
+
+# =====================================================================================================================
+# A MOVE HELD (game.ts beginChannel, updateChannel, endChannel, channelBite): the Mage's Beam, the Ranger's Snipe
+
+## {skill, t, next, bites, tx, ty, wake} while one is held; {} none.
+var channel := {}
+## (a check's hand on the button: held without it)
+var hold_auto := false
+## (his picture: how long since the one held was let go; -1, none since the last attack began)
+var let_go_t := -1.0
+## (game.ts CHANNEL_POSE: the pose of the blow held while it goes on)
+const CHANNEL_POSE := 0.05
+## (THE RANGER'S SNIPE: the draw of the arrow being loosed now, 0 to 1)
+var snipe_power := 0.0
+
+
+func _holding() -> bool:
+	return Input.is_action_pressed("whirl") or hold_auto
+
+
+## (game.ts beginChannel) It begins: from now on _update_channel keeps it going, its first bite in this same step. It counts as
+## used now; its wait begins when it ends.
+func _begin_channel(i: int, at: Vector2) -> void:
+	var def := _def(i)
+	var r: Dictionary = h.loadout.r(i)
+	h.uses[i] += 1
+	h._time_word_sound(i)
+	channel = {"skill": i, "t": 0.0, "next": 0.0, "bites": 0, "tx": at.x, "ty": at.y, "wake": 0.0}
+	var to: Vector2 = at - h.world
+	var way: Vector2 = to / to.length() if to.length() >= 0.01 else h.face
+	h._cast(i, str(def["kind"]), h.world, way)
+	_say({"t": "channel", "kind": def["kind"], "x": h.world.x, "y": h.world.y, "el": r["element"]})
+	if def["kind"] == "beam":
+		h.sfx.play("beam", linear_to_db(0.8))
+	h._boons(i)
+	let_go_t = -1.0
+
+
+## (game.ts updateChannel) Is it over (let go, run its length)? then its bite, if one is due; then time passes. So one let go the
+## moment it began has still bitten once. THE SNIPE draws while it is held, aimed where he points; let go, or drawn its longest,
+## the arrow flies, the harder the longer he drew.
+func _update_channel(dt: float) -> void:
+	var ch := channel
+	var i: int = ch["skill"]
+	var def := _def(i)
+	var r: Dictionary = h.loadout.r(i)
+	var length: float = float(def.get("channel", 0.0)) * float(r["last"])
+	var hold := _holding()
+	if def["kind"] == "snipe":
+		if hold:
+			var at := _aim(float(def["range"]))
+			ch["tx"] = at.x
+			ch["ty"] = at.y
+		_face(Vector2(ch["tx"], ch["ty"]))
+		ch["t"] = float(ch["t"]) + dt
+		_hold_pose(i, def)
+		if not hold or float(ch["t"]) >= length:
+			snipe_power = minf(1.0, float(ch["t"]) / float(T["swap"]["snipe"]["full"]))
+			var to := Vector2(ch["tx"], ch["ty"])
+			_end_channel(false)
+			_deliver(i, h.world, to, 1.0, true)
+			snipe_power = 0.0
+		return
+	var tick: float = float(def.get("tick", 0.25)) / float(r["pace"])
+	if int(ch["bites"]) > 0 and (not hold or float(ch["t"]) >= length - 1e-6):
+		_end_channel(true)
+		return
+	if hold:
+		var at := _aim(float(def["range"]))
+		ch["tx"] = at.x
+		ch["ty"] = at.y
+	_face(Vector2(ch["tx"], ch["ty"]))
+	if float(ch["next"]) <= 1e-9:
+		# (what the words behind it leave, it leaves as it begins and now and then as it goes on)
+		var leaves: bool = float(ch["t"]) >= float(ch["wake"]) - 1e-9
+		if leaves:
+			ch["wake"] = float(ch["wake"]) + float(T["tune"]["channelWake"])
+		_channel_bite(i, h.world, h.face, 1.0, false, leaves, int(ch["bites"]) == 0)
+		ch["next"] = float(ch["next"]) + tick
+		ch["bites"] = int(ch["bites"]) + 1
+	ch["t"] = float(ch["t"]) + dt
+	ch["next"] = float(ch["next"]) - dt
+	_hold_pose(i, def)
+
+
+## (the picture: he holds the pose of the blow for as long as it goes on)
+func _hold_pose(i: int, def: Dictionary) -> void:
+	if attack.is_empty() or int(attack["skill"]) != i:
+		attack = {"skill": i, "age": 0.0, "wind": 0.0, "t": 0.0, "second": false}
+	attack["t"] = maxf(float(attack["t"]), float(def["follow"]))
+	attack["age"] = float(attack["wind"]) + CHANNEL_POSE
+
+
+## (game.ts endChannel) It is over. Its wait begins: all of it after a whole length, less after a shorter one (never less than
+## TUNE.channelMinCool of it). "of Echoes": a phantom carries it on a moment from where it stopped, weaker (`echoes`: not when it
+## was cut off by something else).
+func _end_channel(echoes: bool) -> void:
+	var ch := channel
+	if ch.is_empty():
+		return
+	channel = {}
+	var i: int = ch["skill"]
+	var def := _def(i)
+	var r: Dictionary = h.loadout.r(i)
+	var length: float = float(def.get("channel", 0.0)) * float(r["last"])
+	var part: float = clampf(float(ch["t"]) / length, 0.0, 1.0) if length > 0.0 else 1.0
+	if charges[i] > 0:
+		charges[i] -= 1
+	cd[i] = float(r["cooldown"]) * maxf(float(T["tune"]["channelMinCool"]), part)
+	full[i] = maxf(0.01, cd[i])
+	if not attack.is_empty():
+		attack["t"] = float(def["follow"])
+	let_go_t = 0.0
+	_say({"t": "channelEnd", "kind": def["kind"], "x": h.world.x, "y": h.world.y, "el": r["element"], "part": part})
+	if echoes and float(r["echo"]) > 0.0 and int(ch["bites"]) > 0:
+		var o: Vector2 = h.world
+		var way: Vector2 = h.face
+		var id: String = h.loadout.id(i)
+		var delay: float = Words.data()["echo"]["delay"]
+		h._tell({"t": "echo", "x": o.x, "y": o.y, "dx": way.x, "dy": way.y, "kind": def["kind"], "delay": delay})
+		_after(delay, func() -> void: h._cast(i, str(def["kind"]), o, way, true))
+		for k in int(Words.data()["echo"]["bites"]):
+			_after(delay + k * float(def.get("tick", 0.25)), func() -> void:
+				if h.loadout.id(i) == id:
+					_channel_bite(i, o, way, float(h.loadout.r(i)["echo"]), true, false, k == 0))
+
+
+## (his own: game.ts channelBite) One bite of the move being held, from `from` the way `way`.
+func _channel_bite(_i: int, _from: Vector2, _way: Vector2, _frac: float, _echo: bool, _leaves: bool, _first: bool) -> void:
+	pass
 
 
 ## (game.ts release) What is heard as a quick attack goes: a melee swing, a shot, a wave.
@@ -345,6 +490,9 @@ func _pay_evasive() -> bool:
 		full[2] = maxf(0.01, cd[2])
 	if not windup.is_empty() and int(windup["skill"]) == 0:
 		swing_t = 0.0
+	# (one being held ends here, and its wait begins)
+	if not channel.is_empty():
+		_end_channel(true)
 	windup = {}
 	queued = {}
 	attack = {}
@@ -357,6 +505,11 @@ func _evasive_at(at: Vector2, way: Vector2) -> Vector2:
 		var dir: Vector2 = way if way != Vector2.ZERO else h.face
 		return h.world + dir.normalized() * float(_def(2)["range"])
 	return at
+
+
+## (game.ts isOpen) Whether there is open floor at `p`.
+func _open(p: Vector2) -> bool:
+	return h.map != null and h.map.open_at(floori(p.x), floori(p.y))
 
 
 ## (game.ts reachPoint) As near `to` as he can see, no further than `reach`.
@@ -449,6 +602,12 @@ func _shot_hit(p: Dictionary, m) -> void:
 	# (THE RANGER'S TREE REMADE: Far Sight, an arrow flown past eight tiles a certain critical)
 	var far: bool = arrow and float(p.get("flown", 0.0)) > float(Talents.D["tune"]["farSight2"]["at"]) and h.has("farsight")
 	h.hit_monster(m, i, float(p["dmg"]), false, far)
+	# (THE MAGE'S BALL: it stops on what it hits and bursts there, hurting all round it: game.ts ballBurst)
+	if p.get("look", "") == "ball":
+		_ball_burst(p, m)
+	# (THE RANGER'S SNIPE: drawn, it knocks back what it hits, the harder the fuller the draw)
+	if arrow and not m.dead and float(p.get("snipe", 0.0)) > 0.05:
+		m.throw_from(m.world - Vector2(p["vx"], p["vy"]), float(T["swap"]["snipe"]["push"]) * float(p["snipe"]))
 	# (Long Shot, the arrow knocks back what it hits; Split Shot, one that kills splits into three, flying on)
 	if arrow and not m.dead and h.has("longshot"):
 		m.throw_from(m.world - Vector2(p["vx"], p["vy"]).normalized(), float(Talents.D["tune"]["longShot2"]["far"]))
@@ -486,6 +645,22 @@ func _shot_hit(p: Dictionary, m) -> void:
 	h._tell({"t": "spark", "x": at.x, "y": at.y, "el": r["element"], "n": 6})
 
 
+## (THE MAGE'S BALL, game.ts ballBurst) Its burst where it struck `m`: the others round it take a share of the hit.
+func _ball_burst(p: Dictionary, m) -> void:
+	var i: int = p["skill"]
+	var r: Dictionary = h.loadout.r(i)
+	var B: Dictionary = T["swap"]["ball"]
+	var rad: float = float(B["r"]) * float(r["size"])
+	_say(h._vast_edge(r, rad, {"t": "burst", "x": m.world.x, "y": m.world.y, "r": rad, "el": r["element"], "style": "blast", "words": p["words"], "comet": true}))
+	h.sfx.play("frost" if r["element"] == "frost" else "explode", linear_to_db(0.55))
+	if h.monsters != null:
+		for o in h.monsters.list:
+			if not is_instance_valid(o) or o.dead or o == m or o.world.distance_to(m.world) > rad + o.r or h.monsters.shut_in(o):
+				continue
+			h.hit_monster(o, i, float(p["dmg"]) * float(B["share"]), true)
+	h._break_props(i, m.world, rad)
+
+
 func _end_shot(p: Dictionary) -> void:
 	h._tell({"t": "spark", "x": p["x"], "y": p["y"], "el": p["element"], "n": 4})
 	var at := Vector2(p["x"], p["y"])
@@ -514,6 +689,16 @@ static func attack_frame(c: Dictionary, age: float, wind: float) -> int:
 	return floori(t * float(c["fps"]) + 1e-6)
 
 
+## (figure.ts heldFrame) The frame of a held clip `t` seconds into it: round and round from its loop.
+static func held_frame(c: Dictionary, t: float) -> int:
+	var n: int = c["n"]
+	var from := clampi(roundi(float(c["loop"] if c.get("loop") != null else 0.0) * float(c["fps"])), 0, n - 1)
+	var i := floori(maxf(0.0, t) * float(c["fps"]) + 1e-6)
+	if i < from:
+		return mini(i, n - 1)
+	return from + (i - from) % maxi(1, n - 1 - from)
+
+
 ## (his own) [list, frame] for a move of his own (a roll), or [] for the rest.
 func _own_picture(_side: int) -> Array:
 	return []
@@ -526,8 +711,23 @@ func picture(side: int) -> Array:
 		return own
 	var L: Dictionary = C["lists"]
 	var way := _way_of()
+	# (A MOVE HELD, figure.ts: its beginning while it winds up, held round and round while it goes on, let go after; where his
+	# pictures have them)
+	if not channel.is_empty() and L.has("41"):
+		return [41, held_frame(L["41"], float(channel["t"]))]
+	if let_go_t >= 0.0 and not attack.is_empty() and L.has("43"):
+		var c: Dictionary = L["43"]
+		if let_go_t < (int(c["n"]) - 1) / float(c["fps"]):
+			return [43, clampi(floori(let_go_t * float(c["fps"]) + 1e-6), 0, int(c["n"]) - 1)]
+	if not windup.is_empty() and float(_def(int(windup["skill"])).get("channel", 0.0)) > 0.0 and L.has("42") and not attack.is_empty():
+		return [42, mini(int(L["42"]["n"]) - 1, attack_frame(L["42"], float(attack["age"]), float(attack["wind"])))]
 	if not attack.is_empty():
 		var s: int = attack["skill"]
+		# (THE MAGE'S AND THE RANGER'S MOVES TO LEARN: a move with pictures of its own is those, standing or walking: figure.ts,
+		# clips.moves; the bake's 129 to 132)
+		var mine: int = {"snare": 129, "rally": 130, "ball": 131, "spear": 132}.get(h.loadout.id(s), -1)
+		if mine > 0 and L.has(str(mine)):
+			return [mine, mini(int(L[str(mine)]["n"]) - 1, attack_frame(L[str(mine)], float(attack["age"]), float(attack["wind"])))]
 		# (a combo's second swing: its own pictures, made walking too: figure.ts attackSkill 2, clips.attack2, attack2Walk)
 		var second: bool = attack.get("second", false) and L.has("19")
 		var list := (19 if second else 14) if s == 0 else 20
@@ -566,6 +766,7 @@ func _clear_own() -> void:
 
 ## A new place: what he sent and laid is gone with the old one.
 func clear() -> void:
+	channel = {}
 	shots.clear()
 	_later.clear()
 	windup = {}

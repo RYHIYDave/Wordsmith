@@ -71,6 +71,11 @@ const timesOf = (s: AnimSet & { idleFps?: number; walkFps?: number }): Record<st
     const m = (c?.moves as Record<string, Clip | undefined> | undefined)?.[k];
     if (m) lists[116 + n] = one(m);
   });
+  // (THE MAGE'S AND THE RANGER'S MOVES TO LEARN, art/heroes3.ts SWAP_CLIP_KEYS: their own, 129 to 132)
+  (['snare', 'rally', 'ball', 'spear'] as const).forEach((k, n) => {
+    const m = (c?.moves as Record<string, Clip | undefined> | undefined)?.[k];
+    if (m) lists[129 + n] = one(m);
+  });
   return { idleFps: s.idleFps ?? 2, walkFps: s.walkFps ?? 8, walkStride: s.walkStride ?? null, startAt: s.startAt ?? 0, start: one(s.start), stops: (s.stops ?? []).map((x) => one(x)), lists };
 };
 for (const cls of Object.keys(CLASSES) as ClassId[]) {
@@ -112,7 +117,9 @@ const GAME_TS = readFileSync('src/game/game.ts', 'utf8');
 const numIn = (re: RegExp): number => Number((re.exec(GAME_TS) ?? ['', 'NaN'])[1]);
 const T = TUNE as unknown as Record<string, number>;
 out.tune = Object.fromEntries(['heroSpeed', 'heroRadius', 'attackSlow', 'attackSlowTime', 'attackCut', 'comboWindow', 'swingStep', 'swingStepTime', 'beamWalk', 'whirlWalk',
-  'volleyDelay', 'volleyLife', 'volleyEvery', 'volleyHit', 'volleyLead', 'trapArm', 'trapTrigger', 'trapLife', 'trapMax', 'waveFan', 'orbLife', 'orbEvery', 'orbMax', 'familiarLife', 'familiarMax'].map((k) => [k, T[k] ?? null]));
+  'volleyDelay', 'volleyLife', 'volleyEvery', 'volleyHit', 'volleyLead', 'trapArm', 'trapTrigger', 'trapLife', 'trapMax', 'waveFan', 'orbLife', 'orbEvery', 'orbMax', 'familiarLife', 'familiarMax',
+  // (a move held, the Mage's Beam and the Ranger's Snipe: game.ts updateChannel, endChannel, beamLine)
+  'channelWake', 'channelMinCool', 'beamPatches', 'beamPatchGap'].map((k) => [k, T[k] ?? null]));
 out.rangerArrow = RANGER_ARROW;
 out.swap = SWAP_TUNE;
 out.volleySeen = numIn(/const VOLLEY_SEEN = ([\d.]+);/);

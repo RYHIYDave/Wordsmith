@@ -713,6 +713,10 @@ func killed(m) -> void:
 	# (THE SKILL TREES REMADE: Footwork, every kill makes the Lunge ready again at once: game.ts talentKill, readyAgain('leap'))
 	if has("footwork") and cls == "warrior":
 		_lunge_cd = 0.0
+	# (THE RANGER'S TREE: Venom, a poisoned enemy that dies bursts in a cloud that poisons those near it: game.ts venomCloud)
+	if has("venom") and m.poison_t > 0.0 and m.poison_dps > 0.0 and wakes != null:
+		var V: Dictionary = Talents.D["tune"]["venom2"]
+		wakes.add_venom(m.last_skill, m.world, float(V["r"]), float(V["dur"]), m.poison_dps)
 	# (THE WARRIOR'S BATTLE AXE: Red Mist, each kill a step faster for a while, up to five: game.ts warriorKill)
 	if cls == "warrior" and has("redmist"):
 		var RM: Dictionary = Talents.D["warriorTune"]["redMist"]
@@ -819,12 +823,13 @@ func _break_props(i: int, at: Vector2, rad: float) -> void:
 ## WHAT MOVE `i` LEAVES where it struck (game.ts wake, leavePatches): the ground of an element behind it, no smaller than a
 ## tile round; Poison's cloud, no smaller than a tile and a half; Heavy's cracked ground, no smaller than a tile. `frac`: the
 ## share of the move's hit that the ground and the cloud are sized by.
-func _wake(i: int, at: Vector2, rad: float, frac: float) -> void:
+func _wake(i: int, at: Vector2, rad: float, frac: float, ground := true) -> void:
 	if wakes == null or not is_instance_valid(wakes):
 		return
 	var r: Dictionary = loadout.r(i)
-	# (WORDMELDING: what a melded word behind leaves is its own, its twist and all: wakes.gd)
-	if r["zone"] != null:
+	# (WORDMELDING: what a melded word behind leaves is its own, its twist and all: wakes.gd; `ground` false: a beam lays its ground
+	# along its line, not here)
+	if r["zone"] != null and ground:
 		wakes.add_ground(r["zone"], i, at, maxf(1.0, rad), avg_hit(i, frac), r["meld_behind"])
 	# (LASTING and FLEETING: what it leaves lasts longer or shorter, Fleeting's doing as much in all)
 	if r["cloud"] > 0.0:
@@ -2132,6 +2137,9 @@ func talents_changed() -> void:
 ## its three in his moves' places (the words in them stay where they are), and he is drawn with what he picked (the bake's `axe`
 ## and `hammer` sets, in his town and anywhere else). Nothing changes while he keeps the one he has.
 func arm() -> void:
+	if cls == "mage" or cls == "ranger":
+		swap()
+		return
 	if cls != "warrior":
 		return
 	var w := Talents.warrior_weapon(talents)
@@ -2276,6 +2284,86 @@ func _kindle(at: Vector2) -> void:
 	wakes.add_patch(-1, "burn", at, float(K["r"]), float(K["secs"]), talent_hit("fire", float(K["share"])), "fire")
 	if wakes.list.size() > before:
 		wakes.list.back()["from"] = "kindling"
+
+
+## THE MAGE'S AND THE RANGER'S MOVES TO LEARN (game/swap_moves.ts swapInto; game.ts refresh): the Mage's tap and hold as she has
+## set them on her ATTACKS page (`picks` "@tap", "@hold"), any of Wave, Orb and what her tree has given her (Ball, Spear; Beam
+## only held), never one move in both; the Ranger's Snare in his Shot's place once his tree gives it, and Snipe or Rally in his
+## Volley's (with both, as he has set it). His kit's moves follow (loadout `form_moves`).
+const MOVE_PICK := ["@tap", "@hold"]
+
+
+func swap_moves_for(slot: int) -> Array:
+	if cls == "mage":
+		var out: Array = ["wave", "orb"]
+		if has("ball"):
+			out.append("ball")
+		if has("spear"):
+			out.append("spear")
+		if slot == 1 and has("beam"):
+			out.append("beam")
+		return out
+	if cls == "ranger" and slot == 1:
+		var holds: Array = []
+		if has("snipe"):
+			holds.append("snipe")
+		if has("rally"):
+			holds.append("rally")
+		return holds if not holds.is_empty() else ["volley"]
+	return []
+
+
+func swap() -> void:
+	var base: Array = Words.data()["classes"][cls]["moves"]
+	var want: Array = base.duplicate()
+	var pick_in := func(slot: int) -> String:
+		var p = picks.get(MOVE_PICK[slot])
+		return str(p) if p != null and swap_moves_for(slot).has(str(p)) else ""
+	if cls == "mage":
+		var tap: String = pick_in.call(0)
+		var hold: String = pick_in.call(1)
+		tap = "wave" if tap == "" else tap
+		hold = "orb" if hold == "" else hold
+		if hold == tap:
+			hold = "wave" if tap == "orb" else "orb"
+		want[0] = tap
+		want[1] = hold
+	elif cls == "ranger":
+		if has("snare"):
+			want[0] = "snare"
+		var hold: String = pick_in.call(1)
+		want[1] = hold if hold != "" else swap_moves_for(1)[0]
+	var now: Array = [] if want == base else want
+	if now == loadout.form_moves:
+		return
+	loadout.form_moves = now
+	loadout.refresh()
+	if kit != null and kit.has_method("moves_changed"):
+		kit.moves_changed()
+
+
+## (game.ts moveChoicesOf) The moves place `slot` could be changed to on the ATTACKS page (the one in it first), or none.
+func move_choices(slot: int) -> Array:
+	if slot > 1 or not (cls == "mage" or cls == "ranger"):
+		return []
+	var now := [loadout.id(0), loadout.id(1)]
+	var list: Array = []
+	if cls == "mage":
+		list = swap_moves_for(slot).filter(func(m): return m == now[slot] or m != now[1 - slot])
+	elif slot == 1:
+		list = swap_moves_for(1)
+	return list if list.size() > 1 else []
+
+
+## (game.ts changeMove) Place `slot` changed to the next move it could be: false where it cannot change.
+func change_move(slot: int) -> bool:
+	var list := move_choices(slot)
+	if list.size() < 2:
+		return false
+	picks[MOVE_PICK[slot]] = list[(list.find(loadout.id(slot)) + 1) % list.size()]
+	swap()
+	sfx.play("equip")
+	return true
 
 
 ## (THE WARRIOR'S WARHAMMER, game.ts smashed) What a Smash struck: pushed a little back from him along the blow, where there is

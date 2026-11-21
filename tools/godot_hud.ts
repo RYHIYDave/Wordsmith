@@ -56,7 +56,9 @@ classMoves['warlock:demon'] = DEMON_KIT;
 // (THE WARRIOR'S BATTLE AXE AND WARHAMMER, game/talents.ts WARRIOR_KITS: their three on his buttons once his tree picks one)
 classMoves['warrior:battleaxe'] = WARRIOR_KITS.battleaxe;
 classMoves['warrior:warhammer'] = WARRIOR_KITS.warhammer;
-const allIds = [...new Set([...ids, ...Object.values(classMoves).flat()])];
+// (THE MAGE'S AND THE RANGER'S MOVES TO LEARN, game/swap_moves.ts: whatever is in each place, its name, icon and wait: `skillInfo`)
+const swapIds = ['ball', 'spear', 'beam', 'snare', 'snipe', 'rally'];
+const allIds = [...new Set([...ids, ...Object.values(classMoves).flat(), ...swapIds])];
 for (const id of allIds) {
   const icon = SKILLS[id as SkillId].icon;
   pics.set(`ability:${icon}`, (icons.ability as Record<string, Sprite>)[icon]);
@@ -116,6 +118,7 @@ writeFileSync(`${OUT}/hud.json`, JSON.stringify({
   words: Object.fromEntries(Object.keys(WORDS).map((w) => [w, { front: wordForm(w as keyof typeof WORDS, 'front'), behind: wordForm(w as keyof typeof WORDS, 'behind'), name: WORDS[w as keyof typeof WORDS].name, grows: growsWith(w as keyof typeof WORDS) }])),
   element_ramp: ELEMENT_RAMP,
   skills: ids.map((id) => ({ id, name: SKILLS[id].name, icon: SKILLS[id].icon, cooldown: SKILLS[id].cooldown, channel: SKILLS[id].channel ?? 0 })),
+  skillInfo: Object.fromEntries(allIds.map((id) => [id, { id, name: SKILLS[id as SkillId].name, icon: SKILLS[id as SkillId].icon, cooldown: SKILLS[id as SkillId].cooldown, channel: SKILLS[id as SkillId].channel ?? 0 }])),
   skillsOf: Object.fromEntries(Object.entries(classMoves).map(([c, m]) => [c, m.map((id, slot) => ({ id, name: SKILLS[id as SkillId].name, icon: SKILLS[id as SkillId].icon, cooldown: SKILLS[id as SkillId].cooldown, channel: SKILLS[id as SkillId].channel ?? 0, key: slot === 0 ? 'LEFT CLICK' : SKILLS[id as SkillId].channel ? 'HOLD RIGHT CLICK' : 'RIGHT CLICK' }))])),
   sizes: { slot_w: 11, slot_h: 12, piece_gap: 3 },
   // (the place's name, top left: Game.floorLevel; in town, "Town")

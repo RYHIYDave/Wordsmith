@@ -616,12 +616,37 @@ in their brew's colours, baked by tools/godot_tinkerer.ts), Alchemy, The Big One
 tinkerer_look.gd: the tar puddles, the big vial's ring, the little vials). Not yet: the Contraption, the Gun Arm, Mark II and
 Growth Serum. THE RANGER'S: Fleet, Windrunner, Keen Eye, Steady Aim, Quick Draw, Long Shot, Light Step, Hunter's Mark, Wide
 Traps, Minefield, Split Shot, Hail, Ricochet (`piercing`) and Far Sight (heroes/ranger.gd, kit.gd's shots, hero.gd hit_monster).
-Not yet: Venom (its cloud), and his three moves to learn (Snare, Snipe, Rally). THE MAGE'S: Kindling (her fire leaves the
+Venom (a poisoned one dying leaves a cloud of its poison) and his three moves to learn, Snare, Snipe and Rally (below). THE
+MAGE'S: Kindling (her fire leaves the
 ground burning), Searing, Flame Warp, Hearth (`fuel`: in her own fire nothing burns her), Inferno, Charged (a charge gathered
 walking, let go by her next hit as a leaping bolt), Forking, Storm Warp, Overload, Stormcaller, Bitter Cold, Deep Freeze (a frozen
 one struck slides, freezing what it meets), Frost Warp, Rime, Shatter, her AURA (R, a tap on herself: fire, lightning or frost,
 picked on its stone; six seconds, then ten to wait; drawn as render/swap_fx.ts draws it) and Lasting Aura (heroes/mage.gd,
-mage_look.gd; monsters now keep a shock, monster.gd `shock_t`). Not yet: her three moves to learn (Ball, Beam, Spear).
+mage_look.gd; monsters now keep a shock, monster.gd `shock_t`) and her three moves to learn, Ball, Beam and Spear (below).
+
+## The Mage's and the Ranger's moves to learn (the cloud chat, 21 Nov 2026)
+
+As the released game has them (game/swap_moves.ts, SWAP_MOVES on): stones on her paths teach the Mage BALL, SPEAR and BEAM, moves
+of no element of their own; she sets any two of Wave, Orb, Ball, Spear and Beam on her tap and her hold (Beam only held, never one
+move in both), from her ATTACKS page (CHANGE TO ..., inventory.gd), kept in the save (`picks` "@tap", "@hold"). His tree gives the
+Ranger SNARE in his Shot's place, and SNIPE or RALLY in his Volley's (with both, his pick on the ATTACKS page). hero.gd `swap`
+puts them in their places (loadout `form_moves`; the bar's names and icons, hud.json `skillInfo`), and his kit makes them:
+- BALL (heroes/mage.gd, kit.gd `_ball_burst`): a comet that stops on the first it hits and bursts there, 1.6 tiles round, the
+  others in it taking 60% of the hit. SPEAR: a crystal lance through every enemy in its line. BEAM: held, a line from her to the
+  first wall, everything along it struck five times a second, the nearest first; she walks at 70% while it burns; let go (or run
+  out, 2 s), its wait begins, a whole wait after a whole length, less after less (never under 35%); "of Echoes", three phantom
+  bites; what it leaves, where it first struck and along its line.
+- SNARE (heroes/ranger.gd): thrown where he aims, 7 tiles at most, three at once; what walks in is held two seconds, then it bursts
+  1.3 tiles round. SNIPE: held, it draws (full at 1.5 s); let go, an arrow through everything in its line, at its fullest 2.6 times
+  as hard, 3.3 times as wide, 70% faster, knocking back 1.4 tiles. RALLY: his companions near him faster and harder for five
+  seconds (he has none in this port yet: COMPANIONS is off in the game too).
+- A move held (kit.gd `_begin_channel`, `_update_channel`, `_end_channel`: game.ts beginChannel, updateChannel, endChannel), for
+  any hero's kit; his pictures held while it goes on (the bake's `hold`), begun and let go where his pictures have them, and the
+  moves' own (the bake's 129 to 132: the snare thrown, the rally called, the ball and the spear).
+Their looks (`scripts/heroes/swap_draw.gd`, render/swap_fx.ts line for line, and render/fx.ts drawRay): the comet and its splash,
+the crystal lance, the beam (held away up the screen, drawn behind her), the snare's rope flying out spinning and lying open, the
+snipe's ring filling like a clock with its pulses, its aim, the light rising and drawn in, its glint and twinkle, the loosed
+arrow's whoosh, streak and arrow of light, and the rally's rings. `--only=talents` checks them all (check_talents.gd `_learn`).
 
 ## The Warrior's battle axe and warhammer (the cloud chat, 21 Nov 2026)
 
@@ -651,7 +676,7 @@ by `tools/godot_warrior_fx.ts`: the thrown axe spinning flat (`warrior_fx-0.png`
 in the floor's own stone in place of the slam ring (fx.gd `claims_slam`), its cracks the way he struck, kept 2.4 s: one sheet for
 each stone the game paints it in (`quake_<stone>-0.png`: floors 1 to 3 the Crypt's own, floor 4 and the rest but the fifth the
 Crypt's fourth, the fifth the lair's, the vault's in town), only the floor's own loaded. `--only=talents` checks all of it
-(check_talents.gd, 13 lines) and pictures the axe back in his hands, two axes flying, a quake and the charge.
+(check_talents.gd `_arms`, 13 lines) and pictures the axe back in his hands, two axes flying, a quake and the charge.
 
 ## The shadows under the figures, and the named ones' rings (the cloud chat, 21 Nov 2026)
 

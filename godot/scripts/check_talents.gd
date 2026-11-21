@@ -99,6 +99,8 @@ func run(main, hero, d: String) -> void:
 	await _ranger()
 	# THE MAGE'S TALENTS
 	await _mage()
+	# THE MAGE'S AND THE RANGER'S MOVES TO LEARN, and Venom
+	await _learn()
 	# THE PAGE, for each class
 	var inv = M._inv
 	for cls in ["warrior", "ranger", "mage", "warlock", "tinkerer", "brawler"]:
@@ -903,3 +905,130 @@ func _mage() -> void:
 	h.picks = {}
 	h.talents = []
 	h.shield = 0.0
+
+
+## THE MAGE'S AND THE RANGER'S MOVES TO LEARN (game/swap_moves.ts): set on the ATTACKS page, made by their rules, drawn; and Venom.
+func _learn() -> void:
+	M.set_class("mage", true)
+	M.loot.level = 50
+	h.life = h.max_life
+	h.shield = 0.0
+	h.shield_t = 0.0
+	await _run(0.2)
+	var start: Vector2 = h.world
+	_open_ground()
+	M._kit_look()
+	await _run(0.2)
+	var kit = h.kit
+	# BALL: learned, set on her tap from the ATTACKS page; a comet that bursts on the first it hits, the one beside struck too
+	_take(["kindling", "ball"])
+	var tap0: Array = h.move_choices(0)
+	var changed: bool = h.change_move(0)
+	var bar: Array = M._hud._skills().map(func(x): return x["id"])
+	var two := _foes([[3.0, 0.0], [3.4, 0.9]], true)
+	var lives: Array = [two[0].life, two[1].life]
+	kit._deliver(0, h.world, h.world + h.face * 3.0, 1.0, true)
+	await _run(0.45)
+	await _snap("mage_ball")
+	var look = kit.look
+	_line(tap0 == ["wave", "ball"] and changed and h.loadout.id(0) == "ball" and bar[0] == "ball" and h.picks.get("@tap") == "ball" and two[0].life < lives[0] and two[1].life < lives[1] and look != null and not look.splashes.is_empty(),
+		"Ball: learned, her tap's choices %s, CHANGE made it her tap (the bar's %s); the comet burst on the first (%s) and the one beside it (%s), its splash on the floor" % [tap0, bar, two[0].life < lives[0], two[1].life < lives[1]])
+	await _run(0.6)
+	# SPEAR: through every one in its line
+	_take(["bittercold", "spear"])
+	h.picks["@tap"] = "spear"
+	h.swap()
+	two = _foes([[2.5, 0.0], [4.5, 0.0]], true)
+	lives = [two[0].life, two[1].life]
+	kit._deliver(0, h.world, h.world + h.face * 3.0, 1.0, true)
+	await _run(0.12)
+	await _snap("mage_spear")
+	await _run(0.3)
+	_line(h.loadout.id(0) == "spear" and two[0].life < lives[0] and two[1].life < lives[1], "Spear: a crystal lance through both in its line (%s, %s)" % [two[0].life < lives[0], two[1].life < lives[1]])
+	# BEAM: only held; while held it burns along its line, she is drawn holding it; let go, its wait begins
+	_take(["charged", "beam"])
+	var hold0: Array = h.move_choices(1)
+	h.change_move(1)
+	var m = _foes([[3.0, 0.0]], true)[0]
+	var life0: float = m.life
+	kit.charges[1] = 1
+	kit.hold_auto = true
+	kit._use_skill(1, h.world + h.face * 4.0)
+	await _run(0.6)
+	var held: bool = not kit.channel.is_empty() and not look.held.is_empty() and kit.picture(0)[0] == 41
+	await _snap("mage_beam")
+	kit.hold_auto = false
+	await _run(0.1)
+	var waited := 0
+	while not kit.channel.is_empty() and waited < 30:
+		await M.get_tree().process_frame
+		waited += 1
+	_line(hold0 == ["orb", "beam"] and h.loadout.id(1) == "beam" and held and m.life < life0 and kit.channel.is_empty() and kit.cd[1] > 0.0,
+		"Beam: on her hold (%s), held it burns along its line (%s), the one in it struck (%s); let go, it ends and its wait begins (%.1f s)" % [hold0, held, m.life < life0, kit.cd[1]])
+	h.picks = {}
+	_take([])
+	# THE RANGER
+	M.set_class("ranger", true)
+	M.loot.level = 50
+	await _run(0.2)
+	_open_ground()
+	M._kit_look()
+	await _run(0.2)
+	kit = h.kit
+	# SNARE: in his Shot's place; thrown, what walks in is held, then it bursts
+	_take(["widetraps", "snare"])
+	m = _foes([[3.0, 0.0]])[0]
+	life0 = m.life
+	kit._deliver(0, h.world, h.world + h.face * 3.0, 1.0, true)
+	var snares: int = kit.traps.filter(func(t): return t.get("snare", false)).size()
+	await _run(0.04)
+	await _snap("ranger_snare")
+	await _run(0.36)
+	var held_fast: bool = m.stun_t > 1.0
+	await _run(2.2)
+	_line(h.loadout.id(0) == "snare" and snares == 1 and held_fast and m.life < life0, "Snare: his Shot's place; one lies where it was thrown (%d), the one that walked in held fast (%s), then it burst (%s)" % [snares, held_fast, m.life < life0])
+	# SNIPE: in his Volley's place; held, it draws to full; let go, a harder, wider, faster arrow that knocks back
+	_take(["splitshot", "snipe"])
+	m = _foes([[4.0, 0.0]], true)[0]
+	life0 = m.life
+	kit.charges[1] = 1
+	kit.hold_auto = true
+	kit._use_skill(1, h.world + h.face * 4.0)
+	await _run(1.2)
+	var mid: Dictionary = kit.snipe_draw()
+	await _snap("ranger_snipe_draw")
+	await _run(0.8)
+	var full: Dictionary = kit.snipe_draw()
+	var was: Vector2 = m.world
+	kit.hold_auto = false
+	await _run(0.05)
+	var arrows: Array = kit.shots.filter(func(p): return p.has("snipe"))
+	var k: float = float(arrows[0]["snipe"]) if not arrows.is_empty() else -1.0
+	await _snap("ranger_snipe_loosed")
+	await _run(0.5)
+	_line(h.loadout.id(1) == "snipe" and not mid.is_empty() and float(mid["power"]) > 0.5 and float(mid["power"]) < 1.0 and not full.is_empty() and float(full["power"]) == 1.0 and k == 1.0 and m.life < life0 and m.world.distance_to(h.world) > was.distance_to(h.world) + 0.3,
+		"Snipe: his Volley's place; drawn %.0f%% at 1.2 s, full at 2 s; let go, the arrow at its fullest (%.1f) struck and knocked back (%.1f tiles to %.1f)" % [float(mid.get("power", 0.0)) * 100.0, k, was.distance_to(h.world), m.world.distance_to(h.world)])
+	# RALLY: with Snipe too, his Volley's place is his pick of the two; his call lasts five seconds
+	_take(["splitshot", "snipe", "windrunner", "rally"])
+	var holds: Array = h.move_choices(1)
+	h.change_move(1)
+	kit.charges[1] = 1
+	kit._use_skill(1, h.world + h.face)
+	await _run(0.45)
+	await _snap("ranger_rally")
+	_line(holds == ["snipe", "rally"] and h.loadout.id(1) == "rally" and not kit.rally_now().is_empty(), "Rally: with Snipe, his pick of the two (%s); called, it lasts %.1f s more" % [holds, float(kit.rally_now().get("left", 0.0))])
+	# VENOM: a poisoned enemy that dies bursts in a cloud of its poison
+	_take(["keeneye", "venom"])
+	m = _foes([[2.0, 0.0]])[0]
+	m.poison_t = 3.0
+	m.poison_dps = 6.0
+	var clouds: int = h.wakes.list.filter(func(z): return z["kind"] == "venom").size()
+	h.killed(m)
+	var after: int = h.wakes.list.filter(func(z): return z["kind"] == "venom").size()
+	_line(after == clouds + 1, "Venom: a poisoned one dying leaves a cloud of its poison (%d to %d)" % [clouds, after])
+	h.picks = {}
+	_take([])
+	h.world = start
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead:
+			o.stun_t = 0.0

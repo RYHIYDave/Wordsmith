@@ -949,6 +949,20 @@ func _skills() -> Array:
 	# (THE WARRIOR'S BATTLE AXE AND WARHAMMER: their three on his buttons once his tree picks one: hero.gd arm)
 	if hero != null and hero.cls == "warrior" and of.has("warrior:" + str(hero.weapon)):
 		return of["warrior:" + str(hero.weapon)]
+	# (THE MAGE'S AND THE RANGER'S MOVES TO LEARN: whatever is in each place now, its own name and icon: hud.json `skillInfo`)
+	var info: Dictionary = _data.get("skillInfo", {})
+	if hero != null and not hero.loadout.form_moves.is_empty() and of.has(hero.cls) and hero.cls in ["mage", "ranger"]:
+		var out: Array = []
+		for i in 3:
+			var id: String = hero.loadout.id(i)
+			var base: Dictionary = of[hero.cls][i]
+			if info.has(id) and id != base["id"]:
+				var d: Dictionary = (info[id] as Dictionary).duplicate()
+				d["key"] = "LEFT CLICK" if i == 0 else ("HOLD RIGHT CLICK" if float(d["channel"]) > 0.0 else "RIGHT CLICK")
+				out.append(d)
+			else:
+				out.append(base)
+		return out
 	if hero != null and of.has(hero.cls):
 		return of[hero.cls]
 	return _data["skills"]

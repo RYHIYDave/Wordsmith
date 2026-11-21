@@ -44,6 +44,11 @@ func _ready() -> void:
 	_sil = ShaderMaterial.new()
 	_sil.shader = Shader.new()
 	_sil.shader.code = Figures.SILHOUETTE
+	_sd = SwapDraw.new(self, kit.h.fx if kit != null else null)
+	air = _Air.new()
+	air.look = self
+	air.z_index = 40
+	add_child(air)
 
 
 func _exit_tree() -> void:
@@ -54,9 +59,129 @@ func _exit_tree() -> void:
 	_orbs.clear()
 
 
-## (the game's events for her are fx.gd's and fx_wild_mage.gd's)
-func on_event(_e: Dictionary, _fx) -> void:
-	pass
+## (the game's events for her are fx.gd's and fx_wild_mage.gd's; HER MOVES TO LEARN's, render/fx.ts: the comet's splash, a phantom's
+## beam (an echo), a bite of the beam held: light where it leaves the wand as it begins, sparks where it ends)
+func on_event(e: Dictionary, fx) -> void:
+	match str(e.get("t", "")):
+		"burst":
+			if e.get("comet", false) and splashes.size() < 12:
+				splashes.append({"x": e["x"], "y": e["y"], "el": e["el"], "r": e["r"], "t": 0.0})
+		"beam":
+			var w = e.get("words")
+			var heavy := RangerLook._has(w, "power")
+			var colors: Array = RangerLook.beam_colors(str(e["el"]), w, int(e["n"]), bool(e.get("echo", false)))
+			rays.append({"x0": e["x0"], "y0": e["y0"], "x1": e["x1"], "y1": e["y1"], "t": 0.0, "dur": 0.16 if RangerLook._has(w, "swift") else (0.28 if heavy else 0.22),
+				"colors": colors, "heavy": heavy, "jag": e["el"] == "lightning", "flicker": RangerLook._has(w, "volatile"), "faint": e.get("echo", false), "seed": randi() % 1000})
+			if fx != null:
+				fx.spray(float(e["x1"]), float(e["y1"]), 3 if e.get("echo", false) else 7, PackedColorArray(colors), 2.4, 50.0, 10.0)
+		"beamBite":
+			if fx != null:
+				var w = e.get("words")
+				var colors: Array = RangerLook.beam_colors(str(e["el"]), w, int(e["n"]), false)
+				var d := Vector2(float(e["x1"]) - float(e["x0"]), float(e["y1"]) - float(e["y0"]))
+				var u := d / d.length() if d.length() > 0.01 else Vector2(1, 0)
+				fx.spray(float(e["x1"]), float(e["y1"]), 3, PackedColorArray(colors), 2.2, 50.0, 10.0)
+				if e.get("first", false):
+					fx.flash(float(e["x0"]) + u.x * 0.4, float(e["y0"]) + u.y * 0.4, 12.0, 0.4 if RangerLook._has(w, "power") else 0.26, 0.1, PackedColorArray(colors))
+					if RangerLook._has(w, "power"):
+						fx.kick(1.4)
+
+
+const RangerLook := preload("res://scripts/heroes/ranger_look.gd")
+const SwapDraw := preload("res://scripts/heroes/swap_draw.gd")
+## (the comet's splashes, a phantom's beams, the beams held now: render/swap_fx.ts SPLASHES, render/fx.ts rays and held)
+var splashes: Array = []
+var rays: Array = []
+var held: Array = []
+var air: Node2D
+var _sd
+var _sda
+
+
+class _Air extends Node2D:
+	var look
+
+	func _draw() -> void:
+		look.draw_air(self)
+
+
+## (render/fx.ts holdBeam: the beam held runs, this frame, from the wand to the first wall; a Twin pair both, side by side)
+func _hold_beams(dt: float) -> void:
+	var ch: Dictionary = kit.channel
+	var id: String = kit.h.loadout.id(int(ch["skill"])) if not ch.is_empty() else ""
+	if id == "beam":
+		var h = kit.h
+		var i: int = ch["skill"]
+		var r: Dictionary = h.loadout.r(i)
+		var def: Dictionary = kit._def(i)
+		var half: float = float(def["radius"]) * float(r["size"])
+		var w: Array = h.loadout.wfronts(i)
+		for n in int(r["count"]):
+			var off: float = 0.0 if int(r["count"]) == 1 else (n - (int(r["count"]) - 1) / 2.0) * (half * 2.0 + 0.3)
+			var o := Vector2(h.world.x - h.face.y * off, h.world.y + h.face.x * off)
+			if off != 0.0 and not kit._open(o):
+				o = h.world
+			var end: Vector2 = kit._beam_end(o, h.face, float(def["range"]))
+			var q := {}
+			for x in held:
+				if int(x["n"]) == n and float(x["t"]) < 0.45:
+					q = x
+			if q.is_empty():
+				q = {"n": n, "fresh": true, "t": 0.0, "dur": 1.0, "seed": randi() % 1000}
+				held.append(q)
+			q["fresh"] = true
+			q["x0"] = o.x + h.face.x * 0.45
+			q["y0"] = o.y + h.face.y * 0.45
+			q["x1"] = end.x
+			q["y1"] = end.y
+			q["colors"] = RangerLook.beam_colors(str(r["element"]), w, n, false)
+			q["heavy"] = w.has("power")
+			q["jag"] = r["element"] == "lightning"
+			q["flicker"] = w.has("volatile")
+			q["faint"] = false
+	# (render/fx.ts update: one held comes in over its first moments and stays at full while it is said to run; left unsaid, it thins
+	# away)
+	for k in range(held.size() - 1, -1, -1):
+		var q: Dictionary = held[k]
+		if q["fresh"]:
+			q["fresh"] = false
+			q["t"] = minf(0.3, float(q["t"]) + dt * (0.2 / 0.07))
+		else:
+			q["t"] = maxf(float(q["t"]), 0.45) + dt * (0.55 / 0.14)
+			if float(q["t"]) >= 1.0:
+				held.remove_at(k)
+	for k in range(rays.size() - 1, -1, -1):
+		rays[k]["t"] = float(rays[k]["t"]) + dt
+		if float(rays[k]["t"]) >= float(rays[k]["dur"]):
+			rays.remove_at(k)
+	for k in range(splashes.size() - 1, -1, -1):
+		splashes[k]["t"] = float(splashes[k]["t"]) + dt
+		if float(splashes[k]["t"]) > 0.55:
+			splashes.remove_at(k)
+
+
+## Over the figures: her comets and spears in flight, her beams (render.ts, render/fx.ts drawRay). A beam held away up the screen
+## leaves the wand behind her, so she stands in front of its first stretch: such a one is drawn under her instead (_draw).
+func draw_air(c: CanvasItem) -> void:
+	if kit == null:
+		return
+	if _sda == null:
+		_sda = SwapDraw.new(c, kit.h.fx)
+	for p in kit.shots:
+		var look := str(p.get("look", ""))
+		if look == "ball":
+			_sda.ball(float(p["x"]), float(p["y"]), float(p["vx"]), float(p["vy"]), str(p["element"]), _t, float(p["flown"]))
+		elif look == "mspear":
+			_sda.spear(float(p["x"]), float(p["y"]), float(p["vx"]), float(p["vy"]), str(p["element"]), _t, float(p["flown"]))
+	for r in rays:
+		_sda.ray(r, _t)
+	for r in held:
+		if not _away(r):
+			_sda.ray(r, _t)
+
+
+func _away(r: Dictionary) -> bool:
+	return _gy(r["x1"], r["y1"]) < _gy(r["x0"], r["y0"]) - 1.0
 
 
 ## (render.ts shadow's blot: black, full at its middle, 0.85 at 0.4 of its reach, nothing at its edge)
@@ -104,7 +229,10 @@ func _process(dt: float) -> void:
 				var cs: Array = _tones.get(str(o["element"]), _tones["phys"])
 				fx.mote(float(o["x"]) + randf_range(-0.35, 0.35), float(o["y"]) + randf_range(-0.35, 0.35), PackedColorArray(cs.slice(1)))
 	_place_orbs()
+	_hold_beams(dt)
 	queue_redraw()
+	if air != null:
+		air.queue_redraw()
 
 
 ## Her orbs, each among the figures where it hangs (render.ts: stood at its depth, a hair nearer than a figure on its spot).
@@ -216,6 +344,12 @@ func _draw() -> void:
 	# (HER TREE'S AURA, on the floor round her while it is on: render/swap_fx.ts drawAura)
 	if kit.has_method("aura_now"):
 		_aura(kit.aura_now())
+	# (the comet's splashes on the floor; a beam held away up the screen, behind her)
+	for s in splashes:
+		_sd.splash(s, float(s["t"]))
+	for r in held:
+		if _away(r):
+			_sd.ray(r, _t)
 	var P: Dictionary = L.P
 	for p in kit.shots:
 		if p.get("look", "") != "wave":

@@ -355,6 +355,20 @@
     "loop": null,
     "tail": null,
     "n": 47
+   },
+   "129": {
+    "fps": 30,
+    "hit": 0.24,
+    "loop": null,
+    "tail": null,
+    "n": 18
+   },
+   "130": {
+    "fps": 30,
+    "hit": 0.3,
+    "loop": null,
+    "tail": null,
+    "n": 19
    }
   },
   "card": {
@@ -575,6 +589,20 @@
     "loop": null,
     "tail": null,
     "n": 47
+   },
+   "131": {
+    "fps": 30,
+    "hit": 0.18,
+    "loop": null,
+    "tail": null,
+    "n": 16
+   },
+   "132": {
+    "fps": 30,
+    "hit": 0.2,
+    "loop": null,
+    "tail": null,
+    "n": 17
    }
   },
   "card": {
@@ -1701,7 +1729,11 @@
   "orbEvery": 1,
   "orbMax": 2,
   "familiarLife": 6,
-  "familiarMax": 3
+  "familiarMax": 3,
+  "channelWake": 1,
+  "channelMinCool": 0.35,
+  "beamPatches": 4,
+  "beamPatchGap": 2.4
  },
  "rangerArrow": {
   "on": true,

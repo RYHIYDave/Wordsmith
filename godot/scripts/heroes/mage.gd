@@ -82,10 +82,102 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 					last = o
 			if not last.is_empty():
 				_orb_wave(i, Vector2(last["x"], last["y"]), rad, each, true, false)
+	elif def["kind"] == "projectile":
+		# (HER MOVES TO LEARN, game/swap_moves.ts: BALL, a comet that bursts on the first enemy it hits; SPEAR, a crystal lance through
+		# every enemy in its line: game.ts deliver, a projectile; one list of who they have hit between a Twin pair)
+		var base := atan2(way.y, way.x)
+		var hit: Array = []
+		var n: int = r["count"]
+		var id: String = h.loadout.id(i)
+		for k in n:
+			var a := base + (0.0 if n == 1 else (k - (n - 1) / 2.0) * 0.16)
+			var u := Vector2(cos(a), sin(a))
+			shots.append({"x": from.x + u.x * 0.4, "y": from.y + u.y * 0.4, "vx": u.x * float(r["proj_speed"]), "vy": u.y * float(r["proj_speed"]),
+				"r": minf(0.6, float(def["radius"]) * float(r["size"]) * (1.5 if float(r["splash"]) >= 1.5 else 1.0)), "dist": float(def["range"]),
+				"dmg": each, "element": r["element"], "pierce": bool(r["pierce"]) or id == "spear", "hit": hit, "volley": n > 1, "skill": i,
+				"trail": 0.0, "words": words, "age": 0.0, "n": k, "flown": 0.0, "look": "ball" if id == "ball" else "mspear"})
 	# ("of Echoes": the move made again a moment later, weaker, from where it was made)
 	if primary and float(r["echo"]) > 0.0:
 		var again := func() -> void: _deliver(i, from, to, float(h.loadout.r(i)["echo"]), false)
 		h._echo_of(i, str(def["kind"]), from, way, again)
+
+
+## HER BEAM (game.ts channelBite, beamLine), one bite of it while it is held: a line from her to the first wall (or the end of its
+## reach), and everything along it struck, the nearest first; a Twin pair side by side, one enemy taking only one of them. What it
+## leaves, it leaves where it first struck (or near its far end) and along the line.
+func _channel_bite(i: int, from: Vector2, way: Vector2, frac: float, echo: bool, leaves: bool, first: bool) -> void:
+	var r: Dictionary = h.loadout.r(i)
+	var def := _def(i)
+	var each: float = frac * float(r["count_dmg"])
+	var words: Array = h.loadout.wfronts(i)
+	var behind: Array = h.loadout.wbehinds(i)
+	var half: float = float(def["radius"]) * float(r["size"])
+	var taken: Array = []
+	var hits := 0
+	h.sfx.play("beamHum", linear_to_db(0.3 if echo else 0.5))
+	var n: int = r["count"]
+	for k in n:
+		var off: float = 0.0 if n == 1 else (k - (n - 1) / 2.0) * (half * 2.0 + 0.3)
+		var st := Vector2(from.x - way.y * off, from.y + way.x * off)
+		if off != 0.0 and not h._clear(st.x, st.y):
+			st = from
+		var end := _beam_end(st, way, float(def["range"]))
+		var len: float = end.distance_to(st)
+		var line: Array = []
+		if h.monsters != null:
+			for m in h.monsters.list:
+				if not is_instance_valid(m) or m.dead or taken.has(m) or m.state == "rise":
+					continue
+				var at: float = (m.world - st).dot(way)
+				if at < -m.r or at > len + m.r:
+					continue
+				if absf((m.world.y - st.y) * way.x - (m.world.x - st.x) * way.y) > half + m.r:
+					continue
+				line.append([m, at])
+		line.sort_custom(func(a, b): return a[1] < b[1])
+		if echo:
+			_say({"t": "beam", "x0": st.x, "y0": st.y, "x1": end.x, "y1": end.y, "w": half, "el": r["element"], "words": words, "behind": behind, "n": k, "echo": true})
+		else:
+			_say({"t": "beamBite", "x0": st.x, "y0": st.y, "x1": end.x, "y1": end.y, "w": half, "el": r["element"], "words": words, "n": k, "hits": line.size(), "first": first})
+		for q in line:
+			taken.append(q[0])
+			h.hit_monster(q[0], i, each, hits >= 3)
+			hits += 1
+		if not line.is_empty():
+			h._landed_on(i)
+			if float(r["pull"]) > 0.0:
+				h.city.pull_in(i, line[0][0].world, 0.0, true)
+		var d := 0.5
+		while d < len:
+			h._break_props(i, st + way * d, half + 0.25)
+			d += 1.0
+		if k == 0 and leaves:
+			# (where it first struck, or failing that near its far end: the rune, the cloud, the cracks and the ward; ground along it)
+			var far := maxf(0.0, len - 0.8)
+			var w_at: Vector2 = line[0][0].world if not line.is_empty() else st + way * far
+			h._wake(i, w_at, 1.0, each, false)
+			if r["zone"] != null:
+				var gd := 1.3
+				var gn := 0
+				while gn < int(T["tune"]["beamPatches"]) and gd < len:
+					h.wakes.add_ground(r["zone"], i, st + way * gd, 1.0, h.avg_hit(i, each), r["meld_behind"])
+					gn += 1
+					gd += float(T["tune"]["beamPatchGap"])
+	if hits > 0:
+		h.sfx.play({"fire": "fire", "frost": "frost", "lightning": "zap"}.get(r["element"], "hit"), linear_to_db(0.6))
+
+
+## (game.ts beamEnd) Where a beam from `from` the way `way` stops: the first wall, or the end of its reach.
+func _beam_end(from: Vector2, way: Vector2, reach: float) -> Vector2:
+	var len := 0.0
+	var d := 0.2
+	while d <= reach + 1e-6:
+		var p := from + way * d
+		if not _open(p):
+			break
+		len = d
+		d += 0.2
+	return from + way * len
 
 
 ## (game.ts orbWave) One wave from an orb (two, with Twin in front: the second a moment after the first). `leaves`: the wave it sends

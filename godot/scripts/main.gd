@@ -304,7 +304,8 @@ func _ready() -> void:
 		hero.picks = {}
 		if _restored.get("picks") is Dictionary:
 			for k in _restored["picks"]:
-				if hero.talents.has(k):
+				# (a talent's pick; and THE MOVES TO LEARN, the move set in his tap's or his hold's place: game.ts restore, MOVE_PICK)
+				if hero.talents.has(k) or (k in hero.MOVE_PICK and Words.data()["skills"].has(str(_restored["picks"][k]))):
 					hero.picks[k] = str(_restored["picks"][k])
 		hero.talents_changed()
 	_build(first, "start")

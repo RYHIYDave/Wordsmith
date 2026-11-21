@@ -27,8 +27,14 @@ class _Air extends Node2D:
 		look.draw_air(self)
 
 
+const SwapDraw := preload("res://scripts/heroes/swap_draw.gd")
+var _sd
+var _sda
+
+
 func _ready() -> void:
 	L.ready_up()
+	_sd = SwapDraw.new(self, kit.h.fx if kit != null else null)
 	air = _Air.new()
 	air.look = self
 	air.z_index = 40
@@ -73,6 +79,12 @@ static func arrow_colors(el: String, w, n: int, echo: bool) -> Array:
 	var plain := el == "phys" and not _has(w, "power") and not _has(w, "swift") and not _has(w, "leech") and not _has(w, "poison") and not _has(w, "volatile")
 	if plain and not echo and n == 0:
 		return [P["white"], P["sl5"], P["wd5"], P["wd4"]]
+	return beam_colors(el, w, n, echo)
+
+
+## (render/fx.ts beamColors) A beam's colours: the element's; with none, the violet of magic; a word with a colour of its own takes it.
+static func beam_colors(el: String, w, n: int, echo: bool) -> Array:
+	var P: Dictionary = L.P
 	var heavy := _has(w, "power")
 	var ramp: Array = _ramp(L.EL["arcane" if el == "phys" else el])
 	ramp.reverse()
@@ -187,9 +199,19 @@ func _draw() -> void:
 				draw_rect(Rect2((q.x - 1) * 2, (q.y - 2) * 2, 4, 4), L.WORD.get(w, P["white"]))
 				draw_rect(Rect2(q.x * 2, (q.y - 2) * 2, 2, 2), P["white"])
 				j += 1
-			if pic != null:
+			if tr.get("snare", false):
+				# (HIS SNARE, game/swap_moves.ts: its rope flying out to where it lands, then lying open: render/swap_fx.ts drawSnare)
+				_sd.snare(float(tr["x"]), float(tr["y"]), float(tr["arm"]) <= 0.0, _t, kit._clock - float(tr.get("born", -9.0)), tr.get("from", Vector2.INF))
+			elif pic != null:
 				var rect: Rect2 = pic["rect"]
 				draw_texture_rect_region(loot.sheet, Rect2(c.round() * 2.0 - pic["anchor"], rect.size), rect)
+	# (HIS SNIPE DRAWN, on the floor under him; HIS RALLY's rings going out: render/swap_fx.ts drawSnipeDraw, drawRally)
+	var sn: Dictionary = kit.snipe_draw()
+	if not sn.is_empty():
+		_sd.snipe_floor(kit.h.world, sn)
+	var ra: Dictionary = kit.rally_now()
+	if not ra.is_empty():
+		_sd.rally(kit.h.world, ra)
 
 
 ## (render.ts ringDots) A ring of dots on the floor `r` tiles round, every other one, `step` apart.
@@ -206,10 +228,19 @@ func _ring_dots(c: Vector2, r: float, col: Color, step: int) -> void:
 func draw_air(c: CanvasItem) -> void:
 	if kit == null:
 		return
+	if _sda == null:
+		_sda = SwapDraw.new(c, kit.h.fx)
 	var P: Dictionary = L.P
 	var A: Dictionary = kit.T["rangerArrow"]
+	# (HIS SNIPE DRAWN, over him: render/swap_fx.ts snipeAir)
+	var sn: Dictionary = kit.snipe_draw()
+	if not sn.is_empty():
+		_sda.snipe_air(kit.h.world, sn, _t)
 	for p in kit.shots:
 		var v := Vector2(p["vx"], p["vy"])
+		# (THE SNIPE: the streak behind the arrow it loosed, under the arrow: render/swap_fx.ts drawSnipeStreak)
+		if p.has("snipe"):
+			_sda.snipe_streak(float(p["x"]), float(p["y"]), v.x, v.y, float(p["snipe"]), float(p["age"]))
 		# (from where the arrow on his string was, at its height)
 		if 0.4 + float(p["age"]) * v.length() < float(A["from"]):
 			continue

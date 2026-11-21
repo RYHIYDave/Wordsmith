@@ -373,6 +373,8 @@ func _target_at(at: Vector2) -> Dictionary:
 ## unasked into the next piece pressed.)
 func _press(action: String, arg) -> void:
 	match action:
+		"change":
+			hero.change_move(int(arg))
 		"tab":
 			if arg != _page:
 				if loot.first_word_waits() and arg != "attacks":
@@ -903,6 +905,16 @@ func _draw_attacks(blink: bool, first: bool) -> void:
 	var rows: Array = [["%s %sdamage a hit%s." % [("%d" % hits[0]) if hits[0] == hits[1] else ("%d to %d" % hits), el, (", " + pace) if pace != "" else ""], Color.WHITE]]
 	for i in move["lines"].size():
 		rows.append([move["lines"][i], DIM if i == 0 else TEXT])
+	# (THE MAGE'S AND THE RANGER'S MOVES TO LEARN, game/swap_moves.ts: the move in this place changed to the next it could be, at the
+	# foot of what is read; hers, “She sets tap and hold (Recommended)”; his hold, Snipe or Rally where he has both: ui/inventory.ts)
+	var choices: Array = hero.move_choices(which)
+	var bh := 14.0 * K / 2.0 + 8.0
+	if choices.size() > 1:
+		var nxt: String = choices[(choices.find(hero.loadout.id(which)) + 1) % choices.size()]
+		var label := "CHANGE TO %s" % str(Words.skill(nxt)["name"]).to_upper()
+		var bw := _width(label, 10) + 14.0
+		_button(Rect2(x + w - bw, end - bh, bw, bh), label, "change", which, PICK)
+		end -= bh + 2.0
 	# (a sentence is written whole or not at all: one that stops half way reads as a fault)
 	for row in rows:
 		var parts := _wrap(row[0], w, SMALL)
