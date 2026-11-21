@@ -544,15 +544,16 @@ home to the camp, the camp's waypoint to the city's floors he has reached.
   the Hush pours out over its fixed ground and every bell wakes, 15 s on the clock a bell; the Hush raising the floor's own round
   him in it, more and more; each bell rung by a blow, knocking back what is near, chipping the Hush back, calling its tough one
   (the game's own yellow pack's leader); all rung, the Hush shatters with what it raised and the loot bursts out of the last bell
-  (the clapper with it the first time); the clock run out, it lifts. Seen: the bells by their states (recorded from the game:
+  (the clapper with it the first time); the clock run out, it lifts. What the Hush raises and the tough ones come up dark out of
+  rifts in the floor, their edges the enemy's pink, and step out a second later (the game's ARRIVALS). Seen: the bells by their states (recorded from the game:
   `bell<k>`, `muffled`), the Hush's grey veil with its wall of mist, the arrows at the screen's edge, the clock across the top,
   its ground and the bells on the maps. A Splitting one struck down with the Hush breaks in two as it dies, as in the game.
-  `--only=bells --floor=N` (`check_bells.gd`): 9 steps, on floors 11 and 14.
+  `--only=bells --floor=N` (`check_bells.gd`): 10 steps, on floors 11 and 14.
 
 ## Not in it yet
 
-The last words (floor 16), the rifts the Bells' monsters come up out of (the game's ARRIVALS: here they come up in a puff of
-the Hush's grey), burning Splitting or Binding into gear,
+The last words (floor 16), the rifts for anything but the Bells' monsters (the strongholds' waves come in as before),
+burning Splitting or Binding into gear,
 Frenzied on the prison's bosses' own scripts
 (the mini fleshmancer's), the trees seen through when he is behind them on floors 1 to 5 (on the open floors they are:
 above), a phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched

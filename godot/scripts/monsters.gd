@@ -538,6 +538,19 @@ func call_up(kind: String, at: Vector2, pack: int, face: Vector2, a1 := {}) -> M
 	return call_up_as(d, at, pack, face)
 
 
+## ARRIVALS (game.ts arriveFrom; game/arrivals.ts): `m`, just come into the world, comes in up out of a rift in the floor: its
+## rift opening a little after the last of those still to open (0.12 s apart), the rift's size by its own (small, medium, large).
+func arrive(m: Monster) -> void:
+	var waiting := 0
+	for o in list:
+		if is_instance_valid(o) and o != m and not o._arrive.is_empty() and float(o._arrive["age"]) <= 0.0:
+			waiting += 1
+	var delay := waiting * 0.12
+	m.arrive(delay, 1.0)
+	var r: float = {"small": 0.45, "medium": 0.6, "large": 0.85, "boss": 1.1}.get(str(m.def.get("size", "small")), 0.45)
+	_tell({"t": "arrive", "what": "open", "x": m.world.x, "y": m.world.y, "delay": delay, "secs": 1.0, "r": r})
+
+
 ## One as the game made it (`d`, a monster of the export's: act2/bells.gd's tough ones and what the Hush raises), come into the
 ## world now at `at`, awake and at him.
 func call_up_as(d: Dictionary, at: Vector2, pack: int, face: Vector2) -> Monster:

@@ -242,6 +242,8 @@ func _tough(at: Vector2, k: int) -> void:
 		var m = main._monsters.call_up_as(d, p, 8900 + k, main.hero.world - p)
 		if m == null:
 			continue
+		# (ARRIVALS: up out of a rift in the floor)
+		main._monsters.arrive(m)
 		ids.append(m)
 		main.fx.event({"t": "bells", "what": "rise", "x": m.world.x, "y": m.world.y})
 
@@ -254,6 +256,10 @@ func _won(last: Vector2) -> void:
 	for i in states.size():
 		states[i] = 2
 	for m in ids:
+		# (ARRIVALS: those still coming up out of their rifts go back down them)
+		if is_instance_valid(m) and not m.dead and m.state == "rise":
+			m.queue_free()
+			continue
 		if is_instance_valid(m) and not m.dead:
 			# (its life and shield and one more, as the game's: what its armour keeps off it, below)
 			m.damage(m.life + m.shield + 1.0, "phys", false, false, [], false, false, -1)
@@ -346,6 +352,8 @@ func _step(dt: float) -> void:
 			continue
 		m.max_life = roundf(m.max_life * more)
 		m.life = m.max_life
+		# (ARRIVALS: up out of a rift in the Hush's floor)
+		main._monsters.arrive(m)
 		ids.append(m)
 		risen += 1
 		main.fx.event({"t": "bells", "what": "rise", "x": s.x, "y": s.y})

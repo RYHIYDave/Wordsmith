@@ -121,6 +121,14 @@ func _rising() -> void:
 	var hu: Dictionary = B.D["plan"]["hush"]
 	h.world = M._spot_near(Vector2(hu["x"], hu["y"]), 0.0, h.world)
 	await _run(6.0, func(): return B.risen - before >= 2)
+	# (ARRIVALS: up out of rifts in the floor, nothing reaching them while they come; out in a second)
+	await _run(0.55)
+	var rifts: int = M.fx.rifts.size()
+	var coming: int = B.ids.filter(func(m): return is_instance_valid(m) and m.state == "rise").size()
+	await _snap("up_out_of_rifts")
+	await _run(1.0)
+	var out: int = B.ids.filter(func(m): return is_instance_valid(m) and not m.dead and m.state != "rise").size()
+	_line(rifts >= 1 and coming >= 1 and out >= 2, "they come up out of rifts in the floor (%d rifts open, %d still coming up), out and in the fight a second on (%d)" % [rifts, coming, out])
 	var inside := 0
 	for m in B.ids:
 		if is_instance_valid(m) and B.in_hush(m.world.x, m.world.y):

@@ -311,6 +311,29 @@ func rise(secs: float) -> void:
 	_set_list("crawl")
 
 
+## ARRIVALS (game/arrivals.ts; game.ts arriveFrom, updateRisers; render/arrivals.ts): coming in up out of a rift in the floor, its
+## rift opening `delay` seconds from now; `secs` from then till it is out and in the fight (nothing reaches it while it comes).
+## ({age: from the rift's opening, rise, opened})
+var _arrive := {}
+
+
+func arrive(delay: float, secs: float) -> void:
+	state = "rise"
+	_t = delay + secs
+	_arrive = {"age": -delay, "rise": secs, "opened": false}
+	_set_list("idle")
+
+
+## (render/arrivals.ts risenBy) How far up it is (0 to 1): nothing while its rift opens, then up, fast then slowing.
+func risen_by() -> float:
+	var o := 0.3
+	var age: float = _arrive["age"]
+	if age <= o:
+		return 0.0
+	var k := minf(1.0, (age - o) / maxf(0.01, float(_arrive["rise"]) - o))
+	return 1.0 - (1.0 - k) * (1.0 - k)
+
+
 func _ready() -> void:
 	_sprite = Sprite2D.new()
 	_sprite.centered = false
@@ -392,9 +415,18 @@ func step(dt: float, hero) -> void:
 	match state:
 		"rise":
 			_t -= dt
+			# (ARRIVALS: its rift heard opening as it begins, and closing as it is out)
+			if not _arrive.is_empty():
+				_arrive["age"] = float(_arrive["age"]) + dt
+				if not _arrive["opened"] and float(_arrive["age"]) >= 0.0:
+					_arrive["opened"] = true
+					mgr.sfx.play("rift_open", linear_to_db(0.6))
 			if _t <= 0.0:
 				state = "chase"
 				_cd = 0.8
+				if not _arrive.is_empty():
+					_arrive = {}
+					mgr.sfx.play("rift_close", linear_to_db(0.5))
 		"sleep":
 			if sees and dist <= AGGRO:
 				mgr.wake(self)
@@ -1533,6 +1565,22 @@ func _show() -> void:
 	_sprite.flip_h = f["flip"]
 	_sprite.scale = Vector2.ONE * float(f["scale"]) * look
 	_sprite.self_modulate = Color(2.4, 2.4, 2.4) if _flash > 0.0 else Color.WHITE
+	_sprite.region_enabled = false
+	# (ARRIVALS, render/arrivals.ts risingSprite: coming up out of its rift, what is still below the floor not drawn, dark as it comes,
+	# lit as it steps out: its picture's top `above` rows, let down by what is still under the floor)
+	if not _arrive.is_empty() and state == "rise":
+		var up := risen_by()
+		var size: Vector2 = f["tex"].region.size
+		var ay: float = -float(f["offset"].y)
+		var above := roundf(ay * up)
+		if above <= 0.0:
+			_sprite.visible = false
+			return
+		_sprite.region_enabled = true
+		_sprite.region_rect = Rect2(0, 0, size.x, minf(size.y, above))
+		_sprite.offset = Vector2(f["offset"].x, -above)
+		_sprite.self_modulate = Color.WHITE.lerp(Color("#160a1c"), 0.85 * (1.0 - up))
+		_sprite.self_modulate.a = minf(1.0, 0.35 + up)
 
 
 ## Its life over its head for a while after it is struck (game.ts barT).
@@ -1585,7 +1633,7 @@ func named() -> bool:
 ## Whether anything is over its head now: its bar, its name, the rune of what it carries.
 func _shows_over() -> bool:
 	# (nothing of one hidden, as an inkling going about as a pool of ink is, not its bar nor its name: render.ts `hidden`)
-	if dead or not seen or not _sprite.visible or boss and carries.is_empty():
+	if dead or not seen or not _sprite.visible or boss and carries.is_empty() or state == "rise":
 		return false
 	return _bar > 0.0 or named() or ((elite or boss) and not carries.is_empty())
 

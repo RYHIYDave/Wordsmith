@@ -137,6 +137,8 @@ var whirls: Array = []
 var cracks: Array = []
 ## Marks left on the floor, fire's scorch and frost's rime (Decal): {x, y, r, t, dur, kind, seed}.
 var decals: Array = []
+## ARRIVALS (render/arrivals.ts Rift): the rifts in the floor that the enemies coming in come up out of: {x, y, t, out, dur, r, seed}.
+var rifts: Array = []
 ## Spikes of ice lying out from a frost burst (Spike): {x0, y0, x1, y1, tall, t, dur}.
 var spikes: Array = []
 ## Bursts of light at an impact (Flash): {x, y, z, r, t, dur, colors}.
@@ -399,6 +401,7 @@ func _find() -> void:
 ## Forget everything (fx.ts clear).
 func clear() -> void:
 	pn = 0
+	rifts = []
 	floaters = []
 	_might_note = null
 	rings = []
@@ -874,6 +877,10 @@ func _handle(e: Dictionary) -> void:
 				wild.whirl_end(e["x"], e["y"])
 		"bells":
 			_bells(e)
+		"arrive":
+			# (ARRIVALS, render/arrivals.ts: a rift opening in the floor under one coming in)
+			if e.get("what", "") == "open" and rifts.size() < 40:
+				rifts.append({"x": e["x"], "y": e["y"], "t": -float(e.get("delay", 0.0)), "out": float(e["secs"]), "dur": float(e["secs"]) + 0.4, "r": float(e["r"]), "seed": randi() % 1000000})
 		"spark":
 			spray(e["x"], e["y"], int(e.get("n", 10)), _ramp(str(e.get("el", "phys"))), 2.4, 60.0, 10.0)
 		_:
@@ -1481,6 +1488,10 @@ func update(dt: float, real: float) -> void:
 		r["t"] += dt
 		if r["t"] >= r["dur"]:
 			rings.remove_at(k)
+	for k in range(rifts.size() - 1, -1, -1):
+		rifts[k]["t"] = float(rifts[k]["t"]) + dt
+		if float(rifts[k]["t"]) >= float(rifts[k]["dur"]):
+			rifts.remove_at(k)
 	_age(slashes, dt)
 	_age(cracks, dt)
 	_age(decals, dt)
@@ -1632,7 +1643,7 @@ static func pline(c: CanvasItem, x0f: float, y0f: float, x1f: float, y1f: float,
 
 ## Whether anything is alive to be drawn; the layers are drawn again while there is, and once more after.
 func _alive() -> bool:
-	return pn > 0 or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or city3.alive() or w10.alive() or m3.alive() or v3.alive() or m8.alive()
+	return pn > 0 or not rifts.is_empty() or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or city3.alive() or w10.alive() or m3.alive() or v3.alive() or m8.alive()
 
 
 func _redraw() -> void:
@@ -1665,6 +1676,86 @@ func _paint(c: CanvasItem, pass_id: int) -> void:
 		cost_draw += Time.get_ticks_usec() - t0
 
 
+## THE RIFT (render/arrivals.ts drawRift, riftOpen): a dark tear opening in the floor where one is coming, out fast and a little past,
+## its ragged edge and the cracks running out from it the enemy's pink, flickering; the floor round it darkened, its inside a deep
+## glow toward its back; it holds while its one comes up, and closes behind it.
+const RIFT_VOID := Color("#0b0612")
+const RIFT_DEEP := Color("#2a0c2c")
+const RIFT_EDGE := [Color("#7a1058"), Color("#e0287a"), Color("#ff7aa8")]
+
+
+static func _imul(a: int, b: int) -> int:
+	return (a * b) & 0xFFFFFFFF
+
+
+static func _rhash(a: int, b: int) -> float:
+	var h := (_imul(a & 0xFFFFFFFF, 374761393) + _imul(b & 0xFFFFFFFF, 668265263)) & 0xFFFFFFFF
+	h = _imul(h ^ (h >> 13), 1274126177)
+	return float((h ^ (h >> 16)) & 0xFFFFFFFF) / 4294967296.0
+
+
+static func rift_open(f: Dictionary) -> float:
+	var t: float = f["t"]
+	if t < 0.0:
+		return 0.0
+	var o := 0.3
+	if t < o:
+		var c := t / o - 1.0
+		return maxf(0.0, 1.0 + 2.7 * c * c * c + 1.7 * c * c)
+	if t < float(f["out"]):
+		return 1.0
+	return maxf(0.0, 1.0 - (t - float(f["out"])) / maxf(0.01, float(f["dur"]) - float(f["out"])))
+
+
+func _rift(c: CanvasItem, f: Dictionary) -> void:
+	var k := rift_open(f)
+	if k <= 0.02:
+		return
+	var cx := gx(f["x"], f["y"])
+	var cy := gy(f["x"], f["y"])
+	var r: float = float(f["r"]) * k
+	var flick := floori(clock * 14.0)
+	var seed: int = f["seed"]
+	oval(c, roundf(cx), roundf(cy), r * 26.0, r * 13.0, Color(RIFT_VOID, 0.35 * minf(1.0, k)))
+	var n := 22
+	var pts: Array = []
+	var poly := PackedVector2Array()
+	for i in n:
+		var a := float(i) / n * TAU
+		var rag := 0.72 + 0.38 * _rhash(seed + i, 3) + (-0.12 if i % 2 == 1 else 0.1)
+		var p := Vector2(cx + cos(a) * r * 18.0 * rag, cy + sin(a) * r * 9.0 * rag)
+		pts.append(p)
+		poly.append(p.round() * 2.0)
+	c.draw_colored_polygon(poly, RIFT_VOID)
+	oval(c, roundf(cx), roundf(cy - r * 2.0), r * 10.0, r * 4.5, Color(RIFT_DEEP, 0.85))
+	for i in n:
+		var p0: Vector2 = pts[i]
+		var p1: Vector2 = pts[(i + 1) % n]
+		var steps := maxi(2, ceili(p0.distance_to(p1)))
+		for st in steps:
+			var u := float(st) / steps
+			var hot := _rhash(seed + i * 31 + st, flick)
+			var col: Color = RIFT_EDGE[2] if hot > 0.82 else (RIFT_EDGE[1] if hot > 0.3 else RIFT_EDGE[0])
+			rect(c, roundf(p0.x + (p1.x - p0.x) * u), roundf(p0.y + (p1.y - p0.y) * u), 1, 1, col)
+	for j in 5:
+		var a := _rhash(seed, j + 40) * TAU
+		var long := (0.5 + 0.7 * _rhash(seed, j + 60)) * r * minf(1.0, k * 1.2)
+		var x := cx + cos(a) * r * 17.0
+		var y := cy + sin(a) * r * 8.5
+		var segs := 4
+		for sg in segs:
+			var bend := (_rhash(seed + j, sg) - 0.5) * 0.9
+			var nx := x + cos(a + bend) * long * 6.0
+			var ny := y + sin(a + bend) * long * 3.0
+			var steps := maxi(2, ceili(Vector2(nx - x, ny - y).length()))
+			for q in steps:
+				var u := float(q) / steps
+				var al := (1.0 - float(sg) / segs) * (1.0 if _rhash(j * 7 + q, flick) > 0.2 else 0.4)
+				rect(c, roundf(x + (nx - x) * u), roundf(y + (ny - y) * u), 1, 1, Color(RIFT_EDGE[1] if sg == 0 else RIFT_EDGE[0], al))
+			x = nx
+			y = ny
+
+
 ## Flat effects on the floor: scorch and frost, cracks, ice, shockwave rings. Drawn under the characters (fx.ts drawGround;
 ## before it, what the new words leave on the floor: words3.ts floor3).
 func _paint_ground(c: CanvasItem) -> void:
@@ -1678,8 +1769,10 @@ func _paint_ground(c: CanvasItem) -> void:
 	m8.draw_ground(c)
 	w610.draw_floor(c)
 	w10.draw_floor(c)
-	# (left out: the rifts of the enemies coming in, the other classes' and the unique items' marks, a volley's arrows
-	# standing in the floor and their shadows)
+	# (ARRIVALS: the rifts of the enemies coming in, under every figure: render/arrivals.ts drawRift)
+	for f: Dictionary in rifts:
+		_rift(c, f)
+	# (left out: the other classes' and the unique items' marks, a volley's arrows standing in the floor and their shadows)
 	for d: Dictionary in decals:
 		var cx := gx(d["x"], d["y"])
 		var cy := gy(d["x"], d["y"])
