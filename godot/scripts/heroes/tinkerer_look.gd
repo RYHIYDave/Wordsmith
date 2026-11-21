@@ -92,9 +92,9 @@ const SHADOW := 0.7
 var GRUN_ROUND := 16
 ## THE GOLEM THAT ONLY SHOOTS IN ITS NEW LOOK (tools/godot_golem_wheel.ts: one great wheel in place of its legs, its big gun at
 ## its side in place of its giant fist; his picks of 21 Nov 2026, “fist to a big gun, but id like him to have 1 wheel instead of
-## legs” and “At its side”): OFF until he has seen all its moves and said yes (pictures first); the old look with its cannon arm
-## till then.
-const WHEEL_LOOK := false
+## legs” and “At its side”). ON: shown all its moves, in pictures and in the game, his “Yes, switch it on (Recommended)”, 21 Nov
+## 2026. Off, the old look with legs and its cannon arm (assets/heroes/golem*).
+const WHEEL_LOOK := true
 ## (a check's hand on the switch: the new look shown in a check's pictures, the switch left as it is)
 static var wheel_look_now := false
 

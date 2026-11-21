@@ -731,8 +731,8 @@ is hurt and falls:
   carry the gun, “At its side”): one great wheel in place of its legs, its giant fist a big gun at its side that charges and
   fires the big shot (its little cannon, or her tree's tesla coil, on its other arm for the small shots). Every move of it baked
   by `npx tsx tools/godot_golem_wheel.ts` (`assets/heroes/golem_wheel*`; the sculpt's GOLEM_RANGED, dev/golem_moves.ts
-  golemRoll, golemChargeWheel, golemDownWheel); drawn with tinkerer_look.gd `WHEEL_LOOK` on, OFF until he says yes (a check
-  shows it with `--look=wheel`); till then the game's look with its cannon arm. The Golem's pictures (its run, its small shot, its charge, its rocket jump and everything
+  golemRoll, golemChargeWheel, golemDownWheel); drawn with tinkerer_look.gd `WHEEL_LOOK`, ON at his “Yes, switch it on
+  (Recommended)” once shown all its moves (off, the game's old look with legs and its cannon arm). The Golem's pictures (its run, its small shot, its charge, its rocket jump and everything
   at them, its take-offs and landings, its trail; the tesla coil's set) and her effects (its flash, the shell's blast), baked
   once: `assets/heroes/golem*`, `tinkerer_fx*`; what runs any way (the shell in flight, the beam, the tesla coil's zaps) painted
   as it comes by the game's own painter ported line for line, ahead of time off the screen's thread (`heroes/golem_paint.gd`;
