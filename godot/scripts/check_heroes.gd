@@ -39,10 +39,12 @@ func _run(secs: float, until := Callable(), keep := Callable()) -> bool:
 	return not until.is_valid()
 
 
-## A monster held where it stands, awake, doing nothing.
+## A monster held where it stands, awake, doing nothing (and not moving: what is aimed at it goes where it is, game/lock.ts
+## leadPoint).
 static func _hold(m) -> void:
 	if not is_instance_valid(m) or m.dead:
 		return
+	m.speed = 0.0
 	m.state = "recover"
 	m._t = 1e9
 	m._cd = 1e9
