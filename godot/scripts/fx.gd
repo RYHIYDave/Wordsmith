@@ -58,6 +58,7 @@ const PF := preload("res://scripts/pixel_font.gd")
 const L := preload("res://scripts/fx_looks.gd")
 const Wild := preload("res://scripts/fx_wild.gd")
 const WildMage := preload("res://scripts/fx_wild_mage.gd")
+const WildRanger := preload("res://scripts/fx_wild_ranger.gd")
 const Words3 := preload("res://scripts/fx_words3.gd")
 const Wakes := preload("res://scripts/fx_wakes.gd")
 const Figures := preload("res://scripts/fx_figures.gd")
@@ -172,6 +173,8 @@ var _held_tick := 0
 var wild: Wild
 ## (big and wild, the Mage's: her crystal's crackle, the Wave, the Orb, the Warp: fx_wild_mage.gd)
 var wild_mage
+## (big and wild, the Ranger's: wind: fx_wild_ranger.gd)
+var wild_ranger
 var words3: Words3
 var ground: Wakes
 var figures: Figures
@@ -229,6 +232,8 @@ func _init() -> void:
 	wild.fx = self
 	wild_mage = WildMage.new()
 	wild_mage.fx = self
+	wild_ranger = WildRanger.new()
+	wild_ranger.fx = self
 	words3 = Words3.new()
 	words3.fx = self
 	ground = Wakes.new()
@@ -276,6 +281,7 @@ func _exit_tree() -> void:
 	later = []
 	wild.clear()
 	wild_mage.clear()
+	wild_ranger.clear()
 	words3.clear()
 	figures.clear()
 	w610.clear()
@@ -381,6 +387,46 @@ func _late(_dt: float) -> void:
 		cost_update += Time.get_ticks_usec() - t0
 
 
+## (fx.ts follow) What the hero's own shots shed as they fly, by the words in front of them: Power's embers, wind peeling off a Swift
+## shot, the mirror's teal off a Twin pair, flames, snow, lightning off an element's, blood off Leeching's, Volatile's crackle,
+## Poison's drips. `pace`: the step's length in sixtieths of a second. (A hero's kit calls it each frame with his shots in flight.)
+func follow_shots(shots: Array, pace := 1.0) -> void:
+	var k := pace * room()
+	if k <= 0.0:
+		return
+	var roll := func(p: float) -> bool: return randf() < p * k
+	for p in shots:
+		var w: Array = p.get("words", [])
+		var x: float = p["x"]
+		var y: float = p["y"]
+		if w.has("power"):
+			for i in 2:
+				if roll.call(1.0):
+					add(x + L.rnd(-0.12, 0.12), y + L.rnd(-0.12, 0.12), 10.0 + L.rnd(-2, 2), L.rnd(-0.7, 0.7), L.rnd(-0.7, 0.7), L.rnd(-12, 26), L.rnd(0.16, 0.38), L.POWER_HOT[randi() % 4], 2.0 if randf() < 0.35 else 1.0, 60.0)
+		# wind peels off a swift shot, straight back along its path
+		if w.has("swift") and roll.call(0.8):
+			streaks(x, y, 1, L.WIND, 1.5, 5.0, {"dx": -float(p["vx"]), "dy": -float(p["vy"]), "spread": 0.25, "life": 0.16, "z": 10.0, "r": 0.15})
+		if w.has("twin") and roll.call(0.9 if int(p.get("n", 0)) > 0 else 0.4):
+			add(x + L.rnd(-0.08, 0.08), y + L.rnd(-0.08, 0.08), 10.0, 0.0, 0.0, 0.0, L.rnd(0.2, 0.34), L.pick(L.MIRROR), 2.0 if int(p.get("n", 0)) > 0 and randf() < 0.5 else 1.0, 0.0)
+		var el := str(p.get("element", "phys"))
+		if el == "fire" and roll.call(0.85):
+			flames(x, y, 0.12, 1, 0.6)
+			if randf() < 0.2:
+				smoke(x, y, 0.1, 1)
+		if el == "frost" and roll.call(0.7):
+			snow(x, y, 0.2, 1)
+		if el == "lightning" and roll.call(0.3):
+			var a := randf() * TAU
+			ground_bolt(x, y, x + cos(a) * 0.7, y + sin(a) * 0.7)
+		if w.has("leech") and roll.call(0.5):
+			add(x + L.rnd(-0.1, 0.1), y + L.rnd(-0.1, 0.1), 9.0, 0.0, 0.0, 0.0, L.rnd(0.25, 0.45), L.pick(L.BLOOD), 2.0 if randf() < 0.3 else 1.0, 220.0)
+		if w.has("volatile") and roll.call(0.45):
+			w610.crackle(x, y, 0.25, 1)
+		# a poisoned shot drips as it flies
+		if w.has("poison") and roll.call(0.7):
+			add(x + L.rnd(-0.1, 0.1), y + L.rnd(-0.1, 0.1), 9.0, 0.0, 0.0, L.rnd(-6, 6), L.rnd(0.3, 0.55), L.pick(L.BUBBLE), 2.0 if randf() < 0.4 else 1.0, 170.0)
+
+
 ## The hero (through the monsters' node), or null.
 func hero():
 	if monsters == null or not is_instance_valid(monsters):
@@ -440,6 +486,7 @@ func clear() -> void:
 	_scan_in = 0.0
 	wild.clear()
 	wild_mage.clear()
+	wild_ranger.clear()
 	words3.clear()
 	ground.clear()
 	figures.clear()
@@ -1042,7 +1089,7 @@ func _hit(e: Dictionary) -> void:
 	var heavy: bool = e.get("heavy", false)
 	# (big and wild: what his blade hits is struck hard, and what it is made of flies off it)
 	if not on_hero:
-		if not wild_mage.hit(x, y):
+		if not wild_mage.hit(x, y) and not wild_ranger.hit(x, y):
 			wild.hit(x, y)
 	if on_hero:
 		float_text(x, y, "-" + amount, L.P["bl4"], false, 30.0)
@@ -1191,8 +1238,8 @@ func _burst(e: Dictionary) -> void:
 			wild_mage.warp(x, y)
 		elif style == "nova":
 			wild_mage.nova(x, y, r)
-		elif style == "blast" and wild.has_method("blast"):
-			wild.blast(x, y, r)
+		elif style == "blast":
+			wild_ranger.blast(x, y, r)
 	if style == "ruin":
 		# a rune goes off
 		ring(x, y, r, 0.3, L.VIOLET, true, {"heavy": true})
@@ -1561,6 +1608,7 @@ func update(dt: float, real: float) -> void:
 			bolts.remove_at(k)
 	wild.update(dt)
 	wild_mage.update(dt)
+	wild_ranger.update(dt)
 	words3.tick(dt)
 	city3.tick(dt)
 	figures.tick(dt)
@@ -1711,7 +1759,7 @@ static func pline(c: CanvasItem, x0f: float, y0f: float, x1f: float, y1f: float,
 
 ## Whether anything is alive to be drawn; the layers are drawn again while there is, and once more after.
 func _alive() -> bool:
-	return pn > 0 or not rifts.is_empty() or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or wild_mage.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or city3.alive() or w10.alive() or w7.alive() or m3.alive() or v3.alive() or m8.alive()
+	return pn > 0 or not rifts.is_empty() or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or wild_mage.alive() or wild_ranger.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or city3.alive() or w10.alive() or w7.alive() or m3.alive() or v3.alive() or m8.alive()
 
 
 func _redraw() -> void:
@@ -2112,6 +2160,7 @@ func _paint_air(c: CanvasItem) -> void:
 	# (big and wild: the rings of wind and of the blade's light, over the sparks; the Mage's arcs)
 	wild.draw(c)
 	wild_mage.draw(c)
+	wild_ranger.draw(c)
 	# "of Power": an ember circles the hero for every stack held: on a ring that is tilted, high behind the hero and low
 	# in front; the ones on the far side drawn small and dull and the near ones big and bright; each drags a tail of where
 	# it has just been; the more of them the faster the ring turns.

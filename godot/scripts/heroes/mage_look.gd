@@ -88,6 +88,7 @@ func _process(dt: float) -> void:
 					mobs.append(m.world)
 		wm.mobs = mobs
 		wm.follow(kit.shots, dt * 60.0 * fx.room())
+		fx.follow_shots(kit.shots, dt * 60.0)
 		# (where her crystal burns in the frame she is shown in, and how hot: render.ts, fig.charge(); not while she comes together)
 		var f: Dictionary = h._shown
 		if not f.is_empty() and h._coming <= 0.0 and h.alive:

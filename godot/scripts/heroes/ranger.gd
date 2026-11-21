@@ -18,6 +18,7 @@ extends "res://scripts/heroes/kit.gd"
 # (what he has laid and sent up: his volleys coming down, his traps)
 var volleys: Array = []
 var traps: Array = []
+var _next_volley := 0
 
 
 func _init(hero) -> void:
@@ -62,7 +63,8 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 		var rad: float = float(def["radius"]) * float(r["size"])
 		h.sfx.play("volley", linear_to_db(0.5 if echo else 0.9))
 		_say({"t": "volleyUp", "x": from.x, "y": from.y, "tx": p.x, "ty": p.y, "r": rad, "el": r["element"], "words": words, "echo": echo})
-		volleys.append({"x": p.x, "y": p.y, "r": rad, "t": -float(T["tune"]["volleyDelay"]), "n": 0,
+		_next_volley += 1
+		volleys.append({"id": _next_volley, "x": p.x, "y": p.y, "r": rad, "t": -float(T["tune"]["volleyDelay"]), "n": 0,
 			"total": maxi(1, roundi(float(T["tune"]["volleyLife"]) / float(T["tune"]["volleyEvery"]))), "told": 0, "next": 0.0,
 			"skill": i, "frac": each, "count": r["count"], "element": r["element"], "echo": echo, "wake": primary})
 	# ("of Echoes": the move made again a moment later, weaker, from where it was made)

@@ -37,6 +37,16 @@ func _ready() -> void:
 
 func _process(dt: float) -> void:
 	_t += dt
+	# (what he is doing, told to his wind each frame: fx_wild_ranger.gd, wild.ts see and follow)
+	var fx = kit.h.fx if kit != null else null
+	if fx != null and is_instance_valid(fx):
+		var wr = fx.wild_ranger
+		wr.traps_before = kit.traps.map(func(t): return {"x": t["x"], "y": t["y"]})
+		wr.volleys = kit.volleys
+		wr.move = kit.move
+		wr.hero_at = kit.h.world
+		wr.follow(kit.shots, dt * 60.0 * fx.room(), float(kit.T["rangerArrow"]["height"]))
+		fx.follow_shots(kit.shots, dt * 60.0)
 	for list in [falling, stuck]:
 		for i in range(list.size() - 1, -1, -1):
 			list[i]["t"] = float(list[i]["t"]) + dt
@@ -99,7 +109,10 @@ func on_event(e: Dictionary, fx) -> void:
 					fx.add(b.x + randf_range(-0.1, 0.1), b.y + randf_range(-0.1, 0.1), bz + randf_range(-2, 2), d.x * 0.5 + randf_range(-0.5, 0.5), d.y * 0.5 + randf_range(-0.5, 0.5),
 						ARROW_FALL * randf_range(0.85, 1.1), 0.34 + i * 0.015, colors[mini(colors.size() - 1, 1 + i % 2)], 1.0, 0.0, null, 9.0)
 				fx.flash(b.x, b.y, bz + 1.0, 0.34 if _has(e.get("words"), "power") else 0.22, 0.09, PackedColorArray(colors))
+				fx.wild_ranger.volley_up(b.x, b.y, bz, bool(e.get("echo", false)))
 		"volleyDrop":
+			if fx != null:
+				fx.wild_ranger.volley_drop(float(e["x"]), float(e["y"]), float(e["in"]))
 			if falling.size() < 80:
 				falling.append({"x": e["x"], "y": e["y"], "t": 0.0, "dur": maxf(0.02, float(e["in"])), "colors": arrow_colors(e["el"], e.get("words"), int(e["n"]), bool(e.get("echo", false))), "heavy": _has(e.get("words"), "power")})
 		"volleyFall":
@@ -114,10 +127,12 @@ func on_event(e: Dictionary, fx) -> void:
 					fx.glow(float(e["x"]), float(e["y"]), 26.0 if heavy else 18.0, 0.16)
 				if heavy and int(e.get("hits", 0)) > 0:
 					fx.kick(0.8)
+				fx.wild_ranger.volley_fall(float(e["x"]), float(e["y"]), int(e.get("hits", 0)))
 		"trapSet":
 			if fx != null:
 				var P: Dictionary = L.P
 				fx.spray(float(e["x"]), float(e["y"]), 4, PackedColorArray([P["sl5"], P["sl4"], P["sl3"]]), 1.6, 40.0, 2.0)
+				fx.wild_ranger.trap_set(float(e["x"]), float(e["y"]))
 
 
 ## A floor point on the screen, game pixels.
