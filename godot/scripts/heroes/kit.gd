@@ -286,13 +286,15 @@ func _release() -> void:
 		_release_sound(def)
 		# (TRACK_AIM: pressed at an enemy, he turns to where it is as it goes off, and what flies to where it will be as it gets there)
 		var m = w.get("tid")
-		if m != null and is_instance_valid(m) and not m.dead:
+		if m != null and is_instance_valid(m) and not m.dead and def["kind"] in ["projectile", "wave", "melee"]:
 			var far: float = h.world.distance_to(m.world)
 			var speed: float = float(r["proj_speed"]) if float(r.get("proj_speed", 0.0)) > 0.0 else float(def.get("speed", 0.0))
 			var at: Vector2 = m.world if def["kind"] == "melee" or speed <= 0.0 else _lead(m, far / speed)
 			if at.distance_to(h.world) > 0.05:
 				_face(at)
-		_deliver(0, h.world, h.world + h.face, 1.0, true)
+		# (the quick attack goes the way he faces, from wherever he has got to; THE TINKERER's vial, thrown, to where it was aimed)
+		var to: Vector2 = Vector2(w["tx"], w["ty"]) if def["kind"] in ["vialtoss", "contraption", "snare"] else h.world + h.face
+		_deliver(0, h.world, to, 1.0, true)
 		return
 	# (what it needs may have gone in the meantime: then nothing happens, and nothing is paid)
 	if charges[i] < 1:

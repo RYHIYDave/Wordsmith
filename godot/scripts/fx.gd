@@ -1222,13 +1222,16 @@ func _burst(e: Dictionary) -> void:
 	var r: float = e["r"]
 	var el: String = e.get("el", "phys")
 	var style: String = e.get("style", "shock")
+	# (THE TINKERER's vials, her Golem's pound and her bomb: drawn by heroes/tinkerer_look.gd, render/tinkerer_fx.ts)
+	if style == "vial" or style == "pound" or style == "bomb":
+		return
 	# (m3: as for a hit: fx.ts meldLookWords)
 	var w = Melds3.look_words(e.get("words"))
 	var ramp := _ramp(el)
 	var power := _has(w, "power")
 	var area := style != "shock"
 	var P: Dictionary = L.P
-	# (left out: the other classes' styles and their own looks: the Tinkerer's vial, pound and bomb, the Warrior's Earthquake,
+	# (left out: the other classes' styles and their own looks: the Warrior's Earthquake,
 	# a warp, an orb's wave, a comet; a melded word's burst)
 	var second := int(e.get("n", 0)) > 0
 	var echo: bool = e.get("echo", false)

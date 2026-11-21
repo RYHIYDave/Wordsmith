@@ -66,6 +66,8 @@ func run(main, hero, d: String) -> void:
 		await _mage()
 	elif h.cls == "warlock":
 		await _warlock()
+	elif h.cls == "tinkerer":
+		await _tinkerer()
 	# (every hero: what is drawn with him, the pool of light behind him and his scarf, feather or braids; and in town his own look)
 	await _looks()
 	print("HEROES: the %s, %d steps, %d as the game's%s" % [h.cls, n, n - bad.size(), "" if bad.is_empty() else "; NOT: " + str(bad)])
@@ -446,6 +448,137 @@ func _warlock() -> void:
 	await _run(0.2)
 	await _snap("warlock_man_again")
 	_line(out and back and h.loadout.id(0) == "hellbolt" and K.pact == 0.0, "its pact run dry, the demon burns out (2 s) and he is a man again (%s)" % h.loadout.r(0)["name"])
+
+
+## THE TINKERER: her Vial Toss (lobbed to where she aims, bursting where it comes down, hurting what stands within its reach and not
+## what is further), her Golem (whistled out beside her, dropping in; running at what is awake near her and fighting it with its
+## combo, uppercut, uppercut, slam; her next whistle rocket-jumps it onto where she aims, landing as its pound; left far behind,
+## whistled up beside her again; winding down), her Blast Jump (her bomb going off at her feet, hurting and throwing what is by her,
+## she riding it 4 tiles and more, nothing reaching her; her leap's and her landing's pictures).
+func _tinkerer() -> void:
+	var K = h.kit
+	var home: Vector2 = h.world
+	var way := _open_way(home)
+	var side := Vector2(-way.y, way.x)
+	var pack := _pack(home, way)
+	if pack.size() < 3:
+		_line(false, "floor 2 has no three skeletons to set out")
+		return
+	var A = pack[0]
+	var B = pack[1]
+	var C = pack[2]
+	var put := func(m, at: Vector2) -> void:
+		m.world = at
+		m._place()
+		_hold(m)
+	var keep := func(): for m in pack: _hold(m)
+	for m in pack:
+		m.max_life = 1000.0
+		m.life = 1000.0
+	# HER VIAL TOSS: at the one before her; it bursts on it and the one beside it, not the one further off
+	put.call(A, home + way * 5.0)
+	put.call(B, home + way * 5.0 + side * 0.8)
+	put.call(C, home + way * 5.0 + side * 3.5)
+	h._turn(way)
+	await _run(0.4, Callable(), keep)
+	var a0: float = A.life
+	var b0: float = B.life
+	var c0: float = C.life
+	h.auto_attack = true
+	var lobbed: bool = await _run(1.0, func(): return not K.vials.is_empty(), keep)
+	await _run(0.3, Callable(), keep)
+	await _snap("tinkerer_vial")
+	var burst: bool = await _run(1.0, func(): return K.vials.is_empty() and A.life < a0, keep)
+	await _run(0.1, Callable(), keep)
+	await _snap("tinkerer_vial_burst")
+	_line(lobbed and burst and A.life < a0 and B.life < b0 and C.life == c0,
+		"Vial Toss: her vial lobbed and bursting where she aimed: the one there struck (%.0f to %.0f) and the one beside it (%.0f to %.0f), the one 3.5 tiles off not (%.0f)" % [a0, A.life, b0, B.life, C.life])
+	await _run(0.6, Callable(), keep)
+	# HER GOLEM: whistled out beside her, dropping in
+	put.call(A, home + way * 6.0)
+	put.call(B, home + way * 6.0 + side * 1.2)
+	put.call(C, home - way * 3.0 + side * 6.0)
+	await _run(0.2, Callable(), keep)
+	h.auto_whirl = true
+	var out: bool = await _run(1.0, func(): return not K.golems.is_empty(), keep)
+	await _run(0.12, Callable(), keep)
+	await _snap("tinkerer_golem_drops_in")
+	var g: Dictionary = K.golems[0] if out else {}
+	var beside: bool = out and Vector2(g["x"], g["y"]).distance_to(h.world) < 2.0 and g["act"] == "arrive"
+	_line(out and beside, "her whistle: her Golem dropped in beside her (%.1f tiles from her)" % (Vector2(g["x"], g["y"]).distance_to(h.world) if out else -1.0))
+	# ITS COMBO: it runs at them, uppercut, uppercut, SLAM
+	var acts := {}
+	var punched := [false]
+	var lives := [A.life, B.life]
+	var fought: bool = await _run(8.0, func(): return acts.has("pound") and acts.has("punch"), func():
+		for m in pack: _hold(m)
+		acts[g["act"]] = true
+		if g["act"] == "punch" and not punched[0] and float(g["act_t"]) > 0.55:
+			punched[0] = true)
+	await _run(0.5, Callable(), keep)
+	await _snap("tinkerer_golem_slam")
+	_line(fought and acts.has("walk") and (A.life < lives[0] or B.life < lives[1]),
+		"her Golem ran at them (%s) and fought them with its combo, uppercut and slam (%s): struck (%.0f to %.0f, %.0f to %.0f)" % [acts.has("walk"), acts.keys(), lives[0], A.life, lives[1], B.life])
+	# ITS ROCKET JUMP: her whistle again, aimed at the one far off: it blasts off, flies, and lands as its pound
+	await _run(5.5, func(): return K.charges[1] >= 1, keep)
+	var far_at: Vector2 = h.world - way * 1.0
+	for st in range(9, 3, -1):
+		var p: Vector2 = Vector2(g["x"], g["y"]) - way * st
+		if K._open(p) and h.monsters.sees(Vector2(g["x"], g["y"]), p):
+			far_at = p
+			break
+	put.call(C, far_at)
+	put.call(A, home + way * 12.0)
+	put.call(B, home + way * 12.0 + side * 1.0)
+	await _run(0.2, Callable(), keep)
+	var g_from := Vector2(g["x"], g["y"])
+	c0 = C.life
+	K._use_skill(1, C.world)
+	var jumped: bool = await _run(1.0, func(): return g["act"] == "jump", keep)
+	await _run(0.3, Callable(), keep)
+	await _snap("tinkerer_rocket_crouch")
+	var flying: bool = await _run(1.0, func(): return g["act"] == "jump" and float(g["act_t"]) * 30.0 > 22.0, keep)
+	await _snap("tinkerer_rocket_flight")
+	var landed: bool = await _run(1.5, func(): return g["act"] != "jump", keep)
+	await _snap("tinkerer_rocket_landed")
+	var g_to := Vector2(g["x"], g["y"])
+	_line(jumped and flying and landed and g_from.distance_to(g_to) > 2.0 and C.life < c0,
+		"her whistle again: her Golem rocket-jumped %.1f tiles onto where she aimed, its landing its fist slam (the one there %.0f to %.0f)" % [g_from.distance_to(g_to), c0, C.life])
+	# HER BLAST JUMP: her bomb at her feet, the one by her struck and thrown; she rides it, nothing reaching her
+	for m in pack:
+		if not m.dead:
+			put.call(m, home + way * 12.0 + side * 2.0)
+	h.world = home
+	h._place()
+	put.call(B, home + way * 0.9)
+	await _run(0.3, Callable(), keep)
+	b0 = B.life
+	var b_at: Vector2 = B.world
+	var start: Vector2 = h.world
+	h.auto_lunge = home + way * 6.0
+	var went: bool = await _run(0.2, func(): return not K.move.is_empty(), keep)
+	var safe: bool = h._invuln > 0.0
+	var mid: Array = K.picture(h._side)
+	await _run(0.15, Callable(), keep)
+	await _snap("tinkerer_blast_jump")
+	var came: bool = await _run(1.0, func(): return K.move.is_empty(), keep)
+	var down: Array = K.picture(h._side)
+	await _run(0.1, Callable(), keep)
+	await _snap("tinkerer_landed")
+	_line(went and safe and came and h.world.distance_to(start) > 4.0 and B.life < b0 and B.world.distance_to(b_at) > 0.5 and not mid.is_empty() and int(mid[0]) == 39 and not down.is_empty() and int(down[0]) == 45 and K.charges[2] == 0,
+		"Blast Jump: her bomb struck the one by her (%.0f to %.0f) and threw it (%.1f tiles); she rode it %.1f tiles, nothing reaching her (her leap's pictures %s, her landing's %s); its charge spent" % [b0, B.life, B.world.distance_to(b_at), h.world.distance_to(start), mid, down])
+	# LEFT FAR BEHIND: whistled up beside her again
+	g["x"] = float(g["x"]) + 30.0
+	var back: bool = await _run(0.3, func(): return g["act"] == "arrive" and Vector2(g["x"], g["y"]).distance_to(h.world) < 2.5, keep)
+	await _run(0.8, Callable(), keep)
+	_line(back, "left far behind, her Golem is whistled up beside her again (%.1f tiles from her)" % Vector2(g["x"], g["y"]).distance_to(h.world))
+	# SHE FALLS: it winds down where it stands, and is gone
+	K.fallen(0.0)
+	var winding: bool = g["act"] == "down"
+	await _run(0.9, Callable(), keep)
+	await _snap("tinkerer_golem_winds_down")
+	var gone: bool = await _run(2.5, func(): return K.golems.is_empty(), keep)
+	_line(winding and gone, "she falls: her Golem winds down where it stands (%s), and is gone (%s)" % [winding, gone])
 
 
 ## WHAT IS DRAWN WITH HIM (render.ts: drawAura, the tails): the pool of light behind him, his scarf (the Warrior), feather (the
