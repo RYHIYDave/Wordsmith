@@ -668,14 +668,14 @@ for (const view of ['front', 'back'] as const) {
 //   ld_flash_<view>  the lady's flash on the floor before her, from its spot of light skittering through her warning to the cone
 //                    of cold light held and gone (flashPainted), a frame each thirtieth of a second from FLASH_FX.warn before her
 //                    blow (k0); layer `floor`
-//   qn_glass_<i>     the Queen's hall's pier glass `i` (hallMirrorPainted): still (0), awake (1), and through her Shatter at each
+//   gq_glass_<i>     the Queen's hall's pier glass `i` (hallMirrorPainted): still (0), awake (1), and through her Shatter at each
 //                    of its painted moments (2 to 10: SHATTER_KEYS); layer `stand`
-//   qn_mask_<i>      where the glass of pier glass `i` is in its still picture (its cold blue: render/act1_fx/gqueen.ts glassOf),
+//   gq_mask_<i>      where the glass of pier glass `i` is in its still picture (its cold blue: render/act1_fx/gqueen.ts glassOf),
 //                    white, for her picture laid in it in the ring of mirrors
-//   qn_talk_<mode>   her talking mirror at the hall's end, eight frames a second: still (its fog drifting, round in 4 s),
+//   gq_talk_<mode>   her talking mirror at the hall's end, eight frames a second: still (its fog drifting, round in 4 s),
 //                    speaking (3.8 s), the truth as she dies (TALK_FX.long)
-//   qn_cloud         her poison where the comb struck, eight frames a second (cloudPainted); layer `floor`
-// and the table qn_shards: Shatter's glass in flight across the hall, fifteen frames a second from its burst, each piece where it
+//   gq_cloud         her poison where the comb struck, eight frames a second (cloudPainted); layer `floor`
+// and the table gq_shards: Shatter's glass in flight across the hall, fifteen frames a second from its burst, each piece where it
 // is (her own lengths along the hall, across it, up), [] once lying.
 {
   const nf = Math.ceil((LD_FLASH_FX.warn + LD_FLASH_FX.hold + LD_FLASH_FX.fade) * FPS) + 1;
@@ -684,7 +684,7 @@ for (const view of ['front', 'back'] as const) {
   const KEYS = [0.45, 0.8, 1.1, 1.3, 1.4, 1.9, 2.7, 3.0, 3.3];
   for (let i = 0; i < 12; i++) {
     const glass = (t: number | null, awake: boolean): Sprite => toSprite(hallMirrorPainted(i, t, awake), null, HALL_MIRROR_CANVAS.ax, HALL_MIRROR_CANVAS.ay);
-    films[`qn_glass_${i}`] = { fps: 0, n: 2 + KEYS.length, k0: 0, layers: { stand: [pic(glass(null, false)), pic(glass(null, true)), ...KEYS.map((k) => pic(glass(k, false)))] } };
+    films[`gq_glass_${i}`] = { fps: 0, n: 2 + KEYS.length, k0: 0, layers: { stand: [pic(glass(null, false)), pic(glass(null, true)), ...KEYS.map((k) => pic(glass(k, false)))] } };
     // (where its glass is: every pixel of the cold blue of its glass, white)
     const still = glass(null, false);
     const pp = paintingOf(still);
@@ -699,7 +699,7 @@ for (const view of ['front', 'back'] as const) {
       md[q * 4 + 2] = 255;
       md[q * 4 + 3] = 255;
     }
-    films[`qn_mask_${i}`] = { fps: 0, n: 1, k0: 0, layers: { stand: [rawPic({ w: pp.w, h: pp.h, d: md }, 2 / (still.density ?? 1), still.ax * 2, still.ay * 2)] } };
+    films[`gq_mask_${i}`] = { fps: 0, n: 1, k0: 0, layers: { stand: [rawPic({ w: pp.w, h: pp.h, d: md }, 2 / (still.density ?? 1), still.ax * 2, still.ay * 2)] } };
     // (where her picture's floor point goes in it: the glass's middle across, its foot, and two of the game's pixels down; picture
     // pixels from the glass's own floor point)
     let sx = 0;
@@ -712,17 +712,17 @@ for (const view of ['front', 'back'] as const) {
       low = Math.max(low, Math.floor(q / pp.w));
     }
     const dens = pp.w / Math.max(1, still.w);
-    ((tables.qn_spots ??= []) as number[][])[i] = n > 20 ? [2 * (sx / n / dens - still.ax), 2 * (low / dens - still.ay + 2)] : [0, 0];
+    ((tables.gq_spots ??= []) as number[][])[i] = n > 20 ? [2 * (sx / n / dens - still.ax), 2 * (low / dens - still.ay + 2)] : [0, 0];
   }
   const talk = (mode: 'still' | 'speaking' | 'truth', n: number): number[] => Array.from({ length: n }, (_, j) => pic(toSprite(talkingMirrorPainted(mode, j / 8), null, QN_TALK_CANVAS.ax, QN_TALK_CANVAS.ay)));
-  films.qn_talk_still = { fps: 8, n: 32, k0: 0, layers: { stand: talk('still', 32) } };
-  films.qn_talk_speaking = { fps: 8, n: Math.round(3.8 * 8), k0: 0, layers: { stand: talk('speaking', Math.round(3.8 * 8)) } };
+  films.gq_talk_still = { fps: 8, n: 32, k0: 0, layers: { stand: talk('still', 32) } };
+  films.gq_talk_speaking = { fps: 8, n: Math.round(3.8 * 8), k0: 0, layers: { stand: talk('speaking', Math.round(3.8 * 8)) } };
   const nt = Math.floor(QN_TALK_FX.long * 8) + 1;
-  films.qn_talk_truth = { fps: 8, n: nt, k0: 0, layers: { stand: talk('truth', nt) } };
+  films.gq_talk_truth = { fps: 8, n: nt, k0: 0, layers: { stand: talk('truth', nt) } };
   const nc = Math.round(QN_CLOUD_FX.long * 8);
-  films.qn_cloud = { fps: 8, n: nc, k0: 0, layers: { floor: Array.from({ length: nc }, (_, j) => pic(toSprite(qnCloud(j / 8), null, QN_CLOUD_CANVAS.ax, QN_CLOUD_CANVAS.ay))) } };
+  films.gq_cloud = { fps: 8, n: nc, k0: 0, layers: { floor: Array.from({ length: nc }, (_, j) => pic(toSprite(qnCloud(j / 8), null, QN_CLOUD_CANVAS.ax, QN_CLOUD_CANVAS.ay))) } };
   const b0 = QN_SHATTER_FX.burst[0];
-  tables.qn_shards = Array.from({ length: Math.ceil((QN_SHATTER_FX.lie[1] - b0) * 15) + 1 }, (_, k) => qnShardsAt(b0 + k / 15).map((q) => [+q.p[0].toFixed(1), +q.p[1].toFixed(1), +(q.p[2] ?? 0).toFixed(1)]));
+  tables.gq_shards = Array.from({ length: Math.ceil((QN_SHATTER_FX.lie[1] - b0) * 15) + 1 }, (_, k) => qnShardsAt(b0 + k / 15).map((q) => [+q.p[0].toFixed(1), +q.p[1].toFixed(1), +(q.p[2] ?? 0).toFixed(1)]));
 }
 
 // floors 6 to 8's common monsters, as the game starts with their new moves on (render/act1_fx/qgolem.ts, firepot.ts, chanter.ts,
@@ -1064,7 +1064,7 @@ const KIND_SETS: Record<string, string[]> = {
   // (the city's)
   watch: ['wa'], crier: ['cr'], ratking: ['rk'], fieldhand: ['fh'], orderly: ['og'], physician: ['ph'], bookwarden: ['wb'],
   // (the High City's)
-  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['qn'],
+  gardener: ['gd'], groom: ['gr'], pguard: ['pg', 'gd'], princess: ['pr'], footman: ['ft'], order: ['od'], prince: ['pc'], lady: ['ld'], gqueen: ['gq'],
 };
 function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   const raw = new Uint8Array((w * 4 + 1) * h);

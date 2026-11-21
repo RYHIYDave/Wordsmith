@@ -8,10 +8,10 @@
 ##   reflection:*    what a copy sends, in the enemy's pink: an arrow, a hellfire bolt, a thrown axe, a wave, an orb or a vial lobbed
 ##                   (where it will burst ringed the whole way).
 ##   gqueen:hall     HER HALL: its twelve pier glasses (still; awake, one more each phase; trembling, burst and growing back through her
-##                   Shatter: qn_glass_<i>) and her talking mirror at the hall's end (still, speaking, the truth: qn_talk_<mode>), each
+##                   Shatter: gq_glass_<i>) and her talking mirror at the hall's end (still, speaking, the truth: gq_talk_<mode>), each
 ##                   at its place among the figures; through Shatter's warning its six lanes lit, its glass flying across the hall
 ##                   and lying glittering; her mirror's words over it.
-##   gqueen:cloud    her poison where the comb struck (qn_cloud), under the figures; biting whoever stands in it.
+##   gqueen:cloud    her poison where the comb struck (gq_cloud), under the figures; biting whoever stands in it.
 ##   gqueen:ring     THE RING OF MIRRORS: six pier glasses round him, her in every one, each its bar of life; forming, trembling as its
 ##                   time runs out, burst; their glass flung at him if the time runs out.
 ## Nothing cyan: the enemy's pink, glass and silver.
@@ -224,7 +224,7 @@ static func _stand_hall(P, p: Dictionary) -> void:
 				ki = j
 	var awake: int = int(p["a"])
 	for i in 12:
-		var name := "qn_glass_%d" % i
+		var name := "gq_glass_%d" % i
 		if not P.has_film(name):
 			continue
 		var g := QN.pier_glass(F, i)
@@ -235,13 +235,13 @@ static func _stand_hall(P, p: Dictionary) -> void:
 	var mir: Vector2 = F["mirror"]
 	var c: int = p["c"]
 	var d: float = now - float(p["d"])
-	var tname := "qn_talk_still"
+	var tname := "gq_talk_still"
 	var k := floori(now * 8.0) % 32
 	if c == 2:
-		tname = "qn_talk_truth"
+		tname = "gq_talk_truth"
 		k = mini(floori(minf(TRUTH_LONG, d) * 8.0), int(P._fx["films"].get(tname, {"n": 1})["n"]) - 1)
 	elif c == 1:
-		tname = "qn_talk_speaking"
+		tname = "gq_talk_speaking"
 		k = mini(floori(d * 8.0), roundi(SPEAK_LONG * 8.0) - 1)
 	if P.has_film(tname):
 		P._film_one(p, "fx_talk", P._still(tname, "stand", k), mir, mir.x + mir.y, flip)
@@ -254,7 +254,7 @@ static func _stand_ring(P, p: Dictionary) -> void:
 	for i in spots.size():
 		var q: Vector2 = spots[i]
 		var gi := (i * 2) % 12
-		var name := "qn_glass_%d" % gi
+		var name := "gq_glass_%d" % gi
 		if not P.has_film(name):
 			continue
 		var broken: bool = (int(p["b"]) & (1 << i)) != 0 or int(p["c"]) != 0
@@ -275,7 +275,7 @@ static func _stand_ring(P, p: Dictionary) -> void:
 
 
 ## Her standing picture laid in pier glass `gi`'s glass, cold and faint, nowhere else (render/act1_fx/gqueen.ts herInGlass): its glass
-## a mask (qn_mask_<gi>), her picture clipped by it.
+## a mask (gq_mask_<gi>), her picture clipped by it.
 static func _her_in_glass(P, p: Dictionary, key: String, gi: int, w: Vector2, queen) -> void:
 	var node = p.get(key)
 	if node == null or not is_instance_valid(node):
@@ -295,12 +295,12 @@ static func _her_in_glass(P, p: Dictionary, key: String, gi: int, w: Vector2, qu
 	var scr := Iso.to_screen(w.x, w.y)
 	node.position = Vector2(scr.x, depth * 16.0)
 	var mask: Sprite2D = node.get_child(0)
-	var pi: int = P._still("qn_mask_%d" % gi, "stand", 0)
+	var pi: int = P._still("gq_mask_%d" % gi, "stand", 0)
 	var q: Array = P._fx["pics"][pi]
 	mask.texture = P._sheet(int(q[0]))
 	mask.region_rect = Rect2(q[1], q[2], q[3], q[4])
 	mask.offset = Vector2(float(q[5]), float(q[6]) + scr.y - depth * 16.0)
-	var spot: Array = P._fx["tables"].get("qn_spots", [])[gi] if gi < P._fx["tables"].get("qn_spots", []).size() else [0, 0]
+	var spot: Array = P._fx["tables"].get("gq_spots", [])[gi] if gi < P._fx["tables"].get("gq_spots", []).size() else [0, 0]
 	var her: Sprite2D = mask.get_child(0)
 	var n: int = queen.art.count(0, "idle")
 	var f: Dictionary = queen.art.frame(0.0, 1.0, "idle", floori(P._clock * 10.0) % maxi(1, n))
@@ -339,9 +339,9 @@ static func draw(P, p: Dictionary) -> void:
 				var k := minf(1.0, t / maxf(0.1, float(p["c"]) + float(b["after"])))
 				GW.fan(P, Vector2(p["a"], p["b"]), Vector2(1, 0), 1, -PI, PI, b["burst"], k, P._clock)
 		"gqueen:cloud":
-			if P.has_film("qn_cloud"):
-				var n: int = P._fx["films"]["qn_cloud"]["n"]
-				P._film_pic(P, "qn_cloud", "floor", mini(floori(t * 8.0), n - 1), Iso.to_screen(p["x"], p["y"]), false)
+			if P.has_film("gq_cloud"):
+				var n: int = P._fx["films"]["gq_cloud"]["n"]
+				P._film_pic(P, "gq_cloud", "floor", mini(floori(t * 8.0), n - 1), Iso.to_screen(p["x"], p["y"]), false)
 		"gqueen:ring":
 			# (as its time runs out: where his blow will fall, round him)
 			if int(p["c"]) == 0:
@@ -368,7 +368,7 @@ static func draw(P, p: Dictionary) -> void:
 
 ## Shatter's glass: in flight across the hall in its lanes (the art's own pieces), then lying and glittering.
 static func _shatter_glass(P, c: CanvasItem, F: Dictionary, since: float, air: bool) -> void:
-	var tab: Array = P._fx["tables"].get("qn_shards", [])
+	var tab: Array = P._fx["tables"].get("gq_shards", [])
 	if since < BURST0 or since > LIE1 or tab.is_empty():
 		return
 	var flying := since < BURST0 + FLY + 0.15
