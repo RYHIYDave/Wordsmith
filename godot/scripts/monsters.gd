@@ -91,6 +91,27 @@ var bells: Dictionary = {}
 signal quest_item(what: String, at: Vector2)
 
 
+## FLOOR 9'S TWO SIDE BOSSES' PICTURES TAKEN IN AS THEIR LAIRS ARE ENTERED, not as the floor begins (eight big sheets each: on a
+## phone, held only once he goes their way): the figure, and the area of the floor's land it keeps (the Troll Chieftain's camp,
+## the land's `lair`; the Mist Wolf's glade, its `side`). Asked for off the game's thread once he is within FETCH_INTO of the
+## area's edge (blobDist under it) or FETCH_NEAR tiles of the boss, so that they are in hand by the time he sees it.
+const FETCH_AT := {"warchief": "lair", "mistwolf": "side"}
+const FETCH_INTO := 1.6
+const FETCH_NEAR := 18.0
+
+
+func _fetch_lairs() -> void:
+	if hero == null or map == null:
+		return
+	for m in list:
+		if not is_instance_valid(m) or m.art == null or not m.art.deferred or m.art.fetched:
+			continue
+		var area = map.area(str(FETCH_AT.get(m.kind, ""))) if FETCH_AT.has(m.kind) else null
+		var into: bool = area != null and FloorMap.blob_dist(area["blob"], hero.world) < FETCH_INTO
+		if into or m.world.distance_to(hero.world) <= FETCH_NEAR:
+			m.art.fetch()
+
+
 func load_floor(path: String, figures_dir: String) -> void:
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
 	var info: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(figures_dir + "/lists.json"))
@@ -103,7 +124,7 @@ func load_floor(path: String, figures_dir: String) -> void:
 	for m in data["monsters"]:
 		var figure: String = m["figure"]
 		if not _figures.has(figure):
-			_figures[figure] = BakedFigure.new(figures_dir, figure, info)
+			_figures[figure] = BakedFigure.new(figures_dir, figure, info, FETCH_AT.has(figure))
 		# (the first plain one of each kind, wordless, of no pack's rank: what a boss calls up of it is made as it is: call_up)
 		if not _plain.has(m["kind"]) and not m["boss"] and not m["elite"] and not m["champion"] and (m["words"] as Array).is_empty() and m.get("rarity") == null:
 			_plain[m["kind"]] = m
@@ -117,6 +138,7 @@ func load_floor(path: String, figures_dir: String) -> void:
 
 func _process(dt: float) -> void:
 	_run_later(dt)
+	_fetch_lairs()
 	_flow_in -= dt
 	if _flow_in <= 0.0:
 		_flow_in = FLOW_EVERY

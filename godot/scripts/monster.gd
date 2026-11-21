@@ -1845,6 +1845,10 @@ func _place() -> void:
 
 
 func _show() -> void:
+	# (FLOOR 9'S SIDE BOSSES: none of their pictures taken in, nor any shown, until they are fetched as their lairs are entered,
+	# far beyond what he can see of them: monsters.gd FETCH_AT)
+	if art.deferred and not art.fetched:
+		return
 	var list := _list
 	# (FROZEN, it is its first standing picture, held: render.ts `m.frozenT > 0`; a Boneward whose spear is gone, its bare one)
 	var held := frozen_t > 0.0 and not dead

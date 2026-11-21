@@ -556,3 +556,55 @@ func _alpha_of(e: Dictionary) -> float:
 		return float(node.alpha[int(e["k"])])
 	return float(node.modulate.a) if e.get("mod", false) else float(node.self_modulate.a)
 
+
+## FLOOR 9'S SIDE BOSSES' PICTURES FETCHED AS THEIR LAIRS ARE ENTERED (--only=lairfetch; monsters.gd FETCH_AT, baked_figure.gd
+## fetch): as the Pinewood begins, none of the Troll Chieftain's nor the Mist Wolf's sheets are held; come to the camp, the
+## chieftain's are taken in (off the game's thread) and he is drawn, the wolf's still not; come to the glade, the wolf's.
+func lairfetch(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	M.way_depth = maxi(M.way_depth, 9)
+	await M.go_to("floor9", "down")
+	await M._wait(1.5)
+	var who := {}
+	for m in M._monsters.list:
+		if is_instance_valid(m) and m.kind in ["warchief", "mistwolf"]:
+			who[m.kind] = m
+	var held := func(m) -> int:
+		var k := 0
+		for i in m.art.sheets.size():
+			if m.art.sheets[i] != null or (m.art._asked.has(i) and ResourceLoader.load_threaded_get_status(m.art._paths[i]) == ResourceLoader.THREAD_LOAD_LOADED):
+				k += 1
+		return k
+	var all_of := func(m) -> int:
+		return m.art.sheets.size()
+	_line(who.size() == 2, "floor 9's two side bosses: %s" % [who.keys()])
+	if who.size() < 2:
+		return
+	var tc = who["warchief"]
+	var mw = who["mistwolf"]
+	_line(tc.art.deferred and mw.art.deferred and not tc.art.fetched and not mw.art.fetched and held.call(tc) == 0 and held.call(mw) == 0,
+		"as the Pinewood begins (he %.0f tiles from the chieftain, %.0f from the wolf): none of their %d and %d sheets held" % [h.world.distance_to(tc.world), h.world.distance_to(mw.world), all_of.call(tc), all_of.call(mw)])
+	# (to the camp's edge: the chieftain's taken in, the wolf's not)
+	var camp = M.map.area("lair")
+	var glade = M.map.area("side")
+	for m in M._monsters.list:
+		if is_instance_valid(m) and m != tc and m != mw:
+			m.process_mode = Node.PROCESS_MODE_DISABLED
+	var near_camp: Vector2 = M._free_near(Vector2(camp["blob"]["x"], camp["blob"]["y"]))
+	h.world = near_camp
+	M.sight.see_all()
+	await M._w_until(func(): return held.call(tc) == all_of.call(tc), 10.0)
+	await M._wait(0.6)
+	await M._snap(dir + "/lf_the_camp.png")
+	_line(tc.art.fetched and held.call(tc) == all_of.call(tc) and not mw.art.fetched and held.call(mw) == 0,
+		"in the chieftain's camp: his %d sheets in hand (%d), the wolf's still none (%d)" % [all_of.call(tc), held.call(tc), held.call(mw)])
+	h.world = M._free_near(Vector2(glade["blob"]["x"], glade["blob"]["y"]))
+	await M._w_until(func(): return held.call(mw) == all_of.call(mw), 10.0)
+	await M._wait(0.6)
+	await M._snap(dir + "/lf_the_glade.png")
+	_line(mw.art.fetched and held.call(mw) == all_of.call(mw), "in the wolf's glade: its %d sheets in hand (%d)" % [all_of.call(mw), held.call(mw)])
+	h.unhurt = false
+	print("LAIRFETCH: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+

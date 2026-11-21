@@ -933,10 +933,16 @@ lights over the dark (town.gd `_ring_moments`):
   down, which was in already). `look.gd` `_veiled`, `_see_add`. `--only=veil` (`check_glows.gd`): 16 checks on floors 2 to 5,
   pictured.
 
+## Floor 9's side bosses fetched as their lairs are entered (the cloud chat, 21 Nov 2026)
+
+- **A phone's thrift** (`monsters.gd` FETCH_AT, `baked_figure.gd` fetch): the Troll Chieftain's twelve sheets and the Mist Wolf's
+  eight are not taken in as the Pinewood begins; each boss's are asked for off the game's thread once he comes within 1.6 of his
+  lair's edge (the camp, the glade) or 18 tiles of him, far beyond what he can see, and are in hand by the time he does; until
+  then nothing of them is held or shown. `--only=lairfetch` (`check_glows.gd`): 4 checks, pictured.
+
 ## Not in it yet
 
-A phone's thrift with the side bosses' films (the Troll Chieftain's and the Mist Wolf's are eight big sheets, fetched
-as floor 9 begins: fetched as their lairs are entered, they would cost a phone far less), the bosses' spoken lines aloud (the Chained One and
+The bosses' spoken lines aloud (the Chained One and
 the Amalgamation roar, are heard hurt and die in their own voices, and floors 3 to 5's monsters have their families' voices
 and blows; what a boss says is shown, not spoken), the
 wall's see-through for the monsters behind it, the Warden's spoken lines as he makes them; uniques, magic find, what stands behind raised ground cut off by it; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his

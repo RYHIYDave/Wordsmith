@@ -29,9 +29,14 @@ var _groups := {}
 var _used := PackedInt64Array()
 var _asked := {}
 var _trimmed := 0
+## A FIGURE FETCHED WHEN IT IS WANTED (floor 9's two side bosses, the Troll Chieftain and the Mist Wolf, eight big sheets each):
+## none of its sheets taken in as the floor begins; all of them asked for off the game's thread as its lair is entered (`fetch`,
+## monsters.gd); one wanted before then is taken in at once.
+var deferred := false
+var fetched := false
 
 
-func _init(dir: String, figure: String, lists_info: Dictionary) -> void:
+func _init(dir: String, figure: String, lists_info: Dictionary, defer := false) -> void:
 	name = figure
 	# (a figure the game draws in pictures of its own, not baked as a monster's: the Swamp Colossus, figure "eye", whose fight draws
 	# him and his tentacles (act1/colossus_draw.gd): a figure with no lists)
@@ -40,12 +45,13 @@ func _init(dir: String, figure: String, lists_info: Dictionary) -> void:
 		return
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("%s/%s.json" % [dir, figure]))
 	lazy = data.has("groups")
+	deferred = defer and not lazy
 	for s in data["sheets"]:
 		var path := "%s/%s" % [dir, s]
 		_paths.append(path)
-		sheets.append(null if lazy else load(path))
-	if lazy:
-		_groups = data["groups"]
+		sheets.append(null if lazy or deferred else load(path))
+	if lazy or deferred:
+		_groups = data.get("groups", {})
 		_used.resize(_paths.size())
 		_used.fill(0)
 	_frames = data["frames"]
@@ -140,6 +146,18 @@ func _sheet(i: int) -> Texture2D:
 	else:
 		sheets[i] = load(_paths[i])
 	return sheets[i]
+
+
+## (a figure fetched when it is wanted) All its sheets asked for off the game's thread now, to be in hand when it is first seen.
+func fetch() -> void:
+	if not deferred or fetched:
+		return
+	fetched = true
+	for n in _paths.size():
+		if sheets[n] != null or _asked.has(n):
+			continue
+		if ResourceLoader.load_threaded_request(_paths[n], "Texture2D") == OK:
+			_asked[n] = true
 
 
 ## The sheets of a list asked for off the game's thread, to be in hand when it is played: seen from `side` (0 its front, 1 its
