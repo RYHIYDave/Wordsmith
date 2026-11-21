@@ -246,7 +246,7 @@ for (const [q, n] of POOLS) {
 // (ANY FLOOR: the same pools rolled by the game on each of floors 2 to 10, a new Warrior's game set down there: the deeper, the
 // better the gear, as the game's rollGear has it by the floor; loot.gd takes the pool of the floor he is on)
 const byDepth: Record<string, Record<string, unknown[]>> = { '1': pools };
-for (let depth = 2; depth <= 15; depth++) {
+for (let depth = 2; depth <= 20; depth++) {
   const deep = new Game('warrior', seed);
   deep.depth = depth;
   deep.enterDungeon();
@@ -275,7 +275,7 @@ const shopsOf = (inTown as unknown as { shops: Record<string, (Item | null)[]> }
 const shops: Record<string, unknown[]> = {};
 for (const [id, list] of Object.entries(shopsOf)) shops[id] = list.filter((it): it is Item => it !== null).map(plain);
 // THE STRANGER'S GAMBLE (game.ts gambleKinds, gamblePrice, gamble; defs.ts TUNE.gambleMult, gambleOdds): the kinds he throws for
-// a Warrior (each its name and its Normal picture), what a throw costs coming up from each floor (power 1 to 10), and for each
+// a Warrior (each its name and its Normal picture), what a throw costs coming up from each floor (power 1 to 20), and for each
 // such floor and each quality a throw can come out at (0 plain, 1 magic, 2 rare) GAMBLE_N pieces rolled by the game's own
 // rollItem as gamble() rolls them; loot.gd rolls the quality as the game does and takes one of them. (Its very rare unique,
 // TUNE.gambleOdds.unique: the uniques are not in the Godot version.)
@@ -290,7 +290,7 @@ const gamble = {
   price: {} as Record<string, number[]>,
   pieces: {} as Record<string, unknown[][][]>,
 };
-for (let depth = 1; depth <= 10; depth++) {
+for (let depth = 1; depth <= 20; depth++) {
   const gg = new Game('warrior', seed);
   gg.depth = depth;
   gamble.price[String(depth)] = gambleKindsList.map((_, k) => gg.gamblePrice(k));
@@ -315,7 +315,7 @@ for (const w of [...OURS, ...MADE]) {
 // (stats that count as one property on a piece: items.ts statGroup; only those that are not their own)
 const groups: Record<string, string> = {};
 for (const k of Object.keys(STAT_INFO)) if (statGroup(k as StatKey) !== k) groups[k] = statGroup(k as StatKey);
-const FLOORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+const FLOORS = Array.from({ length: 20 }, (_, i) => i + 1);
 const words = {
   // (the order the game lists the words a hero holds in, types.ts WORD_IDS; and each word's own colour, art/icons.ts WORD_COLOR)
   // (WORDMELDING: the words melding makes after them, in the game's order, melds.ts wordIds; and their own colours as the game
@@ -326,7 +326,8 @@ const words = {
   // (the Warrior's first word, the fallen wordsmith's and the wordsmith's: defs.ts FIRST_WORD)
   first: FIRST_WORD.warrior.word,
   // (the words that may be found on each floor, and how many times as likely a word is there: types.ts wordsAt, defs.ts wordGrowth)
-  at: Object.fromEntries(FLOORS.map((d) => [d, wordsAt(d)])),
+  // (those the Godot version has: the High City's last words come with their port)
+  at: Object.fromEntries(FLOORS.map((d) => [d, wordsAt(d).filter((w) => OURS.includes(w))])),
   growth: Object.fromEntries(FLOORS.map((d) => [d, wordGrowth(d)])),
   // (a piece's places for properties, and what is said of a word before the ring is lit: items.ts ITEM_ROOM, game.ts DARK_RING)
   room: ITEM_ROOM,

@@ -1827,7 +1827,7 @@ func gamble_kinds() -> Array:
 
 ## (the floor he came up from: game.ts `power`, his depth while he is in town)
 func _town_power() -> int:
-	return clampi(int(main.last_floor) if main != null else 1, 1, 10)
+	return clampi(int(main.last_floor) if main != null else 1, 1, 20)
 
 
 func gamble_price(k: int) -> int:
