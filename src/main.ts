@@ -3336,7 +3336,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     groundsAll: GROUNDS_ALL,
     /** (THE EXITS' NAMES, behind EXIT_LABELS in game/exit_labels.ts) Its switch. */
     exitLabels: EXIT_LABELS,
-    /** (THE MUFFLED BELL MADE EASIER TO SEE, behind BELL_MARK in render/bell_mark.ts, off until his yes) Its switch: `bellMark.on`. */
+    /** (THE MUFFLED BELL MADE EASIER TO SEE, behind BELL_MARK in render/bell_mark.ts, on at his word) Its switch: `bellMark.on`. */
     bellMark: BELL_MARK,
     /** (THE STRONGHOLDS' HALLS GIVEN MORE TO THEM, behind HALL_LOOK in game/act1_dress.ts, off until his yes) Its switch: `hallLook.on` (a level made after it is set). */
     hallLook: HALL_LOOK,
