@@ -298,6 +298,13 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 	else:
 		# behind: left where he went up in smoke
 		h._wake(2, x0, float(def["radius"]) * float(r["size"]), float(r["count_dmg"]))
+		# (HIS TREE: Phantom Step, his shadow left where he stood: the enemies near go after it, not him, a while: the decoys)
+		if h.has("phantomstep") and h.monsters != null:
+			var P: Dictionary = _T()["phantom"]
+			var d := {"x": x0.x, "y": x0.y, "t": float(P["secs"]), "r": float(P["reach"]), "size": h.RADIUS}
+			h.monsters.decoys.append(d)
+			_say({"t": "phantom", "x": x0.x, "y": x0.y, "secs": P["secs"]})
+			_shadow_of(d)
 	# "of Echoes": a moment later the smoke streaks along the same way again, weaker
 	if float(r["echo"]) > 0.0:
 		var x1 := land
@@ -529,7 +536,64 @@ func readiness() -> Dictionary:
 
 
 func _clear_own() -> void:
-	pass
+	for sh in _shadows:
+		if is_instance_valid(sh["node"]):
+			sh["node"].queue_free()
+	_shadows.clear()
+
+
+## (Phantom Step) His shadows standing where he stepped from: {d: its decoy, node}.
+var _shadows: Array = []
+const FigureFx := preload("res://scripts/fx_figures.gd")
+
+
+## (render.ts drawShadows) Him as he stood the moment he stepped away, gone dark as his smoke, an edge of the friend's cyan either
+## side; among what stands, where he stood.
+func _shadow_of(d: Dictionary) -> void:
+	var holder = h.get_parent()
+	if holder == null or h._sprite == null:
+		return
+	var node := Node2D.new()
+	node.position = h.position
+	for k in 3:
+		var sp := Sprite2D.new()
+		sp.texture = h._sprite.texture
+		sp.centered = h._sprite.centered
+		sp.offset = h._sprite.offset
+		sp.scale = h._sprite.scale
+		sp.position = h._sprite.position + Vector2([-2.0, 2.0, 0.0][k], 0.0)
+		sp.material = FigureFx._flat_material()
+		sp.modulate = Color("#22d0e0") if k < 2 else Color("#0c0e22")
+		node.add_child(sp)
+	holder.add_child(node)
+	_shadows.append({"d": d, "node": node})
+
+
+## His shadows: each flickering, fading as its time runs out, gone with it; his decoys (not a Golem's) run out.
+func _step_own(dt: float) -> void:
+	if h.monsters != null:
+		for k in range(h.monsters.decoys.size() - 1, -1, -1):
+			var d: Dictionary = h.monsters.decoys[k]
+			if d.get("golem") != null:
+				continue
+			d["t"] = float(d["t"]) - dt
+			if float(d["t"]) <= 0.0:
+				h.monsters.decoys.remove_at(k)
+	for k in range(_shadows.size() - 1, -1, -1):
+		var sh: Dictionary = _shadows[k]
+		var d: Dictionary = sh["d"]
+		var node = sh["node"]
+		if float(d["t"]) <= 0.0 or not is_instance_valid(node):
+			if is_instance_valid(node):
+				node.queue_free()
+			_shadows.remove_at(k)
+			continue
+		var fade := minf(1.0, float(d["t"]) / 0.4) * (0.85 + 0.15 * sin(Time.get_ticks_msec() / 1000.0 * 23.0 + float(d["x"])))
+		var kids: Array = node.get_children()
+		for j in kids.size():
+			var c: Color = kids[j].modulate
+			c.a = (0.45 if j < 2 else 0.9) * fade
+			kids[j].modulate = c
 
 
 # =====================================================================================================================

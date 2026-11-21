@@ -348,6 +348,19 @@ func _warlock() -> void:
 	var filled: float = kit.pact
 	await _run(0.2)
 	_line(absf(filled - float(kit.W["pact"]["full"]) * float(T["soulDebt"]["share"])) < 0.01 and o.life < before, "Soul Debt: a cursed one's death fills a tenth of his pact (%.1f of %.0f); Pyre: it bursts, the one beside struck (%.0f to %.0f)" % [filled, kit.W["pact"]["full"], before, o.life])
+	# Phantom Step: his smoke step leaves his shadow where he stood; the enemies near go after it
+	h.talents = ["branded", "hexchain", "phantomstep"]
+	h.monsters.decoys.clear()
+	var from: Vector2 = h.world
+	kit.charges[2] = 1
+	kit._use_evasive(h.world + Vector2(3.0, 0.0), Vector2(1, 0))
+	await _run(0.5)
+	o.world = from + Vector2(0.0, 1.5)
+	var drawn = h.monsters.decoy_for(o)
+	await _snap("warlock_phantom_step")
+	_line(h.monsters.decoys.size() == 1 and kit._shadows.size() == 1 and drawn != null, "Phantom Step: his shadow left where he stood (%d), the one near it drawn to it for %.0f s" % [kit._shadows.size(), float(T["phantom"]["secs"])])
+	await _run(2.0)
+	_line(h.monsters.decoys.is_empty() and kit._shadows.is_empty(), "Phantom Step: two seconds on, his shadow and its pull gone")
 	# The demon's kills: Hunger, Feast, Bloodlust
 	h.talents = ["hunger", "feast", "bloodlust"]
 	kit.form = "demon"

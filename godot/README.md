@@ -607,8 +607,9 @@ paths (their own moves). THE VETERAN'S, ALL FIFTEEN: Stiff Jab, Viper Jab, Guard
 Starter, Stoke, Hang Time, The Full Set; Switch Kick, Long Legs, Wall Slam, Aftershock, Thunder Knee (heroes/brawler.gd, by game.ts
 vetHit and its neighbours, VET_TALENTS' numbers). THE WARLOCK'S: Hunger, Feast, Bloodlust (the demon's kills), Branded, Hex
 Chain, Withering, Pyre, Blazing Arm, Soul Debt and Last Rites (heroes/warlock.gd: game.ts warlockHit, warlockKill, hexChain,
-blaze, pyre, lastRites; WARLOCK_TUNE.talents). Not yet: Terrible Roar (the roar's runners), Hellwave, Damned Souls, Phantom Step
-and the Bound Demon (their own figures). THE TINKERER'S: Bombs Away, Fortune, Cluster Vials, Tar, Mad Mixture (her vials' bursts
+blaze, pyre, lastRites; WARLOCK_TUNE.talents), and Phantom Step (his shadow left where he stepped from, gone dark with an edge of
+cyan, a decoy for two seconds: render.ts drawShadows). Not yet: Terrible Roar (the roar's runners), Hellwave, Damned Souls and the
+Bound Demon (their own figures). THE TINKERER'S: Bombs Away, Fortune, Cluster Vials, Tar, Mad Mixture (her vials' bursts
 in their brew's colours, baked by tools/godot_tinkerer.ts), Alchemy, The Big One, Lightning Rod (the decoys: monsters.gd
 `decoys`, monster.gd _drawn_to_decoy, as game.ts drawnToDecoy), Shrapnel, Prospector and Overdrive (heroes/tinkerer.gd,
 tinkerer_look.gd: the tar puddles, the big vial's ring, the little vials). Not yet: the Contraption, the Gun Arm, Mark II and
