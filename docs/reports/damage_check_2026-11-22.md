@@ -272,3 +272,19 @@ the elite / the pack; damage_check_2026-11-22_poison_fixed.txt):
 - fire Mage: Scald and Twin 180,454 (12.2 s); Wildfire and Twin 7.2 s (her Orb not counted)
 - frost Mage: Eruption and Swift 148,328 (14.3 s); Wildfire and Twin 8.9 s (her Orb not counted)
 Poison no hero's first choice now; Blight's best 290,148 (the Ranger's). Behind, every one: Power II and Fleeting.
+
+## A melded word a Rank II word's worth
+
+His words: “Oh I'd like the game to think of a meld as a lvl2 word / Since a meld has 2 boosts of 40% and something like power II
+has 1 boost for 80%”. On gear it was already (two properties of 40% against one of 80%); in a move a Rank II word is its word
+half as strong again, and a melded word was both its words whole and its twist besides. Now each of a melded word's two words is
+three quarters of its own figure (words.gd MELD_RANK2), its twist as it was; the words check with it off, 0 differ. Each hero's best
+(quick attack alone; into the elite / the pack; damage_check_2026-11-22_meld_rank2.txt):
+- Ranger: Fire II and Swift 476,824 a second, 3.0 s (Shiver and Swift 433,050, 3.7 s)
+- Tinkerer: Forking and Swift 437,445, 2.3 s
+- Brawler: Fumes and Precise 372,466 (6.4 s); Wildfire and Precise the pack in 3.8 s
+- Warrior: Shiver and Swift 346,620 (the pack not dead in 30 s); Fire II and Twin 344,754 (9.3 s); Sunder and Swift the pack in 6.1 s
+- Warlock: Eruption and Swift 343,571, 4.4 s; Wildfire and Swift the pack in 3.9 s
+- fire Mage: Eruption and Swift 207,052 (9.2 s); Wildfire and Twin 8.8 s (her Orb not counted)
+- frost Mage: Scald and Twin 140,092; Wildfire and Twin 10.2 s (her Orb not counted)
+A plain Rank II word now the Ranger's best; melds still the best of most, for their twists.

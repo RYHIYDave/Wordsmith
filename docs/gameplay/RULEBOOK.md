@@ -256,6 +256,10 @@ without the master rune-stone finds the fallen wordsmith again in the next.
   were poison (your question: “Yes why are poison melds so strong for everyone”). Now a dose is its
   share of the hit without the hit's element bonus, made more by damage and Poison Damage added
   together; and poison grows with Dexterity in any word, Blight too (your “Yes both”).
+- **A melded word is a Rank II word's worth (the Godot game, 22 Nov 2026):** your words, “Oh I'd like
+  the game to think of a meld as a lvl2 word / Since a meld has 2 boosts of 40% and something like
+  power II has 1 boost for 80%”. In a move, each of its two words is three quarters of its own
+  strength (150% in all, as a Rank II word's), and its twist as it was.
 - **What is one class's own is in its tree (the Godot game, 22 Nov 2026):** your words, “If we
   want something to be for only certain characters, it needs to be built into their tree / Like
   poison stacks 4 times naturally, but up to 8 for the ranger if you take the talent point / And
