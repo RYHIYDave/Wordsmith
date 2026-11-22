@@ -7,15 +7,20 @@
 // (art/heroes.ts wornSkin: the Mage's staves, the Ranger's bows, the Tinkerer's wrenches, the Warrior's swords, axes and hammers, the
 // Brawler's wraps, the Warlock's tomes and his demon a group of its own). The files of the bake before (godot/assets/MARKS.txt
 // heroes=) that this one has not are taken away; this copy's own files (clips.json, the golem's, the moves' effects) are kept.
-//   node tools/godot_heroes.mjs [mark]    (from the repository's root; the mark: the newest bake on gh-pages if not given)
+//   node tools/godot_heroes.mjs [mark]    (from the repository's root; the mark: the newest bake on gh-pages if not given; a mark
+//                                          baked here, in .bake/<mark>/, is read from there)
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const OUT = 'godot/assets/heroes';
 const MARKS = 'godot/assets/MARKS.txt';
 const git = (...a) => execFileSync('git', a, { maxBuffer: 1 << 30 });
-const list = (mark) => git('ls-tree', '--name-only', 'origin/gh-pages', `heroes/${mark}/`).toString().trim().split('\n').map((p) => p.split('/').pop());
+// (A BAKE MADE HERE, not published: .bake/<mark>/ (tools/bake_heroes.mjs), read in its place: the web game is finished, so a bake
+// of the heroes' art changed since is the Godot copy's alone, e.g. the Tinkerer's stand at 30 a second, 22 Nov 2026)
+const localOf = (mark) => (mark && existsSync(join('.bake', mark, 'done.json')) ? join('.bake', mark) : null);
+const list = (mark) => (localOf(mark) ? readdirSync(localOf(mark)).filter((f) => f !== 'done.json' && !f.startsWith('.')) : git('ls-tree', '--name-only', 'origin/gh-pages', `heroes/${mark}/`).toString().trim().split('\n').map((p) => p.split('/').pop()));
+const fileOf = (mark, f) => (localOf(mark) ? readFileSync(join(localOf(mark), f)) : git('show', `origin/gh-pages:heroes/${mark}/${f}`));
 
 // (the newest bake: the one the published page names)
 let mark = process.argv[2];
@@ -31,11 +36,11 @@ const made = new Set();
 for (const f of files) {
   if (f.endsWith('-packs.png')) continue;
   if (f.endsWith('.json')) {
-    const d = JSON.parse(git('show', `origin/gh-pages:heroes/${mark}/${f}`).toString());
+    const d = JSON.parse(fileOf(mark, f).toString());
     const packed = new Map();
     for (const pk of d.packs ?? []) {
       if (pk.off === undefined) continue;
-      if (!packed.has(pk.sheet)) packed.set(pk.sheet, git('show', `origin/gh-pages:heroes/${mark}/${pk.sheet}`));
+      if (!packed.has(pk.sheet)) packed.set(pk.sheet, fileOf(mark, pk.sheet));
       const name = `${d.group}-${pk.name.replace(/:/g, '-')}.png`;
       writeFileSync(join(OUT, name), packed.get(pk.sheet).subarray(pk.off, pk.off + pk.len));
       made.add(name);
@@ -44,7 +49,7 @@ for (const f of files) {
       delete pk.len;
     }
     writeFileSync(join(OUT, f), JSON.stringify(d));
-  } else writeFileSync(join(OUT, f), git('show', `origin/gh-pages:heroes/${mark}/${f}`));
+  } else writeFileSync(join(OUT, f), fileOf(mark, f));
   made.add(f);
 }
 // (what the bake before had and this one has not)

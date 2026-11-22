@@ -52,12 +52,14 @@ import type { ContraptionAmmo } from '../dev/sculpt_contraption';
 import { CDOWN, CT, contraptionDown } from '../dev/contraption_fx';
 import { UNITS_PER_TILE } from './moves3';
 
-/** Frames a second: a standing loop, a run (its feet gripping, as the heroes' runs), what is played once. */
-const IDLE_FPS = 10;
+/** Frames a second: a standing loop, a run (its feet gripping, as the heroes' runs), what is played once. Her stand at 30, as the
+ * other heroes stand (it was 10: his yes, 22 Nov 2026, to “repaint his idle and his blast jump flight at 30 frames a second”). */
+const IDLE_FPS = 30;
 const RUN_FPS = 60;
 const CLIP_FPS = 30;
-/** How many pictures the blast jump's flight is painted in, laid over the swipe's time. */
-const FLY_FRAMES = 12;
+/** How many pictures the blast jump's flight is painted in, laid over the swipe's time: 18 over its 0.6 s, 30 a second (it was 12,
+ * 20 a second: the same yes). */
+const FLY_FRAMES = 18;
 
 /** Their pool of light: as the heroes' (art/heroes3.ts). */
 const AURA: Light = { x: CANVAS3.ax - 4, y: CANVAS3.ay - 30, r: 46, color: '#28dcf0', a: 0.2 };
