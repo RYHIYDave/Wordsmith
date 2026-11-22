@@ -912,12 +912,16 @@ const MAX_H := 324.0
 const SCREEN_KEEP := "user://touch.cfg"
 ## The player's choice: held upright (true) or sideways.
 var upright := false
+## PLAY UPRIGHT offered (the start screen's OPTIONS, the pause panel): OFF at his word, 22 Nov 2026: “I appreciate the work but no
+## one is going to play this game upright”, then “Take upright out”. The game held sideways always (a choice kept from before
+## is not read); the upright layout stays in the code, for `--upright=1` alone.
+const UPRIGHT_ON := false
 
 
 func _screen_start() -> void:
 	var cf := ConfigFile.new()
 	# (the checks are not held to a choice kept on this machine by an earlier one)
-	if cf.load(SCREEN_KEEP) == OK and _arg("shots") == "":
+	if UPRIGHT_ON and cf.load(SCREEN_KEEP) == OK and _arg("shots") == "":
 		upright = cf.get_value("screen", "upright", false) == true
 	if _arg("upright") != "":
 		upright = true
@@ -2978,6 +2982,9 @@ func _shoot(hero: Hero, dir: String) -> void:
 		get_tree().quit()
 	if _arg("only") == "safe":
 		await preload("res://scripts/check_safe.gd").new().run(self, hero, dir)
+		get_tree().quit()
+	if _arg("only") == "noupright":
+		await preload("res://scripts/check_safe.gd").new().noupright(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "exits":

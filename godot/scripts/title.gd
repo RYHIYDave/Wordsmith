@@ -169,7 +169,7 @@ func _items() -> Array:
 			["guide", "PROMPTS: OFF" if main != null and main.loot.taught else "PROMPTS: ON", "", false, false],
 			["practice", "PRACTICE ROOM", "", false, false],
 			["floors", "LEVEL SELECT", "", false, false],
-		] + ([["turn", main.turn_label(), "", false, false]] if _finger() else []) + [
+		] + ([["turn", main.turn_label(), "", false, false]] if _finger() and main.UPRIGHT_ON else []) + [
 			["back", "BACK", "", false, false],
 		]
 	var out: Array = []

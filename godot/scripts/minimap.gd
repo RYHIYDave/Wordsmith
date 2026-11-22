@@ -505,7 +505,9 @@ func _pause(W: float, H: float) -> void:
 		val_w = maxf(val_w, PF.width(r[1], "small"))
 	key_w += 8
 	var pw := minf(W - 8, 250.0)
-	var ph := minf(H - 6, 18 + help.size() * 7 + 8 + bh + 6 + ((bh + 3) * 2 if touch else 0))
+	# (PLAY UPRIGHT taken out at his word: main.gd UPRIGHT_ON; the aim's row alone over the three)
+	var rows: int = (2 if main.UPRIGHT_ON else 1) if touch else 0
+	var ph := minf(H - 6, 18 + help.size() * 7 + 8 + bh + 6 + (bh + 3) * rows)
 	var px := floorf((W - pw) / 2.0)
 	var py := maxf(3.0, floorf((H - ph) / 2.0))
 	var bw := floorf((pw - 16) / 3.0)
@@ -530,9 +532,10 @@ func _pause(W: float, H: float) -> void:
 		var ay := ly - bh - 3
 		_hits.append([Rect2(px + 6, ay, pw - 12, bh), "aim"])
 		_button(px + 6, ay, pw - 12, bh, main._touch.label())
-		var ty := ay - bh - 3
-		_hits.append([Rect2(px + 6, ty, pw - 12, bh), "turn"])
-		_button(px + 6, ty, pw - 12, bh, main.turn_label())
+		if main.UPRIGHT_ON:
+			var ty := ay - bh - 3
+			_hits.append([Rect2(px + 6, ty, pw - 12, bh), "turn"])
+			_button(px + 6, ty, pw - 12, bh, main.turn_label())
 	_button(px + 6, by, bw, bh, "Resume", false, true)
 	_button(px + 8 + bw, by, bw, bh, "Sound off" if AudioServer.is_bus_mute(0) else "Sound on")
 	# (ui/panels.ts drawPause, its third: "End run" gives a hero of one's own up; a test hero's "Leave" leaves the save as it was)

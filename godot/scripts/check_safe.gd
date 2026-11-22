@@ -67,3 +67,28 @@ func run(main, hero, dir: String) -> void:
 	if inv.visible:
 		inv.toggle()
 	print("SAFE: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## PLAY UPRIGHT TAKEN OUT (main.gd UPRIGHT_ON, at his word): `--only=noupright`. With fingers, the pause panel and the start
+## screen's OPTIONS no longer offer it, and the game is held sideways; pictured.
+func noupright(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	M.go_to("floor1", "start")
+	await _wait(1.2)
+	M._touch.on = true
+	M._mini.show_panel("pause")
+	await _wait(0.4)
+	await M._snap(dir + "/pause_touch.png")
+	var hits: Array = M._mini._hits.map(func(x): return x[1])
+	_line(not hits.has("turn") and hits.has("aim"), "the pause panel with fingers: %s, no PLAY UPRIGHT" % ", ".join(PackedStringArray(hits)))
+	M._mini.show_panel("")
+	await _wait(0.2)
+	var ts = M.title_up("floor1")
+	ts.page = "options"
+	await _wait(0.5)
+	await M._snap(dir + "/options_touch.png")
+	var ids: Array = ts._items().map(func(x): return x[0])
+	_line(not ids.has("turn") and ids.has("aim"), "the start screen's OPTIONS with fingers: %s, no PLAY UPRIGHT" % ", ".join(PackedStringArray(ids)))
+	_line(not M.upright, "the game held sideways (upright: %s)" % str(M.upright))
+	print("NOUPRIGHT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
