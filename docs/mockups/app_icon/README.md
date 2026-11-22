@@ -9,3 +9,11 @@ power rune”. Both made from the game's own pixels at whole-number sizes:
 - `icon_choices.png`: both as an iPhone and an Android phone cut them, big and at a home screen's size.
 
 Not in the game until he picks one.
+
+Then his word: “see what the wordsmith would look like as an icon”. The wordsmith himself, from the released game's
+townsfolk pictures (assets/townsfolk, 'wordsmith:act' at its brightest: the rune he writes in the air glowing), on the
+town's night blue with the ring's cyan glow behind him:
+
+- `wordsmith_bust_1024.png`: C, close (head to hands, the rune, running off the foot).
+- `wordsmith_full_1024.png`: D, all of him.
+- `wordsmith_choices.png`: C, D and A side by side, as an iPhone cuts them, big and at a home screen's size.
