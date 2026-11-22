@@ -1348,6 +1348,9 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 	# (THE CITY'S WORDS: HEXING, cursed, it takes more from everything)
 	if hex_t > 0.0 and hex_more > 0.0:
 		dmg = maxf(1.0, roundf(dmg * (1.0 + hex_more)))
+	# (BURNING'S OWN, words.gd BURN_MORE: a burning enemy takes more from every fire hit; not from the burning itself)
+	if Words.BURN_MORE > 0.0 and el == "fire" and burn_t > 0.0 and not dot:
+		dmg = maxf(1.0, roundf(dmg * (1.0 + Words.BURN_MORE)))
 	# (THE SKILL TREES REMADE: Giant Slayer's cracks in its guard: more from everything)
 	if cracks > 0:
 		dmg = maxf(1.0, roundf(dmg * (1.0 + 0.03 * cracks)))

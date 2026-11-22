@@ -44,7 +44,7 @@ const BUILDS := [
 ]
 const LEVEL := 50
 ## (WS_DMG_ALL: the tough pack's life each)
-const TOUGH := 150000.0
+const TOUGH := 2000000.0
 
 
 func _say(s: String) -> void:
@@ -57,6 +57,9 @@ func run(main, hero, d: String) -> void:
 	h = hero
 	dir = d
 	G = JSON.parse_string(FileAccess.get_file_as_string(OS.get_environment("WS_DMG_GEAR")))
+	# (WS_BURN_MORE: burning's own, words.gd BURN_MORE, for sizing it)
+	if OS.has_environment("WS_BURN_MORE"):
+		Words.BURN_MORE = float(OS.get_environment("WS_BURN_MORE"))
 	h.unhurt = true
 	M.go_to("floor20", "start")
 	await M._wait(2.0)
