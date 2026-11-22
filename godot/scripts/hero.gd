@@ -744,7 +744,7 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	if dose > 0.0 and (p_min != 0.0 or p_max != 0.0):
 		dose += randf_range(p_min, maxf(p_min, p_max)) / float(Words.data()["poison"]["time"])
 	if dose > 0.0:
-		m.dose(dose, float(Words.data()["poison"]["time"]) * float(r["last"]))
+		m.dose(dose, float(Words.data()["poison"]["time"]) * float(r["last"]), el)
 	# (WORDMELDING: the melded word's twist on this hit, in front and behind: melds.gd)
 	if r["meld"] != null or r["meld_behind"] != null:
 		melds.hit(m, i, dmg, at, quiet, was_burning, was_chilled)

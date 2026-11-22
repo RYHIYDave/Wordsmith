@@ -1658,12 +1658,17 @@ func chill_by(by: float) -> void:
 
 ## POISON in front, a dose of `dps` a second (game.ts poisonMonster): doses add up, 8 at most (after that the poison is no
 ## weaker than 8 of this one), and each new one starts its 4 s again. The hero's Poison Damage makes it more.
-func dose(dps: float, secs := -1.0) -> void:
+func dose(dps: float, secs := -1.0, el := "") -> void:
 	if dead:
 		return
 	var tune: Dictionary = Words.data()["poison"]
 	var more: float = mgr.hero.stats.get("poison_pct", 0.0) if mgr.hero != null else 0.0
-	if more != 0.0:
+	# (POISON_ADD, words.gd: a hit's share, `el` its element: without the hit's own bonus, and damage and Poison Damage added)
+	if Words.POISON_ADD and el != "" and mgr.hero != null and is_instance_valid(mgr.hero):
+		var hs: Dictionary = mgr.hero.stats
+		var gen: float = float(hs.get("dmg_pct", 0.0)) + float(mgr.hero.might)
+		dps *= maxf(0.0, 1.0 + (gen + more) / 100.0) / maxf(0.01, 1.0 + (gen + mgr.hero._el_pct(el)) / 100.0)
+	elif more != 0.0:
 		dps *= maxf(0.0, 1.0 + more / 100.0)
 	if poison_t <= 0.0:
 		poison_dps = 0.0

@@ -67,6 +67,8 @@ func run(main, hero, d: String) -> void:
 	# (WS_BURN_MORE: burning's own, words.gd BURN_MORE, for sizing it)
 	if OS.has_environment("WS_BURN_MORE"):
 		Words.BURN_MORE = float(OS.get_environment("WS_BURN_MORE"))
+	if OS.has_environment("WS_POISON_ADD"):
+		Words.POISON_ADD = OS.get_environment("WS_POISON_ADD") == "1"
 	if OS.has_environment("WS_BURN_ALL"):
 		Words.BURN_MORE_ALL = float(OS.get_environment("WS_BURN_ALL"))
 	h.unhurt = true
@@ -191,7 +193,12 @@ func _dps() -> float:
 	if float(r["poison"]) > 0.0:
 		var P: Dictionary = Words.data()["poison"]
 		var flat: float = (float(h.stats.get("poison_min", 0.0)) + float(h.stats.get("poison_max", 0.0))) / 2.0 / float(P["time"])
-		var dose: float = (hit * float(r["poison"]) * float(r["pace"]) + flat) * (1.0 + float(h.stats.get("poison_pct", 0.0)) / 100.0)
+		var pp: float = float(h.stats.get("poison_pct", 0.0))
+		var dose: float = (hit * float(r["poison"]) * float(r["pace"]) + flat) * (1.0 + pp / 100.0)
+		# (POISON_ADD, words.gd: the hit's share without its element bonus, damage and Poison Damage added)
+		if Words.POISON_ADD:
+			var gen: float = float(h.stats["dmg_pct"]) + h.might
+			dose = hit * float(r["poison"]) * float(r["pace"]) * (1.0 + (gen + pp) / 100.0) / (1.0 + (gen + h._el_pct(el)) / 100.0) + flat * (1.0 + pp / 100.0)
 		dps += dose * float(Words.poison_most(h))
 	if float(r["ignite"]) > 0.0:
 		dps += hit * n * float(r["ignite"]) / 3.0 * float(r["pace"])

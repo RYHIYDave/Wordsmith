@@ -350,7 +350,7 @@ func arc(o, from, i: int, arc_dmg: float, struck: Array) -> void:
 		# (burning jumps along the arc)
 		o.set_alight(arc_dmg * maxf(r["ignite"], 0.3) / 3.0, 3.0)
 	elif r["meld"] == "contagion":
-		o.dose(arc_dmg * maxf(r["poison"], 0.2))
+		o.dose(arc_dmg * maxf(r["poison"], 0.2), -1.0, "lightning")
 		o.last_skill = i
 	elif r["meld"] == "hailstorm":
 		# (the arc chills; a frozen one passes it on)

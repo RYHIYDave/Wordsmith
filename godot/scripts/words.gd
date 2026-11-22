@@ -130,6 +130,14 @@ static var BURN_HEARTH := true
 ##               going out the Burning Verse's, a unique; his Curse thrown at range in its place, heroes/warlock.gd CURSE_RANGED.)
 ##               Off: eight for all, as it was.
 static var POISON_TREE := true
+##   POISON_ADD  poison's own bonus added, not on top (his question, 22 Nov 2026: “Yes why are poison melds so strong for
+##               everyone”): a dose is its share of the hit, and the hit is already made more by its element's bonus (Lightning,
+##               Fire, Frost, Power on gear) and by damage; then Poison Damage made the dose more again, on top. A poison meld on
+##               gear gives both on one piece (Contagion +40% lightning and +40% poison), so the two grew each other. On: a dose is
+##               its share of the hit without the hit's element bonus, made more by damage and Poison Damage added together
+##               (monster.gd dose, `el` the hit's element; what is not a hit's share, a cloud's, a snake's, as before). Off till
+##               his yes.
+static var POISON_ADD := false
 const POISON_MOST := 4
 
 
