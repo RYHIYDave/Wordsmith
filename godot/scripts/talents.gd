@@ -4,6 +4,10 @@
 ## (Recommended)”). THE WARRIOR'S THREE WEAPONS (WARRIOR_TREE2): his first point picks the greatsword, the battle axe or the
 ## warhammer, only one, each with its own three moves; a weapon's own path is that weapon's alone; IRON opens once one is his.
 ## Undone in town only, for gold (unlearnPerLevel a level), and only when nothing taken hangs on it alone.
+## THE WARRIOR'S WEAPON, FREE (his word of 22 Nov 2026: “The warrior has an issue where he starts with the greatsword but would
+## have to pay a talent point to select greatsword.  So maybe he can swap to axe or hammer at level 1.”): his weapon costs no
+## point and is his from level 1; the greatsword his as he starts (`starting`); another taken in its place at any level, anywhere,
+## for nothing, so long as nothing more on the old one's path is taken (`swap_out`); his points go only on the rest (`spent`).
 ## IN THIS PORT: a talent whose rules are not brought over yet (PORTED) is shown, read and marked so, and cannot be taken.
 extends RefCounted
 
@@ -100,6 +104,42 @@ static func _weapons() -> Array:
 	return D["weapons"]["picks"]
 
 
+## Whether `id` is one of the Warrior's three weapons (WARRIOR_TREE2 on).
+static func is_weapon(cls: String, id: String) -> bool:
+	ready_up()
+	return cls == "warrior" and D["switches"]["warriorTree2"] and _weapons().has(id)
+
+
+## The points spent: his weapon costs none.
+static func spent(cls: String, taken: Array) -> int:
+	return taken.filter(func(x): return not is_weapon(cls, str(x))).size()
+
+
+## A new hero's talents: the Warrior's greatsword his already.
+static func starting(cls: String) -> Array:
+	ready_up()
+	return ["greatsword"] if cls == "warrior" and D["switches"]["warriorTree2"] else []
+
+
+## The weapon taking weapon `id` lets go of ("" if none), or why it cannot yet ("!" and the reason): nothing more on its path.
+static func swap_out(cls: String, taken: Array, id: String) -> String:
+	if not is_weapon(cls, id):
+		return ""
+	for w in _weapons():
+		if w == id or not taken.has(w):
+			continue
+		var path := ""
+		for p in D["weapons"]["paths"]:
+			if D["weapons"]["paths"][p] == w:
+				path = p
+		for x in taken:
+			var t := of(cls, str(x))
+			if str(x) != w and not t.is_empty() and t["path"] == path:
+				return "!Undo the %s's talents first" % str(of(cls, w).get("name", w)).to_lower()
+		return w
+	return ""
+
+
 static func _not_his_weapon(cls: String, t: Dictionary, taken: Array) -> bool:
 	var w = D["weapons"]["paths"].get(t["path"])
 	return cls == "warrior" and D["switches"]["warriorTree2"] and w != null and t["id"] != w and not taken.has(w)
@@ -130,12 +170,15 @@ static func take_problem(cls: String, level: int, taken: Array, id: String) -> S
 		return "No such talent"
 	if taken.has(id):
 		return "Taken"
-	if taken.size() >= points(level):
+	if not is_weapon(cls, id) and spent(cls, taken) >= points(level):
 		var nx := next_level(level)
 		return "No points left" if nx < 0 else "Next point at level %d" % nx
 	if not _way_open(t, taken):
 		return "Take one joined to it first"
-	if _other_weapon(cls, id, taken):
+	var out := swap_out(cls, taken, id)
+	if out.begins_with("!"):
+		return out.substr(1)
+	if out == "" and _other_weapon(cls, id, taken):
 		return "One weapon only"
 	if _not_his_weapon(cls, t, taken):
 		return "Not your weapon"
@@ -149,14 +192,17 @@ static func take_problem(cls: String, level: int, taken: Array, id: String) -> S
 ## Whether it could be taken were there a point to spend (talentOpen).
 static func open(cls: String, taken: Array, id: String) -> bool:
 	var t := of(cls, id)
-	return not t.is_empty() and not taken.has(id) and _way_open(t, taken) and not _other_weapon(cls, id, taken) and not _not_his_weapon(cls, t, taken) \
-		and not _waits_for_weapon(cls, t, taken)
+	var swap_ok := is_weapon(cls, id) and not swap_out(cls, taken, id).begins_with("!")
+	return not t.is_empty() and not taken.has(id) and _way_open(t, taken) and (swap_ok or not _other_weapon(cls, id, taken)) \
+		and not _not_his_weapon(cls, t, taken) and not _waits_for_weapon(cls, t, taken)
 
 
 ## Why a taken talent cannot be undone (nothing else may hang on it alone), or "" (unlearnProblem).
 static func unlearn_problem(cls: String, taken: Array, id: String) -> String:
 	if not taken.has(id):
 		return "Not taken"
+	if is_weapon(cls, id):
+		return "Take another to swap"
 	var rest := taken.filter(func(x): return x != id)
 	var reach := []
 	for n in rest.size() + 1:
@@ -182,9 +228,15 @@ static func mods(cls: String, taken: Array) -> Array:
 static func clean(cls: String, level: int, list) -> Array:
 	var out := []
 	if not list is Array:
-		return out
+		return starting(cls)
+	# (his weapon first, free; the greatsword if none was his)
 	for id in list:
-		if id is String and take_problem(cls, level, out, id) == "":
+		if id is String and is_weapon(cls, id) and out.is_empty():
+			out.append(id)
+	if out.is_empty():
+		out = starting(cls)
+	for id in list:
+		if id is String and not out.has(id) and take_problem(cls, level, out, id) == "":
 			out.append(id)
 	return out
 

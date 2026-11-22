@@ -378,7 +378,7 @@ func _rune(z: Dictionary) -> void:
 		sfx.play("explode", linear_to_db(0.8))
 	for m in monsters.list.duplicate():
 		if is_instance_valid(m) and not m.dead and m.world.distance_to(at) <= float(z["r"]) + m.r:
-			m.damage(maxf(1.0, roundf(z["dmg"])), z["element"], false, false, [], false, false, int(z["skill"]))
+			m.damage(_side(m, maxf(1.0, roundf(z["dmg"])), int(z["skill"])), z["element"], false, false, [], false, false, int(z["skill"]))
 	if z.get("meld") != null:
 		_rune_twist(z)
 
@@ -408,7 +408,7 @@ func _meld_zone(z: Dictionary, dt: float) -> bool:
 			if not by.is_empty():
 				var m = by.pick_random()
 				_tell({"t": "arc", "x0": at.x, "y0": at.y, "x1": m.world.x, "y1": m.world.y, "meld": "wildfire"})
-				m.damage(maxf(1.0, roundf(float(z["dmg"]) * (float(T["wildfire"]["spark"]) / 0.25))), "fire", false, false, [], false, false, int(z["skill"]))
+				m.damage(_side(m, maxf(1.0, roundf(float(z["dmg"]) * (float(T["wildfire"]["spark"]) / 0.25))), int(z["skill"])), "fire", false, false, [], false, false, int(z["skill"]))
 				if sfx != null:
 					sfx.play("zap", linear_to_db(0.4))
 	elif meld == "fumes" and z["kind"] == "venom":
@@ -428,7 +428,7 @@ func _meld_zone(z: Dictionary, dt: float) -> bool:
 				sfx.play("explode", linear_to_db(0.7))
 			for m in monsters.list.duplicate():
 				if is_instance_valid(m) and not m.dead and m.world.distance_to(at) <= float(z["r"]) + 0.5 + m.r:
-					m.damage(boom, "fire", false, false, [], false, false, int(z["skill"]))
+					m.damage(_side(m, boom, int(z["skill"])), "fire", false, false, [], false, false, int(z["skill"]))
 			return true
 	elif meld == "frostbite" and z["kind"] == "ice" and due:
 		# (the ice poisons what crosses it)
@@ -445,7 +445,7 @@ func _meld_zone(z: Dictionary, dt: float) -> bool:
 		if not inside.is_empty():
 			var m = inside.pick_random()
 			_tell({"t": "arc", "x0": at.x, "y0": at.y, "x1": m.world.x, "y1": m.world.y, "meld": "contagion"})
-			m.damage(maxf(1.0, roundf(float(z["dmg"]) * float(T["contagion"]["shock"]))), "lightning", false, false, [], false, false, int(z["skill"]))
+			m.damage(_side(m, maxf(1.0, roundf(float(z["dmg"]) * float(T["contagion"]["shock"]))), int(z["skill"])), "lightning", false, false, [], false, false, int(z["skill"]))
 			if sfx != null:
 				sfx.play("zap", linear_to_db(0.4))
 	return false
@@ -515,7 +515,7 @@ func _bite(z: Dictionary) -> void:
 				return
 			var m = inside.pick_random()
 			_tell(_melded({"t": "arc", "x0": at.x, "y0": at.y, "x1": m.world.x, "y1": m.world.y, "sky": true}, z.get("meld")))
-			m.damage(maxf(1.0, roundf(z["dmg"])), "lightning", false, false, [], false, false, int(z.get("skill", -1)))
+			m.damage(_side(m, maxf(1.0, roundf(z["dmg"])), int(z.get("skill", -1))), "lightning", false, false, [], false, false, int(z.get("skill", -1)))
 			if sfx != null:
 				sfx.play("thunder", linear_to_db(0.5))
 			# (WORDMELDING: Hailstorm's storm of ice slows what is in it)
@@ -540,7 +540,7 @@ func _bite(z: Dictionary) -> void:
 				if z["kind"] == "ice" or z["kind"] == "steam":
 					m.chill = maxf(m.chill if m.chill_t > 0.0 else 0.0, z["slow"])
 					m.chill_t = 0.7
-				m.damage(maxf(1.0, roundf(z["dmg"] * 0.5)), z["element"], false, false, [], false, true, int(z.get("skill", -1)))
+				m.damage(_side(m, maxf(1.0, roundf(z["dmg"] * 0.5)), int(z.get("skill", -1))), z["element"], false, false, [], false, true, int(z.get("skill", -1)))
 
 
 ## Told as it is laid (fx.gd `zone`); and it is to be drawn from now.
@@ -585,3 +585,11 @@ func _draw() -> void:
 		fill.remove_at(fill.size() - 1)
 		draw_colored_polygon(fill, Color(tint, 0.4 * a))
 		draw_polyline(ring, Color(STAND_IN_EDGE, 0.9 * a), 2.0)
+
+
+## (WHAT HE ADDS COMPOUNDS: hero.gd side) What his talents and his uniques make of a hit of his ground on `m`.
+func _side(m, amount: float, skill: int) -> float:
+	var h = monsters.hero if monsters != null else null
+	if h == null or not is_instance_valid(h):
+		return amount
+	return h.side(m, amount, skill)

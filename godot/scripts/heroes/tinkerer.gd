@@ -744,8 +744,7 @@ func _tesla_coil(g: Dictionary, gdt: float) -> void:
 	var base: Array = h.base_for("lightning")
 	for m in hit:
 		var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (float(h.stats["dmg_pct"]) + float(h.stats.get("light_pct", 0.0)) + h.might) / 100.0)
-		dmg *= h._talent_hit_mult(m)
-		m.damage(maxf(1.0, roundf(dmg)), "lightning", false, false, [], false, false, i)
+		m.damage(h.side(m, dmg, i), "lightning", false, false, [], false, false, i)
 
 ## (game.ts updateTinkerer) Her vials in the air, and her Golem.
 func _step_own(dt: float) -> void:

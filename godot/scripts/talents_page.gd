@@ -281,7 +281,7 @@ func draw(h, level: int, t: float, dt: float) -> void:
 	var tree: Dictionary = lay["tree"]
 	var r: Rect2 = lay["r"]
 	var taken: Array = h.talents
-	var left := maxi(0, Talents.points(level) - taken.size())
+	var left := maxi(0, Talents.points(level) - Talents.spent(h.cls, taken))
 	var pulse := 0.5 + 0.5 * sin(t * 6.0)
 	if not flash.is_empty():
 		flash["t"] += dt
@@ -677,7 +677,7 @@ func draw_card(h, level: int, gold: int, in_town: bool, W: float, H: float, pric
 			_text(cr.position.x + 5.0 + tw, by + floorf((bh - 6.0) / 2.0) + 1.0, no.to_upper(), T["dim"], true)
 	elif why == "":
 		var tr := Rect2(cr.position.x + 5.0, by, cr.size.x - 10.0, bh)
-		_button(tr, "TAKE  (1 POINT)", false, true)
+		_button(tr, ("SWAP TO IT  (FREE)" if Talents.swap_out(h.cls, h.talents, d["id"]) != "" else "TAKE  (FREE)") if Talents.is_weapon(h.cls, d["id"]) else "TAKE  (1 POINT)", false, true)
 		buttons.append([_screen(tr), "tal_take", d["id"]])
 	else:
 		_text(cr.position.x + 5.0, by + floorf((bh - 6.0) / 2.0) + 1.0, why.to_upper(), T["dim"], true)

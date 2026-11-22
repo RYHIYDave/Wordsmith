@@ -658,7 +658,7 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	if el == "lightning" or int(r["arcs"]) > 0:
 		m.shock_t = float(Talents.D["tune"]["shockSecs"])
 	if el == "fire" and has("kindling"):
-		_kindle(at)
+		_kindle(at, i)
 	if was_frozen_t > 0.0 and not m.dead and not m.boss and has("deepfreeze"):
 		var DF: Dictionary = Talents.D["tune"]["deepFreeze2"]
 		m.throw_from(world, float(DF["far"]), float(DF["secs"]), true)
@@ -2526,6 +2526,9 @@ func _talent_hit_mult(m) -> float:
 	# (THE TINKERER's tree: Fortune, she hits harder the more gold she carries: 1% of her gold, as a percent)
 	if has("fortune") and monsters != null and monsters.loot != null:
 		k *= 1.0 + float(monsters.loot.gold) * float(Talents.D["tinkerTalents"]["fortune"])
+	# (THE WARLOCK'S DEMON MADE TERRIBLE: Dread, what is near the demon takes more from him: heroes/warlock.gd)
+	if kit != null and kit.has_method("dread_k"):
+		k *= kit.dread_k(m)
 	return k
 
 
@@ -2543,6 +2546,9 @@ func _talent_guard() -> float:
 		k *= 1.0 - minf(float(B["most"]), float(B["each"]) * n)
 	if has("thickskin") and life < max_life * float(T["thickSkin2"]["below"]):
 		k *= 1.0 - float(T["thickSkin2"]["less"])
+	# (THE WARLOCK'S DEMON MADE TERRIBLE: the demon takes less: heroes/warlock.gd)
+	if kit != null and kit.has_method("guard_k"):
+		k *= kit.guard_k()
 	return k
 
 
@@ -2597,13 +2603,36 @@ func _lunge_through() -> void:
 
 
 ## (game.ts talentHit) A hit a talent makes by itself: `share` of his weapon's hit, of element `el`.
-func talent_hit(el: String, share: float) -> float:
+func talent_hit(el: String, share: float, i := -1) -> float:
 	var b := base_for(el)
-	return maxf(1.0, roundf((float(b[0]) + float(b[1])) / 2.0 * share * (1.0 + (float(stats["dmg_pct"]) + _el_pct(el)) / 100.0)))
+	return maxf(1.0, roundf((float(b[0]) + float(b[1])) / 2.0 * share * (1.0 + (float(stats["dmg_pct"]) + _el_pct(el) + might) / 100.0) * word_k(i)))
+
+
+## WHAT HE ADDS COMPOUNDS (his word of 22 Nov 2026: “And make sure the words, talents, and uniques all work together correctly to
+## augment attacks.  I want things to compound as they are added to attacks or abilities.”). A blow of one of his moves is made
+## of all of it, each a multiplier on the rest (hit_monster): his weapon's damage, the move's own share as its words make it
+## (`dmg_mult`), his damage bonuses and his might, his talents' (_talent_hit_mult), his uniques' (uniques.gd hit_mult), a critical.
+## What else he sets off (a talent's arc or burning ground, a unique's own blow, a companion's bite, the Golem's coil, the ground a
+## word behind leaves) now takes the same: `side` on each enemy it strikes, his talents' and his uniques' on that enemy; and
+## `word_k`, where it comes of one of his moves, what the words in that move make of its hits. So each thing added grows the rest.
+func word_k(i: int) -> float:
+	if i < 0 or i > 2 or loadout == null:
+		return 1.0
+	return float(loadout.r(i).get("word_k", 1.0))
+
+
+## A hit he sets off, `amount`, on `m`: his talents' and his uniques' multipliers on it (move `i` where it comes of one).
+func side(m, amount: float, i := -1) -> float:
+	if m == null or not is_instance_valid(m):
+		return amount
+	var k := _talent_hit_mult(m)
+	if uniques != null:
+		k *= uniques.hit_mult(m, i)
+	return maxf(1.0, roundf(amount * k))
 
 
 ## (Kindling) His fire leaves the ground burning where it hits, two seconds; never two such patches closer than `apart`.
-func _kindle(at: Vector2) -> void:
+func _kindle(at: Vector2, i := -1) -> void:
 	if wakes == null or not is_instance_valid(wakes):
 		return
 	var K: Dictionary = Talents.D["tune"]["kindling2"]
@@ -2611,7 +2640,7 @@ func _kindle(at: Vector2) -> void:
 		if z.get("from", "") == "kindling" and Vector2(z["x"], z["y"]).distance_to(at) < float(K["apart"]):
 			return
 	var before: int = wakes.list.size()
-	wakes.add_patch(-1, "burn", at, float(K["r"]), float(K["secs"]), talent_hit("fire", float(K["share"])), "fire")
+	wakes.add_patch(i, "burn", at, float(K["r"]), float(K["secs"]), talent_hit("fire", float(K["share"]), i), "fire")
 	if wakes.list.size() > before:
 		wakes.list.back()["from"] = "kindling"
 

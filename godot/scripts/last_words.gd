@@ -384,7 +384,7 @@ func _step_zones(dt: float) -> void:
 				for o in _list().duplicate():
 					if not is_instance_valid(o) or o.dead or o.kind == "bat" or _shut(o) or o.world.distance_to(at) > float(z["r"]) + o.r * 0.5:
 						continue
-					o.damage(maxf(1.0, roundf(float(z["dmg"]) * 0.5)), "phys", false, false, [], false, true, int(z["skill"]))
+					o.damage(hero.side(o, maxf(1.0, roundf(float(z["dmg"]) * 0.5)), int(z["skill"])), "phys", false, false, [], false, true, int(z["skill"]))
 					bleed_monster(o, float(z["dmg"]) * 0.5, float(L()["bleed"]["secs"]))
 					rec("bleed_cut")
 		elif z["kind"] == "reaper":
@@ -435,4 +435,4 @@ func _step_spirits(dt: float) -> void:
 			sp["next"] = R["spiritEvery"]
 			hero._tell({"t": "spiritHit", "id": sp["id"], "x0": at.x, "y0": at.y, "x1": best.world.x, "y1": best.world.y})
 			rec("reap_rake")
-			best.damage(maxf(1.0, roundf(hero.avg_hit(int(sp["skill"]), float(sp["share"])))), hero.loadout.r(int(sp["skill"]))["element"], false, false, [], false, false, -1)
+			best.damage(hero.side(best, maxf(1.0, roundf(hero.avg_hit(int(sp["skill"]), float(sp["share"])))), int(sp["skill"])), hero.loadout.r(int(sp["skill"]))["element"], false, false, [], false, false, -1)

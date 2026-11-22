@@ -1230,6 +1230,9 @@ func rage() -> float:
 	if curse_t > 0.0 and mgr != null and mgr.hero != null and mgr.hero.cls == "warlock" and mgr.hero.has("withering"):
 		wither = float(preload("res://scripts/talents.gd").D["warlockTalents"]["withering"]["pace"])
 	# (EVERY WORD ON A DUNGEON: and Fervor, fed by the deaths round it: foe_words.gd rage)
+	# (THE WARLOCK'S DEMON MADE TERRIBLE: Dread, slower near the demon: heroes/warlock.gd)
+	if mgr != null and mgr.hero != null and mgr.hero.kit != null and mgr.hero.kit.has_method("dread_pace"):
+		wither *= mgr.hero.kit.dread_pace(self)
 	var foe = mgr.main.get("_foe") if mgr != null and mgr.main != null else null
 	return wither * frenzy() * (foe.rage(self) if foe != null else 1.0)
 

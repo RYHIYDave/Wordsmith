@@ -599,6 +599,10 @@ func _tal_press(action: String, arg) -> void:
 			if why != "":
 				_say(why)
 				return
+			# (THE WARRIOR'S WEAPON, FREE: another taken in the one's place he had)
+			var out := Talents.swap_out(hero.cls, hero.talents, arg)
+			if out != "":
+				hero.talents.erase(out)
 			hero.talents.append(arg)
 			hero.talents_changed()
 			_tal.flash = {"id": arg, "t": 0.0}

@@ -2,7 +2,7 @@
 ## and the TALENTS page (ui/talents.ts) for each class, pictured, a line a step (OK or WRONG):
 ##   the points: none till level 5, one every five levels, ten at most; the next point's level;
 ##   the way: where a tree begins is open, the rest once one joined to it by a line is his, before it or after it (both ways);
-##   the Warrior's three weapons: his first point one of them, only one, a weapon's path its own, IRON once a weapon is his;
+##   the Warrior's three weapons: one of them his, free, from level 1, only one, a weapon's path its own, IRON once a weapon is his;
 ##   undoing: not while one taken hangs on it alone; a list made safe (another class's, twice, out of order, more than the level);
 ##   the page for each of the six: its shape, its paths' captions, a talent taken lit, one open, its card read.
 extends RefCounted
@@ -77,14 +77,27 @@ func run(main, hero, d: String) -> void:
 	var w3 := Talents.take_problem("warrior", 50, [], iron_first)
 	var w4 := Talents.open("warrior", ["greatsword"], iron_first)
 	var w5 := Talents.open("warrior", ["greatsword", "sweepingcut", "drilledleap"], "honededge") and not Talents.open("warrior", ["greatsword", "sweepingcut", "drilledleap", "honededge"], "redmist")
-	_line(w1 == "" and w2 == "One weapon only" and w3 == "Pick your weapon first" and w4 and w5 and Talents.warrior_weapon([]) == "greatsword" and Talents.warrior_weapon(["warhammer"]) == "warhammer",
-		"his weapon his first point: the battle axe open ('%s'), not with the greatsword his ('%s'); IRON's %s waits for one ('%s'), open once the greatsword is his (%s); a join open from his path, the axe's beyond it not his (%s)" % [w1, w2, iron_first, w3, w4, w5])
+	_line(w1 == "" and w2 == "" and w3 == "Pick your weapon first" and w4 and w5 and Talents.warrior_weapon([]) == "greatsword" and Talents.warrior_weapon(["warhammer"]) == "warhammer",
+		"his weapon: the battle axe open ('%s'), and in the greatsword's place ('%s'); IRON's %s waits for one ('%s'), open once the greatsword is his (%s); a join open from his path, the axe's beyond it not his (%s)" % [w1, w2, iron_first, w3, w4, w5])
+	# THE WARRIOR'S WEAPON, FREE (his word of 22 Nov 2026): his from level 1, no point, swapped for nothing while nothing more on its
+	# path is his
+	var f1 := Talents.starting("warrior")
+	var f2 := Talents.take_problem("warrior", 1, ["greatsword"], "battleaxe")
+	var f3 := Talents.take_problem("warrior", 1, ["greatsword"], "sweepingcut")
+	var f4 := Talents.take_problem("warrior", 5, ["greatsword"], "sweepingcut")
+	var f5 := Talents.take_problem("warrior", 50, ["greatsword", "sweepingcut"], "warhammer")
+	var f6 := Talents.swap_out("warrior", ["battleaxe"], "warhammer")
+	var f7 := Talents.spent("warrior", ["warhammer", "heavyhead"])
+	var f8 := Talents.starting("mage")
+	_line(f1 == ["greatsword"] and f2 == "" and f3 == "Next point at level 5" and f4 == "" and f5 == "Undo the greatsword's talents first" and f6 == "battleaxe" and f7 == 1 and f8 == [],
+		"his weapon free: the greatsword his as he starts (%s); at level 1 the battle axe his for nothing ('%s'), its path's first waiting for his first point ('%s'; at level 5: '%s'); not swapped while more on its path is his ('%s'); the hammer in the axe's place (%s out); a weapon and one talent, %d point spent; a Mage starts with none (%s)" % [f1, f2, f3, f4, f5, f6, f7, f8])
 	# UNDOING, AND A LIST MADE SAFE
 	var u1 := Talents.unlearn_problem("warrior", ["greatsword", "sweepingcut"], "greatsword")
 	var u2 := Talents.unlearn_problem("warrior", ["greatsword", "sweepingcut"], "sweepingcut")
 	var cl := Talents.clean("warrior", 7, ["greatsword", "greatsword", "kindling", "sweepingcut"])
-	_line(u1 == "Undo the ones after it first" and u2 == "" and cl == ["greatsword"],
-		"the greatsword not undone while Sweeping Cut hangs on it ('%s'), Sweeping Cut undone (''); a save's list made safe at level 7: %s" % [u1, cl])
+	var cl2 := Talents.clean("warrior", 3, ["sweepingcut"])
+	_line(u1 == "Take another to swap" and u2 == "" and cl == ["greatsword", "sweepingcut"] and cl2 == ["greatsword"],
+		"the greatsword not undone but swapped ('%s'), Sweeping Cut undone (''); a save's list made safe at level 7: %s; an old one with no weapon, at level 3: %s" % [u1, cl, cl2])
 	# THE WARRIOR'S TALENTS IN PLAY (game.ts, TALENTS2's rules)
 	await _warrior()
 	# THE WARRIOR'S BATTLE AXE AND WARHAMMER, their moves and their talents
@@ -134,6 +147,29 @@ func run(main, hero, d: String) -> void:
 			inside = inside and page.grow(2.0).encloses(nd["r"])
 		_line(lay["cls"] == cls and lay["nodes"].size() == tree["talents"].size() and inside and not inv._tal.card.is_empty(),
 			"the %s's tree on the TALENTS page: %s, %d talents inside the page, %d captions; %s taken, %s read on its card" % [cls, tree["shape"], lay["nodes"].size(), lay["labels"].size(), first, read])
+	# THE WARRIOR'S WEAPON, FREE, ON THE PAGE: a new Warrior at level 1, his greatsword his; the battle axe's card, TAKE (FREE) on it;
+	# pressed, the axe his for nothing, his moves the axe's, no point spent
+	M.set_class("warrior", true)
+	M.loot.level = 1
+	M.loot.points = 0
+	h.talents_changed()
+	if not inv.visible:
+		inv.toggle()
+	inv._page = "talents"
+	inv._tal.sel = "battleaxe"
+	await _run(0.3)
+	await _snap("warrior_level1_axe_card")
+	var free_take: bool = Talents.take_problem("warrior", 1, h.talents, "battleaxe") == ""
+	inv._tal_press("tal_take", "battleaxe")
+	await _run(0.3)
+	await _snap("warrior_level1_axe_taken")
+	inv._tal.sel = "greatsword"
+	await _run(0.3)
+	await _snap("warrior_level1_back_to_greatsword_card")
+	var back_ok: bool = Talents.take_problem("warrior", 1, h.talents, "greatsword") == ""
+	_line(h.talents == ["battleaxe"] and free_take and back_ok and h.weapon == "battleaxe" and h.loadout.id(0) == "cleave" and Talents.spent("warrior", h.talents) == 0,
+		"a new Warrior at level 1: the battle axe his for nothing in the greatsword's place (%s), his tap now %s, no point spent; the greatsword his again as freely (%s)" % [h.talents, h.loadout.id(0), back_ok])
+	inv._tal_press("tal_take", "greatsword")
 	if inv.visible:
 		inv.toggle()
 	print("TALENTS DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " %s" % [bad]])

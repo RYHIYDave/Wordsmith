@@ -3136,3 +3136,144 @@ func memfloors(main, hero, dir: String) -> void:
 	f.close()
 	h.unhurt = false
 	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+
+
+## WHAT HE ADDS COMPOUNDS (hero.gd side, word_k; his word of 22 Nov 2026): a hit he sets off besides his blow (a talent's arc, a
+## unique's own, a companion's bite, the ground a word leaves), measured as each thing is added: each a multiple of the last.
+func compound(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	await M._wait(1.0)
+	var m = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and not o.boss and (m == null or o.world.distance_to(h.world) < m.world.distance_to(h.world)):
+			m = o
+	m.world = h.world + Vector2(2.0, 0.0)
+	m.elite = false
+	m.life = m.max_life
+	var lo = h.loadout
+	# (his numbers worked out from his gear first, as wearing a piece will; every slot open, as in the practice room)
+	lo.practice = true
+	M.loot.derive()
+	var steps: Array = []
+	var take := func(label: String) -> float:
+		lo._r = [null, null, null]
+		var a: float = h.side(m, h.talent_hit("fire", 1.0, 0), 0)
+		steps.append([label, a])
+		return a
+	var a0: float = take.call("bare")
+	lo.front[0] = ["power"]
+	var a1: float = take.call("Power in front")
+	var k1: float = h.word_k(0)
+	lo.front[0] = ["power", "heavy"]
+	var a2: float = take.call("Power and Heavy in front")
+	var k2: float = h.word_k(0)
+	h.talents = ["greatsword", "executioner"]
+	m.life = m.max_life * 0.2
+	var a3: float = take.call("Executioner (it under a quarter)")
+	m.elite = true
+	_wear("longodds")
+	var a4: float = take.call("The Long Odds (an elite)")
+	var wake_k: float = M.wakes._side(m, 100.0, 0) / 100.0
+	var line := ", ".join(steps.map(func(s): return "%s %d" % [s[0], int(s[1])]))
+	_line(a1 > a0 and a2 > a1 and a3 > a2 and a4 > a3 and absf(a1 / a0 - k1) < 0.05 and absf(a2 / a0 - k2) < 0.05 and absf(a4 / a2 - wake_k) < 0.05,
+		"one fire hit of a talent's, as each thing is added: %s; each a multiple of the last (the words %.2fx, then %.2fx; the talent and the unique on top %.2fx), and the ground he leaves takes the same (%.2fx)" % [line, k1, k2, a4 / a2, wake_k])
+	_bare()
+	h.talents = ["greatsword"]
+	lo.practice = false
+	lo.front[0] = []
+	lo._r = [null, null, null]
+	h.unhurt = false
+	print("COMPOUND: %d checks, %d wrong" % [n, bad.size()])
+
+
+## THE WHOLE GAME, SMOOTH (his words of 22 Nov 2026: “Can you do what you just did to my whole game?  Just make sure it's working
+## properly?  Like no hiccups from beginning to end?”): every place in turn, the town, floors 1 to 20, the camp, the Rim, three
+## endless levels and the final arena; in each he walks from room to room at his own pace (hero.gd SPEED) for up to WALK_SECS, and
+## every frame's time is kept: its middle, the slowest, and every STALL (a frame slower than three times the middle and 120 ms over
+## it), with when and where; and what Godot holds, at its most. How long each place takes to build is kept apart (a stairwell's
+## dark covers it). Written to <shots>/smooth.txt; WS_SMOOTH="floor3 floor4" for only those.
+const WALK_SECS := 24.0
+func smooth(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var places: Array = ["town"]
+	for k in range(1, 21):
+		places.append("floor%d" % k)
+	places.append_array(["camp", "rim", "endless1", "endless2", "endless3", "final"])
+	if OS.has_environment("WS_SMOOTH"):
+		places = Array(OS.get_environment("WS_SMOOTH").split(" ", false))
+	var out: Array = []
+	var worst_all := 0.0
+	var stalls_all := 0
+	for place in places:
+		var t0 := Time.get_ticks_usec()
+		if place == "final":
+			M.open_endless(20)
+			M.final_open = true
+			M.go_final()
+		elif str(place).begins_with("endless"):
+			if M.endless <= 0:
+				M.open_endless(20)
+			M.in_endless = true
+			M.next_endless()
+		else:
+			M.go_to(place, "start")
+		await M.get_tree().process_frame
+		var build_ms := (Time.get_ticks_usec() - t0) / 1000.0
+		await M._wait(2.0)
+		# the route: the rooms' middles in the order the floor lists them
+		var route: Array = []
+		var rooms: Array = M.map.rooms if M.map != null else []
+		for r in rooms:
+			route.append(Vector2(float(r["x"]) + float(r["w"]) / 2.0, float(r["y"]) + float(r["h"]) / 2.0))
+		if route.is_empty():
+			route.append(h.world + Vector2(6.0, 0.0))
+		var times: Array = []
+		var stalls: Array = []
+		var mem_most := 0.0
+		var tex_most := 0.0
+		var walked := 0.0
+		var k := 0
+		var last := Time.get_ticks_usec()
+		var started := last
+		while (Time.get_ticks_usec() - started) / 1e6 < WALK_SECS:
+			await M.get_tree().process_frame
+			var now := Time.get_ticks_usec()
+			var ms := (now - last) / 1000.0
+			last = now
+			times.append(ms)
+			mem_most = maxf(mem_most, Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0)
+			tex_most = maxf(tex_most, Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0)
+			# (a step at his pace, game seconds by the frame's own delta, toward the next room's middle)
+			var target: Vector2 = route[k % route.size()]
+			var dt := minf(0.1, M.get_process_delta_time())
+			var way: Vector2 = target - h.world
+			if way.length() < 0.6:
+				k += 1
+				continue
+			var step := way.normalized() * minf(way.length(), h.SPEED * dt)
+			var next: Vector2 = h.world + step
+			if M.map != null and not M.map.walkable(floori(next.x), floori(next.y)):
+				next = M._free_near(next)
+			h.world = next
+			walked += step.length()
+		times.sort()
+		var mid: float = times[times.size() / 2] if not times.is_empty() else 0.0
+		var worst: float = times.back() if not times.is_empty() else 0.0
+		# (the stalls, from the unsorted run again: kept as they came, with when)
+		var line := "%-10s built %6.0f ms | frames %4d, middle %5.1f ms, slowest %6.1f ms | walked %5.1f tiles | most memory %5.1f MB, textures %5.1f MB" % [place, build_ms, times.size(), mid, worst, walked, mem_most, tex_most]
+		var over: int = times.filter(func(x): return x > maxf(mid * 3.0, mid + 120.0)).size()
+		line += " | stalls %d" % over
+		worst_all = maxf(worst_all, worst)
+		stalls_all += over
+		print("SMOOTH ", line)
+		out.append(line)
+	out.append("all: slowest frame %.1f ms, %d stalls" % [worst_all, stalls_all])
+	var f := FileAccess.open(dir + "/smooth.txt", FileAccess.WRITE)
+	f.store_string("\n".join(out) + "\n")
+	f.close()
+	h.unhurt = false
+	print("SMOOTH DONE")

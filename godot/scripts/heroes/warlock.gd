@@ -22,6 +22,35 @@ extends "res://scripts/heroes/kit.gd"
 
 const PF := preload("res://scripts/pixel_font.gd")
 
+## THE DEMON MADE TERRIBLE (his words of 22 Nov 2026: “The warlock's demon form is one of the weaker character identities in terms of
+## performance, impact, and fun.  Love his look, but something about his attacks don't give off massive threatening menacing demon.
+## That and the skill tree need work.”). His look kept, every picture of it; what it does and how it lands made far heavier. Behind
+## this switch, off till he has seen it and said yes (PICTURES FIRST); `--demon2=1` turns it on for a run (the checks, the film).
+##   CLAW RAKE: a sweep of both claws through everything in a wide arc before it (2.6 tiles), harder (1.7 of a hit, from 1.3); what it
+##     tears is cursed AND set burning in his hellfire; each rake that lands shakes the screen and stops the world a breath (HIT_STOP).
+##   DAMNING (4.5 s, from 6): the ground erupts under EVERY enemy near it, not only the cursed and burning; those cursed or burning pay
+##     every burn on them at once and half as much again; each thrown half as far again and stunned a moment.
+##   DEMON STEP: lands with a blast half as wide again and as hard as a hit, stunning, and leaves the ground burning where it lands.
+##   DREAD: while he is the demon every enemy within DREAD.r of him moves and strikes slower and takes more from him; and he takes less.
+##   THE CHANGE: its roar reaches 4 tiles, strikes everything there with a rake's weight, and stuns all but a boss; the screen shakes
+##     twice as hard. Its sounds and the rakes' a little deeper.
+##   HIS TREE: BOUND DEMON no longer keeps him a man: when the demon burns out it tears free of him and fights at his side, roaring,
+##     for BOUND_SECS more; TERRIBLE ROAR's roar half as wide again.
+const DEMON2 := false
+const D2 := {
+	"rake": {"range": 2.6, "arcCos": -0.15, "dmg": 1.7},
+	"damning": {"cooldown": 4.5, "pay": 1.5, "throw": 2.4, "stun": 0.6},
+	"step": {"burst": 2.4, "burstShare": 1.0, "stun": 0.5, "burnR": 2.0, "burnSecs": 3.0, "burnShare": 0.35},
+	"dread": {"r": 4.0, "pace": 0.75, "more": 0.2, "less": 0.3},
+	"roar": {"r": 4.0, "share": 1.0, "stun": 1.0, "kick": 8.0, "wide": 1.5},
+	"hitStop": 0.05, "rakeKick": 2.5, "deep": 0.8, "boundSecs": 8.0,
+}
+
+
+static func demon2() -> bool:
+	return DEMON2 or OS.get_cmdline_user_args().has("--demon2=1")
+
+
 const W := {
 	"hell": {"share": 0.5, "secs": 4.0},
 	"curse": {"share": 0.4, "secs": 6.0},
@@ -49,6 +78,27 @@ var _deny := 0.0
 
 func _init(hero) -> void:
 	super(hero, "warlock")
+	if demon2():
+		_demon2_data()
+
+
+## (THE DEMON MADE TERRIBLE) The demon's three as the switch has them, and his tree's two talents' words.
+static func _demon2_data() -> void:
+	var S: Dictionary = Words.data()["skills"]
+	var R: Dictionary = D2["rake"]
+	S["rake"]["range"] = R["range"]
+	S["rake"]["arc"] = true
+	S["rake"]["arcCos"] = R["arcCos"]
+	S["rake"]["dmg"] = R["dmg"]
+	S["rake"]["desc"] = "Sweep both claws through everything before you. What they tear is cursed and burns in your hellfire."
+	S["damning"]["cooldown"] = D2["damning"]["cooldown"]
+	S["damning"]["desc"] = "Tear up the floor: the ground erupts under every enemy near you, throwing and stunning it; the cursed and burning pay every burn at once, and half as much again."
+	S["demonstep"]["desc"] = "Smash through them as smoke: what you pass through is raked, cursed and knocked aside, and you land in a blast that stuns and leaves the ground burning."
+	for t in Talents.tree("warlock")["talents"]:
+		if t["id"] == "bounddemon":
+			t["text"] = "When the demon burns out it tears free of him and fights at his side, roaring, for eight seconds more."
+		elif t["id"] == "terribleroar":
+			t["text"] = "The change’s roar reaches half as far again, curses everything it throws back, and they run from him for two seconds."
 
 
 ## (the look the hero's pictures are taken from: render.ts, the demon's while he is it, his arm blazing while his pact is full)
@@ -182,7 +232,7 @@ func _damning_all(i: int, at: Vector2, rad: float, frac: float, n := 0, echo := 
 		for m in h.monsters.list:
 			if not is_instance_valid(m) or m.dead or h.monsters.shut_in(m) or m.world.distance_to(at) > rad + m.r:
 				continue
-			if m.curse_t > 0.0 or m.hell_t > 0.0 or m.burn_t > 0.0:
+			if m.curse_t > 0.0 or m.hell_t > 0.0 or m.burn_t > 0.0 or (demon2() and h.loadout.id(i) == "damning"):
 				spots.append({"id": m.id, "x": m.world.x, "y": m.world.y})
 				them.append(m)
 	_say({"t": "damning", "x": at.x, "y": at.y, "at": spots, "n": n, "echo": echo})
@@ -205,10 +255,16 @@ func _damning_all(i: int, at: Vector2, rad: float, frac: float, n := 0, echo := 
 		m.bleed_t = 0.0
 		h.hit_monster(m, i, frac, hits >= 3)
 		hits += 1
-		if not m.dead and owed * float(D["pay"]) >= 1.0:
-			m.damage(roundf(owed * float(D["pay"])), "fire", false, false, [], false, true, i)
+		var big := demon2()
+		var pay: float = float(D2["damning"]["pay"]) if big else float(D["pay"])
+		if not m.dead and owed * pay >= 1.0:
+			m.damage(h.side(m, roundf(owed * pay), i), "fire", false, false, [], false, true, i)
+		if big and not m.dead:
+			_say({"t": "burst", "x": m.world.x, "y": m.world.y, "r": 0.9, "el": "fire", "style": "blast"})
+			if not m.boss:
+				m.stun_for(float(D2["damning"]["stun"]))
 		if not m.dead:
-			m.throw_from(at, float(D["throw"]), 0.25)
+			m.throw_from(at, float(D2["damning"]["throw"]) if big else float(D["throw"]), 0.25)
 	if hits > 0:
 		h._landed_on(i)
 		if float(h.loadout.r(i)["pull"]) > 0.0:
@@ -224,8 +280,11 @@ func on_hit(m, i: int, dmg: float) -> void:
 	# (HIS TREE: the Bound Demon's rakes are struck as the hits of his first place, and curse as the demon's do; a Hellwave burns)
 	var bolt: bool = id == "hellbolt" and _by != "bound"
 	var was_cursed: bool = m.curse_t > 0.0
-	if not m.dead and (bolt or _by == "wave"):
+	if not m.dead and (bolt or _by == "wave" or (demon2() and id == "rake" and form == "demon")):
 		_hell_on(m, dmg)
+	# (THE DEMON MADE TERRIBLE: a rake that lands shakes the screen and stops the world a breath, once a rake)
+	if demon2() and id == "rake" and form == "demon" and _by == "":
+		_rake_landed()
 	if not m.dead and (_by == "bound" or id in ["curse", "smokestep", "rake", "demonstep"]):
 		_curse_one(m, dmg)
 	# (HIS TREE: Branded, every Hellfire Bolt curses what it hits)
@@ -403,13 +462,19 @@ func _smoke_echo(x0: Vector2, x1: Vector2, frac: float) -> void:
 ## (game.ts demonLands) The demon's smoke step ends: it bursts out of the smoke, its claws slammed down, knocking back whoever is there.
 func _demon_lands() -> void:
 	var r: Dictionary = h.loadout.r(2)
-	var S: Dictionary = W["step"]
-	h.kick(3.0)
+	var S: Dictionary = D2["step"] if demon2() else W["step"]
+	h.kick(5.0 if demon2() else 3.0)
 	h._blast(2, h.world + h.face * 0.6, float(S["burst"]) * float(r["size"]), float(r["count_dmg"]) * float(S["burstShare"]), "land", false, linear_to_db(0.8))
 	if h.monsters != null:
 		for m in h.monsters.list:
 			if is_instance_valid(m) and not m.dead and m.world.distance_to(h.world) <= float(S["burst"]) + m.r:
 				m.throw_from(h.world, 1.2, 0.2)
+				if demon2() and not m.boss and not m.dead:
+					m.stun_for(float(S["stun"]))
+	# (THE DEMON MADE TERRIBLE: the ground burning where it lands)
+	if demon2() and h.wakes != null and is_instance_valid(h.wakes):
+		h.wakes.add_patch(2, "burn", h.world, float(S["burnR"]), float(S["burnSecs"]), h.avg_hit(2, float(S["burnShare"])), "fire")
+		_say({"t": "burst", "x": h.world.x, "y": h.world.y, "r": float(S["burst"]), "el": "fire", "style": "blast"})
 	# behind: left where it bursts out, as far as it throws them
 	h._wake(2, h.world, float(S["burst"]) * float(r["size"]) + 1.2, float(r["count_dmg"]))
 
@@ -453,7 +518,7 @@ func _step_pact(dt: float) -> void:
 	if h.get("auto_change") == true:
 		h.auto_change = false
 	if asked and pact >= float(P["full"]) and move.is_empty():
-		if h.has("bounddemon"):
+		if h.has("bounddemon") and not demon2():
 			_tear_out()
 		else:
 			_begin_change("demon")
@@ -491,13 +556,22 @@ func _step_change(dt: float) -> void:
 		_become("demon")
 		pact = W["pact"]["full"]
 		var R: float = W["change"]["roar"]
+		if demon2():
+			R = float(D2["roar"]["r"]) * (float(D2["roar"]["wide"]) if h.has("terribleroar") else 1.0)
 		_say({"t": "roar", "x": h.world.x, "y": h.world.y, "r": R, "formed": true})
-		h.kick(5.0)
+		h.kick(float(D2["roar"]["kick"]) if demon2() else 5.0)
 		h.sfx.play("explode", linear_to_db(0.8))
+		var struck := 0
 		if h.monsters != null:
 			for m in h.monsters.list:
 				if is_instance_valid(m) and not m.dead and m.world.distance_to(h.world) <= R + m.r:
 					m.throw_from(h.world, 1.5, 0.25)
+					# (THE DEMON MADE TERRIBLE: the roar strikes as a rake does, and stuns all but a boss)
+					if demon2() and not m.dead and not h.monsters.shut_in(m):
+						h.hit_monster(m, 0, float(D2["roar"]["share"]), struck >= 3)
+						struck += 1
+						if not m.dead and not m.boss:
+							m.stun_for(float(D2["roar"]["stun"]))
 		_terrible_roar(h.world, R)
 	else:
 		# (HIS TREE: Last Rites, as the demon burns out, Damning goes off by itself round him)
@@ -505,8 +579,13 @@ func _step_change(dt: float) -> void:
 			var r1: Dictionary = h.loadout.r(1)
 			_damning_all(1, h.world, float(Words.skill("damning")["radius"]) * float(r1["size"]), float(r1["count_dmg"]))
 		lust = 0
+		var was_demon := form == "demon"
 		_become("man")
 		pact = 0.0
+		# (THE DEMON MADE TERRIBLE, BOUND DEMON: burnt out, it tears free of him and fights on beside him, its pact BOUND_SECS of the demon's)
+		if demon2() and was_demon and h.has("bounddemon"):
+			pact = float(W["pact"]["full"]) * float(D2["boundSecs"]) / float(W["pact"]["demonSecs"])
+			_tear_out()
 
 
 ## (game.ts refresh) His three: the demon's in the places of his while he is it; his pictures' times with them.
@@ -995,3 +1074,39 @@ func _step_bound(dt: float) -> void:
 	elif b["act"] != "stand":
 		b["act"] = "stand"
 		b["t"] = 0.0
+
+
+# =====================================================================================================================
+# THE DEMON MADE TERRIBLE (DEMON2): its dread, its toughness, the weight of its rakes
+
+## DREAD: an enemy within DREAD.r of the demon takes this much more from him (hero.gd _talent_hit_mult); 1 otherwise.
+func dread_k(m) -> float:
+	if not demon2() or form != "demon" or m == null or m.world.distance_to(h.world) > float(D2["dread"]["r"]) + m.r:
+		return 1.0
+	return 1.0 + float(D2["dread"]["more"])
+
+
+## DREAD: an enemy within DREAD.r of the demon moves and strikes this much as fast (monster.gd rage); 1 otherwise.
+func dread_pace(m) -> float:
+	if not demon2() or form != "demon" or m.boss or m.world.distance_to(h.world) > float(D2["dread"]["r"]) + m.r:
+		return 1.0
+	return float(D2["dread"]["pace"])
+
+
+## What a blow on him comes to while he is the demon (hero.gd _talent_guard).
+func guard_k() -> float:
+	return 1.0 - float(D2["dread"]["less"]) if demon2() and form == "demon" else 1.0
+
+
+## A rake landed: the screen shakes and the world stops a breath (real time, whatever the game's own pace), and the claws' fire
+## bursts where it tore; the rake's sound deeper.
+var _stopped := false
+func _rake_landed() -> void:
+	h.kick(float(D2["rakeKick"]))
+	if _stopped or Engine.time_scale < 1.0:
+		return
+	_stopped = true
+	Engine.time_scale = 0.08
+	h.get_tree().create_timer(float(D2["hitStop"]), true, false, true).timeout.connect(func() -> void:
+		Engine.time_scale = 1.0
+		_stopped = false)

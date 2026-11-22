@@ -431,7 +431,7 @@ func _step_tree(dt: float) -> void:
 				h._tell({"t": "arc", "x0": best.world.x, "y0": best.world.y, "x1": best.world.x, "y1": best.world.y, "sky": true})
 				h.sfx.play("thunder", linear_to_db(0.5))
 				best.shock_t = float(_TT()["shockSecs"])
-				best.damage(h.talent_hit("lightning", float(T["share"])), "lightning", false, false, [], false, false, -1)
+				best.damage(h.side(best, h.talent_hit("lightning", float(T["share"]))), "lightning", false, false, [], false, false, -1)
 				_storm_t = float(T["every"])
 			else:
 				_storm_t = 0.3
@@ -470,7 +470,7 @@ func release_charge(m, at: Vector2) -> void:
 	h._tell({"t": "arc", "x0": at.x, "y0": at.y, "x1": at.x, "y1": at.y, "sky": true})
 	if not m.dead:
 		m.shock_t = float(_TT()["shockSecs"])
-		m.damage(hit, "lightning", false, false, [], false, false, -1)
+		m.damage(h.side(m, hit), "lightning", false, false, [], false, false, -1)
 	for n in range(1, int(C["n"])):
 		var best = null
 		var bd: float = C["reach"]
@@ -487,7 +487,7 @@ func release_charge(m, at: Vector2) -> void:
 		h._tell({"t": "arc", "x0": p.x, "y0": p.y, "x1": best.world.x, "y1": best.world.y})
 		p = best.world
 		best.shock_t = float(_TT()["shockSecs"])
-		best.damage(hit, "lightning", false, false, [], false, false, -1)
+		best.damage(h.side(best, hit), "lightning", false, false, [], false, false, -1)
 	h.sfx.play("thunder", linear_to_db(0.6))
 
 
@@ -517,7 +517,7 @@ func _talent_warp(x0: Vector2, x1: Vector2) -> void:
 		for m in near.slice(0, int(S["n"])):
 			h._tell({"t": "arc", "x0": m.world.x, "y0": m.world.y, "x1": m.world.x, "y1": m.world.y, "sky": true})
 			m.shock_t = float(T["shockSecs"])
-			m.damage(h.talent_hit("lightning", float(S["share"])), "lightning", false, false, [], false, false, 2)
+			m.damage(h.side(m, h.talent_hit("lightning", float(S["share"]), 2), 2), "lightning", false, false, [], false, false, 2)
 		if not near.is_empty():
 			h.sfx.play("thunder", linear_to_db(0.7))
 
@@ -536,7 +536,7 @@ func on_kill(m) -> void:
 			h._tell({"t": "arc", "x0": at.x, "y0": at.y, "x1": o.world.x, "y1": o.world.y})
 			o.shock_t = float(T["shockSecs"])
 		for o in near:
-			o.damage(jolt, "lightning", false, false, [], false, false, -1)
+			o.damage(h.side(o, jolt), "lightning", false, false, [], false, false, -1)
 		if not near.is_empty():
 			h.sfx.play("zap", linear_to_db(0.6))
 	if h.has("rime") and h.wakes != null:
@@ -630,11 +630,11 @@ func _step_aura(dt: float, town: bool) -> void:
 		if not is_instance_valid(m) or m.dead or m.state == "sleep" or h.monsters.shut_in(m) or m.world.distance_to(h.world) > float(A["r"]) + m.r:
 			continue
 		if kind == "fire":
-			m.damage(h.talent_hit("fire", float(A["burn"]) * 0.5), "fire", false, false, [], false, true, -1)
+			m.damage(h.side(m, h.talent_hit("fire", float(A["burn"]) * 0.5)), "fire", false, false, [], false, true, -1)
 		elif kind == "lightning":
 			h._tell({"t": "arc", "x0": h.world.x, "y0": h.world.y, "x1": m.world.x, "y1": m.world.y})
 			m.shock_t = float(_TT()["shockSecs"])
-			m.damage(h.talent_hit("lightning", float(A["bolt"])), "lightning", false, false, [], false, false, -1)
+			m.damage(h.side(m, h.talent_hit("lightning", float(A["bolt"]))), "lightning", false, false, [], false, false, -1)
 		else:
 			m.chill = maxf(m.chill if m.chill_t > 0.0 else 0.0, float(A["chill"]))
 			m.chill_t = maxf(m.chill_t, 0.7)

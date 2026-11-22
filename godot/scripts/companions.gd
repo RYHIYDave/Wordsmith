@@ -282,7 +282,7 @@ func _bite(p: Dictionary, m) -> void:
 	var crit: bool = randf() * 100.0 < float(st["crit_chance"])
 	if crit:
 		dmg *= 1.0 + float(st["crit_mult"]) / 100.0
-	dmg = maxf(1.0, roundf(dmg))
+	dmg = hero.side(m, maxf(1.0, roundf(dmg)))
 	var mat: Vector2 = m.world
 	hero._tell({"t": "petBite", "kind": p["kind"], "id": m.id, "x": mat.x, "y": mat.y, "dx": p["f"].x, "dy": p["f"].y})
 	hero.sfx.play("hit", linear_to_db(0.45))

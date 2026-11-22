@@ -643,7 +643,7 @@ func _unique_hit(share: float) -> float:
 
 ## (game.ts allyDamage) A hit of what fights beside him.
 func _ally(m, dmg: float) -> void:
-	m.damage(dmg * ALLY_MORE, "phys", false, false, [], false, false, -1)
+	m.damage(hero.side(m, dmg * ALLY_MORE), "phys", false, false, [], false, false, -1)
 
 
 func _fine(m) -> bool:
@@ -749,7 +749,7 @@ func _step_risen(dt: float) -> void:
 			if _fine(m) and m.world.distance_to(p["at"]) <= float(B["reach"]) + m.r + float(p["r"]) + 0.6:
 				hero._tell({"t": "unique", "id": "fleshmancersbrand", "what": "strike", "x": p["at"].x, "y": p["at"].y, "x1": m.world.x, "y1": m.world.y, "mid": m.id})
 				hero.sfx.play("hit", linear_to_db(0.5))
-				m.damage(_unique_hit(float(B["share"])), "phys", false, false, [], false, false, -1)
+				m.damage(hero.side(m, _unique_hit(float(B["share"]))), "phys", false, false, [], false, false, -1)
 				_say({"id": "fleshmancersbrand", "what": "strike"})
 		if float(p["act_t"]) >= 0.6:
 			p["act"] = "stand"
@@ -998,7 +998,7 @@ func meteor_lands(i: int, at: Vector2, k: float, first: bool) -> void:
 		hero.kick(3.0)
 	for m in hero.monsters.list:
 		if _fine(m) and m.world.distance_to(at) <= float(S["r"]) + m.r:
-			m.damage(hero.talent_hit("fire", float(S["share"]) * k), "fire", false, false, [], false, false, i)
+			m.damage(hero.side(m, hero.talent_hit("fire", float(S["share"]) * k, i), i), "fire", false, false, [], false, false, i)
 	if first and hero.wakes != null and is_instance_valid(hero.wakes):
 		hero.wakes.add_patch(-1, "burn", at, float(S["burnR"]), float(S["burnSecs"]), hero.talent_hit("fire", float(S["burn"])), "fire")
 	_say({"id": "starbreaker", "what": "land" if first else "shake"})

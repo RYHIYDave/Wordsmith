@@ -341,6 +341,8 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	var rk := func(side: Array, w: String) -> float: return (1.0 + step * (rank_in.call(side, w) - 1)) * st.call(side, w)
 	var rn := func(side: Array, w: String) -> String: return ["", "", " II", " III", " IV", " V"][rank_in.call(side, w)]
 	var dmg_mult: float = float(def["dmg"]) * (1.0 + prim * float(D["primaryDmg"]) / 100.0)
+	# (what the move comes to with no word in it: `word_k`, below, what its words make of it)
+	var dmg_bare: float = dmg_mult
 	var size: float = d["area"]
 	var rate: float = d["aps"]
 	var cooldown: float = float(def["cooldown"]) * (1.0 - float(d["cdr"]))
@@ -841,6 +843,8 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	r["shield"] *= r["boost"]
 
 	r["dmg_mult"] = dmg_mult
+	# (WHAT ITS WORDS MAKE OF ITS HITS, over the move with none in it: what else it sets off grows with them too, hero.gd side)
+	r["word_k"] = dmg_mult / dmg_bare if dmg_bare > 0.0 else 1.0
 	r["size"] = size
 	r["rate"] = rate
 	r["cooldown"] = cooldown
