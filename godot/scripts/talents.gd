@@ -47,6 +47,7 @@ static func ready_up() -> void:
 		D = JSON.parse_string(FileAccess.get_file_as_string(PATH))
 		_own_words()
 		_twigs()
+		_godot_tune()
 
 
 ## THE ATTACKS CHANGED, A TWIG EACH (his word of 22 Nov 2026: “the different weapon attacks are choices not mandatory in the
@@ -114,6 +115,19 @@ static func _twigs() -> void:
 		for id in RELINK.get(cls, {}):
 			for k in RELINK[cls][id]:
 				by[id][k] = (RELINK[cls][id][k] as Array).duplicate()
+
+
+## THE WARLOCK'S PACKS (the damage check, 22 Nov 2026: a Warlock of level 50 clearing a tough pack in 0.9 s, the Warrior in 5.2,
+## his Hex Chain, Blazing Arm, his hellfire and burning's own on it each on the rest in a knot; his “Yes” to halving the two): Hex
+## Chain's leaps and Blazing Arm's burst each half what they were (70% to 35%, 50% to 25%), curses spreading still his way with a pack.
+const WARLOCK_TUNE := {"hexChain": 0.35, "blazing": 0.25}
+
+
+static func _godot_tune() -> void:
+	var W: Dictionary = D.get("warlockTalents", {})
+	for k in WARLOCK_TUNE:
+		if W.has(k):
+			W[k]["share"] = WARLOCK_TUNE[k]
 
 
 ## THE CARDS THIS PORT WORDS ITS OWN WAY (his word of 21 Nov 2026: the Tinkerer's Golem only shoots, small shots, its big shot on
