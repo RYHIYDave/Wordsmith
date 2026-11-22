@@ -1113,7 +1113,7 @@ func dread_pace(m) -> float:
 
 
 ## What a blow on him comes to while he is the demon (hero.gd _talent_guard).
-func guard_k() -> float:
+func demon_guard() -> float:
 	return 1.0 - float(D2["dread"]["less"]) if demon2() and form == "demon" else 1.0
 
 

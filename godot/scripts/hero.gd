@@ -2547,8 +2547,8 @@ func _talent_guard() -> float:
 	if has("thickskin") and life < max_life * float(T["thickSkin2"]["below"]):
 		k *= 1.0 - float(T["thickSkin2"]["less"])
 	# (THE WARLOCK'S DEMON MADE TERRIBLE: the demon takes less: heroes/warlock.gd)
-	if kit != null and kit.has_method("guard_k"):
-		k *= kit.guard_k()
+	if kit != null and kit.has_method("demon_guard"):
+		k *= kit.demon_guard()
 	return k
 
 

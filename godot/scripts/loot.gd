@@ -192,7 +192,6 @@ var sold: Array = []
 ## (what each word becomes on each kind of piece; which words are found where; the armourer's quest's own lines:
 ## tools/godot_loot.ts. What each word becomes is read when first asked for, one option at a time: imbue_options)
 var _imbue := {}
-var _imbue_opts: FileAccess = null
 var _imbue_read := {}
 var _words := {}
 var quest_text := {}
@@ -1272,20 +1271,18 @@ func burn_options(w: String, it: Dictionary) -> Array:
 
 ## WHAT A WORD BECOMES ON A PIECE OF THAT KIND AND LEVEL (items.ts imbueOptions), all of it, whatever the piece has. MEMORY (22 Nov
 ## 2026, after the web game's crashes on his phone on the later floors: “Will this be a problem in godot?”): the table, 40 MB of
-## text and 687 MB once read whole, is read a line at a time as it is asked for (tools/godot_loot_split.mjs): which options a word
-## has on each kind of piece (imbue.json `of`), and each option once, where it lies in imbue_opts.bin (`at`).
+## text and 687 MB once read whole, is read an option at a time as it is asked for (tools/godot_loot_split.mjs): which options a word
+## has on each kind of piece (imbue.json `of`), and each option once, as its own line of text (`opts`), made a thing when first wanted.
 func imbue_options(w: String, it: Dictionary) -> Array:
 	if _imbue.is_empty():
 		_imbue = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/imbue.json"))
-		_imbue_opts = FileAccess.open(DIR + "/imbue_opts.bin", FileAccess.READ)
 	var nums: Array = _imbue["of"].get(w, {}).get("%s:%d" % [it["slot"], int(it["ilvl"])], [])
-	var at: Array = _imbue["at"]
+	var opts: Array = _imbue["opts"]
 	var out: Array = []
 	for n in nums:
 		var i := int(n)
 		if not _imbue_read.has(i):
-			_imbue_opts.seek(int(at[i]))
-			_imbue_read[i] = JSON.parse_string(_imbue_opts.get_buffer(int(at[i + 1]) - int(at[i])).get_string_from_utf8())
+			_imbue_read[i] = JSON.parse_string(str(opts[i]))
 		out.append(_imbue_read[i])
 	return out
 

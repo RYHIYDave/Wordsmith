@@ -2,8 +2,8 @@
 // web game's crashes on his phone on the later floors (“Will this be a problem in godot?”): items.json as tools/godot_loot.ts
 // writes it is 40 MB of text, and Godot held 687 MB once it was read, the most of all it holds from the start. So, run after
 // tools/godot_loot.ts (it reads items.json as that wrote it, and writes it again without what is moved out):
-//   imbue.json + imbue_opts.bin   WHAT A WORD BECOMES ON A PIECE (`imbue`): every option the game has is written once, as a line of
-//                                 JSON in imbue_opts.bin (their byte offsets in imbue.json `at`), and for each word and piece
+//   imbue.json                    WHAT A WORD BECOMES ON A PIECE (`imbue`): every option the game has is written once, as a line of
+//                                 JSON text in `opts`, and for each word and piece
 //                                 (`slot:ilvl`) the options' numbers (`of`): 12,208 lists of 4,422 options where the options were
 //                                 written out again in each. Godot reads an option only when it is asked for (burn_options).
 //   depth/<d>.json                THE PIECES ROLLED ON FLOOR d (`byDepth`): read for the floor his drops come from, and let go of
@@ -37,16 +37,11 @@ for (const [w, byKey] of Object.entries(data.imbue)) {
     });
   }
 }
-const lines = opts.map((s) => Buffer.from(s + '\n', 'utf8'));
-const at = [];
-let off = 0;
-for (const b of lines) {
-  at.push(off);
-  off += b.length;
-}
-at.push(off);
-writeFileSync(join(DIR, 'imbue_opts.bin'), Buffer.concat(lines));
-writeFileSync(join(DIR, 'imbue.json'), JSON.stringify({ at, of }));
+// (each option kept as its own line of text in `opts`, read into a thing only when asked for: a file Godot packs into the app,
+// as it would not a .bin)
+rmSync(join(DIR, 'imbue_opts.bin'), { force: true });
+writeFileSync(join(DIR, 'imbue.json'), JSON.stringify({ opts, of }));
+const off = opts.reduce((n, o) => n + o.length, 0);
 // THE PIECES OF EACH FLOOR, AND THE STRANGER'S
 for (const d of ['depth', 'gamble']) {
   rmSync(join(DIR, d), { recursive: true, force: true });

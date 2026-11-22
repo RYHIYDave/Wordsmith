@@ -1250,8 +1250,9 @@ final arena; with each figure's pictures held and how near its nearest monster i
 
 - **The item tables** (tools/godot_loot_split.mjs, run at the end of tools/godot_loot.ts; `loot.gd` imbue_options,
   `_piece_of`, `_gamble_pieces`): items.json was 40 MB of text and 687 MB once read whole, before the title screen. Now what a
-  word becomes on each piece is read one option at a time as it is asked for (each of its 4,422 options written once:
-  `imbue.json` + `imbue_opts.bin`), each floor's pieces only for the floor of the last drop (`depth/<d>.json`), and the
+  word becomes on each piece is read one option at a time as it is asked for (each of its 4,422 options written once, a line
+  of text in `imbue.json`, made a thing only when wanted: no `.bin`, which an app's build would leave out), each floor's
+  pieces only for the floor of the last drop (`depth/<d>.json`), and the
   stranger's only as he throws (`gamble/<d>.json`). What Godot holds in town: 842 MB before, 194 MB now. Every one of the 12,208
   lists, the 20 floors' pieces and the 20 gamble tables read back exactly as the whole file had them.
 - **The monsters' pictures** (`baked_figure.gd` `near`, fetch, collect, whole, let_go; `monsters.gd` NEAR_FETCH 40 tiles,
@@ -1273,6 +1274,51 @@ final arena; with each figure's pictures held and how near its nearest monster i
   which some runs does not open after the Moth's death as the game is left paused then, off as on: not yet looked into);
   `--only=lairfetch` 4 of 4, `--only=boss` (floor 3) and `--only=final` 28 of 28.
 - `check.json` (assets/words, 399 MB, for the words check only) is never kept in the repository, so it is in no build.
+
+## The night of 22 Nov 2026 (the cloud chat)
+
+His words, going to bed: “Can you do what you just did to my whole game?  Just make sure it's working properly?  Like no
+hiccups from beginning to end?”, “And look for things that are wonky or something that's needed that isn't in the game yet”,
+“The warlock's demon form is one of the weaker character identities in terms of performance, impact, and fun.  Love his look,
+but something about his attacks don't give off massive threatening menacing demon.  That and the skill tree need work.”, “The
+warrior has an issue where he starts with the greatsword but would have to pay a talent point to select greatsword.  So maybe
+he can swap to axe or hammer at level 1.”, “And make sure the words, talents, and uniques all work together correctly to
+augment attacks.  I want things to compound as they are added to attacks or abilities.”
+
+- **The Warrior's weapon, free** (`talents.gd` is_weapon, spent, starting, swap_out; `inventory.gd`, `talents_page.gd`,
+  `hud.gd`): his weapon costs no point; the greatsword his as he starts; the battle axe or the warhammer taken in its place
+  at any level, anywhere, for nothing (SWAP TO IT (FREE) on its card), so long as nothing more on the old one's path is
+  taken (“Undo the greatsword's talents first”); a weapon is never undone, only swapped (“Take another to swap”); an old save
+  with no weapon given the greatsword. `--only=talents`: 82 checks (a new Warrior at level 1 swapping to the axe and back).
+- **What he adds compounds** (`hero.gd` side, word_k, talent_hit; `words.gd` resolve `word_k`): a blow of one of his moves
+  was made of everything already, each a multiplier on the rest. What else he sets off now is too: a talent's arc or its
+  burning ground, a unique's own blow, a companion's bite, the Golem's coil, the ground a word behind leaves, the last
+  words' spirits each take his talents' and his uniques' multipliers on the enemy they strike, his might, and, where they
+  come of one of his moves, what that move's words make of its hits. `--only=compound`: one fire hit of a talent's, as
+  each thing is added: 9, Power in front 12, and Heavy 19, Executioner 38, The Long Odds 52.
+- **The whole game walked** (`--only=smooth`, `check_glows.gd`; `WS_SMOOTH="floor3 floor4"` for some): every place in turn
+  (the town, floors 1 to 20, the camp, the Rim, three endless levels, the final arena), walked from room to room at his own
+  pace for 24 s each, every frame timed: 5 stalls in all (frames slower than three times the middle and 120 ms over it:
+  floor 18 three, floor 20 two), the slowest frame 221 ms (in this machine's software drawing, frames 19 to 89 ms in the
+  middle). FLOOR 9'S SIDE BOSSES (the Troll Chieftain's and the Mist Wolf's pictures, 169 and 116 MB), fetched as their
+  lairs are entered, are now let go of once he is far, as every figure's: floor 9 back at its start 999 -> 623 MB.
+  `--only=memfloors` counts the floor's look, the films and the hero's own pictures as well as the figures'.
+- **The Warlock's demon made terrible** (`heroes/warlock.gd` DEMON2, D2; behind its switch, OFF till his yes to the film;
+  `--demon2=1` on for a run): his look kept, every picture of it; CLAW RAKE a sweep through everything in a wide arc before
+  it (2.6 tiles), 1.7 of a hit (1.3), what it tears cursed and burning in his hellfire, each rake that lands shaking the
+  screen and stopping the world a breath; DAMNING every 4.5 s (6) under every enemy near, not only the cursed and burning,
+  their burns paid half as much again, each thrown half as far again and stunned; DEMON STEP's landing half as wide again,
+  as hard as a hit, stunning, the ground left burning; DREAD, every enemy within 4 tiles slower by a quarter and taking a
+  fifth more from him, and he taking 30% less; THE CHANGE's roar 4 tiles, striking as a rake and stunning all but a boss.
+  HIS TREE: Bound Demon no longer keeps him a man (when the demon burns out it tears free and fights beside him 8 s more);
+  Terrible Roar's roar half as wide again; Hunger 3 s a kill, Bloodlust 15%, Hellwave every other rake and harder, Damned
+  Souls, Hex Chain and Pyre harder, Soul Debt a sixth of his pact. Its hero check 11/11 on and off; on, a rake 16 (10),
+  Damning 120 (58), thrown 2.1 tiles (1.3). The film: `--only=demonfilm --cls=warlock` under `--write-movie <file>.avi
+  --fixed-fps 30`, with and without `--demon2=1` (docs/mockups/demon2/).
+- The city check's trapdoor (floor 20) keeps him from harm: a blow that took all his life in one frame laid him down, and
+  the fallen hero's screen paused the game, the trapdoor's clock with it.
+- Asked of him: the Warrior's WHIRLWIND talent stands in his tree, NOT IN THE PORT YET, for his hold is the Whirlwind already
+  (his pick of 14 Nov 2026, “Give him the Whirlwind spin”): what it should give instead is his to say.
 
 ## Not in it yet
 
