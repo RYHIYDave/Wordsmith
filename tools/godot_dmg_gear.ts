@@ -9,11 +9,12 @@
 //             its range. A piece holds four properties in all (ITEM_ROOM) and never two of one kind (statGroup); a word burned
 //             in rolls in a same-level affix's range times IMBUE_STRENGTH, so the best piece is four words burned into a plain
 //             one: a found affix never beats the word of its stat.
-//   npx tsx tools/godot_dmg_gear.ts <ilvl> <out.json>
+//   npx tsx tools/godot_dmg_gear.ts <ilvl> <out.json> [plain]
 import { writeFileSync } from 'node:fs';
 import { RNG } from '../src/engine/rng';
 import { flatPair, flatSpan, imbueOptions, rollItem, statGroup } from '../src/game/items';
 import { wordIds } from '../src/game/melds';
+import { RANK_OF } from '../src/game/types';
 import type { Slot, StatKey, WeaponKind } from '../src/game/types';
 
 const ilvl = Number(process.argv[2] ?? 20);
@@ -48,7 +49,13 @@ const options: Record<string, { word: string; mods: Mod[]; groups: string[] }[]>
 for (const slot of SLOTS) {
   options[slot] = [];
   for (const word of wordIds()) {
-    for (const o of imbueOptions(word as never, slot, ilvl)) {
+    // (THE CLASSES EVENED, as the Godot game has it: loot.gd imbue_options, words.gd EVEN_GEAR_ATTR: a ranked word's Strength,
+    // Dexterity or Intelligence on gear is its plain word's; `plain` on the command line for the game's own)
+    const rank = (RANK_OF as Record<string, { word: string }>)[word];
+    const evenAttr = process.argv[4] !== 'plain';
+    const plainOpts = rank ? imbueOptions(rank.word as never, slot, ilvl) : [];
+    for (const o0 of imbueOptions(word as never, slot, ilvl)) {
+      const o = rank && evenAttr && ['str', 'dex', 'int'].includes(o0.stat) ? (plainOpts.find((p) => p.stat === o0.stat) ?? o0) : o0;
       const one = (stat: StatKey, max: number): Mod[] => {
         const pair = flatPair(stat);
         if (!pair) return [[stat, max]];

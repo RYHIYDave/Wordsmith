@@ -30,6 +30,8 @@ func _init() -> void:
 	Words.WORDS_ADD = false
 	Words.ATTR_CURVE = false
 	Words.POISON_SPREAD = false
+	Words.EVEN_BASE = false
+	Words.ELEMENT_HIT = false
 	var path := "res://assets/words/check.json"
 	if not FileAccess.file_exists(path):
 		print("WORDS CHECK: no check.json: run `npx tsx tools/godot_words.ts check` first")

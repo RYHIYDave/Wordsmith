@@ -80,9 +80,24 @@ const FILE := "res://assets/words/words.json"
 ##   POISON_SPREAD  his word after that change's check (the poison was left doing millions: “Yes” to its share being of the
 ##               hit over the whole of the poison's time, not each second of it): a dose is the same share of the hit, spread over
 ##               its 4 s (a quarter as much a second); its doses still add up, eight deep, and what gear adds to poison is as it was.
+##   THE CLASSES EVENED (his “Yes” after the same check found the Warrior at about 5.7 times the fire Mage: “Frost is a bit more
+##   defensive so it having lower dps makes sense, but a warrior should not be 7x stronger.  Especially if str is also adding bonus
+##   health for waaaay more survivability than the mage”):
+##   EVEN_BASE    every class's quick attack as hard a second before its words as the Warrior's Strike with his greatsword
+##                (EVEN: what its share of the weapon's hit is made, for its own weapon's speed and damage: the bow's Shot, the
+##                staff's Wave, the wrench's Vial Toss, the tome's Hellbolt; the Brawler's wraps are the greatsword's already).
+##   ELEMENT_HIT  Flame and Lightning in front add to the hit as Power does, Frost two thirds of that (FROST_HIT), each besides
+##                its own burn, arcs or chill; of the damage words in front (a melded word's two among them), only the best one's.
+##   EVEN_GEAR_ATTR (loot.gd imbue_options) a ranked word burned into gear gives no more Strength, Dexterity or Intelligence than
+##                its plain word: no attribute stacks faster than another.
 static var WORDS_ADD := true
 static var ATTR_CURVE := true
 static var POISON_SPREAD := true
+static var EVEN_BASE := true
+static var ELEMENT_HIT := true
+static var EVEN_GEAR_ATTR := true
+const EVEN := {"shot": 1.303, "wave": 1.6, "vialtoss": 1.72, "hellbolt": 1.635}
+const FROST_HIT := 2.0 / 3.0
 const ATTR_KNEE := 50.0
 const ATTR_SPAN := 100.0
 
@@ -368,7 +383,7 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		return BOOST * MB if m != null and parts_of(m).has(w) else BOOST
 	var rk := func(side: Array, w: String) -> float: return (1.0 + step * (rank_in.call(side, w) - 1)) * st.call(side, w)
 	var rn := func(side: Array, w: String) -> String: return ["", "", " II", " III", " IV", " V"][rank_in.call(side, w)]
-	var dmg_mult: float = float(def["dmg"]) * (1.0 + prim * float(D["primaryDmg"]) / 100.0)
+	var dmg_mult: float = float(def["dmg"]) * (float(EVEN[id]) if EVEN_BASE and EVEN.has(id) else 1.0) * (1.0 + prim * float(D["primaryDmg"]) / 100.0)
 	# (what the move comes to with no word in it: `word_k`, below, what its words make of it)
 	var dmg_bare: float = dmg_mult
 	var size: float = d["area"]
@@ -407,6 +422,8 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	var guard: Dictionary = D["guard"]
 	# (WORDS_ADD: the bonuses of the words in front, added up, made one at the end)
 	var front_more := 0.0
+	# (ELEMENT_HIT: the best of the damage words' own bonuses to the hit)
+	var word_hit := 0.0
 
 	# ----- in front: the hit -----
 	if has.call(front, "power"):
@@ -414,7 +431,9 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		var k: float = rk.call(front, "power")
 		var dmg := 25.0 * k + 0.6 * a
 		var big := 20.0 * k + 0.3 * a
-		if WORDS_ADD:
+		if ELEMENT_HIT:
+			word_hit = maxf(word_hit, dmg)
+		elif WORDS_ADD:
 			front_more += dmg
 		else:
 			dmg_mult *= 1.0 + dmg / 100.0
@@ -472,24 +491,45 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		if single:
 			r["splash"] = maxf(r["splash"], 1.5)
 			r["splash_dmg"] = 1.0
-		lines.append("Flame%s: fire damage%s, burns for %s more over 3 s." % [rn.call(front, "fire"), ", explodes on contact" if single else "", _pct(burn)])
+		if ELEMENT_HIT:
+			var fh: float = 25.0 * rk.call(front, "fire") + 0.6 * grows_by.call(front, "fire")
+			word_hit = maxf(word_hit, fh)
+			lines.append("Flame%s: +%s damage, fire damage%s, burns for %s more over 3 s." % [rn.call(front, "fire"), _pct(fh), ", explodes on contact" if single else "", _pct(burn)])
+		else:
+			lines.append("Flame%s: fire damage%s, burns for %s more over 3 s." % [rn.call(front, "fire"), ", explodes on contact" if single else "", _pct(burn)])
 	if has.call(front, "frost"):
 		var slow: float = minf(70.0, 30.0 * rk.call(front, "frost") + 0.3 * grows_by.call(front, "frost"))
 		r["chill"] = slow / 100.0
 		if single:
 			r["splash"] = maxf(r["splash"], 1.5)
 			r["splash_dmg"] = 1.0
-		lines.append("Frost%s: frost damage%s, slows by %s; a second hit freezes." % [rn.call(front, "frost"), ", bursts on contact" if single else "", _pct(slow)])
+		if ELEMENT_HIT:
+			var ch: float = (25.0 * rk.call(front, "frost") + 0.6 * grows_by.call(front, "frost")) * FROST_HIT
+			word_hit = maxf(word_hit, ch)
+			lines.append("Frost%s: +%s damage, frost damage%s, slows by %s; a second hit freezes." % [rn.call(front, "frost"), _pct(ch), ", bursts on contact" if single else "", _pct(slow)])
+		else:
+			lines.append("Frost%s: frost damage%s, slows by %s; a second hit freezes." % [rn.call(front, "frost"), ", bursts on contact" if single else "", _pct(slow)])
 	if has.call(front, "lightning"):
 		var a: float = grows_by.call(front, "lightning")
 		var arc: float = 40.0 * rk.call(front, "lightning") + 0.5 * a
 		r["arcs"] = 2 + floori(a / 40.0)
 		r["arc_dmg"] = arc / 100.0
+		var lh: float = 25.0 * rk.call(front, "lightning") + 0.6 * a
+		if ELEMENT_HIT:
+			word_hit = maxf(word_hit, lh)
 		# (THUNDER: one big bolt instead of arcs: its twist, below)
 		if meld == "thunder":
-			lines.append("Lightning: lightning damage.")
+			lines.append("Lightning: %slightning damage." % (("+%s damage, " % _pct(lh)) if ELEMENT_HIT else ""))
+		elif ELEMENT_HIT:
+			lines.append("Lightning%s: +%s damage, lightning damage, arcs to %d more enemies for %s." % [rn.call(front, "lightning"), _pct(lh), r["arcs"], _pct(arc)])
 		else:
 			lines.append("Lightning%s: lightning damage, arcs to %d more enemies for %s." % [rn.call(front, "lightning"), r["arcs"], _pct(arc)])
+	# (ELEMENT_HIT: the best damage word's bonus to the hit, as one of the words in front)
+	if ELEMENT_HIT and word_hit > 0.0:
+		if WORDS_ADD:
+			front_more += word_hit
+		else:
+			dmg_mult *= 1.0 + word_hit / 100.0
 	if has.call(front, "leech"):
 		r["leech"] = 1.0 + 0.08 * grows_by.call(front, "leech")
 		lines.append("Leeching: heals %s life per enemy hit." % _fixed1(r["leech"]))

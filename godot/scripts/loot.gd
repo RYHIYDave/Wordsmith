@@ -1284,6 +1284,16 @@ func imbue_options(w: String, it: Dictionary) -> Array:
 		if not _imbue_read.has(i):
 			_imbue_read[i] = JSON.parse_string(str(opts[i]))
 		out.append(_imbue_read[i])
+	# (THE CLASSES EVENED, words.gd EVEN_GEAR_ATTR: a ranked word gives no more of an attribute than its plain word: its option of
+	# Strength, Dexterity or Intelligence is the plain word's own)
+	if Words.EVEN_GEAR_ATTR and Words.is_rank(w):
+		var plain: Array = imbue_options(str(Words.parts_of(w)[0]), it)
+		for k in out.size():
+			var st: String = str(out[k]["stat"])
+			if st in ["str", "dex", "int"]:
+				for o in plain:
+					if str(o["stat"]) == st:
+						out[k] = o
 	return out
 
 
