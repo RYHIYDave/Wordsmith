@@ -189,6 +189,11 @@ func _dps() -> float:
 		hit *= 1.0 + Words.burn_more(h)
 	var n: float = float(r["count"]) * float(r["count_dmg"])
 	var rate: float = maxf(0.3, float(r["rate"])) * h.attack_pace()
+	# (the Brawler's punches quicken at most to twice his weapon's pace: heroes/brawler.gd _pace)
+	if h.cls == "brawler":
+		var w = M.loot.gear.get("mainhand")
+		var wr: float = float(w["aps"]) if w != null and float(w.get("aps", 0.0)) > 0.0 else 1.0
+		rate = wr * clampf(float(r["rate"]) / maxf(0.3, wr), 0.5, 2.0) * h.attack_pace()
 	var dps: float = hit * n * rate
 	if float(r["poison"]) > 0.0:
 		var P: Dictionary = Words.data()["poison"]
