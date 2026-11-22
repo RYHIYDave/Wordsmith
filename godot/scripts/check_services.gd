@@ -78,8 +78,8 @@ func run(main, hero, dir: String) -> void:
 		loot.bag.append(it.duplicate(true))
 	inv._press("gm_throw", null)
 	_line(inv._note == "Bag is full" and loot.bag.size() == loot.BAG, "the bag full: '%s'" % inv._note)
-	# (1000 throws: their qualities against the game's odds)
-	var by := [0, 0, 0]
+	# (1000 throws: their qualities against the game's odds; a unique now and then too, as the game's gamble gives: uniques.ts)
+	var by := [0, 0, 0, 0]
 	loot.gold = 10000000
 	for i in 1000:
 		loot.bag.clear()
@@ -90,7 +90,7 @@ func run(main, hero, dir: String) -> void:
 	var close := true
 	for q in 3:
 		close = close and absf(by[q] / 1000.0 - want[q]) < 0.05
-	_line(close, "1000 throws: %d plain, %d magic, %d rare (the game's odds %.0f%%, %.0f%%, %.0f%%)" % [by[0], by[1], by[2], want[0] * 100.0, want[1] * 100.0, want[2] * 100.0])
+	_line(close, "1000 throws: %d plain, %d magic, %d rare, %d unique (the game's odds %.0f%%, %.0f%%, %.0f%%)" % [by[0], by[1], by[2], by[3], want[0] * 100.0, want[1] * 100.0, want[2] * 100.0])
 	inv.toggle()
 
 	# --- THE STASH

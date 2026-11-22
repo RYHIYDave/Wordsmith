@@ -391,7 +391,7 @@ func _pressed(at: Vector2) -> void:
 
 
 func _released(at: Vector2) -> void:
-	var W := size.x / 2.0
+	var W := _hw()
 	if not _shelf_drag.is_empty():
 		var d := _shelf_drag
 		_shelf_drag = {}
@@ -442,14 +442,14 @@ func _begin_drag() -> void:
 
 ## What the pointer is over that a word could go to: an exact slot of a move, or a piece of gear.
 func _target_at(at: Vector2) -> Dictionary:
-	if altar >= 0 and at.x >= size.x / 2.0:
-		return {"kind": "altar", "r": Rect2(size.x / 2.0, 0, size.x / 2.0, size.y)}
+	if altar >= 0 and at.x >= _hw():
+		return {"kind": "altar", "r": Rect2(_hw(), 0, _hw(), _vh())}
 	# (WORDMELDING: over the wordsmith's half, melding: the next free hollow)
-	if wsmith == "meld" and at.x >= size.x / 2.0:
+	if wsmith == "meld" and at.x >= _hw():
 		var nx: int = meld_in.find(null)
-		return {"kind": "meld", "r": _ws_hollows()[nx] if nx >= 0 else Rect2(size.x / 2.0, 0, size.x / 2.0, size.y)}
+		return {"kind": "meld", "r": _ws_hollows()[nx] if nx >= 0 else Rect2(_hw(), 0, _hw(), _vh())}
 	# (THE WORDSMITH'S TRADE: over his half, a spare word is sold him: where the next he is sold will lie)
-	if wsmith == "trade" and at.x >= size.x / 2.0:
+	if wsmith == "trade" and at.x >= _hw():
 		return {"kind": "sell", "r": _ws_next_sold()}
 	for c in _slots:
 		if c["r"].grow_individual(2.0 * K, 3.0 * K, 2.0 * K, 3.0 * K).has_point(at):
@@ -764,8 +764,8 @@ func _drop(w: String, to: Dictionary) -> void:
 # --- where things are (ui/inventory.ts, the same sums at twice the size) ---
 
 func _lay() -> void:
-	var W := size.x / 2.0
-	var H := size.y
+	var W := _hw()
+	var H := _vh()
 	var body_w := W - 2.0 * M
 	var top := 2.0 * K
 	_page_y = top + HEAD + 2.0 * K
@@ -926,22 +926,25 @@ func _draw() -> void:
 	_hits = []
 	_card_buttons = []
 	_lay()
-	var W := size.x / 2.0
+	var W := _hw()
 	var blink := sin(_t * 7.0) > 0.0
 	# (THE VIEW: with the panel up and no service beside it, the game is seen with the hero in the middle of the half it has
 	# (main.ts renderer.view, gameRect); beside a service the picture stays where it was)
 	if hero != null and hero._cam != null and shop == "" and altar < 0 and wsmith == "" and svc == "":
-		hero._cam.offset.x = W / 2.0 / maxf(0.01, hero._cam.zoom.x)
+		if _tall():
+			hero._cam.offset = Vector2(0.0, -24.0 + _ph() / 2.0 / maxf(0.01, hero._cam.zoom.y))
+		else:
+			hero._cam.offset.x = W / 2.0 / maxf(0.01, hero._cam.zoom.x)
 	# (THE PANEL, on the right half: ui/inventory.ts invRect; laid out from 0 and drawn moved over: _half)
 	_half(1)
-	draw_rect(Rect2(0, 0, W, size.y), PANEL)
+	draw_rect(Rect2(0, 0, W, _vh()), PANEL)
 	# (the bottom that never changes stands on a ground of its own; not on THE SKILL TREES' page)
 	if _page != "talents":
-		draw_rect(Rect2(0, _strip_y - 3.0 * K, W, size.y - _strip_y + 3.0 * K), BOX)
+		draw_rect(Rect2(0, _strip_y - 3.0 * K, W, _vh() - _strip_y + 3.0 * K), BOX)
 		draw_rect(Rect2(0, _strip_y - 3.0 * K, W, 1), EDGE)
 	# (its edge against the game: a line, and a hair of light along it)
-	draw_rect(Rect2(0, 0, K, size.y), EDGE_HI)
-	draw_rect(Rect2(0, 0, 1, size.y), PICK_LO)
+	draw_rect(Rect2(0, 0, K, _vh()), EDGE_HI)
+	draw_rect(Rect2(0, 0, 1, _vh()), PICK_LO)
 	var first: bool = loot.first_word_waits()
 	for tb in _tabs:
 		var on: bool = tb["page"] == _page
@@ -972,6 +975,9 @@ func _draw() -> void:
 		_mid(nr, _note, NORMAL, BAD)
 	# (THE SERVICES, on the left half: ui/inventory.ts gameRect; laid out from W)
 	_half(-1)
+	# (UPRIGHT: the part above the panel is a game pixel or so taller than a half is laid out: a service's ground reaches down to it)
+	if _tall() and (shop != "" or altar >= 0 or wsmith != "" or svc != ""):
+		draw_rect(Rect2(W, _vh() - 2.0 * K, W, size.y - _ph() - _vh() + 2.0 * K), PANEL)
 	if shop != "":
 		_shelf()
 	if altar >= 0:
@@ -987,7 +993,7 @@ func _draw() -> void:
 	_draw_reading(blink, first)
 	# (THE SKILL TREES: the card of the talent being read, over the game's half)
 	if _page == "talents":
-		_tal_buttons = _tal.draw_card(hero, loot.level, loot.gold, main.is_home(main.place), W / K, size.y / K)
+		_tal_buttons = _tal.draw_card(hero, loot.level, loot.gold, main.is_home(main.place), W / K, _vh() / K)
 	_half(0)
 	_draw_flash()
 	# the word being dragged follows the pointer (over a slot it may go in it is shown sitting there)
@@ -1063,7 +1069,7 @@ func _draw_attacks(blink: bool, first: bool) -> void:
 	# under the three lines: the coach's line (a new player's first word); and, with nothing else being read, the move
 	# last touched read out, as much of it as there is room for
 	var x := M
-	var w := size.x / 2.0 - 2.0 * M
+	var w := _hw() - 2.0 * M
 	var y := _rows_end + 4.0 * K
 	var end := _page_y + _page_h
 	var coach := _coach()
@@ -1152,7 +1158,7 @@ func _pace(i: int) -> Array:
 # --- the GEAR page: what he wears, and his numbers ---
 
 func _draw_gear() -> void:
-	var W := size.x / 2.0
+	var W := _hw()
 	# the hero, as he stands in the game and twice the size, on a ground of his own between the two columns of slots
 	var hero_x := M + CELL + 3.0 * K
 	var hero_w := DOLL_W * K - 2.0 * CELL - 6.0 * K
@@ -1386,7 +1392,7 @@ func _pips(it: Dictionary, r: Rect2) -> void:
 # --- the bottom that never changes: his words, and the bag ---
 
 func _draw_bag(_blink: bool, first: bool) -> void:
-	var W := size.x / 2.0
+	var W := _hw()
 	# (WORD_LEX: LEXICON, under the gold and the level beside the bag)
 	if _lex_r.has_area():
 		_gbutton(_lex_r, "LEXICON", false, _lex or _lex_r.has_point(_mouse))
@@ -1431,7 +1437,7 @@ func _draw_words(first: bool) -> void:
 	var line: Array = _pouch.filter(func(c): return not c.get("lex", false))
 	var hidden: int = loot.held().size() - line.size()
 	if hidden > 0:
-		_small(Vector2(size.x / 2.0 - M - (_swap_r.size.x + GAP if _swap_r.has_area() else 0.0), _pouch_y - CAP), "+%d MORE" % hidden, DIM, true)
+		_small(Vector2(_hw() - M - (_swap_r.size.x + GAP if _swap_r.has_area() else 0.0), _pouch_y - CAP), "+%d MORE" % hidden, DIM, true)
 	# (WORD_ROOM: the tile that turns the bottom: ALL, and how many words he holds; or BAG, and how full it is)
 	if _swap_r.has_area():
 		var hot := _swap_r.has_point(_mouse)
@@ -1608,7 +1614,7 @@ func _draw_reading(blink: bool, first: bool) -> void:
 	var what := _reading()
 	if what == "":
 		return
-	var W := size.x / 2.0
+	var W := _hw()
 	var card_w := 190.0 * K
 	var inner := card_w - 10.0 * K
 	var rows: Array = []  # {t, c, px} a line of letters; {parts, px} a move's name; {gap} air
@@ -1694,8 +1700,13 @@ func _draw_reading(blink: bool, first: bool) -> void:
 	var ch := 5.0 * K + tall + foot + 3.0 * K
 	# (against the panel's edge, over the game's half: the panel on the right, the card to the left of it)
 	var cx := 2.0 * W - 3.0 * K - card_w
-	var mid: float = (about.position.y + about.size.y / 2.0) if about != null else size.y / 2.0
-	var cy := clampf(roundf(mid - ch / 2.0), 3.0 * K, size.y - ch - 3.0 * K)
+	var mid: float = (about.position.y + about.size.y / 2.0) if about != null else _vh() / 2.0
+	var cy := clampf(roundf(mid - ch / 2.0), 3.0 * K, _vh() - ch - 3.0 * K)
+	if _tall():
+		# (UPRIGHT: over the panel, against its upper edge; across the screen, over the thing it is about: ui/inventory.ts `below`)
+		var ax: float = (about.position.x + about.size.x / 2.0) if about != null else size.x / 2.0
+		cx = W + clampf(roundf(ax - card_w / 2.0), 3.0 * K, size.x - card_w - 3.0 * K)
+		cy = maxf(2.0 * K, size.y - _ph() - ch - 3.0 * K)
 	if shop != "":
 		# (over a vendor's half the card lies on lettering, not on the game: a dark margin round it keeps the two apart)
 		draw_rect(Rect2(cx - 3.0 * K, cy - 3.0 * K, card_w + 6.0 * K, ch + 6.0 * K), Color(INK, 0.72))
@@ -1837,6 +1848,7 @@ func _draw_flash() -> void:
 	var k: float = _flash["t"]
 	var band := 9.0 * K * (px / float(NORMAL)) + K + 9.0 * K
 	var row_y: float = _plates[s].position.y if _plates[s] != null else _page_y
+	row_y = _to_screen(Vector2(0, row_y)).y
 	var by := clampf(row_y + floorf(TH / 2.0) - floorf(band / 2.0), 2.0 * K, size.y - band - 2.0 * K)
 	var a := 0.94 if k < 0.8 else maxf(0.0, 0.94 * (1.0 - (k - 0.8) / 0.3))
 	draw_rect(Rect2(0, by, size.x, band), Color(Color.WHITE if k < 0.12 else INK, a))
@@ -1962,7 +1974,7 @@ func _text(at: Vector2, s: String, px: int, c: Color) -> void:
 	var f := _font_of(px)
 	var y := at.y - (5.0 if f[0] == "small" else 7.0) * K * int(f[1])
 	# (a line that would run past the edge of its half is broken there, as the game's wrapText breaks it)
-	var W := size.x / 2.0
+	var W := _hw()
 	var limit := (2.0 * W if at.x >= W else W) - SIDE_M * K
 	if at.x + _width(s, px) > limit and limit - at.x > 40.0 * K:
 		for part in _wrap(s, limit - at.x, px):
@@ -2045,19 +2057,48 @@ func _gbutton(r: Rect2, label: String, primary := false, lit := false, small := 
 
 ## THE PANEL ON THE RIGHT HALF OF THE SCREEN (ui/inventory.ts invRect), the service's on the left (gameRect). Everything is laid
 ## out as before, the panel from 0 and the other half from W; it is drawn and pressed with the two halves changed round.
+## UPRIGHT (a screen taller than wide, a phone held upright: invRect's `H > W`): the panel along the bottom, as tall as half the
+## screen (234 to 272 game pixels) and as wide as it, the other half above it. Laid out the same way, two halves side by side each
+## _hw() wide and _vh() tall; drawn and pressed with the panel moved down under the other half.
+func _tall() -> bool:
+	return size.y > size.x
+
+
+## (invRect) The panel's height upright, in picture pixels.
+func _ph() -> float:
+	return minf(size.y, clampf(floorf(size.y / K / 2.0), 234.0, 272.0) * K)
+
+
+## Each half's width and height as they are laid out.
+func _hw() -> float:
+	return size.x if _tall() else size.x / 2.0
+
+
+func _vh() -> float:
+	return _ph() if _tall() else size.y
+
+
 func _to_panel(p: Vector2) -> Vector2:
+	if _tall():
+		var top := size.y - _ph()
+		return p - Vector2(0, top) if p.y >= top else p + Vector2(size.x, 0)
 	var W := size.x / 2.0
 	return Vector2(p.x - W if p.x >= W else p.x + W, p.y)
 
 
 func _to_screen(p: Vector2) -> Vector2:
+	if _tall():
+		return p + Vector2(0, size.y - _ph()) if p.x < size.x else p - Vector2(size.x, 0)
 	var W := size.x / 2.0
 	return Vector2(p.x + W if p.x < W else p.x - W, p.y)
 
 
 ## Draw what follows in the panel's half (+1), the other half (-1), or as the screen is (0).
 func _half(which: int) -> void:
-	_xf = Vector2(size.x / 2.0 * which, 0.0)
+	if _tall():
+		_xf = Vector2(0.0, size.y - _ph()) if which == 1 else (Vector2(-size.x, 0.0) if which == -1 else Vector2.ZERO)
+	else:
+		_xf = Vector2(size.x / 2.0 * which, 0.0)
 	draw_set_transform(_xf)
 
 
@@ -2074,8 +2115,8 @@ func open_shop(id: String) -> void:
 ## A service's half (ui/town.ts sideFrame): its ground, and its title in the friend's cyan along its top. Returns where its own
 ## things begin. Laid out in the other half's lay (from W: _half).
 func _side_frame(title: String) -> float:
-	var W := size.x / 2.0
-	draw_rect(Rect2(W, 0, W, size.y), PANEL)
+	var W := _hw()
+	draw_rect(Rect2(W, 0, W, _vh()), PANEL)
 	_top(Vector2(W + (SIDE_M + 1.0) * K, (3.0 + floorf((16.0 - 3.0 - 8.0) / 2.0) + 1.0) * K), title, NORMAL, PICK)
 	return (2.0 + 16.0 + 2.0) * K
 
@@ -2099,7 +2140,7 @@ var _lex_panel := Rect2()
 
 
 func _shelf() -> void:
-	var W := size.x / 2.0
+	var W := _hw()
 	var body_y := _side_frame(str(SHOP_NAME.get(shop, shop)).to_upper())
 	var cols := clampi(floori((W / K - 2.0 * SIDE_M + 2.0) / (PITCH / K)), 1, 10)
 	var gx := W + SIDE_M * K
@@ -2150,12 +2191,12 @@ func _shelf() -> void:
 				_card_buttons.append([br, "shelf_take"])
 	# how it is used, along the bottom; or, while a piece out of the bag is carried over this half, what letting go will do
 	var foot := PF.wrap("RIGHT-CLICK A PIECE TO BUY OR SELL IT, OR DRAG IT ACROSS.", W / K - 2.0 * SIDE_M, "small")
-	var fy := size.y - 3.0 * K - foot.size() * 6.0 * K
+	var fy := _vh() - 3.0 * K - foot.size() * 6.0 * K
 	if not _piece_drag.is_empty() and _piece_drag["moving"] and _mouse.x >= W and int(_piece_drag["i"]) < loot.bag.size():
 		var it: Dictionary = loot.bag[int(_piece_drag["i"])]
-		_frame_line(Rect2(W + 2.0 * K, 2.0 * K, W - 4.0 * K, size.y - 4.0 * K), PICK if sin(_t * 7.0) > 0.0 else PICK_LO)
+		_frame_line(Rect2(W + 2.0 * K, 2.0 * K, W - 4.0 * K, _vh() - 4.0 * K), PICK if sin(_t * 7.0) > 0.0 else PICK_LO)
 		var line := "LET GO TO SELL: %d GOLD" % loot.sell_value(it)
-		_top(Vector2(W + floorf((W - _width(line, NORMAL)) / 2.0), minf(fy - 2.0 * K, size.y - 14.0 * K)), line, NORMAL, PICK)
+		_top(Vector2(W + floorf((W - _width(line, NORMAL)) / 2.0), minf(fy - 2.0 * K, _vh() - 14.0 * K)), line, NORMAL, PICK)
 	elif fy >= grid_end + 4.0 * K and _shelf_pick.is_empty() and _word == "" and _pending.is_empty():
 		for k in foot.size():
 			_top(Vector2(gx, fy + k * 6.0 * K), foot[k], SMALL, FAINT)
@@ -2211,9 +2252,9 @@ func _altar_press(action: String, arg) -> void:
 
 
 func _altar_side(blink: bool) -> void:
-	var x0 := size.x / 2.0 + 12.0
-	var w := size.x / 2.0 - 24.0
-	draw_rect(Rect2(x0 - 12, 0, w + 24, size.y), PANEL)
+	var x0 := _hw() + 12.0
+	var w := _hw() - 24.0
+	draw_rect(Rect2(x0 - 12, 0, w + 24, _vh()), PANEL)
 	_text(Vector2(x0, 22), "ALTAR OF THE WORDS", 16, PICK)
 	var y := 42.0
 	for l in _wrap("The door opens only to words given to it. Lay up to three spare words in the altar: they are burned. Each past the first makes the cult within harder, and its runedust richer.", w, 10):
@@ -2255,7 +2296,7 @@ func _altar_side(blink: bool) -> void:
 			y += 13.0
 	var label := "OPEN THE DOOR"
 	var bw := _width(label, NORMAL) + 48.0
-	var br := Rect2(x0 + w - bw, size.y - 52.0, bw, 30.0)
+	var br := Rect2(x0 + w - bw, _vh() - 52.0, bw, 30.0)
 	var can := not laid.is_empty()
 	_gbox(br, Color(PRESS, (0.35 if blink else 0.18) if can else 0.06), PRESS if can else FAINT)
 	_mid(br, label, NORMAL, Color.WHITE if can else FAINT)
@@ -2318,8 +2359,8 @@ func open_wordsmith() -> void:
 
 ## Where its things are: the two hollows and what comes out, a row under the runedust, on the right half.
 func _ws_layout() -> Dictionary:
-	var x0 := size.x / 2.0 + 12.0
-	var w := size.x / 2.0 - 24.0
+	var x0 := _hw() + 12.0
+	var w := _hw() - 24.0
 	var intro: Array = _wrap(WS_INTRO, w, 10)
 	var dust_y := 42.0 + intro.size() * 13.0 + 6.0
 	var row_y := dust_y + 22.0
@@ -2451,7 +2492,7 @@ func _ws_side(blink: bool) -> void:
 	var L := _ws_layout()
 	var x0: float = L["x0"]
 	var w: float = L["w"]
-	draw_rect(Rect2(x0 - 12, 0, w + 24, size.y), PANEL)
+	draw_rect(Rect2(x0 - 12, 0, w + 24, _vh()), PANEL)
 	_text(Vector2(x0, 22), "WORDSMITH", 16, PICK)
 	var tw := _width("WORDSMITH", 16)
 	if wsmith == "meld":
@@ -2525,7 +2566,7 @@ func _ws_side(blink: bool) -> void:
 	var ty: float = float(L["row_y"]) + CELL + 14.0
 	var label2 := "MELD: %d RUNEDUST" % loot.meld_cost()
 	var bwid := _width(label2, NORMAL) + 32.0
-	var br := Rect2(x0 + w - bwid, size.y - 52.0, bwid, 30.0)
+	var br := Rect2(x0 + w - bwid, _vh() - 52.0, bwid, 30.0)
 	var room: float = br.position.y - 8.0
 	if not made.is_empty() and not reading:
 		var mw: String = made["word"]
@@ -2645,7 +2686,7 @@ func _ws_trade(blink: bool, x0: float, w: float) -> void:
 	var page_y: float = T["page_y"]
 	# a word of the hero's carried over this half: what letting go will do
 	if not _over.is_empty() and _over["kind"] == "sell" and not _drag.is_empty() and _drag["moving"]:
-		var half := Rect2(size.x / 2.0 + 2.0, 2.0, size.x / 2.0 - 4.0, size.y - 4.0)
+		var half := Rect2(_hw() + 2.0, 2.0, _hw() - 4.0, _vh() - 4.0)
 		draw_rect(half, PICK if blink else PICK_LO, false, 2.0)
 		var nr: Rect2 = T["next"]
 		_gbox(nr, PICK_BG, PICK)
@@ -2655,7 +2696,7 @@ func _ws_trade(blink: bool, x0: float, w: float) -> void:
 		# the word picked: its page, and the button that buys it
 		var o := _ws_offer(ws_pick)
 		var bwid := _width(o["label"], NORMAL) + 32.0
-		var br := Rect2(x0 + w - bwid, size.y - 52.0, bwid, 30.0)
+		var br := Rect2(x0 + w - bwid, _vh() - 52.0, bwid, 30.0)
 		var poor: bool = loot.gold < int(o["cost"])
 		_ws_page(_ws_cell_word(ws_pick), x0, page_y, w, br.position.y - 6.0)
 		if poor:
@@ -2671,7 +2712,7 @@ func _ws_trade(blink: bool, x0: float, w: float) -> void:
 	var y := page_y + 4.0
 	for t in [["Click one of his words to read it. Right-click buys it.", TEXT], ["To sell a spare word of yours, click it and press SELL, or drag it here.", TEXT], ["Burn a word into your gear as you always have: on your side of the screen.", FAINT]]:
 		for l in _wrap(t[0], w, 10):
-			if y + 13.0 > size.y - 8.0:
+			if y + 13.0 > _vh() - 8.0:
 				return
 			_text(Vector2(x0, y + 9.0), l, 10, t[1])
 			y += 13.0
@@ -2835,9 +2876,9 @@ func _svc_press(action: String, arg) -> void:
 
 
 func _svc_side(blink: bool) -> void:
-	var x0 := size.x / 2.0 + 12.0
-	var w := size.x / 2.0 - 24.0
-	draw_rect(Rect2(x0 - 12, 0, w + 24, size.y), PANEL)
+	var x0 := _hw() + 12.0
+	var w := _hw() - 24.0
+	draw_rect(Rect2(x0 - 12, 0, w + 24, _vh()), PANEL)
 	match svc:
 		"stranger":
 			_gm_side(blink, x0, w)
@@ -2849,7 +2890,7 @@ func _svc_side(blink: bool) -> void:
 
 func _svc_button(label: String, x0: float, w: float, action: String, can: bool, blink: bool) -> Rect2:
 	var bwid := _width(label, NORMAL) + 32.0
-	var br := Rect2(x0 + w - bwid, size.y - 52.0, bwid, 30.0)
+	var br := Rect2(x0 + w - bwid, _vh() - 52.0, bwid, 30.0)
 	_gbox(br, Color(PRESS, (0.35 if blink else 0.18) if can else 0.06), PRESS if can else FAINT)
 	_mid(br, label, NORMAL, Color.WHITE if can else FAINT)
 	_hits.append([br, action, null, null])
@@ -2968,7 +3009,7 @@ func _cd_side(blink: bool, x0: float, w: float) -> void:
 			_text(Vector2(x0, y + 10.0), l, 9, FAINT)
 			y += 12.0
 	var row_h := 34.0
-	var room := maxi(1, int(floorf((size.y - 60.0 - y) / row_h)))
+	var room := maxi(1, int(floorf((_vh() - 60.0 - y) / row_h)))
 	var picked = null
 	for i in mini(room, hands.size()):
 		var h: Dictionary = hands[i]
@@ -3067,7 +3108,7 @@ func _lx_side(blink: bool, x0: float, w: float) -> void:
 			draw_rect(Rect2(r.position.x + 3.0 * K + j * 4.0 * K, r.end.y - 2.5 * K, 3.0 * K, 1.5 * K), loot.word_color(wd) if kn[j] else EDGE)
 		_hits.append([r, "lx_word", wd, null])
 	# the shelf along the bottom: the words kept in the book
-	var shelf_y := size.y - 58.0 - CELL
+	var shelf_y := _vh() - 58.0 - CELL
 	var page_y := 58.0 + CELL + 10.0
 	if _word == "" and _pending.is_empty() and _result.is_empty():
 		if lx_sel != "" and _lx_found(lx_sel):

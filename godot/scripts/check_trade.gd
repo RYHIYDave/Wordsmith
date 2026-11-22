@@ -88,7 +88,7 @@ func run(main, hero, dir: String) -> void:
 	_line(int(loot.words["power"]) == 0 and loot.gold == 1100 and loot.words_sold == ["power"], "POWER of his pressed: its card says what he pays, SELL: 300 GOLD; pressed: %d gold, BUY BACK %s" % [loot.gold, loot.words_sold])
 	# --- and one let go over his half
 	loot.words["fire"] = 1
-	inv._drop("fire", inv._target_at(Vector2(inv.size.x * 0.75, inv.size.y * 0.5)))
+	inv._drop("fire", inv._target_at(Vector2(inv._hw() * 1.5, inv._vh() * 0.5)))
 	await M._wait(0.2)
 	await M._snap(dir + "/t05_sold_two.png")
 	_line(int(loot.words["fire"]) == 0 and loot.gold == 1400 and loot.words_sold == ["power", "fire"], "FLAME let go over his half: sold, %d gold, BUY BACK %s" % [loot.gold, loot.words_sold])
