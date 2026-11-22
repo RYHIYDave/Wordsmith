@@ -984,8 +984,20 @@ lights over the dark (town.gd `_ring_moments`):
   draws them: the gold ring of dots round the one locked onto, the stick's ring of dots and its knob, the reticle on what a tap
   picked, the ring closing over the thumb as a press becomes a hold; and the screen's words a phone's (LEFT THUMB to MOVE, TAP,
   HOLD, SWIPE, INVENTORY, the flask larger and without its key). The app is held sideways and turns with the phone either way
-  (the game's own way on a phone held upright, turned for him: `window/handheld/orientation`). `--only=touch`
-  (`check_glows.gd`): 7 checks, real touches, pictured.
+  (the game's own way on a phone held upright, turned for him: `window/handheld/orientation`). The stick, the reticle, the hold's
+  ring and the ghosts below are drawn over everything, the dungeon's darkness too, as the game draws them in its HUD (the gold
+  ring stays on the floor). `--only=touch` (`check_glows.gd`): 7 checks, real touches, pictured.
+- **The first dungeon's fight lesson, and its ghosts on a phone** (game.ts guideRows, updateGuide; ui/guide.ts guideBanner;
+  main.ts hudIn.gesture; ui/hud.ts drawGesture; `guide.gd`, `touch.gd`): once an enemy awake has come near him, and in a fight
+  till each is done, HOW TO PLAY with a line for each move open (TAP to STRIKE, TAP + HOLD to WHIRL, SWIPE to LUNGE; with a
+  mouse LEFT CLICK, HOLD RIGHT CLICK, SPACE), each ticked as it is done, and once his life has fallen under 40% with a flask in
+  hand, TAP THE FLASK (Q) to HEAL, the flask's edge lit and an arrow over it (the Lunge's, while its line is open). With a finger
+  a ghost of the gesture the prompt asks for, where it should be made: for LEFT THUMB to MOVE a ring of dots on the left and a
+  thumb pushed the way the dungeon goes; for the next line of the fight a ring closing on the enemy (a tap), a ring filling round
+  the thumb on it (a hold), or a quick stroke on the right (a swipe); for the fallen wordsmith a tap on him; for the first word's
+  move, its own. Kept in the save. The prompt now waits while the floor's name is across the screen, as the game's does
+  (FLOOR_CARD_FIRST); and NEW MOVE says TAP, TAP + HOLD, SWIPE with a finger. `--only=lesson` (`check_glows.gd`): 9 checks,
+  pictured.
 
 ## What the hero and the town's people say (the cloud chat, 21 Nov 2026)
 
@@ -1084,7 +1096,7 @@ gear screen; on a floor each of the six bites and does its word), pictured.
 
 The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); playing UPRIGHT (the game laid out for a phone held upright, its PLAY UPRIGHT switch: the Godot screen is laid out for one
-held sideways only); the first dungeon's ghosts of the gesture each prompt asks for on a phone.
+held sideways only).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made

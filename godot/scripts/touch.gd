@@ -66,6 +66,10 @@ func _ready() -> void:
 	process_priority = -100
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	z_index = 2
+	var over := _Over.new()
+	over.t = self
+	over.z_index = 60
+	add_child(over)
 	# (a finger is a finger: it is not made a mouse as well, so that a thumb on the stick is no click on the world)
 	Input.emulate_mouse_from_touch = false
 	var cf := ConfigFile.new()
@@ -101,6 +105,17 @@ func _hero():
 func _playing() -> bool:
 	var h = _hero()
 	return h != null and h.alive and not get_tree().paused and main._title == null and main._cards == null
+
+
+## Where a place on the floor is on the screen, in game pixels (two picture pixels each), and the screen's size in them.
+func to_view(w: Vector2) -> Vector2:
+	var cam := get_viewport().get_camera_2d()
+	var tl: Vector2 = cam.get_screen_center_position() - get_viewport_rect().size / 2.0 if cam != null else Vector2.ZERO
+	return (Iso.to_screen(w.x, w.y) - tl) / 2.0
+
+
+func view_size() -> Vector2:
+	return get_viewport_rect().size / 2.0
 
 
 ## Does a touch here belong to the screen's own things (main.ts isUi): the HUD's buttons and the flask, the small map and the pause
@@ -639,32 +654,99 @@ func _draw() -> void:
 	if lock != null and is_instance_valid(lock) and not lock.dead and mode != "tap":
 		var c: Vector2 = Iso.to_screen(lock.world.x, lock.world.y)
 		_lock_ring(c, maxf(0.62, float(lock.r) * 1.9), now)
+
+
+## What the game draws of the touches over everything (ui/hud.ts, its touch feedback, drawn in the HUD): on a node of its own above
+## the dungeon's darkness (look.gd, z 50), `c`.
+func _draw_screen(c: CanvasItem) -> void:
+	var h = _hero()
+	if not on or h == null or not _playing():
+		return
+	var cam := get_viewport().get_camera_2d()
+	var tl: Vector2 = cam.get_screen_center_position() - get_viewport_rect().size / 2.0 if cam != null else Vector2.ZERO
+	var now := Time.get_ticks_msec() / 1000.0
 	var T: Dictionary = main._hud.T if main._hud != null else {}
 	var edge_hi: Color = T.get("edgeHi", Color("#7a6aa8"))
 	var edge: Color = T.get("edge", Color("#3a3058"))
 	var accent: Color = T.get("accent", Color("#b0f0dc"))
 	# (a game pixel on the screen, as a square of two picture pixels)
-	var dot := func(p: Vector2, c: Color, sz := 1.0) -> void:
-		draw_rect(Rect2(tl + p.round() * 2.0, Vector2(sz, sz) * 2.0), c)
+	var dot := func(p: Vector2, col: Color, sz := 1.0) -> void:
+		c.draw_rect(Rect2(tl + p.round() * 2.0, Vector2(sz, sz) * 2.0), col)
 	if stick["active"]:
 		var o := Vector2(stick["ox"], stick["oy"])
 		for i in 28:
 			var a := float(i) / 28.0 * TAU
 			dot.call(o + Vector2(cos(a), sin(a)) * 18.0, edge_hi)
 		var k := Vector2(roundf(float(stick["ox"]) + float(stick["dx"]) * 14.0) - 3.0, roundf(float(stick["oy"]) + float(stick["dy"]) * 14.0) - 3.0)
-		draw_rect(Rect2(tl + k * 2.0, Vector2(12, 12)), Color(edge_hi, 0.6))
+		c.draw_rect(Rect2(tl + k * 2.0, Vector2(12, 12)), Color(edge_hi, 0.6))
 	if mode == "tap" and _mark != null and is_instance_valid(_mark) and not _mark.dead and now - _mark_t < 3.0:
 		var ms: Vector2 = (Iso.to_screen(_mark.world.x, _mark.world.y) - tl) / 2.0 - Vector2(0, roundf(float(_mark.r) * 30.0 * 0.4 + 8.0))
 		var off := 6.0 + float(floori(now * 6.0) % 2)
 		for q in [[Vector2(-off - 2, 0), Vector2(3, 1)], [Vector2(off, 0), Vector2(3, 1)], [Vector2(0, -off - 2), Vector2(1, 3)], [Vector2(0, off), Vector2(1, 3)]]:
-			draw_rect(Rect2(tl + (ms.round() + q[0]) * 2.0, q[1] * 2.0), accent)
+			c.draw_rect(Rect2(tl + (ms.round() + q[0]) * 2.0, q[1] * 2.0), accent)
+	# (THE FIRST DUNGEON: a ghost of the gesture its prompt asks for, where it should be made: guide.gd `gesture`)
+	var q: Dictionary = main.guide.gesture if main.guide != null else {}
+	if not q.is_empty():
+		var V := view_size()
+		var white: Color = main._hud.P["white"] if main._hud != null else Color.WHITE
+		if q["kind"] == "stick" and not stick["active"]:
+			_ghost(c, tl, "stick", Vector2(roundf(V.x * 0.17), roundf(V.y * 0.62)), q["dir"], now, edge_hi, accent, edge, white)
+		elif q["kind"] == "flick" and not aim["active"]:
+			_ghost(c, tl, "flick", Vector2(roundf(V.x * 0.62), roundf(V.y * 0.6)), Vector2(1, 0), now, edge_hi, accent, edge, white)
+		elif (q["kind"] == "tap" or q["kind"] == "hold") and not aim["active"]:
+			_ghost(c, tl, q["kind"], q["at"], Vector2.ZERO, now, edge_hi, accent, edge, white)
 	var hold := _hold_progress()
 	if aim["active"] and hold > 0.35:
-		var c := Vector2(roundf(float(aim["x"])), roundf(float(aim["y"])) - 20.0)
+		var at := Vector2(roundf(float(aim["x"])), roundf(float(aim["y"])) - 20.0)
 		var lit := roundi((hold - 0.35) / 0.65 * 16.0)
 		for i in 16:
 			var a := -PI / 2.0 + float(i) / 16.0 * TAU
-			dot.call(c + Vector2(cos(a), sin(a)) * 7.0, (accent if hold >= 1.0 else edge_hi) if i < lit else edge, 2.0 if hold >= 1.0 else 1.0)
+			dot.call(at + Vector2(cos(a), sin(a)) * 7.0, (accent if hold >= 1.0 else edge_hi) if i < lit else edge, 2.0 if hold >= 1.0 else 1.0)
+
+
+## (ui/hud.ts drawGesture) A ghost of a gesture at `at` (game pixels on the screen), `dir` the way the walking thumb is pushed:
+## STICK, a ring of dots 18 round, a thumb put down and pushed 14 the way to go; TAP, a ring closing in and the thumb on it;
+## HOLD, the thumb down and a ring of 20 dots filling round it; FLICK, a quick stroke 46 across, the thumb at its end.
+func _ghost(c: CanvasItem, tl: Vector2, kind: String, at: Vector2, dir: Vector2, t: float, edge_hi: Color, accent: Color, edge: Color, white: Color) -> void:
+	var px := func(p: Vector2, col: Color, sz := 1.0) -> void:
+		c.draw_rect(Rect2(tl + p.round() * 2.0, Vector2(sz, sz) * 2.0), col)
+	var ring := func(o: Vector2, r: float, color: Color, n: int) -> void:
+		for i in n:
+			var a := float(i) / n * TAU
+			px.call(o + Vector2(cos(a), sin(a)) * r, color)
+	var thumb := func(p: Vector2, alpha: float) -> void:
+		var o := p.round()
+		# (the two crossing as the game's do, the middle where they cross the whiter)
+		c.draw_rect(Rect2(tl + (o + Vector2(-3, -2)) * 2.0, Vector2(6, 4) * 2.0), Color(white, alpha))
+		c.draw_rect(Rect2(tl + (o + Vector2(-2, -3)) * 2.0, Vector2(4, 6) * 2.0), Color(white, alpha))
+	match kind:
+		"stick":
+			# (a thumb is put down, and pushed the way to go)
+			var k := fmod(t * 0.8, 1.0)
+			var push := 0.0 if k < 0.2 else minf(1.0, (k - 0.2) / 0.35)
+			var d: Vector2 = dir / dir.length() if dir.length() > 0.0 else Vector2(1, 0)
+			ring.call(at, 18.0, edge_hi, 28)
+			thumb.call(at + d * 14.0 * push, (1.0 - k) / 0.15 if k > 0.85 else minf(1.0, k / 0.1) * 0.9)
+		"tap":
+			var k := fmod(t * 1.5, 1.0)
+			ring.call(at, 13.0 - k * 8.0, accent, 20)
+			if k > 0.6:
+				thumb.call(at, 0.9)
+		"hold":
+			# (the thumb stays down, and the ring closes round it)
+			var k := fmod(t * 0.8, 1.0)
+			var lit := roundi(minf(1.0, k / 0.7) * 20.0)
+			for i in 20:
+				var a := -PI / 2.0 + float(i) / 20.0 * TAU
+				px.call(at + Vector2(cos(a), sin(a)) * 11.0, accent if i < lit else edge, 2.0 if k > 0.7 else 1.0)
+			thumb.call(at, 0.9)
+		_:
+			# (a quick stroke across the screen)
+			var k := fmod(t * 0.9, 1.0)
+			var go := minf(1.0, k / 0.22)
+			var a := maxf(0.0, 1.0 - (k - 0.6) / 0.25) if k > 0.6 else 1.0
+			c.draw_rect(Rect2(tl + Vector2(at.x, at.y - 1.0).round() * 2.0, Vector2(roundf(46.0 * go), 2.0) * 2.0), Color(white, 0.5 * a))
+			thumb.call(at + Vector2(46.0 * go, 0), 0.9 * a)
 
 
 ## (Input.holdProgress) How far the right thumb is toward counting as a hold, 0 to 1.
@@ -696,3 +778,14 @@ func _lock_ring(c: Vector2, r: float, t: float) -> void:
 		draw_rect(Rect2(px.call(r + 0.09), Vector2(2, 2)), RING[0])
 		draw_rect(Rect2(px.call(r), Vector2(2, 2)), RING[1] if k == 0 or k == lit - 1 else RING[2])
 		draw_rect(Rect2(px.call(r - 0.06), Vector2(2, 2)), RING[2] if k == 0 or k == lit - 1 else RING[3])
+
+
+## (the touches' marks over the darkness: _draw_screen)
+class _Over extends Node2D:
+	var t
+
+	func _process(_dt: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		t._draw_screen(self)

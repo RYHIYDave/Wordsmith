@@ -387,6 +387,14 @@ func _draw() -> void:
 	if potions <= 0:
 		_rect(px + 1, py + 1, ps - 2, ps - 2, Color(P["black"], 0.65))
 	_text("%d" % potions, px + ps - 2, py + ps - 7, P["white"], {"align": "right", "font": "small", "shadow": ink})
+	# (the prompt pointing at the flask: its edge lit as it pulses, and the arrow over it: hud.ts `point === 'flask'`)
+	if main != null and int(main.guide.point) == 3:
+		if pulse:
+			_rect(px, py, ps, 1, T["accent"])
+			_rect(px, py + ps - 1, ps, 1, T["accent"])
+			_rect(px, py, 1, ps, T["accent"])
+			_rect(px + ps - 1, py, 1, ps, T["accent"])
+		_arrow(px + floorf(ps / 2.0), py - 9, T["accent"])
 	# (with a finger, no key on it, and no level over it: hud.ts `if (pd || !touch)`, `if (!touch)`)
 	if not _touching():
 		_text("Q", px + 2, py + 2, T["dim"], {"font": "small", "shadow": ink})
@@ -603,7 +611,12 @@ func _draw() -> void:
 	# (a word found is the bigger news: for its moment it takes the prompt's place, under the boss's bar where that is up; it
 	# is not shown while the game is held)
 	var toast_up: bool = loot != null and not loot.toast.is_empty() and not get_tree().paused
-	var b: Dictionary = main.guide.banner(not boss_up and not toast_up) if main != null else {}
+	# (FLOOR_CARD_FIRST: the first dungeon's prompt, and every line at the top, waits while the floor's name is up: main.ts)
+	var card_up := not floor_card.is_empty()
+	var b: Dictionary = main.guide.banner(not boss_up and not toast_up) if main != null and not card_up else {}
+	if card_up and main != null:
+		main.guide.gesture = {}
+		main.guide.point = -1
 	if toast_up:
 		_toast(loot.toast["word"], loot.toast["t"], 4.0 + (20.0 * rows if boss_up else 0.0) + (22.0 if bells_up else 0.0), loot.toast["big"], W)
 	elif main != null and not main.move_toast.is_empty() and not get_tree().paused:
@@ -923,6 +936,9 @@ func _move_toast(skill: int, age: float, top: float, W: float) -> float:
 	var scale := 3 if W >= 380.0 else 2
 	var nw := _width(name) * scale
 	var key: String = "SPACE" if skill == 2 else str(skills[skill].get("key", "RIGHT CLICK"))
+	# (ui/guide.ts pressName: with a finger, TAP, TAP + HOLD, SWIPE)
+	if _touching():
+		key = ["TAP", "TAP + HOLD", "SWIPE"][skill]
 	var line := "%s to %s" % [key, str(sk.get("verb", name))]
 	var icon: String = "ability:" + str(skills[skill]["icon"])
 	var isz := _pic_size(icon)

@@ -2,6 +2,9 @@
 ## shows now, in the order the game has them:
 ##   USE    his first word is on a move: what to press, the move's name with its words, and the word's own plain line (for
 ##          a while after it is put there)
+##   FIGHT  in a fight, till each is done: a line for each move open (TAP to STRIKE, TAP + HOLD to SLAM, SWIPE to LUNGE, or with a
+##          mouse LEFT CLICK, RIGHT CLICK, SPACE) and, once his life has fallen under 40% with a flask in hand, TAP THE FLASK (Q)
+##          to HEAL; each ticked as it is done (game.ts guideRows, updateGuide: `met` once an enemy awake is near him first)
 ##   SMITH  his first word in hand, whichever it is: put it on Strike (in a fight: when the fight is over)
 ##   TAKE   a word lying near, before he has set one: walk over it
 ##   CARRY / RING  the stone in hand: for a few seconds on finding it, and on coming into town with it
@@ -10,7 +13,9 @@
 ##   MOVE   till 3 tiles walked
 ## The first word's prompts are a new player's lesson: once a word has been set in a move they are over (game.ts endGuide;
 ## loot.gd `taught`), and a word come by after that is only announced (hud.gd WORD FOUND).
-## `point`: what the prompt points at on the screen, an attack's plate (0, 1) or the Lunge's button (2); -1 nothing.
+## `point`: what the prompt points at on the screen, an attack's plate (0, 1), the Lunge's button (2) or the flask (3); -1 nothing.
+## `gesture`: with a finger, the gesture the prompt asks for, drawn as a ghost where it should be made (main.ts hudIn.gesture;
+## touch.gd draws it): {kind: stick|tap|hold|flick, at (game pixels on the screen, a tap's or a hold's), dir (the stick's)}.
 ##
 ## THE QUEST'S LINE (ui/guide.ts questBanner; game.ts updateSpeak, questGivers, turnInFor; game/quest_marks.ts), when the
 ## guide has nothing to say: "Speak to the ARMOURER" the moment he has a quest to give (the ring lit), and "Return to the
@@ -41,6 +46,20 @@ var _givers: Array = []
 var _back := ""
 var _place := ""
 var _clock := 0.0
+## THE FIGHT'S LESSON (game.ts newGuide: met, low, quick, slow, evade, flask), kept in the save
+var met := false
+var low := false
+var quick := false
+var slow := false
+var evade := false
+var flask := false
+## (defs.ts GUIDE: the flask is pointed out when his life first falls below this share; monsters this near, and awake, are a
+## fight; TUNE.aggroRadius + 1.5, an enemy this near and seen: met)
+const LOW_LIFE := 0.4
+const MET := 9.0 + 1.5
+## (ui/guide.ts pressName, with a finger and with a mouse, the flask's)
+const FLASK_PRESS := ["Q", "TAP THE FLASK"]
+var gesture := {}
 
 
 ## The prompt for this moment: {caption, text, sub}, or empty. `seen`: it is on the screen (the boss's bar, or the news of a
@@ -50,7 +69,9 @@ func banner(seen := true) -> Dictionary:
 	var dt := clampf(now - _clock, 0.0, 0.1)
 	_clock = now
 	point = -1
+	gesture = {}
 	_speak_step()
+	_fight_step()
 	var b := _lesson()
 	if not b.is_empty():
 		return b
@@ -80,7 +101,15 @@ func _lesson() -> Dictionary:
 		var f: Array = L.fronts(at)
 		var says: String = Words.word(f[0])["frontText"] if not f.is_empty() else Words.word(L.behinds(at)[0])["behindText"]
 		point = at
+		# (the word may be on the swipe: the Ranger's first goes on Trap)
+		if _touch():
+			gesture = {"kind": "flick"} if at == 2 else _on_monster("tap" if at == 0 else "hold")
 		return {"caption": "WORDSMITHING", "text": "%s: %s" % [(TOUCH_PRESS if _touch() else PRESS)[at], str(L.r(at)["name"]).to_upper()], "sub": says}
+	# FIGHT: in a fight, a line for each move open (and the flask once wanted) till each is done
+	var fight: bool = not town and main._in_fight()
+	var rows := rows_now()
+	if fight and rows.any(func(r): return not r["done"]):
+		return _fight_banner(rows)
 	if loot.lesson():
 		var held: String = loot.first_spare()
 		var strike: String = str(Words.skill(main.hero.loadout.id(0))["name"]).to_upper()
@@ -101,16 +130,122 @@ func _lesson() -> Dictionary:
 		return {}
 	if town and not loot.ring_lit:
 		if hero.walked < STEPS:
+			_stick_ghost()
 			return {"caption": "HOW TO PLAY", "text": "LEFT THUMB to MOVE" if _touch() else "W A S D to MOVE", "sub": "Put your thumb down anywhere on the left and push." if _touch() else ""}
 		if loot.quest_given:
 			return {"caption": "WORDSMITHING", "text": "Take the STAIRS down", "sub": "Find the fallen wordsmith, and bring back the stone."}
 		return {"caption": "WORDSMITHING", "text": "Talk to the WORDSMITH", "sub": "He stands in the ring of stones. Tap him." if _touch() else "He stands in the ring of stones. Go up to him and press E."}
 	var b = loot._body
 	if not town and b != null and not b["searched"] and b["node"] != null and hero.world.distance_to(b["at"]) < SIGHT and main.sees(hero.world, b["at"]):
+		if _touch():
+			gesture = {"kind": "tap", "at": (main._touch.to_view(b["at"]) - Vector2(0, 4)).round()}
 		return {"caption": "WORDSMITHING", "text": "Someone fell here", "sub": "Walk up to the body to search it, or tap it." if _touch() else "Walk up to the body to search it."}
 	if hero.walked < STEPS:
+		_stick_ghost()
 		return {"caption": "HOW TO PLAY", "text": "LEFT THUMB to MOVE" if _touch() else "W A S D to MOVE", "sub": "Put your thumb down anywhere on the left and push." if _touch() else ""}
 	return {}
+
+
+## (game.ts updateGuide) What the fight's lesson has seen done, and whether it has begun: a move once used, the flask once drunk
+## (loot.gd drink), his life once low with a flask in hand, an enemy awake and near once seen. A test hero has no lessons.
+func _fight_step() -> void:
+	if int(main.get("trial")) > 0 or main.get("practice") == true or main.loot.taught:
+		return
+	var h = main.hero
+	if h == null:
+		return
+	quick = quick or int(h.uses[0]) > 0
+	slow = slow or int(h.uses[1]) > 0
+	evade = evade or int(h.uses[2]) > 0
+	if not low and h.life < h.max_life * LOW_LIFE and main.loot.potions > 0:
+		low = true
+	if not met and main._monsters != null:
+		for m in main._monsters.list:
+			if is_instance_valid(m) and not m.dead and m.seen and m.world.distance_to(h.world) < MET:
+				met = true
+				break
+
+
+## (game.ts guideRows, with FIRST_LEVELS) The lines of the fight's lesson showing, each with whether it is done: only the moves
+## open, each as it opens; the flask once wanted.
+func rows_now() -> Array:
+	if not met or main.loot.taught:
+		return []
+	var h = main.hero
+	var out: Array = [{"id": "quick", "done": quick}]
+	if h.move_open(1):
+		out.append({"id": "slow", "done": slow})
+	if h.move_open(2):
+		out.append({"id": "evade", "done": evade})
+	if low:
+		out.append({"id": "flask", "done": flask})
+	return out
+
+
+## (ui/guide.ts guideBanner 'fight'; main.ts hudIn.gesture) The fight's lesson as the prompt draws it, a line for each; what it
+## points at (the dodge, the flask: the newest not done); and with a finger the gesture the next line asks for.
+func _fight_banner(rows: Array) -> Dictionary:
+	var h = main.hero
+	var t: bool = _touch()
+	var skills: Array = main._hud._skills() if main._hud != null else []
+	var how := {}
+	var what := {}
+	for i in 3:
+		var id: String = ["quick", "slow", "evade"][i]
+		var key: String = str(skills[i].get("key", PRESS[i])) if i < 2 and i < skills.size() else PRESS[i]
+		how[id] = TOUCH_PRESS[i] if t else key
+		var sk: Dictionary = Words.skill(h.loadout.id(i))
+		what[id] = "to %s" % str(sk.get("verb", sk.get("name", ""))).to_upper()
+	how["flask"] = FLASK_PRESS[1] if t else FLASK_PRESS[0]
+	what["flask"] = "to HEAL"
+	var lines: Array = []
+	var open: Array = []
+	for r in rows:
+		lines.append({"id": r["id"], "how": how[r["id"]], "what": what[r["id"]], "done": r["done"]})
+		if not r["done"]:
+			open.append(r["id"])
+	point = 3 if open.has("flask") else (2 if open.has("evade") else -1)
+	if t and not open.is_empty():
+		match open[0]:
+			"quick":
+				gesture = _on_monster("tap")
+			"slow":
+				gesture = _on_monster("hold")
+			"evade":
+				gesture = {"kind": "flick"}
+	return {"caption": "HOW TO PLAY", "text": "", "sub": "", "lines": lines}
+
+
+## (main.ts, the 'move' step) The walking thumb's ghost, pushed the way the dungeon goes: toward the nearest enemy (in town, with
+## none, a step up and to the right of him), as it lies on the screen.
+func _stick_ghost() -> void:
+	if not _touch():
+		return
+	var h = main.hero
+	var to: Vector2 = h.world + Vector2(1, -1)
+	var best := INF
+	if main._monsters != null:
+		for m in main._monsters.list:
+			if is_instance_valid(m) and not m.dead and m.world.distance_to(h.world) < best:
+				best = m.world.distance_to(h.world)
+				to = m.world
+	gesture = {"kind": "stick", "dir": main._touch.to_view(to) - main._touch.to_view(h.world)}
+
+
+## (main.ts onMonster) A tap's or a hold's ghost: on the nearest enemy seen if the right thumb can reach it there (the screen's right
+## half, clear of its edges); otherwise out on the right, where a tap aims itself. Empty with none seen.
+func _on_monster(kind: String) -> Dictionary:
+	var h = main.hero
+	var near = null
+	for m in main._monsters.list:
+		if is_instance_valid(m) and not m.dead and m.seen and (near == null or m.world.distance_to(h.world) < near.world.distance_to(h.world)):
+			near = m
+	if near == null:
+		return {}
+	var s: Vector2 = main._touch.to_view(near.world) - Vector2(0, 10)
+	var v: Vector2 = main._touch.view_size()
+	var reach: bool = s.x >= v.x * 0.45 and s.x <= v.x - 12.0 and s.y >= 60.0 and s.y <= v.y - 50.0
+	return {"kind": kind, "at": s.round() if reach else Vector2(roundf(v.x * 0.72), roundf(v.y * 0.56))}
 
 
 ## The word lying nearest him on the floor, within sight (ui/guide.ts guideWord), or "".

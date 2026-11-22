@@ -1060,6 +1060,9 @@ func drink() -> void:
 	if potions <= 0 or (hero.life >= hero.max_life and not blood):
 		return
 	potions -= 1
+	# (the first dungeon's fight lesson: TAP THE FLASK to HEAL, done: guide.gd)
+	if main != null and main.guide != null:
+		main.guide.flask = true
 	# (UNIQUE ITEMS: Bloodprice, a flask heals nothing: it makes him hit harder for a while)
 	if hero.uniques == null or not hero.uniques.blood_flask():
 		hero.heal(POTION_HEAL)

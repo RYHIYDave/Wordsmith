@@ -1989,3 +1989,96 @@ func companions(main, hero, dir: String) -> void:
 			"fox": "gives her a burst of speed (Swift)", "tortoise": "a brief shield (Guarding)"}[k]
 		_line(did.get(k, false), "the %s bites%s and %s" % [k, "" if did.has(k) else " (no bite seen)", what])
 	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## THE FIRST DUNGEON'S FIGHT LESSON AND ITS GHOSTS (guide.gd; game.ts guideRows, updateGuide; ui/guide.ts guideBanner 'fight';
+## main.ts hudIn.gesture; ui/hud.ts drawGesture): with a finger, the walking thumb pushed the way to go; in a fight a line for each
+## move open, each ticked as it is done, the next one's gesture where it should be made; the flask's line once his life is low,
+## the flask pointed at; kept in the save; with a mouse the keys and no ghost.
+func lesson(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var G = M.guide
+	var L = M.loot
+	var T = M._touch
+	L.taught = false
+	h.practice = false
+	L.level = 10
+	h.loadout.set_level(10, L.ring_lit)
+	T.on = true
+	await M._wait(0.6)
+	# (the floor's name across the screen gone: the prompt waits behind it)
+	M._hud.floor_card = {}
+	# (the floor's monsters far off and asleep, so that nothing is a fight yet)
+	for m in M._monsters.list:
+		if is_instance_valid(m) and not m.dead:
+			m.state = "sleep"
+			m.seen = false
+	h.walked = 0.0
+	G.met = false
+	await M._wait(0.3)
+	var b: Dictionary = G.banner()
+	_line(b.get("text", "") == "LEFT THUMB to MOVE" and G.gesture.get("kind", "") == "stick" and (G.gesture["dir"] as Vector2).length() > 0.0,
+		"not walked yet: %s, and the walking thumb's ghost pushed %s" % [b.get("text", ""), G.gesture.get("dir")])
+	await M._snap(dir + "/lesson_stick.png")
+	h.walked = 5.0
+	# A FIGHT: one awake, a little to his right on the screen
+	var foe = null
+	for m in M._monsters.list:
+		if is_instance_valid(m) and not m.dead and not m.boss:
+			foe = m
+			break
+	foe.world = M._free_near(h.world + Vector2(2.0, 0.0))
+	foe.state = "chase"
+	foe.seen = true
+	foe.speed = 0.0
+	foe.max_life = 100000.0
+	foe.life = 100000.0
+	h.uses = [0, 0, 0]
+	await M._wait(0.4)
+	b = G.banner()
+	# (a lambda keeps the banner it was made with: each read is handed the one now)
+	var ids := func(bn: Dictionary) -> Array: return (bn.get("lines", []) as Array).map(func(l): return [l["id"], l["how"], l["done"]])
+	_line(G.met and ids.call(b).size() == 3 and str(ids.call(b)[0][1]) == "TAP" and str(ids.call(b)[1][1]) == "TAP + HOLD" and str(ids.call(b)[2][1]) == "SWIPE",
+		"a fight: the lesson's lines %s (%s)" % [ids.call(b), (b.get("lines", []) as Array).map(func(l): return "%s %s" % [l["how"], l["what"]])])
+	var on_foe: Vector2 = T.to_view(foe.world) - Vector2(0, 10)
+	_line(G.gesture.get("kind", "") == "tap" and (G.gesture["at"] as Vector2).distance_to(on_foe) < 2.0, "its first line's ghost: a tap on the enemy (%s, the enemy at %s)" % [G.gesture, on_foe.round()])
+	await M._wait(0.3)
+	await M._snap(dir + "/lesson_tap.png")
+	h.uses[0] = 1
+	await M._wait(0.2)
+	b = G.banner()
+	_line(ids.call(b)[0][2] == true and G.gesture.get("kind", "") == "hold", "the quick attack used: its line ticked; the next one's ghost a hold (%s)" % G.gesture.get("kind", ""))
+	await M._wait(0.5)
+	await M._snap(dir + "/lesson_hold.png")
+	h.uses[1] = 1
+	await M._wait(0.2)
+	b = G.banner()
+	_line(G.gesture.get("kind", "") == "flick" and G.point == 2, "the slow one used: the swipe's ghost, the Lunge pointed at (%s, point %d)" % [G.gesture.get("kind", ""), G.point])
+	await M._wait(0.15)
+	await M._snap(dir + "/lesson_flick.png")
+	# HIS LIFE LOW, a flask in hand: its line, the flask pointed at
+	h.unhurt = false
+	h.life = h.max_life * 0.3
+	L.potions = maxi(1, L.potions)
+	await M._wait(0.2)
+	b = G.banner()
+	_line(G.low and ids.call(b).size() == 4 and ids.call(b)[3][0] == "flask" and str(ids.call(b)[3][1]) == "TAP THE FLASK" and G.point == 3, "his life low: %s; pointed at: the flask (%d)" % [ids.call(b)[3] if ids.call(b).size() > 3 else null, G.point])
+	await M._snap(dir + "/lesson_flask.png")
+	L.drink()
+	h.uses[2] = 1
+	h.unhurt = true
+	await M._wait(0.2)
+	b = G.banner()
+	_line(G.flask and not b.has("lines"), "the flask drunk and the Lunge made: the lesson's lines all done, gone (%s)" % b.get("text", "none"))
+	# KEPT IN THE SAVE
+	var run: Dictionary = preload("res://scripts/save.gd").run_of(M)
+	_line(run.get("guide", {}) == {"met": true, "low": true, "quick": true, "slow": true, "evade": true, "flask": true}, "kept in the save: %s" % run.get("guide"))
+	# WITH A MOUSE: the keys, and no ghost
+	G.quick = false
+	h.uses[0] = 0
+	T.on = false
+	b = G.banner()
+	_line(not b.get("lines", []).is_empty() and str(b["lines"][0]["how"]) == "LEFT CLICK" and G.gesture.is_empty(), "with a mouse: %s, and no ghost" % [b.get("lines", []).map(func(l): return l["how"])])
+	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

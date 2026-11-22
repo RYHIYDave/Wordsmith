@@ -33,6 +33,8 @@ static func run_of(main) -> Dictionary:
 		"gold": loot.gold, "kills": loot.kills,
 		# (how far through the first lessons he is: game.ts save `guide`, its `walked`)
 		"walked": h.walked,
+		# (and the fight's lesson: what it has seen done, game.ts save `guide` met, low, quick, slow, evade, flask)
+		"guide": {"met": main.guide.met, "low": main.guide.low, "quick": main.guide.quick, "slow": main.guide.slow, "evade": main.guide.evade, "flask": main.guide.flask},
 		"depth": main.last_floor, "cleared": loot.cleared, "way": main.way_depth,
 		"body": loot.body_searched, "asked": loot.quest_given, "ring": loot.ring_lit, "quest": loot.quest,
 		"furnace": loot.furnace, "meld": loot.meld, "meldAsk": loot.meld_ask, "toldCarrier": loot.told_carrier,
@@ -152,6 +154,10 @@ static func restore_run(main, s: Dictionary) -> void:
 				loot.words[w] = maxi(0, int(s["words"][w]))
 	loot.gold = maxi(0, int(_num(s.get("gold"), 0)))
 	h.walked = maxf(0.0, _num(s.get("walked"), 0.0))
+	var gq = s.get("guide")
+	if gq is Dictionary:
+		for k in ["met", "low", "quick", "slow", "evade", "flask"]:
+			main.guide.set(k, gq.get(k) == true)
 	loot.kills = maxi(0, int(_num(s.get("kills"), 0)))
 	main.last_floor = maxi(1, int(_num(s.get("depth"), 1)))
 	loot.cleared = maxi(0, int(_num(s.get("cleared"), 0)))
