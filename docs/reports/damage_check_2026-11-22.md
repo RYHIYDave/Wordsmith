@@ -174,3 +174,16 @@ Blight and Heavy in front, Power II and Fleeting behind, gear chosen for them (S
 The build chosen before (Fumes and Heavy; Power II and Fleeting; Dexterity 376, 2.13 attacks a second): 452,975, 6.6 s (424,658,
 7.2 s). Fumes is fire and poison together, and burning's own doubles its fire half.
 (damage_check_2026-11-22_warlock_brawler2.txt)
+
+## Burning's own the Mage's alone
+
+His words: “Maybe we change some stuff in the mages fire tree for the "burning enemies take more fire damage" cause I don't like
+that fire is BiS for a str/dex character”. A burning enemy takes double from a fire hit only of a hero who has taken Hearth, the
+fourth of the Mage's fire path (words.gd BURN_HEARTH; Hearth's card in place of its mana half, which this port has not). The fair
+fight again (damage_check_2026-11-22_hearth.txt), his quick attack into the elite and the pack dead in (with his hold):
+- the Brawler, his words found afresh: Blight and Precise in front, Power II and Fleeting behind, no fire (Strength 381,
+  Dexterity 180): 375,012 a second, 6.5 s (384,973, 9.2 s). Before, Fumes: 452,975, 6.6 s.
+- the Warlock (Fire II, Swift; Power II, Fleeting): 283,098, 5.9 s (192,407, 8.9 s); with Hex Chain and Blazing Arm at the game's
+  own 70% and 50%: 263,265, 4.5 s (192,507, 7.5 s). Before, with burning's own: 472,332, 3.3 s.
+- the fire Mage, Hearth hers (Fire II, Twin; Power II, Fleeting): 158,128, 11.3 s (318,846, 7.2 s), as before (320,810, 7.5 s).
+- the frost Mage, Scald (fire and frost melded), no Hearth: 109,969, 23.9 s (209,068, 10.7 s). Before: 351,591, 5.7 s.

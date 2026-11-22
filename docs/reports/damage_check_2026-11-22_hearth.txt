@@ -1,0 +1,61 @@
+BURNING'S OWN THE MAGE'S ALONE (her fire tree's Hearth: words.gd BURN_HEARTH)
+
+=== BRAWLER (Strength and Dexterity) ===
+hero: level 50, Str 381 Dex 180 Int 6; weapon 69-94 at 1.80 attacks a second; damage +0%, physical +323%, fire +0%, frost +0%, lightning +0%, poison +241%, poison added 0-0; critical 78% for +530%
+talents: vstiffjab, vviperjab, vknockdown, vlauncher, vswitchkick, vlonglegs, vwallslam, vaftershock, vthunderknee, vfullset
+  mainhand: War Wraps + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), sunder (str 20.0, physPct 40.0), twin (critChance 12.0), piercing (critMult 60.0)
+  helm: War Helm + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  chest: War Plate + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  gloves: Studded Gloves + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), power2 (physPct 81.0), twin (critChance 12.0), power (str 27.0)
+  belt: Studded Belt + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  boots: War Greaves + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  amulet: Obsidian Amulet + poison2 (poisonPct 81.0), power2 (physPct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring1: Ruby Ring + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), power2 (physPct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), sunder (str 20.0, physPct 40.0), twin (critChance 12.0), piercing (critMult 60.0)
+ALL FOUR WORDS (in front blight, precise; behind power2, fleeting), in his hold too (vkick), burning's own +0%: into the elite, his quick attack alone 375012 a second, it and his hold 384973 a second; a tough pack (six of 2000000 life), quick alone dead in 6.5 s (1860114 a second), it and his hold 9.2 s (1306450 a second)
+
+=== WARLOCK (Strength and Intelligence), as a man ===
+hero: level 50, Str 111 Dex 153 Int 356; weapon 50-67 at 3.38 attacks a second; damage +54%, physical +0%, fire +364%, frost +0%, lightning +0%, poison +0%, poison added 0-0; critical 81% for +530%
+talents: branded, hexchain, blazingarm, withering, pyre, souldebt, lastrites, hunger, terribleroar, bloodlust
+  mainhand: Pact Tome + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fervor (atkSpeed 16.0, firePct 40.0), twin (critChance 12.0), splitting (dmgPct 54.0)
+  offhand: Runed Focus + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  helm: War Helm + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), swift (atkSpeed 22.0)
+  belt: Studded Belt + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Emerald Amulet + fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0), swift (atkSpeed 22.0)
+  ring1: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too (curse), burning's own +0%: into the elite, his quick attack alone 283098 a second, it and his hold 192407 a second; a tough pack (six of 2000000 life), quick alone dead in 5.9 s (2035152 a second), it and his hold 8.9 s (1354663 a second)
+
+=== MAGE, FIRE (Intelligence) ===
+hero: level 50, Str 86 Dex 116 Int 351; weapon 69-95 at 1.87 attacks a second; damage +108%, physical +0%, fire +323%, frost +0%, lightning +0%, poison +0%, poison added 0-0; critical 75% for +530%
+talents: kindling, searing, aura, flamewarp, fuel, inferno, lasting, charged, forking, ball
+  mainhand: Runed Staff + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), piercing (critMult 60.0)
+  helm: War Helm + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Amethyst Amulet + fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring1: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+ALL FOUR WORDS (in front fire2, twin; behind power2, fleeting), in his hold too (orb), burning's own +100%: into the elite, his quick attack alone 158128 a second, it and his hold 318846 a second; a tough pack (six of 2000000 life), quick alone dead in 11.3 s (1065870 a second), it and his hold 7.2 s (1665488 a second)
+
+=== MAGE, FROST (Intelligence) ===
+hero: level 50, Str 86 Dex 116 Int 351; weapon 69-95 at 1.87 attacks a second; damage +108%, physical +0%, fire +323%, frost +0%, lightning +0%, poison +0%, poison added 0-0; critical 75% for +530%
+talents: bittercold, deepfreeze, aura, frostwarp, rime, shatter, lasting, kindling, searing, spear
+  mainhand: Runed Staff + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), piercing (critMult 60.0)
+  helm: War Helm + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Amethyst Amulet + fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring1: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+ALL FOUR WORDS (in front scald, twin; behind power2, fleeting), in his hold too (orb), burning's own +0%: into the elite, his quick attack alone 109969 a second, it and his hold 209068 a second; a tough pack (six of 2000000 life), quick alone dead in 23.9 s (502861 a second), it and his hold 10.7 s (1119127 a second)
+
+THE WARLOCK, HEX CHAIN AND BLAZING ARM AT THE GAME'S OWN SHARES (70%, 50%)
+ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too (curse), burning's own +0%: into the elite, his quick attack alone 263265 a second, it and his hold 192507 a second; a tough pack (six of 2000000 life), quick alone dead in 4.5 s (2680086 a second), it and his hold 7.5 s (1605721 a second)
