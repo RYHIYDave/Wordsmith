@@ -61,6 +61,9 @@ func run(main, hero, d: String) -> void:
 	h = hero
 	dir = d
 	G = JSON.parse_string(FileAccess.get_file_as_string(OS.get_environment("WS_DMG_GEAR")))
+	# (WS_ELEMENT_SPLASH: Flame's splash round what a one-enemy move hits, words.gd ELEMENT_SPLASH, for sizing it)
+	if OS.has_environment("WS_ELEMENT_SPLASH"):
+		Words.ELEMENT_SPLASH = float(OS.get_environment("WS_ELEMENT_SPLASH"))
 	# (WS_BURN_MORE: burning's own, words.gd BURN_MORE, for sizing it)
 	if OS.has_environment("WS_BURN_MORE"):
 		Words.BURN_MORE = float(OS.get_environment("WS_BURN_MORE"))

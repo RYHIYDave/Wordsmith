@@ -112,6 +112,9 @@ const SWIFT_DODGE := 3.0
 ##               held still, level 50: none, +50%, +100%: into one elite 121,648 / 161,765 / 230,125 a second, a tough pack dead in
 ##               16.5 / 12.3 / 10.2 s; docs/reports/damage_check_2026-11-22.md): +100%. WS_BURN_MORE for a run.
 static var BURN_MORE := 1.0
+## (what Flame and Frost in front of a one-enemy move splash round what it hits, a share of the hit: the game's 1, all of it;
+## WS_ELEMENT_SPLASH for a run of the damage check)
+static var ELEMENT_SPLASH := 1.0
 ## (THE MAGE'S OWN, his “Do that.” to bringing her clearing of a pack to within about half again the Warrior's, her one enemy at a
 ## time left lower: her Wave and her Orb a third and more harder, MAGE_MORE, on top of the Wave's evening)
 const MAGE_MORE := 1.35
@@ -509,7 +512,7 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		r["ignite"] = burn / 100.0
 		if single:
 			r["splash"] = maxf(r["splash"], 1.5)
-			r["splash_dmg"] = 1.0
+			r["splash_dmg"] = maxf(r["splash_dmg"], ELEMENT_SPLASH)
 		if ELEMENT_HIT:
 			var fh: float = 25.0 * rk.call(front, "fire") + 0.6 * grows_by.call(front, "fire")
 			word_hit = maxf(word_hit, fh)
