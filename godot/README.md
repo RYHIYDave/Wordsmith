@@ -1288,11 +1288,14 @@ augment attacks.  I want things to compound as they are added to attacks or abil
   `talents_page.gd` lay_out, draw: the WEAPON row; `inventory.gd`, `hud.gd`): at his words the morning after (“No I mean I don't
   like the trees starting with a weapon swap.  I want the swap to be available but not be part of the talent tree pathing.  Like
   it's a pre-point, something that can be allocated in the talent tree area but before you get into an actual branch”), his
-  weapon is no stone of his tree: a row of its own under the tree on the TALENTS page, WEAPON, then the battle axe, the
-  greatsword and the warhammer, the one he holds lit; pressed, its card (WEAPON: FREE TO SWAP; SWAP TO IT (NO POINT), or YOURS).
+  weapon is no stone of his tree: each weapon's name on a plate at the foot of its own shape on the TALENTS page (his word
+  after the first try, a row under the tree with lines fanning up from a rune: “Okay but that looks bad visually so can you fix
+  that”: no rune, no lines up from it, the tree come down to fill the page, the shapes of the two weapons he does not hold
+  fainter), the one he holds lit; pressed, its card (WEAPON: FREE TO SWAP; SWAP TO IT (NO POINT), or YOURS), his picture made
+  again at once with the new weapon in his hands; `--only=talpage` pictures the page.
   The greatsword his as he starts; another in its place at any level, anywhere, so long as nothing more on the old one's path is
   taken (“Undo the greatsword's talents first”). It costs no point: his ten go on the tree's own, the first at level 5, as every
-  hero's. The tree begins at each path's own first talents, drawn from where the tree begins; only his weapon's open.
+  hero's. The tree begins at each path's own first talents; only his weapon's open.
   `--only=talents`: 82 checks (a new Warrior at level 1 swapping to the axe and back, the row under the tree).
 - **What he adds compounds** (`hero.gd` side, word_k, talent_hit; `words.gd` resolve `word_k`): a blow of one of his moves
   was made of everything already, each a multiplier on the rest. What else he sets off now is too: a talent's arc or its

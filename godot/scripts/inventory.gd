@@ -605,6 +605,9 @@ func _tal_press(action: String, arg) -> void:
 				hero.talents.erase(out)
 			hero.talents.append(arg)
 			hero.talents_changed()
+			# (the game waits under the page: his picture made again at once, the new weapon in his hands beside it)
+			if out != "" and hero.has_method("_show"):
+				hero._show()
 			_tal.flash = {"id": arg, "t": 0.0}
 			if loot.sfx != null:
 				loot.sfx.play("equip")

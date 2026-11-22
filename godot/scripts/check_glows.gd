@@ -3459,3 +3459,33 @@ func whirl1(main, hero, dir: String) -> void:
 	h.talents_changed()
 	h.unhurt = false
 	print("WHIRL1: %d checks, %d wrong" % [n, bad.size()])
+
+
+## THE WARRIOR'S TALENTS PAGE, for the eye (his word: the weapons a pre-point, under the tree): at level 10, the greatsword his and
+## Sweeping Cut taken; the battle axe's card read; swapped to the warhammer.
+func talpage(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	M.set_class("warrior", true)
+	M.loot.level = 10
+	h.talents = ["greatsword"]
+	h.talents_changed()
+	var inv = M._inv
+	if not inv.visible:
+		inv.toggle()
+	inv._page = "talents"
+	inv._tal.sel = ""
+	await M._wait(0.4)
+	await M._snap(dir + "/talpage_greatsword.png")
+	inv._tal.sel = "battleaxe"
+	await M._wait(0.3)
+	await M._snap(dir + "/talpage_axe_card.png")
+	inv._tal_press("tal_take", "warhammer")
+	inv._tal.sel = "warhammer"
+	await M._wait(0.4)
+	await M._snap(dir + "/talpage_hammer.png")
+	print("TALPAGE hammer: weapon %s arms %s skin '%s' act '%s' list %d side %d idle frames %d, art is dungeon %s, in town %s" % [h.weapon, h.arms(), h.skin, h._act, h._list, h._side, h.art.count(h._side, 0), h.art == h.arts.get("dungeon"), h.in_town])
+	inv.toggle()
+	await M._wait(0.5)
+	await M._snap(dir + "/talpage_hammer_closed.png")
+	print("TALPAGE done")

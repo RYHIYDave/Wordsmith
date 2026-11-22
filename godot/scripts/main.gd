@@ -2885,6 +2885,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_glows.gd").new().finalmusic(self, hero, dir)
 		get_tree().quit()
 		return
+	if _arg("only") == "talpage":
+		await preload("res://scripts/check_glows.gd").new().talpage(self, hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "whirl1":
 		await preload("res://scripts/check_glows.gd").new().whirl1(self, hero, dir)
 		get_tree().quit()
