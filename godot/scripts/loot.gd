@@ -132,6 +132,69 @@ static func implicit_of(it: Dictionary) -> Array:
 	return out
 
 
+## THE THREE DEFENCES' WORDS on gear: how big a barrier or a dodge burned into a piece of this kind and level is at most (as a
+## leather or cloth piece's own, times the 1.2 a word burned in has over an affix; a weapon, a ring or an amulet as gloves, an
+## off-hand as a helm).
+static func defence_size(slot: String, ilvl: float) -> float:
+	var s := slot.trim_suffix("1").trim_suffix("2")
+	var H: Array = HEAVY_ARMOUR.get("helm" if s == "offhand" else s, HEAVY_ARMOUR["gloves"])
+	return (float(H[0]) + float(H[1]) * (ilvl - 1.0)) * LEATHER_K * 1.2
+
+
+## A word's option on a piece as the three defences' words make it: a chance to block, barrier; Swift's cooldown recovery on a
+## piece that keeps him (off-hand, helm, chest, belt), dodge. Each roll where it fell in the old range, in the new (from 55% of
+## the most to the most; a melded word's three quarters of that).
+func _defence_option(w: String, slot: String, ilvl: float, o: Dictionary) -> Dictionary:
+	var k := 0.75 if Words.is_meld(w) else 1.0
+	var to := {}
+	var swift_here: bool = Words.parts_of(w).has("swift") and slot.trim_suffix("1").trim_suffix("2") in ["offhand", "helm", "chest", "belt"]
+	for r in o.get("rolls", []):
+		for m in r[1]:
+			if m[0] == "blockChance":
+				to["blockChance"] = ["barrier", defence_size(slot, ilvl) * BARRIER_K * k, "Barrier"]
+			elif m[0] == "cdr" and swift_here:
+				to["cdr"] = ["dodge", defence_size(slot, ilvl) * k, "Dodge"]
+	if to.is_empty():
+		return o
+	var lo := {}
+	var hi := {}
+	for r in o["rolls"]:
+		for m in r[1]:
+			if to.has(m[0]):
+				lo[m[0]] = minf(float(lo.get(m[0], 1e9)), float(m[1]))
+				hi[m[0]] = maxf(float(hi.get(m[0], -1e9)), float(m[1]))
+	var rolls: Array = []
+	var nlo := 1e9
+	var nhi := 0.0
+	var label := ""
+	for r in o["rolls"]:
+		var mods: Array = []
+		var lines: Array = []
+		var old_lines: Array = r[2] if r.size() > 2 else []
+		for idx in (r[1] as Array).size():
+			var m: Array = r[1][idx]
+			if to.has(m[0]):
+				var span: float = float(hi[m[0]]) - float(lo[m[0]])
+				var f: float = (float(m[1]) - float(lo[m[0]])) / span if span > 0.0 else 1.0
+				var v: float = maxf(1.0, roundf(float(to[m[0]][1]) * (0.55 + 0.45 * f)))
+				mods.append([to[m[0]][0], v])
+				lines.append("+%d %s" % [int(v), to[m[0]][2]])
+				nlo = minf(nlo, v)
+				nhi = maxf(nhi, v)
+				label = to[m[0]][2]
+			else:
+				mods.append(m)
+				if idx < old_lines.size():
+					lines.append(old_lines[idx])
+		rolls.append([r[0], mods, lines])
+	var out := o.duplicate(true)
+	out["rolls"] = rolls
+	if to.has(str(o["stat"])):
+		out["stat"] = to[str(o["stat"])][0]
+		out["range"] = "+%d to %d %s" % [int(nlo), int(nhi), label]
+	return out
+
+
 ## Everything a piece gives (its `mods`, its implicit as the three defences make it).
 static func mods_of(it: Dictionary) -> Array:
 	var mods: Array = it.get("mods", [])
@@ -439,7 +502,12 @@ func derive() -> void:
 	# (THE THREE DEFENCES: his dodge and his barrier, his gear's and what Dexterity and Intelligence add)
 	if DEFENCE_LAYERS:
 		hero.stats["dodge"] = roundf(g.call("dodge") * (1.0 + Words.eff_attr(dex) * DEX_DODGE / 100.0))
-		hero.set_max_barrier(roundf(g.call("barrier") * (1.0 + Words.eff_attr(int_) * INT_BARRIER / 100.0)))
+		# (THE THREE DEFENCES' WORDS: a chance to block gone; a piece that had one burned into it before, its barrier: ten a point)
+		var from_block := 0.0
+		if Words.DEFENCE_WORDS:
+			from_block = g.call("blockChance") * 10.0
+			hero.stats["block_chance"] = 0.0
+		hero.set_max_barrier(roundf((g.call("barrier") + from_block) * (1.0 + Words.eff_attr(int_) * INT_BARRIER / 100.0)))
 	else:
 		hero.stats["dodge"] = 0.0
 		hero.set_max_barrier(0.0)
@@ -1411,6 +1479,10 @@ func imbue_options(w: String, it: Dictionary) -> Array:
 		if not _imbue_read.has(i):
 			_imbue_read[i] = JSON.parse_string(str(opts[i]))
 		out.append(_imbue_read[i])
+	# (THE THREE DEFENCES' WORDS, words.gd DEFENCE_WORDS: a chance to block on gear is barrier; Swift on a piece that keeps him,
+	# dodge in place of cooldown recovery)
+	if DEFENCE_LAYERS and Words.DEFENCE_WORDS:
+		out = out.map(func(o): return _defence_option(w, str(it["slot"]), float(it["ilvl"]), o))
 	# (THE CLASSES EVENED, words.gd EVEN_GEAR_ATTR: a ranked word gives no more of an attribute than its plain word: its option of
 	# Strength, Dexterity or Intelligence is the plain word's own)
 	if Words.EVEN_GEAR_ATTR and Words.is_rank(w):

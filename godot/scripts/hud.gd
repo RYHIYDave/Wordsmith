@@ -386,13 +386,14 @@ func _draw() -> void:
 	_globe(life_x, life_y, 14, hero.life / hero.max_life, T["life"], T["lifeHi"], _life_rim())
 	_text("%d" % ceili(hero.life), life_x, life_y - 3, P["white"], {"align": "center", "font": "small", "shadow": ink})
 	# (THE THREE DEFENCES, loot.gd DEFENCE_LAYERS: his barrier, a ring of cyan round his life, as full as it is; its number at its top)
-	if hero.max_barrier > 0.0:
-		var bf := clampf(hero.barrier / hero.max_barrier, 0.0, 1.0)
+	if hero.max_barrier > 0.0 or (Words.DEFENCE_WORDS and hero.shield > 0.0):
+		var held: float = hero.barrier + (hero.shield if Words.DEFENCE_WORDS else 0.0)
+		var bf := clampf(held / maxf(hero.max_barrier, held), 0.0, 1.0)
 		var cy := Color("#7af8f0")
 		draw_arc(Vector2(life_x, life_y), 18.5, -PI / 2.0, -PI / 2.0 + TAU, 48, Color(cy, 0.22), 2.0)
 		if bf > 0.0:
 			draw_arc(Vector2(life_x, life_y), 18.5, -PI / 2.0, -PI / 2.0 + TAU * bf, 48, cy, 2.0)
-		_text("%d" % ceili(hero.barrier), life_x + 20, life_y - 20, cy, {"font": "small", "shadow": ink})
+		_text("%d" % ceili(held), life_x + 20, life_y - 20, cy, {"font": "small", "shadow": ink})
 	# (mana is only there to be seen when it is what limits the slow abilities: hud.ts, its globe at the right)
 	var by_mana: bool = hero.by_mana()
 	if by_mana:

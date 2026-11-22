@@ -431,6 +431,9 @@ func set_max_barrier(v: float) -> void:
 ## THE THREE DEFENCES: the chance a blow misses him altogether (loot.gd DODGE_K x dodge / (dodge + 40 + 20 a floor)).
 func dodge_chance() -> float:
 	var d: float = stats.get("dodge", 0.0)
+	# (THE THREE DEFENCES' WORDS: Swift behind, his haste is dodge too while it lasts: words.gd SWIFT_DODGE)
+	if Words.DEFENCE_WORDS and haste_t > 0.0 and haste > 0.0:
+		d += haste * Words.SWIFT_DODGE
 	if d <= 0.0:
 		return 0.0
 	return DODGE_K * d / (d + 40.0 + 20.0 * maxf(1.0, float(map.depth) if map != null else 1.0))
@@ -444,6 +447,9 @@ func _through_barrier(dmg: float) -> float:
 	var took := minf(barrier, dmg)
 	barrier -= took
 	_tell({"t": "barrierHit", "x": world.x, "y": world.y, "left": barrier, "most": max_barrier})
+	# (THE SKILL TREES: Shieldwall, his barrier breaking bursts outward, as Guarding's shield did)
+	if barrier <= 0.0 and has("shieldwall"):
+		_shield_burst()
 	return dmg - took
 
 
@@ -838,7 +844,12 @@ func _boons(i: int) -> void:
 		boost_by["frenzy"] = i
 		_tell({"t": "frenzy", "x": world.x, "y": world.y, "dx": face.x, "dy": face.y, "n": frenzy})
 	# GUARDING in front: each use gives a shield (a new one never weaker than what is left of the last)
-	if r["shield"] > 0.0:
+	# (THE THREE DEFENCES' WORDS: with a barrier, Guarding tops it up: words.gd DEFENCE_WORDS)
+	if r["shield"] > 0.0 and Words.DEFENCE_WORDS and max_barrier > 0.0:
+		barrier = minf(max_barrier, barrier + roundf(max_life * float(r["shield"])))
+		boost_by["shield"] = i
+		_tell({"t": "shield", "x": world.x, "y": world.y, "secs": 0.6})
+	elif r["shield"] > 0.0:
 		shield = maxf(shield, roundf(max_life * float(r["shield"])))
 		shield_t = float(Words.data()["guard"]["shieldTime"]) * float(r["last"])
 		boost_by["shield"] = i
@@ -2474,8 +2485,8 @@ func _draw() -> void:
 	if not alive:
 		return
 	# (THE THREE DEFENCES: while his barrier holds, a faint cyan shell shimmers round him, brighter the fuller it is)
-	if barrier > 0.0 and max_barrier > 0.0:
-		var bf := clampf(barrier / max_barrier, 0.0, 1.0)
+	if barrier + shield > 0.0 and (max_barrier > 0.0 or Words.DEFENCE_WORDS):
+		var bf := clampf((barrier + shield) / maxf(max_barrier, barrier + shield), 0.0, 1.0)
 		var shim := 0.5 + 0.5 * sin(_clock * 3.0)
 		draw_set_transform(Vector2(0, -46.0 - _lift), 0.0, Vector2(1.0, 1.9))
 		draw_circle(Vector2.ZERO, 24.0, Color(0.48, 0.97, 0.94, 0.05 + 0.04 * bf))
@@ -2503,9 +2514,9 @@ func _draw() -> void:
 	draw_rect(Rect2(-w / 2 - 1, top - 1, w + 2, 7 + more), edge)
 	draw_rect(Rect2(-w / 2, top, w * clampf(life / max_life, 0.0, 1.0), 5), Color(0.86, 0.16, 0.24))
 	# (THE THREE DEFENCES: his barrier, a cyan line over his life)
-	if max_barrier > 0.0:
+	if max_barrier > 0.0 or (Words.DEFENCE_WORDS and shield > 0.0):
 		draw_rect(Rect2(-w / 2 - 1, top - 4, w + 2, 4), Color(0.04, 0.04, 0.1, 0.85))
-		draw_rect(Rect2(-w / 2, top - 3, w * clampf(barrier / max_barrier, 0.0, 1.0), 2), Color("#7af8f0"))
+		draw_rect(Rect2(-w / 2, top - 3, w * clampf((barrier + shield) / maxf(max_barrier, barrier + shield), 0.0, 1.0), 2), Color("#7af8f0"))
 	if more > 0.0:
 		draw_rect(Rect2(-w / 2 - 1, top + 5, w + 2, 2), Color(0.04, 0.04, 0.1))
 		draw_rect(Rect2(-w / 2, top + 7, w, 2), Color("#0e0c24"))

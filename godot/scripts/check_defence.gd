@@ -134,4 +134,50 @@ func run(main, hero, d: String) -> void:
 	await M._snap(dir + "/def07_stats_ranger.png")
 	M._inv._page = "gear"
 	M._inv.toggle()
+	# --- THE THREE DEFENCES' WORDS (words.gd DEFENCE_WORDS) ---
+	# (Guarding on a chest and a ring: barrier in place of a chance to block; Swift on a chest: dodge in place of cooldown recovery,
+	# on a ring as it was)
+	var g_chest: Array = M.loot.imbue_options("guarding", {"slot": "chest", "ilvl": 20}).map(func(o): return o["range"])
+	var g_ring: Array = M.loot.imbue_options("guarding", {"slot": "ring", "ilvl": 20}).map(func(o): return o["range"])
+	var s_chest: Array = M.loot.imbue_options("swift", {"slot": "chest", "ilvl": 20}).map(func(o): return o["range"])
+	var s_ring: Array = M.loot.imbue_options("swift", {"slot": "ring", "ilvl": 20}).map(func(o): return o["range"])
+	_line(str(g_chest).contains("Barrier") and not str(g_chest).contains("Block") and str(g_ring).contains("Barrier") and str(s_chest).contains("Dodge") and not str(s_chest).contains("Cooldown") and str(s_ring).contains("Attack Speed"),
+		"on gear: Guarding on a chest %s, on a ring %s; Swift on a chest %s, on a ring %s" % [g_chest, g_ring, s_chest, s_ring])
+	# (Swift behind: while its haste lasts, his dodge is more)
+	var d0: float = h.dodge_chance()
+	h.haste = 30.0
+	h.haste_t = 3.0
+	var d1: float = h.dodge_chance()
+	h.haste = 0.0
+	h.haste_t = 0.0
+	_line(d1 > d0, "Swift behind: his dodge chance with its haste on %.0f%% (without %.0f%%)" % [d1 * 100.0, d0 * 100.0])
+	# (Guarding in front: the Mage's barrier topped up by each use; a hero with none has it as a shield, the cyan ring all the same)
+	M.set_class("mage", true)
+	M.loot.level = 20
+	M.loot.ring_lit = true
+	M.loot.attrs["int"] = 14.0 + 5.0 * 19
+	M.loot.gear["chest"] = _piece("chest", "Velvet Robe", [["maxMana", 87], ["armor", 32]], ["+8.7% Cooldown Recovery", "+32 Armour"])
+	M.loot.derive()
+	h.loadout.front[0] = ["guarding", null]
+	h.loadout._r = [null, null, null]
+	h.barrier = 10.0
+	h._boons(0)
+	var topped: float = h.barrier
+	var line: String = str(h.loadout.r(0)["lines"].filter(func(l): return str(l).begins_with("Guarding"))[0])
+	_line(topped > 10.0 and h.shield == 0.0, "Guarding in front, with a barrier: each use tops it up (10 to %d of %d); \"%s\"" % [topped, h.max_barrier, line])
+	M.loot.gear["chest"] = null
+	M.loot.derive()
+	h.shield = 0.0
+	h._boons(0)
+	_line(h.max_barrier == 0.0 and h.shield > 0.0, "with no barrier: a shield of %d for a while, as before" % h.shield)
+	await M._wait(0.3)
+	await M._snap(dir + "/def08_guarding_shield.png")
+	# (a chance to block gone: one burned into gear before, barrier)
+	M.loot.gear["ring1"] = {"name": "Old Ring", "base": "Ruby Ring", "icon": "ring:2", "slot": "ring", "ilvl": 20, "rarity": 1, "imods": [], "mods": [["blockChance", 10]], "implicit": [], "lines": ["+10% Chance to Block"], "imbues": []}
+	M.loot.derive()
+	_line(h.stats.get("block_chance", 0.0) == 0.0 and h.max_barrier > 0.0, "a ring with +10%% Chance to Block from before: no block, %d barrier" % h.max_barrier)
+	M.loot.gear["ring1"] = null
+	h.loadout.front[0] = [null, null]
+	h.loadout._r = [null, null, null]
+	M.loot.derive()
 	print("DEFENCE: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

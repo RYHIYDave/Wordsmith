@@ -99,6 +99,12 @@ static var POISON_SPREAD := true
 static var EVEN_BASE := true
 static var ELEMENT_HIT := true
 static var EVEN_GEAR_ATTR := true
+##   DEFENCE_WORDS (his “Yes to both”, 22 Nov 2026, to the three defences' words): GUARDING the barrier's word, in front each use
+##                tops up his barrier (a hero with none has it as a shield a while, as before), on gear barrier in place of a
+##                chance to block; SWIFT the dodge's, behind its haste is dodge too (SWIFT_DODGE a point of haste), on the pieces
+##                that keep him dodge in place of cooldown recovery; a chance to block gone (loot.gd imbue_options, derive).
+static var DEFENCE_WORDS := true
+const SWIFT_DODGE := 3.0
 const EVEN := {"shot": 1.303, "wave": 1.6, "vialtoss": 1.72, "hellbolt": 1.635}
 const FROST_HIT := 1.0
 const ATTR_KNEE := 50.0
@@ -589,7 +595,10 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		lines.append("Frenzied: each use makes the next %s faster, up to %s times; it fades %s s after the last." % [_pct(float(frenzy["each"]) * 100.0), _num(frenzy["max"]), _num(frenzy["hold"])])
 	if has.call(front, "guarding"):
 		r["shield"] = minf(0.2, float(guard["shield"]) + 0.001 * grows_by.call(front, "guarding"))
-		lines.append("Guarding: each use gives you a shield of %s of your life for %s s." % [_pct(r["shield"] * 100.0), _num(guard["shieldTime"])])
+		if DEFENCE_WORDS:
+			lines.append("Guarding: each use tops up your barrier by %s of your life (with no barrier, it holds that much for %s s)." % [_pct(r["shield"] * 100.0), _num(guard["shieldTime"])])
+		else:
+			lines.append("Guarding: each use gives you a shield of %s of your life for %s s." % [_pct(r["shield"] * 100.0), _num(guard["shieldTime"])])
 	# THE CITY'S WORDS IN FRONT (Version 23.8; his doc "Wordsmith: The New Words": the numbers its starting points, each growing a
 	# little with its attribute, a tenth of a percent a point, a two-hundredth of a tile for Pulling's drag)
 	var C: Dictionary = D.get("city", {"pull": D["pull"]})
@@ -657,7 +666,10 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		lines.append("of Power%s: each hit that lands adds +%s damage for 5 s (up to 5 times)." % [rn.call(behind, "power"), _pct(r["might"])])
 	if has.call(behind, "swift"):
 		r["haste"] = 15.0 + 0.2 * grows_by.call(behind, "swift")
-		lines.append("of Swiftness: +%s movement speed for 3 s after each use." % _pct(r["haste"]))
+		if DEFENCE_WORDS:
+			lines.append("of Swiftness: +%s movement speed and +%d dodge for 3 s after each use." % [_pct(r["haste"]), roundi(r["haste"] * SWIFT_DODGE)])
+		else:
+			lines.append("of Swiftness: +%s movement speed for 3 s after each use." % _pct(r["haste"]))
 	if has.call(behind, "twin"):
 		var again := minf(100.0, 40.0 + 0.5 * grows_by.call(behind, "twin"))
 		r["echo"] = again / 100.0
