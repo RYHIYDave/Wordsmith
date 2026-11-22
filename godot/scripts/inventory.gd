@@ -1830,11 +1830,25 @@ func _card(it: Dictionary, at: Vector2, fixed := false) -> float:
 		implicit.remove_at(0)
 	for l in implicit:
 		rows.append([l, TEXT, false])
+	# (THE LEVELING UNIQUES: a stat that takes away, its price, in red as a unique's price is)
 	for l in loot.lines_of(it):
-		rows.append([l, MAGIC, false])
+		rows.append([l, BAD if int(it["rarity"]) == 3 and str(l).begins_with("-") else MAGIC, false])
 	for im in it.get("imbues", []):
 		for l in loot.lines_of(im):
 			rows.append(["%s: %s" % [Words.word(im["word"])["name"], l], loot.word_color(im["word"]), false])
+	# (UNIQUE ITEMS, game/uniques.ts uniqueLines: under its ordinary stats, what it does in its own orange, its price, whose it is;
+	# it takes no word)
+	if int(it["rarity"]) == 3 and it.get("unique") != null:
+		for l in it.get("does", []):
+			rows.append([l, loot.RARITY_COLOR[3], false])
+		if it.get("price") != null:
+			rows.append([str(it["price"]), BAD, false])
+		if it.get("ucls") != null:
+			var who: String = str(it["ucls"]).capitalize()
+			rows.append([("%s only" % who) if it.get("only") == true else ("The %s's" % who), DIM if it["ucls"] == loot.cls else BAD, true])
+		if it.get("wordIn") == false:
+			rows.append(["Its word is not in the game yet.", BAD, true])
+		rows.append(["Cannot be crafted", DIM, true])
 	if int(it["rarity"]) != 3:
 		var left: int = loot.room(it)
 		rows.append([("Room for %d %s" % [left, "word" if left == 1 else "words"]) if left > 0 else "No room for words", DIM if left > 0 else FAINT, true])

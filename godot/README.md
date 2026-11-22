@@ -998,9 +998,28 @@ lights over the dark (town.gd `_ring_moments`):
   files (`node tools/godot_voices.mjs`, which now also says each hero's 210 or so lines and the town's 24: 1,358 takes, 6 MB).
   `--only=speech` (`check_glows.gd`): 4 checks, pictured.
 
+## Uniques and magic find (the cloud chat, 22 Nov 2026)
+
+- **Where they drop** (game/uniques.ts, UNIQUES on; game.ts rollGear, poolUnique, makePoolUnique, dropBossUnique, gamble;
+  `loot.gd`): every piece of gear about to drop is now and then one of the pool's instead (2 in 1000 from an ordinary monster, 4
+  from a better one, 8 from a hoard, times 1 + his magic find / 100, from floor 2): the ones for everyone and his own, never
+  another hero's, and a Warrior only his own weapon's of his three. Failing that, as often, one of the leveling uniques of the
+  floor's level or below, on any floor. A boss drops his own one kill in ten; the stranger's gamble gives one of the pool's of the
+  kind thrown for 5 times in 1000. Each with the rare chime. The 88 (46 of the pool's, 20 bosses', 20 leveling ones, the final
+  boss's two) are pieces the game's own makeUnique made at each floor's level, their numbers rolled (`tools/godot_loot.ts`,
+  items.json `uniques`, 1,944 of them); their card as the game's: what each does in its own orange, its price in red, whose it
+  is, "Cannot be crafted"; it takes no word, will not split or bind, and a Warrior's keeps its own weapon.
+- **Magic find** (items.ts rollRarity; game.ts rollGear): the hero's Magic Find from his gear (the stats screen's), and the
+  rarity of every piece by the game's rule: the chances of Magic and Rare at the floor's level, times 1 + magic find / 100, a
+  better monster's luck (1.5, 2) or a hoard's (3, 4), and from floor 6 every roll 1.25 times luckier; a boss's or a guardian's
+  first never plain, from floor 6 a rare. A piece of the rarity rolled is one the game rolled on that floor.
+- **The hoards as the game's below floor 1** (game.ts dropLoot): the gold times the floor's level; a boss's four pieces on floors
+  5, 10, 15 and 20; from floor 6 a boss's later pieces and a guardian's second with a hoard's luck.
+- `--only=uniques` (`check_glows.gd`): 11 checks (the odds counted over 20,000 and 200,000 rolls against the game's), pictured.
+
 ## Not in it yet
 
-Uniques, magic find; the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+What the uniques do (they drop, and their cards say it, but their powers are not in yet); the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); playing UPRIGHT (the game laid out for a phone held upright, its PLAY UPRIGHT switch: the Godot screen is laid out for one
 held sideways only); the first dungeon's ghosts of the gesture each prompt asks for on a phone.
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)

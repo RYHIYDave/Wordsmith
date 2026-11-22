@@ -1,10 +1,12 @@
 ## FLOOR 1'S LOOT, THE HERO'S GEAR, HIS LEVELS AND HIS WORDS, as the game has them (game.ts dropLoot, updateDrops, takeItem,
 ## gainXp; game/stats.ts derive; tools/godot_loot.ts saved the game's own gear and pictures: assets/loot).
-##   WHAT FALLS (dropLoot, with LOOT2): an ordinary monster, gold 25% of the time (3 to 8), a piece of gear 4%, a life orb
-##   6%; a pack's leader, gold 8 to 16 and a piece 75% of the time (a leader's luck); a guardian, gold 15 to 25, two
-##   pieces (a hoard's luck, then an ordinary one) and an orb, and the flasks filled; a boss, gold 25 to 45, three pieces
-##   (the first never plain) and an orb. The dead the Warden calls leave nothing. Each piece is one the game itself rolled
-##   at that luck (items.json), so their kinds, names, rarities and properties are the game's.
+##   WHAT FALLS (dropLoot, with LOOT2), the gold each time the floor's level: an ordinary monster, gold 25% of the time (3 to
+##   8), a piece of gear 4%, a life orb 6%; a pack's leader, gold 8 to 16 and a piece 75% of the time (a leader's luck); a
+##   guardian, gold 15 to 25, two pieces (a hoard's luck, then an ordinary one; from floor 6 both a hoard's) and an orb, and the
+##   flasks filled; a boss, gold 25 to 45, three pieces (four on floors 5, 10, 15 and 20: the first never plain, the others
+##   a better monster's luck, from floor 6 a hoard's), now and then his own unique, and an orb. The dead the Warden calls leave
+##   nothing. Each piece is of the rarity the game's rules roll (UNIQUE ITEMS below) and one the game itself rolled on that
+##   floor (items.json), so their kinds, names, rarities and properties are the game's.
 ##   TAKING IT (updateDrops): walking; nothing is taken till it has lain 0.4 s; gold and orbs within 3.2 tiles fly to him
 ##   at 9 a second and are taken at 0.75; gear lies where it fell and is taken within 1.1: worn at once in an empty slot
 ##   it fits, else into the bag of 24, else "Your bag is full". An orb gives back 15% of his life.
@@ -157,6 +159,23 @@ var _pools := {}
 var _by_depth := {}
 ## (QUESTS1115: the armourer's pick for the clapper, fully modded rares by level and slot: tools/godot_loot.ts fullRares)
 var _full_rares := {}
+## UNIQUE ITEMS (game/uniques.ts, UNIQUES on; items.json `uniques`, tools/godot_loot.ts): what each is and where it drops (`defs`),
+## pieces of each as the game's own makeUnique made them at each floor's level, a leveling unique at its own (`pieces`), the odds
+## (`drops`, `gamble`), the chances of Normal, Magic and Rare at each floor's level (`chances`) and LOOT2's (`loot2`).
+##   WHERE THEY DROP (game.ts rollGear, poolUnique, makePoolUnique, dropBossUnique, gamble; uniques.ts poolChance, levelChance,
+##   levelPoolFor): any piece of gear about to drop is now and then one of the pool's instead: 2 in 1000 from an ordinary monster,
+##   4 from a better one, 8 from a hoard, times (1 + his magic find / 100), from floor 2; the ones for everyone and his own, never
+##   another hero's, and a Warrior only his own weapon's of his three. Failing that, as often, one of the leveling uniques of this
+##   floor's level or below (anyone's, or his class's), on any floor. A boss drops his own one kill in ten (floor 13's pair as the
+##   last falls); the stranger's gamble gives one of the pool's of the kind gambled for 5 throws in 1000. Each lands with the
+##   rare chime.
+##   MAGIC FIND (items.ts rollRarity; game.ts rollGear): the chances of Magic and Rare at the floor's level, each times (1 + his
+##   magic find / 100) and a better monster's luck (1.5, 2) or a hoard's (3, 4), and from floor 6 (LOOT2.from) every roll's 1.25
+##   times; a boss's or a guardian's first never plain (from floor 6 a rare at the least). A piece of the rarity rolled is one the
+##   game rolled on this floor (out of all its pools: luck changes only the rarity).
+var _uniques := {}
+## (by floor: the pieces the game rolled there, by rarity, Normal, Magic, Rare: the uniques among them left out)
+var _by_rarity := {}
 ## THE ROYAL CARDS (act3/royal_cards.gd; items.json `royal`): the cards he holds, by royal (game.ts Hero.cards: kept for good,
 ## save.gd); where in the bag the pieces the last hand handed in brought lie (game.ts wonHand); the deck's names, colours, numbers
 ## and what a hand may pay.
@@ -196,6 +215,7 @@ func _ready() -> void:
 	_pools = data["pools"]
 	_by_depth = data.get("byDepth", {})
 	_full_rares = data.get("fullRares", {})
+	_uniques = data.get("uniques", {})
 	_value = data.get("value", {})
 	shops = data["shops"]
 	_imbue = data["imbue"]
@@ -277,7 +297,7 @@ func derive() -> void:
 		"life_regen": float(_tune["baseLifeRegen"]) + g.call("lifeRegen"),
 		"life_on_hit": g.call("lifeOnHit"), "life_on_kill": g.call("lifeOnKill"),
 		"armor": g.call("armor"), "move_speed": g.call("moveSpeed"), "area": 1.0 + g.call("areaPct") / 100.0,
-		"gold_find": g.call("goldFind"),
+		"gold_find": g.call("goldFind"), "magic_find": g.call("magicFind"),
 		# (what a word burned into a piece may add besides: the damage added to his hits of one element (items.ts FLAT_PAIRS;
 		# game.ts baseFor), his chance to stun, what he withstands of each element)
 		"fire_min": g.call("fireMin"), "fire_max": g.call("fireMax"), "frost_min": g.call("frostMin"), "frost_max": g.call("frostMax"),
@@ -454,33 +474,38 @@ func on_kill(m) -> void:
 	# (FLOOR 13'S DOUBLE BOSS: the first of the pair to fall leaves part of a boss's hoard, the last the whole of it; the other
 	# fights on alone: game.ts kill)
 	var other = _partner_of(m) if m.boss else null
+	# (gold by the floor's level, game.ts dropLoot `goldBase`; LOOT2: from floor 6 a boss's later pieces and a guardian's second
+	# with a hoard's luck; a boss one more on floors 5, 10, 15 and 20, TUNE.bossItemsFifth)
+	var p := power()
+	var deep := p >= int(_uniques.get("loot2", {}).get("from", 6))
 	if other != null:
 		say("%s falls. %s fights on alone." % [m.title, other.title], Color("#ff8a3a"))
-		_gold(at, randi_range(12, 22))
+		_gold(at, randi_range(12, 22) * p)
 		_item(at, 4)
 		_orb(at)
 		return
 	if m.boss:
-		_gold(at, randi_range(25, 45))
-		_item(at, 4)
-		_item(at, 1)
-		_item(at, 1)
+		_gold(at, randi_range(25, 45) * p)
+		var n := 3 + (int(_tune.get("bossItemsFifth", 1)) if map != null and int(map.depth) % 5 == 0 else 0)
+		for i in n:
+			_item(at, 4 if i == 0 else (2 if deep else 1))
+		_boss_unique(m, at)
 		_orb(at)
 	elif m.champion:
 		potions = POTIONS
-		_gold(at, randi_range(15, 25))
+		_gold(at, randi_range(15, 25) * p)
 		_item(at, 2)
-		_item(at, 0)
+		_item(at, 2 if deep else 0)
 		_orb(at)
 	elif m.elite:
-		_gold(at, randi_range(8, 16))
+		_gold(at, randi_range(8, 16) * p)
 		if randf() < 0.75:
 			_item(at, 1)
 	else:
 		# (THE TINKERER's tree: Alchemy, what her vials kill always drops gold: game.ts dropLoot, `brewing`)
 		var alchemy: bool = hero.kit != null and hero.kit.get("brewing") == true and hero.has("alchemy")
 		if randf() < 0.25 or alchemy:
-			_gold(at, randi_range(3, 8))
+			_gold(at, randi_range(3, 8) * p)
 		if randf() < 0.04:
 			_item(at, 0)
 		if randf() < 0.06:
@@ -590,10 +615,162 @@ func orb_at(at: Vector2) -> void:
 
 
 func _item(at: Vector2, quality: int) -> void:
-	var here: Dictionary = _by_depth.get(str(map.depth), _pools) if map != null else _pools
-	var pool: Array = here[str(quality)]
-	var it: Dictionary = pool[randi() % pool.size()].duplicate(true)
+	var it: Dictionary = roll_gear(quality)
 	_drop("gear", _scatter(at), it["icon"], {"item": it})
+
+
+## The floor's level, what is found on it is made for (game.ts `power`): the floor's depth; in town, the floor he came up from.
+func power() -> int:
+	if map != null and int(map.depth) >= 1:
+		return clampi(int(map.depth), 1, 20)
+	return _town_power()
+
+
+## His magic find, % (game.ts rollGear: his gear's; the gate's words are not laid in the Godot version).
+func magic_find() -> float:
+	return float(hero.stats.get("magic_find", 0.0)) if hero != null else 0.0
+
+
+## A piece of gear for this floor, of quality `quality` (game.ts rollGear: 0 an ordinary monster's, 1 a better one's, 2 a
+## hoard's, 3 a boss's first before LOOT2, 4 a boss's or a guardian's first): now and then a unique (`_pool_unique`), else of the
+## rarity its luck and his magic find roll.
+func roll_gear(quality: int) -> Dictionary:
+	var mf := magic_find()
+	var u = _pool_unique(quality, mf)
+	if u != null:
+		sfx.play("rare", linear_to_db(0.9))
+		return u
+	return _piece_of(power(), _rarity(quality, mf))
+
+
+## items.ts rollRarity, with game.ts rollGear's luck and least.
+func _rarity(quality: int, mf: float) -> int:
+	var p := power()
+	var w: Array = _uniques.get("chances", {}).get(str(p), [100.0, 0.0, 0.0])
+	var boost := maxf(0.0, 1.0 + mf / 100.0)
+	var luck: Array = [1.0, 1.0]
+	if quality == 1:
+		luck = _tune["betterLuck"]
+	elif quality >= 2:
+		luck = _tune["hoardLuck"]
+	var L2: Dictionary = _uniques.get("loot2", {})
+	var deep: bool = not L2.is_empty() and p >= int(L2["from"])
+	if deep:
+		luck = [float(luck[0]) * float(L2["deep"]), float(luck[1]) * float(L2["deep"])]
+	var w0 := float(w[0])
+	var w1 := float(w[1]) * boost * float(luck[0])
+	var w2 := float(w[2]) * boost * float(luck[1])
+	var r := randf() * (w0 + w1 + w2)
+	var i := 0 if r < w0 else (1 if r < w0 + w1 else 2)
+	var least := 0
+	if quality == 3:
+		least = 1
+	elif quality == 4:
+		least = 2 if deep else 1
+	return maxi(i, least)
+
+
+## One of the pieces the game rolled on floor `p` of rarity `rarity` (the nearest rarity there is, if none).
+func _piece_of(p: int, rarity: int) -> Dictionary:
+	var key := str(p)
+	if not _by_rarity.has(key):
+		var here: Dictionary = _by_depth.get(key, _pools)
+		var lists: Array = [[], [], []]
+		for q in here:
+			for it in here[q]:
+				var r := int(it["rarity"])
+				if r <= 2:
+					lists[r].append(it)
+		_by_rarity[key] = lists
+	var by: Array = _by_rarity[key]
+	for k in [rarity, rarity - 1, rarity - 2, rarity + 1, rarity + 2]:
+		if k >= 0 and k <= 2 and not (by[k] as Array).is_empty():
+			return (by[k] as Array).pick_random().duplicate(true)
+	var any: Array = _pools["0"]
+	return any.pick_random().duplicate(true)
+
+
+## game.ts poolUnique: a unique in place of a piece of quality `quality` (of slot `slot`, of weapon `weapon`, where asked), or
+## null: nearly always null.
+func _pool_unique(quality: int, mf: float, slot := "", weapon := ""):
+	if _uniques.is_empty() or (main != null and main.get("practice") == true):
+		return null
+	var D: Dictionary = _uniques["drops"]
+	var p := power()
+	var boost := maxf(0.0, 1.0 + mf / 100.0)
+	var P: Dictionary = D["pool"]
+	var base := float(P["hoard"] if quality >= 2 else P["elite"] if quality == 1 else P["plain"])
+	if p >= int(P["from"]) and randf() < base * boost:
+		return make_pool_unique(slot, weapon)
+	# (THE LEVELING UNIQUES: a roll of their own, as often; one of those of this floor's level or below, anyone's or his class's)
+	var L: Dictionary = D["level"]
+	base = float(L["hoard"] if quality >= 2 else L["elite"] if quality == 1 else L["plain"])
+	if randf() < base * boost:
+		var pool: Array = []
+		for id in _uniques["defs"]:
+			var d: Dictionary = _uniques["defs"][id]
+			if d["from"] == "level" and int(d["level"] if d["level"] != null else 1) <= p and (d["cls"] == null or d["cls"] == cls) \
+					and (slot == "" or d["slot"] == slot) and (weapon == "" or d["weapon"] == weapon):
+				pool.append(id)
+		if not pool.is_empty():
+			return unique_piece(pool.pick_random())
+	return null
+
+
+## game.ts makePoolUnique: one of the pool's for him (of that slot, of that weapon, where asked), made for this floor; null if none.
+func make_pool_unique(slot := "", weapon := ""):
+	var pool: Array = []
+	var arms := ["greatsword", "battleaxe", "warhammer"]
+	for id in _uniques["defs"]:
+		var d: Dictionary = _uniques["defs"][id]
+		if d["from"] != "pool" or (d["cls"] != null and d["cls"] != cls and _uniques["rules"]["ownOnly"]):
+			continue
+		if slot != "" and d["slot"] != slot:
+			continue
+		# (a Warrior finds only the uniques of the weapon he uses, of his three)
+		var w: String = str(d["weapon"]) if d["weapon"] != null else ""
+		if cls == "warrior" and hero != null and w in arms and w != str(hero.weapon):
+			continue
+		if weapon != "" and w != weapon:
+			continue
+		pool.append(id)
+	return unique_piece(pool.pick_random()) if not pool.is_empty() else null
+
+
+## A piece of unique `id` as the game made it for this floor (a leveling unique at its own level; a boss's at his floor).
+func unique_piece(id: String):
+	var all: Array = _uniques.get("pieces", {}).get(id, [])
+	if all.is_empty():
+		return null
+	var d: Dictionary = _uniques["defs"][id]
+	if d["from"] == "level":
+		return all.pick_random().duplicate(true)
+	var p := power()
+	var best: Array = []
+	var gap := 999
+	for it in all:
+		var g := absi(int(it.get("floor", p)) - p)
+		if g < gap:
+			gap = g
+			best = []
+		if g == gap:
+			best.append(it)
+	return best.pick_random().duplicate(true)
+
+
+## game.ts dropBossUnique: a boss dies; his own unique, one kill in ten.
+func _boss_unique(m, at: Vector2) -> void:
+	if _uniques.is_empty():
+		return
+	for id in _uniques["defs"]:
+		var d: Dictionary = _uniques["defs"][id]
+		if d["from"] == "boss" and d["boss"] is Array and str(m.kind) in d["boss"]:
+			if randf() < float(_uniques["drops"]["boss"]):
+				var it = unique_piece(id)
+				if it != null:
+					_drop("gear", _scatter(at), it["icon"], {"item": it})
+					sfx.play("rare", linear_to_db(0.9))
+			return
 
 
 ## A piece given him, laid at his feet (game.ts addDrop 'item': QUESTS1620's whole court and the knight-captain's gift).
@@ -1641,7 +1818,8 @@ var _arms := {}
 
 
 func for_him(it):
-	if not (it is Dictionary) or cls != "warrior" or hero == null or _arms.is_empty():
+	# (a unique keeps its own weapon, and its moves: his pick of 12 Nov 2026, "Each keeps its weapon's moves")
+	if not (it is Dictionary) or cls != "warrior" or hero == null or _arms.is_empty() or it.get("unique") != null:
 		return it
 	var to: Dictionary = _arms.get(str(hero.weapon), {})
 	var from := ""
@@ -2035,11 +2213,17 @@ func gamble(k: int) -> String:
 	var roll := randf()
 	var rarity := 2 if roll < float(odds["rare"]) else (1 if roll < float(odds["rare"]) + float(odds["magic"]) else 0)
 	var pool: Array = _gamble["pieces"][str(_town_power())][k][rarity]
-	var it: Dictionary = for_him(pool[randi() % pool.size()].duplicate(true))
+	# (UNIQUE ITEMS: his "very low chance to give a unique", TUNE.gambleOdds.unique: one of the pool's of the kind gambled for, if
+	# there is one for him; a dice of its own)
+	var kind: Dictionary = gamble_kinds()[k]
+	var unique = null
+	if not _uniques.is_empty() and randf() < float(odds.get("unique", 0.0)):
+		unique = make_pool_unique(str(kind["slot"]), str(kind.get("weapon", "")) if kind["slot"] == "mainhand" and kind.get("weapon") != null else "")
+	var it: Dictionary = unique if unique != null else for_him(pool[randi() % pool.size()].duplicate(true))
 	gold -= price
 	bag.append(it)
 	won = bag.size() - 1
-	sfx.play("rare" if rarity >= 2 else "buy")
+	sfx.play("rare" if rarity >= 2 or unique != null else "buy")
 	return ""
 
 

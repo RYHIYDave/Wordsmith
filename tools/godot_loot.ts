@@ -29,6 +29,9 @@ import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { DARK_RING, Game } from '../src/game/game';
+import { LEVEL_DEFS, UNIQUE_DROPS, UNIQUE_RULES, UNIQUE_TUNE, liveDefs, makeUnique, uniqueDef, uniqueSlot, uniqueWeapon, wordIsIn } from '../src/game/uniques';
+import { rarityChances } from '../src/game/items';
+import { RNG as UniqueRng } from '../src/engine/rng';
 import { CLASS_BASES, ITEM_BASES, rollFullRare, rollItem } from '../src/game/items';
 import { RNG as LootRNG } from '../src/engine/rng';
 import { CLAPPER_REWARD, PAGES, QUEST1115_TEXT, QUESTS1115, jarWords } from '../src/game/quests1115';
@@ -40,7 +43,7 @@ import { CARD_FACE } from '../src/render/royal_cards';
 import { keySprite, springSprite } from '../src/art/quest1620';
 import { ITEM_ROOM, STAT_INFO, flatPair, imbueItem, imbueLines, imbueOptions, imbueOptionsFor, itemMods, itemRoom, itemValue, kindName, modLines, rarityFor, starterWeapon, statGroup } from '../src/game/items';
 import { CLASSES, FIRST_WORD, WORDS, wordGrowth, wordsAt } from '../src/game/defs';
-import { TUNE, ATTR_GIVES } from '../src/game/defs';
+import { TUNE, ATTR_GIVES, LOOT2 } from '../src/game/defs';
 import { FURNACE_WORD, QUEST_TEXT } from '../src/game/quests15';
 import { QUEST_MARKS, SPEAK_BACK, SPEAK_WHERE } from '../src/game/quest_marks';
 import { WORD_COLOR, itemPic, makeIconArt } from '../src/art/icons';
@@ -144,8 +147,20 @@ const plain = (it: Item): Record<string, unknown> => {
     props: it.affixes.map((a) => ({ mods: a.mods.map((m) => [m.stat, m.value]), lines: modLines(a.mods, 'cooldown'), linesMana: ifMana(modLines(a.mods, 'cooldown'), modLines(a.mods, 'mana')) })),
     imods: it.implicit.map((m) => [m.stat, m.value]),
     vbase: itemValue(it) / (VALUE.rarity[it.rarity] * (1 + VALUE.affix * it.affixes.length) * VALUE.imbued ** it.imbues.length),
+    // (UNIQUE ITEMS, game/uniques.ts: which it is, its own numbers as rolled, and what its card says it does and costs)
+    ...(it.rarity === 3 && it.unique ? uniqueOut(it) : {}),
   };
 };
+
+/** A unique's own (game/uniques.ts uniqueLines, makeUnique): its id, its numbers as rolled, what it does and its price as its card says them. */
+function uniqueOut(it: Item): Record<string, unknown> {
+  const d = uniqueDef(it.unique);
+  if (!d) return { unique: it.unique };
+  return {
+    unique: d.id, uroll: it.uroll ?? {}, does: d.does(it), price: d.price ? d.price(it) : null,
+    ucls: d.cls ?? null, only: !!d.only, wordIn: wordIsIn(d), powers: d.powers ?? 1,
+  };
+}
 
 /**
  * WHAT A WORD BECOMES ON A PIECE OF THAT KIND AND LEVEL (items.ts imbueOptions): each thing it may become there, and every
@@ -494,7 +509,48 @@ const warriorArms = Object.fromEntries(armsKinds.map((w) => {
   return [w, { kind: kindName({ weapon: w, offhand: null, slot: 'mainhand' } as unknown as Item), names: tiers.map((b) => b.name), icon: tiers[0].icon }];
 }));
 writeFileSync(`${OUT}/trials.json`, JSON.stringify({ trials, practice }));
-writeFileSync(`${OUT}/items.json`, JSON.stringify({ pools, byDepth, fullRares, value: VALUE, starter, starters, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble, royal, warriorArms }));
+// UNIQUE ITEMS (game/uniques.ts, UNIQUES on): what each is and where it drops, its numbers' tune and the odds; and pieces of each as
+// the game's own makeUnique makes them, at each floor's level (a leveling unique at its own); and the chances of plain, magic and
+// rare at each floor's level, for magic find to move (items.ts rarityChances, rollRarity)
+const uRng = new UniqueRng((seed ^ 0x5a17c3) >>> 0);
+const uDefs: Record<string, unknown> = {};
+const uPieces: Record<string, unknown[]> = {};
+for (const d of [...liveDefs(), ...LEVEL_DEFS]) {
+  uDefs[d.id] = { name: d.name, from: d.from, boss: d.boss ?? null, floor: d.floor ?? null, cls: d.cls ?? null, only: !!d.only, bends: d.bends, powers: d.powers ?? 1, rolled: d.rolled ?? [], slot: uniqueSlot(d), weapon: uniqueWeapon(d) ?? null, level: d.level ?? null };
+  const out: unknown[] = [];
+  if (d.from === 'level') {
+    for (let k = 0; k < 4; k++) {
+      const it = makeUnique(d.id, 1, uRng);
+      if (it) out.push(plain(it));
+    }
+  } else {
+    // (at the level of each floor it may drop on: a boss's at his own; the pool's from UNIQUE_DROPS.pool.from)
+    const floors = d.from === 'boss' && d.floor ? [d.floor] : Array.from({ length: 20 }, (_, i) => i + 1).filter((f) => f >= UNIQUE_DROPS.pool.from);
+    for (const f of floors) {
+      const deep = new Game('warrior', seed);
+      deep.depth = f;
+      deep.enterDungeon();
+      const power = Math.max(1, (deep as unknown as { power: number }).power);
+      for (let k = 0; k < 2; k++) {
+        const it = makeUnique(d.id, power, uRng);
+        if (it) out.push({ ...plain(it), floor: f });
+      }
+    }
+  }
+  uPieces[d.id] = out;
+}
+const chances: Record<string, number[]> = {};
+const powers: Record<string, number> = {};
+for (let depth = 1; depth <= 20; depth++) {
+  const deep = new Game('warrior', seed);
+  deep.depth = depth;
+  deep.enterDungeon();
+  powers[String(depth)] = Math.max(1, (deep as unknown as { power: number }).power);
+  chances[String(depth)] = [...rarityChances(powers[String(depth)])];
+}
+const uniques = { defs: uDefs, pieces: uPieces, tune: UNIQUE_TUNE, drops: UNIQUE_DROPS, rules: UNIQUE_RULES, gamble: TUNE.gambleOdds.unique, chances, powers, loot2: LOOT2 };
+tally.push(`uniques: ${Object.keys(uDefs).length}, ${Object.values(uPieces).reduce((n, l) => n + l.length, 0)} pieces made`);
+writeFileSync(`${OUT}/items.json`, JSON.stringify({ uniques, pools, byDepth, fullRares, value: VALUE, starter, starters, stats, tune: { ...TUNE }, attr: { ...ATTR_GIVES }, body: body ? { x: body.x, y: body.y } : null, shops, imbue, words, quest, gamble, royal, warriorArms }));
 tally.push(`words on gear: ${[...OURS, ...MADE].join(', ')} on ${kinds.size} kinds of piece by level, ${sizes} sizes in all`);
 
 // --- the pictures in one sheet: each at two picture pixels to a game pixel, its anchor kept ---

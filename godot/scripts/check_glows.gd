@@ -1033,3 +1033,124 @@ func speech(main, hero, dir: String) -> void:
 	h.unhurt = false
 	print("SPEECH: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
+
+
+## UNIQUE ITEMS AND MAGIC FIND (loot.gd roll_gear, _rarity, _pool_unique, make_pool_unique, _boss_unique, gamble; inventory.gd _card):
+## the odds as the game's, magic find moving them, his own only, a boss's own, the gamble's, and a unique's card.
+func uniques(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var L = M.loot
+	var U: Dictionary = L._uniques
+	_line(U.has("defs") and U["defs"].size() == 88 and U.has("pieces"), "the uniques' table: %d of them, pieces for each" % U.get("defs", {}).size())
+	M.way_depth = maxi(M.way_depth, 6)
+	await M.go_to("floor6", "down")
+	await M._wait(1.0)
+	seed(1234)
+	# THE RARITY ROLLED, AND MAGIC FIND MOVING IT (items.ts rollRarity): an ordinary monster's on floor 6, with none and with 100%
+	var w: Array = U["chances"]["6"]
+	var deep: float = float(U["loot2"]["deep"])
+	var N := 20000
+	for mf in [0.0, 100.0]:
+		h.stats["magic_find"] = mf
+		var got := [0, 0, 0]
+		for i in N:
+			got[L._rarity(0, mf)] += 1
+		var b: float = 1.0 + float(mf) / 100.0
+		var ws := [float(w[0]), float(w[1]) * b * deep, float(w[2]) * b * deep]
+		var tot: float = ws[0] + ws[1] + ws[2]
+		var ok := true
+		var said := []
+		for r in 3:
+			var want: float = ws[r] / tot * N
+			ok = ok and absf(got[r] - want) <= 4.0 * sqrt(maxf(want, 1.0)) + 2.0
+			said.append("%d (%.0f)" % [got[r], want])
+		_line(ok, "floor 6, an ordinary monster's piece, magic find %d%%: Normal, Magic, Rare %s (the game's odds in brackets)" % [mf, ", ".join(said)])
+	# (a boss's first: from floor 6 a rare at the least; a hoard's luck)
+	var least := true
+	for i in 500:
+		least = least and L._rarity(4, 0.0) == 2
+	_line(least, "floor 6, a boss's first piece: always a rare")
+	# HOW OFTEN A UNIQUE (uniques.ts poolChance, levelChance): ordinary pieces on floor 6, magic find 0 and 100%
+	for mf in [0.0, 100.0]:
+		var u := 0
+		var M2 := 200000
+		for i in M2:
+			if L._pool_unique(0, mf) != null:
+				u += 1
+		var b: float = 1.0 + float(mf) / 100.0
+		var p_pool: float = float(U["drops"]["pool"]["plain"]) * b
+		var want: float = M2 * (p_pool + (1.0 - p_pool) * float(U["drops"]["level"]["plain"]) * b)
+		_line(absf(u - want) <= 4.0 * sqrt(want) + 2.0, "floor 6, %d ordinary pieces, magic find %d%%: %d uniques (the game's odds: %.0f)" % [M2, mf, u, want])
+	h.stats["magic_find"] = 0.0
+	# (none of the pool's on floor 1: from floor 2)
+	await M.go_to("floor1", "start")
+	await M._wait(0.6)
+	var on1 := 0
+	for i in 20000:
+		var it = L._pool_unique(2, 0.0)
+		if it != null and U["defs"][it["unique"]]["from"] != "level":
+			on1 += 1
+	_line(on1 == 0, "floor 1: none of the pool's (%d), only the leveling ones of level 1" % on1)
+	# HIS OWN ONLY: a Warrior with the battle axe, a Ranger
+	var was_cls: String = L.cls
+	var was_w: String = str(h.weapon)
+	h.weapon = "battleaxe"
+	var kinds := {}
+	for i in 600:
+		var it = L.make_pool_unique()
+		var d: Dictionary = U["defs"][it["unique"]]
+		kinds[str(d["weapon"])] = true
+		if d["cls"] != null and d["cls"] != "warrior":
+			kinds["another hero's"] = true
+	_line(not kinds.has("greatsword") and not kinds.has("warhammer") and not kinds.has("another hero's") and kinds.has("battleaxe"),
+		"a Warrior with the battle axe: the pool gives his axe's and everyone's, never the greatsword's, the hammer's or another hero's (%s)" % ", ".join(kinds.keys()))
+	h.weapon = was_w
+	# A BOSS'S OWN, AND HIS HOARD (game.ts dropLoot, dropBossUnique): the Headsman, his own forced
+	M.way_depth = maxi(M.way_depth, 2)
+	await M.go_to("floor2", "down")
+	await M._wait(1.0)
+	U["drops"]["boss"] = 1.0
+	var gear0: int = L._drops.filter(func(d): return d["kind"] == "gear").size()
+	var gold0: Array = L._drops.filter(func(d): return d["kind"] == "gold")
+	var boss = M._d_boss()
+	boss._die()
+	await M._wait(0.3)
+	U["drops"]["boss"] = 0.1
+	var gears: Array = L._drops.filter(func(d): return d["kind"] == "gear")
+	var golds: Array = L._drops.filter(func(d): return d["kind"] == "gold" and not gold0.has(d))
+	var his: Array = gears.filter(func(d): return d["item"].get("unique") == "headsmanshood")
+	var amount: int = int(golds[0]["amount"]) if not golds.is_empty() else 0
+	_line(gears.size() - gear0 == 4 and his.size() == 1 and amount >= 50 and amount <= 90,
+		"the Headsman falls on floor 2: three pieces and his own unique, %s (%d pieces in all); %d gold (25 to 45 times the floor's level, 2)" % [his[0]["item"]["name"] if not his.is_empty() else "-", gears.size() - gear0, amount])
+	await M._snap(dir + "/un01_the_headsmans_hoard.png")
+	# THE GAMBLE'S (game.ts gamble): one of the pool's of the kind thrown for, a helmet
+	await M.go_to("town", "start")
+	await M._wait(0.6)
+	var odds: Dictionary = L._tune["gambleOdds"]
+	var was_odds: float = float(odds["unique"])
+	odds["unique"] = 1.0
+	L.gold = 100000
+	var k := -1
+	for i in L.gamble_kinds().size():
+		if L.gamble_kinds()[i]["slot"] == "helm":
+			k = i
+	var why: String = L.gamble(k)
+	odds["unique"] = was_odds
+	var won = L.bag[L.won] if why == "" else null
+	_line(won != null and won.get("unique") != null and U["defs"][won["unique"]]["slot"] == "helm", "the stranger, a throw for a helmet: %s" % [won["name"] if won != null else why])
+	# A UNIQUE'S CARD (ui/panels.ts itemCard; uniques.ts uniqueLines)
+	var card = L.unique_piece("headsmanshood")
+	L.bag.append(card)
+	M._inv.toggle()
+	await M._wait(0.3)
+	M._inv._hover = {"item": card, "at": Vector2(300, 200)}
+	M._inv.queue_redraw()
+	await M._wait(0.2)
+	await M._snap(dir + "/un02_a_uniques_card.png")
+	_line(not (card["does"] as Array).is_empty(), "the Headsman's Hood's card: \"%s\"" % "; ".join(card["does"]))
+	M._inv._hover = {}
+	M._inv.toggle()
+	h.unhurt = false
+	print("UNIQUES: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
