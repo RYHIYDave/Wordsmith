@@ -94,6 +94,14 @@ func run(main, hero, d: String) -> void:
 	var f8 := Talents.starting("mage")
 	_line(f1 == ["greatsword"] and f2 == "" and f3 == "Next point at level 5" and f4 == "" and f4b == "" and f5 == "Undo the greatsword's talents first" and f6 == "battleaxe" and f7 == 1 and f8 == [],
 		"his weapon a pre-point, no talent: the greatsword his as he starts (%s); at level 1 the battle axe in its place ('%s'); his first point at level 5, as every hero's ('%s'; at level 5: '%s'; at 10: '%s'); not swapped while more on its path is his ('%s'); the hammer in the axe's place (%s out); a weapon and one talent, %d point spent; a Mage starts with none (%s)" % [f1, f2, f3, f4, f4b, f5, f6, f7, f8])
+	# THE ATTACKS CHANGED, A TWIG EACH (talents.gd TWIGS): Whirlwind off Sweeping Cut, not open before it; the branch on up never
+	# needing it; Twin Axes off Rend, Tremors off Heavy Head; each a small stone
+	var tw1 := Talents.take_problem("warrior", 50, ["greatsword"], "gswhirlwind")
+	var tw2 := Talents.take_problem("warrior", 50, ["greatsword", "sweepingcut"], "gswhirlwind")
+	var tw3 := Talents.take_problem("warrior", 50, ["greatsword", "sweepingcut"], "drilledleap")
+	var tw4: bool = Talents.of("warrior", "twinaxes")["from"] == ["rend"] and Talents.of("warrior", "tremors")["from"] == ["heavyhead"] and not Talents.of("warrior", "gswhirlwind")["big"]
+	_line(tw1 == "Take one joined to it first" and tw2 == "" and tw3 == "" and tw4,
+		"the attacks changed, each a twig off its branch: Whirlwind with the greatsword alone '%s', after Sweeping Cut '%s'; the branch on up without it '%s'; Twin Axes off Rend, Tremors off Heavy Head, small stones (%s)" % [tw1, tw2, tw3, tw4])
 	# UNDOING, AND A LIST MADE SAFE
 	var u1 := Talents.unlearn_problem("warrior", ["greatsword", "sweepingcut"], "greatsword")
 	var u2 := Talents.unlearn_problem("warrior", ["greatsword", "sweepingcut"], "sweepingcut")

@@ -1296,7 +1296,7 @@ augment attacks.  I want things to compound as they are added to attacks or abil
   The greatsword his as he starts; another in its place at any level, anywhere, so long as nothing more on the old one's path is
   taken (“Undo the greatsword's talents first”). It costs no point: his ten go on the tree's own, the first at level 5, as every
   hero's. The tree begins at each path's own first talents; only his weapon's open.
-  `--only=talents`: 82 checks (a new Warrior at level 1 swapping to the axe and back, the row under the tree).
+  `--only=talents`: 83 checks (a new Warrior at level 1 swapping to the axe and back, the row under the tree).
 - **What he adds compounds** (`hero.gd` side, word_k, talent_hit; `words.gd` resolve `word_k`): a blow of one of his moves
   was made of everything already, each a multiplier on the rest. What else he sets off now is too: a talent's arc or its
   burning ground, a unique's own blow, a companion's bite, the Golem's coil, the ground a word behind leaves, the last
@@ -1343,6 +1343,13 @@ augment attacks.  I want things to compound as they are added to attacks or abil
   0.55 of a Strike. The checks written for the Whirlwind give him its talent (talents.gd `checks_whirlwind`); `--only=whirl1
   --whirl1=1`: 2 checks (one hold of Whirl cuts the three within 2 tiles once, 14, 16 and 16, not the one 3.4 tiles off, nothing
   more while held; with the talent, about five cuts each in 1.6 s).
+- **The attacks changed, each a twig off its branch** (`talents.gd` TWIGS, _twigs): his word the same day (“the different
+  weapon attacks are choices not mandatory in the tree.  So swapping from whirl to whirlwind should be a small beach off the main
+  tree.  Etc”): the three talents that change one of his attacks are no longer stones on each weapon's main path but small ones
+  on a short twig off its first talent, open once that is taken, never needed for the rest: WHIRLWIND off Sweeping Cut, TWIN
+  AXES off Rend, TREMORS off Heavy Head. Each weapon's path goes straight on up without them. `--only=talents`: 83 checks
+  (Whirlwind not open with the greatsword alone, open after Sweeping Cut; the path on up taken without it);
+  docs/mockups/warrior_free_weapon/talents_page_twigs.png.
 
 ## Not in it yet
 

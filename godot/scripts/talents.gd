@@ -46,6 +46,38 @@ static func ready_up() -> void:
 	if D.is_empty():
 		D = JSON.parse_string(FileAccess.get_file_as_string(PATH))
 		_own_words()
+		_twigs()
+
+
+## THE WARRIOR'S ATTACKS CHANGED, A TWIG EACH (his word of 22 Nov 2026: “the different weapon attacks are choices not mandatory in
+## the tree.  So swapping from whirl to whirlwind should be a small beach off the main tree.  Etc”): Whirlwind (Whirl made the
+## Whirlwind), Twin Axes (the throw two axes) and Tremors (the Earthquake three shakes) no longer big stones at the foot of their
+## weapons, where the tree seemed to begin with them: each a small stone on a short twig off the first talent of its weapon's own
+## branch (Sweeping Cut, Rend, Heavy Head), reached from it and leading nowhere, to take or leave.
+const TWIGS := {
+	"gswhirlwind": {"from": "sweepingcut", "at": [2.62, 2.95]},
+	"twinaxes": {"from": "rend", "at": [0.62, 2.95]},
+	"tremors": {"from": "heavyhead", "at": [4.62, 2.95]},
+}
+
+
+static func _twigs() -> void:
+	if not D["switches"]["warriorTree2"]:
+		return
+	var by := {}
+	for t in D["trees"]["warrior"]["talents"]:
+		by[t["id"]] = t
+	for id in TWIGS:
+		if not by.has(id):
+			continue
+		var t: Dictionary = by[id]
+		var main: String = TWIGS[id]["from"]
+		t["from"] = [main]
+		t["joined"] = [main]
+		t["at"] = TWIGS[id]["at"]
+		t["big"] = false
+		if not (by[main]["joined"] as Array).has(id):
+			by[main]["joined"].append(id)
 
 
 ## THE CARDS THIS PORT WORDS ITS OWN WAY (his word of 21 Nov 2026: the Tinkerer's Golem only shoots, small shots, its big shot on
