@@ -134,6 +134,8 @@ func run(main, hero, d: String) -> void:
 	# (WS_TALENTS_ONLY=warlock or ranger: his talents in play alone, for a change to them)
 	if OS.get_environment("WS_TALENTS_ONLY") == "ranger":
 		await _ranger()
+		# (his Venom among the moves to learn)
+		await _learn()
 		print("TALENTS DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " %s" % [bad]])
 		return
 	if OS.get_environment("WS_TALENTS_ONLY") == "warlock":

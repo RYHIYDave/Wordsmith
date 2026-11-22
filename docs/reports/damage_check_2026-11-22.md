@@ -197,3 +197,21 @@ other hero's fire +25% on what burns (words.gd BURN_MORE_ALL). The Brawler with 
 for them, Dexterity 376), his quick attack into the elite and the pack (with his hold), the others' share at none / +25% / +50%:
 431,231, 7.4 s (381,827, 6.7 s) / 440,001, 6.6 s (427,456, 7.2 s) / 443,825, 6.6 s (475,039, 6.2 s). Burning's own was never
 what made Fumes his best: it is fire and poison at once (a piece it is burned into gives both), and poison stacks.
+
+## What is one class's own is in its tree
+
+His words: “If we want something to be for only certain characters, it needs to be built into their tree / Like poison stacks 4
+times naturally, but up to 8 for the ranger if you take the talent point / And maybe the warlock gets some blanket for Damage over
+time like it has infinite duration or something.  It can't be the same but the specialization in the tree is the point”. Poison
+four doses deep for all, eight with the Ranger's Venom; burning's own off the Warlock's class; his Pyre, his curses never run out
+(his burns on a cursed enemy never going out are the Burning Verse's already, a unique). `--only=talents`, WS_TALENTS_ONLY ranger
+and warlock: 23 and 21 checks, 0 wrong. The fair fight (damage_check_2026-11-22_trees.txt), each his quick attack into the elite
+and the tough pack dead in (with his hold):
+- Ranger (Blight, Precise; Power II, Fleeting; Venom his): 456,305, 4.5 s (484,650, 4.4 s)
+- Tinkerer (Contagion, Precise; Demolition, Fleeting): 424,778, 3.7 s (434,626, 3.9 s)
+- Warlock (Fire II, Swift; Power II, Fleeting): 342,086, 5.2 s (221,898, 7.4 s); Hex Chain and Blazing Arm at the game's own
+  70% and 50%: 315,847, 4.3 s (218,333, 6.8 s)
+- Warrior (Blight, Heavy; Fleeting, Power II): 318,661, 7.4 s (394,938, 6.9 s)
+- Brawler (Fumes, Heavy; Power II, Fleeting): 256,627, 7.9 s (297,492, 8.2 s)
+- the fire Mage (no poison in her words) as before: 158,128, 11.3 s (318,846, 7.2 s)
+The words are those found best before; with poison four deep the Warrior's and the Brawler's best may now be others.

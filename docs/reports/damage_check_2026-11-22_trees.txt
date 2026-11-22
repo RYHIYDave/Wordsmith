@@ -1,0 +1,31 @@
+WHAT IS ONE CLASS'S OWN IN ITS TREE (words.gd POISON_TREE): poison four doses deep, eight with the Ranger's Venom; the Warlock's Pyre, his curses never run out; burning's own +25% for all, double for the Mage with Hearth
+
+-- ranger
+=== RANGER, POISON (Dexterity) ===
+hero: level 50, Str 155 Dex 394 Int 6; weapon 66-97 at 2.92 attacks a second; damage +54%, physical +323%, fire +0%, frost +0%, lightning +0%, poison +282%, poison added 0-0; critical 89% for +530%
+ALL FOUR WORDS (in front blight, precise; behind power2, fleeting), in his hold too (volley), burning's own +25%: into the elite, his quick attack alone 456305 a second, it and his hold 484650 a second; a tough pack (six of 2000000 life), quick alone dead in 4.5 s (2690363 a second), it and his hold 4.4 s (2746257 a second)
+
+-- warrior
+=== WARRIOR, POWER (Strength) ===
+hero: level 50, Str 379 Dex 116 Int 6; weapon 69-94 at 1.63 attacks a second; damage +0%, physical +405%, fire +0%, frost +0%, lightning +0%, poison +241%, poison added 0-0; critical 75% for +590%
+ALL FOUR WORDS (in front blight, heavy; behind fleeting, power2), in his hold too (whirlwind), burning's own +25%: into the elite, his quick attack alone 318661 a second, it and his hold 394938 a second; a tough pack (six of 2000000 life), quick alone dead in 7.4 s (1617657 a second), it and his hold 6.9 s (1737013 a second)
+
+-- tinkerer
+=== TINKERER, LIGHTNING AND VOLATILE ===
+hero: level 50, Str 106 Dex 403 Int 111; weapon 54-72 at 2.67 attacks a second; damage +162%, physical +0%, fire +0%, frost +0%, lightning +200%, poison +405%, poison added 0-0; critical 70% for +530%
+ALL FOUR WORDS (in front contagion, precise; behind demolition, fleeting), in his hold too (golem), burning's own +25%: into the elite, his quick attack alone 424778 a second, it and his hold 434626 a second; a tough pack (six of 2000000 life), quick alone dead in 3.7 s (3254221 a second), it and his hold 3.9 s (3095945 a second)
+
+-- brawler
+=== BRAWLER (Strength and Dexterity) ===
+hero: level 50, Str 119 Dex 376 Int 6; weapon 69-94 at 2.13 attacks a second; damage +0%, physical +0%, fire +323%, frost +0%, lightning +0%, poison +323%, poison added 0-0; critical 84% for +410%
+ALL FOUR WORDS (in front fumes, heavy; behind power2, fleeting), in his hold too (vkick), burning's own +25%: into the elite, his quick attack alone 256627 a second, it and his hold 297492 a second; a tough pack (six of 2000000 life), quick alone dead in 7.9 s (1519783 a second), it and his hold 8.2 s (1462910 a second)
+
+-- warlock
+=== WARLOCK (Strength and Intelligence), as a man ===
+hero: level 50, Str 111 Dex 153 Int 356; weapon 50-67 at 3.38 attacks a second; damage +54%, physical +0%, fire +364%, frost +0%, lightning +0%, poison +0%, poison added 0-0; critical 81% for +530%
+ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too (curse), burning's own +25%: into the elite, his quick attack alone 342086 a second, it and his hold 221898 a second; a tough pack (six of 2000000 life), quick alone dead in 5.2 s (2297630 a second), it and his hold 7.4 s (1630305 a second)
+
+-- warlock_full
+=== WARLOCK (Strength and Intelligence), as a man ===
+hero: level 50, Str 111 Dex 153 Int 356; weapon 50-67 at 3.38 attacks a second; damage +54%, physical +0%, fire +364%, frost +0%, lightning +0%, poison +0%, poison added 0-0; critical 81% for +530%
+ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too (curse), burning's own +25%: into the elite, his quick attack alone 315847 a second, it and his hold 218333 a second; a tough pack (six of 2000000 life), quick alone dead in 4.3 s (2800854 a second), it and his hold 6.8 s (1751877 a second)
