@@ -112,6 +112,18 @@ const SWIFT_DODGE := 3.0
 ##               held still, level 50: none, +50%, +100%: into one elite 121,648 / 161,765 / 230,125 a second, a tough pack dead in
 ##               16.5 / 12.3 / 10.2 s; docs/reports/damage_check_2026-11-22.md): +100%. WS_BURN_MORE for a run.
 static var BURN_MORE := 1.0
+##   BURN_HEARTH burning's own the Mage's alone, her fire tree's Hearth (his word, 22 Nov 2026: “Maybe we change some stuff in the
+##               mages fire tree for the "burning enemies take more fire damage" cause I don't like that fire is BiS for a str/dex
+##               character”): only fire of a hero who has taken Hearth (talents.gd OWN_WORDS, its card; its other half, her mana
+##               back the faster, nothing in this port, which has no mana). Off: every hero's fire, as it was.
+static var BURN_HEARTH := true
+
+
+## How much more a burning enemy takes from a fire hit of `hero` (burning's own; none without Hearth while BURN_HEARTH).
+static func burn_more(hero) -> float:
+	if BURN_HEARTH and (hero == null or not is_instance_valid(hero) or not hero.has("fuel")):
+		return 0.0
+	return BURN_MORE
 ## (what Flame and Frost in front of a one-enemy move splash round what it hits, a share of the hit: the game's 1, all of it;
 ## WS_ELEMENT_SPLASH for a run of the damage check)
 static var ELEMENT_SPLASH := 1.0

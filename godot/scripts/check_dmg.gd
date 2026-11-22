@@ -182,7 +182,7 @@ func _dps() -> float:
 	var hit: float = avg * (1.0 + cc * float(h.stats["crit_mult"]) / 100.0)
 	# (burning's own, words.gd BURN_MORE: a fire hit on what its own Flame keeps burning)
 	if el == "fire" and float(r["ignite"]) > 0.0:
-		hit *= 1.0 + Words.BURN_MORE
+		hit *= 1.0 + Words.burn_more(h)
 	var n: float = float(r["count"]) * float(r["count_dmg"])
 	var rate: float = maxf(0.3, float(r["rate"])) * h.attack_pace()
 	var dps: float = hit * n * rate
@@ -636,7 +636,7 @@ func _build(b: Dictionary) -> void:
 			var p1 := await _fight_pack(reach, false, TOUGH)
 			var p2 := await _fight_pack(reach, true, TOUGH)
 			h.auto_whirl = false
-			_say("ALL FOUR WORDS (%s), in his hold too (%s), burning's own +%d%%: into the elite, his quick attack alone %d a second, it and his hold %d a second; a tough pack (six of %d life), quick alone dead in %.1f s (%d a second), it and his hold %.1f s (%d a second)" % [_wname(ws), h.loadout.id(1), roundi(float(bm) * 100.0), int(q1), int(q2), int(TOUGH), p1, int(6.0 * TOUGH / p1), p2, int(6.0 * TOUGH / p2)])
+			_say("ALL FOUR WORDS (%s), in his hold too (%s), burning's own +%d%%: into the elite, his quick attack alone %d a second, it and his hold %d a second; a tough pack (six of %d life), quick alone dead in %.1f s (%d a second), it and his hold %.1f s (%d a second)" % [_wname(ws), h.loadout.id(1), roundi(Words.burn_more(h) * 100.0), int(q1), int(q2), int(TOUGH), p1, int(6.0 * TOUGH / p1), p2, int(6.0 * TOUGH / p2)])
 		lo.front[1] = [null, null]
 		lo.behind[1] = [null, null]
 		lo._r = [null, null, null]

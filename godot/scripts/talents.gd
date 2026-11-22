@@ -139,6 +139,10 @@ static func _godot_tune() -> void:
 ## her whistle in place of its ground pound; the Gun Arm swaps its cannon for the tesla coil, no pick: “we can keep the tesla coil
 ## for now, but i feel like it will need to be changed in the future”).
 const OWN_WORDS := {
+	# (Hearth: burning's own hers alone, words.gd BURN_HEARTH; in place of her mana back the faster, which this port has not)
+	"mage": {
+		"fuel": "Standing in fire you made, nothing burns you; and a burning enemy takes double damage from your fire.",
+	},
 	"tinkerer": {
 		"gunarm": "Her Golem's cannon is swapped for a tesla coil (Int): every second it zaps the enemy nearest it, leaping on to two more. Her hold charges a beam.",
 		"lightningrod": "For three seconds after its big shot, every enemy near the Golem goes after it instead of her.",
