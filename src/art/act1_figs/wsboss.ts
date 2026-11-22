@@ -134,7 +134,9 @@ export function makeWsArt(): ActorArt {
 
 export const FIG: Act1Fig | null = {
   make: () => makeWsArt(),
-  size: { top: 132, half: 62 },
+  // (his size as his picture has it, 66 up over the boar's back and 31 to his widest side: it came in at twice that, as if counted in
+  // picture pixels; set right at the queue's final-boss-size-to-picture)
+  size: { top: 66, half: 31 },
   heavy: true,
 };
 

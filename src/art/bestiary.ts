@@ -321,7 +321,7 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   rshadow: { top: 33, half: 9 },
   moth: { top: 322, half: 70 },
   // (ENDLESS MODE'S FINAL BOSS: the warped wordsmith on his boar, art/endless_boss.ts)
-  wsboss: { top: 132, half: 62 },
+  wsboss: { top: 66, half: 31 },
   // (the Rime Shade hunched, its head where its picture has it: tests/first5_bosses.test.ts 10)
   rshade: { top: 32, half: 11 },
   // (floor 3's Stoker twice the knight, his firebox broad: art/stoker.ts)
