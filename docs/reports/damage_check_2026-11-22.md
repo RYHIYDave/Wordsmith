@@ -186,4 +186,4 @@ fight again (damage_check_2026-11-22_hearth.txt), his quick attack into the elit
 - the Warlock (Fire II, Swift; Power II, Fleeting): 283,098, 5.9 s (192,407, 8.9 s); with Hex Chain and Blazing Arm at the game's
   own 70% and 50%: 263,265, 4.5 s (192,507, 7.5 s). Before, with burning's own: 472,332, 3.3 s.
 - the fire Mage, Hearth hers (Fire II, Twin; Power II, Fleeting): 158,128, 11.3 s (318,846, 7.2 s), as before (320,810, 7.5 s).
-- the frost Mage, Scald (fire and frost melded), no Hearth: 109,969, 23.9 s (209,068, 10.7 s). Before: 351,591, 5.7 s.
+- the frost Mage, Scald (fire and frost melded), no Hearth: 109,969, 23.9 s (209,068, 10.7 s). Before: 219,763, 15.5 s (351,591, 5.7 s).
