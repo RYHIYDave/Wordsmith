@@ -611,7 +611,9 @@ func _wrap(s: String, w: float) -> Array:
 
 ## The card, over the game's half against the panel's edge, level with its stone; its TAKE, its UNDO, its pick of two. `W` the
 ## panel's width and `H` the screen's height, game pixels. Returns the buttons to press: [Rect2 (screen), action, arg].
-func draw_card(h, level: int, gold: int, in_town: bool, W: float, H: float) -> Array:
+func draw_card(h, level: int, gold: int, in_town: bool, W: float, H: float, price_level := -1) -> Array:
+	# (the price of undoing one by his own level, whatever level his points are counted by: game.ts unlearnPrice)
+	var own := level if price_level < 0 else price_level
 	card = {}
 	var buttons: Array = []
 	if sel == "" or not lay["at"].has(sel):
@@ -665,11 +667,11 @@ func draw_card(h, level: int, gold: int, in_town: bool, W: float, H: float) -> A
 		var no := Talents.unlearn_problem(h.cls, h.talents, d["id"])
 		if no == "" and not in_town:
 			no = "Undone in town only"
-		elif no == "" and gold < Talents.unlearn_price(level):
-			no = "Needs %d gold" % Talents.unlearn_price(level)
+		elif no == "" and gold < Talents.unlearn_price(own):
+			no = "Needs %d gold" % Talents.unlearn_price(own)
 		if no == "":
 			var ur := Rect2(cr.position.x + 5.0 + tw, by, cr.size.x - 10.0 - tw, bh)
-			_button(ur, "UNDO  %d GOLD" % Talents.unlearn_price(level), false, false)
+			_button(ur, "UNDO  %d GOLD" % Talents.unlearn_price(own), false, false)
 			buttons.append([_screen(ur), "tal_undo", d["id"]])
 		else:
 			_text(cr.position.x + 5.0 + tw, by + floorf((bh - 6.0) / 2.0) + 1.0, no.to_upper(), T["dim"], true)

@@ -1229,6 +1229,12 @@ game/world_sounds.ts; `sfx.gd`, `monsters.gd`, `monster.gd`, `town.gd`, `main.gd
   half a second). The picture, its stage map and its living pieces from the game itself (tools/godot_splash.ts); laid up as the game
   lays them, pixel for pixel the game's own at every moment pictured.
 - `--only=fanfare` (`check_glows.gd`): 7 checks, 11 pictures (the splash at nine moments, the card, the game on).
+- **Packs as big as the game makes them** (game.ts fillPack; defs.ts PACK_GROWTH, GATE_TWIN_PACKS; `main.gd` grow_packs): an
+  endless level's packs as big as its level has them (5% more for each level past the first, held at double), and with Twin laid
+  on a dungeon (at the gate or on the altar) half as big again; each one more one of its own pack's, laid near it, asleep. A word's
+  chance held at triple however deep (WORD_GROWTH). In the practice room every talent point (PRACTICE_TALENTS: his “And can I get
+  all the talent points in practice mode?”).
+- `--only=packs` (`check_glows.gd`): 4 checks.
 
 ## Not in it yet
 

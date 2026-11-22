@@ -547,7 +547,7 @@ func _draw() -> void:
 		var w := _width(label) + 12.0 if _pad() else 78.0
 		_button(floorf(W / 2.0 - w / 2.0), prompt_y, w, pbh, label, false, true, pulse)
 		prompt_y -= pbh + 3
-	elif loot != null and hero != null and Talents.points(loot.level) > hero.talents.size():
+	elif loot != null and hero != null and Talents.points(loot.talent_level()) > hero.talents.size():
 		# THE SKILL TREES: a talent point is waiting (after the level's attribute, where both come at once)
 		var label := "NEW TALENT (UP)" if _pad() else "NEW TALENT"
 		var w := _width(label) + 12

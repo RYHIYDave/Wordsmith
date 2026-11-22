@@ -2555,6 +2555,7 @@ func skins(main, hero, dir: String) -> void:
 
 
 const Save := preload("res://scripts/save.gd")
+const Talents := preload("res://scripts/talents.gd")
 
 
 func _said(start: String) -> String:
@@ -2966,6 +2967,45 @@ func fanfare(main, hero, dir: String) -> void:
 	_line(s2.card_at >= 0.0, "left alone, the splash runs its 3.2 s and the card comes up (%.1f s)" % s2.card_at)
 	s2.go_on()
 	await M._wait(0.2)
+	h.unhurt = false
+	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+	for bb in bad:
+		print("  WRONG: ", bb)
+
+
+## THE LAST OF 25.3.22's SMALL RULES (--only=packs): an endless level's packs as big as its level has them (game.ts fillPack,
+## defs.ts PACK_GROWTH: a floor 1 level, the power 21, its packs twice the floor's), Twin laid on a dungeon half as big again
+## (GATE_TWIN_PACKS); a word's chance held at triple however deep (WORD_GROWTH); in the practice room every talent point
+## (PRACTICE_TALENTS).
+func packs(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	await M._wait(0.6)
+	var raw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/floor1/monsters.json"))
+	var in_packs := func(list: Array) -> int: return list.filter(func(m): return int(m.get("packId", -1)) >= 0 and not bool(m["boss"])).size()
+	var n1: int = in_packs.call(raw["monsters"])
+	M.open_endless(20)
+	M.endless_floor = 1
+	M.go_endless()
+	await M._wait(2.5)
+	var live: int = M._monsters.list.filter(func(m): return is_instance_valid(m) and m.pack_id >= 0 and not m.boss).size()
+	_line(M.place == "floor1" and live >= int(n1 * 1.85) and live <= int(n1 * 2.15), "Endless 1 on floor 1 (as deep as 21): its packs twice the floor's (%d in packs, the floor laid %d)" % [live, n1])
+	await M._snap(dir + "/pk_01_endless.png")
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/floor1/monsters.json"))
+	M.dungeon_words = ["twin"]
+	var added: int = M.grow_packs(data, 1)
+	var n2: int = in_packs.call(data["monsters"])
+	M.dungeon_words = []
+	_line(n2 >= int(n1 * 1.4) and n2 <= int(n1 * 1.6) + 2, "Twin laid on floor 1: its packs half as big again (%d, from %d)" % [n2, n1])
+	_line(absf(M.loot._growth() - 3.0) < 0.001 and M.pack_growth(40) == 2.0, "deep in endless: a word's chance held at triple (x%.2f), a pack at double (x%.1f)" % [M.loot._growth(), M.pack_growth(40)])
+	var was = M.practice
+	M.practice = false
+	var own: int = M.loot.talent_level()
+	M.practice = true
+	var all := Talents.points(M.loot.talent_level())
+	M.practice = was
+	_line(own == M.loot.level and all == int(Talents.D["max"]), "talent points: his own level's (level %d); in the practice room every one (%d)" % [own, all])
 	h.unhurt = false
 	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
 	for bb in bad:

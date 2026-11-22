@@ -179,6 +179,61 @@ func endless_power() -> int:
 	return last_built() + maxi(1, endless)
 
 
+## PACKS AS BIG AS THE GAME MAKES THEM (game.ts fillPack; defs.ts PACK_GROWTH, GATE_TWIN_PACKS). A floor's packs were laid at its
+## own depth (assets/floorN/monsters.json: 5% bigger for each level past the first); on an endless level they are as big as its
+## level has them (his pick, 20 Oct 2026: “Every floor, on into endless (Recommended)”, “5% each level (Recommended)”; held at
+## double), and with Twin burned in at the gate or laid on the altar half as big again, rounded; the part of one over rounded up
+## as often as it is. Each one more is one of its own pack's (not its leader, carrying nothing), laid near it, asleep.
+const PACK_GROWTH := {"each": 0.05, "most": 2.0}
+const GATE_TWIN_PACKS := 1.5
+static func pack_growth(level: int) -> float:
+	return minf(float(PACK_GROWTH["most"]), 1.0 + float(PACK_GROWTH["each"]) * (maxi(1, level) - 1))
+
+
+func grow_packs(data: Dictionary, level: int) -> int:
+	var twin: bool = FoeWords.foe_words_of(dungeon_words).has("twin")
+	var g0 := pack_growth(int(map.depth))
+	var g1 := pack_growth(level)
+	if not twin and g1 <= g0:
+		return 0
+	var packs := {}
+	var top := 0
+	for m in data["monsters"]:
+		top = maxi(top, int(m.get("id", 0)))
+		var pid := int(m.get("packId", -1))
+		if bool(m["boss"]) or pid < 0:
+			continue
+		if not packs.has(pid):
+			packs[pid] = []
+		packs[pid].append(m)
+	var added := 0
+	for pid in packs:
+		var L: Array = packs[pid]
+		var size := maxi(1, roundi(L.size() / g0))
+		var tw := roundi(size * GATE_TWIN_PACKS) if twin else size
+		var big := tw * g1
+		var n := floori(big) + (1 if randf() < big - floorf(big) else 0) if big > tw else tw
+		var from: Dictionary = L[L.size() - 1]
+		var mid := Vector2.ZERO
+		for m in L:
+			mid += Vector2(float(m["x"]), float(m["y"]))
+			if m.get("rarity") != "leader" and (m.get("carries", []) as Array).is_empty():
+				from = m
+		mid /= L.size()
+		for i in range(L.size(), n):
+			var d: Dictionary = from.duplicate(true)
+			top += 1
+			d["id"] = top
+			var at := _free_near(mid + Vector2(randf_range(-1.6, 1.6), randf_range(-1.6, 1.6)))
+			d["x"] = at.x
+			d["y"] = at.y
+			d["carries"] = []
+			d["seed"] = randf()
+			data["monsters"].append(d)
+			added += 1
+	return added
+
+
 ## (endless.ts endlessTough) How much more life and damage its monsters have than its depth gives: 10% more on each after the first.
 func endless_tough() -> float:
 	return pow(1.0 + ENDLESS_GROW, maxi(1, endless) - 1)
@@ -649,7 +704,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions", "endless", "rim", "shards", "final", "fanfare"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions", "endless", "rim", "shards", "final", "fanfare", "packs"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -1231,7 +1286,10 @@ func _build(where: String, arrive: String) -> void:
 			if monsters.strength.is_empty():
 				monsters.strength = {"life": 1.0, "boss": 1.0, "dmg": 1.0, "xp": 1.0, "words": []}
 			monsters.strength["laid"] = FoeWords.foe_words_of(dungeon_words)
-		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)
+		var mdata: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dir + "/monsters.json"))
+		if where != "final":
+			grow_packs(mdata, endless_power() if in_endless else int(map.depth))
+		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR, mdata)
 		# (THE BOTTOM OF THE SHAFT: its arena's rules, its round, its way back up: final_arena.gd)
 		arena = null
 		if where == "final":
@@ -2807,6 +2865,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "fanfare":
 		await preload("res://scripts/check_glows.gd").new().fanfare(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "packs":
+		await preload("res://scripts/check_glows.gd").new().packs(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "pad":

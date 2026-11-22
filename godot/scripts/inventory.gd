@@ -595,7 +595,7 @@ func _press(action: String, arg) -> void:
 func _tal_press(action: String, arg) -> void:
 	match action:
 		"tal_take":
-			var why := Talents.take_problem(hero.cls, loot.level, hero.talents, arg)
+			var why := Talents.take_problem(hero.cls, loot.talent_level(), hero.talents, arg)
 			if why != "":
 				_say(why)
 				return
@@ -970,7 +970,7 @@ func _draw() -> void:
 		_draw_attacks(blink, first)
 	elif _page == "talents":
 		_tal.lay_out(hero.cls, Rect2(M / K, _page_y / K, (W - 2.0 * M) / K, _page_h / K))
-		_tal.draw(hero, loot.level, _t, _dt)
+		_tal.draw(hero, loot.talent_level(), _t, _dt)
 	elif _page == "stats":
 		_draw_stats(Rect2(M, _page_y, W - 2.0 * M, _page_h))
 	else:
@@ -1003,7 +1003,7 @@ func _draw() -> void:
 	_draw_reading(blink, first)
 	# (THE SKILL TREES: the card of the talent being read, over the game's half)
 	if _page == "talents":
-		_tal_buttons = _tal.draw_card(hero, loot.level, loot.gold, main.is_home(main.place), W / K, _vh() / K)
+		_tal_buttons = _tal.draw_card(hero, loot.talent_level(), loot.gold, main.is_home(main.place), W / K, _vh() / K, loot.level)
 	_half(0)
 	_draw_flash()
 	# the word being dragged follows the pointer (over a slot it may go in it is shown sitting there)

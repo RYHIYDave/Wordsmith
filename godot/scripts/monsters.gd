@@ -112,8 +112,8 @@ func _fetch_lairs() -> void:
 			m.art.fetch()
 
 
-func load_floor(path: String, figures_dir: String) -> void:
-	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
+func load_floor(path: String, figures_dir: String, given := {}) -> void:
+	var data: Dictionary = given if not given.is_empty() else JSON.parse_string(FileAccess.get_file_as_string(path))
 	var info: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(figures_dir + "/lists.json"))
 	_defs = data["defs"]
 	_info = info

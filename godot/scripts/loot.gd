@@ -601,9 +601,9 @@ func _first_in_vault(at: Vector2) -> bool:
 
 ## How many times as likely a word is on this floor (defs.ts wordGrowth), and one of the words found on it (types.ts wordsAt).
 func _growth() -> float:
-	# (defs.ts wordGrowth: by the floor's strength, `power`; past the table, as it grows: a tenth more for each level)
+	# (defs.ts wordGrowth: by the floor's strength, `power`; past the table, as it grows: a tenth more for each level, held at triple)
 	var p := power()
-	return float(_words["growth"].get(str(p), 1.0 + 0.1 * float(p - 1))) if map != null else 1.0
+	return float(_words["growth"].get(str(p), minf(3.0, 1.0 + 0.1 * float(p - 1)))) if map != null else 1.0
 
 
 func _found() -> String:
@@ -676,6 +676,14 @@ func _item(at: Vector2, quality: int) -> void:
 ## ENDLESS MODE: on an endless level, and in town once they are open to him, the depth of the one he has reached (endless.ts
 ## endlessPower: past the last floor). What is rolled from the game's tables (its pieces, their chances, the words found) is
 ## rolled as on the last floor (`_tp`): the tables go no deeper; the gold and the rest go by the whole depth.
+## (game.ts talentLevel) The level his talent points are counted by: his own; in the practice room, every point (PRACTICE_TALENTS:
+## his words, 7 Nov 2026, “And can I get all the talent points in practice mode?”).
+func talent_level() -> int:
+	if main != null and bool(main.get("practice")):
+		return 99999
+	return level
+
+
 func power() -> int:
 	if main != null and int(main.endless) > 0 and (main.in_endless or main.is_home(main.place)):
 		return main.endless_power()
