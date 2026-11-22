@@ -146,3 +146,13 @@ reach: the pack now held where it stands).
 Burning's own (his word: “a burning target takes more total fire damage”; words.gd BURN_MORE): the fire Mage, her words held still
 (Fire II, Twin; Power II, Fleeting), none / +50% / +100%: into the elite 121,648 / 161,765 / 230,125 a second; the pack dead in
 16.5 / 12.3 / 10.2 s (damage_check_2026-11-22_burn.txt). Set at +100%.
+
+## The Mage's Wave and Orb harder; the Warlock and the Brawler checked
+
+His “Do that.” (the Mage's packs to within about half again the Warrior's, her one enemy lower) “And check the brawler and warlock
+as well.” words.gd MAGE_MORE 1.35 on her Wave and Orb; the fair fight (damage_check_2026-11-22_mage_warlock_brawler.txt), into the
+elite, and the tough pack dead in: fire Mage 320,810 a second, 7.5 s (the Warrior 686,321, 5.2 s); frost Mage (Scald, fire and frost
+melded) 351,591, 5.7 s; Brawler 424,658, 7.2 s (his quick attack alone 6.6 s); Warlock, as a man, 439,587 a second with his bolt
+alone, the pack dead in 0.9 s: his Hex Chain (a bolt leaping on to three more cursed, 70% each), Blazing Arm (his bolt bursting
+round what it hits while his pact is full, 50%), his hellfire burning and burning's own on it, in a knot of six, about fourteen
+times the Warrior's clearing.
