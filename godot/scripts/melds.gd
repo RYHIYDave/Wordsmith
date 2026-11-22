@@ -128,6 +128,15 @@ func fervor_pct(el: String) -> float:
 	return fervor_n * float(E()["fervor"]["burn"]) * 100.0
 
 
+## FERVOR's attack speed now, as its card has it, “Each kill makes you attack faster and burn hotter for a few seconds” (melds8.ts
+## M8.fervor `speed`, each kill's; the game read only its `burn`: his “Start all that”, 22 Nov 2026, to the list's “Fervor never
+## makes him faster”).
+func fervor_pace() -> float:
+	if fervor_t <= 0.0:
+		return 1.0
+	return 1.0 + fervor_n * float(E()["fervor"].get("speed", 0.0))
+
+
 ## A step of Implode's bursts and Fervor's time (game.ts updateMelds8).
 func step(dt: float) -> void:
 	if fervor_t > 0.0:

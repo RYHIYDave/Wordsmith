@@ -630,8 +630,9 @@ func _case(w: String, side: String) -> void:
 			var v = _victim()
 			await M._w_strike(h)
 			var pct: float = h.melds.fervor_pct("fire")
-			said += "; A killed: fervor %.1f for %.1f s (formula %.1f, %.0f s), his fire %.0f%% hotter (formula %.1f x %.0f%%)" % [h.melds.fervor_n, h.melds.fervor_t, k8, E["fervor"]["secs"], pct, h.melds.fervor_n, float(E["fervor"]["burn"]) * 100.0]
-			M._w_is(wrong, v.dead and _near(h.melds.fervor_n, k8) and h.melds.fervor_t > float(E["fervor"]["secs"]) - 0.2 and _near(pct, k8 * float(E["fervor"]["burn"]) * 100.0), "fervor %.2f" % h.melds.fervor_n)
+			var pace: float = h.melds.fervor_pace()
+			said += "; A killed: fervor %.1f for %.1f s (formula %.1f, %.0f s), his fire %.0f%% hotter (formula %.1f x %.0f%%), his attacks x%.2f faster (formula 1 + %.1f x %.2f)" % [h.melds.fervor_n, h.melds.fervor_t, k8, E["fervor"]["secs"], pct, h.melds.fervor_n, float(E["fervor"]["burn"]) * 100.0, pace, h.melds.fervor_n, float(E["fervor"]["speed"])]
+			M._w_is(wrong, v.dead and _near(h.melds.fervor_n, k8) and h.melds.fervor_t > float(E["fervor"]["secs"]) - 0.2 and _near(pct, k8 * float(E["fervor"]["burn"]) * 100.0) and _near(pace, 1.0 + k8 * float(E["fervor"]["speed"])), "fervor %.2f, pace %.2f" % [h.melds.fervor_n, pace])
 		["rimeward", "front"], ["rimeward", "behind"]:
 			var k8: float = 1.0 if side == "front" else float(E["behind"])
 			h.stats["block_chance"] = 100.0

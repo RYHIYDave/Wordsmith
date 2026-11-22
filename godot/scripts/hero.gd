@@ -517,7 +517,7 @@ func _hammer_stun(m, secs: float) -> void:
 
 ## How much faster his attacks are played (game.ts frenzyPace x handPace): the frenzy's, and the Half-Carved Hand's below half life.
 func attack_pace() -> float:
-	return frenzy_pace() * (uniques.hand_pace() if uniques != null else 1.0)
+	return frenzy_pace() * (uniques.hand_pace() if uniques != null else 1.0) * melds.fervor_pace()
 
 
 ## UNIQUE ITEMS: BROKEN SHACKLES, he can be hit during his swipe move: nothing his moves do keeps blows off him (game.ts hitInMove).
