@@ -3,7 +3,7 @@
 ## optimized gear rolls for poison damage, full damage talent tree points, and words to push the poison as far as possible and see
 ## how hard it can actually hit in a min/max build.  Maybe try it with warrior and str and power, tinker with lightning and
 ## volatile, and the mage with fire or frost maxed”).
-##   godot ... -- --only=dmg --shots=<dir>    with WS_DMG_GEAR=<file> (tools/godot_dmg_gear.ts: every base and every word a piece can
+##   godot ... -- --only=dmg --shots=<dir>    (WS_DMG_FAST=1: worked out only, no fights) with WS_DMG_GEAR=<file> (tools/godot_dmg_gear.ts: every base and every word a piece can
 ##                                            take, at the top of its range); WS_DMG="ranger warrior" for some builds only
 ## Each build, a hero of level 50 (every talent point and every word slot open), every attribute point in what his attacks grow
 ## with, his ten talents on his attacks' damage, and the best gear there is for it: each piece a plain one of its best base with
@@ -465,6 +465,9 @@ static func _wname(ws: Array) -> String:
 
 ## His quick attack into the elite that cannot die: what it lost a second, from the 2nd second to the 10th.
 func _fight_one(reach: float) -> float:
+	# (WS_DMG_FAST: worked out only, no fights: for trying a change quickly)
+	if OS.has_environment("WS_DMG_FAST"):
+		return 0.0
 	_clear()
 	await M.get_tree().process_frame
 	dummy = _one(spot + way * reach)
@@ -491,6 +494,8 @@ func _fight_one(reach: float) -> float:
 ## His quick attack into a pack, six of the floor's own held in a knot before him: seconds till all are dead (30 at most).
 var pack_life := 0.0
 func _fight_pack(reach: float) -> float:
+	if OS.has_environment("WS_DMG_FAST"):
+		return 0.0
 	_clear()
 	await M.get_tree().process_frame
 	pack = []
