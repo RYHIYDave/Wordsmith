@@ -138,6 +138,11 @@ func _touching() -> bool:
 	return main != null and main._touch != null and main._touch.on
 
 
+## (A GAME CONTROLLER being played with: gamepad.ts PAD_USE.live) the HUD names its buttons.
+func _pad() -> bool:
+	return main != null and main.pad_live
+
+
 ## (TOUCH, touch.gd) Whether a touch here is a press of the HUD's own things (main.ts isUi, ui.claim): the INVENTORY and TALENTS
 ## buttons, the flask, a move's plate or the Lunge's button out of a fight.
 func claims(p: Vector2) -> bool:
@@ -406,8 +411,10 @@ func _draw() -> void:
 			_rect(px + ps - 1, py, 1, ps, T["accent"])
 		_arrow(px + floorf(ps / 2.0), py - 9, T["accent"])
 	# (with a finger, no key on it, and no level over it: hud.ts `if (pd || !touch)`, `if (!touch)`)
+	# (with a controller, its button: X)
+	if _pad() or not _touching():
+		_text("X" if _pad() else "Q", px + 2, py + 2, T["dim"], {"font": "small", "shadow": ink})
 	if not _touching():
-		_text("Q", px + 2, py + 2, T["dim"], {"font": "small", "shadow": ink})
 		_text("LV %d" % (loot.level if loot != null else 1), px, py - 7, T["accent"], {"font": "small", "shadow": ink})
 
 	# ---- the Lunge: beside where the mana would be, as the flask is beside the life ----
@@ -482,6 +489,9 @@ func _draw() -> void:
 		plates[0] = Rect2(roundf(alone.position.x + (plates[0].position.x - alone.position.x) * k), roundf(alone.position.y + (plates[0].position.y - alone.position.y) * k), w0, PH)
 	_plates = plates if slow_shown else [plates[0]]
 	var keys := [str(skills[0].get("key", "LEFT CLICK")), str(skills[1].get("key", "HOLD RIGHT CLICK"))]
+	# (with a controller, its triggers: ui/guide.ts padPress)
+	if _pad():
+		keys = ["RT", "HOLD LT" if keys[1].begins_with("HOLD") else "LT"]
 	# (a plate is a button out of a fight: under the pointer it lights, and a press on it opens the gear screen at its move)
 	var button: bool = main != null and not main._in_fight()
 	for s in 2:
@@ -533,13 +543,13 @@ func _draw() -> void:
 	_talent_button = Rect2()
 	if loot != null and loot.points > 0:
 		# (in the game L opens the level's choice; here it is made on the gear screen)
-		var label := "LEVEL UP (I)"
-		var w := 78.0
+		var label := "LEVEL UP (UP)" if _pad() else "LEVEL UP (I)"
+		var w := _width(label) + 12.0 if _pad() else 78.0
 		_button(floorf(W / 2.0 - w / 2.0), prompt_y, w, pbh, label, false, true, pulse)
 		prompt_y -= pbh + 3
 	elif loot != null and hero != null and Talents.points(loot.level) > hero.talents.size():
 		# THE SKILL TREES: a talent point is waiting (after the level's attribute, where both come at once)
-		var label := "NEW TALENT"
+		var label := "NEW TALENT (UP)" if _pad() else "NEW TALENT"
 		var w := _width(label) + 12
 		_talent_button = Rect2(floorf(W / 2.0 - w / 2.0), prompt_y, w, pbh)
 		_button(_talent_button.position.x, prompt_y, w, pbh, label, false, true, pulse)
@@ -548,7 +558,8 @@ func _draw() -> void:
 		var p: Array = main.prompt()
 		if p[0] != "":
 			var hint: String = p[0].trim_prefix("E: ")
-			var label2: String = hint + " (E)" if p[1] != "" else hint
+			# (what B does with a controller; with a finger the thing is touched, so no key: hud.ts)
+			var label2: String = (hint + (" (B)" if _pad() else " (E)")) if p[1] != "" and (_pad() or not _touching()) else hint
 			var w2 := _width(label2) + 12
 			_button(floorf(W / 2.0 - w2 / 2.0), prompt_y, w2, pbh, label2, false, false, p[1] != "")
 
@@ -571,7 +582,7 @@ func _draw() -> void:
 	_text("%d" % (loot.gold if loot != null else 0), stat_x + _pic_size("gold").x + 2, gold_y, T["gold"], {"font": "small", "shadow": ink})
 	if _touching():
 		_text("LV %d" % (loot.level if loot != null else 1), stat_x, gold_y + 11, T["text"], {"font": "small", "shadow": ink})
-	var inv_label := "INVENTORY" if _touching() else "INVENTORY (I)"
+	var inv_label := "INVENTORY (Y)" if _pad() else ("INVENTORY" if _touching() else "INVENTORY (I)")
 	var iw := _width(inv_label, "normal" if _touching() else "small") + (14.0 if _touching() else 10.0)
 	_button(lx, btn_y, iw, btn_h, inv_label, not _touching(), spare > 0, spare > 0 and int(floorf(_t * 2.0)) % 2 == 0)
 	_inv_button = Rect2(lx, btn_y, iw, btn_h)
@@ -856,7 +867,7 @@ func _draw_dodge(ex: float, py: float, ps: float, ready: Dictionary, skills: Arr
 		_rect(ex + 1, py + 1, ps - 2, ceilf((ps - 2) * lunge_cover), Color(P["black"], 0.72))
 	if ready.has("max") and int(ready["max"][2]) > 1:
 		_text(str(int(ready["have"][2])), ex + ps - 2, py + ps - 7, P["white"], {"align": "right", "font": "small", "shadow": ink})
-	_text("SWIPE" if _touching() else "SPACE", ex + floorf(ps / 2.0), py - 7, T["accent"] if point == 2 else T["dim"], {"align": "center", "font": "small", "shadow": ink})
+	_text("A" if _pad() else ("SWIPE" if _touching() else "SPACE"), ex + floorf(ps / 2.0), py - 7, T["accent"] if point == 2 else T["dim"], {"align": "center", "font": "small", "shadow": ink})
 	# (its name with its words, in the small letters over its button, once it has any)
 	var lunge_named: bool = (not hero.loadout.fronts(2).is_empty() or not hero.loadout.behinds(2).is_empty()) and not _stacked
 	if lunge_named:
@@ -899,7 +910,7 @@ func _draw_plate(s: int, r: Rect2, pieces: Array, keys: Array, ready: Dictionary
 		_text(str(int(ready["have"][s])), r.position.x + 18, iy + 13, P["white"], {"align": "right", "font": "small", "shadow": ink})
 	_draw_phrase(pieces[s], r.position.x + 20 + PAD, r.position.y, PH, pulse)
 	# (with a finger: TAP and HOLD over the plates, hud.ts `gestures`)
-	_text(keys[s] if not _touching() else ["TAP", "HOLD"][s], r.position.x + 1, r.position.y - 6, T["dim"], {"font": "small", "shadow": ink})
+	_text(keys[s] if not _touching() or _pad() else ["TAP", "HOLD"][s], r.position.x + 1, r.position.y - 6, T["dim"], {"font": "small", "shadow": ink})
 	if asked:
 		_arrow(r.position.x + floorf(r.size.x / 2.0), r.position.y - 8, T["accent"])
 
@@ -992,10 +1003,8 @@ func _move_toast(skill: int, age: float, top: float, W: float) -> float:
 	var name: String = str(sk["name"]).to_upper()
 	var scale := 3 if W >= 380.0 else 2
 	var nw := _width(name) * scale
-	var key: String = "SPACE" if skill == 2 else str(skills[skill].get("key", "RIGHT CLICK"))
-	# (ui/guide.ts pressName: with a finger, TAP, TAP + HOLD, SWIPE)
-	if _touching():
-		key = ["TAP", "TAP + HOLD", "SWIPE"][skill]
+	# (ui/guide.ts pressName: with a mouse, a finger or a controller)
+	var key: String = main.guide.press_name(skill) if main != null else "SPACE"
 	var line := "%s to %s" % [key, str(sk.get("verb", name))]
 	var icon: String = "ability:" + str(skills[skill]["icon"])
 	var isz := _pic_size(icon)

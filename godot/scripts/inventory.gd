@@ -191,9 +191,6 @@ func _ready() -> void:
 			var e := InputEventKey.new()
 			e.physical_keycode = k
 			InputMap.action_add_event("inventory", e)
-		var b := InputEventJoypadButton.new()
-		b.button_index = JOY_BUTTON_BACK
-		InputMap.action_add_event("inventory", b)
 
 
 func _process(dt: float) -> void:
@@ -1033,7 +1030,8 @@ func _draw_attacks(blink: bool, first: bool) -> void:
 		_gbox(a, HOT if _focus == s else BOX, PICK if _focus == s else EDGE)
 		_hud_pic("ability:" + str(def["icon"]), Rect2(a.position + Vector2(2.0 * K, 2.0 * K), Vector2(16.0 * K, 16.0 * K)))
 		_top(a.position + Vector2(22.0 * K, 3.0 * K), str(def["name"]).to_upper(), NORMAL, Color.WHITE)
-		_top(a.position + Vector2(22.0 * K, 12.0 * K), HOW[s], SMALL, DIM)
+		# (what makes it: with a controller its buttons, ui/inventory.ts `how`)
+		_top(a.position + Vector2(22.0 * K, 12.0 * K), ["RT", "LT", "A"][s] if main != null and main.pad_live else (["TAP", "HOLD", "SWIPE"][s] if main != null and main._touch != null and main._touch.on else HOW[s]), SMALL, DIM)
 		# its numbers: one hit, and how often
 		if _nums[s] != null:
 			var at: Vector2 = _nums[s]
@@ -1122,10 +1120,15 @@ func _coach() -> String:
 	if _coached:
 		if main == null or main.is_home(main.place):
 			return ""
-		return "%s! Close this and try it." % str(hero.loadout.r(main.guide.at)["name"]).to_upper()
+		return "%s! %s" % [str(hero.loadout.r(main.guide.at)["name"]).to_upper(), "Press B and try it." if main.pad_live else "Close this and try it."]
 	if not loot.first_word_waits():
 		return ""
-	return "Drag %s onto %s, or click the word and then the slot." % [str(Words.word(loot.first_spare())["name"]).to_upper(), str(_skill(0)["name"]).to_upper()]
+	# (with a controller, A is a click where its pointer is: ui/guide.ts guideCoach)
+	var wn: String = str(Words.word(loot.first_spare())["name"]).to_upper()
+	var sn: String = str(_skill(0)["name"]).to_upper()
+	if main != null and main.pad_live:
+		return "Press A on %s, then on %s's slot." % [wn, sn]
+	return "Drag %s onto %s, or click the word and then the slot." % [wn, sn]
 
 
 ## One hit of a move, lowest to highest, as the ATTACKS page gives it (game.ts hitRange, baseFor): with all that his gear

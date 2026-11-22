@@ -2127,3 +2127,104 @@ func upright(main, hero, dir: String) -> void:
 	_line(not M.upright and size2 == size0 and M.turn_label() == "PLAY UPRIGHT", "PLAY SIDEWAYS pressed: sideways again, %s game pixels" % [size2 / 2.0])
 	M._mini._press("resume")
 	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## A GAME CONTROLLER (pad.gd; engine/gamepad.ts; main.ts padFrame, padControls): a pad of the check's own. The left stick walks
+## him at one speed; the right stick aims at the enemy that way and turns him; RT strikes; A lunges the way he goes; the prompts
+## name its buttons; Y opens the inventory and in a screen the stick moves a pointer and B goes back; START pauses; BACK the map;
+## left idle 8 s, the prompts are the keyboard's again.
+func pad(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var P = M._pad
+	var frames := func(n: int) -> void:
+		for i in n:
+			await M.get_tree().process_frame
+	var tap := func(b: String) -> void:
+		P.fake = {"axes": [0, 0, 0, 0, 0, 0], "buttons": [b]}
+		await frames.call(3)
+		P.fake = {"axes": [0, 0, 0, 0, 0, 0], "buttons": []}
+		await frames.call(3)
+	M._hud.floor_card = {}
+	M.loot.taught = false
+	h.walked = 0.0
+	for m in M._monsters.list:
+		if is_instance_valid(m) and not m.dead:
+			m.state = "sleep"
+	await M._wait(0.3)
+	_line(not M.pad_live, "no pad played with: not live (%s)" % M.pad_live)
+	var at0: Vector2 = h.world
+	P.fake = {"axes": [0.9, 0.0, 0, 0, 0, 0], "buttons": []}
+	await M._wait(0.6)
+	var walked: float = h.world.distance_to(at0)
+	var b: Dictionary = M.guide.banner()
+	_line(M.pad_live and walked > 1.0 and b.get("text", "") == "LEFT STICK to MOVE" and M.guide.press_name(0) == "RT" and M.guide.press_name(2) == "A",
+		"the left stick held: he walks (%.1f tiles in 0.6 s); the prompt %s / %s; the moves %s, %s, %s" % [walked, b.get("text", ""), b.get("sub", ""), M.guide.press_name(0), M.guide.press_name(1), M.guide.press_name(2)])
+	await M._snap(dir + "/pad_1_walking.png")
+	h.walked = 5.0
+	# THE RIGHT STICK: at an enemy that way
+	var foe = null
+	for m in M._monsters.list:
+		if is_instance_valid(m) and not m.dead and not m.boss:
+			foe = m
+			break
+	foe.world = M._free_near(h.world + Iso.screen_dir_to_world(Vector2(1, 0)) * 3.0)
+	foe.state = "chase"
+	foe.seen = true
+	foe.speed = 0.0
+	foe.max_life = 100000.0
+	foe.life = 100000.0
+	var way: Vector2 = Iso.to_screen(foe.world.x, foe.world.y) - Iso.to_screen(h.world.x, h.world.y)
+	P.fake = {"axes": [0, 0, way.normalized().x, way.normalized().y, 0, 0], "buttons": []}
+	await frames.call(4)
+	var aim0: Vector2 = h.touch_aim.get(0, Vector2.INF)
+	_line(M._touch.lock == foe and aim0.distance_to(foe.world) < 1.5 and h.face.dot((foe.world - h.world).normalized()) > 0.9,
+		"the right stick pushed toward the %s: locked onto it (its gold ring), the quick attack aimed at it, he faces it" % foe.kind)
+	var uses0: int = h.uses[0]
+	P.fake = {"axes": [0, 0, way.normalized().x, way.normalized().y, 0, 1.0], "buttons": []}
+	await M._wait(0.8)
+	await M._snap(dir + "/pad_2_aim_strike.png")
+	_line(h.uses[0] > uses0, "RT held: he strikes (%d blows)" % (h.uses[0] - uses0))
+	P.fake = {"axes": [0, 0, 0, 0, 0, 0], "buttons": []}
+	await M._wait(0.6)
+	var at1: Vector2 = h.world
+	P.fake = {"axes": [-0.9, 0.0, 0, 0, 0, 0], "buttons": ["A"]}
+	await M._wait(0.5)
+	P.fake = {"axes": [0, 0, 0, 0, 0, 0], "buttons": []}
+	_line(h.world.distance_to(at1) > 2.5, "A, walking left: the Lunge that way (%.1f tiles)" % h.world.distance_to(at1))
+	await M._wait(0.4)
+	_line(M._hud._pad() and M.guide.press_name(1).ends_with("LT"), "the HUD names its buttons: INVENTORY (Y), the flask X, the Lunge A, the attacks RT and %s" % M.guide.press_name(1))
+	await M._snap(dir + "/pad_3_hud.png")
+	# Y: the inventory; a pointer; B back
+	await tap.call("Y")
+	var opened: bool = M._inv.visible
+	P.fake = {"axes": [0.8, 0.5, 0, 0, 0, 0], "buttons": []}
+	await M._wait(0.3)
+	P.fake = {"axes": [0, 0, 0, 0, 0, 0], "buttons": []}
+	await frames.call(2)
+	var ptr: bool = P.pointer
+	await M._snap(dir + "/pad_4_inventory_pointer.png")
+	await tap.call("B")
+	await frames.call(4)
+	_line(opened and ptr and not M._inv.visible, "Y: the inventory (%s); in it the stick moves a pointer (%s, at %s); B: closed (%s)" % [opened, ptr, Vector2(P.px, P.py).round(), not M._inv.visible])
+	# START: pause; B back. BACK: the map; BACK again
+	await tap.call("START")
+	await frames.call(4)
+	var paused: bool = M._mini.open == "pause"
+	await M._snap(dir + "/pad_5_pause.png")
+	await tap.call("B")
+	await frames.call(6)
+	var unpaused: bool = M._mini.open == ""
+	await tap.call("BACK")
+	await frames.call(4)
+	var mapped: bool = M._mini.open == "map"
+	await tap.call("BACK")
+	await frames.call(6)
+	_line(paused and unpaused and mapped and M._mini.open == "", "START: paused (%s), B: back to the game (%s); BACK: the map (%s), BACK: closed (%s)" % [paused, unpaused, mapped, M._mini.open == ""])
+	# idle: the keyboard's names again
+	P.fake = null
+	P.idle = 9.0
+	await frames.call(3)
+	_line(not M.pad_live and M.guide.press_name(0) == "LEFT CLICK", "left idle: the prompts name the mouse's again (%s)" % M.guide.press_name(0))
+	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

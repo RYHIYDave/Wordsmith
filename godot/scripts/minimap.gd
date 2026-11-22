@@ -21,6 +21,9 @@ const MH := 46.0
 ## (what the port's keys do: panels.ts drawPause's table, for the keys this version has)
 const HELP := [["MOVE", "WASD"], ["ATTACK", "left button"], ["SLOW ATTACK", "right button"], ["EVADE", "Space"], ["FLASK", "Q"], ["INTERACT", "E"], ["INVENTORY", "Tab"], ["MAP", "M"]]
 ## (with a finger: ui/panels.ts drawPause, its table for a phone)
+## (with a controller being played with: its buttons)
+const HELP_PAD := [["MOVE", "left stick"], ["AIM", "right stick"], ["ATTACK", "RT"], ["SLOW ATTACK", "LT"], ["EVADE", "A"], ["FLASK", "X"],
+	["INTERACT", "B"], ["INVENTORY", "Y"], ["LEVEL UP", "D-pad up"], ["MAP", "BACK"]]
 const HELP_TOUCH := [["MOVE", "left thumb"], ["ATTACK", "tap"], ["SLOW ATTACK", "hold"], ["EVADE", "swipe"], ["FLASK", "tap it"], ["INVENTORY", "tap an attack"]]
 
 var main  # main.gd
@@ -60,9 +63,6 @@ func _ready() -> void:
 			var e := InputEventKey.new()
 			e.physical_keycode = pair[1]
 			InputMap.action_add_event(pair[0], e)
-	var b := InputEventJoypadButton.new()
-	b.button_index = JOY_BUTTON_START
-	InputMap.action_add_event("pause", b)
 
 
 func _process(dt: float) -> void:
@@ -495,7 +495,7 @@ func _pause(W: float, H: float) -> void:
 	# drawPause, `opt.aim` and `turn` with a finger only; its buttons taller and its table a phone's)
 	var touch: bool = main._touch != null and main._touch.on
 	var bh := 18.0 if touch else 13.0
-	var help: Array = HELP_TOUCH if touch else HELP
+	var help: Array = HELP_PAD if main.pad_live else (HELP_TOUCH if touch else HELP)
 	var key_w := 0.0
 	var val_w := 0.0
 	for r in help:

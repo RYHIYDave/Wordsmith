@@ -647,7 +647,8 @@ func _spot_at(p: Vector2) -> Dictionary:
 ## on what a tap's aim help picked (WHERE YOU TAP); and a ring closing over the right thumb as a press turns into a hold.
 func _draw() -> void:
 	var h = _hero()
-	if not on or h == null or not _playing():
+	# (the gold ring is drawn for a game controller's aim too: main.ts renderer.lockId)
+	if not (on or main.pad_live) or h == null or not _playing():
 		return
 	var cam := get_viewport().get_camera_2d()
 	var tl: Vector2 = cam.get_screen_center_position() - get_viewport_rect().size / 2.0 if cam != null else Vector2.ZERO

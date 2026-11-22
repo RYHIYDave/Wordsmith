@@ -60,6 +60,9 @@ const MET := 9.0 + 1.5
 ## (ui/guide.ts pressName, with a finger and with a mouse, the flask's)
 const FLASK_PRESS := ["Q", "TAP THE FLASK"]
 var gesture := {}
+## (ui/guide.ts guideAttack) The attack the prompt asks a word onto just now, out of a fight, or -1: a controller's Y opens the
+## inventory there.
+var ask_at := -1
 
 
 ## The prompt for this moment: {caption, text, sub}, or empty. `seen`: it is on the screen (the boss's bar, or the news of a
@@ -70,6 +73,7 @@ func banner(seen := true) -> Dictionary:
 	_clock = now
 	point = -1
 	gesture = {}
+	ask_at = -1
 	_speak_step()
 	_fight_step()
 	var b := _lesson()
@@ -104,7 +108,7 @@ func _lesson() -> Dictionary:
 		# (the word may be on the swipe: the Ranger's first goes on Trap)
 		if _touch():
 			gesture = {"kind": "flick"} if at == 2 else _on_monster("tap" if at == 0 else "hold")
-		return {"caption": "WORDSMITHING", "text": "%s: %s" % [(TOUCH_PRESS if _touch() else PRESS)[at], str(L.r(at)["name"]).to_upper()], "sub": says}
+		return {"caption": "WORDSMITHING", "text": "%s: %s" % [press_name(at), str(L.r(at)["name"]).to_upper()], "sub": says}
 	# FIGHT: in a fight, a line for each move open (and the flask once wanted) till each is done
 	var fight: bool = not town and main._in_fight()
 	var rows := rows_now()
@@ -118,31 +122,31 @@ func _lesson() -> Dictionary:
 			if main._in_fight():
 				return {"caption": "WORDSMITHING", "text": "You hold a word: %s" % name, "sub": "When the fight is over, it goes on %s." % strike}
 			point = 0
-			return {"caption": "WORDSMITHING", "text": "Put %s on %s" % [name, strike], "sub": ("Tap %s at the bottom of the screen." if _touch() else "Click %s at the bottom of the screen.") % strike}
+			ask_at = 0
+			# (with a controller: Y opens the inventory at that attack)
+			return {"caption": "WORDSMITHING", "text": "Put %s on %s" % [name, strike], "sub": "Press Y to open your attacks." if _pad() else ("Tap %s at the bottom of the screen." if _touch() else "Click %s at the bottom of the screen.") % strike}
 		var lying: String = _word_near(hero.world)
 		if lying != "":
 			return {"caption": "WORDSMITHING", "text": "A power word: %s" % str(Words.word(lying)["name"]).to_upper(), "sub": "Walk over it to take it."}
 	if loot.quest != "":
 		if loot.prompt_t > 0.0:
 			if town:
-				return {"caption": "WORDSMITHING", "text": "Bring the MASTER RUNE-STONE to the wordsmith", "sub": "He stands in the ring of stones. Tap him." if _touch() else "He stands in the ring of stones. Go up to him and press E."}
+				return {"caption": "WORDSMITHING", "text": "Bring the MASTER RUNE-STONE to the wordsmith", "sub": _go_up()}
 			return {"caption": "WORDSMITHING", "text": "You carry the MASTER RUNE-STONE", "sub": "Take it to the wordsmith in town."}
 		return {}
 	if town and not loot.ring_lit:
 		if hero.walked < STEPS:
-			_stick_ghost()
-			return {"caption": "HOW TO PLAY", "text": "LEFT THUMB to MOVE" if _touch() else "W A S D to MOVE", "sub": "Put your thumb down anywhere on the left and push." if _touch() else ""}
+			return _move_banner()
 		if loot.quest_given:
 			return {"caption": "WORDSMITHING", "text": "Take the STAIRS down", "sub": "Find the fallen wordsmith, and bring back the stone."}
-		return {"caption": "WORDSMITHING", "text": "Talk to the WORDSMITH", "sub": "He stands in the ring of stones. Tap him." if _touch() else "He stands in the ring of stones. Go up to him and press E."}
+		return {"caption": "WORDSMITHING", "text": "Talk to the WORDSMITH", "sub": _go_up()}
 	var b = loot._body
 	if not town and b != null and not b["searched"] and b["node"] != null and hero.world.distance_to(b["at"]) < SIGHT and main.sees(hero.world, b["at"]):
 		if _touch():
 			gesture = {"kind": "tap", "at": (main._touch.to_view(b["at"]) - Vector2(0, 4)).round()}
 		return {"caption": "WORDSMITHING", "text": "Someone fell here", "sub": "Walk up to the body to search it, or tap it." if _touch() else "Walk up to the body to search it."}
 	if hero.walked < STEPS:
-		_stick_ghost()
-		return {"caption": "HOW TO PLAY", "text": "LEFT THUMB to MOVE" if _touch() else "W A S D to MOVE", "sub": "Put your thumb down anywhere on the left and push." if _touch() else ""}
+		return _move_banner()
 	return {}
 
 
@@ -192,11 +196,10 @@ func _fight_banner(rows: Array) -> Dictionary:
 	var what := {}
 	for i in 3:
 		var id: String = ["quick", "slow", "evade"][i]
-		var key: String = str(skills[i].get("key", PRESS[i])) if i < 2 and i < skills.size() else PRESS[i]
-		how[id] = TOUCH_PRESS[i] if t else key
+		how[id] = press_name(i)
 		var sk: Dictionary = Words.skill(h.loadout.id(i))
 		what[id] = "to %s" % str(sk.get("verb", sk.get("name", ""))).to_upper()
-	how["flask"] = FLASK_PRESS[1] if t else FLASK_PRESS[0]
+	how["flask"] = "X" if _pad() else (FLASK_PRESS[1] if t else FLASK_PRESS[0])
 	what["flask"] = "to HEAL"
 	var lines: Array = []
 	var open: Array = []
@@ -339,6 +342,36 @@ func _speak_step() -> void:
 
 
 ## (ui/guide.ts: `touch`) Whether he is playing with fingers.
+## (ui/guide.ts pressName, padPress) What makes move `i`: with a controller RT, LT (HOLD LT for one that goes on while held), A;
+## with a finger TAP, TAP + HOLD, SWIPE; with a mouse LEFT CLICK, RIGHT CLICK (HOLD RIGHT CLICK), SPACE.
+func press_name(i: int) -> String:
+	var channel := false
+	if i == 1:
+		var skills: Array = main._hud._skills() if main._hud != null else []
+		channel = skills.size() > 1 and str(skills[1].get("key", "")).begins_with("HOLD")
+	if _pad():
+		return ["RT", "HOLD LT" if channel else "LT", "A"][i]
+	if _touch():
+		return TOUCH_PRESS[i]
+	return ["LEFT CLICK", "HOLD RIGHT CLICK" if channel else "RIGHT CLICK", "SPACE"][i]
+
+
+## (ui/guide.ts 'move') The first prompt: how to walk.
+func _move_banner() -> Dictionary:
+	_stick_ghost()
+	if _pad():
+		return {"caption": "HOW TO PLAY", "text": "LEFT STICK to MOVE", "sub": "The right stick aims."}
+	return {"caption": "HOW TO PLAY", "text": "LEFT THUMB to MOVE" if _touch() else "W A S D to MOVE", "sub": "Put your thumb down anywhere on the left and push." if _touch() else ""}
+
+
+func _go_up() -> String:
+	return "He stands in the ring of stones. Go up to him and press B." if _pad() else ("He stands in the ring of stones. Tap him." if _touch() else "He stands in the ring of stones. Go up to him and press E.")
+
+
+func _pad() -> bool:
+	return main != null and main.pad_live
+
+
 func _touch() -> bool:
 	return main != null and main._touch != null and main._touch.on
 

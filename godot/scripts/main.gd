@@ -160,6 +160,9 @@ var _loot: Loot
 var _inv
 ## (TOUCH, for a phone: touch.gd)
 var _touch = null
+## (A GAME CONTROLLER: pad.gd) and whether one is being played with now (gamepad.ts PAD_USE.live): the prompts name its buttons
+var _pad = null
+var pad_live := false
 ## (what the hero and the town's people say: speech.gd)
 var _speech = null
 var _uniques = null
@@ -296,6 +299,10 @@ func _ready() -> void:
 		_touch = preload("res://scripts/touch.gd").new()
 		_touch.main = self
 		add_child(_touch)
+	if _pad == null:
+		_pad = preload("res://scripts/pad.gd").new()
+		_pad.main = self
+		add_child(_pad)
 	if _speech == null:
 		_speech = preload("res://scripts/speech.gd").new()
 		_speech.main = self
@@ -346,7 +353,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -1306,11 +1313,7 @@ func _inputs() -> void:
 		# (THE WARLOCK: his pact full, R changes him into the demon: main.ts, `input.pressed('KeyR')`)
 		"change": [KEY_R],
 	}
-	var sticks := {
-		"move_up": [JOY_AXIS_LEFT_Y, -1.0], "move_down": [JOY_AXIS_LEFT_Y, 1.0],
-		"move_left": [JOY_AXIS_LEFT_X, -1.0], "move_right": [JOY_AXIS_LEFT_X, 1.0],
-		"attack": [JOY_AXIS_TRIGGER_RIGHT, 1.0], "whirl": [JOY_AXIS_TRIGGER_LEFT, 1.0],
-	}
+	# (A GAME CONTROLLER is read by pad.gd, as the game's main.ts padControls reads it: no button of it is bound here)
 	for action in keys:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action, 0.2)
@@ -1318,24 +1321,10 @@ func _inputs() -> void:
 			var e := InputEventKey.new()
 			e.physical_keycode = k
 			InputMap.action_add_event(action, e)
-	for action in sticks:
-		var j := InputEventJoypadMotion.new()
-		j.axis = sticks[action][0]
-		j.axis_value = sticks[action][1]
-		InputMap.action_add_event(action, j)
 	for pair in [["attack", MOUSE_BUTTON_LEFT], ["whirl", MOUSE_BUTTON_RIGHT]]:
 		var m := InputEventMouseButton.new()
 		m.button_index = pair[1]
 		InputMap.action_add_event(pair[0], m)
-	var a := InputEventJoypadButton.new()
-	a.button_index = JOY_BUTTON_A
-	InputMap.action_add_event("lunge", a)
-	var x := InputEventJoypadButton.new()
-	x.button_index = JOY_BUTTON_X
-	InputMap.action_add_event("potion", x)
-	var b := InputEventJoypadButton.new()
-	b.button_index = JOY_BUTTON_B
-	InputMap.action_add_event("interact", b)
 
 
 func _arg(name: String) -> String:
@@ -2427,6 +2416,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "uniqueswar":
 		await preload("res://scripts/check_glows.gd").new().uniqueswar(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "pad":
+		await preload("res://scripts/check_glows.gd").new().pad(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "upright":

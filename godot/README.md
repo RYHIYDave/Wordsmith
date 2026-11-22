@@ -328,7 +328,16 @@ through chat, so the art and sounds go into the project whole).
 
 Keys: WASD or the arrows to walk; the left button to Strike, the right to Whirl, Space to Lunge (the mouse aims; from
 the keys he aims at the nearest monster close by); E to use (talk, trade, give); Q a flask; I or Tab the gear screen.
-A controller: the left stick, RT, LT, A, B, X.
+A controller, as the game's (engine/gamepad.ts; main.ts padFrame, padControls; `scripts/pad.gd`, 22 Nov 2026): the left stick
+walks him at one speed; the right stick aims (at the enemy nearest that line, in a narrow cone and in sight, its gold ring round
+it, and he turns that way; let go, the game aims as on a phone); RT the quick attack, held on; LT the slow one; A the Lunge the
+way he goes (or faces); B use; X a flask; RB the Warlock's change; Y the gear screen (at the attack the first dungeon's prompt
+asks a word onto); START pause; BACK the map; the D-pad's UP the prompt over the attacks (LEVEL UP, NEW TALENT). In any screen
+the left stick moves a pointer (a small arrow), A presses where it is, B or START goes back, Y closes the gear screen, BACK the
+map. While it is played with (anything on it moved or pressed in the last 8 seconds) the prompts, the HUD, the attacks page, the
+coach and the pause panel's table name its buttons (LEFT STICK to MOVE, RT to STRIKE, HOLD LT to WHIRL, A to LUNGE, X to HEAL,
+INVENTORY (Y), LEVEL UP (UP), "Go up to him and press B", "Press Y to open your attacks"). `--only=pad` (`check_glows.gd`): 9
+checks with a pad of the check's own, pictured.
 
 - **The monsters' own moves** (at his pick, "Monsters' own moves", 14 Nov 2026; game/defs.ts MONSTER_MOVES with the
   first floor's MORE ACTION, `scripts/monster_moves.gd`): each makes the biggest of its moves that is ready and in reach,
