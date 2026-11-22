@@ -384,12 +384,26 @@ func speak(kind: String, text: String) -> void:
 var said_aloud: Array = []
 
 
-func voice(name: String, gap: float, db: float) -> void:
+func voice(name: String, gap: float, db: float, keep := 1) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	if now - float(_voiced.get(name, -1000.0)) < gap:
 		return
 	_voiced[name] = now
+	if keep > 1 and not kept_cry(name, keep):
+		return
 	sfx.play(name, db)
+
+
+## THE ENEMIES' GRUNT AND DEATH CRY A THIRD AS OFTEN, BY A COUNT (game.ts keptCry, sound_families.ts ENEMY_KEEP: the sound chat's
+## fourteenth batch, his picks “Enemies' grunts” and “Rarer, and more takes (Recommended)”): where a family's grunt would be heard
+## it is on that family's 1st, 4th, 7th … time; its 1st, 4th, 7th … death cries out, its others die with the plain sound of one
+## with no voice. A count, not the dice. Champions always cry; the bosses and the cry on seeing him are as they were.
+const ENEMY_KEEP := {"hurt": 3, "death": 3}
+var cry_count := {}
+func kept_cry(name: String, keep: int) -> bool:
+	var n: int = cry_count.get(name, 0)
+	cry_count[name] = n + 1
+	return n % keep == 0
 
 
 ## THE SKELETON CHAMPION'S CRY (game.ts hearsCry): whether one of his minions would hear it: one of his pack that carries his

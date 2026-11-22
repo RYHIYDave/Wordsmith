@@ -221,34 +221,28 @@ func _pic_on(n: Sprite2D, name: String) -> void:
 	n.offset = -p["anchor"]
 
 
-## (THE WORLD'S SOUNDS, world_sounds.ts) the braziers' fire, the forge's, the ring's hum: each heard from where it is.
+## (THE WORLD'S SOUNDS, world_sounds.ts) No loops (the fifteenth batch: WORLD_LOOPS off, no constant sound but the music): the
+## braziers' crackle, the forge's and the ring's hum gone; a brazier's pop now and then (sfx.gd AMBIENT fire), heard only right
+## beside one, by the nearest (FIRE_REACH).
+var _braziers: Array[Vector2] = []
 func _sounds() -> void:
 	for t in data["props"]:
-		var file := ""
-		var vol := -10.0
-		match t["kind"]:
-			"brazier":
-				file = "fire_small_loop.wav"
-			"forge":
-				file = "fire_big_loop.wav"
-				vol = -8.0
-			"runeSlab":
-				file = "ring_hum_loop.wav"
-		if file == "" or not ResourceLoader.exists("res://assets/sound/" + file):
-			continue
-		var p := AudioStreamPlayer2D.new()
-		p.stream = load("res://assets/sound/" + file)
-		p.volume_db = vol
-		p.max_distance = 420.0
-		p.attenuation = 1.6
-		p.position = Iso.to_screen(t["x"], t["y"])
-		p.finished.connect(p.play)
-		add_child(p)
-		p.play()
+		if t["kind"] == "brazier" and int(t.get("state", 0)) != 1:
+			_braziers.append(Vector2(t["x"], t["y"]))
+
+
+func _fire_near() -> void:
+	if sfx == null or hero == null:
+		return
+	var fire := 0.0
+	for b in _braziers:
+		fire = maxf(fire, sfx.by_nearness(b.distance_to(hero.world), sfx.FIRE_REACH["near"], sfx.FIRE_REACH["far"]))
+	sfx.amb_near["fire_pop"] = fire
 
 
 func _process(dt: float) -> void:
 	_t += dt
+	_fire_near()
 	if given_at >= 0.0 and _word_due > 0.0 and _t >= _word_due:
 		_word_due = -1.0
 		loot.give_word(loot.first_word())

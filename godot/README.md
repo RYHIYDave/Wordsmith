@@ -1140,11 +1140,29 @@ gear screen; on a floor each of the six bites and does its word), pictured.
 - `--only=foemelds` (`check_glows.gd` foewords): 21 checks (the altar's rules against the game's own, the count of two, each
   twist's effect on a floor).
 
+## Fewer repeats in the sound, and no constant sound but the music (the cloud chat, 22 Nov 2026)
+
+The sound chat's fourteenth and fifteenth batches, as the game 25.3.22 has them (engine/audio.ts, game/sound_families.ts,
+game/world_sounds.ts; `sfx.gd`, `monsters.gd`, `monster.gd`, `town.gd`, `main.gd`):
+- **The enemies' grunt and death cry a third as often, by a count** (ENEMY_KEEP): a family's 1st, 4th, 7th … grunt is heard, and
+  its 1st, 4th, 7th … death cries out; its others die with the plain sound of one with no voice. Champions always cry. Each of the
+  23 voice families now has four takes of its cry on seeing him, its grunt and its death.
+- **The hero's shouts and grunts a third as often again** (VOICE_TUNE keep): where the rules would play one, it plays one time in
+  three, the wait counted from the one passed over too. Each hero has a new shout and a new grunt (attack_c, hurt_c).
+- **Never the same take twice running** where a sound has three takes or more (playTake).
+- **The music about a minute round** (MUSIC_PLACES: the town's and floors 1 to 10's walks and fights, `_long`, made by
+  tools/godot_music.mjs; the short loops gone).
+- **No constant sound but the music** (WORLD_LOOPS off): the floors' background loops, the braziers', the forge's and the ring's
+  gone (the 31 loop files too, as from the game). Each place's sounds now and then on their own countdowns (AMBIENT,
+  AMBIENT_FLOORS): floors 1 to 4, 6, 7, 8, 10 and 14's; the camp's breeze (three takes) every 13 to 30 s; a brazier's pop every
+  10 to 25 s, heard only within 2.5 tiles of one. (The game's braziers in the cult strongholds are not in this copy's floors.)
+- `--only=sounds14` (`check_glows.gd`): 8 checks.
+
 ## Not in it yet
 
 The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick).
 Endless mode (the Shaft's Rim town, the endless levels, the Tablet Shards, the Twisted Wordsmith). The uniques' own looks on the
-heroes (a unique weapon drawn as itself). Sound batch 14 (fewer repeats: the enemies' kept cries, the longer music, more takes).
+heroes (a unique weapon drawn as itself).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made

@@ -10,118 +10,118 @@
  "places": {
   "town": {
    "walk": {
-    "file": "music_town_walk.ogg",
-    "loop": 36.9299
+    "file": "music_town_walk_long.ogg",
+    "loop": 64.625187
    }
   },
   "f1": {
    "walk": {
-    "file": "music_f1_walk.ogg",
-    "loop": 21.1096
+    "file": "music_f1_walk_long.ogg",
+    "loop": 55.280896
    },
    "fight": {
-    "file": "music_f1_fight.ogg",
-    "loop": 34.2715,
-    "fightIn": 0.822
+    "file": "music_f1_fight_long.ogg",
+    "loop": 74.410604,
+    "fightIn": 0.011
    }
   },
   "f2": {
    "walk": {
-    "file": "music_f2_walk.ogg",
-    "loop": 23.981
+    "file": "music_f2_walk_long.ogg",
+    "loop": 66.6235
    },
    "fight": {
-    "file": "music_f2_fight.ogg",
-    "loop": 27.6495,
-    "fightIn": 0.011
+    "file": "music_f2_fight_long.ogg",
+    "loop": 55.3835,
+    "fightIn": 1.761
    }
   },
   "f3": {
    "walk": {
-    "file": "music_f3_walk.ogg",
-    "loop": 29.4062
+    "file": "music_f3_walk_long.ogg",
+    "loop": 58.127958
    },
    "fight": {
-    "file": "music_f3_fight.ogg",
-    "loop": 30.0115,
-    "fightIn": 0.945
+    "file": "music_f3_fight_long.ogg",
+    "loop": 45.001542,
+    "fightIn": 0.475
    }
   },
   "f4": {
    "walk": {
-    "file": "music_f4_walk.ogg",
-    "loop": 29.9445
+    "file": "music_f4_walk_long.ogg",
+    "loop": 68.324396
    },
    "fight": {
-    "file": "music_f4_fight.ogg",
-    "loop": 35.1143,
-    "fightIn": 0.006
+    "file": "music_f4_fight_long.ogg",
+    "loop": 59.766937,
+    "fightIn": 1.787
    }
   },
   "f5": {
    "walk": {
-    "file": "music_f5_walk.ogg",
-    "loop": 27.9472
+    "file": "music_f5_walk_long.ogg",
+    "loop": 51.906312
    },
    "fight": {
-    "file": "music_f5_fight.ogg",
-    "loop": 31.4438,
-    "fightIn": 0.497
+    "file": "music_f5_fight_long.ogg",
+    "loop": 74.751188,
+    "fightIn": 2.113
    }
   },
   "f6": {
    "walk": {
-    "file": "music_f6_walk.ogg",
-    "loop": 26.7458
+    "file": "music_f6_walk_long.ogg",
+    "loop": 57.725875
    },
    "fight": {
-    "file": "music_f6_fight.ogg",
-    "loop": 25.7787,
-    "fightIn": 2.161
+    "file": "music_f6_fight_long.ogg",
+    "loop": 51.857,
+    "fightIn": 0.561
    }
   },
   "f7": {
    "walk": {
-    "file": "music_f7_walk.ogg",
-    "loop": 27.6948
+    "file": "music_f7_walk_long.ogg",
+    "loop": 58.971354
    },
    "fight": {
-    "file": "music_f7_fight.ogg",
-    "loop": 26.4213,
-    "fightIn": 0.843
+    "file": "music_f7_fight_long.ogg",
+    "loop": 52.955208,
+    "fightIn": 1.057
    }
   },
   "f8": {
    "walk": {
-    "file": "music_f8_walk.ogg",
-    "loop": 29.2397
+    "file": "music_f8_walk_long.ogg",
+    "loop": 49.029896
    },
    "fight": {
-    "file": "music_f8_fight.ogg",
-    "loop": 39.0779,
-    "fightIn": 0.161
+    "file": "music_f8_fight_long.ogg",
+    "loop": 50.097604,
+    "fightIn": 0.63
    }
   },
   "f9": {
    "walk": {
-    "file": "music_f9_walk.ogg",
-    "loop": 27.6584
+    "file": "music_f9_walk_long.ogg",
+    "loop": 55.822708
    },
    "fight": {
-    "file": "music_f9_fight.ogg",
-    "loop": 33.6587,
-    "fightIn": 0.641
+    "file": "music_f9_fight_long.ogg",
+    "loop": 60.199,
+    "fightIn": 0.859
    }
   },
   "f10": {
    "walk": {
-    "file": "music_f10_walk.ogg",
-    "loop": 36.1024
+    "file": "music_f10_walk_long.ogg",
+    "loop": 72.051375
    },
    "fight": {
-    "file": "music_f10_fight.ogg",
-    "loop": 35.6684,
-    "fightIn": 0.006
+    "file": "music_f10_fight_long.ogg",
+    "loop": 51.061563,
+    "fightIn": 1.206
    }
   }
  },

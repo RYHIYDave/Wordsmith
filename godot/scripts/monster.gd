@@ -1383,7 +1383,7 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 	elif not boss and VOICE.has(kind):
 		mgr.hurt_tick = (mgr.hurt_tick + 1) % 6
 		if crit or dmg >= max_life * 0.25 or mgr.hurt_tick == 0:
-			mgr.voice(VOICE[kind] + "_hurt", 0.7, -4.4)
+			mgr.voice(VOICE[kind] + "_hurt", 0.7, -4.4, 1 if champion else mgr.ENEMY_KEEP["hurt"])
 
 
 ## STILLING (game.ts timeOf): how fast its time runs now: slowed by a Stilling hit, and in a bubble (a boss half as much).
@@ -1883,10 +1883,15 @@ func _die() -> void:
 	elif boss and BOSS_VOICE.has(kind):
 		# (a boss who roars: his own death)
 		mgr.sfx.play(BOSS_VOICE[kind] + "_death")
+	elif VOICE.has(kind) and (champion or mgr.kept_cry(VOICE[kind] + "_death", mgr.ENEMY_KEEP["death"])):
+		mgr.sfx.play(VOICE[kind] + "_death", -1.0 if champion else -4.0)
 	elif VOICE.has(kind):
-		mgr.sfx.play(VOICE[kind] + "_death", -4.0)
+		# (THE FOURTEENTH BATCH: the others of a family die with the plain sound of one with no voice, ENEMY_KEEP)
+		mgr.sfx.play("monster_die", -3.1)
 	elif boss:
 		mgr.sfx.play("boss_roar")
+	else:
+		mgr.sfx.play("explode" if champion else "monster_die", -3.1)
 	queue_redraw()
 
 

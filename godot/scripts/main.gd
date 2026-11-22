@@ -358,7 +358,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -1088,18 +1088,17 @@ func _build(where: String, arrive: String) -> void:
 		town.looked = looked
 		town.camp = where == "camp"
 		_place.add_child(town)
-		# (the camp: no loop under it (game/world_sounds.ts WORLD_LOOPS off), its own sounds now and then (amb_camp))
-		if where == "camp":
-			sfx.background("", "amb_camp")
-		else:
-			sfx.background("fire_small_loop.wav", "")
+		# (NO CONSTANT SOUND BUT THE MUSIC, game/world_sounds.ts WORLD_LOOPS off: no loop under either; the camp's breeze now and
+		# then, and in both a brazier's pop heard right beside it: ambientWants; the castle hall's breeze not, CASTLE_HALL off)
+		sfx.ambient([sfx.AMBIENT["camp"], sfx.AMBIENT["fire"]] if where == "camp" else [sfx.AMBIENT["fire"]])
 		# (the camp at dusk: its vignette game/camp.ts CAMP_DUSK's, its dark and tint in its look)
 		_veil.material.set_shader_parameter("deep", Look._num(look.data.get("vignette"), 0.32 if where == "camp" else 0.26) if looked else 0.45)
 	else:
 		if not looked and where == "floor1":
 			_floor_gate(flats)
 		var n := depth_of(where)
-		sfx.background("bed_f%d_loop.wav" % n, "amb_f%d" % n)
+		# (no loop under it, WORLD_LOOPS off: its own sounds now and then, world_sounds.ts AMBIENT_FLOORS)
+		sfx.ambient(sfx.AMBIENT_FLOORS.get(n, []))
 		_veil.material.set_shader_parameter("deep", Look._num(look.data.get("vignette"), 0.62) if looked else 0.82)
 		# (THE DESCENT, its look not yet in: the day's veil and vignette, game/act1.ts)
 		var day: Dictionary = DESCENT_LIGHT.get(n, {}) if not looked else {}
@@ -2426,6 +2425,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "foemelds":
 		await preload("res://scripts/check_glows.gd").new().foewords(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "sounds14":
+		await preload("res://scripts/check_glows.gd").new().sounds14(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "pad":

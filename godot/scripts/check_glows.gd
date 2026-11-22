@@ -2399,3 +2399,98 @@ func foewords(main, hero, dir: String) -> void:
 	_line(grounds.call("implode") or h.world.distance_to(at0) > 0.05, "Implode: as it dies it pulls him in (moved %.2f)" % h.world.distance_to(at0))
 	await M._snap(dir + "/foe_2_deaths.png")
 	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## THE SOUND CHAT'S FOURTEENTH AND FIFTEENTH BATCHES (25.3.21, 25.3.22): fewer repeats (the enemies' grunts and deaths one time in
+## three by a count, the hero's shouts and grunts one time in three, four takes of each family's cries and a new shout and grunt
+## for each hero, never the same take twice running where there are three or more), the music about a minute round, and no
+## constant sound but the music (each place's sounds now and then on their own countdowns).
+func sounds14(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var S = M.sfx
+	await M._wait(0.4)
+	# THE TAKES
+	var fams := ["bat", "bones", "book", "bug", "deer", "devil", "flesh", "hound", "hshape", "hushed", "ink", "leech", "moth", "order", "rat", "rshade", "spirit", "stone", "swan", "troll", "vulture", "watch", "wolf"]
+	var short: Array = []
+	for f in fams:
+		for k in ["aggro", "hurt", "death"]:
+			if S._takes_of("%s_%s" % [f, k]).size() != 4:
+				short.append("%s_%s" % [f, k])
+	_line(short.is_empty() and S._takes_of("breeze").size() == 3, "four takes of each of the 23 voice families' cry on seeing him, grunt and death (%s); three of the breeze" % ("all" if short.is_empty() else str(short)))
+	var hero_takes: Array = []
+	for who in ["warrior", "ranger", "mage", "warlock", "tinkerer", "brawler"]:
+		var a := 0
+		for t in S.CRIES["attack"]:
+			a += S._takes_of("%s_%s" % [who, t]).size()
+		var g := 0
+		for t in S.CRIES["grunt"]:
+			g += S._takes_of("%s_%s" % [who, t]).size()
+		hero_takes.append([who, a, g])
+	_line(hero_takes.all(func(x): return x[1] == 6 and x[2] == 4), "each hero's new shout and grunt (attack_c, hurt_c): shouts and grunts %s" % [hero_takes])
+	# NEVER THE SAME TAKE TWICE RUNNING (three takes or more), two still at random
+	S.heard.clear()
+	for i in 40:
+		S.play("bat_hurt", -60.0)
+	var twice := 0
+	for i in range(1, S.heard.size()):
+		if S.heard[i][1] == S.heard[i - 1][1]:
+			twice += 1
+	var kinds := {}
+	for e in S.heard:
+		kinds[e[1]] = true
+	_line(twice == 0 and kinds.size() == 4, "40 of a bat's grunt: never the same take twice running (%d), all four heard" % twice)
+	# THE ENEMIES' GRUNT AND DEATH ONE TIME IN THREE, BY A COUNT
+	var mm = M._monsters
+	mm.cry_count.clear()
+	var kept: Array = []
+	for i in 9:
+		kept.append(mm.kept_cry("bones_death", 3))
+	_line(kept == [true, false, false, true, false, false, true, false, false], "a family's deaths: its 1st, 4th and 7th cry out, the others not (%s)" % [kept])
+	var foes: Array = mm.list.filter(func(o): return is_instance_valid(o) and not o.dead and not o.boss and o.VOICE.has(o.kind) and not o.champion)
+	var died: Array = []
+	if foes.size() >= 3:
+		var fam: String = foes[0].VOICE[foes[0].kind]
+		var same: Array = foes.filter(func(o): return o.VOICE[o.kind] == fam)
+		mm.cry_count.clear()
+		S.heard.clear()
+		var k := 0
+		for o in same.slice(0, 4):
+			o.world = M._free_near(h.world + Vector2(1.5, 0))
+			o.life = 1.0
+			o._take(50.0, "phys", false, false, [], false, false)
+			k += 1
+		await M._wait(0.2)
+		for e in S.heard:
+			if e[0] == fam + "_death" or e[0] == "monster_die":
+				died.append(e[0])
+		_line(k >= 2 and died.size() == k and died[0] == fam + "_death" and (k < 2 or died[1] == "monster_die") and (k < 4 or died[3] == fam + "_death"), "%d of the %s family killed: %s" % [k, fam, died])
+	else:
+		_line(false, "not enough of one voice family here to kill (%d)" % foes.size())
+	# THE HERO'S SHOUTS AND GRUNTS ONE TIME IN THREE
+	S.passed_over = 0
+	S.last_cry = []
+	var cried := 0
+	for i in 300:
+		S._clock += 3.0
+		S.last_cry = []
+		S.voice("warrior", "hurt")
+		if S.last_cry == ["warrior", "grunt"]:
+			cried += 1
+	_line(cried > 60 and cried < 140 and S.passed_over > 150, "300 hurts 3 s apart: %d grunts, %d passed over (one time in three, the lines aside)" % [cried, S.passed_over])
+	# THE MUSIC ABOUT A MINUTE ROUND
+	var mj: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/music/music.json"))
+	var walk: Dictionary = mj["places"]["f1"]["walk"]
+	var st: AudioStream = load("res://assets/music/" + str(walk["file"]))
+	_line(str(walk["file"]) == "music_f1_walk_long.ogg" and absf(st.get_length() - float(walk["loop"])) < 0.05 and float(walk["loop"]) > 50.0, "floor 1's walk about a minute round: %s, %.2f s (its loop %.2f s)" % [walk["file"], st.get_length(), float(walk["loop"])])
+	# NO CONSTANT SOUND BUT THE MUSIC
+	var loops: Array = []
+	for p in S.get_children():
+		if p is AudioStreamPlayer and p.playing and p.stream != null and p.stream.resource_path.get_extension() == "wav":
+			loops.append(p.stream.resource_path.get_file())
+	_line(loops.is_empty() and S.ambient_names() == ["amb_f2"], "floor 2: no loop under it (%s); its sounds now and then %s, every 16 to 40 s" % [loops, S.ambient_names()])
+	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+	for b in bad:
+		print("  WRONG: ", b)
+
