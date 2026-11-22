@@ -20,7 +20,7 @@ import type { Slot, StatKey, WeaponKind } from '../src/game/types';
 const ilvl = Number(process.argv[2] ?? 20);
 const out = process.argv[3] ?? 'dmg_gear.json';
 const SLOTS: Slot[] = ['mainhand', 'offhand', 'helm', 'chest', 'gloves', 'belt', 'boots', 'amulet', 'ring'];
-const WEAPONS: Record<string, WeaponKind> = { warrior: 'greatsword', ranger: 'bow', mage: 'staff', tinkerer: 'wrench' };
+const WEAPONS: Record<string, WeaponKind> = { warrior: 'greatsword', ranger: 'bow', mage: 'staff', tinkerer: 'wrench', warlock: 'tome', brawler: 'wraps' };
 
 type Mod = [StatKey, number];
 const implicitOf = (it: { implicit: { stat: StatKey; value: number }[] }): Mod[] => it.implicit.map((m) => [m.stat, m.value]);

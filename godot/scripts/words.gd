@@ -112,7 +112,10 @@ const SWIFT_DODGE := 3.0
 ##               held still, level 50: none, +50%, +100%: into one elite 121,648 / 161,765 / 230,125 a second, a tough pack dead in
 ##               16.5 / 12.3 / 10.2 s; docs/reports/damage_check_2026-11-22.md): +100%. WS_BURN_MORE for a run.
 static var BURN_MORE := 1.0
-const EVEN := {"shot": 1.303, "wave": 1.6, "vialtoss": 1.72, "hellbolt": 1.635}
+## (THE MAGE'S OWN, his “Do that.” to bringing her clearing of a pack to within about half again the Warrior's, her one enemy at a
+## time left lower: her Wave and her Orb a third and more harder, MAGE_MORE, on top of the Wave's evening)
+const MAGE_MORE := 1.35
+const EVEN := {"shot": 1.303, "wave": 1.6 * MAGE_MORE, "vialtoss": 1.72, "hellbolt": 1.635, "orb": MAGE_MORE}
 const FROST_HIT := 1.0
 const ATTR_KNEE := 50.0
 const ATTR_SPAN := 100.0

@@ -39,6 +39,10 @@ const BUILDS := [
 		"talents": ["bombsaway", "clustervials", "tar", "madmixture", "alchemy", "thebigone", "growthserum", "lightningrod", "shrapnel", "fortune"]},
 	{"id": "mage_fire", "cls": "mage", "label": "MAGE, FIRE (Intelligence)", "must": "fire",
 		"talents": ["kindling", "searing", "aura", "flamewarp", "fuel", "inferno", "lasting", "charged", "forking", "ball"]},
+	{"id": "warlock", "cls": "warlock", "label": "WARLOCK (Strength and Intelligence), as a man", "must": "",
+		"talents": ["branded", "hexchain", "blazingarm", "withering", "pyre", "souldebt", "lastrites", "hunger", "terribleroar", "bloodlust"]},
+	{"id": "brawler", "cls": "brawler", "label": "BRAWLER (Strength and Dexterity)", "must": "",
+		"talents": ["vstiffjab", "vviperjab", "vknockdown", "vlauncher", "vswitchkick", "vlonglegs", "vwallslam", "vaftershock", "vthunderknee", "vfullset"]},
 	{"id": "mage_frost", "cls": "mage", "label": "MAGE, FROST (Intelligence)", "must": "frost",
 		"talents": ["bittercold", "deepfreeze", "aura", "frostwarp", "rime", "shatter", "lasting", "kindling", "searing", "spear"]},
 ]
@@ -173,6 +177,9 @@ func _dps() -> float:
 	avg *= h._talent_hit_mult(dummy)
 	var cc: float = clampf(float(h.stats["crit_chance"]), 0.0, 100.0) / 100.0
 	var hit: float = avg * (1.0 + cc * float(h.stats["crit_mult"]) / 100.0)
+	# (burning's own, words.gd BURN_MORE: a fire hit on what its own Flame keeps burning)
+	if el == "fire" and float(r["ignite"]) > 0.0:
+		hit *= 1.0 + Words.BURN_MORE
 	var n: float = float(r["count"]) * float(r["count_dmg"])
 	var rate: float = maxf(0.3, float(r["rate"])) * h.attack_pace()
 	var dps: float = hit * n * rate
@@ -412,6 +419,9 @@ func _words(ws: Array, free: Array) -> Array:
 
 ## The front's damage word: of the build's own (a word whose parts are it), the one that with the best of the rest does the most.
 func _with_must(b: Dictionary, ws: Array, free: Array) -> Array:
+	# (no word of its own asked for: the best of every word in every slot)
+	if str(b["must"]) == "":
+		return _words(ws, [0] + free)
 	var best: Array = []
 	var best_v := -1.0
 	for w in _all_words():
@@ -558,7 +568,7 @@ func _build(b: Dictionary) -> void:
 	_say("")
 	_say("=== %s ===" % b["label"])
 	_hero(b, true)
-	var reach: float = 1.5 if b["cls"] == "warrior" else 4.5
+	var reach: float = 1.5 if b["cls"] in ["warrior", "brawler"] else 4.5
 	if kind == "":
 		await _set_out()
 	_share_points(b)
