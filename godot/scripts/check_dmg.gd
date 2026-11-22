@@ -474,6 +474,9 @@ func _fight_one(reach: float, hold := false) -> float:
 	if OS.has_environment("WS_DMG_FAST"):
 		return 0.0
 	_clear()
+	# (what the last fight left to come, a moment after (Inferno's bursts, the echoes), gone off on nothing first)
+	await M._wait(0.8)
+	_clear()
 	await M.get_tree().process_frame
 	dummy = _one(spot + way * reach)
 	dummy.elite = true
@@ -508,6 +511,8 @@ func _fight_pack(reach: float, hold := false, life := 0.0) -> float:
 	if OS.has_environment("WS_DMG_FAST"):
 		return 0.0
 	_clear()
+	await M._wait(0.8)
+	_clear()
 	await M.get_tree().process_frame
 	pack = []
 	for k in 6:
@@ -529,10 +534,15 @@ func _fight_pack(reach: float, hold := false, life := 0.0) -> float:
 			h.auto_whirl = true
 		h.world = spot
 		var alive := 0
+		var left := 0.0
 		for m in pack:
 			if is_instance_valid(m) and not m.dead:
 				alive += 1
+				left += m.life
 				_hold(m)
+		# (WS_DMG_TRACE: the pack's life frame by frame, its first half second)
+		if OS.has_environment("WS_DMG_TRACE") and t < 0.5:
+			print("DMG TRACE t %.3f alive %d life %d hero life %d" % [t, alive, int(left), int(h.life)])
 		if alive == 0:
 			return t
 	return 30.0
