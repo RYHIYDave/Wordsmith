@@ -112,12 +112,12 @@ import { GOLEM_ROCKET, ROCKET, rocketAlong } from '../art/golem_rocket_fx';
 import type { Brew, Decoy, GolemRocketAt, Risen, Tar } from './state';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 import { leadPoint } from './lock';
-import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_SOUNDS, HURT_BIG, VOICE, bossSound } from './sound_families';
+import { ACT_SOUND, ATK, BOSS_VOICE, ENEMY_GAPS, ENEMY_KEEP, ENEMY_SOUNDS, HURT_BIG, VOICE, bossSound } from './sound_families';
 import { BOSS_CALLS, bossCall } from './boss_calls';
 import { LEVEL_DEFS, LEVEL_UNIQUES, UNIQUES, UNIQUE_DEFS, UNIQUE_DROPS, UNIQUE_TUNE, bendWords, finalUniques, levelChance, levelPoolFor, rolledTune, uniqueDef, urollOf, bossUnique, damageWordsASide, makeUnique, poolChance, poolFor, uniqueSlot, uniqueWeapon, wearProblem, wornUniques } from './uniques';
 import type { BendCtx, UniqueDef } from './uniques';
 import { FOE_WORDS } from './defs';
-import { foeAfterBlow, foeBlast, foeDeath, foeHarder, foeTick, foeWordsOf, foeZone, layProblem, rankOfElement, secondElement, upTo, wordsWeight } from './foe_melds';
+import { foeAfterBlow, foeBlast, foeDeath, foeHarder, foeRage, foeShield, foeTick, foeWordsOf, foeZone, layProblem, rankOfElement, secondElement, upTo, wordsWeight } from './foe_melds';
 
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
 /** Seconds before "of Echoes" repeats an ability. */
@@ -4481,13 +4481,22 @@ export class Game {
   private hurtTick = 0;
   /** When each enemy sound was last heard (its name), so that a pack or a flurry of blows is not a din. */
   private heard = new Map<string, number>();
-  /** An enemy sound, if it has not been heard within `gap` seconds. */
-  private enemyRec(name: string, gap: number, vol: number, or?: Sfx): boolean {
+  /** An enemy sound, if it has not been heard within `gap` seconds; one time in `keep` (by a count per name: ENEMY_KEEP) where given. */
+  private enemyRec(name: string, gap: number, vol: number, or?: Sfx, keep = 1): boolean {
     const last = this.heard.get(name);
     if (last !== undefined && this.time - last < gap) return false;
     this.heard.set(name, this.time);
+    if (keep > 1 && !this.keptCry(name, keep)) return false;
     this.rec(name, vol, or);
     return true;
+  }
+  /** (THE FOURTEENTH BATCH) How many times each family's grunt and death would have been heard (`<family>_hurt`, `<family>_death`). */
+  private cryCount = new Map<string, number>();
+  /** Whether this one is heard: the 1st, (keep+1)th, (2·keep+1)th … of its name (ENEMY_KEEP). */
+  private keptCry(name: string, keep: number): boolean {
+    const n = this.cryCount.get(name) ?? 0;
+    this.cryCount.set(name, n + 1);
+    return n % keep === 0;
   }
 
   /**
@@ -5126,6 +5135,8 @@ export class Game {
 
   private healHero(n: number): void {
     const h = this.hero;
+    // (EVERY WORD ON A DUNGEON: Siphon's poison on him, he heals less: game/foe_melds.ts)
+    if (h.poisonT > 0 && (h.siphonLess ?? 0) > 0) n *= 1 - (h.siphonLess ?? 0);
     h.life = Math.min(h.d.maxLife, h.life + n);
   }
 
@@ -5231,7 +5242,7 @@ export class Game {
   private updateHero(dt: number, c: Controls): void {
     const h = this.hero;
     const d = h.d;
-    h.life = Math.min(d.maxLife, h.life + d.lifeRegen * dt);
+    h.life = Math.min(d.maxLife, h.life + d.lifeRegen * dt * (h.poisonT > 0 && (h.siphonLess ?? 0) > 0 ? 1 - (h.siphonLess ?? 0) : 1));
     // (THE SKILL TREES REMADE: Resolute, nothing slows him; Hearth, in his own fire nothing burns him and his mana comes back faster)
     if (this.now('resolute')) h.chillT = 0;
     const hearth = this.now('fuel') && this.inOwnFire();
@@ -5287,6 +5298,7 @@ export class Game {
     if (h.poisonT > 0) h.poisonT -= dt;
     // (EVERY WORD ON A DUNGEON: Blight's and Frostbite's go with the poison and the chill they ride on)
     if (h.poisonT <= 0 && h.blightMore) h.blightMore = 0;
+    if (h.poisonT <= 0 && h.siphonLess) h.siphonLess = 0;
     if (h.chillT <= 0 && h.frostbiteDps) h.frostbiteDps = 0;
     // (THE CITY'S WORDS, on monsters: a curse on him and his cooldowns slowed run out)
     if (h.hexT) h.hexT = Math.max(0, h.hexT - dt);
@@ -11451,6 +11463,8 @@ export class Game {
       const soak = Math.min(m.shield, dmg);
       m.shield -= soak;
       m.life -= dmg - soak;
+      // (EVERY WORD ON A DUNGEON: Rime Ward, a blow of his on its shield chills him: game/foe_melds.ts)
+      if (FOE_WORDS.on && skill >= 0 && !dot && !poison) foeShield(this, m, soak);
     } else m.life -= dmg;
     // (VOLATILE'S MELDS, behind VOLT_MELDS: Demolition in front, an elite or a boss bursts once at half its life)
     if (skill >= 0 && (m.elite || m.boss) && !m.demolished && m.life > 0 && m.life <= m.maxLife * 0.5) {
@@ -11476,7 +11490,7 @@ export class Game {
       this.hurtTick = (this.hurtTick + 1) % HURT_BIG.one;
       const big = crit || dmg >= m.maxLife * HURT_BIG.share || this.hurtTick === 0;
       if (b && (crit || dmg >= m.maxLife * 0.04)) this.enemyRec(b, ENEMY_GAPS.bossHurt, 0.9);
-      else if (v && big) this.enemyRec(`${v}_hurt`, ENEMY_GAPS.hurt, 0.6);
+      else if (v && big) this.enemyRec(`${v}_hurt`, ENEMY_GAPS.hurt, 0.6, undefined, m.champion ? 1 : ENEMY_KEEP.hurt);
     }
     // (ACT 1: one whose rules hold its life up is kept there: a boss with another life bar to come, or one who must first be where his death was drawn)
     if (r1 && r1.lifeFloor) {
@@ -11523,7 +11537,9 @@ export class Game {
     if (dieB === 'none') {
       // (his death is his fight's own sound, begun as he is killed: the Swamp Colossus's, game/act1_rules/colossus.ts `died`)
     } else if (dieB) this.rec(dieB, 1, 'explode');
-    else if (dieV) this.rec(`${dieV}_death`, m.champion ? 0.9 : 0.7, m.champion ? 'explode' : 'monsterDie');
+    else if (dieV && (m.champion || this.keptCry(`${dieV}_death`, ENEMY_KEEP.death))) this.rec(`${dieV}_death`, m.champion ? 0.9 : 0.7, m.champion ? 'explode' : 'monsterDie');
+    // (THE FOURTEENTH BATCH: the others of a family die with the plain sound of one with no voice, ENEMY_KEEP)
+    else if (dieV) this.sfx('monsterDie', 0.7);
     else this.sfx(m.boss || m.champion ? 'explode' : 'monsterDie', m.boss ? 1 : 0.7);
     if (m.champion) this.emit({ t: 'shake', amount: 4 });
     const st = h.d.stats;
@@ -11844,7 +11860,7 @@ export class Game {
       if (by) this.emit({ t: 'cullBlow', id: by.id, x: by.x, y: by.y });
     }
     // (EVERY WORD ON A DUNGEON: Avalanche on him chilled, Blight's poison on him, Scald's crack: game/foe_melds.ts)
-    if (FOE_WORDS.on) dmg *= foeHarder(this, k, parts);
+    if (FOE_WORDS.on) dmg *= foeHarder(this, k, parts, by);
     dmg = Math.max(1, Math.round(dmg));
     // (Bitter Cold: what strikes him is chilled)
     if (src && !src.dead && this.now('bittercold')) {
@@ -11961,7 +11977,7 @@ export class Game {
       }
     }
     // (EVERY WORD ON A DUNGEON: what its melded word leaves on him and round him, Blight, Frostbite, Wildfire, Eruption, Thunder)
-    if (FOE_WORDS.on) foeAfterBlow(this, k, by, dmg);
+    if (FOE_WORDS.on) foeAfterBlow(this, k, by, dmg, parts);
     // (LEECH on a monster heals what its blow takes: 9 Oct 2026, 22:12, "bosses with leech are very hard to kill"; asked,
     // "What its blow takes (Recommended)". Until then, 15% of its whole life a blow.)
     if (src && !src.dead && k('leech') > 0) {
@@ -12351,7 +12367,8 @@ export class Game {
         continue;
       }
       // FRENZIED, on a monster: the more it is hurt, the faster it moves and the sooner it attacks again
-      const rage = 1 + FRENZY.monster * wordShare(m, 'frenzied') * (1 - Math.max(0, m.life) / m.maxLife);
+      // (EVERY WORD ON A DUNGEON: and Fervor, fed by the deaths round it: game/foe_melds.ts)
+      const rage = (1 + FRENZY.monster * wordShare(m, 'frenzied') * (1 - Math.max(0, m.life) / m.maxLife)) * (FOE_WORDS.on ? foeRage(m) : 1);
       // (THE WARLOCK's tree: Withering, cursed it moves and strikes at half speed)
       const wither = (m.curseT ?? 0) > 0 && h.cls === 'warlock' && this.has('withering') ? WARLOCK_TUNE.talents.withering.pace : 1;
       m.cd -= mdt * rage * wither;
@@ -13950,6 +13967,8 @@ export class Game {
         if (z.t >= z.dur) this.zones.splice(i, 1);
         continue;
       }
+      // (EVERY WORD ON A DUNGEON: Implode's pull, a monster's vortex, draws the hero in, not the monsters: game/foe_melds.ts)
+      if (z.foe === 'implode' && foeZone(this, z, i, dt)) continue;
       if (z.kind === 'vortex') {
         // (THE CITY'S WORDS: Pulling behind, the vortex keeps drawing what is in it in to its middle; a boss stands firm)
         for (const m of this.monsters) {

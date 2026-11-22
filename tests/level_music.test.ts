@@ -3,7 +3,8 @@
 // MUSIC_PLACES and levelMusic, game/level_music.ts). Held here:
 //   1. its eleven files are in assets/sound, each its loop and 2 s more (the guard), shipped as files of their own, not packed
 //      (MP3 since 14 Nov 2026: they were AAC in .mp4, which claude.ai's check of a page's files before it is shared does not take);
-//   2. the loops' lengths and fight-in points are the tenth batch's table's, to the figure;
+//   2. the loops' lengths and fight-in points are the fourteenth batch's table's, to the figure (14 Nov 2026: the same songs cut
+//      about a minute round, at his word “there is a lot of repetition in the audio”);
 //   3. the place: the prison town, floors 1 to 10 (6 to 10 the thirteenth batch's, 14 Nov 2026); not the camp, the Rim, floor
 //      11 on, nor the endless levels;
 //   4. a fight: on as soon as an enemy is awake and near him, still on a few seconds after the last is gone, then off; never in
@@ -55,7 +56,7 @@ function onFloor(depth: number, seed = 5): Game {
 const loops = Object.values(MUSIC_PLACES).flatMap((p) => (p.fight ? [p.walk, p.fight] : [p.walk]));
 
 test('1. its twenty-one files are in assets/sound, each its loop and the 2 s guard, shipped as files of their own', () => {
-  assert.equal(loops.length, 21, 'the tenth batch\'s eleven and the thirteenth\'s ten');
+  assert.equal(loops.length, 21, 'the town\'s walk and floors 1 to 10\'s two (the fourteenth batch\'s, a minute round)');
   for (const t of loops) {
     const f = `${DIR}/${t.file}`;
     assert.ok(fs.existsSync(f), t.file);
@@ -71,18 +72,19 @@ test('1. its twenty-one files are in assets/sound, each its loop and the 2 s gua
   assert.deepEqual([MUSIC.walkIn, MUSIC.walkDown, MUSIC.fightOut, MUSIC.walkBack], [0.6, 0.6, 1.5, 1.5], 'the fades of try-out 15');
 });
 
-test("2. the loops' lengths and the fights' points are the tenth batch's table's", () => {
+test("2. the loops' lengths and the fights' points are the fourteenth batch's table's (about a minute round)", () => {
   const readme = fs.readFileSync(`${DIR}/README.md`, 'utf8');
-  const from = readme.indexOf('## Tenth batch');
-  assert.ok(from >= 0, 'the tenth batch in the README');
-  const part = readme.slice(from);
-  const rows = [...part.matchAll(/^\|[^|\n]*\| `(music_[a-z0-9_]+\.mp3)` \| *([\d.]+) *\| *([\d.]*) *\|/gm)];
-  assert.equal(rows.length, 21, 'eleven rows, and the thirteenth batch\'s ten after them');
+  const from = readme.indexOf('## Fourteenth batch');
+  assert.ok(from >= 0, 'the fourteenth batch in the README');
+  const part = readme.slice(from, readme.indexOf('## Fifteenth batch'));
+  const rows = [...part.matchAll(/\{ file: '(music_[a-z0-9_]+\.mp3)', loop: ([\d.]+)(?:, fightIn: ([\d.]+))? \}/g)];
+  assert.equal(rows.length, 21, 'the town and floors 1 to 10, walk and fight');
   for (const r of rows) {
     const t = loops.find((q) => q.file === r[1]);
     if (!t) throw new Error(`${r[1]}: not played`);
     assert.equal(t.loop, Number(r[2]), `${r[1]}: its loop`);
     assert.equal(t.fightIn, r[3] ? Number(r[3]) : undefined, `${r[1]}: where its fight comes in`);
+    assert.ok(t.loop >= 45 && t.loop <= 75, `${r[1]}: about a minute round`);
   }
 });
 

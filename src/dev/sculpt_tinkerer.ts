@@ -204,6 +204,43 @@ export function tinkererStance(B: Build, kit: TinkerKit | 'vial' = TINKER_KIT): 
 export const ARMS_AKIMBO: V3 = [-2, 12, 1];
 
 /** The Tinkerer sculpted, standing as she stands, in one of the game's views. */
+/**
+ * WHERE HER WRENCH IS (THE TINKERER'S UNIQUE WRENCHES, art/wrench_skins.ts): what a wrench's skin is laid on. `c` her fist, `d` the
+ * way her hand runs, `way` the way the wrench runs from her fist (its head that way), `len` how far its head is from her fist,
+ * `k` how big (her wrench on her shoulder is half again as big), `u` her up.
+ */
+export interface WrenchAt {
+  c: V3;
+  d: V3;
+  way: V3;
+  len: number;
+  k: number;
+  u: V3;
+}
+/**
+ * A SKIN OF HER WRENCH: its solids laid on where it is (`sculpt`, her wrench's own steel to hand). Each has its parts as `wrench`,
+ * and a prim tagged `jaw` (her ponytail swings clear of them).
+ */
+export interface WrenchSkin {
+  id: string;
+  name: string;
+  sculpt: (sc: Sculpt, at: WrenchAt, mats: { steel: number }) => void;
+}
+/** HER OWN WRENCH: a steel shaft out of her fist, a jaw across its head, the gap of the jaw carved out of it. */
+export const PLAIN_WRENCH: WrenchSkin = {
+  id: 'plain',
+  name: 'Her own wrench',
+  sculpt: (sc, { c, d, way, len, k }, { steel }) => {
+    const w1 = add(c, mul(way, len));
+    sc.cone(steel, 'wrench', add(c, mul(way, -1.8 * k)), w1, 0.75 * k, 0.85 * k, 0.2, { tag: 'shaft' });
+    const side = norm(cross(way, d));
+    sc.box(steel, 'wrench', add(w1, mul(way, 1.0 * k)), [mul(way, 1.35 * k), mul(side, 2.0 * k), mul(norm(cross(way, side)), 0.7 * k)], 0.4, 0.3, { tag: 'jaw' });
+    sc.box(steel, 'wrench', add(w1, mul(way, 1.9 * k)), [mul(way, 0.9 * k), mul(side, 0.7 * k), mul(norm(cross(way, side)), 1.0 * k)], 0.1, 0, { tag: 'gap', carve: true });
+  },
+};
+/** The wrench she is painted holding (art/tinkerer_art.ts sets it while it paints her with a unique one); null: her own. */
+export const TINK_WRENCH = { skin: null as WrenchSkin | null };
+
 export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0, kit: TinkerKit | 'vial' = TINKER_KIT, pack: TinkPack = TINK_PACK.pack): Drawn {
   const B = TINKERER_BODY;
   const q = (pose ?? tinkererStance(B, kit)) as Posed;
@@ -346,12 +383,9 @@ export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0, kit: Tink
   };
   /** A wrench in a fist, running `way` from it (a unit: which way its head is). */
   // (her tools BIG, as a gleeful tinkerer's are: a wrench as long as her leg)
+  // (THE TINKERER'S UNIQUE WRENCHES, art/wrench_skins.ts: the wrench a skin laid on where it is, TINK_WRENCH; her own, PLAIN_WRENCH)
   const wrenchIn = (hd: Hand, way: V3, len = 9, k = 1): void => {
-    const w1 = add(hd.c, mul(way, len));
-    sc.cone(steel, 'wrench', add(hd.c, mul(way, -1.8 * k)), w1, 0.75 * k, 0.85 * k, 0.2, { tag: 'shaft' });
-    const side = norm(cross(way, hd.d));
-    sc.box(steel, 'wrench', add(w1, mul(way, 1.0 * k)), [mul(way, 1.35 * k), mul(side, 2.0 * k), mul(norm(cross(way, side)), 0.7 * k)], 0.4, 0.3, { tag: 'jaw' });
-    sc.box(steel, 'wrench', add(w1, mul(way, 1.9 * k)), [mul(way, 0.9 * k), mul(side, 0.7 * k), mul(norm(cross(way, side)), 1.0 * k)], 0.1, 0, { tag: 'gap', carve: true });
+    (TINK_WRENCH.skin ?? PLAIN_WRENCH).sculpt(sc, { c: hd.c, d: hd.d, way, len, k, u }, { steel });
   };
   /** A hammer: a wooden haft, a steel head across its end, a claw behind. */
   const hammerIn = (hd: Hand, way: V3): void => {

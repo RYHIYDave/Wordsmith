@@ -93,8 +93,8 @@ export function heavyMoves(weapon: HeavyWeapon): Record<string, AxeMove> {
 }
 
 /** A frame as the game holds it, his lights put out as the game's fall puts them out (art/warrior_up_art.ts wuSprite). */
-export function heavySprite(m: AxeMove, t: number, side: WuSide): Sprite {
-  let f = paintAxe(m, t, side);
+export function heavySprite(m: AxeMove, t: number, side: WuSide, skin?: WeaponTake): Sprite {
+  let f = paintAxe(m, t, side, undefined, skin);
   const out = axePosed(m, t).q.out ?? 0;
   if (out > 0.01) f = { ...f, ...lightsOut(f, out) };
   const aura = { ...AURA, x: f.ax + (f.ax === CANVAS3.ax ? AURA.x - CANVAS3.ax : CANVAS3.ax - AURA.x) };
@@ -102,8 +102,8 @@ export function heavySprite(m: AxeMove, t: number, side: WuSide): Sprite {
   return toSprite(f, pool, f.ax, f.ay);
 }
 
-function lists(side: WuSide) {
-  const at = (m: AxeMove, t: number): Sprite => heavySprite(m, t, side);
+function lists(side: WuSide, skin?: WeaponTake) {
+  const at = (m: AxeMove, t: number): Sprite => heavySprite(m, t, side, skin);
   const end = (m: AxeMove): number => m.keys[m.keys.length - 1].at;
   const round = (m: AxeMove, fps: number): Sprite[] => {
     const t0 = m.loop ?? 0;
@@ -127,12 +127,14 @@ function lists(side: WuSide) {
  * his card: `idle` and `walk` with it on his back, and on the front side `clips.idleA` (he looks about him) and `clips.ready`
  * (he draws it into his guard).
  */
-export function makeWarriorHeavyArt(weapon: HeavyWeapon, place: 'dungeon' | 'town' | 'card'): Record<WuSide, AnimSet> {
+export function makeWarriorHeavyArt(weapon: HeavyWeapon, place: 'dungeon' | 'town' | 'card', skin?: WeaponTake): Record<WuSide, AnimSet> {
   const moves = heavyMoves(weapon);
-  const fights = place === 'dungeon' ? (weapon === 'axe' ? makeWarriorAxeArt() : makeWarriorHammerArt()) : null;
+  // (THE WARRIOR'S UNIQUE AXES AND HAMMERS, art/heavy_skins.ts: `skin` the one in his hands, in every frame of his, in place of the
+  // war axe or the maul; its moves theirs, its haft and hands where theirs are)
+  const fights = place === 'dungeon' ? (weapon === 'axe' ? makeWarriorAxeArt(skin) : makeWarriorHammerArt(skin)) : null;
   const out = {} as Record<WuSide, AnimSet>;
   for (const side of WU_SIDES) Object.defineProperty(out, side, { enumerable: true, configurable: true, get: () => {
-    const { round, clip } = lists(side);
+    const { round, clip } = lists(side, skin);
     let set: AnimSet;
     if (fights) {
       const own = fights[side];

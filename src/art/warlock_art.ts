@@ -27,6 +27,7 @@ import type { GameView } from './skin';
 import { GRIP_SPEED } from './moves3';
 import { FR, RUN_ROUND, STAND_LONG, drawWarlockAt, warlockMoves } from '../dev/warlock_moves';
 import type { WarlockMove } from '../dev/warlock_moves';
+import type { TomeSkin } from '../dev/sculpt_warlock';
 import { BACK_LONG, BOLT_HIT, CURSE_HIT, STEP_GONE, STEP_LONG, warlockSpells } from '../dev/warlock_spells';
 import { demonLurch, demonReel, warlockLurch, warlockReel } from '../dev/warlock_hits';
 import { BURN_OUT_LONG, DAMN_HIT, RAKE_HIT, RUN_ROUND as DEMON_RUN, SS, STAND_LONG as DEMON_STAND, STEP_LONG as DEMON_STEP, demonMoves, drawDemonAt } from '../dev/demon_moves';
@@ -48,6 +49,11 @@ export interface WarlockLook {
   form: 'man' | 'demon';
   place: 'dungeon' | 'town' | 'card';
   blaze?: boolean;
+  /**
+   * THE UNIQUE TOME AT HIS HIP (art/tome_skins.ts): the book he is painted with, the man brought up (art/warlock_up_art.ts) a set
+   * of him of its own; absent, his own. (The man not brought up, and the demon, are as ever.)
+   */
+  tome?: TomeSkin;
 }
 
 /** Frames a second: a standing loop, a run (its feet gripping, as the heroes' runs), what is played once. */

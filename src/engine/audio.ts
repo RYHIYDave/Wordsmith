@@ -815,9 +815,10 @@ const RECORDED_GAIN = 0.5;
 
 /** What a hero's voice says, and its takes (<hero>_<take>.mp3). */
 export type VoiceCry = 'attack' | 'hurt' | 'death';
+// (THE FOURTEENTH BATCH: a new shout and a new grunt for each hero, two takes each, in his own voice: attack_c and hurt_c)
 const CRIES = {
-  attack: ['attack_a_1', 'attack_a_2', 'attack_b_1', 'attack_b_2'],
-  grunt: ['hurt_a_1', 'hurt_a_2'],
+  attack: ['attack_a_1', 'attack_a_2', 'attack_b_1', 'attack_b_2', 'attack_c_1', 'attack_c_2'],
+  grunt: ['hurt_a_1', 'hurt_a_2', 'hurt_c_1', 'hurt_c_2'],
   line: ['hurt_b_1', 'hurt_b_2'],
   death: ['death_1', 'death_2'],
 } as const;
@@ -832,8 +833,12 @@ const CRIES = {
  * and how much, his picks by 14:17: “Grunts when hit”, “Attack shouts”, and “About a third as often (Recommended)”): the shouts one
  * attack in 42 and never within 14.4 s; the grunts never within 2.1 s of the last (was 0.7). The hurt lines and his death cry are
  * as they were.
+ * AND A THIRD AS OFTEN AGAIN, WITH MORE TAKES (the sound chat's fourteenth batch, at his word of 14 Nov 2026, 17:38, “there is a lot
+ * of repetition in the audio”, his picks “Hero grunting when hit (Recommended), Hero attack shouts” and “Rarer, and more takes
+ * (Recommended)”, heard on try-out 19, “All good, hand over (Recommended)”): where the rules above would play a shout or a grunt, it
+ * plays one time in `keep`; the gap counts from the one passed over too.
  */
-export const VOICE_TUNE = { attackOne: 42, attackGap: 14.4, gruntGap: 2.1, lineOne: 8, lineGap: 25, vol: 0.9 } as const;
+export const VOICE_TUNE = { attackOne: 42, attackGap: 14.4, gruntGap: 2.1, lineOne: 8, lineGap: 25, keep: 3, vol: 0.9 } as const;
 
 /** THE TITLE THEME: its file, and the stretch it goes round for ever once it has played from its start (seconds). */
 export const TITLE = { file: 'title.mp3', loop: [94.024, 162.275] as const, vol: 0.8 } as const;
@@ -931,10 +936,23 @@ function pumpFetches(): void {
 }
 
 /**
- * HOW MANY TAKES A SOUND BY NAME HAS (<name>_1 … _n): two, as every batch made them, but where it says more (the sound chat's
- * fifteenth batch, 15 Nov 2026: the breeze in through the hall's door, three).
+ * THE ENEMIES' VOICE FAMILIES with four takes of their cry on seeing him, their grunt and their death (the sound chat's fourteenth
+ * batch, 14 Nov 2026, at his word “there is a lot of repetition in the audio” and his pick “Rarer, and more takes (Recommended)”):
+ * every family of game/sound_families.ts VOICE (tests/less_repetition.test.ts holds the two lists the same).
  */
-export const TAKES: Readonly<Record<string, number>> = { breeze: 3 };
+export const FOUR_TAKE_FAMILIES = [
+  'bat', 'bones', 'book', 'bug', 'deer', 'devil', 'flesh', 'hound', 'hshape', 'hushed', 'ink', 'leech', 'moth', 'order', 'rat', 'rshade',
+  'spirit', 'stone', 'swan', 'troll', 'vulture', 'watch', 'wolf',
+] as const;
+/**
+ * HOW MANY TAKES A SOUND BY NAME HAS (<name>_1 … _n): two, as every batch made them, but where it says more (the sound chat's
+ * fifteenth batch, 15 Nov 2026: the breeze in through the hall's door, three; its fourteenth: each voice family's aggro, hurt and
+ * death, four).
+ */
+export const TAKES: Readonly<Record<string, number>> = {
+  breeze: 3,
+  ...Object.fromEntries(FOUR_TAKE_FAMILIES.flatMap((f) => ['aggro', 'hurt', 'death'].map((k) => [`${f}_${k}`, 4]))),
+};
 export function takesOf(name: string): number {
   return TAKES[name] ?? 2;
 }
@@ -1234,7 +1252,11 @@ function playTake(c: AudioContext, into: AudioNode, key: string, takes: readonly
   voiceEnds.length = live;
   if (live >= MAX_VOICES) return true;
   lastPlayed.set(key, ms);
-  const buf = ready[Math.floor(Math.random() * ready.length)];
+  // (THE FOURTEENTH BATCH: where a sound has three takes or more, never the one this key played last; two would only alternate)
+  const prev = lastTake.get(key);
+  const pool = takes.length >= 3 && ready.length >= 2 && prev ? ready.filter((b) => b !== prev) : ready;
+  const buf = pool[Math.floor(Math.random() * pool.length)];
+  lastTake.set(key, buf);
   const src = c.createBufferSource();
   src.buffer = buf;
   const pitch = (asked !== undefined && asked > 0 ? Math.max(0.25, Math.min(4, asked)) : 1) * (spread ? 1 + (Math.random() * 2 - 1) * PITCH_SPREAD : 1);
@@ -1260,6 +1282,8 @@ function playTake(c: AudioContext, into: AudioNode, key: string, takes: readonly
 }
 /** How many recorded takes have been played (recordedDetail). */
 let takesPlayed = 0;
+/** The take each sound's key played last (playTake: none twice in a row where there are three or more). */
+const lastTake = new Map<string, AudioBuffer>();
 /** The last takes played, by their sound's key (`rec:colossus_roar`): for the playtests (recordedDetail). */
 const heardLast: string[] = [];
 
@@ -1282,6 +1306,10 @@ export function heroVoice(who: Speaker, cry: VoiceCry): void {
     for (const takes of Object.values(CRIES)) for (const t of takes) fetchRecorded(c, `${who}_${t}.mp3`);
     if (cry === 'attack') {
       if (s - cried.attack < VOICE_TUNE.attackGap || Math.random() * VOICE_TUNE.attackOne >= 1) return;
+      if (Math.random() * VOICE_TUNE.keep >= 1) {
+        cried.attack = s;
+        return;
+      }
       if (playTake(c, bus, `voice:${who}:attack`, take(CRIES.attack), nowMs(), VOICE_TUNE.vol, undefined, false)) cried.attack = s;
       return;
     }
@@ -1292,6 +1320,10 @@ export function heroVoice(who: Speaker, cry: VoiceCry): void {
         return;
       }
       if (s - cried.grunt < VOICE_TUNE.gruntGap) return;
+      if (Math.random() * VOICE_TUNE.keep >= 1) {
+        cried.grunt = s;
+        return;
+      }
       if (playTake(c, bus, `voice:${who}:grunt`, take(CRIES.grunt), nowMs(), VOICE_TUNE.vol, undefined, false)) cried.grunt = s;
       return;
     }
@@ -1396,21 +1428,23 @@ export function titleMusic(on: boolean): void {
 export type MusicLoop = { readonly file: string; readonly loop: number; readonly fightIn?: number };
 /** THE LEVEL MUSIC'S LOUDNESS (one for all of it, against the fights' sounds) and its fades (seconds), as on try-out 15. */
 export const MUSIC = { vol: 0.6, walkIn: 0.6, walkDown: 0.6, fightOut: 1.5, walkBack: 1.5, leave: 0.6 } as const;
-/** Each place's walk and fight (the tenth batch's table: loop lengths and fight-in points from the sound chat, to the sample at 48 kHz). */
+/** Each place's walk and fight: THE FOURTEENTH BATCH'S TABLE (the sound chat, 14 Nov 2026, README_fourteenth_batch.md), the same songs
+ * cut about a minute round, in place of the tenth and thirteenth batches' 21 to 39 s loops, at his word “there is a lot of repetition in
+ * the audio” and his pick “About a minute each (Recommended)”; loop lengths and fight-in points to the sample at 48 kHz. Decoded, a
+ * floor's two now take about 40 to 51 MB (were 20 to 27), let go as the floor is left, as before. */
 export const MUSIC_PLACES: Readonly<Record<string, { readonly walk: MusicLoop; readonly fight?: MusicLoop }>> = {
-  town: { walk: { file: 'music_town_walk.mp3', loop: 36.9299 } },
-  f1: { walk: { file: 'music_f1_walk.mp3', loop: 21.1096 }, fight: { file: 'music_f1_fight.mp3', loop: 34.2715, fightIn: 0.822 } },
-  f2: { walk: { file: 'music_f2_walk.mp3', loop: 23.981 }, fight: { file: 'music_f2_fight.mp3', loop: 27.6495, fightIn: 0.011 } },
-  f3: { walk: { file: 'music_f3_walk.mp3', loop: 29.4062 }, fight: { file: 'music_f3_fight.mp3', loop: 30.0115, fightIn: 0.945 } },
-  f4: { walk: { file: 'music_f4_walk.mp3', loop: 29.9445 }, fight: { file: 'music_f4_fight.mp3', loop: 35.1143, fightIn: 0.006 } },
-  f5: { walk: { file: 'music_f5_walk.mp3', loop: 27.9472 }, fight: { file: 'music_f5_fight.mp3', loop: 31.4438, fightIn: 0.497 } },
-  // (THE WILDS, floors 6 to 10: the sound chat's thirteenth batch, his songs, “Should be everything for 6-10”, and on try-out 18 his
-  // “All good, hand over (Recommended)”; its table, to the sample at 48 kHz: assets/sound/README.md, "Thirteenth batch")
-  f6: { walk: { file: 'music_f6_walk.mp3', loop: 26.7458 }, fight: { file: 'music_f6_fight.mp3', loop: 25.7787, fightIn: 2.161 } },
-  f7: { walk: { file: 'music_f7_walk.mp3', loop: 27.6948 }, fight: { file: 'music_f7_fight.mp3', loop: 26.4213, fightIn: 0.843 } },
-  f8: { walk: { file: 'music_f8_walk.mp3', loop: 29.2397 }, fight: { file: 'music_f8_fight.mp3', loop: 39.0779, fightIn: 0.161 } },
-  f9: { walk: { file: 'music_f9_walk.mp3', loop: 27.6584 }, fight: { file: 'music_f9_fight.mp3', loop: 33.6587, fightIn: 0.641 } },
-  f10: { walk: { file: 'music_f10_walk.mp3', loop: 36.1024 }, fight: { file: 'music_f10_fight.mp3', loop: 35.6684, fightIn: 0.006 } },
+  town: { walk: { file: 'music_town_walk_long.mp3', loop: 64.625187 } },
+  f1: { walk: { file: 'music_f1_walk_long.mp3', loop: 55.280896 }, fight: { file: 'music_f1_fight_long.mp3', loop: 74.410604, fightIn: 0.011 } },
+  f2: { walk: { file: 'music_f2_walk_long.mp3', loop: 66.6235 }, fight: { file: 'music_f2_fight_long.mp3', loop: 55.3835, fightIn: 1.761 } },
+  f3: { walk: { file: 'music_f3_walk_long.mp3', loop: 58.127958 }, fight: { file: 'music_f3_fight_long.mp3', loop: 45.001542, fightIn: 0.475 } },
+  f4: { walk: { file: 'music_f4_walk_long.mp3', loop: 68.324396 }, fight: { file: 'music_f4_fight_long.mp3', loop: 59.766937, fightIn: 1.787 } },
+  f5: { walk: { file: 'music_f5_walk_long.mp3', loop: 51.906312 }, fight: { file: 'music_f5_fight_long.mp3', loop: 74.751188, fightIn: 2.113 } },
+  // (THE WILDS, floors 6 to 10: his songs of the thirteenth batch, “Should be everything for 6-10”, cut longer the same way)
+  f6: { walk: { file: 'music_f6_walk_long.mp3', loop: 57.725875 }, fight: { file: 'music_f6_fight_long.mp3', loop: 51.857, fightIn: 0.561 } },
+  f7: { walk: { file: 'music_f7_walk_long.mp3', loop: 58.971354 }, fight: { file: 'music_f7_fight_long.mp3', loop: 52.955208, fightIn: 1.057 } },
+  f8: { walk: { file: 'music_f8_walk_long.mp3', loop: 49.029896 }, fight: { file: 'music_f8_fight_long.mp3', loop: 50.097604, fightIn: 0.63 } },
+  f9: { walk: { file: 'music_f9_walk_long.mp3', loop: 55.822708 }, fight: { file: 'music_f9_fight_long.mp3', loop: 60.199, fightIn: 0.859 } },
+  f10: { walk: { file: 'music_f10_walk_long.mp3', loop: 72.051375 }, fight: { file: 'music_f10_fight_long.mp3', loop: 51.061563, fightIn: 1.206 } },
 };
 
 type MusicPlaying = { src: AudioBufferSourceNode; g: GainNode };

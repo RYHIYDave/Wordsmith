@@ -37,7 +37,7 @@ import type { ActorArt, AnimSet } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
 import { heroLists, makeHeroArt3 } from '../art/heroes3';
 import { heroSides } from '../art/sides';
-import { isTownPlace, lookOfPlace, staffOfPlace } from '../art/heroes';
+import { isSkinPlace, isTownPlace, lookOfPlace, tomeOfPlace } from '../art/heroes';
 import type { HeroPlace } from '../art/heroes';
 import { paintTerrain, terrainOf } from '../art/terrain';
 import { nearOf, paintWithStanding, standingBits } from '../art/standing';
@@ -643,14 +643,16 @@ export class Painter {
     // (THE HEROES BAKED, render/baked.ts: where this hero in this place is baked, his pictures are taken from the bake, and
     // the worker is not asked to paint them; where they cannot be had, they are painted, as before)
     // (THE MAGE'S STAFF, art/staff_skins.ts: only the set of the staff she holds is kept, the others let go of first)
-    this.baked?.holdOnly(cls, place, false);
+    // (and the Brawler's wraps, art/wrap_skins.ts: his groups are the Veteran's, as he is taken)
+    this.baked?.holdOnly(cls, place, cls === 'brawler' && VETERAN.on);
     if (this.baked && this.baked.take(cls, place, cls === 'brawler' && VETERAN.on)) return true;
     if (!this.warmGround() || !this.groundLane || !this.groundLane.ready) return false;
     // (THE WARLOCK, as a man in a dungeon, his arm blazing, or the demon: all three in one order, the order he needs them in
     // (his lag, 30 Oct 2026): the first frame of each of his lists soon, before the floor's monsters (a frame of theirs is a
     // few thousandths of a second to paint, of his a tenth to half a second), so that none is painted where the game is
     // played; then the rest. The worker: warlock().)
-    if (cls === 'warlock' && place !== 'card' && place !== 'town') {
+    // (a unique tome's places, art/heroes.ts TOME_PLACES, as any hero's other places: below)
+    if (cls === 'warlock' && place !== 'card' && place !== 'town' && tomeOfPlace(place) === null) {
       if (!this.heroAsked.has('warlock:all')) {
         this.heroAsked.add('warlock:all');
         const two = this.many >= 2 && this.startHeroLane();
@@ -685,9 +687,9 @@ export class Painter {
       this.heroAsked.add(key);
       this.groundLane.open++;
       // (the Warlock's demon before his arm blazing: it is the heavier by far, and its frames are not painted in the game: art/kit.ts HEAVY)
-      // (a staff's places, art/heroes.ts STAFF_PLACES, as the town's and the dungeon's)
+      // (a staff's or a bow's places, art/heroes.ts STAFF_PLACES, BOW_PLACES, as the town's and the dungeon's)
       const town = isTownPlace(place);
-      const dungeon = !town && (place === 'dungeon' || place === 'axe' || place === 'hammer' || staffOfPlace(place) !== null);
+      const dungeon = !town && (place === 'dungeon' || place === 'axe' || place === 'hammer' || isSkinPlace(place));
       this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'card' ? 29 : town ? 30 : dungeon ? 31 : place === 'demon' ? 31.5 : 32, ...(vet ? { vet: true } : {}) } satisfies Ask);
     }
     return true;

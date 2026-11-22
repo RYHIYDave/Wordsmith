@@ -32,6 +32,8 @@ import { PRESS_RUNS, makeBrawlerArt, makeBrawlerCardArt } from './brawler_art';
 import { VET_LISTS, makeVeteranArt, makeVeteranCardArt } from './veteran_art';
 import { VETERAN } from '../game/veteran';
 import { makeWarlockArt } from './warlock_art';
+import { WRAP_SKIN_OF } from './wrap_skins';
+import { TOME_SKIN_OF } from './tome_skins';
 import type { WarlockShare } from './warlock_art';
 // (THE WARRIOR BROUGHT UP TO THE BRAWLER'S LEVEL, behind its switch, off: art/warrior_up.ts)
 import { WARRIOR_UP } from './warrior_up';
@@ -45,8 +47,14 @@ import { makeRangerUpArt } from './ranger_up_art';
 import { MAGE_UP } from './mage_up';
 import { makeMageUpArt } from './mage_up_art';
 import { STAFF_SKIN_OF } from './staff_skins';
+import { BOW_SKIN_OF } from './bow_skins';
+import { WRENCH_SKIN_OF } from './wrench_skins';
+import { SWORD_SKIN_OF } from './sword_skins';
+import type { SwordSkinId } from './sword_skins';
+import { HEAVY_SKIN_OF } from './heavy_skins';
+import type { SkinTakeId } from './warrior_up_weapons';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
-import { lookOfPlace } from './heroes';
+import { WARRIOR_SKIN_KIND, lookOfPlace } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
 import type { Painted } from './kit';
 import { COMBO_MENDS, GREAT_BLADE, MOVES3, SETTLES, SLASH3, STAFF_UP, STRIKE3, WALKS, holdStartOf, runWaysOf, settlesOf, startsOf, walkingOf } from './moves3';
@@ -477,28 +485,35 @@ export function makeHeroArt3(): HeroArt {
   // (and the Mage brought up; and with each unique staff, art/staff_skins.ts)
   const mageShare = new Map<string, Sprite[]>();
   const staffShares = new Map<string, Map<string, Sprite[]>>();
+  const bowShares = new Map<string, Map<string, Sprite[]>>();
+  const swordShares = new Map<string, Map<string, Sprite[]>>();
   const of = (cls: ClassId, look: HeroLook): ActorArt => {
     // (one figure of each hero in each place: the knight with the great sword, whatever he carries, until he is painted with a sword and a shield)
     const place = look.card ? 'card' : look.town ? 'town' : 'dungeon';
     // (THE WARLOCK: sculpted, art/warlock_art.ts; a man or the demon, his arm blazing or not)
+    // (THE WARLOCK'S BOOK, art/tome_skins.ts: the man with a unique tome at his hip, a set of him of its own; the demon, and his
+    // class card, as ever)
     if (cls === 'warlock') {
       const form = look.demon ? 'demon' : 'man';
       const blaze = form === 'man' && !!look.blaze;
-      const wkey = `warlock:${place}:${form}:${blaze ? 1 : 0}`;
+      const tome = form === 'man' && place !== 'card' && look.tome ? look.tome : null;
+      const wkey = `warlock:${place}:${form}:${blaze ? 1 : 0}${tome ? `:${tome}` : ''}`;
       let wart = made.get(wkey);
       if (!wart) {
-        wart = makeWarlockArt({ form, place, blaze }, warlockShare);
+        wart = makeWarlockArt({ form, place, blaze, ...(tome ? { tome: TOME_SKIN_OF[tome] } : {}) }, warlockShare);
         made.set(wkey, wart);
       }
       return wart;
     }
     // (THE VETERAN, the Brawler made again, while game/veteran.ts VETERAN is on (or the look says he is: the painter's worker,
     // which has no switch of its own): art/veteran_art.ts; one set of him for every place)
+    // (THE BRAWLER'S WRAPS, art/wrap_skins.ts: wearing unique ones, a set of him with them on his fists; his class card his own)
     if (cls === 'brawler' && (look.vet ?? VETERAN.on)) {
-      const vkey = place === 'card' ? 'veteran:card' : 'veteran';
+      const wraps = place !== 'card' ? look.wraps : undefined;
+      const vkey = place === 'card' ? 'veteran:card' : wraps ? `veteran:${wraps}` : 'veteran';
       let vart = made.get(vkey);
       if (!vart) {
-        vart = place === 'card' ? makeVeteranCardArt() : makeVeteranArt();
+        vart = place === 'card' ? makeVeteranCardArt() : makeVeteranArt(wraps ? WRAP_SKIN_OF[wraps] : undefined);
         made.set(vkey, vart);
       }
       return vart;
@@ -515,6 +530,17 @@ export function makeHeroArt3(): HeroArt {
       return bart;
     }
     // (THE TINKERER: sculpted, art/tinkerer_art.ts; one set of her for every place, as yet)
+    // (THE TINKERER'S WRENCH, art/wrench_skins.ts: holding a unique wrench, her pictures painted with it, each wrench a set of its
+    // own; her class card her own wrench's, as ever)
+    if (cls === 'tinkerer' && look.wrench && place !== 'card') {
+      const wkey = `tinkerer:${look.wrench}`;
+      let wart = made.get(wkey);
+      if (!wart) {
+        wart = makeTinkererArt(WRENCH_SKIN_OF[look.wrench]);
+        made.set(wkey, wart);
+      }
+      return wart;
+    }
     if (cls === 'tinkerer') {
       const tkey = place === 'card' ? 'tinkerer:card' : 'tinkerer';
       let tart = made.get(tkey);
@@ -528,14 +554,29 @@ export function makeHeroArt3(): HeroArt {
     // Movement 9: art/warrior_up_art.ts. Off, he is as he was, every frame the same: tests/warrior_up.test.ts)
     // (THE WARRIOR'S WEAPON, game/talents.ts WARRIOR_TREE2: with the war axe or the maul, his pictures with it from his eight
     // sides, art/warrior_up_heavy_art.ts; his class card is the great sword's, as ever)
+    // (THE WARRIOR'S UNIQUE AXES AND HAMMERS, art/heavy_skins.ts: the one in his hands in place of the war axe or the maul)
     if (cls === 'warrior' && WARRIOR_UP.on && look.weapon && place !== 'card') {
-      const hkey = `warriorheavy:${look.weapon}:${place}`;
+      const skin = look.warriorSkin && WARRIOR_SKIN_KIND[look.warriorSkin] === look.weapon ? (look.warriorSkin as SkinTakeId) : null;
+      const hkey = `warriorheavy:${look.weapon}:${place}${skin ? `:${skin}` : ''}`;
       let hart = made.get(hkey);
       if (!hart) {
-        hart = makeWarriorHeavyArt(look.weapon, place) as unknown as ActorArt;
+        hart = makeWarriorHeavyArt(look.weapon, place, skin ? HEAVY_SKIN_OF[skin] : undefined) as unknown as ActorArt;
         made.set(hkey, hart);
       }
       return hart;
+    }
+    // (THE WARRIOR'S UNIQUE GREAT SWORDS, art/sword_skins.ts: holding one, his pictures painted with it, each a set of its own;
+    // his class card his own sword's, as ever)
+    if (cls === 'warrior' && WARRIOR_UP.on && look.warriorSkin && WARRIOR_SKIN_KIND[look.warriorSkin] === null && place !== 'card') {
+      const skey = `warriorup:${look.warriorSkin}:${place}`;
+      let sart = made.get(skey);
+      if (!sart) {
+        let share = swordShares.get(look.warriorSkin);
+        if (!share) swordShares.set(look.warriorSkin, (share = new Map()));
+        sart = makeWarriorUpArt(place, share, SWORD_SKIN_OF[look.warriorSkin as SwordSkinId]);
+        made.set(skey, sart);
+      }
+      return sart;
     }
     if (cls === 'warrior' && WARRIOR_UP.on) {
       const ukey = `warriorup:${place}`;
@@ -548,6 +589,19 @@ export function makeHeroArt3(): HeroArt {
     }
     // (THE RANGER BROUGHT UP, while art/ranger_up.ts RANGER_UP is on: sculpted, from all eight sides, every list at 30 a second,
     // his shot and volley by Movement 9: art/ranger_up_art.ts. Off, he is as he was, every frame the same: tests/ranger_up.test.ts)
+    // (THE RANGER'S BOW, art/bow_skins.ts: holding a unique bow, his pictures painted with it, each bow a set of its own; his
+    // class card his own bow's, as ever)
+    if (cls === 'ranger' && RANGER_UP.on && look.bow && place !== 'card') {
+      const bkey = `rangerup:${look.bow}:${place}`;
+      let bart = made.get(bkey);
+      if (!bart) {
+        let share = bowShares.get(look.bow);
+        if (!share) bowShares.set(look.bow, (share = new Map()));
+        bart = makeRangerUpArt(place, share, BOW_SKIN_OF[look.bow]);
+        made.set(bkey, bart);
+      }
+      return bart;
+    }
     if (cls === 'ranger' && RANGER_UP.on) {
       const rkey = `rangerup:${place}`;
       let rart = made.get(rkey);

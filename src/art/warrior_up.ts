@@ -36,7 +36,7 @@
 // from eight sides, and then, asked whether some were only mirrored, “Paint all 8 (Recommended)”: every facing true, his
 // sword in his right hand whichever way he faces (art/warrior_up_art.ts wuFacing).
 
-import type { Light } from '../engine/px';
+import type { Light, Px } from '../engine/px';
 import type { TailRoot } from '../engine/tails';
 import { blade, bladeLights, KNIGHT_LOOK } from './hero_warrior';
 import { BLADE, CYAN, GLINT, INK, MAIL, PLUM, STEEL, hash } from './kit';
@@ -174,7 +174,23 @@ export interface WuAround {
    * lights, its smear, the strap it hangs from). His great sword is then not drawn. Absent, he is drawn as ever.
    */
   held?: { lay(sc: Sculpt): void; extras?(st: Stage, lights: Light[]): void };
+  /** (THE WARRIOR'S UNIQUE GREAT SWORDS, art/sword_skins.ts) The great sword in his hand: absent, his own (PLAIN_SWORD), as ever. */
+  sword?: SwordSkin;
 }
+
+/**
+ * A SKIN OF HIS GREAT SWORD (THE WARRIOR'S UNIQUE GREAT SWORDS, art/sword_skins.ts): painted as his own is, flat on its own sheet
+ * (art/hero_warrior.ts blade: `p` the sheet, the grip at (hx, hy), the blade `deg` degrees round, `len` long, `bw` half as wide,
+ * the grip `grip` long, the guard `guard` out past the blade), and its light along it.
+ */
+export interface SwordSkin {
+  id: string;
+  name: string;
+  blade: (p: Px, hx: number, hy: number, deg: number, len: number, bw: number, grip: number, guard: number) => void;
+  lights: (hx: number, hy: number, deg: number, len: number) => Light[];
+}
+/** HIS OWN GREAT SWORD: its blade the friend's cyan, a steel guard, a plum grip, a steel pommel (art/hero_warrior.ts). */
+export const PLAIN_SWORD: SwordSkin = { id: 'plain', name: 'His own great sword', blade, lights: bladeLights };
 
 /** What a sculpted frame of him is, for the checks: the drawing, and the solids by part. */
 export interface WuFrame extends Painted {
@@ -583,7 +599,9 @@ export function paintWarriorUp(s: Skeleton, q: Posed, side: WuSide, B: Build, ar
         lights.push({ x: lx, y: ly, r: 15, color: BLADE[3], a: 0.34 });
       }
     }
-    blade(sword, gx, gy, deg, lenB, 2.6, Math.max(2, 9 * seenLong), 4);
+    // (THE WARRIOR'S UNIQUE GREAT SWORDS, art/sword_skins.ts: the sword in his hand a skin; his own, PLAIN_SWORD, as ever)
+    const swordSkin = around.sword ?? PLAIN_SWORD;
+    swordSkin.blade(sword, gx, gy, deg, lenB, 2.6, Math.max(2, 9 * seenLong), 4);
     {
       const r = (deg * Math.PI) / 180;
       const [dx, dy] = [Math.cos(r), -Math.sin(r)];
@@ -591,7 +609,7 @@ export function paintWarriorUp(s: Skeleton, q: Posed, side: WuSide, B: Build, ar
     }
     laidAlong(sword, st, add(carried.grip, mul(carried.point, -9)), tip3, 0.4);
     const cf0 = s.chest[0];
-    if (!(away && st.near(cf0) > 0)) for (const l of bladeLights(gx, gy, deg, lenB)) lights.push(l);
+    if (!(away && st.near(cf0) > 0)) for (const l of swordSkin.lights(gx, gy, deg, lenB)) lights.push(l);
     // (the strap the sword hangs from on his back, across his chest from his right shoulder to his left hip)
     if (away && st.near(cf0) > 0) {
       const a = add(s.shoulderR, add(mul(cf, B.ribDeep * 0.8 + 1.4), mul(cl, 3.4)));

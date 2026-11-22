@@ -92,7 +92,80 @@ export interface RuAround {
   wind?: number;
   /** At a release (Movement 9): him the frame before, whose string and arrow are left as the after-image. */
   ghost?: { q: Posed; s: Skeleton };
+  /** (THE RANGER'S UNIQUE BOWS, art/bow_skins.ts) The bow in his hand: absent, his own (PLAIN_BOW), as ever. */
+  bow?: BowSkin;
+  /** The moment of the move, in seconds: for what of a bow moves of itself (the Rainwalker's rain). */
+  t?: number;
 }
+
+/**
+ * WHERE HIS BOW IS, A FRAME (THE RANGER'S UNIQUE BOWS, art/bow_skins.ts): what a bow's skin is laid on. `grip` his left hand (or
+ * where the bow hangs on his back, `away`), `p3` the way the arrow points, `ac` along the bow, its upper limb that way; `tipOf`
+ * where each limb's tip is at this draw; `t` the moment of the move.
+ */
+export interface BowAt {
+  s: Skeleton;
+  q: Posed;
+  B: Build;
+  grip: V3;
+  p3: V3;
+  ac: V3;
+  away: boolean;
+  tipOf: (sgn: 1 | -1) => V3;
+  eye: V3;
+  t: number;
+}
+/** What a bow's string and arrows are drawn with (the frame's own, in its extras). */
+export interface BowDraw {
+  line: ReturnType<Stage['part']>;
+  thread: (a: V3, b: V3, c: string, lift?: number) => void;
+  arrowAt: (from: V3, to: V3) => void;
+  nocks: V3[];
+  strung: boolean;
+}
+/**
+ * A SKIN OF HIS BOW: its solids laid on where his bow is (`sculpt`, with his bow's own wood and the grip's leather to hand),
+ * returning its two nocks (the upper limb's first) for the string and the materials of its limbs; `fan`: the arrows on the
+ * string, each its angle from the middle one along the bow, in degrees (absent: the one); `extras`: what else is drawn of it, of
+ * the old kind, after his string and arrow.
+ */
+export interface BowSkin {
+  id: string;
+  name: string;
+  sculpt: (sc: Sculpt, at: BowAt, mats: { wood: number; glove: number }) => { nocks: V3[]; mats: number[] };
+  fan?: readonly number[];
+  extras?: (st: Stage, at: BowAt, lights: Light[], d: BowDraw) => void;
+}
+
+/** HIS OWN BOW: two limbs of indigo wood curving back from a leather grip, each tip curled forward (a recurve), light nocks. */
+export const PLAIN_BOW: BowSkin = {
+  id: 'plain',
+  name: 'His own bow',
+  sculpt: (sc, at, { wood, glove }) => {
+    const { grip, p3, ac, tipOf } = at;
+    const nocks: V3[] = [];
+    for (const sgn of [1, -1] as const) {
+      const ctl = add(grip, add(mul(ac, sgn * BOW_HALF * 0.72), mul(p3, 0.6)));
+      const t = tipOf(sgn);
+      let last: V3 = add(grip, mul(ac, sgn * 1.4));
+      const N = 7;
+      for (let i = 1; i <= N; i++) {
+        const k = i / N;
+        const pt = bez(grip, ctl, t, k);
+        sc.cone(wood, 'bow', last, pt, 1.35 - 0.62 * ((i - 1) / N), 1.35 - 0.62 * k, 0.6, { tag: 'limb' });
+        last = pt;
+      }
+      // (the recurve: the tip curled forward, toward where the arrow points)
+      const curl = add(t, add(mul(ac, sgn * 1.1), mul(p3, 1.5)));
+      sc.cone(wood, 'bow', t, curl, 0.73, 0.55, 0.5, { tag: 'limb' });
+      sc.ell(wood, 'bow', curl, [mul(ac, 0.6), mul(p3, 0.6), mul(norm(cross(ac, p3)), 0.6)], 0.2, { tag: 'nock' });
+      nocks.push(curl);
+    }
+    // (the grip, wrapped in leather)
+    sc.cone(glove, 'bowgrip', add(grip, mul(ac, 2.0)), add(grip, mul(ac, -2.0)), 1.5, 1.5, 0.3, { tag: 'grip' });
+    return { nocks, mats: [wood] };
+  },
+};
 
 /** What a sculpted frame of him is, for the checks: the drawing, and the solids by part. */
 export interface RuFrame extends Painted {
@@ -584,26 +657,10 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
   const p3 = carried.point;
   const ac = carried.across;
   const tipOf = (sgn: 1 | -1): V3 => add(grip, add(mul(ac, sgn * BOW_HALF * (1 - 0.13 * q.draw)), mul(p3, -(BOW_BRACE + 0.05 * B.tall * q.draw))));
-  const nocks: V3[] = [];
-  for (const sgn of [1, -1] as const) {
-    const ctl = add(grip, add(mul(ac, sgn * BOW_HALF * 0.72), mul(p3, 0.6)));
-    const t = tipOf(sgn);
-    let last: V3 = add(grip, mul(ac, sgn * 1.4));
-    const N = 7;
-    for (let i = 1; i <= N; i++) {
-      const k = i / N;
-      const pt = bez(grip, ctl, t, k);
-      sc.cone(wood, 'bow', last, pt, 1.35 - 0.62 * ((i - 1) / N), 1.35 - 0.62 * k, 0.6, { tag: 'limb' });
-      last = pt;
-    }
-    // (the recurve: the tip curled forward, toward where the arrow points)
-    const curl = add(t, add(mul(ac, sgn * 1.1), mul(p3, 1.5)));
-    sc.cone(wood, 'bow', t, curl, 0.73, 0.55, 0.5, { tag: 'limb' });
-    sc.ell(wood, 'bow', curl, [mul(ac, 0.6), mul(p3, 0.6), mul(norm(cross(ac, p3)), 0.6)], 0.2, { tag: 'nock' });
-    nocks.push(curl);
-  }
-  // (the grip, wrapped in leather)
-  sc.cone(glove, 'bowgrip', add(grip, mul(ac, 2.0)), add(grip, mul(ac, -2.0)), 1.5, 1.5, 0.3, { tag: 'grip' });
+  // (THE RANGER'S UNIQUE BOWS, art/bow_skins.ts: the bow is a skin laid on where it is; his own, PLAIN_BOW, as ever)
+  const bowSkin = around.bow ?? PLAIN_BOW;
+  const bowAt: BowAt = { s, q, B, grip, p3, ac, away, tipOf, eye, t: around.t ?? 0 };
+  const { nocks, mats: bowMats } = bowSkin.sculpt(sc, bowAt, { wood, glove });
 
   // ---- what is drawn of the old kind: the string and the arrow on it (as the game draws its arrow in flight), the glint at
   // full draw ----
@@ -677,6 +734,12 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
         { shaft: CYAN[3], head: '#ffffff', tip: '#ffffff', vane: '#ffffff', vane2: '#ffffff' },
       ][step];
       arrowAt(s.handR, point, line, charged);
+      // (a bow that looses more than one arrow, art/bow_skins.ts `fan`: the others beside it on the string, spread along the bow)
+      for (const deg of bowSkin.fan ?? []) {
+        if (deg === 0) continue;
+        const a = (deg * Math.PI) / 180;
+        arrowAt(s.handR, add(s.handR, mul(norm(add(mul(p3, Math.cos(a)), mul(ac, Math.sin(a)))), ARROW_LONG * B.tall)), line, charged);
+      }
       if (step >= 1) {
         // (sparks running along it, more at each step)
         for (let k = 0; k < step * 2; k++) {
@@ -718,6 +781,8 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
       arrowAt(g.s.handR, add(g.s.handR, mul(gp, long)), ghost, fainter, 3);
       arrowAt(add(g.s.handR, mul(gp, long * 0.55)), add(g.s.handR, mul(gp, long * 1.55)), ghost, ghostTone, 4);
     }
+    // (what else a unique bow has of the old kind: art/bow_skins.ts)
+    bowSkin.extras?.(st, bowAt, lights, { line, thread, arrowAt: (a, b) => arrowAt(a, b), nocks, strung });
     // what he does when left standing: the squirrel on his shoulders (prop 1), or an arrow held before his eye (prop 2)
     if (q.prop === 1) {
       const sq = squirrelOn(s, B, q.pt);
@@ -798,6 +863,6 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
     const [qx, qy] = st.at(quillAt);
     tails = [{ id: 'r-feather', x: qx, y: qy, over: true }];
   }, rim);
-  return { px: drawn.px, lights, tails, drawn, sc, s, spin, ax, ay: CANVAS3.ay, bowMat: wood };
+  return { px: drawn.px, lights, tails, drawn, sc, s, spin, ax, ay: CANVAS3.ay, bowMat: bowMats[0] ?? wood };
 }
 

@@ -26,7 +26,7 @@ import type { GameView } from '../art/skin';
 import { about, add, buildOf, cross, dot, elbowFor, len, lerp3, mul, norm, solve, standing, sub, trunkOf } from '../art/skeleton';
 import type { Bones, Build, Posed, Skeleton, V3 } from '../art/skeleton';
 import { Sculpt, draw, onBall, onCone, primDist } from './sculpt';
-import type { Cone, Drawn, Ell, Prim } from './sculpt';
+import type { Cone, Drawn, Ell, Hit, Prim } from './sculpt';
 
 // ---------------------------------------------------------------------------------------------
 // His colours (none glows; nothing the enemy's pink or gold)
@@ -58,6 +58,50 @@ const MILK_DK = '#8c90a0';
 const EYE = '#120a16';
 
 const sh = (r: Ramp, k: number): string => r[Math.max(0, Math.min(4, k))];
+
+// ---------------------------------------------------------------------------------------------
+// HIS WRAPS A SKIN (the skins chat, 14 Nov 2026: the unique wraps he holds shown on his fists, art/wrap_skins.ts; his words, 13
+// Nov 2026, of the heroes' weapons: “How hard would it be to have weapon skins?”, and 14 Nov, of the Mage's staves done, “then
+// do it for the rest of the cast”). PLAIN_WRAPS is his own (painted with it he is the very frame he was); VET_WRAPS.skin the
+// wraps he is painted with, set by art/veteran_art.ts only while it paints him with unique ones.
+
+/** One fist, as a skin is laid on it: its arm's piece, his hand and elbow, the way the hand runs, its thumb's side and its palm's. */
+export interface WrapAt {
+  side: 'L' | 'R';
+  piece: string;
+  ha: V3;
+  el: V3;
+  /** Down the hand, from the wrist to the knuckles. */
+  d: V3;
+  /** The thumb's side of the fist. */
+  top: V3;
+  /** Toward the palm. */
+  inw: V3;
+  /** How big his fists are (VET_FIST.k). */
+  F: number;
+  /** The arm is on the far side of him from the eye (painted a step darker). */
+  far: boolean;
+  /** Toward the eye. */
+  eye: V3;
+}
+/** A skin for his wraps: the straps round his knuckles, hand and wrist, a pattern on them, and what is added to each fist. */
+export interface WrapSkin {
+  id: string;
+  name: string;
+  /** The straps' colours (his own: dark leather). */
+  strap: Ramp;
+  /** A colour of its own at a point of a strap (null: the strap's tone, a step darker on the far arm). */
+  strapPaint?: (h: Hit, w: WrapAt) => string | null;
+  /**
+   * What the skin adds to each fist, laid last, after his headband's tails (which keep clear of every solid before them, so they
+   * stream as they did). `t`: the pose's phase, to move what moves (a flame).
+   */
+  extras?: (sc: Sculpt, w: WrapAt, t: number) => void;
+}
+/** HIS OWN WRAPS: dark leather straps. */
+export const PLAIN_WRAPS: WrapSkin = { id: 'plain', name: 'his own wraps', strap: VET_STRAP };
+/** The wraps he is painted with (art/veteran_art.ts sets it while it paints him with unique ones, and puts it back). */
+export const VET_WRAPS: { skin: WrapSkin } = { skin: PLAIN_WRAPS };
 
 // ---------------------------------------------------------------------------------------------
 // His build: his own proportions
@@ -804,6 +848,8 @@ export function sculptVeteran(p: VetPose, turn = 0): VetFigure {
     const top = side === 'R' ? norm(cross(d, inw)) : norm(cross(inw, d));
     fistInfo.push({ side, d, top, inw });
   }
+  const wrap = VET_WRAPS.skin;
+  const wrapAt: WrapAt[] = fistInfo.map(({ side, d, top, inw }) => ({ side, piece: `arm${side}`, ha: side === 'L' ? s.handL : s.handR, el: side === 'L' ? s.elbowL : s.elbowR, d, top, inw, F, far: farArm(`arm${side}`), eye }));
   const fistM = sc.mat({
     ramp: VET_SKIN,
     paint: (h) => {
@@ -819,7 +865,16 @@ export function sculptVeteran(p: VetPose, turn = 0): VetFigure {
       return dk ? sh(VET_SKIN, h.tone - 1) : null;
     },
   });
-  const strapM = sc.mat({ ramp: VET_STRAP, paint: (h) => (farArm(h.prim.piece) ? sh(VET_STRAP, h.tone - 1) : null) });
+  const strapPaint = wrap.strapPaint;
+  const strapM = sc.mat({
+    ramp: wrap.strap,
+    paint: strapPaint
+      ? (h) => {
+          const w = wrapAt.find((x) => x.piece === h.prim.piece);
+          return (w && strapPaint(h, w)) ?? (farArm(h.prim.piece) ? sh(wrap.strap, h.tone - 1) : null);
+        }
+      : (h) => (farArm(h.prim.piece) ? sh(wrap.strap, h.tone - 1) : null),
+  });
   const bracerM = sc.mat({
     ramp: VET_BRACER,
     paint: (h) => {
@@ -939,6 +994,8 @@ export function sculptVeteran(p: VetPose, turn = 0): VetFigure {
   };
   tailOf(1);
   tailOf(0);
+  // (HIS WRAPS' SKIN: what it adds to each fist, after the tails)
+  if (wrap.extras) for (const w of wrapAt) wrap.extras(sc, w, p.phase);
 
   return { sc, s, tails: lines };
 }

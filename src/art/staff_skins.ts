@@ -37,15 +37,10 @@ import type { Stage } from './skin';
 import { five } from './warrior_up';
 import type { StaffId } from './heroes';
 
-/**
- * THE SWITCH: ON, at his yes, 14 Nov 2026 (by 16:11 Eastern), shown her in the game with each staff
- * (docs/mockups/staff_skins/pictures/staves_in_game.mp4) and asked whether to turn them on: “Yes, switch them on (Recommended)”.
- * On, the Mage holding a unique staff is drawn holding it (render/render.ts heroArt: her place with that staff,
- * art/heroes.ts STAFF_PLACES), its pictures baked whole, a group of their own for each staff (render/baked.ts bakeGroups), as the
- * Warrior's axe and maul are: his pick, 14 Nov 2026, told the split layers would cost about an eighth more memory while she is
- * played and each staff baked whole about 2 MB of download and none: “Bake each staff whole (Recommended)”.
- */
-export const STAFF_SKINS = { on: true };
+// THE SWITCH, STAFF_SKINS, and which staff an item is (staffWorn) are in art/heroes.ts beside her places with each staff, so that
+// the bake's groups (render/baked.ts) need not take in the staves' art to know them (tools/bake_marks.mjs: a group is marked by
+// the code its heroes are painted with). Said again here for what read them here.
+export { STAFF_SKINS, STAFF_OF_UNIQUE, staffWorn } from './heroes';
 
 const SK_BROWN: Ramp = five(BROWN);
 const SK_TEAL: Ramp = five(TEAL);
@@ -414,13 +409,6 @@ export const ROD_STAFF: StaffSkin = {
 
 /** Each unique staff's skin, by the id of its place (art/heroes.ts StaffId). */
 export const STAFF_SKIN_OF: Readonly<Record<StaffId, StaffSkin>> = { crook: CROOK_STAFF, ebb: EBB_STAFF, resonance: RESONANCE_STAFF, rod: ROD_STAFF };
-/** The unique staves of the game (game/uniques.ts) that are drawn in her hands, and the skin each is. */
-export const STAFF_OF_UNIQUE: Readonly<Record<string, StaffId>> = { shepherdscrook: 'crook', tide: 'ebb', tuningstaff: 'resonance', kindlingrod: 'rod' };
-/** The skin of the staff an item is, if it is one of those (and the switch is on); null: her own staff. */
-export function staffWorn(item: { unique?: string; rarity?: number } | null | undefined): StaffId | null {
-  if (!STAFF_SKINS.on || !item || item.rarity !== 3 || !item.unique) return null;
-  return STAFF_OF_UNIQUE[item.unique] ?? null;
-}
 
 /** The skins of her staff, her own first. */
 export const STAFF_SKIN_LIST: readonly StaffSkin[] = [PLAIN_STAFF, CROOK_STAFF, EBB_STAFF, RESONANCE_STAFF, ROD_STAFF];

@@ -35,13 +35,13 @@ import { GREAT_RUNE, RUNES7, SMITH_BODY, SMITH_STANCE, burning } from '../art/sm
 // ---------------------------------------------------------------------------------------------
 // What every one of them is built with
 
-const sh = (r: Ramp, k: number): string => r[Math.max(0, Math.min(4, Math.round(k)))];
+export const sh = (r: Ramp, k: number): string => r[Math.max(0, Math.min(4, Math.round(k)))];
 /** A plane cut: keep only what lies where dot(p, n) <= o. */
-type Cut = { n: V3; o: number };
+export type Cut = { n: V3; o: number };
 /** Keep what lies on the side of `through` that `n` points away from. */
-const keepBelow = (n: V3, through: V3): Cut => ({ n, o: dot(n, through) });
+export const keepBelow = (n: V3, through: V3): Cut => ({ n, o: dot(n, through) });
 /** Nothing below the floor. */
-const FLOOR_CUT: Cut = { n: [0, 0, -1], o: 0 };
+export const FLOOR_CUT: Cut = { n: [0, 0, -1], o: 0 };
 
 /** The eye of the game's camera, as a figure turned `turn` is built (before it is truly turned). */
 function eyeFor(turn: number): V3 {
@@ -51,7 +51,7 @@ function eyeFor(turn: number): V3 {
 }
 
 /** One of them being sculpted: the bones, and where things are on them. */
-interface Rig {
+export interface Rig {
   B: Build;
   q: Posed;
   s: Skeleton;
@@ -80,7 +80,7 @@ interface Rig {
   pix(p: V3): [number, number];
 }
 
-function rigOf(B: Build, bones: Partial<Bones>, turn: number): Rig {
+export function rigOf(B: Build, bones: Partial<Bones>, turn: number): Rig {
   const q = { ...standing(B), ...bones } as Posed;
   const s = solve(B, q);
   const sc = new Sculpt();
@@ -105,10 +105,10 @@ function rigOf(B: Build, bones: Partial<Bones>, turn: number): Rig {
 }
 
 /** The joints of an arm or a leg. */
-function armOf(s: Skeleton, side: 'L' | 'R'): { sh: V3; el: V3; ha: V3 } {
+export function armOf(s: Skeleton, side: 'L' | 'R'): { sh: V3; el: V3; ha: V3 } {
   return side === 'L' ? { sh: s.shoulderL, el: s.elbowL, ha: s.handL } : { sh: s.shoulderR, el: s.elbowR, ha: s.handR };
 }
-function legOf(s: Skeleton, side: 'L' | 'R'): { hip: V3; knee: V3; ankle: V3; heel: V3; toe: V3 } {
+export function legOf(s: Skeleton, side: 'L' | 'R'): { hip: V3; knee: V3; ankle: V3; heel: V3; toe: V3 } {
   return side === 'L' ? { hip: s.hipL, knee: s.kneeL, ankle: s.ankleL, heel: s.heelL, toe: s.toeL } : { hip: s.hipR, knee: s.kneeR, ankle: s.ankleR, heel: s.heelR, toe: s.toeR };
 }
 
@@ -116,7 +116,7 @@ function legOf(s: Skeleton, side: 'L' | 'R'): { hip: V3; knee: V3; ankle: V3; he
  * A TRUNK of one stuff, `pad` off the bones' own girth: the ribs broad at the top, the belly under them (`paunch`: how far
  * it stands out in front, a smith's), the seat, the yoke of the shoulders and the slope from the neck out to each.
  */
-function trunkIn(g: Rig, mat: number, pad: number, o: { paunch?: number; yoke?: number; cuts?: Cut[]; tag?: string; seat?: boolean } = {}): void {
+export function trunkIn(g: Rig, mat: number, pad: number, o: { paunch?: number; yoke?: number; cuts?: Cut[]; tag?: string; seat?: boolean } = {}): void {
   const { sc, s, B, f, l, u, ribs, belly, pel } = g;
   const [rf, rl, ru] = ribs.r;
   const cuts = o.cuts;
@@ -135,14 +135,14 @@ function trunkIn(g: Rig, mat: number, pad: number, o: { paunch?: number; yoke?: 
 }
 
 /** A limb's own three ways: along it, out from the body, and the third. */
-function frameOf(a: V3, b: V3, out: V3, or: V3): readonly [V3, V3, V3] {
+export function frameOf(a: V3, b: V3, out: V3, or: V3): readonly [V3, V3, V3] {
   const d = norm(sub(b, a));
   const o = norm(sub(out, mul(d, dot(out, d))), or);
   return [d, o, norm(cross(d, o))];
 }
 
 /** A hand closed in a fist (round a handle, or on a hip): the block of it and the thumb folded over. `k`: how big. */
-function fistOf(g: Rig, mat: number, side: 'L' | 'R', k: number, tag = 'fist'): void {
+export function fistOf(g: Rig, mat: number, side: 'L' | 'R', k: number, tag = 'fist'): void {
   const { sc, s, l } = g;
   const { el, ha } = armOf(s, side);
   const d = norm(sub(ha, el));
@@ -153,7 +153,7 @@ function fistOf(g: Rig, mat: number, side: 'L' | 'R', k: number, tag = 'fist'): 
 }
 
 /** A hand held open, its palm facing `palm`: the flat of it, the fingers together beyond, the thumb out. */
-function openHand(g: Rig, mat: number, side: 'L' | 'R', palm: V3, k: number): void {
+export function openHand(g: Rig, mat: number, side: 'L' | 'R', palm: V3, k: number): void {
   const { sc, s } = g;
   const { el, ha } = armOf(s, side);
   const d = norm(sub(ha, el));
@@ -169,7 +169,7 @@ function openHand(g: Rig, mat: number, side: 'L' | 'R', palm: V3, k: number): vo
  * thumb: at this size a hand is a few pixels, and one that is a flat paddle reads as a flipper). `palm`: the way its palm
  * faces; `cup`: the fingers curled toward the palm's side (a hand that holds something up), 0 to 1.
  */
-function handOf(g: Rig, mat: number, side: 'L' | 'R', palm: V3, k: number, cup = 0): void {
+export function handOf(g: Rig, mat: number, side: 'L' | 'R', palm: V3, k: number, cup = 0): void {
   const { sc, s } = g;
   const { el, ha } = armOf(s, side);
   const d = norm(sub(ha, el));
@@ -184,7 +184,7 @@ function handOf(g: Rig, mat: number, side: 'L' | 'R', palm: V3, k: number, cup =
  * BOOTS, set ON the floor (never in it): the foot a block from heel to toe, its sole under it, and the leg of the boot up
  * the shin to `high` of the way from ankle to knee.
  */
-function bootsOn(g: Rig, mat: number, high: number, wide = 1): void {
+export function bootsOn(g: Rig, mat: number, high: number, wide = 1): void {
   const { sc, s, B } = g;
   for (const side of ['L', 'R'] as const) {
     const { knee, ankle, heel, toe } = legOf(s, side);
@@ -206,7 +206,7 @@ function bootsOn(g: Rig, mat: number, high: number, wide = 1): void {
 }
 
 /** A man's head: skull, jaw, brow, cheeks, nose and ears. `o`: how heavy the jaw and the brow are, how big the nose. */
-function headIn(g: Rig, skin: number, o: { jaw?: number; brow?: number; nose?: number; ears?: boolean; lean?: number } = {}): void {
+export function headIn(g: Rig, skin: number, o: { jaw?: number; brow?: number; nose?: number; ears?: boolean; lean?: number } = {}): void {
   const { sc, at, hf, hl, hu, R, s, u } = g;
   const jaw = o.jaw ?? 1;
   const brow = o.brow ?? 1;
@@ -1515,7 +1515,7 @@ export function sculptStranger(p: StrangerPose, turn = 0): TownFigure {
  * HIS BOOTS: tall, to under the knee. A foot that is flat on the wall behind him (its toes down) is set against the wall;
  * one on the floor is set on the floor.
  */
-function bootsOnWall(g: Rig, mat: number, high: number): void {
+export function bootsOnWall(g: Rig, mat: number, high: number): void {
   const { sc, s, B } = g;
   for (const side of ['L', 'R'] as const) {
     const { knee, ankle, heel, toe } = legOf(s, side);

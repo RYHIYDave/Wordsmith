@@ -317,6 +317,8 @@ export interface Hero {
   blightMore?: number;
   /** (the same) Frostbite on a monster: while he is chilled he loses this much life a second. */
   frostbiteDps?: number;
+  /** (the same) Siphon on a monster: while its poison is on him he heals this much less. */
+  siphonLess?: number;
   heroBleedAt?: { x: number; y: number };
   /**
    * (THE TEN NEW WORDS, for their looks: the art chat's asks of 9 Nov 2026) WHOSE poison, burning or chill is on him: the monster
@@ -614,6 +616,13 @@ export interface Monster {
   /** (EVERY WORD ON A DUNGEON, game/foe_melds.ts) its blows counted toward its melded word's twist (Eruption's heat, Thunder's clap); and Hailstorm's wait. */
   foeN?: number;
   hailT?: number;
+  /** (the same, the eight new melds) Sunder: when a blow of its last knocked him back (its next soon after a follow-up); Fervor: the
+   * deaths it has been fed and how long still; Cauterize: its wounds seared shut, once; Rime Ward: when its shield last chilled him. */
+  sunderAt?: number;
+  fervorN?: number;
+  fervorT?: number;
+  seared?: boolean;
+  rimeAt?: number;
   mirrorT?: number;
   /**
    * THE WARLOCK (game/warlock.ts): burning in his hellfire (the Hellfire Bolt's), and cursed (the Curse's smoulder): each its
