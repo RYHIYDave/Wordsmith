@@ -3045,6 +3045,43 @@ func finalmusic(main, hero, dir: String) -> void:
 ## in godot?”): floors 11 to 20 one after another in one sitting, and the final arena, the hero walked to each room in turn so its
 ## monsters are seen and their pictures taken in; at each floor, what Godot holds: its own memory, the textures' (pictures in the
 ## graphics memory), and the objects alive. Written to <shots>/memfloors.txt.
+## (what the pictures held are, the biggest first: each monster figure's sheets held, and every other picture on a node in the
+## scene, by the folder it came from, or its size where the game made it in code; each picture counted once, at 4 bytes a pixel)
+func _tex_groups() -> Array:
+	var by := {}
+	var count := {}
+	var seen := {}
+	var add := func(key: String, t: Texture2D) -> void:
+		if t == null or seen.has(t.get_rid()):
+			return
+		seen[t.get_rid()] = true
+		by[key] = float(by.get(key, 0.0)) + float(t.get_width() * t.get_height() * 4) / 1048576.0
+		count[key] = int(count.get(key, 0)) + 1
+	var figs: Dictionary = M._monsters._figures if M._monsters != null else {}
+	for n in figs:
+		for t in figs[n].sheets:
+			add.call("figure " + str(n), t)
+	var stack: Array = [M.get_tree().root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		stack.append_array(node.get_children())
+		for prop in ["texture", "normal_map"]:
+			var t = node.get(prop)
+			if t is Texture2D:
+				var path: String = (t as Texture2D).resource_path
+				add.call(path.get_base_dir().trim_prefix("res://") if path != "" else "(made in code) " + node.get_class(), t)
+	var keys: Array = by.keys()
+	keys.sort_custom(func(x, y): return by[x] > by[y])
+	var lines: Array = []
+	var total := 0.0
+	for key in keys:
+		total += float(by[key])
+	lines.append("      %7.1f MB counted, of which:" % total)
+	for key in keys.slice(0, 14):
+		lines.append("      %7.1f MB  %4d  %s" % [by[key], count[key], key])
+	return lines
+
+
 func memfloors(main, hero, dir: String) -> void:
 	M = main
 	h = hero
@@ -3072,6 +3109,7 @@ func memfloors(main, hero, dir: String) -> void:
 			n += 1
 		await M._wait(1.0)
 		row.call("floor %d walked" % k)
+		out.append_array(_tex_groups())
 	M.open_endless(20)
 	M.final_open = true
 	M.go_final()

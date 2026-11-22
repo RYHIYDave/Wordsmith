@@ -22,7 +22,10 @@
 //   godot/assets/loot/icons.png + icons.json  the pictures (art/icons.ts itemPic for each piece at its rarity; the gold piles,
 //     the life orb, the potion, the words' rune stones, the made words' with their own colours and runes as the game starts:
 //     tools/godot_meld_art.ts), two picture pixels to a game pixel.
+//   THE TABLES SPLIT (22 Nov 2026, so that Godot holds only what is wanted: tools/godot_loot_split.mjs, run at the end of this):
+//     `imbue`, `byDepth` and `gamble.pieces` go out of items.json into imbue.json + imbue_opts.bin, depth/<d>.json, gamble/<d>.json.
 //   npx tsx tools/godot_loot.ts [seed]
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
@@ -598,3 +601,5 @@ writeFileSync(`${OUT}/icons.png`, png(SHEET_W, H, sheet));
 writeFileSync(`${OUT}/icons.json`, JSON.stringify(placed));
 console.log(tally.join('\n'));
 console.log(`starter: ${(starter as { name: string }).name}; ${pics.size} pictures in a ${SHEET_W}x${H} sheet`);
+// (the tables split, so that Godot holds only what is wanted: tools/godot_loot_split.mjs)
+execFileSync('node', ['tools/godot_loot_split.mjs'], { stdio: 'inherit' });

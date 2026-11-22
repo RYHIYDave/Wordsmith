@@ -155,8 +155,9 @@ var sheet: Texture2D
 var pics := {}
 var stat_info := {}
 var _pools := {}
-## (any floor: the same pools as the game rolls them on each floor, tools/godot_loot.ts; floor 1's where a floor has none)
-var _by_depth := {}
+## (any floor: the same pools as the game rolls them on each floor, tools/godot_loot.ts; floor 1's where a floor has none. Read
+## from depth/<d>.json for the floor a drop is of, and let go of with the next: `_depths` the floors that have their own)
+var _depths: Array = []
 ## (QUESTS1115: the armourer's pick for the clapper, fully modded rares by level and slot: tools/godot_loot.ts fullRares)
 var _full_rares := {}
 ## UNIQUE ITEMS (game/uniques.ts, UNIQUES on; items.json `uniques`, tools/godot_loot.ts): what each is and where it drops (`defs`),
@@ -174,7 +175,7 @@ var _full_rares := {}
 ##   times; a boss's or a guardian's first never plain (from floor 6 a rare at the least). A piece of the rarity rolled is one the
 ##   game rolled on this floor (out of all its pools: luck changes only the rarity).
 var _uniques := {}
-## (by floor: the pieces the game rolled there, by rarity, Normal, Magic, Rare: the uniques among them left out)
+## (the floor of the last drop: the pieces the game rolled there, by rarity, Normal, Magic, Rare: the uniques among them left out)
 var _by_rarity := {}
 ## THE ROYAL CARDS (act3/royal_cards.gd; items.json `royal`): the cards he holds, by royal (game.ts Hero.cards: kept for good,
 ## save.gd); where in the bag the pieces the last hand handed in brought lie (game.ts wonHand); the deck's names, colours, numbers
@@ -189,8 +190,10 @@ var shops := {}
 ## (what he has sold to the vendors on this visit, oldest first: game.ts `sold`)
 var sold: Array = []
 ## (what each word becomes on each kind of piece; which words are found where; the armourer's quest's own lines:
-## tools/godot_loot.ts)
+## tools/godot_loot.ts. What each word becomes is read when first asked for, one option at a time: imbue_options)
 var _imbue := {}
+var _imbue_opts: FileAccess = null
+var _imbue_read := {}
 var _words := {}
 var quest_text := {}
 var _starters := {}
@@ -213,12 +216,11 @@ func _ready() -> void:
 	_font = ThemeDB.fallback_font
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/items.json"))
 	_pools = data["pools"]
-	_by_depth = data.get("byDepth", {})
+	_depths = data.get("split", {}).get("depths", [])
 	_full_rares = data.get("fullRares", {})
 	_uniques = data.get("uniques", {})
 	_value = data.get("value", {})
 	shops = data["shops"]
-	_imbue = data["imbue"]
 	_words = data["words"]
 	quest_text = data["quest"]
 	stat_info = data["stats"]
@@ -751,7 +753,11 @@ func _rarity(quality: int, mf: float) -> int:
 func _piece_of(p: int, rarity: int) -> Dictionary:
 	var key := str(p)
 	if not _by_rarity.has(key):
-		var here: Dictionary = _by_depth.get(key, _pools)
+		# (MEMORY, 22 Nov 2026: only this floor's pieces held, read from their own file: tools/godot_loot_split.mjs)
+		_by_rarity.clear()
+		var here: Dictionary = _pools
+		if _depths.has(key):
+			here = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/depth/" + key + ".json"))
 		var lists: Array = [[], [], []]
 		for q in here:
 			for it in here[q]:
@@ -1257,11 +1263,31 @@ func burn_options(w: String, it: Dictionary) -> Array:
 	for im in it.get("imbues", []):
 		has.append_array(im["stats"])
 	var kinds: Array = has.map(_group)
-	var all: Array = _imbue.get(w, {}).get("%s:%d" % [it["slot"], int(it["ilvl"])], [])
+	var all: Array = imbue_options(w, it)
 	# (WORDMELDING: a melded word's two properties must both be free; of its pairs, the first two that are)
 	var free := func(st) -> bool: return st == null or (not has.has(st) and not kinds.has(_group(st)))
 	var out: Array = all.filter(func(o): return free.call(o["stat"]) and free.call(o.get("also")))
 	return out.slice(0, 2) if Words.is_meld(w) else out
+
+
+## WHAT A WORD BECOMES ON A PIECE OF THAT KIND AND LEVEL (items.ts imbueOptions), all of it, whatever the piece has. MEMORY (22 Nov
+## 2026, after the web game's crashes on his phone on the later floors: “Will this be a problem in godot?”): the table, 40 MB of
+## text and 687 MB once read whole, is read a line at a time as it is asked for (tools/godot_loot_split.mjs): which options a word
+## has on each kind of piece (imbue.json `of`), and each option once, where it lies in imbue_opts.bin (`at`).
+func imbue_options(w: String, it: Dictionary) -> Array:
+	if _imbue.is_empty():
+		_imbue = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/imbue.json"))
+		_imbue_opts = FileAccess.open(DIR + "/imbue_opts.bin", FileAccess.READ)
+	var nums: Array = _imbue["of"].get(w, {}).get("%s:%d" % [it["slot"], int(it["ilvl"])], [])
+	var at: Array = _imbue["at"]
+	var out: Array = []
+	for n in nums:
+		var i := int(n)
+		if not _imbue_read.has(i):
+			_imbue_opts.seek(int(at[i]))
+			_imbue_read[i] = JSON.parse_string(_imbue_opts.get_buffer(int(at[i + 1]) - int(at[i])).get_string_from_utf8())
+		out.append(_imbue_read[i])
+	return out
 
 
 func _group(stat: String) -> String:
@@ -2269,6 +2295,9 @@ class _FilmPic extends Node2D:
 # rare unique, gambleOdds.unique: the uniques are not in the Godot version.) ---
 
 var _gamble := {}
+## (the stranger's pieces at the floor he came up from, read when he throws: gamble/<d>.json; `_gamble_at` that floor)
+var _gamble_held: Array = []
+var _gamble_at := -1
 ## (where in the bag the piece the last throw brought lies; -1: nothing thrown for on this visit)
 var won := -1
 
@@ -2283,6 +2312,14 @@ func _town_power() -> int:
 	if main != null and int(main.endless) > 0:
 		return 20
 	return clampi(int(main.last_floor) if main != null else 1, 1, 20)
+
+
+func _gamble_pieces() -> Array:
+	var d := _town_power()
+	if d != _gamble_at:
+		_gamble_held = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/gamble/%d.json" % d))
+		_gamble_at = d
+	return _gamble_held
 
 
 func gamble_price(k: int) -> int:
@@ -2311,7 +2348,7 @@ func gamble(k: int) -> String:
 	var odds: Dictionary = _tune["gambleOdds"]
 	var roll := randf()
 	var rarity := 2 if roll < float(odds["rare"]) else (1 if roll < float(odds["rare"]) + float(odds["magic"]) else 0)
-	var pool: Array = _gamble["pieces"][str(_town_power())][k][rarity]
+	var pool: Array = _gamble_pieces()[k][rarity]
 	# (UNIQUE ITEMS: his "very low chance to give a unique", TUNE.gambleOdds.unique: one of the pool's of the kind gambled for, if
 	# there is one for him; a dice of its own)
 	var kind: Dictionary = gamble_kinds()[k]

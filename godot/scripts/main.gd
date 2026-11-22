@@ -2059,13 +2059,13 @@ func _wordsui_shots(h: Hero, dir: String) -> void:
 					unique = it.duplicate(true)
 				continue
 			for w in loot._words["order"]:
-				var all: Array = loot._imbue[w]["%s:%d" % [it["slot"], int(it["ilvl"])]]
+				var all: Array = loot.imbue_options(w, it)
 				var free: Array = loot.burn_options(w, it)
 				if found.is_empty() and not free.is_empty() and free.size() < all.size():
 					found = it.duplicate(true)
 					found_w = w
 	if not found.is_empty():
-		var all_stats: Array = loot._imbue[found_w]["%s:%d" % [found["slot"], int(found["ilvl"])]].map(func(o): return o["stat"])
+		var all_stats: Array = loot.imbue_options(found_w, found).map(func(o): return o["stat"])
 		var free_stats: Array = loot.burn_options(found_w, found).map(func(o): return o["stat"])
 		loot.bag.append(found)
 		loot.words[found_w] = int(loot.words.get(found_w, 0)) + 1
