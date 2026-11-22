@@ -230,6 +230,9 @@ var a1_in := {}
 ## dies, shown as a rune over its head (none before the wordsmith's ring is lit).
 var words: Array = []
 var half: Array = []
+## UNIQUE ITEMS: THE CRIER'S HUSH (uniques.gd; game.ts Monster.dark): its words and its half, darkened while he stands close.
+var dark_words: Array = []
+var dark_half: Array = []
 var carries: Array = []
 ## THE ROYAL CARDS (act3/royal_cards.gd): the royal that touched its pack ("princess", "prince", "queen", "king"), or "".
 var royal := ""

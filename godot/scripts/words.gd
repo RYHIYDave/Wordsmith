@@ -284,7 +284,10 @@ static func _num(n: float) -> String:
 
 ## A MOVE WITH ITS WORDS (resolveSkill), for a hero whose numbers are `d`: {str, dex, int, area, aps, cdr} (stats.ts derive).
 ## `front`, `behind`: the words in its slots, null where one is empty.
-static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls := "warrior", limit := "cooldown") -> Dictionary:
+## (`bent`, UNIQUE ITEMS: what a unique makes of the move's words, uniques.gd bend: {boost, meld_boost, meld}: how many times its own
+## figure each word is, "half as strong again", as RANK II's is for a ranked word, what its attribute adds staying on top; the same
+## for a melded word's two alone; a meld given without melding, the Amalgam's Heart's. Left out: every word as it always was.)
+static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls := "warrior", limit := "cooldown", bent := {}) -> Dictionary:
 	var D := data()
 	var def: Dictionary = D["skills"][id]
 	# (WORDMELDING: a melded word does the work of both its words, so for all that follows it is both of them; a ranked word is its
@@ -294,7 +297,7 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 			if x != null and (x == w or parts_of(x).has(w)):
 				return true
 		return false
-	var meld = meld_in(front)
+	var meld = bent["meld"] if bent.get("meld") != null else meld_in(front)
 	var meld_behind = meld_in(behind)
 	# (one enemy at a time: a blade. A word that makes "the hit" bigger gives these a splash.)
 	var single: bool = def["kind"] in ["melee", "projectile", "summon"]
@@ -328,7 +331,14 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 				return rank_of(y)
 		return 1
 	var step: float = D["melds"]["rankStep"]
-	var rk := func(side: Array, w: String) -> float: return 1.0 + step * (rank_in.call(side, w) - 1)
+	var BOOST: float = float(bent.get("boost", 1.0))
+	var MB: float = float(bent.get("meld_boost", 1.0))
+	var st := func(side: Array, w: String) -> float:
+		if MB == 1.0:
+			return BOOST
+		var m = meld_in(side)
+		return BOOST * MB if m != null and parts_of(m).has(w) else BOOST
+	var rk := func(side: Array, w: String) -> float: return (1.0 + step * (rank_in.call(side, w) - 1)) * st.call(side, w)
 	var rn := func(side: Array, w: String) -> String: return ["", "", " II", " III", " IV", " V"][rank_in.call(side, w)]
 	var dmg_mult: float = float(def["dmg"]) * (1.0 + prim * float(D["primaryDmg"]) / 100.0)
 	var size: float = d["area"]

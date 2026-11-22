@@ -298,7 +298,8 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 	var demon: bool = h.loadout.id(2) == "demonstep"
 	move = {"kind": "smoke", "from": x0, "to": land, "t": 0.0, "dur": float(W["step"]["demonSecs"] if demon else W["step"]["secs"]), "hit": [], "demon": demon}
 	h._act = "lunge"
-	h._invuln = maxf(h._invuln, 0.06)
+	if h.move_safe():
+		h._invuln = maxf(h._invuln, 0.06)
 	_say({"t": "smoke", "x0": x0.x, "y0": x0.y, "x1": land.x, "y1": land.y, "demon": demon})
 	if demon:
 		h.sfx.play("slam", linear_to_db(0.6))
@@ -321,7 +322,8 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 
 func _move_step(dt: float) -> void:
 	move["t"] = float(move["t"]) + dt
-	h._invuln = maxf(h._invuln, 0.06)
+	if h.move_safe():
+		h._invuln = maxf(h._invuln, 0.06)
 	var k := clampf(float(move["t"]) / float(move["dur"]), 0.0, 1.0)
 	h.world = (move["from"] as Vector2).lerp(move["to"], k)
 	_anim_t += dt

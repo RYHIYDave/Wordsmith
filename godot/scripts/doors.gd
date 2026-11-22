@@ -209,15 +209,20 @@ func unseal(words: Dictionary, at: Vector2, rad: float) -> void:
 			continue
 		if not carried.has(w):
 			continue
-		d["want"] = 1
-		d["told"] = true
-		for t in d["way"]:
-			map.shut[int(t)] = 0
-			map.walk[int(t)] = 1
-		sfx.play("sealed_door", linear_to_db(0.9))
-		sfx.play("word", linear_to_db(0.6))
+		open_seal(d)
 		if main.loot != null:
 			main.loot.say("The %s seal breaks." % _word_name(w).to_upper(), WORD)
+
+
+## (game.ts openSeal) A sealed door opened: its way walkable, its sound.
+func open_seal(d: Dictionary) -> void:
+	d["want"] = 1
+	d["told"] = true
+	for t in d["way"]:
+		map.shut[int(t)] = 0
+		map.walk[int(t)] = 1
+	sfx.play("sealed_door", linear_to_db(0.9))
+	sfx.play("word", linear_to_db(0.6))
 
 
 ## The words of one side of an attack, as a list: an array's own (its empty slots left out), or the one word of a string.

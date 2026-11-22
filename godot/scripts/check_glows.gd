@@ -1154,3 +1154,239 @@ func uniques(main, hero, dir: String) -> void:
 	M._inv.toggle()
 	h.unhurt = false
 	print("UNIQUES: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## (the uniques' check: a unique of id `id` worn, made as the game makes it; every unique taken off)
+func _wear(id: String) -> Dictionary:
+	var L = M.loot
+	var it: Dictionary = L.unique_piece(id)
+	var slot: String = "ring1" if it["slot"] == "ring" else str(it["slot"])
+	if slot == "ring1" and L.gear["ring1"] != null and L.gear["ring1"].get("unique") != null:
+		slot = "ring2"
+	L.gear[slot] = it
+	L.derive()
+	return it
+
+
+func _bare() -> void:
+	var L = M.loot
+	for s in L.EQUIP:
+		if L.gear[s] != null and L.gear[s].get("unique") != null:
+			L.gear[s] = null
+	L.derive()
+
+
+## WHAT THE UNIQUES DO, the first of them (uniques.gd; game.ts “UNIQUE ITEMS”, uniques.ts bendWords): the ones that bend his words,
+## and his own rules that need no picture of their own.
+func uniquesdo(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var L = M.loot
+	var U = M._uniques
+	var lo = h.loadout
+	M.way_depth = maxi(M.way_depth, 2)
+	await M.go_to("floor2", "down")
+	await M._wait(1.0)
+	L.ring_lit = true
+	L.level = 20
+	L.derive()
+	lo.front[0][0] = "power"
+	lo.front[1][0] = "fire"
+	lo.behind[0][0] = "swift"
+	lo.refresh()
+	var plain0: float = float(lo.r(0)["dmg_mult"])
+	# THE HEADSMAN'S HOOD: CULLING in front of the tap, no slot used
+	_wear("headsmanshood")
+	_line(lo.wfronts(0).has("culling") and float(lo.r(0)["cull"]) > 0.0 and lo.front[0].size() == 2 and not lo.front[0].has("culling"), "the Headsman's Hood: CULLING in front of his Strike (cull %.2f), its slots as they were" % float(lo.r(0)["cull"]))
+	_bare()
+	# THE CENSOR'S SEAL: the tap's words half as strong again, the hold none
+	var seal := _wear("censorsseal")
+	var half: float = float(U.halves.get("censorsseal", 0.5))
+	var held_none: bool = lo.wfronts(1).is_empty() and lo.wbehinds(1).is_empty()
+	_line(float(lo.r(0)["dmg_mult"]) > plain0 and held_none and lo.r(1)["element"] == "phys", "the Censor's Seal (rolled %.2f): POWER on his Strike stronger (%.3f, was %.3f); his Whirlwind takes no words (no FLAME)" % [half, float(lo.r(0)["dmg_mult"]), plain0])
+	_bare()
+	# THE DOG-EARED PAGE: every slot open at level 1; taken off, the slots close and their words come back
+	L.level = 1
+	L.derive()
+	for w in lo.trim():
+		L.words[w] = int(L.words.get(w, 0)) + 1
+	var n1: int = lo.front[0].size()
+	_wear("dogearedpage")
+	var all: int = lo.front[0].size()
+	lo.front[0][all - 1] = "frost"
+	var before: int = int(L.words.get("frost", 0))
+	_bare()
+	_line(all > n1 and lo.front[0].size() == n1 and int(L.words.get("frost", 0)) == before + 1, "the Dog-Eared Page at level 1: %d slots in front of the Strike (%d without); taken off, the last closes and its FROST goes back to his pouch" % [all, n1])
+	L.level = 20
+	L.derive()
+	lo.front[0][0] = "power"
+	lo.refresh()
+	# THE POLYGLOT'S MANTLE: two damage words a side
+	_wear("polyglotsmantle")
+	var two: String = lo.problem(0, "front", "fire") if lo.front[0].has(null) else "full"
+	_bare()
+	var one: String = lo.problem(0, "front", "fire") if lo.front[0].has(null) else "full"
+	_line(two == "" and one != "", "the Polyglot's Mantle: FLAME may go beside POWER (\"%s\"); without it, \"%s\"" % [two, one])
+	# THE LONG ECHO, THE TWO-FACED MASK, THE CANTOR'S ECHO, THE UNDERTOW, THE HOLLOW CROWN, THE QUEEN'S GLASS
+	_wear("longecho")
+	var echo: bool = lo.wfronts(0).has("lasting") and lo.wfronts(1).has("lasting") and lo.wfronts(2).has("lasting")
+	_bare()
+	_wear("twofacedmask")
+	var mask: bool = lo.wbehinds(0).has("power")
+	_bare()
+	_wear("cantorsecho")
+	var cantor: bool = lo.wbehinds(1).has("twin")
+	_bare()
+	_line(echo and mask and cantor, "the Long Echo: LASTING on all three; the Two-Faced Mask: POWER behind his Strike as well; the Cantor's Echo: TWIN behind his Whirlwind")
+	# THE CLOCKWORK SONGBIRD: stronger while his life is full; hurt, silent
+	h.life = h.max_life
+	_wear("clockworksongbird")
+	await M._wait(0.1)
+	var sings: float = float(lo.r(0)["dmg_mult"])
+	h.unhurt = false
+	h.hurt_by(5.0, "phys", [], {}, null, h.world + Vector2(1, 0), true)
+	h.unhurt = true
+	await M._wait(0.1)
+	var silent: float = float(lo.r(0)["dmg_mult"])
+	_bare()
+	h.life = h.max_life
+	_line(sings > silent and absf(silent - plain0) < 0.001, "the Clockwork Songbird: his Strike %.3f at full life, %.3f once hurt" % [sings, silent])
+	# THE NETTLE SHIRT: her Vow grows unhit, and a hit starts it over
+	_wear("nettleshirt")
+	var every: float = float(U.ut["nettle"]["every"])
+	await M._wait(every + 0.3)
+	var vow: float = float(U.uq["vow"])
+	h.hurt_by(5.0, "phys", [], {}, null, h.world + Vector2(1, 0), true)
+	var after: float = float(U.uq["vow"])
+	_bare()
+	_line(vow > 0.0 and after == 0.0, "the Nettle Shirt: her Vow %.2f after %.1f s unhit, 0 after a hit" % [vow, every + 0.3])
+	# THE MOTH'S WING: a third less from each hit, and a hit darkens one of his words
+	_wear("mothswing")
+	var k: float = U.hurt_k()
+	var less: float = float(U.ut["moth"]["less"])
+	h.hurt_by(5.0, "phys", [], {}, null, h.world + Vector2(1, 0), true)
+	var dark = U.uq["dark"]
+	var gone := false
+	if dark != null:
+		var side: Array = lo.wfronts(int(dark["skill"])) if dark["side"] == "front" else lo.wbehinds(int(dark["skill"]))
+		var w = (lo.front if dark["side"] == "front" else lo.behind)[int(dark["skill"])][int(dark["idx"])]
+		gone = not side.has(w)
+	_bare()
+	_line(absf(k - (1.0 - less)) < 0.001 and dark != null and gone, "the Moth's Wing: blows %.0f%% as hard; a hit darkened %s" % [k * 100.0, str(dark)])
+	# THE KING'S KNOT: a monster with a word killed, his Strike carries it a while
+	var m = null
+	for o in h.monsters.list:
+		if is_instance_valid(o) and not o.dead and not o.boss:
+			m = o
+			break
+	_wear("kingsknot")
+	if m != null:
+		m.words = ["frost"]
+		h.killed(m)
+	var lent: bool = lo.wfronts(0).has("frost")
+	_bare()
+	_line(lent, "the King's Knot: a monster carrying FROST killed: his Strike carries FROST too")
+	# BLOODPRICE: a flask at full life heals nothing and makes him hit harder
+	_wear("bloodprice")
+	h.life = h.max_life
+	L.potions = 3
+	L.drink()
+	var fury: float = U.hit_mult(m, 0) if m != null else 0.0
+	_line(L.potions == 2 and float(U.uq["blood_t"]) > 0.0 and absf(fury - (1.0 + float(U.ut["bloodprice"]["more"]))) < 0.001, "Bloodprice: a flask drunk at full life: his hits x%.2f for %.1f s" % [fury, float(U.uq["blood_t"])])
+	_bare()
+	U.uq["blood_t"] = 0.0
+	# THE HALF-CARVED HAND: below half his life, faster
+	_wear("halfcarvedhand")
+	var walk0: float = h.walk_pace()
+	h.life = h.max_life * 0.4
+	var quick: float = h.attack_pace()
+	var feet: float = h.walk_pace() / walk0
+	h.life = h.max_life
+	_bare()
+	_line(quick > 1.2 and feet > 1.1, "the Half-Carved Hand below half life: attacks x%.2f, feet x%.2f" % [quick, feet])
+	# THE STANDING STONE: stood still, less harm and no shove
+	_wear("standingstone")
+	await M._wait(0.6)
+	var stone: float = U.hurt_k()
+	var at0: Vector2 = h.world
+	h.knock(Vector2(1, 0), 1.0)
+	await M._wait(0.2)
+	_bare()
+	_line(stone < 0.7 and h.world.distance_to(at0) < 0.05, "the Standing Stone: stood still, blows %.0f%% as hard, and a knock moves him %.2f tiles" % [stone * 100.0, h.world.distance_to(at0)])
+	# BROKEN SHACKLES: the swipe with no cooldown, and he can be hit in it
+	_wear("brokenshackles")
+	_line(float(lo.r(2)["cooldown"]) == 0.0 and not h.move_safe(), "Broken Shackles: his Lunge's cooldown %.1f s; blows reach him in it" % float(lo.r(2)["cooldown"]))
+	_bare()
+	# THE DANCING SHOES: nothing slows him
+	_wear("dancingshoes")
+	h.chill(2.0, 0.5)
+	h.chill_t = 2.0
+	h.chill_k = 0.5
+	await M._wait(0.1)
+	var slowed: bool = h.chill_t > 0.0 or h._slow_t > 0.0
+	_bare()
+	_line(not slowed, "the Dancing Shoes: chilled and slowed, and at once not")
+	# THE PHYSICIAN'S COAT: a flask from his hits on an elite or a boss; none from kills
+	_wear("physicianscoat")
+	L.potions = 0
+	var boss = M._d_boss()
+	var hits: int = int(U.ut["coat"]["hits"])
+	for q in hits:
+		U.landed(boss, false, false)
+	var coat: int = L.potions
+	_bare()
+	_line(coat == 1, "the Physician's Coat: %d hits on the Headsman, %d flask back" % [hits, coat])
+	L.potions = 3
+	# THE KINDLING ROD, THE LAST WORD
+	_wear("kindlingrod")
+	var fire: bool = lo.r(0)["element"] != "fire" and not U.worn.has("kindlingrod")
+	_bare()
+	var cool0: float = float(lo.r(2)["cooldown"])
+	_wear("lastword")
+	var cool1: float = float(lo.r(2)["cooldown"])
+	var lw: float = float(lo.r(0)["dmg_mult"])
+	_bare()
+	_line(fire and cool1 > cool0 * 1.4 and lw > plain0, "the Kindling Rod on a Warrior: the Mage's, its rule does nothing for him; the Last Word: Lunge's cooldown %.1f s (was %.1f), his Strike %.3f (was %.3f)" % [cool1, cool0, lw, plain0])
+	# THE PACKSTRAP: Guarding's shield always on him
+	h.shield = 0.0
+	_wear("packstrap")
+	U.uq["hurt_at"] = -1e9
+	await M._wait(0.1)
+	var shielded: float = h.shield
+	_bare()
+	h.shield = 0.0
+	_line(shielded > 0.0, "the Packstrap: a shield of %.0f on him" % shielded)
+	# THE CRIER'S HUSH: a monster close to him has its words darkened
+	_wear("criershush")
+	var near = null
+	for o in h.monsters.list:
+		if is_instance_valid(o) and not o.dead and not o.boss:
+			near = o
+			break
+	if near != null:
+		near.words = ["fire"]
+		near.state = "chase"
+		h.world = M._free_near(near.world + Vector2(1.2, 0))
+		await M._wait(0.2)
+	var hushed: bool = near != null and (near.words as Array).is_empty() and (near.dark_words as Array).has("fire")
+	_bare()
+	await M._wait(0.1)
+	var back: bool = near != null and (near.words as Array).has("fire")
+	_line(hushed and back, "the Crier's Hush: a monster with FLAME close to him has it darkened; taken off, it is given back")
+	await M._snap(dir + "/ud01_floor2.png")
+	# THE WARDEN'S KEYS: the sealed door opens as he comes near
+	var door = null
+	for d in M.map.doors:
+		if d["kind"] == "worddoor" and int(d["want"]) == 0:
+			door = d
+	_wear("wardenskeys")
+	if door != null:
+		h.world = M._free_near(Vector2(door["middle"]["x"], door["middle"]["y"]) + Vector2(0.8, 0.8))
+		await M._wait(0.3)
+	var opened: bool = door != null and int(door["want"]) == 1
+	_bare()
+	await M._snap(dir + "/ud02_the_wardens_keys.png")
+	_line(opened, "the Warden's Keys: floor 2's sealed door opens as he comes near, without its word")
+	h.unhurt = false
+	print("UNIQUESDO: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

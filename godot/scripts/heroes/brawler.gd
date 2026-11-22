@@ -378,7 +378,7 @@ func _pace(id: String) -> float:
 	var r: Dictionary = h.loadout.r(0 if is_punch(id) else 1)
 	var w = look.loot.gear.get("mainhand") if look != null and is_instance_valid(look) and look.loot != null else null
 	var wr: float = float(w["aps"]) if w != null and float(w.get("aps", 0.0)) > 0.0 else 1.0
-	return clampf(float(r["rate"]) / maxf(0.3, wr), 0.5, 2.0) * h.frenzy_pace()
+	return clampf(float(r["rate"]) / maxf(0.3, wr), 0.5, 2.0) * h.attack_pace()
 
 
 ## (veteran.ts vetWalkable) Whether he may walk himself `f` frames into move `id`: in its wind-up or its wind-down.
@@ -439,7 +439,8 @@ func _play(dt: float, way: Vector2) -> void:
 		h.world = h.map.slide(h.world, HERO_R, fw * dc.x + left * dc.y)
 	# (his dodging jump: nothing touches him while he is off the floor)
 	# (THE VETERAN'S TREE: Hang Time, nor through any move of his in the air)
-	if m["air"] != null and (id == "dodge" or _has("vhangtime")) and f >= float(m["air"][0]) and f <= float(m["air"][1]):
+	# (UNIQUE ITEMS: Broken Shackles, he can be hit during his dodge: hero.gd move_safe)
+	if m["air"] != null and (h.move_safe() if id == "dodge" else _has("vhangtime")) and f >= float(m["air"][0]) and f <= float(m["air"][1]):
 		h._invuln = maxf(h._invuln, 0.06)
 	if S != null and f >= float(S["at"]):
 		_strike(m)

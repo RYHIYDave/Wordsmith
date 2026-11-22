@@ -247,7 +247,8 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 	h.world = land
 	h._place()
 	h.phase_in(0.22)
-	h._invuln = maxf(h._invuln, 0.3)
+	if h.move_safe():
+		h._invuln = maxf(h._invuln, 0.3)
 	_say({"t": "burst", "x": land.x, "y": land.y, "r": 0.8, "el": "frost", "style": "warp"})
 	# (HER TREE: Frost Warp, Flame Warp; Storm Warp where she arrives)
 	_talent_warp(x0, land)

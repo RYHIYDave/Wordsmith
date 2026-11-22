@@ -270,6 +270,13 @@ func derive() -> void:
 			continue
 		for m in it["mods"]:
 			s[m[0]] = s.get(m[0], 0.0) + float(m[1])
+	# (UNIQUE ITEMS: which work for him, their numbers as they rolled; what they add that is not written on them: uniques.gd)
+	var U = hero.uniques if hero != null else null
+	var changed := false
+	if U != null:
+		changed = U.set_gear(gear, cls)
+		for m in U.mods():
+			s[m[0]] = s.get(m[0], 0.0) + float(m[1])
 	var g := func(k: String) -> float: return s.get(k, 0.0)
 	var str_: float = attrs["str"] + g.call("str")
 	var dex: float = attrs["dex"] + g.call("dex")
@@ -321,6 +328,11 @@ func derive() -> void:
 	hero.mana = minf(hero.mana, hero.max_mana)
 	hero.loadout.limit = limit
 	hero.loadout.set_level(level, ring_lit)
+	# (a unique taken off: the slots it opened close, and the words in them come back to his pouch: game.ts refresh)
+	if changed:
+		for w in hero.loadout.trim():
+			words[w] = int(words.get(w, 0)) + 1
+		hero.uniques_changed()
 	hero.loadout.set_stats({"str": str_, "dex": dex, "int": int_, "area": hero.stats["area"], "aps": hero.stats["aps"], "cdr": cdr})
 
 
@@ -443,8 +455,11 @@ func on_kill(m) -> void:
 	if not practising:
 		gain_xp(m.xp)
 	hero.heal_flat(hero.stats["life_on_kill"])
-	kills += 1
-	if kills % KILLS_A_POTION == 0 and potions < POTIONS:
+	# (UNIQUE ITEMS: The Physician's Coat, no flask refills from kills)
+	var counts: bool = hero.uniques == null or hero.uniques.flasks_from_kills()
+	if counts:
+		kills += 1
+	if counts and kills % KILLS_A_POTION == 0 and potions < POTIONS:
 		potions += 1
 		say("A flask fills", Color(0.86, 0.3, 0.36))
 	var at: Vector2 = m.world
@@ -530,7 +545,7 @@ func from_breakable(at: Vector2) -> void:
 ## likeliest place on a floor to find one).
 func from_chest(at: Vector2, vault: bool) -> void:
 	var before := at + Vector2(0, 0.6)
-	var n := 1 + (1 if vault and randf() < 0.5 else 0)
+	var n: int = 1 + (1 if vault and randf() < 0.5 else 0) + (hero.uniques.chest_more() if hero.uniques != null else 0)
 	for i in n:
 		_item(before, 2 if vault and i == 0 else 1)
 	_gold(before, randi_range(10, 20) * (2 if vault else 1))
@@ -602,6 +617,11 @@ func floor_near(at: Vector2) -> Vector2:
 func _gold(at: Vector2, amount: int) -> void:
 	var key := "gold:2" if amount >= 30 else ("gold:1" if amount >= 8 else "gold:0")
 	_drop("gold", _scatter(at), key, {"amount": amount})
+
+
+## (UNIQUE ITEMS: The Miser's Purse, a hit he takes spills gold round him: uniques.gd)
+func spill_gold(at: Vector2, amount: int) -> void:
+	_gold(at, amount)
 
 
 func _orb(at: Vector2) -> void:
@@ -1035,10 +1055,14 @@ func unequip(slot: String) -> void:
 
 
 func drink() -> void:
-	if potions <= 0 or hero.life >= hero.max_life:
+	# (UNIQUE ITEMS: Bloodprice, a flask may be drunk at full life: its fury)
+	var blood: bool = hero.uniques != null and hero.uniques.wears("bloodprice")
+	if potions <= 0 or (hero.life >= hero.max_life and not blood):
 		return
 	potions -= 1
-	hero.heal(POTION_HEAL)
+	# (UNIQUE ITEMS: Bloodprice, a flask heals nothing: it makes him hit harder for a while)
+	if hero.uniques == null or not hero.uniques.blood_flask():
+		hero.heal(POTION_HEAL)
 	sfx.play("potion", -4.0)
 	# (THE SKILL TREES REMADE: Second Wind, a flask throws back what is near, and nothing hurts him for a second)
 	hero.second_wind()

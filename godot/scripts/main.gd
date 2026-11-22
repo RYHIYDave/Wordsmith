@@ -162,6 +162,7 @@ var _inv
 var _touch = null
 ## (what the hero and the town's people say: speech.gd)
 var _speech = null
+var _uniques = null
 ## (the small map top right, the large one and the pause panel: minimap.gd)
 var _mini
 var _veil: ColorRect
@@ -251,6 +252,14 @@ func _ready() -> void:
 	loot.main = self
 	add_child(loot)
 	_loot = loot
+	# (UNIQUE ITEMS: what the uniques he wears do: uniques.gd)
+	_uniques = preload("res://scripts/uniques.gd").new()
+	_uniques.main = self
+	_uniques.hero = hero
+	_uniques.loot = loot
+	add_child(_uniques)
+	hero.uniques = _uniques
+	hero.loadout.uq = _uniques
 	guide = Guide.new()
 	guide.main = self
 	_gate = JSON.parse_string(FileAccess.get_file_as_string(TOWN_DIR + "/floor1_gate.json"))
@@ -330,7 +339,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -2325,6 +2334,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "uniques":
 		await preload("res://scripts/check_glows.gd").new().uniques(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "uniquesdo":
+		await preload("res://scripts/check_glows.gd").new().uniquesdo(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "touch":

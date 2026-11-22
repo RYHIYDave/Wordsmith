@@ -28,6 +28,10 @@ var _d := {"str": 14.0, "dex": 8.0, "int": 6.0, "area": 1.0, "aps": 1.092, "cdr"
 var _r: Array = [null, null, null]
 ## (ACT 2, THE HUSH on him: each move made as if no word were in it, game.ts refresh `dark`)
 var hushed := false
+## UNIQUE ITEMS (uniques.gd): what the uniques he wears make of his slots and his words (game.ts slots, refresh; uniques.ts
+## bendWords); and the words each move works with as they bend them (game.ts SkillState.eff), null where none is worn.
+var uq = null
+var eff: Array = [null, null, null]
 
 
 ## His level, and whether the ring is lit: the slots there are now. A slot that opens is empty; none is ever taken away.
@@ -35,14 +39,55 @@ func set_level(lv: int, lit: bool) -> void:
 	level = lv
 	ring = lit
 	# (THE PRACTICE ROOM is for trying every combination: every slot open there, whatever the level: game.ts slots, moveOpen)
-	var n: Array = Words.socket_count(999 if practice else lv) if lit or practice else [0, 0]
+	var n: Array = _slots_now()
 	for i in 3:
 		var open: bool = practice or (lit and Words.move_open(i, lv))
-		while front[i].size() < (int(n[0]) if open else 0):
+		while front[i].size() < (_front_want(i, n) if open else 0):
 			front[i].append(null)
 		while behind[i].size() < (int(n[1]) if open else 0):
 			behind[i].append(null)
 	_r = [null, null, null]
+
+
+## (game.ts slots) The slots an open move has now, in front and behind: none before the ring is lit; then by level (every one in the
+## practice room, or with the Dog-Eared Page).
+func _slots_now() -> Array:
+	if not ring and not practice:
+		return [0, 0]
+	return Words.socket_count(999 if practice or (uq != null and uq.every_slot()) else level)
+
+
+## (game.ts refresh) The slots in front of move `i`: the Third Word, one more in front of the tap.
+func _front_want(i: int, n: Array) -> int:
+	return int(n[0]) + (1 if i == 0 and int(n[0]) > 0 and uq != null and uq.third_word() else 0)
+
+
+## (game.ts refresh) A unique taken off: a slot it opened closes, and a second damage word on a side (the Polyglot's Mantle's) goes:
+## the words that come out, for his pouch.
+func trim() -> Array:
+	var back: Array = []
+	var n: Array = _slots_now()
+	var most: int = uq.damage_a_side() if uq != null else 1
+	for i in 3:
+		var open: bool = practice or (ring and Words.move_open(i, level))
+		for which in 2:
+			var side: Array = front[i] if which == 0 else behind[i]
+			var want: int = (_front_want(i, n) if which == 0 else int(n[1])) if open else 0
+			while side.size() > want:
+				var w = side.pop_back()
+				if w != null:
+					back.append(w)
+			var dmg := 0
+			for k in side.size():
+				if side[k] == null or not Words.is_damage(side[k]):
+					continue
+				if dmg >= most:
+					back.append(side[k])
+					side[k] = null
+				else:
+					dmg += 1
+	_r = [null, null, null]
+	return back
 
 
 ## His numbers, as his gear, his levels and his attributes make them: {str, dex, int, area, aps, cdr}.
@@ -68,7 +113,7 @@ func problem(i: int, side: String, w: String) -> String:
 	var g := slots(i, side)
 	if g.is_empty():
 		return "No free socket"
-	return Words.socket_problem(g, w)
+	return Words.socket_problem(g, w, uq.damage_a_side() if uq != null else 1)
 
 
 ## Word `w` set in the first empty slot of a side of move `i`: "" if it went in, else why not.
@@ -106,12 +151,14 @@ func behinds(i: int) -> Array:
 ## WORDMELDING: the words in front of move `i` as the fight's rules and looks go by them (game.ts fronts; melds.ts withParts): each
 ## melded word and after it its two words; a ranked word as its word. (`fronts` is the words as they are set: the screens'.)
 func wfronts(i: int) -> Array:
-	return Words.with_parts(front[i])
+	r(i)
+	return Words.with_parts(eff[i]["front"] if eff[i] != null else front[i])
 
 
 ## The same of the words behind move `i`.
 func wbehinds(i: int) -> Array:
-	return Words.with_parts(behind[i])
+	r(i)
+	return Words.with_parts(eff[i]["behind"] if eff[i] != null else behind[i])
 
 
 ## Whether move `i` carries word `w` on either side.
@@ -148,7 +195,19 @@ func r(i: int) -> Dictionary:
 	if _r[i] == null:
 		var none := func(_w): return null
 		var by: String = cls if str(grows[i]) == "" else str(grows[i])
-		_r[i] = Words.resolve(id(i), front[i].map(none) if hushed else front[i], behind[i].map(none) if hushed else behind[i], _d, by, limit)
+		# (UNIQUE ITEMS: what the uniques worn make of its words: uniques.gd bend; its slots' own with none worn)
+		var f: Array = front[i]
+		var b: Array = behind[i]
+		var bent := {}
+		eff[i] = null
+		if uq != null and not uq.worn.is_empty():
+			bent = uq.bend(i, front, behind)
+			f = bent["front"]
+			b = bent["behind"]
+			eff[i] = {"front": f, "behind": b}
+		_r[i] = Words.resolve(id(i), f.map(none) if hushed else f, b.map(none) if hushed else b, _d, by, limit, {} if hushed else bent)
+		if uq != null and not uq.worn.is_empty():
+			uq.after_resolve(i, _r[i])
 	return _r[i]
 
 

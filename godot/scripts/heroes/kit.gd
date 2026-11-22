@@ -250,7 +250,7 @@ func _face(at: Vector2) -> void:
 func _use_basic(at: Vector2) -> void:
 	var r: Dictionary = h.loadout.r(0)
 	# (Frenzied: the frenzy makes the quick attack faster; a chill on him, slower)
-	var rate: float = maxf(0.3, float(r["rate"])) * h.frenzy_pace()
+	var rate: float = maxf(0.3, float(r["rate"])) * h.attack_pace()
 	if h.chill_t > 0.0:
 		rate *= 1.0 - h.chill_k * 0.5
 	swing_t = 1.0 / rate

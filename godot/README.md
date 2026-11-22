@@ -1016,10 +1016,20 @@ lights over the dark (town.gd `_ring_moments`):
 - **The hoards as the game's below floor 1** (game.ts dropLoot): the gold times the floor's level; a boss's four pieces on floors
   5, 10, 15 and 20; from floor 6 a boss's later pieces and a guardian's second with a hoard's luck.
 - `--only=uniques` (`check_glows.gd`): 11 checks (the odds counted over 20,000 and 200,000 rolls against the game's), pictured.
+- **What they do, the first of them** (game.ts “UNIQUE ITEMS”; game/uniques.ts bendWords, rolledTune; `uniques.gd`): each worn
+  piece's numbers as it rolled them; the ones that bend his words (the Headsman's Hood, the Queen's Glass, the Cantor's Echo, the
+  Undertow, the Hollow Crown and the Long Echo adding their word with no slot used; the Censor's Seal and the Quill's Band, one
+  move stronger and the other wordless; the Two-Faced Mask; the King's Knot's borrowed word; the Amalgam's Heart's meld; the
+  Songbird at full life, the Nettle Shirt's Vow, the Alloy Band, the Last Word; the Moth's Wing's dark word; the Dog-Eared Page,
+  the Third Word and the Polyglot's Mantle's slots, closing again with their words back in his pouch when taken off); and his own
+  rules: Bloodprice, the Long Odds, the Miser's Purse, the Press, the Half-Carved Hand, the Standing Stone, the Moth's Wing,
+  Broken Shackles, the Dancing Shoes, the Physician's Coat, the Warden's Keys, the Crier's Hush, the Free Hand, the Sure Thing,
+  the Kindling Rod, the Rot Axe, the Packstrap. A hero's own work only on that hero. `--only=uniquesdo`: 19 checks.
 
 ## Not in it yet
 
-What the uniques do (they drop, and their cards say it, but their powers are not in yet); the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+What the rest of the uniques do (the Drowned Arm, the Queen's Talons, the Fleshmancer's Brand, the hero's own weapons' and the
+like: they drop and their cards say it); the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); playing UPRIGHT (the game laid out for a phone held upright, its PLAY UPRIGHT switch: the Godot screen is laid out for one
 held sideways only); the first dungeon's ghosts of the gesture each prompt asks for on a phone.
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)

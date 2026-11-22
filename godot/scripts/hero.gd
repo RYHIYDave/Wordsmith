@@ -161,6 +161,8 @@ var arts := {}
 var in_town := false
 var sfx: Sfx
 var monsters  # monsters.gd
+## UNIQUE ITEMS: what the uniques he wears do (uniques.gd; main.gd makes it)
+var uniques = null
 ## (what the fight shows of his blows and words: the rules tell it with fx.event, fx.gd draws it; null where a place has none)
 var fx
 ## (the ground his moves leave, and what it does: wakes.gd; the place's own)
@@ -407,7 +409,7 @@ func set_max_life(v: float) -> void:
 ## 0.3 a second); chilled by a monster's Frost, slower by half the chill.
 func rate() -> float:
 	# (Frenzied: the frenzy makes the quick attack faster)
-	var r := maxf(0.3, float(loadout.r(0)["rate"])) * frenzy_pace()
+	var r := maxf(0.3, float(loadout.r(0)["rate"])) * attack_pace()
 	if chill_t > 0.0:
 		r *= 1.0 - chill_k * 0.5
 	# (THE WARLOCK's tree: Bloodlust, the demon's rakes quicker for every kill: heroes/warlock.gd)
@@ -434,6 +436,9 @@ func walk_pace() -> float:
 		sp *= 1.0 - _slow_by
 	# (THE HIGH CITY, FLOOR 16: slowed in the nettles, and a moment after: act3/garden.gd)
 	sp *= nettle_k
+	# (UNIQUE ITEMS: The Half-Carved Hand, below half his life, faster on his feet)
+	if uniques != null:
+		sp *= uniques.feet_pace()
 	return sp
 
 
@@ -442,6 +447,26 @@ func walk_pace() -> float:
 func frenzy_pace() -> float:
 	var mist: float = 1.0 + float(Talents.D["warriorTune"]["redMist"]["each"]) * red_mist if red_mist_t > 0.0 else 1.0
 	return (1.0 + float(Words.data()["frenzy"]["each"]) * frenzy) * mist
+
+
+## How much faster his attacks are played (game.ts frenzyPace x handPace): the frenzy's, and the Half-Carved Hand's below half life.
+func attack_pace() -> float:
+	return frenzy_pace() * (uniques.hand_pace() if uniques != null else 1.0)
+
+
+## UNIQUE ITEMS: BROKEN SHACKLES, he can be hit during his swipe move: nothing his moves do keeps blows off him (game.ts hitInMove).
+func move_safe() -> bool:
+	return uniques == null or not uniques.hit_in_move()
+
+
+## (game.ts refresh) What he wears has changed which uniques work for him: his moves made afresh; a swipe that has no cooldown now
+## ready at once.
+func uniques_changed() -> void:
+	loadout.refresh()
+	if float(loadout.r(2)["cooldown"]) <= 0.0:
+		_lunge_cd = 0.0
+		if kit != null:
+			kit.cd[2] = 0.0
 
 
 ## (game.ts `after`) `fn` done `t` seconds from now, on the hero's clock.
@@ -531,6 +556,9 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(el) + melds.fervor_pct(el) + might) / 100.0)
 	# (THE SKILL TREES: what the talents make of a hit: game.ts talentHitMult)
 	dmg *= _talent_hit_mult(m)
+	# (UNIQUE ITEMS: what the uniques worn make of it: uniques.gd hit_mult)
+	if uniques != null:
+		dmg *= uniques.hit_mult(m, i)
 	var crit: bool = randf() * 100.0 < stats["crit_chance"] or sure
 	# (THE SKILL TREES REMADE: Keen Eye, the first arrow at an enemy that has not noticed him a certain critical)
 	if m.state == "sleep" and has("keeneye") and str(Words.skill(loadout.id(i)).get("kind", "")) in ["projectile", "volley"]:
@@ -546,9 +574,16 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	if spent:
 		crit = true
 		m.mark_t = 0.0
-	if crit:
+	# (THE LEVELING UNIQUES: The Sure Thing, every hit a critical one, and a critical hit no harder)
+	var sure_thing: bool = uniques != null and uniques.sure_thing()
+	if sure_thing:
+		crit = true
+	if crit and not sure_thing:
 		# (THE SKILL TREES: Hunter's Mark, Precise's mark makes a triple critical)
 		dmg *= 1.0 + stats["crit_mult"] / 100.0 * (float(Talents.D["tune"]["huntersMark"]) if spent and has("huntersmark") else 1.0)
+	# (UNIQUE ITEMS: The Physician's Coat counts the hits on elites and bosses: uniques.gd landed)
+	if uniques != null:
+		uniques.landed(m, crit, quiet)
 	# (WORDMELDING: Avalanche behind, a hit on a chilled enemy hits harder: melds.gd)
 	dmg = melds.avalanche(m, r, dmg, quiet)
 	dmg = maxf(1.0, roundf(dmg))
@@ -581,7 +616,15 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	if crit and has("honededge"):
 		var B: Dictionary = Talents.D["tune"]["honedEdge2"]
 		last.bleed_monster(m, dmg * float(B["share"]) / float(B["secs"]), float(B["secs"]))
-	m.damage(dmg, el, crit, not quiet and front.has("power"), front, false, false, i)
+	# (THE LEVELING UNIQUES: The Rot Axe, a physical hit does no harm of its own; it poisons instead, below)
+	var rot: float = uniques.rot(el) if uniques != null else 0.0
+	if rot > 0.0:
+		m._bar = 4.0
+		m.last_skill = i
+		if m.state == "sleep":
+			monsters.wake(m)
+	else:
+		m.damage(dmg, el, crit, not quiet and front.has("power"), front, false, false, i)
 	# (THE SKILL TREES: a lightning hit leaves it shocked, which Overload works on; Kindling, his fire leaves the ground burning
 	# where it hits; Deep Freeze, a frozen one struck slides away, freezing what it meets; Charged, the charge goes off)
 	if el == "lightning" or int(r["arcs"]) > 0:
@@ -600,7 +643,7 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	if float(r["split"]) > 0.0 and not quiet:
 		city.split_first(m, i, frac, at)
 	# VAST behind: each hit, not a splash's, splashes a share of itself onto every other enemy near what it hit
-	if r["vast"] > 0.0 and not quiet:
+	if r["vast"] > 0.0 and not quiet and rot <= 0.0:
 		var reach: float = Words.data()["vast"]["splashR"]
 		var ids: Array = []
 		for o in monsters.list:
@@ -620,6 +663,8 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	# the poison's time: items.ts POISON_DMG, which loot.gd does not give yet); LASTING and FLEETING as for burning; BLIGHT in
 	# front, its poison biting harder the lower the enemy's life
 	var dose: float = dmg * float(r["poison"]) * Melds.blight_k(r, m) * float(r["pace"]) if r["poison"] > 0.0 else 0.0
+	if rot > 0.0:
+		dose += dmg * rot / float(Words.data()["poison"]["time"])
 	var p_min: float = stats.get("poison_min", 0.0)
 	var p_max: float = stats.get("poison_max", 0.0)
 	if dose > 0.0 and (p_min != 0.0 or p_max != 0.0):
@@ -731,6 +776,9 @@ func _boons(i: int) -> void:
 ## stack more and the frenzy held longer (to three times its hold); VOLATILE in front, it explodes; LEECH behind, now and then
 ## a life orb. (monster.gd _die calls this as it falls.)
 func killed(m) -> void:
+	# (UNIQUE ITEMS: what a kill does with them: uniques.gd killed)
+	if uniques != null:
+		uniques.killed(m)
 	# (a hero's own kit's kills: the Warlock's tree, game.ts warlockKill)
 	if kit != null and kit.has_method("on_kill"):
 		kit.on_kill(m)
@@ -1436,7 +1484,8 @@ func _begin_lunge(target: Vector2) -> void:
 
 func _fly(dt: float) -> void:
 	_act_t += dt
-	_invuln = maxf(_invuln, LUNGE["invuln"])
+	if move_safe():
+		_invuln = maxf(_invuln, LUNGE["invuln"])
 	var k := clampf(_act_t / _lunge["dur"], 0.0, 1.0)
 	world = _lunge["from"].lerp(_lunge["to"], k)
 	# (THE SKILL TREES REMADE: Drilled Lunge, every enemy he passes on the way struck: game.ts lungeThrough)
@@ -1502,7 +1551,8 @@ func _end_act() -> void:
 ## Knocked `dist` tiles the way `way` (a unit vector on the floor).
 func knock(way: Vector2, dist: float) -> void:
 	# (THE SKILL TREES REMADE: Resolute, nothing knocks him back, nor drags him: game.ts knockHero, pullHero)
-	if _act == "lunge" or has("resolute"):
+	# (UNIQUE ITEMS: The Standing Stone, nothing shoves him while he stands still)
+	if _act == "lunge" or has("resolute") or (uniques != null and uniques.rooted()):
 		return
 	_knock = way * dist
 	_knock_t = 0.12
@@ -1567,6 +1617,9 @@ func resist(el: String) -> float:
 func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null, from := Vector2.INF, bare := false) -> void:
 	if not alive or _invuln > 0.0:
 		return
+	# (THE PACKSTRAP: a blow reached him, shield or none: its shield comes back only so long after the last)
+	if uniques != null:
+		uniques.blow_came()
 	# (THE HIGH CITY, FLOOR 18: a monster's blow landing on him by a tall mirror cracks it too: act3/gallery.gd)
 	if src != null and is_instance_valid(src) and monsters != null and is_instance_valid(monsters) and monsters.main != null and monsters.main.gallery != null and monsters.main.gallery.on():
 		monsters.main.gallery.strike(world, 0.3)
@@ -1635,6 +1688,9 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	# (THE VETERAN'S TREE: Guard Up, between his blows his fists are up: heroes/brawler.gd)
 	if kit != null and kit.has_method("guard_k"):
 		dmg *= kit.guard_k(by)
+	# (UNIQUE ITEMS: The Moth's Wing, less from every hit; the Standing Stone, less while he stands still)
+	if uniques != null:
+		dmg *= uniques.hurt_k()
 	dmg = maxf(1.0, roundf(dmg))
 	# HEAVY, on a monster: its blow knocks him back a step (game.ts knockHero)
 	var knocked := 0.0
@@ -1707,6 +1763,9 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 		src.life += healed
 		_tell({"t": "text", "x": src.world.x, "y": src.world.y, "text": "heals", "color": "#ff8a80"})
 	last_blow = {"raw": raw, "el": el, "words": words, "half": hw, "parts": each, "shocked": shocked, "dmg": dmg, "knock": knocked, "soaked": soaked, "ward": ward, "longer": longer, "lasts": lasts, "healed": healed}
+	# (UNIQUE ITEMS: what a blow that took life from him does with them: uniques.gd hurt)
+	if uniques != null:
+		uniques.hurt(src)
 	# (THE SKILL TREES: Unbreakable, once in each dungeon a killing blow leaves him at 1 life, shielded)
 	if life <= 0.0 and has("unbreakable") and not unbroken:
 		unbroken = true

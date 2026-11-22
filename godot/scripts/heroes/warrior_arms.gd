@@ -317,7 +317,8 @@ func _move_step(dt: float) -> void:
 	var off: float = float(move["t"]) - float(move["crouch"])
 	var k := clampf(off / float(move["dur"]), 0.0, 1.0)
 	h.world = (move["from"] as Vector2).lerp(move["to"], k)
-	h._invuln = maxf(h._invuln, 0.06)
+	if h.move_safe():
+		h._invuln = maxf(h._invuln, 0.06)
 	# (THE WARRIOR'S WARHAMMER: Shoulder Charge strikes every enemy in his way, at its own strength)
 	if off > 0.0 and bool(_def(2).get("through", false)):
 		_through()

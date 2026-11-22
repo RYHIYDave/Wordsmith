@@ -208,7 +208,8 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 	move = {"from": x0, "to": end, "t": 0.0, "dur": 0.24}
 	# (nothing reaches him while he rolls: game.ts, h.move)
 	h._act = "lunge"
-	h._invuln = maxf(h._invuln, 0.06)
+	if h.move_safe():
+		h._invuln = maxf(h._invuln, 0.06)
 	# (his trap where the roll began; Twin, a second where it ends; "of Echoes", a weaker one a moment later)
 	_lay_trap(2, x0, float(r["count_dmg"]))
 	# (THE RANGER'S TREE: Minefield, two more in a fan behind where the roll began)
@@ -227,7 +228,8 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 
 func _move_step(dt: float) -> void:
 	move["t"] = float(move["t"]) + dt
-	h._invuln = maxf(h._invuln, 0.06)
+	if h.move_safe():
+		h._invuln = maxf(h._invuln, 0.06)
 	var k := clampf(float(move["t"]) / float(move["dur"]), 0.0, 1.0)
 	h.world = (move["from"] as Vector2).lerp(move["to"], k)
 	if k >= 1.0:

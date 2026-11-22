@@ -82,12 +82,14 @@ func step(dt: float, way: Vector2, hooked: bool) -> bool:
 
 
 ## (lock.ts placedAim) Her vial aimed at an enemy for her goes where it will be as it comes down.
-func _aim(reach: float, kind := "") -> Vector2:
-	if kind == "vialtoss" and not (Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)) and h.monsters != null:
+func _aim(reach: float, kind := "", which := -1) -> Vector2:
+	# (on a phone, where the thumb or the aim help put it, as for any move: kit.gd)
+	var touched: bool = (which >= 0 and h.touch_aim.has(which)) or (which == -1 and h.touch_aim.has(0))
+	if kind == "vialtoss" and not touched and not (Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)) and h.monsters != null:
 		var m = h.monsters.nearest(h.world, reach)
 		if m != null:
 			return _lead(m, float(Words.data()["skills"]["vialtoss"]["windup"]) + float(TT["toss"]["flight"]))
-	return super(reach, kind)
+	return super(reach, kind, which)
 
 
 func _shake(amount: float) -> void:
@@ -310,12 +312,14 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 	var secs: float = TT["blast"]["secs"]
 	move = {"kind": "blast", "from": x0, "to": land, "t": 0.0, "dur": secs}
 	h._act = "lunge"
-	h._invuln = maxf(h._invuln, secs + 0.1)
+	if h.move_safe():
+		h._invuln = maxf(h._invuln, secs + 0.1)
 
 
 func _move_step(dt: float) -> void:
 	move["t"] = float(move["t"]) + dt
-	h._invuln = maxf(h._invuln, 0.06)
+	if h.move_safe():
+		h._invuln = maxf(h._invuln, 0.06)
 	var k := clampf(float(move["t"]) / float(move["dur"]), 0.0, 1.0)
 	h.world = (move["from"] as Vector2).lerp(move["to"], k)
 	_anim_t += dt
