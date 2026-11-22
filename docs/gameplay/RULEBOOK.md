@@ -262,8 +262,10 @@ without the master rune-stone finds the fallen wordsmith again in the next.
     standing in fire she made, nothing burns her.
   - the Warlock: no second “lasts forever” of his own (your words: “I mean, if he already has the
     talent he doesn't need another one.”): his burns on a cursed enemy never going out are the
-    Burning Verse's, a unique; his Curse to be thrown where he aims instead (“I need it to be a
-    ranged ability”), waiting on your yes to its pictures (docs/mockups/warlock_curse).
+    Burning Verse's, a unique (“If his damage numbers are still okay I'm fine with it being on a
+    unique”); his Curse thrown where he aims instead (“I need it to be a ranged ability”): up to 9
+    tiles off, every enemy within 3.5 tiles of where it lands cursed; on at your “That's fine.” to
+    its pictures (docs/mockups/warlock_curse).
 
 ## Builds
 

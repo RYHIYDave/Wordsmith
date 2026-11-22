@@ -29,3 +29,6 @@ ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too
 === WARLOCK (Strength and Intelligence), as a man ===
 hero: level 50, Str 111 Dex 153 Int 356; weapon 50-67 at 3.38 attacks a second; damage +54%, physical +0%, fire +364%, frost +0%, lightning +0%, poison +0%, poison added 0-0; critical 81% for +530%
 ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too (curse), burning's own +25%: into the elite, his quick attack alone 315847 a second, it and his hold 218333 a second; a tough pack (six of 2000000 life), quick alone dead in 4.3 s (2800854 a second), it and his hold 6.8 s (1751877 a second)
+
+-- warlock, his Curse thrown (heroes/warlock.gd CURSE_RANGED on), Pyre as it was
+ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too (curse), burning's own +25%: into the elite, his quick attack alone 308258 a second, it and his hold 206231 a second; a tough pack (six of 2000000 life), quick alone dead in 5.4 s (2227717 a second), it and his hold 7.7 s (1565319 a second)

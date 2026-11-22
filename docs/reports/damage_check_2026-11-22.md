@@ -215,3 +215,9 @@ and the tough pack dead in (with his hold):
 - Brawler (Fumes, Heavy; Power II, Fleeting): 256,627, 7.9 s (297,492, 8.2 s)
 - the fire Mage (no poison in her words) as before: 158,128, 11.3 s (318,846, 7.2 s)
 The words are those found best before; with poison four deep the Warrior's and the Brawler's best may now be others.
+
+Then his words: “I mean, if he already has the talent he doesn't need another one.” (Pyre as it was: his burns on a cursed enemy
+never going out the Burning Verse's, a unique) and the Curse thrown where he aims, on at his “That's fine.  If his damage numbers
+are still okay I'm fine with it being on a unique”. The Warlock (Fire II, Swift; Power II, Fleeting), without the unique:
+308,258 a second into the elite, the pack dead in 5.4 s (with his Curse 206,231, 7.7 s): among the rest, below the Ranger and
+the Tinkerer, about the Warrior.
