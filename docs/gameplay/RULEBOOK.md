@@ -248,13 +248,15 @@ without the master rune-stone finds the fallen wordsmith again in the next.
 - **Burning and poison differ (the Godot game, 22 Nov 2026):** poison stacks, eight doses deep, for
   the long fight on one enemy; burning does not stack, it spreads (Searing) and readies an enemy
   for more fire. Your words: “Or a burning target takes more total fire damage.” A burning enemy
-  takes double damage from every fire hit (not from the burning itself), and that is the Mage's
-  alone, her fire tree's Hearth, so that fire is not the best choice for a Strength or Dexterity
+  takes double damage from every fire hit (not from the burning itself), and that is the Mage's,
+  her fire tree's Hearth, so that fire is not the best choice for a Strength or Dexterity
   hero: your words, “Maybe we change some stuff in the mages fire tree for the "burning enemies
   take more fire damage" cause I don't like that fire is BiS for a str/dex character”. Hearth's
   other half stays: standing in fire she made, nothing burns her. And the Warlock's, his own, on
   what burns in his hellfire too: “It should be good for the mage since she's elemental, and good
-  for the warlock since he's DoT focused.  But not for everyone.”
+  for the warlock since he's DoT focused.  But not for everyone.” Every other hero's fire a
+  quarter more on what burns: “It could still be some %more fire damage to burning enemies so you
+  could spec into fire if you wanted to.”
 
 ## Builds
 

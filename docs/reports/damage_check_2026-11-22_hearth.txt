@@ -62,3 +62,9 @@ ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too
 
 THE WARLOCK, BURNING'S OWN HIS OWN (on what burns, in his hellfire too); Hex Chain and Blazing Arm halved, as set
 ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too (curse), burning's own +100%: into the elite, his quick attack alone 442283 a second, it and his hold 295743 a second; a tough pack (six of 2000000 life), quick alone dead in 3.1 s (3837131 a second), it and his hold 5.5 s (2179820 a second)
+
+THE BRAWLER, FUMES AND HEAVY; POWER II AND FLEETING (gear chosen for them): every other hero's burning's own at none, a quarter, a half (words.gd BURN_MORE_ALL)
+hero: level 50, Str 119 Dex 376 Int 6; weapon 69-94 at 2.13 attacks a second; damage +0%, physical +0%, fire +323%, frost +0%, lightning +0%, poison +323%, poison added 0-0; critical 84% for +410%
+ALL FOUR WORDS (in front fumes, heavy; behind power2, fleeting), in his hold too (vkick), burning's own +0%: into the elite, his quick attack alone 431231 a second, it and his hold 381827 a second; a tough pack (six of 2000000 life), quick alone dead in 7.4 s (1617690 a second), it and his hold 6.7 s (1787580 a second)
+ALL FOUR WORDS (in front fumes, heavy; behind power2, fleeting), in his hold too (vkick), burning's own +25%: into the elite, his quick attack alone 440001 a second, it and his hold 427456 a second; a tough pack (six of 2000000 life), quick alone dead in 6.6 s (1822317 a second), it and his hold 7.2 s (1671559 a second)
+ALL FOUR WORDS (in front fumes, heavy; behind power2, fleeting), in his hold too (vkick), burning's own +50%: into the elite, his quick attack alone 443825 a second, it and his hold 475039 a second; a tough pack (six of 2000000 life), quick alone dead in 6.6 s (1830120 a second), it and his hold 6.2 s (1930406 a second)

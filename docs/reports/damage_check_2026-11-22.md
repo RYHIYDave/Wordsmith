@@ -191,3 +191,9 @@ fight again (damage_check_2026-11-22_hearth.txt), his quick attack into the elit
 Then his words: “It should be good for the mage since she's elemental, and good for the warlock since he's DoT focused.  But not
 for everyone.” Burning's own the Warlock's too, his own, on what burns in his hellfire as well (words.gd burn_more; his Hellfire
 Bolt's card says so): 442,283 a second, the pack dead in 3.1 s (295,743, 5.5 s), as he was. Hex Chain and Blazing Arm kept halved.
+
+And his words: “It could still be some %more fire damage to burning enemies so you could spec into fire if you wanted to.” Every
+other hero's fire +25% on what burns (words.gd BURN_MORE_ALL). The Brawler with Fumes and Heavy, Power II and Fleeting (gear chosen
+for them, Dexterity 376), his quick attack into the elite and the pack (with his hold), the others' share at none / +25% / +50%:
+431,231, 7.4 s (381,827, 6.7 s) / 440,001, 6.6 s (427,456, 7.2 s) / 443,825, 6.6 s (475,039, 6.2 s). Burning's own was never
+what made Fumes his best: it is fire and poison at once (a piece it is burned into gives both), and poison stacks.
