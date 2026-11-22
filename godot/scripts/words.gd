@@ -136,8 +136,12 @@ static var POISON_TREE := true
 ##               gear gives both on one piece (Contagion +40% lightning and +40% poison), so the two grew each other. On: a dose is
 ##               its share of the hit without the hit's element bonus, made more by damage and Poison Damage added together
 ##               (monster.gd dose, `el` the hit's element; what is not a hit's share, a cloud's, a snake's, as before). Off till
-##               his yes.
-static var POISON_ADD := false
+##               his yes; on at his “Yes both”.
+static var POISON_ADD := true
+##   POISON_DEX  poison grows with Dexterity, in any word (his “Yes both”, 22 Nov 2026, to: Blight's poison growing with Dexterity,
+##               poison being Dexterity's; the game's tables have Blight a Strength word, its poison growing with Strength): a
+##               Strength hero's Blight has its Power whole and its poison weak. Off: as the game has it.
+static var POISON_DEX := true
 const POISON_MOST := 4
 
 
@@ -438,6 +442,9 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	var grows_by := func(side: Array, w: String) -> float:
 		var m = meld_in(side)
 		var a: String = word_attr(m) if m != null and parts_of(m).has(w) else word_attr(w)
+		# (POISON_DEX: poison grows with Dexterity, in a meld too)
+		if POISON_DEX and w == "poison":
+			a = word_attr("poison")
 		return eff_attr(float(d[attr if a == "" else a]))
 	# (RANK II: a ranked word on this side is its word half as strong again: the word's own figure grows, what the attribute adds
 	# stays on top; and its rank is named in its line)
