@@ -1036,7 +1036,16 @@ lights over the dark (town.gd `_ring_moments`):
 - **The Warrior's greatsword's** (game.ts useBasic, windBlade, updateChannel, land; render/unique_fx.ts drawBlade): the Windcutter
   (every third Strike in a row sends a blade of wind on ahead through everything in its line, a crescent of rushing air with his
   cyan edge, a gust off his sword as it goes), Millstone (the Whirlwind spins for as long as it is held), the Pivot (Lunge lands in a
-  free turn of Whirlwind); the Press with the rest above. `--only=uniqueswar`: 3 checks, pictured.
+  free turn of Whirlwind); the Press with the rest above.
+- **His battle axe's and warhammer's, Set 1** (game.ts parks, stepGyre, tithe, hammerStun, peal, weightQuake, meteorLands; render/
+  set1_fx.ts): Gyre (his thrown axe stops at the end of its flight and spins there, cutting what is round it, wind streaming round
+  it on the floor, two at most), Red Tithe (one that dies bleeding throws its blood in an arc to the nearest other, which bleeds;
+  Cleave a little softer), Widowfall (Leaping Chop lands with a Cleave all round him, and all it strikes bleed), Death Knell (what
+  his hammer stuns rings like a bell, its rings going out; struck while it rings it peals, stunning all round it; each stun
+  shorter), Deadweight (each Smash in a row harder and slower, iron studs at his feet counting them; the fifth an Earthquake of its
+  own; stopped, the weight drains away), Starbreaker (Earthquake calls down a meteor, its shadow growing where it will land, its
+  fire streaming; it strikes as the hammer comes down, rocks flying, the floor left burning; with Tremors its fire again with each
+  shake). `--only=uniqueswar`: 9 checks, pictured.
 
 ## Not in it yet
 

@@ -449,6 +449,14 @@ func frenzy_pace() -> float:
 	return (1.0 + float(Words.data()["frenzy"]["each"]) * frenzy) * mist
 
 
+## (game.ts hammerStun) A stun of his hammer's (UNIQUE ITEMS, SET 1: Death Knell's rings: uniques.gd).
+func _hammer_stun(m, secs: float) -> void:
+	if uniques != null:
+		uniques.hammer_stun(m, secs)
+	else:
+		m.stun_for(secs)
+
+
 ## How much faster his attacks are played (game.ts frenzyPace x handPace): the frenzy's, and the Half-Carved Hand's below half life.
 func attack_pace() -> float:
 	return frenzy_pace() * (uniques.hand_pace() if uniques != null else 1.0)
@@ -700,15 +708,20 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 		var sid := loadout.id(i)
 		var sd: Dictionary = Words.skill(sid)
 		if float(sd.get("stun", 0.0)) > 0.0:
-			m.stun_for(float(sd["stun"]))
+			_hammer_stun(m, float(sd["stun"]))
 		if sd.get("stagger", false):
 			m.stagger_from(world)
 		if sid == "smash" and has("heavyhead"):
-			m.stun_for(float(Talents.D["warriorTune"]["heavyHead"]["secs"]))
+			_hammer_stun(m, float(Talents.D["warriorTune"]["heavyHead"]["secs"]))
 		if sid == "cleave" and has("rend"):
 			var RD: Dictionary = Talents.D["warriorTune"]["rend"]
 			m.bleed_dps = maxf(m.bleed_dps if m.bleed_t > 0.0 else 0.0, dmg * float(RD["share"]) / float(RD["secs"]))
 			m.bleed_t = float(RD["secs"])
+		# (UNIQUE ITEMS, SET 1: Widowfall, every enemy Leaping Chop strikes bleeds)
+		if sid == "chop" and uniques != null and uniques.wears("widowfall"):
+			var WF: Dictionary = uniques.ut["widow"]
+			m.bleed_dps = maxf(m.bleed_dps if m.bleed_t > 0.0 else 0.0, dmg * float(WF["bleed"]) / float(WF["secs"]))
+			m.bleed_t = maxf(m.bleed_t, float(WF["secs"]))
 		if float(r["bind"]) > 0.0:
 			var held_for: float = city.bind_monster(m, r["bind"])
 			if held_for > 0.0:

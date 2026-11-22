@@ -140,6 +140,11 @@ func draw_air(c: CanvasItem) -> void:
 			continue
 		var k := floori(float(p["age"]) / turn * fly_n) % fly_n
 		_piece(c, _sheet, _pics, "fly:%d" % k, _at(p["x"], p["y"]))
+	# (UNIQUE ITEMS, SET 1: Gyre, his axes spinning where their flight ended, as a thrown axe that does not move: uniques.gd)
+	if kit.h.uniques != null:
+		for q in kit.h.uniques.gyres:
+			var k := floori(float(q["age"]) / turn * fly_n) % fly_n
+			_piece(c, _sheet, _pics, "fly:%d" % k, _at(q["at"].x, q["at"].y))
 	var qn: int = D["quakeN"]
 	for p in quakes:
 		var t: float = p["t"]

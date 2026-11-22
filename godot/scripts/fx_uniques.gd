@@ -73,6 +73,23 @@ var cracks: Array = []
 var blows: Array = []
 var falls: Array = []
 var _wisp_t := 0.0
+## SET 1 IN PLAY (render/set1_fx.ts Set1Fx, SET1_LOOK on): the meteor falling and its strikes, the blood thrown and its splash, the
+## peals, the axe's dust as it falls
+const S1 := {
+	"rock": ["#1c1824", "#322a3a", "#544658"], "fire": ["#7a1a06", "#d04810", "#ff8a2a", "#ffd27a", "#fff4d6"],
+	"blood": ["#6a0a16", "#b01c2c", "#e8444e"], "bell": ["#7a5a2a", "#c8a46a", "#f2e4c2"], "wind": ["#9aa6c8", "#d4dcf0"],
+	"iron": ["#16141e", "#3a3848", "#7a788a"],
+}
+const METEOR := {"high": 230.0, "right": 80.0, "size": 11, "trail": 10, "strike": 0.55, "rocks": 11}
+const TX := 22.6
+const TY := 11.3
+var s1_falls: Array = []
+var s1_strikes: Array = []
+var s1_bloods: Array = []
+var s1_splashes: Array = []
+var s1_peals: Array = []
+var s1_dusts: Array = []
+var s1_clock := 0.0
 var _grit_t := 0.0
 ## (what stands, each frame laid again: Sprite2Ds among the figures, made as wanted and hidden when not)
 var _sprites: Array[Sprite2D] = []
@@ -197,6 +214,18 @@ func handle(e: Dictionary) -> void:
 		fx.ring(x + u.x * 1.3, y + u.y * 1.3, 0.5, 0.15, cols([AIR[1], AIR[2], AIR[3]]), false)
 		fx.spray(x, y, 8, PackedColorArray([L.P["st6"], L.P["st5"], L.P["st4"]]), 1.4, 40.0, 1.0)
 		fx.kick(1.2)
+	elif id == "starbreaker":
+		if what == "fall":
+			s1_falls.append({"x": x, "y": y, "t": 0.0, "dur": maxf(0.2, float(e.get("secs", 0.6)))})
+		elif what == "land" or what == "shake":
+			s1_falls = s1_falls.filter(func(f): return Vector2(f["x"], f["y"]).distance_to(Vector2(x, y)) > 0.6)
+			s1_strikes.append({"x": x, "y": y, "r": float(e.get("r", 1.6)), "t": 0.0, "big": what == "land"})
+	elif id == "redtithe" and what == "throw":
+		s1_bloods.append({"x0": x, "y0": y, "x1": float(e.get("x1", x)), "y1": float(e.get("y1", y)), "t": 0.0, "dur": maxf(0.1, float(e.get("secs", 0.25)))})
+	elif id == "deathknell" and what == "peal":
+		s1_peals.append({"x": x, "y": y, "r": float(e.get("r", 2.6)), "t": 0.0})
+	elif id == "gyre" and what == "fall":
+		s1_dusts.append({"x": x, "y": y, "r": 0.6, "t": 0.0})
 	elif id == "queenstalons" and what == "dive":
 		# (from in front or behind, and which way round on the screen, by the way it flies: as a monster is shown)
 		var x1: float = float(e["x1"])
@@ -308,6 +337,24 @@ func update(dt: float) -> void:
 	for b in blows:
 		b["t"] += dt
 	blows = blows.filter(func(b): return b["t"] * 30.0 < float(TU["RISEN_BLOW_FRAMES"]))
+	# SET 1
+	s1_clock += dt
+	for f in s1_falls:
+		f["t"] += dt
+	s1_falls = s1_falls.filter(func(f): return f["t"] < f["dur"] + 0.3)
+	for q in s1_strikes:
+		q["t"] += dt
+	s1_strikes = s1_strikes.filter(func(q): return q["t"] < float(METEOR["strike"]))
+	for b in s1_bloods:
+		b["t"] += dt
+		if b["t"] >= b["dur"] and b["t"] - dt < b["dur"]:
+			s1_splashes.append({"x": b["x1"], "y": b["y1"], "r": 0.5, "t": 0.0})
+	s1_bloods = s1_bloods.filter(func(b): return b["t"] < b["dur"])
+	for r in s1_splashes + s1_peals + s1_dusts:
+		r["t"] += dt
+	s1_splashes = s1_splashes.filter(func(r): return r["t"] < 0.4)
+	s1_peals = s1_peals.filter(func(r): return r["t"] < 0.5)
+	s1_dusts = s1_dusts.filter(func(r): return r["t"] < 0.5)
 	# THE WINDCUTTER: grit kicked up off the floor under its blade as it goes
 	_grit_t += dt
 	var U = _uq()
@@ -507,6 +554,7 @@ func draw_ground(c: CanvasItem) -> void:
 		var px: float = a["x"] + fx0 * 0.45
 		var py: float = a["y"] + fy0 * 0.45
 		_draw_pic(c, pic("armpool|%d" % f), roundf(_gx(px, py)) * 2.0, roundf(_gy(px, py)) * 2.0)
+	_s1_ground(c)
 	var RS: Dictionary = TU["RISEN_SHOWN"]
 	var RC: Dictionary = TU["RISE_CRACKS"]
 	for q in cracks:
@@ -592,6 +640,7 @@ func _drops() -> Array:
 
 ## WHAT IS OVER EVERYTHING (fx.gd's air pass): the beam over each unique lying on the floor; the burst of the risen one's blow.
 func draw_air(c: CanvasItem) -> void:
+	_lights = []
 	var TU: Dictionary = D["tune"]
 	var DB: Dictionary = TU["DROP_BEAM"]
 	var orange := Color("#ff8a3a")
@@ -628,6 +677,7 @@ func draw_air(c: CanvasItem) -> void:
 	if U != null:
 		for bl in U.blades:
 			_blade(c, bl)
+	_s1_air(c)
 	_lit(c)
 
 
@@ -727,6 +777,10 @@ func _lit(c: CanvasItem) -> void:
 
 
 func draw_add(c: CanvasItem) -> void:
+	for l in _lights:
+		var r: float = l[2]
+		c.draw_texture_rect(_glow, Rect2((l[0] - r) * 2.0, (l[1] - r) * 2.0, r * 4.0, r * 4.0), false, Color(l[3], clampf(l[4], 0.0, 1.0)))
+	_lights = []
 	var U = _uq()
 	var p = U.risen if U != null else null
 	if p == null:
@@ -743,3 +797,167 @@ class _AddLayer extends Node2D:
 
 	func _draw() -> void:
 		owner_fx.draw_add(self)
+
+
+# --- SET 1's looks (render/set1_fx.ts), drawn in game pixels at twice ---
+
+static func _h(i: int, k: int) -> float:
+	var v := sin(i * 127.1 + k * 311.7) * 43758.5453
+	return v - floorf(v)
+
+
+func _px(c: CanvasItem, x: float, y: float, w: float, h: float, col: Color, a := 1.0) -> void:
+	c.draw_rect(Rect2(roundf(x) * 2.0, roundf(y) * 2.0, w * 2.0, h * 2.0), Color(col, clampf(a, 0.0, 1.0) * col.a))
+
+
+## An ellipse's arc from `a0` to `a1`, its middle (cx, cy), `rx` by `ry` (game pixels), `w` wide.
+func _ell(c: CanvasItem, cx: float, cy: float, rx: float, ry: float, a0: float, a1: float, col: Color, w: float, fill := false) -> void:
+	var pts := PackedVector2Array()
+	var n := maxi(12, ceili((a1 - a0) * maxf(rx, ry) * 0.5))
+	for k in n + 1:
+		var a := a0 + (a1 - a0) * k / n
+		pts.append(Vector2((cx + cos(a) * rx) * 2.0, (cy + sin(a) * ry) * 2.0))
+	if fill:
+		c.draw_colored_polygon(pts, col)
+	else:
+		c.draw_polyline(pts, col, w * 2.0)
+
+
+func _glow_add(x: float, y: float, r: float, col: Color, a: float) -> void:
+	_lights.append([x, y, r, col, a])
+
+
+func _s1_ground(c: CanvasItem) -> void:
+	# STARBREAKER: the shadow of what is falling, growing and darkening as it comes
+	for f in s1_falls:
+		var k := minf(1.0, f["t"] / f["dur"])
+		_ell(c, roundf(_gx(f["x"], f["y"])), roundf(_gy(f["x"], f["y"])), (0.4 + 0.9 * k) * TX * 0.5, (0.4 + 0.9 * k) * TY * 0.5, 0.0, TAU, Color(0, 0, 0, 0.25 + 0.4 * k), 1.0, true)
+	var U = _uq()
+	if U != null:
+		# GYRE: wind streaming round each spinning axe, as far as it cuts
+		var G: Dictionary = U.ut["gyre"]
+		for q in U.gyres:
+			var cx := _gx(q["at"].x, q["at"].y)
+			var cy := _gy(q["at"].x, q["at"].y)
+			var fade := minf(1.0, float(q["t"]) / 0.4)
+			for k in 3:
+				var a0 := -s1_clock * 9.0 + k * TAU / 3.0
+				for st in 10:
+					var a := a0 + st * 0.09
+					var rr := 0.75 + 0.25 * (st / 10.0)
+					_px(c, cx + cos(a) * float(G["r"]) * TX * rr, cy + sin(a) * float(G["r"]) * TY * rr, 2.0, 1.0, Color(S1["wind"][1] if st < 3 else S1["wind"][0]), (0.55 - st * 0.045) * fade)
+		# DEADWEIGHT: an iron stud on the floor round his feet for each Smash in a row
+		var n: int = int(U.uq["weight"]) if U.wears("deadweight") else 0
+		if n > 0:
+			var hw: Vector2 = fx.hero_at()
+			var cx := _gx(hw.x, hw.y)
+			var cy := _gy(hw.x, hw.y)
+			for k in n:
+				var a := PI / 2.0 + (k - (n - 1) / 2.0) * 0.55
+				var x := roundf(cx + cos(a) * 13.0)
+				var y := roundf(cy + sin(a) * 6.5)
+				_px(c, x - 2.0, y - 1.0, 4.0, 3.0, Color(S1["iron"][0]))
+				_px(c, x - 1.0, y - 1.0, 2.0, 1.0, Color(S1["iron"][2]))
+	# DEATH KNELL: a peal's shock, a great ring going out over the floor
+	for r in s1_peals:
+		var k: float = r["t"] / 0.5
+		var cx := roundf(_gx(r["x"], r["y"]))
+		var cy := roundf(_gy(r["x"], r["y"]))
+		_ell(c, cx, cy, r["r"] * TX * (0.3 + 0.7 * k), r["r"] * TY * (0.3 + 0.7 * k), 0.0, TAU, Color(Color(S1["bell"][2]), 0.95 * (1.0 - k)), 3.0)
+		_ell(c, cx, cy, r["r"] * TX * (0.2 + 0.6 * k), r["r"] * TY * (0.2 + 0.6 * k), 0.0, TAU, Color(Color(S1["bell"][0]), 0.95 * (1.0 - k)), 1.0)
+	# STARBREAKER: where it struck, the ground thrown up in a ring
+	for q in s1_strikes:
+		var k: float = q["t"] / float(METEOR["strike"])
+		_ell(c, roundf(_gx(q["x"], q["y"])), roundf(_gy(q["x"], q["y"])), q["r"] * TX * (0.4 + 0.8 * k), q["r"] * TY * (0.4 + 0.8 * k), 0.0, TAU,
+			Color(Color(S1["fire"][2] if q["big"] else S1["fire"][1]), 0.7 * (1.0 - k)), 2.0 if q["big"] else 1.0)
+
+
+func _s1_air(c: CanvasItem) -> void:
+	var F: Array = S1["fire"].map(func(h): return Color(h))
+	var rock: Array = S1["rock"].map(func(h): return Color(h))
+	# STARBREAKER: the meteor falling, its fire streaming back up the way it came
+	for f in s1_falls:
+		var k := minf(1.0, f["t"] / f["dur"])
+		var e := k * k
+		var gx := _gx(f["x"], f["y"])
+		var gy := _gy(f["x"], f["y"])
+		var at := func(q: float) -> Vector2: return Vector2(gx + float(METEOR["right"]) * (1.0 - q), gy - 6.0 - float(METEOR["high"]) * (1.0 - q))
+		for i in range(int(METEOR["trail"]), 0, -1):
+			var q := maxf(0.0, e - i * 0.03)
+			var p: Vector2 = at.call(q)
+			var sz := maxf(2.0, roundf(float(METEOR["size"]) * 1.1 * (1.0 - float(i) / (int(METEOR["trail"]) + 2))))
+			_px(c, p.x - sz / 2.0, p.y - sz / 2.0, sz, sz, F[3] if i < 3 else (F[2] if i < 5 else F[1]), 0.85 * (1.0 - float(i) / (int(METEOR["trail"]) + 1)))
+		var p: Vector2 = at.call(e)
+		_glow_add(p.x, p.y, 26.0 + 14.0 * k, F[2], 0.65)
+		var S: float = float(METEOR["size"])
+		var x0 := roundf(p.x - S / 2.0)
+		var y0 := roundf(p.y - S / 2.0)
+		_px(c, x0 + 2.0, y0, S - 4.0, S, rock[0])
+		_px(c, x0, y0 + 2.0, S, S - 4.0, rock[0])
+		_px(c, x0 + 1.0, y0 + 1.0, S - 2.0, S - 2.0, rock[0])
+		_px(c, x0 + 3.0, y0 + 2.0, S - 6.0, 3.0, rock[1])
+		_px(c, x0 + 4.0, y0 + 2.0, 3.0, 1.0, rock[2])
+		_px(c, x0, y0 + 3.0, 2.0, S - 5.0, F[2])
+		_px(c, x0 + 2.0, y0 + S - 2.0, S - 5.0, 2.0, F[2])
+		_px(c, x0 + 1.0, y0 + S - 3.0, 3.0, 2.0, F[3])
+		_px(c, x0 + 1.0, y0 + S - 2.0, 1.0, 1.0, F[4])
+	# STARBREAKER: its strike, a flash and rocks thrown up
+	for q in s1_strikes:
+		var k: float = q["t"] / float(METEOR["strike"])
+		var gx := _gx(q["x"], q["y"])
+		var gy := _gy(q["x"], q["y"])
+		_glow_add(gx, gy - 6.0, (46.0 if q["big"] else 26.0) * (0.6 + 0.6 * k), F[2], (0.9 if q["big"] else 0.5) * (1.0 - k))
+		if k < 0.2 and q["big"]:
+			_glow_add(gx, gy - 6.0, 22.0, F[4], 1.0 - k * 5.0)
+		var n: int = int(METEOR["rocks"]) if q["big"] else 4
+		for i in n:
+			var a := float(i) / n * TAU + _h(i, 1)
+			var v := 40.0 + 50.0 * _h(i, 2)
+			var up := 70.0 + 60.0 * _h(i, 3)
+			var tt: float = q["t"]
+			_px(c, gx + cos(a) * v * tt, gy - 4.0 + sin(a) * v * tt * 0.5 - up * tt + 260.0 * tt * tt, 2.0, 2.0, F[2] if i % 3 == 0 else rock[1], 1.0 - k)
+	# RED TITHE: the blood thrown in an arc, drops trailing it
+	var BL: Array = S1["blood"].map(func(h): return Color(h))
+	for b in s1_bloods:
+		var k := minf(1.0, b["t"] / b["dur"])
+		var x0 := _gx(b["x0"], b["y0"])
+		var y0 := _gy(b["x0"], b["y0"]) - 10.0
+		var x1 := _gx(b["x1"], b["y1"])
+		var y1 := _gy(b["x1"], b["y1"]) - 10.0
+		var lift := 18.0 + Vector2(x1 - x0, y1 - y0).length() * 0.25
+		for i in 6:
+			var q := maxf(0.0, k - i * 0.05)
+			var x := x0 + (x1 - x0) * q
+			var y := y0 + (y1 - y0) * q - lift * 4.0 * q * (1.0 - q)
+			var sz := 4.0 if i == 0 else (3.0 if i < 3 else 2.0)
+			_px(c, x - sz / 2.0, y - sz / 2.0, sz, sz, BL[2] if i == 0 else (BL[1] if i < 3 else BL[0]))
+	for r in s1_splashes:
+		var k: float = r["t"] / 0.4
+		var x := _gx(r["x"], r["y"])
+		var y := _gy(r["x"], r["y"]) - 10.0
+		for i in 8:
+			var a := float(i) / 8.0 * TAU
+			_px(c, x + cos(a) * 12.0 * k, y + sin(a) * 6.0 * k + 10.0 * k * k, 3.0, 3.0, BL[1] if i % 2 else BL[2], 1.0 - k)
+	# DEATH KNELL: the rings of a struck bell going out from each enemy still ringing
+	var U = _uq()
+	if U != null and U.wears("deathknell") and fx.monsters != null and is_instance_valid(fx.monsters):
+		var B: Array = S1["bell"].map(func(h): return Color(h))
+		for m in fx.monsters.list:
+			if not is_instance_valid(m) or m.dead or m.knell_t <= 0.0:
+				continue
+			var cx := roundf(_gx(m.world.x, m.world.y))
+			var cy := roundf(_gy(m.world.x, m.world.y) - 14.0)
+			var strong := minf(1.0, m.knell_t / 1.2)
+			for w in 2:
+				var k := fmod(s1_clock * 1.6 + w * 0.5, 1.0)
+				var col: Color = Color(B[1] if w else B[2], 0.95 * (1.0 - k) * strong)
+				_ell(c, cx, cy, 5.0 + 12.0 * k, 3.0 + 6.0 * k, PI * 1.05, PI * 1.95, col, 1.0 if w else 2.0)
+				_ell(c, cx, cy, 5.0 + 12.0 * k, 3.0 + 6.0 * k, PI * 0.05, PI * 0.95, col, 1.0 if w else 2.0)
+	# GYRE: the dust it throws up as it falls
+	for r in s1_dusts:
+		var k: float = r["t"] / 0.5
+		var x := _gx(r["x"], r["y"])
+		var y := _gy(r["x"], r["y"])
+		for i in 6:
+			var a := float(i) / 6.0 * TAU + 0.3
+			_px(c, x + cos(a) * 12.0 * k, y + sin(a) * 6.0 * k - 4.0 * k, 2.0, 2.0, Color(S1["wind"][i % 2]), 0.7 * (1.0 - k))

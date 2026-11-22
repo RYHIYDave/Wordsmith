@@ -1542,5 +1542,124 @@ func uniqueswar(main, hero, dir: String) -> void:
 	await M._wait(0.8)
 	_line(U.told.slice(n0).any(func(e): return e["id"] == "pivot"), "the Pivot: his Lunge lands and turns into a free turn of Whirlwind")
 	_bare()
+	# SET 1: THE BATTLE AXE
+	h.talents = ["battleaxe"]
+	h.talents_changed()
+	await M._wait(0.3)
+	var K = h.kit
+	for o in foes:
+		o.world = M._free_near(h.world + h.face * 3.0)
+		o.life = o.max_life
+	# GYRE: his thrown axe stops at the end of its flight and spins there, cutting what is round it
+	_wear("gyre")
+	var tgt: Vector2 = foes[0].world
+	K.cd[1] = 0.0
+	K.charges[1] = K.max_charges[1]
+	K._use_skill(1, h.world + (tgt - h.world).normalized() * 6.0)
+	var spun := false
+	for q in 40:
+		await M._wait(0.05)
+		if not U.gyres.is_empty():
+			spun = true
+			break
+	await M._wait(0.4)
+	await M._snap(dir + "/uw02_gyre.png")
+	await M._wait(1.0)
+	var gyre_cut: bool = U.told.any(func(e): return e["id"] == "gyre" and e["what"] == "cut")
+	_line(spun and gyre_cut, "Gyre: his thrown axe stops where its flight ends and spins there, cutting what is round it")
+	_bare()
+	await M._wait(0.5)
+	# RED TITHE: one that dies bleeding throws its blood to the nearest other
+	_wear("redtithe")
+	var bleeder = foes[0]
+	var other = foes[1]
+	other.world = M._free_near(bleeder.world + Vector2(1.5, 0.3))
+	other.bleed_t = 0.0
+	bleeder.bleed_t = 3.0
+	bleeder.bleed_dps = 5.0
+	bleeder.max_life = 10.0
+	bleeder.life = 10.0
+	bleeder.damage(20.0, "phys", false, false, [], false, false, 0)
+	await M._wait(0.12)
+	await M._snap(dir + "/uw03_red_tithe.png")
+	await M._wait(0.3)
+	var bled: bool = U.told.any(func(e): return e["id"] == "redtithe" and e["what"] == "bleeds")
+	_line(bleeder.dead and bled, "Red Tithe: one dies bleeding, and its blood flies to the nearest other, which bleeds")
+	_bare()
+	# WIDOWFALL: Leaping Chop lands with a Cleave all round him, and all it strikes bleed
+	_wear("widowfall")
+	other.bleed_t = 0.0
+	K.cd[2] = 0.0
+	K.charges[2] = K.max_charges[2]
+	var n1: int = U.told.size()
+	K._use_evasive(other.world - (other.world - h.world).normalized() * 0.8, (other.world - h.world).normalized())
+	await M._wait(0.9)
+	_line(U.told.slice(n1).any(func(e): return e["id"] == "widowfall") and other.bleed_t > 0.0, "Widowfall: Leaping Chop lands with a Cleave all round him, and what it strikes bleeds")
+	_bare()
+	# SET 1: THE WARHAMMER
+	h.talents = ["warhammer"]
+	h.talents_changed()
+	await M._wait(0.3)
+	K = h.kit
+	var alive: Array = foes.filter(func(o): return is_instance_valid(o) and not o.dead)
+	for o in alive:
+		o.world = M._free_near(h.world + h.face * 1.6)
+		o.life = o.max_life
+		o.stun_t = 0.0
+	# DEADWEIGHT: each Smash in a row heavier; the fifth an Earthquake of its own
+	_wear("deadweight")
+	# (quick hands: a hammer swung faster than the weight drains away, as a hero further on swings it)
+	var dex0: float = L.attrs["dex"]
+	L.attrs["dex"] = 400.0
+	L.derive()
+	var at0: Vector2 = alive[0].world
+	for k in 5:
+		K._use_basic(at0)
+		await M._wait(K.swing_t)
+		if k == 3:
+			await M._snap(dir + "/uw04_deadweight.png")
+	var quaked: bool = U.told.any(func(e): return e["id"] == "deadweight" and e["what"] == "quake")
+	L.attrs["dex"] = dex0
+	L.derive()
+	_line(quaked, "Deadweight: five Smashes in a row, the fifth lands as an Earthquake of its own")
+	_bare()
+	await M._wait(1.5)
+	# DEATH KNELL: what his hammer stuns rings; struck while it rings, it peals
+	_wear("deathknell")
+	for o in alive:
+		o.stun_t = 0.0
+		o.knell_t = 0.0
+	K.cd[1] = 0.0
+	K.charges[1] = K.max_charges[1]
+	K._use_skill(1, alive[0].world)
+	await M._wait(0.9)
+	var ringing: Array = alive.filter(func(o): return is_instance_valid(o) and not o.dead and o.knell_t > 0.0)
+	await M._snap(dir + "/uw05_death_knell_ringing.png")
+	if not ringing.is_empty():
+		h.hit_monster(ringing[0], 0, 0.1, false)
+	await M._wait(0.15)
+	await M._snap(dir + "/uw06_death_knell_peal.png")
+	_line(not ringing.is_empty() and U.told.any(func(e): return e["id"] == "deathknell" and e["what"] == "peal"), "Death Knell: his Earthquake's stun sets %d ringing; struck, one peals" % ringing.size())
+	_bare()
+	await M._wait(1.0)
+	# STARBREAKER: Earthquake pulls a meteor down out of the sky
+	_wear("starbreaker")
+	K.cd[1] = 0.0
+	K.charges[1] = K.max_charges[1]
+	K._use_skill(1, alive[0].world)
+	await M._wait(0.15)
+	await M._snap(dir + "/uw07_starbreaker_falling.png")
+	var landed := false
+	for q in 30:
+		await M._wait(0.05)
+		if U.told.any(func(e): return e["id"] == "starbreaker" and e["what"] == "land"):
+			landed = true
+			break
+	await M._wait(0.05)
+	await M._snap(dir + "/uw08_starbreaker_lands.png")
+	_line(U.told.any(func(e): return e["id"] == "starbreaker" and e["what"] == "fall") and landed, "Starbreaker: his Earthquake calls a meteor down, landing as the hammer hits")
+	_bare()
+	h.talents = []
+	h.talents_changed()
 	h.unhurt = false
 	print("UNIQUESWAR: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

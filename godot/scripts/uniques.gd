@@ -41,7 +41,10 @@ var uq := {
 	"full": true, "vow_t": 0.0, "vow": 0.0, "dark": null, "dark_t": 0.0, "borrowed": null, "borrowed_t": 0.0,
 	"blood_t": 0.0, "coat_hits": 0, "still": 0.0, "hurt_at": -1e9,
 	"arm_t": 0.0, "arm_m": null, "arm_at": -1e9, "talon_at": -1e9, "strikes": 0,
+	"weight": 0, "weight_hit": 0, "weight_quake": false, "weight_at": -1e9,
 }
+## SET 1, GYRE: his axes spinning where their flight ended: {at, skill, dmg, t, tick, age}
+var gyres: Array = []
 ## THE WINDCUTTER'S BLADES in flight: {at, v, r, left, hit: [monsters], age, words, el}
 var blades: Array = []
 ## (defs.ts ALLY_DAMAGE: a hit of what fights beside him, the tentacle's or a bird's, made as hard as allies hit now)
@@ -257,6 +260,12 @@ func hit_mult(m, i: int) -> float:
 	if wears("miserspurse"):
 		var fo: float = float(Talents.D["tinkerTalents"]["fortune"]) if hero.has("fortune") else 0.0
 		k *= (1.0 + loot.gold * (fo + float(ut["purse"]["each"]))) / (1.0 + loot.gold * fo)
+	# (SET 1) DEADWEIGHT: each Smash in a row harder than the last; RED TITHE: Cleave a little softer (its price)
+	var sid: String = hero.loadout.id(i) if i >= 0 and i <= 2 else ""
+	if sid == "smash" and int(uq["weight_hit"]) > 0 and wears("deadweight"):
+		k *= 1.0 + float(ut["weight"]["more"]) * int(uq["weight_hit"])
+	if sid == "cleave" and wears("redtithe"):
+		k *= 1.0 - float(ut["tithe"]["cleave"])
 	# THE PRESS: the more enemies close round him
 	if wears("press"):
 		var n := 0
@@ -377,6 +386,9 @@ func killed(m) -> void:
 	# THE FLESHMANCER'S BRAND: an elite he kills rises and fights for him
 	if wears("fleshmancersbrand") and m.elite and not m.boss:
 		_raise(m)
+	# (SET 1) RED TITHE: one that dies bleeding throws its blood to the nearest other, which starts bleeding too
+	if m.bleed_t > 0.0 and m.bleed_dps > 0.0 and wears("redtithe"):
+		_tithe(m)
 
 
 ## (game.ts kill) THE PHYSICIAN'S COAT: no flask refills from kills.
@@ -393,6 +405,9 @@ func landed(m, crit: bool, quiet: bool) -> void:
 	if not quiet and wears("drownedarm"):
 		uq["arm_m"] = m
 		uq["arm_at"] = _clock
+	# (SET 1: Death Knell, struck while it rings, it peals)
+	if m.knell_t > 0.0 and wears("deathknell"):
+		_peal(m)
 	if (m.elite or m.boss) and wears("physicianscoat"):
 		uq["coat_hits"] = int(uq["coat_hits"]) + 1
 		if int(uq["coat_hits"]) >= int(ut["coat"]["hits"]):
@@ -440,6 +455,17 @@ func _process(dt: float) -> void:
 		_step_risen(dt)
 	if not blades.is_empty():
 		_step_blades(dt)
+	if not gyres.is_empty():
+		_step_gyres(dt)
+	# (SET 1) DEATH KNELL: the rings die away; DEADWEIGHT: stopped swinging, the weight drains away, a blow's worth at a time
+	if wears("deathknell"):
+		for m in hero.monsters.list:
+			if is_instance_valid(m) and m.knell_t > 0.0:
+				m.knell_t = maxf(0.0, m.knell_t - dt)
+	if int(uq["weight"]) > 0 and _clock - float(uq["weight_at"]) > float(ut["weight"]["keep"]):
+		uq["weight"] = int(uq["weight"]) - 1
+		uq["weight_at"] = _clock - float(ut["weight"]["keep"]) + float(ut["weight"]["drain"])
+		hero._tell({"t": "unique", "id": "deadweight", "what": "weight", "x": hero.world.x, "y": hero.world.y, "r": uq["weight"]})
 	var walked: float = 0.0 if _was == Vector2.INF else hero.world.distance_to(_was)
 	_was = hero.world
 	if worn.is_empty():
@@ -783,3 +809,168 @@ func _step_blades(dt: float) -> void:
 			hero.hit_monster(m, 0, float(W["share"]), false)
 			_say({"id": "windcutter", "what": "cut"})
 	blades = blades.filter(func(b): return float(b["left"]) > 0.0)
+
+
+# --- SET 1: THE BATTLE AXE'S AND THE WARHAMMER'S ---
+
+## (game.ts parks) GYRE: his thrown axe at the end of its flight (or where a wall ends it) stops there and spins, and does not come
+## back: whether it did. No more than so many spin at once: the oldest falls.
+func park_axe(p: Dictionary) -> bool:
+	if not wears("gyre"):
+		return false
+	var G: Dictionary = ut["gyre"]
+	gyres.sort_custom(func(a, b): return float(a["t"]) < float(b["t"]))
+	for k in range(0, gyres.size() - int(G["most"]) + 1):
+		gyres[k]["t"] = 0.0
+	var at := Vector2(float(p["x"]), float(p["y"]))
+	gyres.append({"at": at, "skill": int(p["skill"]), "dmg": float(p["dmg"]), "t": float(G["secs"]), "tick": 0.0, "age": float(p["age"])})
+	hero._tell({"t": "unique", "id": "gyre", "what": "spin", "x": at.x, "y": at.y, "r": G["r"], "secs": G["secs"]})
+	_say({"id": "gyre", "what": "spin"})
+	return true
+
+
+## (game.ts stepGyre) An axe spinning where its flight ended cuts everything round it every so often, and falls when its seconds are out.
+func _step_gyres(dt: float) -> void:
+	var G: Dictionary = ut["gyre"]
+	var keep: Array = []
+	for q in gyres:
+		q["t"] = float(q["t"]) - dt
+		q["tick"] = float(q["tick"]) - dt
+		q["age"] = float(q["age"]) + dt
+		if float(q["t"]) <= 0.0:
+			hero._tell({"t": "unique", "id": "gyre", "what": "fall", "x": q["at"].x, "y": q["at"].y})
+			_say({"id": "gyre", "what": "fall"})
+			continue
+		keep.append(q)
+		if float(q["tick"]) <= 0.0:
+			q["tick"] = float(q["tick"]) + float(G["tick"])
+			var any := false
+			for m in hero.monsters.list:
+				if not _fine(m) or m.world.distance_to(q["at"]) > float(G["r"]) + m.r:
+					continue
+				hero.hit_monster(m, int(q["skill"]), float(q["dmg"]) * float(G["share"]), true)
+				any = true
+			if any:
+				hero.sfx.play("hit", linear_to_db(0.35))
+				_say({"id": "gyre", "what": "cut"})
+	gyres = keep
+
+
+## (game.ts tithe) RED TITHE: `m` died bleeding: its blood flies to the nearest other enemy within reach, which bleeds as hard.
+func _tithe(m) -> void:
+	var R: Dictionary = ut["tithe"]
+	var best = null
+	var bd: float = float(R["reach"])
+	for o in hero.monsters.list:
+		if o == m or not _fine(o):
+			continue
+		var d: float = o.world.distance_to(m.world) - o.r
+		if d < bd:
+			bd = d
+			best = o
+	if best == null:
+		return
+	var dps: float = m.bleed_dps
+	var to = best
+	hero._tell({"t": "unique", "id": "redtithe", "what": "throw", "x": m.world.x, "y": m.world.y, "x1": to.world.x, "y1": to.world.y, "secs": R["fly"], "mid": to.id})
+	_say({"id": "redtithe", "what": "throw"})
+	hero._after(float(R["fly"]), func() -> void:
+		if not _fine(to):
+			return
+		var fresh: bool = to.bleed_t < 0.5
+		to.bleed_dps = maxf(to.bleed_dps if to.bleed_t > 0.0 else 0.0, dps)
+		to.bleed_t = maxf(to.bleed_t, float(R["secs"]))
+		if fresh:
+			hero._tell({"t": "bleedOn", "id": to.id, "m": to, "x": to.world.x, "y": to.world.y, "secs": R["secs"]})
+		hero._tell({"t": "spark", "x": to.world.x, "y": to.world.y, "el": "phys", "n": 3})
+		_say({"id": "redtithe", "what": "bleeds"}))
+
+
+## (game.ts hammerStun) A stun of his hammer's: with Death Knell each shorter (its price), and what it stuns rings like a bell.
+func hammer_stun(m, secs: float) -> void:
+	var knell := wears("deathknell")
+	var K: Dictionary = ut["knell"]
+	m.stun_for(secs * (1.0 - float(K["shorter"])) if knell else secs)
+	if not knell or m.dead or m.boss or m.stun_t <= 0.0:
+		return
+	var fresh: bool = m.knell_t <= 0.0
+	m.knell_t = float(K["secs"])
+	if fresh:
+		hero._tell({"t": "unique", "id": "deathknell", "what": "ring", "x": m.world.x, "y": m.world.y, "mid": m.id, "secs": K["secs"]})
+		_say({"id": "deathknell", "what": "ring"})
+
+
+## (game.ts peal) DEATH KNELL: struck while it rings, `m` peals: a shockwave stuns everything round it, and those ring too.
+func _peal(m) -> void:
+	var K: Dictionary = ut["knell"]
+	m.knell_t = 0.0
+	hero._tell({"t": "unique", "id": "deathknell", "what": "peal", "x": m.world.x, "y": m.world.y, "r": K["r"], "mid": m.id})
+	hero.sfx.play("slam", linear_to_db(0.5))
+	var n := 0
+	for o in hero.monsters.list:
+		if o == m or not _fine(o) or o.world.distance_to(m.world) > float(K["r"]) + o.r:
+			continue
+		hammer_stun(o, float(K["stun"]))
+		n += 1
+	_say({"id": "deathknell", "what": "peal", "n": n})
+
+
+## (game.ts useBasic) DEADWEIGHT: a Smash begun, the weight it carries; the slower its swing for it (1: as ever).
+func weight_swing() -> float:
+	if not wears("deadweight"):
+		uq["weight_hit"] = 0
+		return 1.0
+	var W: Dictionary = ut["weight"]
+	uq["weight_hit"] = uq["weight"]
+	var slower: float = 1.0 + float(W["slower"]) * int(uq["weight"])
+	uq["weight"] = int(uq["weight"]) + 1
+	uq["weight_quake"] = int(uq["weight"]) >= int(W["every"])
+	if uq["weight_quake"]:
+		uq["weight"] = 0
+	uq["weight_at"] = _clock
+	hero._tell({"t": "unique", "id": "deadweight", "what": "weight", "x": hero.world.x, "y": hero.world.y, "r": int(W["every"]) if uq["weight_quake"] else uq["weight"]})
+	_say({"id": "deadweight", "what": "weight", "n": uq["weight"], "quake": uq["weight_quake"]})
+	return slower
+
+
+## (game.ts weightQuake) The weight's last Smash, move `i`, lands at `at` as an Earthquake of its own: the ground quakes, and what
+## stands on it is struck and stunned.
+func weight_quake(i: int, at: Vector2, way: Vector2, frac: float) -> void:
+	uq["weight_quake"] = false
+	var W: Dictionary = ut["weight"]
+	hero._tell({"t": "unique", "id": "deadweight", "what": "quake", "x": at.x, "y": at.y, "r": W["r"]})
+	hero._tell({"t": "quake", "x": at.x, "y": at.y, "q": 0, "fx": way.x, "fy": way.y})
+	hero.kick(3.0)
+	hero.sfx.play("slam")
+	hero._blast(i, at, float(W["r"]), frac * float(W["quake"]), "slam", false, 0.0)
+	var stun: float = float(Words.skill("quake").get("stun", 0.6))
+	for m in hero.monsters.list:
+		if _fine(m) and m.world.distance_to(at) <= float(W["r"]) + m.r:
+			hammer_stun(m, stun)
+	_say({"id": "deadweight", "what": "quake"})
+
+
+## (game.ts begin) STARBREAKER: an Earthquake begun calls a meteor down out of the sky over the spot the maul will come down on.
+func star_fall(at: Vector2, wind: float) -> void:
+	if not wears("starbreaker"):
+		return
+	hero._tell({"t": "unique", "id": "starbreaker", "what": "fall", "x": at.x, "y": at.y, "r": ut["star"]["r"], "secs": wind})
+	_say({"id": "starbreaker", "what": "fall"})
+
+
+## (game.ts meteorLands) STARBREAKER: the meteor lands as the hammer hits (`first`), and with Tremors its fire goes out again with each
+## shake (`k` of it): its fire on all round it; the floor left burning.
+func meteor_lands(i: int, at: Vector2, k: float, first: bool) -> void:
+	var S: Dictionary = ut["star"]
+	if not hero.alive:
+		return
+	hero._tell({"t": "unique", "id": "starbreaker", "what": "land" if first else "shake", "x": at.x, "y": at.y, "r": S["r"]})
+	hero.sfx.play("fire", linear_to_db(0.9 if first else 0.6))
+	if first:
+		hero.kick(3.0)
+	for m in hero.monsters.list:
+		if _fine(m) and m.world.distance_to(at) <= float(S["r"]) + m.r:
+			m.damage(hero.talent_hit("fire", float(S["share"]) * k), "fire", false, false, [], false, false, i)
+	if first and hero.wakes != null and is_instance_valid(hero.wakes):
+		hero.wakes.add_patch(-1, "burn", at, float(S["burnR"]), float(S["burnSecs"]), hero.talent_hit("fire", float(S["burn"])), "fire")
+	_say({"id": "starbreaker", "what": "land" if first else "shake"})

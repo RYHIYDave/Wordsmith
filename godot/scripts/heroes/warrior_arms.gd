@@ -84,7 +84,24 @@ func _begin(i: int, at: Vector2, wind: float) -> void:
 		hands_empty = false
 	if bool(_def(i).get("returns", false)):
 		hands_empty = true
+	# (UNIQUE ITEMS, SET 1: Starbreaker, an Earthquake begun calls a meteor down over the spot the maul will come down on: it falls
+	# while he winds up, and lands as the hammer hits)
+	if h.loadout.id(i) == "quake" and h.uniques != null and h.uniques.wears("starbreaker"):
+		var def := _def(i)
+		var reach: float = float(def["ahead"]) if def.get("ahead") != null else 1.4
+		while reach > 0.2 and not _open(h.world + h.face * reach):
+			reach -= 0.2
+		h.uniques.star_fall(h.world + h.face * reach, wind)
 	super(i, at, wind)
+
+
+## (game.ts useBasic, UNIQUE ITEMS, SET 1: Deadweight) Each Smash in a row heavier: harder, and slower.
+func _use_basic(at: Vector2) -> void:
+	var slower := 1.0
+	if h.loadout.id(0) == "smash" and h.uniques != null:
+		slower = h.uniques.weight_swing()
+	super(at)
+	swing_t *= slower
 
 
 func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) -> void:
@@ -101,6 +118,11 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 	match str(def["kind"]):
 		"melee":
 			var reach: float = def["range"]
+			# (UNIQUE ITEMS, SET 1: Deadweight, the last Smash of the weight lands as an Earthquake of its own)
+			if h.loadout.id(i) == "smash" and primary and h.uniques != null and h.uniques.uq["weight_quake"]:
+				var sp = def.get("spot")
+				var at: Vector2 = from + way * (float(sp["at"]) if sp is Dictionary else reach * 0.8)
+				h.uniques.weight_quake(i, at, way, frac)
 			for k in int(r["count"]):
 				if k == 0:
 					h._strike(i, from, way, each, 0, echo, reach)
@@ -138,6 +160,12 @@ func _quake(i: int, from: Vector2, way: Vector2, len: float, each: float, echo: 
 	var T: Dictionary = W["tremors"]
 	var shares: Array = T["shares"]
 	var shakes: int = int(T["n"]) if sid == "quake" and h.has("tremors") else 1
+	# (UNIQUE ITEMS, SET 1: Starbreaker, the meteor lands as the hammer hits; with Tremors its fire goes out again with each shake)
+	if sid == "quake" and not echo and h.uniques != null and h.uniques.wears("starbreaker"):
+		h.uniques.meteor_lands(i, c, 1.0, true)
+		for q in range(1, shakes):
+			var sk: float = float(shares[mini(q, shares.size() - 1)])
+			_after(q * float(T["gap"]), func() -> void: h.uniques.meteor_lands(i, c, sk, false))
 	for q in shakes:
 		var share: float = each * (float(shares[mini(q, shares.size() - 1)]) if shakes > 1 else 1.0)
 		var round_r: float = rad + (q * float(T["wider"]) if shakes > 1 else 0.0)
@@ -213,10 +241,14 @@ func _step_axes(dt: float) -> void:
 				# its way back it flies over)
 				if h.doors != null:
 					h.doors.unseal({"front": h.loadout.wfronts(int(p["skill"])), "behind": h.loadout.wbehinds(int(p["skill"]))}, n, 0.1)
-				if not p["back"]:
-					_turn_back(p)
 				p["x"] = n.x
 				p["y"] = n.y
+				if not p["back"]:
+					# (UNIQUE ITEMS, SET 1: Gyre, a wall ends its flight: it stops there and spins)
+					if h.uniques != null and h.uniques.park_axe(p):
+						dead = true
+					else:
+						_turn_back(p)
 				continue
 			p["x"] = n.x
 			p["y"] = n.y
@@ -236,7 +268,14 @@ func _step_axes(dt: float) -> void:
 				if float(p["trail"]) >= 0.8:
 					p["trail"] = 0.0
 					h.wakes.add_ground(r["zone"], int(p["skill"]), n, 0.8, h.avg_hit(int(p["skill"]), float(p["dmg"])), r["meld_behind"])
+		if dead:
+			shots.remove_at(i)
+			continue
 		if not p["back"] and float(p["dist"]) <= 0.0:
+			# (UNIQUE ITEMS, SET 1: Gyre, at the end of its flight it stops and spins, and does not come back)
+			if h.uniques != null and h.uniques.park_axe(p):
+				shots.remove_at(i)
+				continue
 			_turn_back(p)
 		if p["back"]:
 			var b: Vector2 = h.world - Vector2(p["x"], p["y"])
@@ -377,6 +416,12 @@ func _land() -> void:
 			_after(0.28 * n, func() -> void: h._blast(2, at, rad * 1.15, each, "land", false, -4.0, n))
 	if float(r["echo"]) > 0.0:
 		h._echo_of(2, "leap", at, h.face, func() -> void: h._blast(2, at, rad, float(h.loadout.r(2)["count_dmg"]) * float(h.loadout.r(2)["echo"]), "land", false, -4.0, 0, true))
+	# (UNIQUE ITEMS, SET 1: Widowfall, Leaping Chop lands with a Cleave all round him; all it strikes bleed: hero.gd hit_monster)
+	if h.loadout.id(2) == "chop" and h.uniques != null and h.uniques.wears("widowfall"):
+		var WF: Dictionary = h.uniques.ut["widow"]
+		h._tell({"t": "unique", "id": "widowfall", "what": "cleave", "x": h.world.x, "y": h.world.y, "r": WF["r"]})
+		h.uniques._say({"id": "widowfall", "what": "cleave"})
+		h._blast(2, h.world, float(WF["r"]), each * float(WF["share"]), "whirl", false, -4.0)
 	land_t = 0.0
 
 

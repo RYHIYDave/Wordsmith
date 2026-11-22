@@ -233,6 +233,8 @@ var half: Array = []
 ## UNIQUE ITEMS: THE CRIER'S HUSH (uniques.gd; game.ts Monster.dark): its words and its half, darkened while he stands close.
 var dark_words: Array = []
 var dark_half: Array = []
+## UNIQUE ITEMS, SET 1: DEATH KNELL (game.ts Monster.knellT): seconds it rings yet, struck by his hammer.
+var knell_t := 0.0
 var carries: Array = []
 ## THE ROYAL CARDS (act3/royal_cards.gd): the royal that touched its pack ("princess", "prince", "queen", "king"), or "".
 var royal := ""
