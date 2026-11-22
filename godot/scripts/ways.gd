@@ -314,6 +314,11 @@ func _taken() -> bool:
 func _go() -> void:
 	var n: int = map.depth
 	var good := Color("#8af078")
+	# (ENDLESS MODE: from an endless level, every way on, the stairwell, the mine shaft and the way on alike, to the next: game.ts
+	# takeWay, nextEndless)
+	if main.in_endless:
+		main.next_endless()
+		return
 	if way_kind() == "shaft":
 		# (game.ts takeWay 'up': the Prison cleared; with the Meldstone given already, the gate unbarred as he comes in sight of it)
 		if main.loot.meld == "open" and main.way_depth < 6:
@@ -346,8 +351,13 @@ func _go() -> void:
 		# “Yes, the camp from then on (Recommended)”)
 		if n == 10 or n == 15:
 			main.way_depth = maxi(main.way_depth, n + 1)
+		# (ENDLESS MODE: the last floor built beaten, the endless levels are open to him: the town's waypoint takes him on)
+		var opens: bool = main.open_endless(n)
 		main.go_to(main.home_place(), "in_gate" if n == 10 else "start")
+		if opens and main.has_method("endless_fanfare"):
+			main.endless_fanfare()
 	elif not main.has_floor(n + 1):
+		main.open_endless(n)
 		main.go_to("town", "cage")
 	else:
 		main.go_to("floor%d" % (n + 1), "down")

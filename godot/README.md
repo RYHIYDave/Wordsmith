@@ -1169,10 +1169,24 @@ game/world_sounds.ts; `sfx.gd`, `monsters.gd`, `monster.gd`, `town.gd`, `main.gd
   drawn with that kind (his tree's war axe or maul, or his great sword). Put down, his own again.
 - `--only=skins` (`check_glows.gd`): 37 checks, a picture of each of the thirty.
 
+## Endless mode (the cloud chat, 22 Nov 2026)
+
+- **The endless levels** (game/endless.ts; game.ts endless, nextEndless, power, tough, storyHere; `main.gd` endless): the last
+  floor's way home taken, endless mode opens ("Endless mode is open: the waypoint leads on, each level harder. Hardcore."), and
+  from then the town's waypoint takes him to the endless level he reached ("E: Waypoint: to Endless 1"). Each is a floor of the
+  twenty at random (never the one just beaten), its monsters as strong as its level's depth (21 for the first, one more for each
+  after) and 10% more life and damage for each level before it; an elite with two words, a guardian with three. Its card: the
+  floor's name, ENDLESS N under it, HARDCORE in the enemy's pink, up 1.5 s longer. No story on it: no quest people or pieces, no
+  fallen wordsmith, floor 3's furnace out, floor 5's temple open with no key-bearers, no lesson or quest line; the strongholds,
+  the Bells and the bosses as ever. Every way on leads to the next ("Endless 1 cleared"). A death there is the hero's end, Normal
+  or Hardcore. What drops goes by its depth (the gold; the pieces and their chances as on floor 20, the game's tables going no
+  deeper here); the vendors' too once it is open. Kept in the save; the deepest any hero cleared kept with the stash.
+- `--only=endless` (`check_glows.gd`): 10 checks, pictured.
+
 ## Not in it yet
 
 The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick).
-Endless mode (the Shaft's Rim town, the endless levels, the Tablet Shards, the Twisted Wordsmith).
+Of endless mode: the Shaft's Rim town, the Tablet Shards, the Twisted Wordsmith, the fanfare as it opens.
 (The monsters' pictures are the final release 25.3.22's bake, a9b22fa26169: the Chained One's sheets laid afresh, and the rest as
 25.3.21's b982b7f72ca4 but for rounding.)
 

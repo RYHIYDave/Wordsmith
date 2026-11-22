@@ -354,6 +354,9 @@ func _tell(e: Dictionary) -> void:
 
 ## (the count of blows by which a hurt voice is heard now and then: game.ts hurtTick)
 var hurt_tick := 0
+## (ENDLESS MODE: on an endless level what its monsters are made stronger by, against the floor's own, main.gd endless_strength
+## {life, boss, dmg, xp, words}; {} anywhere else: monster.gd setup)
+var strength := {}
 var _voiced := {}
 
 

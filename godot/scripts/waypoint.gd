@@ -50,7 +50,12 @@ func here() -> bool:
 func prompt() -> Array:
 	if not here():
 		return ["", ""]
-	return ["E: Waypoint: to town", "way"] if not in_town else ["E: Waypoint: to dungeon %d" % target(), "way"]
+	if not in_town:
+		return ["E: Waypoint: to town", "way"]
+	# (ENDLESS MODE: the endless level he reached: game.ts interactHint)
+	if int(main.endless) > 0:
+		return ["E: Waypoint: to %s" % main.endless_name(main.endless), "way"]
+	return ["E: Waypoint: to dungeon %d" % target(), "way"]
 
 
 ## The floor his town's waypoint takes him to (game.ts takeWay: max(2, wayDepth)). From the camp that is the city's first floor,
@@ -71,4 +76,8 @@ func warp() -> void:
 	sfx.play("power", linear_to_db(0.7))
 	await get_tree().create_timer(WARP).timeout
 	sfx.play("portal")
+	# (ENDLESS MODE: the town's waypoint takes him back to the endless level he reached: his pick, “Pick up where you left off”)
+	if in_town and int(main.endless) > 0:
+		main.go_endless()
+		return
 	main.go_warp(main.home_place() if not in_town else "floor%d" % target())

@@ -139,6 +139,116 @@ var hero_mode := "normal"
 ## `entry`: the run as he came into this floor ({} in town); `deaths`: the heroes lost (meta); `wake_note`: the line he wakes to.
 var entry := {}
 var deaths := 0
+
+
+## ENDLESS MODE (game/endless.ts; game.ts endless, endlessFloor, inEndless, nextEndless, power, tough, storyHere): past the last
+## floor built, the floors already built again, chosen at random, each harder than the last, for as long as the hero lives. His
+## words, 20 Oct 2026: “I’d like once you beat whatever the last level we have built, it picks a random leveled scaled up so you
+## can go in an endless mode of harder and harder levels until you want to stop.  Or until you die?”; his picks: the waypoint “Pick
+## up where you left off (Recommended)”, dying there “The hero too”, “10% more each level (Recommended)”, “All 15 floors” (now all
+## twenty). `endless`: the endless level he has reached (0: not open to him yet; it opens as the last floor's way home is taken);
+## `endless_floor` the floor it is; `in_endless` whether the floor he is on is it. On it the floor is as it is (its ground, pieces,
+## monsters, boss, event), but its monsters as strong as its level's depth (one past the last floor, and one more for each level
+## after: `endless_power`), and 10% more life and damage for each endless level before it (`endless_tough`); no story on it
+## (`story_here`: no quest people or pieces, floor 5's temple open with no key-bearers, no fallen wordsmith, floor 1 without its
+## lesson); every way on leads to the next; a death there is the hero's end, Normal or Hardcore. `best_endless` (the account's):
+## the deepest endless level any hero of his has cleared.
+const ENDLESS_GROW := 0.1
+const ENDLESS_WARN := "Hardcore"
+const ENDLESS_CARD_MORE := 1.5
+const ENDLESS_OPENS := "Endless mode is open: the waypoint leads on, each level harder. Hardcore."
+var endless := 0
+var endless_floor := 0
+var in_endless := false
+var best_endless := 0
+## (the run's own number, game.ts `seed`: which floor each endless level is, the same for the same hero and level)
+var run_seed: int = randi()
+
+
+## (act1.ts lastFloor) The last floor built: the deepest this copy has.
+static func last_built() -> int:
+	var n := 1
+	while has_floor(n + 1):
+		n += 1
+	return n
+
+
+## (endless.ts endlessPower) The depth an endless level's strength and finds are of.
+func endless_power() -> int:
+	return last_built() + maxi(1, endless)
+
+
+## (endless.ts endlessTough) How much more life and damage its monsters have than its depth gives: 10% more on each after the first.
+func endless_tough() -> float:
+	return pow(1.0 + ENDLESS_GROW, maxi(1, endless) - 1)
+
+
+## (endless.ts endlessName)
+static func endless_name(level: int) -> String:
+	return "Endless %d" % maxi(1, level)
+
+
+## (endless.ts endlessFloorFor) Which floor an endless level is: one of 1 to the last built, at random (the same for the same hero
+## and level), never `prev`.
+func endless_floor_for(level: int, prev: int) -> int:
+	var from: Array = []
+	for d in range(1, last_built() + 1):
+		if d != prev:
+			from.append(d)
+	if from.is_empty():
+		return 1
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([run_seed, maxi(1, level), 0x5eed])
+	return from[rng.randi_range(0, from.size() - 1)]
+
+
+## (game.ts storyHere) Where the story and the quests are played: every floor but an endless level, and town.
+func story_here() -> bool:
+	return not in_endless
+
+
+## (game.ts takeWay 'on' from the last floor) The last floor built beaten: the endless levels open to him; the waypoint takes him on.
+func open_endless(from: int) -> bool:
+	if endless > 0 or in_endless or from < last_built():
+		return false
+	endless = 1
+	endless_floor = endless_floor_for(1, from)
+	loot.say(ENDLESS_OPENS, Color("#7af8f0"))
+	return true
+
+
+## (game.ts nextEndless) From an endless level, every way on: on to the next, another floor at random, never the one just beaten;
+## 10% harder.
+func next_endless() -> void:
+	var was := endless
+	best_endless = maxi(best_endless, was)
+	loot.cleared += 1
+	endless = was + 1
+	endless_floor = endless_floor_for(endless, map.depth if map != null else 0)
+	in_endless = true
+	loot.say("%s cleared" % endless_name(was), Color("#8af078"))
+	go_to("floor%d" % endless_floor, "down" if endless_floor > 1 else "start")
+
+
+## (game.ts takeWay, the town's waypoint) Back to the endless level he reached: his pick, “Pick up where you left off”.
+func go_endless() -> void:
+	in_endless = true
+	go_warp("floor%d" % endless_floor)
+
+
+## (game.ts spawn under ENDLESS) What an endless level does to its monsters, against the floor's own (the records are its depth's):
+## life as its level's depth (a boss's by its own rule) times `tough`, damage the same, experience by its depth; words as many as
+## its level's depth gives an elite (two) and a guardian (three), drawn from all there are.
+func endless_strength(depth: int) -> Dictionary:
+	var P := float(endless_power())
+	var D := float(maxi(1, depth))
+	var T := endless_tough()
+	var L: Dictionary = Words.data().get("depthScale", {"life": 0.35, "dmg": 0.22})
+	var life := func(d: float) -> float: return 1.0 + float(L["life"]) * (d - 1.0)
+	var dmg := func(d: float) -> float: return 1.0 + float(L["dmg"]) * (d - 1.0)
+	return {"life": life.call(P) / life.call(D) * T, "boss": (1.0 + 0.4 * (P - 1.0)) / (1.0 + 0.4 * (D - 1.0)) * T,
+		"dmg": dmg.call(P) / dmg.call(D) * T, "xp": (1.0 + 0.25 * (P - 1.0)) / (1.0 + 0.25 * (D - 1.0)),
+		"words": loot.words_found_at(20)}
 static var wake_note := ""
 ## (he has just woken in town from a fall: no start screen)
 var woke := false
@@ -358,7 +468,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions", "endless"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -760,6 +870,9 @@ func _build(where: String, arrive: String) -> void:
 		hero.unbroken = false
 	place = where
 	hero.in_town = is_home(where)
+	# (ENDLESS MODE: in town he is on no endless level; the waypoint takes him back to the one he reached)
+	if not where.begins_with("floor"):
+		in_endless = false
 	if not hero.arts.is_empty():
 		hero.art = hero.arts["town" if is_home(where) else "dungeon"]
 	_place = Node2D.new()
@@ -921,7 +1034,14 @@ func _build(where: String, arrive: String) -> void:
 	_place.add_child(shadows)
 	_place.move_child(shadows, fx.get_index() + 1)
 	if not is_home(where):
+		# (ENDLESS MODE: an endless level's monsters as strong as its level: endless_strength)
+		monsters.strength = endless_strength(map.depth) if in_endless else {}
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)
+		# (ENDLESS MODE, NO STORY: floor 5's temple open, with no key-bearers)
+		if in_endless:
+			for m in monsters.list.filter(func(o): return is_instance_valid(o) and (o.kind == "keyblade" or o.kind == "keyflame")):
+				monsters.list.erase(m)
+				m.queue_free()
 	# (THE PRACTICE ROOM: its packs coming on and on, up out of rifts: practice.gd)
 	if where == "practice":
 		var pr := preload("res://scripts/practice.gd").new()
@@ -964,9 +1084,12 @@ func _build(where: String, arrive: String) -> void:
 		temple.monsters = monsters
 		temple.sfx = sfx
 		_place.add_child(temple)
+		if not story_here():
+			temple.open_now()
 	# (floor 3 while its furnace burns: the fire in the Chained One's gateway, the forge crank: furnace.gd)
 	furnace = null
-	if map.furnace != null:
+	# (ENDLESS MODE, NO STORY: an endless level's floor 3 without its furnace burning: game.ts furnaceBurns, storyHere)
+	if map.furnace != null and story_here():
 		furnace = Furnace.new()
 		furnace.main = self
 		furnace.map = map
@@ -1032,6 +1155,11 @@ func _build(where: String, arrive: String) -> void:
 	# (none in the practice room: game.ts, FLOOR_NAMES `!this.practice`)
 	if not is_home(where) and _hud != null and not practice:
 		_hud.floor_card_for(where)
+		# (ENDLESS MODE: the floor's own name, the level under it, and the warning: his pick, a death here is the hero's end)
+		if in_endless and not _hud.floor_card.is_empty():
+			_hud.floor_card["level"] = endless_name(endless)
+			_hud.floor_card["warn"] = ENDLESS_WARN
+			_hud.floor_card["secs"] = float(_hud.floor_card["secs"]) + ENDLESS_CARD_MORE
 	elif _hud != null:
 		_hud.floor_card = {}
 	loot.enter_place(map, stands, monsters, where == "floor1")
@@ -1113,11 +1241,12 @@ func _build(where: String, arrive: String) -> void:
 	# (FLOORS 6 TO 10 BESIDES THEIR FIGHTS: the floor's strongholds, its part of the quest line, the quest marks: act1/quest610.gd)
 	if quest610 != null:
 		quest610.enter(where)
+	# (ENDLESS MODE, NO STORY: the city's and the High City's quest pieces and people not on an endless level: story_here)
 	if quest1115 != null:
-		quest1115.enter(where)
+		quest1115.enter(where if story_here() else "town")
 	# (after the city's: floor 12's second jar is these quests')
 	if quest1620 != null:
-		quest1620.enter(where)
+		quest1620.enter(where if story_here() else "town")
 	if bells != null:
 		bells.enter(where)
 	if garden != null:
@@ -1227,6 +1356,9 @@ func go_to(where: String, arrive: String) -> void:
 ## Down the stairwell (game.ts leave('down'), takeWay): the next floor, where he comes in at its start, looking down the
 ## screen and to the right (enterDungeon).
 func go_down() -> void:
+	if in_endless:
+		next_endless()
+		return
 	var next := "floor%d" % (map.depth + 1)
 	if not FileAccess.file_exists("res://assets/" + next + "/layout.json"):
 		loot.say("The stairs go down into the dark. (Floor %d is not in the Godot version yet.)" % (map.depth + 1))
@@ -2438,6 +2570,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "skins":
 		await preload("res://scripts/check_glows.gd").new().skins(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "endless":
+		await preload("res://scripts/check_glows.gd").new().endless(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "pad":
@@ -6670,7 +6806,8 @@ func _b67_queen(boss: Monster, perch: Vector2, base: Vector2) -> Array:
 
 ## Whether he would wake in town from a fall here: a Normal hero, in a floor he came into (not his town).
 func will_wake() -> bool:
-	return hero_mode == "normal" and not is_home(place) and not entry.is_empty()
+	# (ENDLESS MODE: a death on an endless level is the hero's end, Normal or Hardcore: his pick, “The hero too”)
+	return hero_mode == "normal" and not is_home(place) and not entry.is_empty() and not in_endless
 
 
 ## The part of the gold he carried into this floor a Normal fall costs.

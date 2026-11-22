@@ -1335,6 +1335,12 @@ func _floor_card(W: float, H: float) -> void:
 	var ry := ly + 2.0
 	_rule(cx - lw / 2.0 - 5, cx - lw / 2.0 - 5 - 18, ry, Color(STONE_UNDER, a), Color(STONE_FACE, a))
 	_rule(cx + lw / 2.0 + 5, cx + lw / 2.0 + 5 + 18, ry, Color(STONE_UNDER, a), Color(STONE_FACE, a))
+	# (ENDLESS MODE: the warning under it, in the enemy's pink, in the letters of the screen's lines, to be read at a glance)
+	if floor_card.has("warn"):
+		var warn: String = str(floor_card["warn"]).to_upper()
+		var wy := ly + 12.0
+		_text(warn, cx + 1, wy + 1, Color(Color("#0d0716"), a), {"align": "center"})
+		_text(warn, cx, wy, Color(Color("#ff4f8a"), a), {"align": "center"})
 
 
 func _rule(x0: float, x1: float, y: float, c: Color, tip: Color) -> void:

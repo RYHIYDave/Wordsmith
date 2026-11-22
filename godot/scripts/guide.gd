@@ -74,6 +74,9 @@ func banner(seen := true) -> Dictionary:
 	point = -1
 	gesture = {}
 	ask_at = -1
+	# (ENDLESS MODE, NO STORY: on an endless level no lesson, no "Speak to" or "Return to" line, no hunt: game.ts storyHere)
+	if main.get("in_endless") == true:
+		return {}
 	_speak_step()
 	_fight_step()
 	var b := _lesson()

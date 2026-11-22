@@ -41,7 +41,13 @@ static func run_of(main) -> Dictionary:
 		"dust": q.dust if q != null else 0, "feather": q.feather if q != null else "", "citySeen": q.city_seen if q != null else false,
 		"pieces": q.pieces if q != null else 0, "rollPages": q.roll_pages if q != null else 0,
 		"wordsBought": range(loot.word_stock.size()).filter(func(i): return loot.word_stock[i] == null),
+		# (the run's own number: game.ts save `seed`)
+		"seed": main.run_seed,
 	}
+	# (ENDLESS MODE: the endless level reached and the floor it is, once it is open to him: game.ts save `endless`, `endlessFloor`)
+	if int(main.endless) > 0:
+		run["endless"] = main.endless
+		run["endlessFloor"] = main.endless_floor
 	# (FLOORS 11 TO 15's quests: the jar, the pages, the clapper, and the armourer's pick laid out and not yet taken: game.ts save,
 	# act2/quest1115.gd)
 	var q11 = main.quest1115
@@ -80,7 +86,9 @@ static func meta_of(main) -> Dictionary:
 		# (the mode the next hero is made in: the class cards remember it, main.ts meta.mode)
 		"mode": main.next_mode,
 		# (ABILITIES: COOLDOWNS or MANA: the device's choice, main.ts meta.limit)
-		"limit": loot.limit}
+		"limit": loot.limit,
+		# (ENDLESS MODE: the deepest endless level any of his heroes has cleared: game.ts meta.bestEndless)
+		"bestEndless": main.best_endless}
 
 
 ## Written (main.ts writeSave). Not while he is down, nor between places: the run as it stands at a quiet moment. A FALLEN HERO
@@ -125,6 +133,7 @@ static func restore_meta(main, m: Dictionary) -> void:
 			loot.stash[i] = m["stash"][i] if m["stash"][i] is Dictionary else null
 	loot.taught = m.get("taught", false) == true
 	main.deaths = maxi(0, int(_num(m.get("deaths"), 0)))
+	main.best_endless = maxi(0, int(_num(m.get("bestEndless"), 0)))
 	main.next_mode = "hardcore" if m.get("mode") == "hardcore" else "normal"
 	loot.limit = "mana" if m.get("limit") == "mana" else "cooldown"
 
@@ -162,6 +171,13 @@ static func restore_run(main, s: Dictionary) -> void:
 	main.last_floor = maxi(1, int(_num(s.get("depth"), 1)))
 	loot.cleared = maxi(0, int(_num(s.get("cleared"), 0)))
 	main.way_depth = maxi(1, int(_num(s.get("way"), 1)))
+	# (the run's own number; ENDLESS MODE: the endless level reached and its floor, a floor past the last built not one)
+	main.run_seed = int(_num(s.get("seed"), 0))
+	if main.run_seed == 0:
+		main.run_seed = randi()
+	main.endless = maxi(0, int(_num(s.get("endless"), 0)))
+	var ef := int(_num(s.get("endlessFloor"), 0))
+	main.endless_floor = (ef if ef >= 1 and ef <= main.last_built() else main.endless_floor_for(main.endless, 0)) if main.endless > 0 else 0
 	loot.body_searched = s.get("body", false) == true
 	loot.quest_given = s.get("asked", false) == true
 	loot.ring_lit = s.get("ring", false) == true

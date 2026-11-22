@@ -50,6 +50,20 @@ func _ready() -> void:
 	_show(0.0)
 
 
+## (ENDLESS MODE, NO STORY: an endless level's floor 5 has no temple door, his pick “Door open, no key-bearers (Recommended)”) The
+## door stands open from the first, as it stands once unlocked.
+func open_now() -> void:
+	open = true
+	began = SWING_AT + SWING
+	_chain = [1.0, 1.0]
+	_door["want"] = 1
+	_door["open"] = 1.0
+	for t in _door["tiles"]:
+		map.walk[int(t)] = 1
+		map.shut[int(t)] = 0
+	_show(began)
+
+
 ## One of the door's keys, taken where it lay (game.ts templeKeyTaken).
 func _taken(what: String, _at: Vector2) -> void:
 	if what != "key":

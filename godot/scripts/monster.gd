@@ -389,6 +389,23 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 	own_seed = float(m.get("seed", randf()))
 	# (what its kind's rules keep about it as the game laid it: floor 14's patients lying in their beds)
 	a1_in = m["a1"] if m.get("a1") is Dictionary else {}
+	# (ENDLESS MODE, game.ts spawn: on an endless level as strong as its level's depth, `power`, and 10% more for each endless level
+	# before it, `tough`: monsters.gd strength, main.gd endless_strength; an elite with two words, a guardian with three)
+	if mgr != null and not mgr.strength.is_empty():
+		var S: Dictionary = mgr.strength
+		var k: float = float(S["boss"] if boss else S["life"])
+		max_life = maxf(1.0, roundf(max_life * k))
+		life = maxf(1.0, roundf(life * k))
+		dmg_min *= float(S["dmg"])
+		dmg_max *= float(S["dmg"])
+		xp *= float(S["xp"])
+		var want := 3 if champion else (2 if elite else 0)
+		if not boss and rarity != "minion" and words.size() < want:
+			words = words.duplicate()
+			var pool: Array = (S["words"] as Array).filter(func(w): return not words.has(w))
+			pool.shuffle()
+			while words.size() < want and not pool.is_empty():
+				words.append(pool.pop_back())
 	if BOSS_AI.has(kind):
 		h2 = BOSS_AI[kind].new()
 		# (what one with rules of its own has about it from the first, before it wakes: the Fleshmancer's circle)

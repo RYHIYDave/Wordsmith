@@ -131,10 +131,12 @@ func enter(where: String) -> void:
 		h.flats = main._place.get_child(3)
 		place.add_child(h)
 		holds = h
-	if depth == 9:
+	# (ENDLESS MODE, NO STORY: the Pinewood's pieces and the Fen's pillars not on an endless level; the strongholds stay: storyHere)
+	var story: bool = main.story_here()
+	if depth == 9 and story:
 		_pieces_made()
 	# (FLOOR 10, THE FEN: the cult's three obelisks, the pillars of the Swamp Colossus's third phase)
-	if depth == 10 and holds != null and holds.data.has("pillars"):
+	if depth == 10 and story and holds != null and holds.data.has("pillars"):
 		var p := Pillars.new()
 		p.q = self
 		p.main = main

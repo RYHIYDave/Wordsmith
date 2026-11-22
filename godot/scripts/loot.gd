@@ -471,14 +471,16 @@ func on_kill(m) -> void:
 	var r: String = str(m.get("royal")) if m.get("royal") != null else ""
 	if r != "" and royal_floor():
 		_card(at, r)
+	# (ENDLESS MODE, NO STORY: none of the quests' pieces from what dies on an endless level: game.ts storyHere)
+	var story: bool = main == null or main.story_here()
 	# (FLOORS 6 TO 10: a piece of the ward-stone it carried, the Queen's feather and her eyrie's scene: act1/quest610.gd)
-	if main != null and main.quest610 != null:
+	if story and main != null and main.quest610 != null:
 		main.quest610.killed(m)
 	# (FLOORS 11 TO 15: an unstruck page, as the last of floor 13's pair falls and as the Physician does: act2/quest1115.gd)
-	if main != null and main.quest1115 != null:
+	if story and main != null and main.quest1115 != null:
 		main.quest1115.killed(m)
 	# (FLOORS 16 TO 20: the songbird's key as the Prince falls, its spring as the Queen does: act3/quest1620.gd)
-	if main != null and main.get("quest1620") != null:
+	if story and main != null and main.get("quest1620") != null:
 		main.quest1620.killed(m)
 	if m.summoned:
 		return
@@ -570,11 +572,13 @@ func _first_in_vault(at: Vector2) -> bool:
 
 ## How many times as likely a word is on this floor (defs.ts wordGrowth), and one of the words found on it (types.ts wordsAt).
 func _growth() -> float:
-	return float(_words["growth"].get(str(map.depth), 1.0)) if map != null else 1.0
+	# (defs.ts wordGrowth: by the floor's strength, `power`; past the table, as it grows: a tenth more for each level)
+	var p := power()
+	return float(_words["growth"].get(str(p), 1.0 + 0.1 * float(p - 1))) if map != null else 1.0
 
 
 func _found() -> String:
-	var here: Array = _words["at"].get(str(map.depth), [_words["first"]]) if map != null else [_words["first"]]
+	var here: Array = words_found_at(power()) if map != null else [_words["first"]]
 	return here.pick_random()
 
 
@@ -640,10 +644,24 @@ func _item(at: Vector2, quality: int) -> void:
 
 
 ## The floor's level, what is found on it is made for (game.ts `power`): the floor's depth; in town, the floor he came up from.
+## ENDLESS MODE: on an endless level, and in town once they are open to him, the depth of the one he has reached (endless.ts
+## endlessPower: past the last floor). What is rolled from the game's tables (its pieces, their chances, the words found) is
+## rolled as on the last floor (`_tp`): the tables go no deeper; the gold and the rest go by the whole depth.
 func power() -> int:
+	if main != null and int(main.endless) > 0 and (main.in_endless or main.is_home(main.place)):
+		return main.endless_power()
 	if map != null and int(map.depth) >= 1:
 		return clampi(int(map.depth), 1, 20)
 	return _town_power()
+
+
+func _tp() -> int:
+	return clampi(power(), 1, 20)
+
+
+## (types.ts wordsAt) The words that may be found at depth `d` (the game's table, its last floor's past it).
+func words_found_at(d: int) -> Array:
+	return _words["at"].get(str(clampi(d, 1, 20)), [_words["first"]])
 
 
 ## His magic find, % (game.ts rollGear: his gear's; the gate's words are not laid in the Godot version).
@@ -660,12 +678,12 @@ func roll_gear(quality: int) -> Dictionary:
 	if u != null:
 		sfx.play("rare", linear_to_db(0.9))
 		return u
-	return _piece_of(power(), _rarity(quality, mf))
+	return _piece_of(_tp(), _rarity(quality, mf))
 
 
 ## items.ts rollRarity, with game.ts rollGear's luck and least.
 func _rarity(quality: int, mf: float) -> int:
-	var p := power()
+	var p := _tp()
 	var w: Array = _uniques.get("chances", {}).get(str(p), [100.0, 0.0, 0.0])
 	var boost := maxf(0.0, 1.0 + mf / 100.0)
 	var luck: Array = [1.0, 1.0]
@@ -1159,6 +1177,9 @@ func enter_place(m, st: Node2D, mons, is_floor1: bool) -> void:
 		return
 	var first: bool = is_floor1 and cleared == 0
 	cleared = maxi(cleared, int(m.depth) - 1)
+	# (ENDLESS MODE, NO STORY: no fallen wordsmith on an endless level: game.ts storyHere)
+	if main != null and not main.story_here():
+		return
 	var lies: bool = first or (not ring_lit and quest == "" and not body_searched)
 	var at = Vector2(m.body["x"], m.body["y"]) if m.body != null else (_body1 if is_floor1 else null)
 	if not lies or at == null:
@@ -2210,6 +2231,9 @@ func gamble_kinds() -> Array:
 
 ## (the floor he came up from: game.ts `power`, his depth while he is in town)
 func _town_power() -> int:
+	# (ENDLESS MODE: once its levels are open to him, what the vendors have grows on with the one he has reached: game.ts power)
+	if main != null and int(main.endless) > 0:
+		return 20
 	return clampi(int(main.last_floor) if main != null else 1, 1, 20)
 
 

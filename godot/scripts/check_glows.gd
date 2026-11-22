@@ -2553,3 +2553,72 @@ func skins(main, hero, dir: String) -> void:
 	for b in bad:
 		print("  WRONG: ", b)
 
+
+const Save := preload("res://scripts/save.gd")
+
+
+func _said(start: String) -> String:
+	for m in M.loot.msgs:
+		if str(m["text"]).begins_with(start):
+			return str(m["text"])
+	return ""
+
+
+## ENDLESS MODE (main.gd endless, game/endless.ts): open after the last floor; the town's waypoint on into it; a floor at random,
+## its monsters as strong as its level and 10% more each level; the card's warning; no story; a death there the hero's end; every
+## way on the next; floor 5's temple open with no key-bearers; the save.
+func endless(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	await M._wait(0.6)
+	var last: int = M.last_built()
+	_line(last == 20 and M.endless == 0 and not M.open_endless(19) and M.endless == 0, "not open before the last floor (the last built: %d)" % last)
+	var opened: bool = M.open_endless(20)
+	var f1: int = M.endless_floor
+	_line(opened and M.endless == 1 and f1 >= 1 and f1 <= 20 and f1 != 20 and _said("Endless mode is open") != "", "the last floor beaten: endless open, its first level floor %d; said '%s'" % [f1, _said("Endless mode is open")])
+	var way = M._way
+	if way != null:
+		h.world = way.at
+		way.awake = true
+		await M._wait(0.2)
+	_line(way != null and way.here() and way.prompt()[0] == "E: Waypoint: to Endless 1", "the town's waypoint: %s" % (str(way.prompt()) if way != null else "(none)"))
+	M.go_endless()
+	await M._wait(2.5)
+	var card: Dictionary = M._hud.floor_card
+	_line(M.place == "floor%d" % f1 and M.in_endless and card.get("level", "") == "Endless 1" and card.get("warn", "") == "Hardcore", "into %s: in endless %s; the card '%s' / '%s' / '%s'" % [M.place, M.in_endless, card.get("name", ""), card.get("level", ""), card.get("warn", "")])
+	await M._snap(dir + "/en_01_card.png")
+	var recs: Array = JSON.parse_string(FileAccess.get_file_as_string("res://assets/floor%d/monsters.json" % f1))["monsters"]
+	var S: Dictionary = M.endless_strength(f1)
+	var m0 = null
+	for m in M._monsters.list:
+		if is_instance_valid(m) and not m.boss and not m.summoned:
+			m0 = m
+			break
+	var rec: Dictionary = {}
+	for r in recs:
+		if m0 != null and absf(float(r["x"]) - m0.world.x) < 0.01 and absf(float(r["y"]) - m0.world.y) < 0.01:
+			rec = r
+	var ratio: float = float(m0.max_life) / float(rec.get("maxLife", 1.0)) if m0 != null else 0.0
+	_line(m0 != null and not rec.is_empty() and absf(ratio - float(S["life"])) < 0.05 and S["life"] > 1.0, "its monsters as strong as Endless 1 (depth %d): a %s's life %d, the floor's own %d (x%.2f, wanted x%.2f)" % [M.endless_power(), m0.kind if m0 != null else "-", m0.max_life if m0 != null else 0, rec.get("maxLife", 0), ratio, S["life"]])
+	_line(M.loot.power() == 21 and not M.will_wake() and M.guide.banner().is_empty() and not M.story_here(), "finds as deep as %d; a fall here the hero's end (wakes %s); no lesson or quest line; no story" % [M.loot.power(), M.will_wake()])
+	M.next_endless()
+	await M._wait(2.5)
+	var f2: int = M.endless_floor
+	_line(M.endless == 2 and f2 != f1 and M.place == "floor%d" % f2 and M.in_endless and absf(M.endless_tough() - 1.1) < 0.001 and M._hud.floor_card.get("level", "") == "Endless 2" and _said("Endless 1 cleared") != "", "the way on: Endless 2, floor %d (not %d), 10%% harder (x%.2f); said '%s'" % [f2, f1, M.endless_tough(), _said("Endless 1 cleared")])
+	# FLOOR 5 AS AN ENDLESS LEVEL: its temple open, no key-bearers
+	M.endless_floor = 5
+	M.go_to("town", "start")
+	await M._wait(2.0)
+	_line(not M.in_endless and M.place == "town" and M.loot.power() == 22, "home: on no endless level (finds in town as deep as %d)" % M.loot.power())
+	var run: Dictionary = Save.run_of(M)
+	_line(int(run.get("endless", 0)) == 2 and int(run.get("endlessFloor", 0)) == 5 and int(run.get("seed", 0)) == M.run_seed, "the save holds Endless %s on floor %s" % [run.get("endless"), run.get("endlessFloor")])
+	M.go_endless()
+	await M._wait(2.5)
+	var keyb: int = M._monsters.list.filter(func(o): return is_instance_valid(o) and (o.kind == "keyblade" or o.kind == "keyflame")).size()
+	_line(M.place == "floor5" and M.temple != null and M.temple.open and keyb == 0 and M.map.walk[int(M.temple._door["tiles"][0])] == 1, "Endless 2 on floor 5: the temple open (%s), no key-bearers (%d)" % [M.temple.open if M.temple != null else "-", keyb])
+	await M._snap(dir + "/en_02_floor5.png")
+	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+	for b in bad:
+		print("  WRONG: ", b)
+
