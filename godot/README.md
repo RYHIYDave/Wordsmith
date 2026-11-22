@@ -1025,11 +1025,18 @@ lights over the dark (town.gd `_ring_moments`):
   rules: Bloodprice, the Long Odds, the Miser's Purse, the Press, the Half-Carved Hand, the Standing Stone, the Moth's Wing,
   Broken Shackles, the Dancing Shoes, the Physician's Coat, the Warden's Keys, the Crier's Hush, the Free Hand, the Sure Thing,
   the Kindling Rod, the Rot Axe, the Packstrap. A hero's own work only on that hero. `--only=uniquesdo`: 19 checks.
+- **Those with looks of their own** (game.ts stepArm, callBird, raise, stepRisen; render/unique_fx.ts; `fx_uniques.gd`, its pictures
+  the game's own baked by `npx tsx tools/godot_unique_fx.ts` into assets/uniques): the Drowned Arm (every 3 s a tentacle bursts up
+  out of black water under the one he fights, whips down across it, slams and stuns what is there), the Queen's Talons (a critical
+  hit calls one of her birds, diving out of the air onto the one nearest him, its shadow under it, a burst of feathers), the
+  Fleshmancer's Brand (an elite he kills is pulled up off the floor where it fell, drained and glowing the friend's cyan, the floor
+  cracked with light, the brand turning under it and burning away with its seconds, and fights for him; its blows' cyan bursts; it
+  falls and fades), the Crier's Hush (the Hush's grey ring closing on what it darkens, its wisps), and the beam of the uniques'
+  orange over any unique lying on the floor, shooting up as it lands. `--only=uniqueslook`: 5 checks, pictured.
 
 ## Not in it yet
 
-What the rest of the uniques do (the Drowned Arm, the Queen's Talons, the Fleshmancer's Brand, the hero's own weapons' and the
-like: they drop and their cards say it); the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+What the heroes' own uniques do (their weapons', boots', rings' and the like: they drop and their cards say it); the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); playing UPRIGHT (the game laid out for a phone held upright, its PLAY UPRIGHT switch: the Godot screen is laid out for one
 held sideways only); the first dungeon's ghosts of the gesture each prompt asks for on a phone.
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)

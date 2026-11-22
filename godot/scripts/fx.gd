@@ -62,6 +62,7 @@ const WildRanger := preload("res://scripts/fx_wild_ranger.gd")
 const Words3 := preload("res://scripts/fx_words3.gd")
 const Wakes := preload("res://scripts/fx_wakes.gd")
 const Figures := preload("res://scripts/fx_figures.gd")
+const UFx := preload("res://scripts/fx_uniques.gd")
 const Monster := preload("res://scripts/monster.gd")
 ## (floors 6 to 10's words at work: Twin's, Leech's, Volatile's, Precise's, Frenzied's and Guarding's looks: fx_words610.gd)
 const Words610 := preload("res://scripts/fx_words610.gd")
@@ -84,6 +85,8 @@ const Volatile3 := preload("res://scripts/fx_volatile3.gd")
 var v3: Volatile3
 const Melds8 := preload("res://scripts/fx_melds8.gd")
 var m8: Melds8
+## (UNIQUE ITEMS: what the uniques show in play: fx_uniques.gd)
+var uq: UFx
 
 ## (main.ts: `gdt = fx.freeze > 0 ? dt * 0.06 : dt`)
 const HOLD_PACE := 0.06
@@ -254,6 +257,8 @@ func _init() -> void:
 	v3.fx = self
 	m8 = Melds8.new()
 	m8.fx = self
+	uq = UFx.new()
+	uq.fx = self
 
 
 func _ready() -> void:
@@ -291,6 +296,7 @@ func _exit_tree() -> void:
 	m3.clear()
 	v3.clear()
 	m8.clear()
+	uq.clear()
 
 
 func _notification(what: int) -> void:
@@ -322,6 +328,7 @@ func event(e: Dictionary) -> void:
 	# (v3: Volatile's five melds' looks, called up as the ten's are: main.ts eventsV3; m8: the eight's moments, fx.ts handle)
 	v3.event(e)
 	m8.handle(e)
+	uq.handle(e)
 	# (m3, v3, m8: a melded word's own bolts, blasts and patches are its look's, not the effects': fx.ts handle, meldOwnsEvent,
 	# ownsEventV3; Implode's burst and Forking's arc are melds8.ts's)
 	# (w7: the seven last words' events are their looks' own: fx.ts handle, ownsEventW7; their zones too: ownsZoneW7)
@@ -368,6 +375,7 @@ func advance(dt: float, lights := true) -> void:
 	_find()
 	_lit = lights
 	update(dt, real)
+	uq.update(dt)
 	ambient(monsters.list if monsters != null and is_instance_valid(monsters) else [], dt)
 	ground.tend(dt)
 	if lights:
@@ -382,6 +390,7 @@ func advance(dt: float, lights := true) -> void:
 func _late(_dt: float) -> void:
 	var t0 := Time.get_ticks_usec() if timing else 0
 	figures.follow()
+	uq.follow()
 	# (w10: his after-images, where he now is)
 	w10.follow()
 	# (w7: his reflection in glass, the rules' spirits, where they now are: render/words7.ts heroW7, spiritsW7)
@@ -502,6 +511,7 @@ func clear() -> void:
 	m3.clear()
 	v3.clear()
 	m8.clear()
+	uq.clear()
 	_redraw()
 
 
@@ -1901,6 +1911,7 @@ func _paint_ground(c: CanvasItem) -> void:
 	# (v3: Volatile's five melds' runes, their marks and their ground, with the floor: render.ts floorV3; m8: the eight's, fx.ts drawGround)
 	v3.draw_floor(c, v3.clock)
 	m8.draw_ground(c)
+	uq.draw_ground(c)
 	w610.draw_floor(c)
 	w10.draw_floor(c)
 	# (w7: render.ts floorW7)
@@ -2047,6 +2058,7 @@ func _paint_air(c: CanvasItem) -> void:
 	# (v3: Volatile's five melds' domes, pillars, spikes and what flies: render.ts airV3; m8: the eight's, fx.ts drawAir)
 	v3.draw_air(c, v3.clock)
 	m8.draw_air(c)
+	uq.draw_air(c)
 	# (w10: Lasting's, Fleeting's and Vast's, over the figures and the dark: render/words10.ts airW10, before fx.drawAir)
 	w10.draw_air(c)
 	# (w7: the seven last words', over the figures and the dark: render.ts airW7)

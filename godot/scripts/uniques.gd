@@ -40,7 +40,13 @@ var halves := {}
 var uq := {
 	"full": true, "vow_t": 0.0, "vow": 0.0, "dark": null, "dark_t": 0.0, "borrowed": null, "borrowed_t": 0.0,
 	"blood_t": 0.0, "coat_hits": 0, "still": 0.0, "hurt_at": -1e9,
+	"arm_t": 0.0, "arm_m": null, "arm_at": -1e9, "talon_at": -1e9,
 }
+## (defs.ts ALLY_DAMAGE: a hit of what fights beside him, the tentacle's or a bird's, made as hard as allies hit now)
+const ALLY_MORE := 1.0
+## THE FLESHMANCER'S BRAND (game.ts risen): the elite risen to fight for him, or null: {art, kind, champion, at, f, r, t, act, act_t,
+## did, target, cd, walked, map}
+var risen = null
 ## (what happened, oldest first, for the checks and the looks: {id, what, ...})
 var told: Array = []
 var _clock := 0.0
@@ -366,6 +372,9 @@ func killed(m) -> void:
 			if was != w:
 				hero._tell({"t": "text", "x": hero.world.x, "y": hero.world.y, "text": str(Words.word(w)["name"]).to_upper(), "color": "#7af8f0"})
 				hero.loadout.refresh()
+	# THE FLESHMANCER'S BRAND: an elite he kills rises and fights for him
+	if wears("fleshmancersbrand") and m.elite and not m.boss:
+		_raise(m)
 
 
 ## (game.ts kill) THE PHYSICIAN'S COAT: no flask refills from kills.
@@ -375,7 +384,13 @@ func flasks_from_kills() -> bool:
 
 ## (game.ts hitMonster) A hit he landed on `m` (`crit`, a critical one; `quiet`, a splash's): the Physician's Coat counts it on an elite
 ## or a boss.
-func landed(m, _crit: bool, _quiet: bool) -> void:
+func landed(m, crit: bool, quiet: bool) -> void:
+	# (THE QUEEN'S TALONS: each critical hit calls a bird; THE DROWNED ARM: the enemy he is fighting is the one he last struck)
+	if crit and wears("queenstalons"):
+		_call_bird()
+	if not quiet and wears("drownedarm"):
+		uq["arm_m"] = m
+		uq["arm_at"] = _clock
 	if (m.elite or m.boss) and wears("physicianscoat"):
 		uq["coat_hits"] = int(uq["coat_hits"]) + 1
 		if int(uq["coat_hits"]) >= int(ut["coat"]["hits"]):
@@ -419,6 +434,8 @@ func _process(dt: float) -> void:
 	_clock += dt
 	if hero == null or not hero.alive:
 		return
+	if risen != null:
+		_step_risen(dt)
 	var walked: float = 0.0 if _was == Vector2.INF else hero.world.distance_to(_was)
 	_was = hero.world
 	if worn.is_empty():
@@ -475,6 +492,8 @@ func _process(dt: float) -> void:
 			_hush_near()
 		if wears("wardenskeys"):
 			_keys_open()
+		if wears("drownedarm"):
+			_step_arm(dt)
 	if again:
 		hero.loadout.refresh()
 
@@ -553,3 +572,163 @@ func _say(e: Dictionary) -> void:
 	told.append(e)
 	if told.size() > 64:
 		told.pop_front()
+
+
+# --- WHAT FIGHTS BESIDE HIM: the tentacle, her birds, the risen elite ---
+
+## (game.ts uniqueHit) A hit his own gear makes by itself (a tentacle, a bird, a risen elite): `share` of his weapon hit, physical.
+func _unique_hit(share: float) -> float:
+	var b: Array = hero.base_for("phys")
+	var st: Dictionary = hero.stats
+	return maxf(1.0, roundf(randf_range(b[0], b[1]) * share * (1.0 + (float(st["dmg_pct"]) + float(st["phys_pct"]) + hero.might) / 100.0)))
+
+
+## (game.ts allyDamage) A hit of what fights beside him.
+func _ally(m, dmg: float) -> void:
+	m.damage(dmg * ALLY_MORE, "phys", false, false, [], false, false, -1)
+
+
+func _fine(m) -> bool:
+	return m != null and is_instance_valid(m) and not m.dead and not hero.monsters.shut_in(m)
+
+
+## (game.ts stepArm) THE DROWNED ARM: every few seconds a tentacle bursts up under the enemy he is fighting and slams it, stunning
+## what it slams.
+func _step_arm(dt: float) -> void:
+	var A: Dictionary = ut["arm"]
+	uq["arm_t"] = float(uq["arm_t"]) - dt
+	if float(uq["arm_t"]) > 0.0:
+		return
+	var m = uq["arm_m"]
+	if not _fine(m) or _clock - float(uq["arm_at"]) > float(A["fresh"]) or m.world.distance_to(hero.world) > float(A["reach"]):
+		uq["arm_t"] = 0.0
+		return
+	uq["arm_t"] = float(A["every"])
+	var at: Vector2 = m.world
+	hero._tell({"t": "unique", "id": "drownedarm", "what": "warn", "x": at.x, "y": at.y, "r": A["r"], "secs": A["lead"], "mid": m.id})
+	_say({"id": "drownedarm", "what": "warn"})
+	hero._after(float(A["lead"]), func() -> void:
+		if not hero.alive:
+			return
+		hero._tell({"t": "unique", "id": "drownedarm", "what": "slam", "x": at.x, "y": at.y, "r": A["r"]})
+		hero._tell({"t": "burst", "x": at.x, "y": at.y, "r": A["r"], "el": "phys", "style": "slam"})
+		hero.kick(2.5)
+		hero.sfx.play("slam", linear_to_db(0.7))
+		var n := 0
+		for o in hero.monsters.list:
+			if not _fine(o) or o.world.distance_to(at) > float(A["r"]) + o.r:
+				continue
+			_ally(o, _unique_hit(float(A["share"])))
+			o.stun_for(float(A["stun"]))
+			n += 1
+		_say({"id": "drownedarm", "what": "slam", "n": n}))
+
+
+## (game.ts callBird) THE QUEEN'S TALONS: a critical hit calls one of her birds: it dives on the enemy nearest him.
+func _call_bird() -> void:
+	var B: Dictionary = ut["talons"]
+	if _clock - float(uq["talon_at"]) < float(B["gap"]):
+		return
+	var best = null
+	var bd: float = float(B["reach"])
+	for m in hero.monsters.list:
+		if not _fine(m) or m.state == "sleep":
+			continue
+		var d: float = m.world.distance_to(hero.world) - m.r
+		if d < bd:
+			bd = d
+			best = m
+	if best == null:
+		return
+	uq["talon_at"] = _clock
+	var to = best
+	hero._tell({"t": "unique", "id": "queenstalons", "what": "dive", "x": hero.world.x, "y": hero.world.y, "x1": to.world.x, "y1": to.world.y, "secs": B["dive"], "mid": to.id})
+	_say({"id": "queenstalons", "what": "dive"})
+	hero._after(float(B["dive"]), func() -> void:
+		if not _fine(to) or not hero.alive:
+			return
+		hero._tell({"t": "spark", "x": to.world.x, "y": to.world.y, "el": "phys", "n": 6})
+		hero.sfx.play("hit", linear_to_db(0.5))
+		_ally(to, _unique_hit(float(B["share"])))
+		_say({"id": "queenstalons", "what": "struck"}))
+
+
+## (game.ts raise) THE FLESHMANCER'S BRAND: an elite he killed rises where it fell, to fight for him a while; one at a time.
+func _raise(m) -> void:
+	var B: Dictionary = ut["brand"]
+	if risen != null:
+		hero._tell({"t": "unique", "id": "fleshmancersbrand", "what": "fall", "x": risen["at"].x, "y": risen["at"].y})
+	var at: Vector2 = m.world if hero.monsters.clear(m.world.x, m.world.y, 0.3) else hero.world
+	risen = {"art": m.art, "kind": m.kind, "champion": m.champion, "at": at, "f": m.face if m.get("face") != null else Vector2(0.7, 0.7),
+		"r": m.r, "t": float(B["secs"]), "act": "rise", "act_t": 0.0, "did": false, "target": null, "cd": 0.0, "walked": 0.0, "map": hero.map}
+	hero._tell({"t": "unique", "id": "fleshmancersbrand", "what": "rise", "x": at.x, "y": at.y, "secs": B["secs"]})
+	hero.sfx.play("power", linear_to_db(0.5))
+	_say({"id": "fleshmancersbrand", "what": "rise", "kind": m.kind})
+
+
+## (game.ts stepRisen) The risen elite, each step: it goes for the nearest enemy awake near him, strikes it, and falls when its time
+## is up.
+func _step_risen(dt: float) -> void:
+	var p: Dictionary = risen
+	var B: Dictionary = ut["brand"]
+	p["t"] = float(p["t"]) - dt
+	p["act_t"] = float(p["act_t"]) + dt
+	p["cd"] = maxf(0.0, float(p["cd"]) - dt)
+	var map = hero.map
+	if float(p["t"]) <= 0.0 or map == null or int(map.depth) < 1 or p["map"] != map or not wears("fleshmancersbrand"):
+		hero._tell({"t": "unique", "id": "fleshmancersbrand", "what": "fall", "x": p["at"].x, "y": p["at"].y})
+		_say({"id": "fleshmancersbrand", "what": "fall"})
+		risen = null
+		return
+	if p["act"] == "rise":
+		if float(p["act_t"]) >= 0.6:
+			p["act"] = "stand"
+		return
+	if p["act"] == "strike":
+		if not p["did"] and float(p["act_t"]) >= 0.3:
+			p["did"] = true
+			var m = p["target"]
+			if _fine(m) and m.world.distance_to(p["at"]) <= float(B["reach"]) + m.r + float(p["r"]) + 0.6:
+				hero._tell({"t": "unique", "id": "fleshmancersbrand", "what": "strike", "x": p["at"].x, "y": p["at"].y, "x1": m.world.x, "y1": m.world.y, "mid": m.id})
+				hero.sfx.play("hit", linear_to_db(0.5))
+				m.damage(_unique_hit(float(B["share"])), "phys", false, false, [], false, false, -1)
+				_say({"id": "fleshmancersbrand", "what": "strike"})
+		if float(p["act_t"]) >= 0.6:
+			p["act"] = "stand"
+			p["act_t"] = 0.0
+			p["cd"] = float(B["every"])
+		return
+	# (left far behind, or somewhere it may not stand: by him again)
+	if p["at"].distance_to(hero.world) > 14.0 or not hero.monsters.clear(p["at"].x, p["at"].y, 0.3):
+		p["at"] = hero.world
+	var best = null
+	var bd := 1e9
+	for m in hero.monsters.list:
+		if not _fine(m) or not m.seen or m.state == "sleep" or m.world.distance_to(hero.world) > float(B["leash"]):
+			continue
+		var d: float = m.world.distance_to(p["at"]) - m.r - float(p["r"])
+		if d < bd and hero.monsters.sees(p["at"], m.world):
+			bd = d
+			best = m
+	if best != null and bd <= float(B["reach"]) and float(p["cd"]) <= 0.0:
+		p["f"] = (best.world - p["at"]).normalized()
+		p["act"] = "strike"
+		p["act_t"] = 0.0
+		p["did"] = false
+		p["target"] = best
+		return
+	var goal: Vector2 = best.world if best != null else hero.world - hero.face * 1.4
+	var stop: float = float(B["reach"]) * 0.7 + best.r + float(p["r"]) if best != null else 0.4
+	var d: float = goal.distance_to(p["at"])
+	if d > stop:
+		var to: Vector2 = p["at"] + (goal - p["at"]) / d * minf(d - stop, float(B["speed"]) * dt)
+		var moved := 0.0
+		if hero.monsters.clear(to.x, to.y, minf(0.42, float(p["r"]))):
+			moved = to.distance_to(p["at"])
+			if moved > 0.001:
+				p["f"] = (to - p["at"]) / moved
+			p["at"] = to
+		p["walked"] = float(p["walked"]) + moved
+		p["act"] = "walk" if moved > 0.001 else "stand"
+	else:
+		p["act"] = "stand"

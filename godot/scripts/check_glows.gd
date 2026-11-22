@@ -1390,3 +1390,89 @@ func uniquesdo(main, hero, dir: String) -> void:
 	_line(opened, "the Warden's Keys: floor 2's sealed door opens as he comes near, without its word")
 	h.unhurt = false
 	print("UNIQUESDO: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## WHAT THE UNIQUES DO, with looks of their own (uniques.gd, fx_uniques.gd; game.ts stepArm, callBird, raise, stepRisen;
+## render/unique_fx.ts): the Drowned Arm's tentacle, the Queen's Talons' birds, the Fleshmancer's Brand's risen elite, the beam over a
+## unique lying on the floor.
+func uniqueslook(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var L = M.loot
+	var U = M._uniques
+	M.way_depth = maxi(M.way_depth, 2)
+	await M.go_to("floor2", "down")
+	await M._wait(1.0)
+	# (a few of floor 2's skeletons woken and brought to him, kept from hurting him)
+	var foes: Array = []
+	for o in h.monsters.list:
+		if is_instance_valid(o) and not o.dead and not o.boss and foes.size() < 3:
+			foes.append(o)
+	var spot: Vector2 = h.world
+	for k in foes.size():
+		var o = foes[k]
+		o.world = M._free_near(spot + Vector2(1.6 + k * 0.7, 0.4 * k))
+		o.state = "chase"
+		o.max_life = 100000.0
+		o.life = 100000.0
+	# THE DROWNED ARM: struck, the one he fights has a tentacle burst up under it and slam it, stunning it
+	_wear("drownedarm")
+	var m = foes[0]
+	var life0: float = m.life
+	h.hit_monster(m, 0, 1.0, false)
+	var after_hit: float = m.life
+	await M._wait(0.25)
+	await M._snap(dir + "/ul01_the_drowned_arm_rising.png")
+	await M._wait(0.45)
+	await M._snap(dir + "/ul02_the_drowned_arm_slams.png")
+	var slam: bool = U.told.any(func(e): return e["id"] == "drownedarm" and e["what"] == "slam" and int(e.get("n", 0)) >= 1)
+	_line(slam and m.life < after_hit and m.stun_t > 0.0, "the Drowned Arm: a tentacle up under the one he struck, slamming it (%.0f to %.0f) and stunning it (%.2f s)" % [after_hit, m.life, m.stun_t])
+	_bare()
+	await M._wait(0.6)
+	# THE QUEEN'S TALONS: a critical hit calls one of her birds onto the one nearest him
+	_wear("queenstalons")
+	var near_life: Array = foes.map(func(o): return o.life)
+	h.hit_monster(foes[1], 0, 1.0, false, true)
+	var hit_life: Array = foes.map(func(o): return o.life)
+	await M._wait(0.2)
+	await M._snap(dir + "/ul03_her_bird_diving.png")
+	await M._wait(0.4)
+	var dived: bool = U.told.any(func(e): return e["id"] == "queenstalons" and e["what"] == "struck")
+	var lost := false
+	for k in foes.size():
+		if foes[k].life < hit_life[k]:
+			lost = true
+	_line(dived and lost, "the Queen's Talons: a critical hit, and her bird dives on the one nearest him and strikes it")
+	_bare()
+	# THE FLESHMANCER'S BRAND: an elite he kills rises and fights for him
+	_wear("fleshmancersbrand")
+	var e = foes[2]
+	e.elite = true
+	var e_at: Vector2 = e.world
+	e.damage(e.life + 10.0, "phys", false, false, [], false, false, 0)
+	await M._wait(0.1)
+	var rose: bool = U.risen != null and U.risen["at"].distance_to(e_at) < 1.0
+	await M._wait(0.5)
+	await M._snap(dir + "/ul04_the_risen_elite.png")
+	var struck := false
+	for q in 60:
+		await M._wait(0.1)
+		if U.told.any(func(x): return x["id"] == "fleshmancersbrand" and x["what"] == "strike"):
+			struck = true
+			break
+	await M._snap(dir + "/ul05_the_risen_strikes.png")
+	_line(rose and struck, "the Fleshmancer's Brand: an elite killed rises where it fell (%s) and strikes for him" % (U.risen["kind"] if U.risen != null else "-"))
+	_bare()
+	await M._wait(1.2)
+	_line(U.risen == null, "the brand taken off: the risen one falls")
+	# A UNIQUE DROPPED: the beam of the uniques' orange over it
+	var it = L.unique_piece("twofacedmask")
+	L.lay_item(h.world + Vector2(1.5, -0.5), it)
+	await M._wait(0.15)
+	await M._snap(dir + "/ul06_a_unique_lands.png")
+	await M._wait(0.8)
+	await M._snap(dir + "/ul07_a_unique_lying.png")
+	_line(M.fx != null and M.fx.uq._drops().size() >= 1, "a unique lying on the floor: its beam over it")
+	h.unhurt = false
+	print("UNIQUESLOOK: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
