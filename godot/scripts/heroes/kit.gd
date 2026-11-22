@@ -596,6 +596,9 @@ func _step_shots(dt: float) -> void:
 			p["y"] = n.y
 			p["dist"] = float(p["dist"]) - stp
 			p["flown"] = float(p["flown"]) + stp
+			# (UNIQUE ITEMS: what a shot of his crosses on its way: the Hair Trigger's traps, the Tuning Staff's Orb: uniques.gd)
+			if h.uniques != null and not h.uniques.worn.is_empty():
+				h.uniques.crossings(p, self)
 			var r: Dictionary = h.loadout.r(int(p["skill"]))
 			# (whatever he sends flying breaks the barrels and urns it passes, and flies on)
 			h._break_props(int(p["skill"]), n, float(p["r"]))

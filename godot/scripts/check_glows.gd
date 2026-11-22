@@ -1663,3 +1663,209 @@ func uniqueswar(main, hero, dir: String) -> void:
 	h.talents_changed()
 	h.unhurt = false
 	print("UNIQUESWAR: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## THE OTHER HEROES' UNIQUES (uniques.gd and each hero's kit; game.ts, each where it acts), for the hero of --cls.
+func uniquescls(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var U = M._uniques
+	var L = M.loot
+	M.way_depth = maxi(M.way_depth, 2)
+	await M.go_to("floor2", "down")
+	await M._wait(1.0)
+	L.level = 20
+	L.ring_lit = true
+	L.derive()
+	var K = h.kit
+	var foes: Array = []
+	for o in h.monsters.list:
+		if is_instance_valid(o) and not o.dead and not o.boss and foes.size() < 3:
+			foes.append(o)
+	for k in foes.size():
+		var o = foes[k]
+		o.world = M._free_near(h.world + h.face * (2.5 + k * 0.8))
+		o.state = "chase"
+		o.max_life = 100000.0
+		o.life = 100000.0
+	var ahead: Vector2 = foes[0].world
+	var ready := func(i: int) -> void:
+		K.cd[i] = 0.0
+		K.charges[i] = K.max_charges[i]
+		K.windup = {}
+	match h.cls:
+		"ranger":
+			_wear("fan")
+			ready.call(0)
+			var n0: int = K.shots.size()
+			K._use_basic(ahead)
+			var most := 0
+			for q in 25:
+				await M._wait(0.02)
+				most = maxi(most, K.shots.size() - n0)
+				if most >= 3:
+					break
+			await M._snap(dir + "/uc_ranger_fan.png")
+			_line(most == 3, "the Fan: a Shot looses %d arrows in a fan" % most)
+			_bare()
+			_wear("rainwalker")
+			ready.call(1)
+			K._use_skill(1, ahead)
+			await M._wait(0.8)
+			var rains: bool = not K.volleys.is_empty() and K.volleys[0].get("walker", false) and Vector2(K.volleys[0]["x"], K.volleys[0]["y"]).distance_to(h.world) < 0.1
+			await M._snap(dir + "/uc_ranger_rainwalker.png")
+			_line(rains, "Rainwalker: his Volley rains round him")
+			_bare()
+			await M._wait(1.5)
+			_wear("poachersbow")
+			var t0: int = K.traps.size()
+			ready.call(1)
+			K._use_skill(1, ahead)
+			await M._wait(1.2)
+			_line(K.traps.size() > t0 or U.told.any(func(e): return e["id"] == "poachersbow"), "the Poacher's Bow: where the Volley falls it leaves one of his traps")
+			_bare()
+			await M._wait(1.5)
+			K.traps.clear()
+			_wear("hairtrigger")
+			var spot: Vector2 = M._free_near(h.world + h.face * 1.6)
+			K._lay_trap(2, spot, 1.0)
+			K.traps.back()["arm"] = 99.0
+			ready.call(0)
+			K._use_basic(h.world + (spot - h.world).normalized() * 5.0)
+			await M._wait(0.8)
+			_line(U.told.any(func(e): return e["id"] == "hairtrigger"), "the Hair Trigger: an arrow over his trap sets it off")
+			_bare()
+		"mage":
+			_wear("shepherdscrook")
+			ready.call(1)
+			K._use_skill(1, ahead)
+			await M._wait(0.6)
+			var orb_at: Vector2 = Vector2(K.orbs[0]["x"], K.orbs[0]["y"]) if not K.orbs.is_empty() else Vector2.INF
+			h.world = M._free_near(h.world - h.face * 3.0)
+			await M._wait(1.0)
+			var follows: bool = not K.orbs.is_empty() and Vector2(K.orbs[0]["x"], K.orbs[0]["y"]).distance_to(orb_at) > 0.5
+			await M._snap(dir + "/uc_mage_crook.png")
+			_line(follows, "the Shepherd's Crook: the Orb comes after her")
+			_bare()
+			_wear("tuningstaff")
+			ready.call(0)
+			K._use_basic(Vector2(K.orbs[0]["x"], K.orbs[0]["y"]) if not K.orbs.is_empty() else ahead)
+			await M._wait(0.8)
+			_line(U.told.any(func(e): return e["id"] == "tuningstaff"), "the Tuning Staff: a Wave through her Orb makes it pulse at once")
+			_bare()
+			_wear("tide")
+			ready.call(0)
+			K._use_basic(ahead)
+			await M._wait(1.2)
+			_line(U.told.any(func(e): return e["id"] == "tide"), "the Tide: the Wave comes back to her")
+			_bare()
+			_wear("prism")
+			h.loadout.front[0][0] = "fire"
+			h.loadout.refresh()
+			var pm = foes[1]
+			pm.chill_t = 0.0
+			pm.shock_t = 0.0
+			h.hit_monster(pm, 0, 1.0, false)
+			_line(pm.burn_t > 0.0 and pm.chill_t > 0.0 and pm.shock_t > 0.0, "the Prism: a fire hit burns, chills and shocks")
+			h.loadout.front[0][0] = null
+			h.loadout.refresh()
+			_bare()
+			_wear("shortway")
+			var start: Vector2 = h.world
+			ready.call(2)
+			K._use_evasive(h.world + h.face * 4.0, h.face)
+			await M._wait(0.3)
+			var away: float = h.world.distance_to(start)
+			K._use_evasive(h.world + h.face * 4.0, h.face)
+			await M._wait(0.3)
+			_line(away > 1.0 and h.world.distance_to(start) < 0.6, "the Short Way: warped %.1f tiles, warping again snaps her back" % away)
+			_bare()
+		"warlock":
+			_wear("ledgerofdebts")
+			for o in foes:
+				o.curse_t = 5.0
+			var bolt: float = U.hit_mult(foes[0], 0)
+			_line(bolt > 1.1, "the Ledger of Debts: his Hellfire Bolt x%.2f with %d cursed near" % [bolt, foes.size()])
+			_bare()
+			_wear("restlesstome")
+			await M._wait(2.5)
+			await M._snap(dir + "/uc_warlock_tome.png")
+			_line(U.told.any(func(e): return e["id"] == "restlesstome"), "the Restless Tome: it circles him and puts his hellfire on what it touches")
+			_bare()
+			_wear("burningverse")
+			var bv = foes[0]
+			bv.curse_t = 10.0
+			bv.set_alight(1.0, 1.0)
+			await M._wait(2.0)
+			_line(bv.burn_t > 0.0, "the Burning Verse: a burn on a cursed one does not go out (%.1f s left after 2 s of 1)" % bv.burn_t)
+			_bare()
+		"tinkerer":
+			_wear("secondwhistle")
+			_line(K.golems_most() >= 2, "the Second Whistle: %d Golems at once" % K.golems_most())
+			_bare()
+			_wear("stickywrench")
+			ready.call(0)
+			K._use_basic(foes[0].world)
+			await M._wait(0.9)
+			await M._snap(dir + "/uc_tinkerer_sticky.png")
+			_line(U.told.any(func(e): return e["id"] == "stickywrench"), "the Sticky Wrench: her vial sticks to what it hits")
+			_bare()
+			await M._wait(1.0)
+			ready.call(1)
+			K._use_skill(1, ahead)
+			await M._wait(1.5)
+			_wear("foremanswrench")
+			ready.call(0)
+			var v0: int = K.vials.size()
+			K._use_basic(foes[0].world)
+			await M._wait(0.45)
+			_line(U.told.any(func(e): return e["id"] == "foremanswrench"), "the Foreman's Wrench: her Golem lobs a vial with hers")
+			_bare()
+			await M._wait(0.8)
+			_wear("towline")
+			ready.call(2)
+			K._use_evasive(h.world - h.face * 4.0, -h.face)
+			await M._wait(1.2)
+			_line(U.told.any(func(e): return e["id"] == "towline"), "the Tow Line: her Golem rides her Blast Jump")
+			_bare()
+			_wear("companyscrip")
+			L.gold = 5000
+			ready.call(2)
+			var open_to: Vector2 = M._free_near(h.world + Vector2(3.0, 0.5))
+			K._use_evasive(open_to, (open_to - h.world).normalized())
+			await M._wait(0.1)
+			_line(K.cd[2] <= 0.0 and L.gold < 5000, "the Company Scrip: her Blast Jump with no cooldown, for %d gold" % (5000 - L.gold))
+			_bare()
+		"brawler":
+			_wear("fourthglobe")
+			_line(K.most() == 4, "the Fourth Globe: his combos hold %d globes" % K.most())
+			_bare()
+			_wear("lastround")
+			K.globes = []
+			K.queue = []
+			K._press("tap", ahead)
+			K._press("tap", ahead)
+			K._press("tap", ahead)
+			_line(K.globes.size() >= 3 and K.globes[2] == "punchFire", "the Last Round: the third globe sets itself in fire (%s)" % str(K.globes))
+			await M._wait(2.5)
+			_bare()
+			_wear("winningstreak")
+			for k in 3:
+				K._press("tap", ahead)
+			await M._wait(2.5)
+			# (told as it grows: a blow on him meanwhile ends it, as in the game)
+			_line(U.told.any(func(e): return e["id"] == "winningstreak"), "the Winning Streak: a combo finished, and his streak grows")
+			_bare()
+			_wear("sprungheels")
+			_line(K.max_charges[2] == 2, "Sprung Heels: two jumps")
+			_bare()
+			_wear("receipt")
+			var src = foes[0]
+			src.world = M._free_near(h.world + h.face * 1.2)
+			h._invuln = 0.0
+			h.hurt_by(5.0, "phys", [], {}, src)
+			_line(U.told.any(func(e): return e["id"] == "receipt"), "the Receipt: a blow from in front answered with a free punch")
+			_bare()
+	h.unhurt = false
+	print("UNIQUESCLS: %s: %d checks, %d wrong%s" % [h.cls, n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

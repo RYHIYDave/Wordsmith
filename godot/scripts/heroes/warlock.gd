@@ -417,12 +417,30 @@ func _demon_lands() -> void:
 # =====================================================================================================================
 # THE PACT AND THE CHANGE (game.ts stepPact, beginChange, stepChange)
 
+## (UNIQUE ITEMS, the Unsigned Pact: the demon is staying on his life: game.ts uq.feeding)
+var feeding := false
+
+
 func _step_pact(dt: float) -> void:
 	var P: Dictionary = W["pact"]
 	if form == "demon":
 		pact = maxf(0.0, pact - float(P["full"]) / float(P["demonSecs"]) * dt)
 		if pact <= 0.0:
-			_begin_change("man")
+			# (UNIQUE ITEMS: the Unsigned Pact, the pact dry, the demon stays for as long as he can pay: it feeds on his life, and lets
+			# him go when he has little left, or at his word)
+			var U = h.uniques
+			var UP: Dictionary = U.ut["pact"] if U != null else {}
+			if U != null and U.wears("unsignedpact") and h.life > h.max_life * float(UP["floor"]) and not Input.is_action_just_pressed("change"):
+				if not feeding:
+					h._tell({"t": "unique", "id": "unsignedpact", "what": "feeds", "x": h.world.x, "y": h.world.y})
+					U._say({"id": "unsignedpact", "what": "feeds"})
+				feeding = true
+				h.life = maxf(h.max_life * float(UP["floor"]), h.life - h.max_life * float(UP["drain"]) * dt)
+			else:
+				feeding = false
+				_begin_change("man")
+		else:
+			feeding = false
 		return
 	# (HIS TREE: Bound Demon, while it is out the pact runs dry as the demon's would; empty, it burns out)
 	if not bound.is_empty():

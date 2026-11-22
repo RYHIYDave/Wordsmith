@@ -42,6 +42,7 @@ var uq := {
 	"blood_t": 0.0, "coat_hits": 0, "still": 0.0, "hurt_at": -1e9,
 	"arm_t": 0.0, "arm_m": null, "arm_at": -1e9, "talon_at": -1e9, "strikes": 0,
 	"weight": 0, "weight_hit": 0, "weight_quake": false, "weight_at": -1e9,
+	"tome_a": 0.0, "tome_at": {}, "streak": 0, "receipt_at": -1e9,
 }
 ## SET 1, GYRE: his axes spinning where their flight ended: {at, skill, dmg, t, tick, age}
 var gyres: Array = []
@@ -266,6 +267,16 @@ func hit_mult(m, i: int) -> float:
 		k *= 1.0 + float(ut["weight"]["more"]) * int(uq["weight_hit"])
 	if sid == "cleave" and wears("redtithe"):
 		k *= 1.0 - float(ut["tithe"]["cleave"])
+	# THE LEDGER OF DEBTS: the Hellfire Bolt, for every cursed enemy near him
+	if sid == "hellbolt" and wears("ledgerofdebts"):
+		var n := 0
+		for o in hero.monsters.list:
+			if is_instance_valid(o) and not o.dead and o.curse_t > 0.0 and o.world.distance_to(hero.world) <= float(ut["ledger"]["near"]) + o.r:
+				n += 1
+		k *= 1.0 + minf(float(ut["ledger"]["most"]), float(ut["ledger"]["each"]) * n)
+	# THE WINNING STREAK: every combo finished, unhit
+	if int(uq["streak"]) > 0 and wears("winningstreak"):
+		k *= 1.0 + minf(float(ut["streak"]["most"]), float(ut["streak"]["each"]) * int(uq["streak"]))
 	# THE PRESS: the more enemies close round him
 	if wears("press"):
 		var n := 0
@@ -316,10 +327,25 @@ func blow_came() -> void:
 
 
 ## (game.ts uniqueHurt) What a blow that took life from him does with the uniques worn (`src`: the monster that struck it).
-func hurt(_src) -> void:
+func hurt(src) -> void:
 	if worn.is_empty():
 		return
 	var again := false
+	# THE WINNING STREAK: getting hit ends the streak
+	uq["streak"] = 0
+	# THE RECEIPT: a blow he takes from in front is answered at once with a free punch
+	if src != null and is_instance_valid(src) and not src.dead and wears("receipt") and _clock - float(uq["receipt_at"]) >= float(ut["receipt"]["gap"]):
+		var R: Dictionary = ut["receipt"]
+		var dv: Vector2 = src.world - hero.world
+		var d := dv.length()
+		if d - src.r <= float(R["reach"]) and (d < 0.01 or dv.dot(hero.face) / d >= float(R["cos"])):
+			uq["receipt_at"] = _clock
+			var f: Vector2 = dv / d if d > 0.01 else hero.face
+			hero._tell({"t": "unique", "id": "receipt", "what": "answer", "x": hero.world.x, "y": hero.world.y, "x1": src.world.x, "y1": src.world.y, "mid": src.id})
+			hero._tell({"t": "swing", "x": hero.world.x, "y": hero.world.y, "dx": f.x, "dy": f.y, "reach": R["reach"], "el": hero.loadout.r(0)["element"]})
+			hero.sfx.play("haymaker", linear_to_db(0.7))
+			hero.hit_monster(src, 0, float(R["share"]), false)
+			_say({"id": "receipt", "what": "answer"})
 	# THE NETTLE SHIRT: a hit breaks the vow, and it starts over
 	if wears("nettleshirt"):
 		uq["vow_t"] = 0.0
@@ -524,6 +550,8 @@ func _process(dt: float) -> void:
 			_keys_open()
 		if wears("drownedarm"):
 			_step_arm(dt)
+		if wears("restlesstome"):
+			_step_tome(dt)
 	if again:
 		hero.loadout.refresh()
 
@@ -974,3 +1002,48 @@ func meteor_lands(i: int, at: Vector2, k: float, first: bool) -> void:
 	if first and hero.wakes != null and is_instance_valid(hero.wakes):
 		hero.wakes.add_patch(-1, "burn", at, float(S["burnR"]), float(S["burnSecs"]), hero.talent_hit("fire", float(S["burn"])), "fire")
 	_say({"id": "starbreaker", "what": "land" if first else "shake"})
+
+
+# --- THE RANGER'S, THE MAGE'S: what his shots cross ---
+
+## (game.ts crossings) What a shot of his crosses on its way: THE HAIR TRIGGER, an arrow over one of his traps sets it off, harder;
+## THE TUNING STAFF, a Wave through his Orb makes it pulse at once, harder (`kit`: his kit, which keeps his traps and orbs).
+func crossings(p: Dictionary, kit) -> void:
+	var at := Vector2(float(p["x"]), float(p["y"]))
+	if p.get("look", "") == "arrow" and wears("hairtrigger") and kit.get("traps") != null:
+		var G: Dictionary = ut["trigger"]
+		for t in kit.traps:
+			if t.has("shot") or Vector2(t["x"], t["y"]).distance_to(at) > float(G["near"]) + float(p["r"]):
+				continue
+			t["shot"] = float(G["mult"])
+			hero._tell({"t": "unique", "id": "hairtrigger", "what": "shot", "x": t["x"], "y": t["y"]})
+			_say({"id": "hairtrigger", "what": "shot"})
+	if kit.has_method("tuning_cross"):
+		kit.tuning_cross(p, self)
+
+
+# --- THE WARLOCK'S ---
+
+## (game.ts stepTome) THE RESTLESS TOME: it circles him, and puts his hellfire on any enemy it touches (the same not again for a moment).
+func _step_tome(dt: float) -> void:
+	var B: Dictionary = ut["tome"]
+	var ch = hero.kit.get("change") if hero.kit != null else null
+	if ch is Dictionary and not (ch as Dictionary).is_empty():
+		return
+	uq["tome_a"] = fmod(float(uq["tome_a"]) + TAU / float(B["turn"]) * dt, TAU)
+	var at: Vector2 = hero.world + Vector2(cos(uq["tome_a"]), sin(uq["tome_a"])) * float(B["r"])
+	var seen: Dictionary = uq["tome_at"]
+	if seen.size() > 256:
+		seen.clear()
+	for m in hero.monsters.list:
+		if not _fine(m) or m.world.distance_to(at) > float(B["touch"]) + m.r:
+			continue
+		if _clock - float(seen.get(m.id, -1e9)) < float(B["again"]):
+			continue
+		seen[m.id] = _clock
+		if hero.kit != null and hero.kit.has_method("_hell_on"):
+			hero.kit._hell_on(m, hero.talent_hit("fire", float(B["share"])))
+		if m.state == "sleep":
+			hero.monsters.wake(m)
+		hero._tell({"t": "unique", "id": "restlesstome", "what": "touch", "x": m.world.x, "y": m.world.y, "mid": m.id})
+		_say({"id": "restlesstome", "what": "touch"})

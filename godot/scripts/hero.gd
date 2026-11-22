@@ -475,6 +475,10 @@ func uniques_changed() -> void:
 		_lunge_cd = 0.0
 		if kit != null:
 			kit.cd[2] = 0.0
+	# (UNIQUE ITEMS: Sprung Heels, the Brawler's jump twice: game.ts refresh, maxCharges)
+	if kit != null and str(Words.skill(loadout.id(2)).get("kind", "")) == "vjump":
+		kit.max_charges[2] = int(uniques.ut["heels"]["jumps"]) if uniques != null and uniques.wears("sprungheels") else 1
+		kit.charges[2] = mini(kit.charges[2], kit.max_charges[2])
 
 
 ## (game.ts `after`) `fn` done `t` seconds from now, on the hero's clock.
@@ -606,6 +610,14 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	# FROST in front: it is chilled; a second chilling hit freezes it
 	if r["chill"] > 0.0:
 		m.chill_by(r["chill"])
+	# (UNIQUE ITEMS: the Prism, fire, frost and lightning each count as all three: what one of them hits burns, is chilled and shocked)
+	if el != "phys" and uniques != null and uniques.wears("prism"):
+		var Pm: Dictionary = uniques.ut["prism"]
+		if float(r["ignite"]) <= 0.0:
+			m.set_alight(dmg * float(Pm["burn"]) / 3.0, maxf(m.burn_t, 3.0))
+		if float(r["chill"]) <= 0.0:
+			m.chill_by(float(Pm["chill"]))
+		m.shock_t = maxf(m.shock_t, float(Talents.D["tune"]["shockSecs"]))
 	# (WORDMELDING: Thunder in front, one big bolt out of the sky in place of the arcs)
 	melds.thunder_bolt(r, at, quiet)
 	var front: Array = [] if quiet else loadout.wfronts(i)

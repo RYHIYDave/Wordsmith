@@ -1046,10 +1046,20 @@ lights over the dark (town.gd `_ring_moments`):
   own; stopped, the weight drains away), Starbreaker (Earthquake calls down a meteor, its shadow growing where it will land, its
   fire streaming; it strikes as the hammer comes down, rocks flying, the floor left burning; with Tremors its fire again with each
   shake). `--only=uniqueswar`: 9 checks, pictured.
+- **The other heroes' own** (game.ts, each where it acts; render/unique_fx.ts): the Ranger's Fan (three arrows a Shot, a little
+  weaker, one enemy taking only one), Rainwalker (his Volley rains round him and goes with him), the Poacher's Bow (a Volley leaves
+  one of his traps), the Hair Trigger (an arrow over his trap sets it off, twice as hard); the Mage's Shepherd's Crook (her Orb
+  follows her), Tide (the Wave comes back), Tuning Staff (a Wave through her Orb makes it pulse, twice as hard), Prism (fire,
+  frost and lightning each burn, chill and shock), Short Way (warp again soon and she snaps back); the Warlock's Ledger of Debts,
+  Restless Tome (the book circling him in its own pictures, its fire streaming, setting his hellfire on what it touches), Burning
+  Verse, Unsigned Pact (the demon stays, feeding on his life), Cloven Boots; the Tinkerer's Second Whistle, Sticky Wrench (her vial
+  stuck in pitch, blinking, bursting twice as wide), Foreman's Wrench, Tow Line (her Golem rides her Blast Jump and pounds where it
+  lands), Company Scrip (no cooldown, for gold); the Brawler's Fourth Globe, Last Round, Winning Streak, Sprung Heels, Receipt.
+  `--only=uniquescls --cls=<hero>`: 22 checks across the five, pictured. (The Pack Collar comes with the Ranger's companions.)
 
 ## Not in it yet
 
-What the heroes' own uniques do (their weapons', boots', rings' and the like: they drop and their cards say it); the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+The Ranger's companions (on in the game since this port began; and with them the Pack Collar); the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); playing UPRIGHT (the game laid out for a phone held upright, its PLAY UPRIGHT switch: the Godot screen is laid out for one
 held sideways only); the first dungeon's ghosts of the gesture each prompt asks for on a phone.
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)

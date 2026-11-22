@@ -58,6 +58,9 @@ func _T() -> Dictionary:
 
 ## (game.ts brewVial) What her tree puts in a vial leaving her hand: The Big One, every fifth a big one; Mad Mixture, a brew.
 func _brew(v: Dictionary) -> void:
+	# (UNIQUE ITEMS: the Sticky Wrench, her vials stick to what they hit and burst a moment later, twice as wide)
+	if h.uniques != null and h.uniques.wears("stickywrench") and not v.get("bomb", false):
+		v["sticky"] = true
 	if h.has("thebigone"):
 		vials_thrown += 1
 		if vials_thrown % int(_T()["bigOne"]["every"]) == 0:
@@ -127,6 +130,7 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 		# Echoes", a weaker one after that: each Golem charging keeps it for when it fires)
 		if not echo:
 			_whistle(i, to, each, int(r["count"]))
+			_scrip(i)
 		else:
 			for g in _up():
 				if g["act"] == "charge" and not g["did"]:
@@ -161,6 +165,17 @@ func _toss_vial(i: int, from: Vector2, to: Vector2, frac: float, n: int, echo: b
 	_say({"t": "vial", "id": -1, "x0": from.x, "y0": from.y, "x1": x1, "y1": y1, "flight": float(T["flight"]), "n": n, "echo": echo, "big": v.get("big", false)})
 	if n == 0:
 		_sfx("vial", 0.3 if echo else 0.5)
+	# (UNIQUE ITEMS: the Foreman's Wrench, whenever she tosses a vial each of her Golems lobs one as well, at the same spot)
+	if n == 0 and not echo and h.uniques != null and h.uniques.wears("foremanswrench"):
+		for g in _up():
+			if g["act"] == "arrive":
+				continue
+			var gv := {"x0": float(g["x"]), "y0": float(g["y"]), "x1": x1, "y1": y1, "t": 0.0, "flight": float(T["flight"]), "skill": i,
+				"frac": frac * float(h.uniques.ut["foreman"]["share"]), "wake": false, "foreman": true}
+			_brew(gv)
+			vials.append(gv)
+			_say({"t": "vial", "id": -1, "x0": g["x"], "y0": g["y"], "x1": x1, "y1": y1, "flight": float(T["flight"]), "n": 0, "big": gv.get("big", false)})
+			h.uniques._say({"id": "foremanswrench", "what": "lob"})
 
 
 ## (game.ts vialBursts) A vial of hers bursting where it comes down, hurting all within the move's radius.
@@ -171,6 +186,9 @@ func _vial_bursts(v: Dictionary) -> void:
 	var little: bool = v.get("little", false)
 	var big: bool = v.get("big", false)
 	var brew: String = v.get("brew", "")
+	# (UNIQUE ITEMS: the Sticky Wrench, twice as wide)
+	if v.get("sticky", false) and h.uniques != null:
+		rad *= float(h.uniques.ut["sticky"]["wide"])
 	# (CLUSTER VIALS: a little one bursts smaller; THE BIG ONE, three times as wide)
 	if little:
 		rad *= float(T["cluster"]["size"])
@@ -314,6 +332,10 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 	h._act = "lunge"
 	if h.move_safe():
 		h._invuln = maxf(h._invuln, secs + 0.1)
+	# (UNIQUE ITEMS: the Tow Line, her Golems ride the jump with her; the Company Scrip, no cooldown, for gold)
+	if h.uniques != null and h.uniques.wears("towline"):
+		_tow_ride(x0, land)
+	_scrip(2)
 
 
 func _move_step(dt: float) -> void:
@@ -330,6 +352,12 @@ func _move_step(dt: float) -> void:
 		# (her coming down: a thud of dust where she lands)
 		_say({"t": "blastLand", "x": h.world.x, "y": h.world.y})
 		land_t = 0.0
+		# (UNIQUE ITEMS: the Tow Line, a Golem that did not ride her jump pounds where it stands as she lands)
+		if h.uniques != null and h.uniques.wears("towline"):
+			for g in _up():
+				if g.get("towed", false) or g["act"] == "jump":
+					continue
+				_pounds(int(g["skill"]), Vector2(g["x"], g["y"]), float(h.loadout.r(int(g["skill"]))["count_dmg"]) * float(h.uniques.ut["tow"]["share"]), 0, false, g)
 		# (her tree's BOMBS AWAY: a second bomb goes off where she lands)
 		if h.has("bombsaway"):
 			var B: Dictionary = _T()["bombsAway"]
@@ -434,6 +462,54 @@ func _whistle(i: int, to: Vector2, frac: float, count: int) -> void:
 	_overdrive()
 
 
+## (game.ts towRide) THE TOW LINE: her Golems ride her Blast Jump, each to its own side of where she comes down, landing in a ground
+## pound.
+func _tow_ride(x0: Vector2, x1: Vector2) -> void:
+	var d := x0.distance_to(x1)
+	var u: Vector2 = (x1 - x0) / d if d > 0.01 else h.face
+	for g in _up():
+		if g["act"] == "jump" or g["act"] == "charge":
+			continue
+		var seat: int = g["seat"]
+		var side := 1.2 if seat == 0 else (-1.2 if seat == 1 else 0.0)
+		var back := 0.6 + (1.3 if seat >= 2 else 0.0)
+		var to := Vector2(x1.x - u.y * side - u.x * back, x1.y + u.x * side - u.y * back)
+		if not _open(to):
+			to = x1
+		var gat := Vector2(g["x"], g["y"])
+		if gat.distance_to(to) < 1.0:
+			continue
+		_turn_golem(g, to)
+		g["jx"] = gat.x
+		g["jy"] = gat.y
+		g["ax"] = to.x
+		g["ay"] = to.y
+		g["act"] = "jump"
+		g["act_t"] = (float(RK["blast"]) - 1.0) / 30.0
+		g["did"] = false
+		g["towed"] = true
+		h._tell({"t": "unique", "id": "towline", "what": "ride", "x": gat.x, "y": gat.y, "x1": to.x, "y1": to.y})
+		h.uniques._say({"id": "towline", "what": "ride"})
+
+
+## (game.ts scrip) THE COMPANY SCRIP: her whistle or her Blast Jump, just used, has no cooldown, for gold; without the gold, its
+## cooldown as ever.
+func _scrip(i: int) -> void:
+	if h.uniques == null or not h.uniques.wears("companyscrip"):
+		return
+	var L = h.monsters.loot if h.monsters != null else null
+	if L == null:
+		return
+	var cost: int = maxi(1, roundi(float(h.uniques.ut["scrip"]["gold"]) * maxf(1.0, float(L.power()))))
+	if L.gold < cost:
+		return
+	L.gold -= cost
+	charges[i] = max_charges[i]
+	cd[i] = 0.0
+	h._tell({"t": "text", "x": h.world.x, "y": h.world.y, "text": "-%d gold" % cost, "color": "#ffd27a"})
+	h.uniques._say({"id": "companyscrip", "what": "paid", "gold": cost})
+
+
 ## (game.ts armOf) The arm on her Golem: its cannon; with her tree's GUN ARM, the tesla coil (his word of 21 Nov 2026: the node
 ## swaps the cannon for the coil, no pick).
 func arm_of() -> String:
@@ -441,7 +517,9 @@ func arm_of() -> String:
 
 ## (game.ts golemsMost) How many Golems she may have out at once: one; two with her tree's MARK II.
 func golems_most() -> int:
-	return int(_T()["markII"]) if h.has("markii") else 1
+	# (UNIQUE ITEMS: the Second Whistle, one more than she would have, at full strength)
+	var more: int = int(h.uniques.ut["whistle"]["more"]) if h.uniques != null and h.uniques.wears("secondwhistle") else 0
+	return (int(_T()["markII"]) if h.has("markii") else 1) + more
 
 
 ## (GROWTH SERUM, game.ts growGolem) Golem `g` grows, twice as big and twice as strong, for a while.
@@ -675,6 +753,24 @@ func _step_own(dt: float) -> void:
 	for k in range(vials.size() - 1, -1, -1):
 		var v: Dictionary = vials[k]
 		v["t"] = float(v["t"]) + dt
+		# (UNIQUE ITEMS: the Sticky Wrench: landed, it sticks, to the enemy it landed on if there is one, and goes where that goes)
+		if v.get("sticky", false) and not v.has("fuse") and float(v["t"]) >= float(v["flight"]) and h.uniques != null:
+			var S: Dictionary = h.uniques.ut["sticky"]
+			v["fuse"] = float(S["fuse"])
+			var bd: float = float(S["grab"])
+			if h.monsters != null:
+				for m in h.monsters.list:
+					var dd: float = m.world.distance_to(Vector2(v["x1"], v["y1"])) - m.r
+					if is_instance_valid(m) and not m.dead and not h.monsters.shut_in(m) and dd < bd:
+						bd = dd
+						v["stuck"] = m
+			var sm = v.get("stuck")
+			h._tell({"t": "unique", "id": "stickywrench", "what": "stuck", "x": v["x1"], "y": v["y1"], "secs": S["fuse"], "mid": sm.id if sm != null else null})
+			h.uniques._say({"id": "stickywrench", "what": "stuck"})
+		var sv = v.get("stuck")
+		if sv != null and is_instance_valid(sv) and not sv.dead:
+			v["x1"] = sv.world.x
+			v["y1"] = sv.world.y
 		# (her Contraption's little bombs sit a moment where they land before they go off)
 		if float(v["t"]) < float(v["flight"]) + float(v.get("fuse", 0.0)):
 			continue
@@ -891,7 +987,9 @@ func _step_rocket(g: Dictionary, gdt: float) -> void:
 		_say({"t": "golemArrive", "x": p.x, "y": p.y, "rocket": rocket})
 		# (ITS FIST SLAM: it lands as its ground pound strikes)
 		_pounds(int(g["skill"]), p, _golem_frac(g), 0, false, g)
-		g["jump_cd"] = float(GT["jump"]["wait"])
+		# (UNIQUE ITEMS: the Tow Line's ride is free: its jump's wait set back to none)
+		g["jump_cd"] = 0.0 if g.get("towed", false) else float(GT["jump"]["wait"])
+		g.erase("towed")
 	if f >= float(RK["end"]):
 		_golem_idle(g)
 

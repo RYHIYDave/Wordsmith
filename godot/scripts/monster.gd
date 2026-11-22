@@ -235,6 +235,8 @@ var dark_words: Array = []
 var dark_half: Array = []
 ## UNIQUE ITEMS, SET 1: DEATH KNELL (game.ts Monster.knellT): seconds it rings yet, struck by his hammer.
 var knell_t := 0.0
+## (the Burning Verse: a burn of his on it while it was cursed, which never goes out: game.ts Monster.verse)
+var verse := false
 var carries: Array = []
 ## THE ROYAL CARDS (act3/royal_cards.gd): the royal that touched its pack ("princess", "prince", "queen", "king"), or "".
 var royal := ""
@@ -1439,14 +1441,21 @@ func _afflicted(dt: float) -> bool:
 			bleed_move = 0.0
 	if mirror_t > 0.0:
 		mirror_t = maxf(0.0, mirror_t - dt)
+	# (UNIQUE ITEMS: the Burning Verse, a burn of his on a cursed enemy never goes out: it lasts until it dies)
+	var lasts := false
+	var hu = mgr.hero.get("uniques") if mgr.hero != null and is_instance_valid(mgr.hero) else null
+	if hu != null and hu.wears("burningverse"):
+		if not verse and curse_t > 0.0 and (burn_t > 0.0 or hell_t > 0.0):
+			verse = true
+		lasts = verse
 	# (THE WARLOCK: his hellfire and the curse run out)
-	if hell_t > 0.0:
+	if hell_t > 0.0 and not lasts:
 		hell_t = maxf(0.0, hell_t - dt)
 	if curse_t > 0.0:
 		curse_t = maxf(0.0, curse_t - dt)
 	if frozen_t <= 0.0 and stun_t <= 0.0:
 		_surge(dt)
-	if burn_t > 0.0:
+	if burn_t > 0.0 and not lasts:
 		burn_t -= dt
 	if chill_t > 0.0:
 		chill_t -= dt

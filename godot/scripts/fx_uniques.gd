@@ -90,6 +90,13 @@ var s1_splashes: Array = []
 var s1_peals: Array = []
 var s1_dusts: Array = []
 var s1_clock := 0.0
+## THE RESTLESS TOME: the tongues of its fire left along its way {x, y, z, t, lean, seed}; its fire on those it touched; its flare
+var flames: Array = []
+var touches: Array = []
+var _flame_t := 0.0
+## THE STICKY WRENCH: her vials stuck {x, y, m, z, secs, t}
+var stuck: Array = []
+var flare := 0.0
 var _grit_t := 0.0
 ## (what stands, each frame laid again: Sprite2Ds among the figures, made as wanted and hidden when not)
 var _sprites: Array[Sprite2D] = []
@@ -205,6 +212,17 @@ func handle(e: Dictionary) -> void:
 			var c: Color = fx.monsters.main.loot.word_color(m.words[0]) if fx.monsters.main.loot != null else Color.WHITE
 			fx.ring(x, y, 1.1, 0.26, PackedColorArray([Color.WHITE, c, c]), false)
 			fx.spray(x, y, 8, PackedColorArray([c, Color.WHITE]), 1.1, 70.0, roundf(top * 0.6))
+	elif id == "stickywrench" and what == "stuck":
+		# (on the enemy it landed on, at its middle; else on the floor)
+		var m = _mon(e.get("mid"))
+		stuck.append({"x": x, "y": y, "m": m, "z": minf(16.0, _top_of(m) * 0.45) if m != null else 2.0, "secs": float(e.get("secs", 0.7)), "t": 0.0})
+		if stuck.size() > 8:
+			stuck.pop_front()
+	elif id == "restlesstome" and what == "touch":
+		var m = _mon(e.get("mid"))
+		_seeds += 1
+		touches.append({"x": x, "y": y, "z": minf(20.0, _top_of(m) * 0.5), "t": 0.0, "seed": _seeds})
+		flare = float(D["tune"]["TOME_FLIES"]["flare"])
 	elif id == "windcutter" and what == "blade":
 		# A GUST OFF HIS SWORD as the blade leaves it: hoops of air thrown out the way it goes, a puff of grit round his feet
 		var AIR: Array = C["AIR"]
@@ -337,6 +355,36 @@ func update(dt: float) -> void:
 	for b in blows:
 		b["t"] += dt
 	blows = blows.filter(func(b): return b["t"] * 30.0 < float(TU["RISEN_BLOW_FRAMES"]))
+	# THE STICKY WRENCH: it goes where what it is stuck to goes
+	for v in stuck:
+		v["t"] += dt
+		var sm = v["m"]
+		if sm != null and is_instance_valid(sm) and not sm.dead:
+			v["x"] = sm.world.x
+			v["y"] = sm.world.y
+	stuck = stuck.filter(func(v): return v["t"] < v["secs"])
+	# THE TOME: a tongue of its fire left where it is, a thirtieth of a second apart
+	var TF: Dictionary = TU["TOME_FLIES"]
+	flare = maxf(0.0, flare - dt)
+	for f in flames:
+		f["t"] += dt
+		f["z"] += float(TF["rises"]) * dt
+	flames = flames.filter(func(f): return f["t"] < float(TF["burns"]))
+	for q in touches:
+		q["t"] += dt
+	touches = touches.filter(func(q): return q["t"] * 30.0 < float(TU["TOME_TOUCH_FRAMES"]))
+	var tm := _tome_now()
+	if tm.is_empty():
+		_flame_t = 0.0
+	else:
+		_flame_t += dt
+		if _flame_t >= float(TF["every"]):
+			_flame_t = minf(_flame_t - float(TF["every"]), float(TF["every"]))
+			var sdx: float = float(tm["tx"]) - float(tm["ty"])
+			_seeds += 1
+			flames.append({"x": tm["x"] - tm["tx"] * 0.2, "y": tm["y"] - tm["ty"] * 0.2, "z": tm["z"] - 1.0, "t": 0.0, "lean": 0 if tm["still"] else (-1 if sdx > 0.25 else (1 if sdx < -0.25 else 0)), "seed": _seeds})
+			if flames.size() > int(TF["most"]):
+				flames.pop_front()
 	# SET 1
 	s1_clock += dt
 	for f in s1_falls:
@@ -416,11 +464,52 @@ func _stand(p: Dictionary, sx: float, sy: float, d: float, alpha: float, flip :=
 	s.modulate = Color(1, 1, 1, alpha)
 
 
+## (render/unique_fx.ts tomeNow) THE TOME, worn: where it is, how high, and the way it flies there; {} if none.
+func _tome_now() -> Dictionary:
+	var U = _uq()
+	if U == null or not U.wears("restlesstome") or not U.hero.alive:
+		return {}
+	var map = U.hero.map
+	if map == null or int(map.depth) < 1:
+		return {}
+	var a: float = U.uq["tome_a"]
+	var r: float = U.ut["tome"]["r"]
+	var TF: Dictionary = D["tune"]["TOME_FLIES"]
+	var hw: Vector2 = U.hero.world
+	var ch = U.hero.kit.get("change") if U.hero.kit != null else null
+	return {"x": hw.x + cos(a) * r, "y": hw.y + sin(a) * r, "z": float(TF["high"]) + float(TF["bob"]) * sin(t * 5.1), "tx": -sin(a), "ty": cos(a),
+		"still": ch is Dictionary and not (ch as Dictionary).is_empty()}
+
+
 ## After everything else in the frame (fx.gd _late): what stands laid where it now is.
 func follow() -> void:
 	_used = 0
 	var TU: Dictionary = D["tune"]
 	var U = _uq()
+	# THE TOME'S FIRE, oldest first, then the book, then its fire on the one it touched
+	var TF: Dictionary = TU["TOME_FLIES"]
+	var TFL: Dictionary = TU["TOME_FLAME"]
+	var sizes: int = (TFL["sizes"] as Array).size()
+	for f in flames:
+		var u: float = f["t"] / float(TF["burns"])
+		var i := clampi(roundi((1.0 - u) * (sizes - 2) + (1.0 if flare > 0.0 else 0.0)), 0, sizes - 1)
+		var fr := (floori(t * 20.0) + int(f["seed"])) % int(TFL["frames"])
+		_stand(pic("flame|%d|%d|%d" % [i, fr, int(f["lean"])]), _gx(f["x"], f["y"]) * 2.0, (_gy(f["x"], f["y"]) - f["z"]) * 2.0, f["x"] + f["y"] - 0.004, 1.0)
+	var tm := _tome_now()
+	if not tm.is_empty():
+		var TB: Dictionary = TU["TOME"]
+		var al := atan2(float(tm["tx"]) + float(tm["ty"]), float(tm["tx"]) - float(tm["ty"]))
+		var hd := posmod(roundi(al / TAU * int(TB["headings"])), int(TB["headings"]))
+		var fl := floori(t * 30.0) % int(TB["flaps"])
+		_stand(pic("tome|%d|%d" % [hd, fl]), _gx(tm["x"], tm["y"]) * 2.0, (_gy(tm["x"], tm["y"]) - tm["z"]) * 2.0, tm["x"] + tm["y"], 1.0)
+	# THE STICKY WRENCH: her vial where it is stuck, a little before what it is stuck to
+	var ST: Dictionary = TU["STICKY"]
+	for v in stuck:
+		var f := mini(int(ST["frames"]) - 1, floori(v["t"] / v["secs"] * int(ST["frames"])))
+		_stand(pic("stuck|%d" % f), _gx(v["x"], v["y"]) * 2.0, (_gy(v["x"], v["y"]) - v["z"]) * 2.0, v["x"] + v["y"] + 0.06, 1.0)
+	for q in touches:
+		var age := mini(int(TU["TOME_TOUCH_FRAMES"]) - 1, floori(q["t"] * 30.0))
+		_stand(pic("touch|%d|%d" % [age, int(q["seed"]) % 3]), _gx(q["x"], q["y"]) * 2.0, (_gy(q["x"], q["y"]) - q["z"]) * 2.0, q["x"] + q["y"] + 0.05, 1.0)
 	# THE QUEEN'S TALONS: her bird where it is on its way, its floor point lifted as high as it flies
 	for b in birds:
 		var at := talons_at(b["t"], b["secs"])
@@ -521,6 +610,9 @@ func _draw_pic(c: CanvasItem, p: Dictionary, sx: float, sy: float, alpha := 1.0)
 ## where the elite rose, its shadow, the brand under it.
 func draw_ground(c: CanvasItem) -> void:
 	var TU: Dictionary = D["tune"]
+	var tm := _tome_now()
+	if not tm.is_empty():
+		_oval(c, tm["x"], tm["y"], 0.3, 0.24)
 	for b in birds:
 		var at := talons_at(b["t"], b["secs"])
 		if at.is_empty():
@@ -781,6 +873,20 @@ func draw_add(c: CanvasItem) -> void:
 		var r: float = l[2]
 		c.draw_texture_rect(_glow, Rect2((l[0] - r) * 2.0, (l[1] - r) * 2.0, r * 4.0, r * 4.0), false, Color(l[3], clampf(l[4], 0.0, 1.0)))
 	_lights = []
+	# (her stuck vials' light, flaring with each blink)
+	var ST: Dictionary = D["tune"]["STICKY"]
+	for v in stuck:
+		var f := floori(v["t"] / v["secs"] * int(ST["frames"]))
+		var hot := false
+		for b in ST["blinks"]:
+			if f == int(b) or f == int(b) + 1:
+				hot = true
+		var rr := 22.0 if hot else 12.0
+		c.draw_texture_rect(_glow, Rect2((_gx(v["x"], v["y"]) - rr) * 2.0, (_gy(v["x"], v["y"]) - v["z"] - 4.0 - rr) * 2.0, rr * 4.0, rr * 4.0), false, Color(Color(D["colors"]["STICKY_BREW"][1]), 0.32 if hot else 0.12))
+	var tm := _tome_now()
+	if not tm.is_empty():
+		c.draw_texture_rect(_glow, Rect2((_gx(tm["x"], tm["y"]) - (44.0 if flare > 0.0 else 32.0)) * 2.0, (_gy(tm["x"], tm["y"]) - 2.0 - (44.0 if flare > 0.0 else 32.0)) * 2.0, (88.0 if flare > 0.0 else 64.0) * 2.0, (88.0 if flare > 0.0 else 64.0) * 2.0), false,
+			Color(Color(D["colors"]["TOME_GLOW"]), (0.3 if flare > 0.0 else 0.15) + 0.02 * sin(t * 31.0)))
 	var U = _uq()
 	var p = U.risen if U != null else null
 	if p == null:

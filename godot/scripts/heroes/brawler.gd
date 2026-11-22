@@ -91,7 +91,12 @@ func _shake(amount: float) -> void:
 
 
 func _full() -> bool:
-	return globes.size() >= 3
+	return globes.size() >= most()
+
+
+## (game.ts vetMost) How many globes his combos hold: three; UNIQUE ITEMS, the Fourth Globe: four.
+func most() -> int:
+	return int(h.uniques.ut["fourth"]["globes"]) if h.uniques != null and h.uniques.wears("fourthglobe") else 3
 
 
 static func is_punch(id: String) -> bool:
@@ -251,6 +256,11 @@ func _press(kind: String, at := Vector2.ZERO) -> bool:
 		globes.append("jump")
 		queue.append({"id": "dodge", "globe": globes.size() - 1, "tx": at.x, "ty": at.y})
 		idle = 0.0
+		# (UNIQUE ITEMS: Sprung Heels, he can jump again in the air: the jump he is in ends here, and the next begins from it)
+		if not mv.is_empty() and mv["id"] == "dodge" and float(mv["f"]) >= float(R["dodge"]["air"][0]) and h.uniques != null and h.uniques.wears("sprungheels"):
+			done.append("dodge")
+			mv = {}
+			h.uniques._say({"id": "sprungheels", "what": "again"})
 		return true
 	var i := 0 if kind == "tap" else 1
 	# (THE VETERAN'S TREE: Fire Starter, landed from a dodge jump, his next tap or hold is in fire already, the jump not spent)
@@ -286,6 +296,16 @@ func _press(kind: String, at := Vector2.ZERO) -> bool:
 		return true
 	if _full():
 		return false
+	# (UNIQUE ITEMS: the Last Round, the third globe of every combo sets itself in fire, the jump not spent)
+	if globes.size() == 2 and h.uniques != null and h.uniques.wears("lastround"):
+		globes.append("punchFire" if kind == "tap" else "kickFire")
+		var lq := {"id": fire_for(kind, before), "globe": globes.size() - 1}
+		lq.merge(_aim_of(kind))
+		queue.append(lq)
+		h.uses[i] += 1
+		idle = 0.0
+		h.uniques._say({"id": "lastround", "what": "fire"})
+		return true
 	globes.append("punch" if kind == "tap" else "kick")
 	var q := {"id": move_for(kind, before), "globe": globes.size() - 1}
 	q.merge(_aim_of(kind))
@@ -455,6 +475,11 @@ func _play(dt: float, way: Vector2) -> void:
 		if _full() and queue.is_empty():
 			globes = []
 			done = []
+			# (UNIQUE ITEMS: the Winning Streak, every combo he finishes makes his next blows hit harder)
+			if h.uniques != null and h.uniques.wears("winningstreak"):
+				h.uniques.uq["streak"] = int(h.uniques.uq.get("streak", 0)) + 1
+				h._tell({"t": "unique", "id": "winningstreak", "what": "streak", "x": h.world.x, "y": h.world.y, "mid": h.uniques.uq["streak"]})
+				h.uniques._say({"id": "winningstreak", "what": "streak"})
 
 
 ## (veteran.ts vetReach) The frame a blow's force reaches one standing at `p`, radius `r` (from where he stood as it began, along

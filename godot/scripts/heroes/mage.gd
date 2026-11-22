@@ -203,6 +203,16 @@ func _step_orbs(dt: float) -> void:
 			_say({"t": "orbEnd", "x": o["x"], "y": o["y"], "el": o["element"]})
 			orbs.remove_at(k)
 			continue
+		# (UNIQUE ITEMS: the Shepherd's Crook, the Orb follows her)
+		if h.uniques != null and h.uniques.wears("shepherdscrook"):
+			var C: Dictionary = h.uniques.ut["crook"]
+			var oat := Vector2(o["x"], o["y"])
+			var dd: float = oat.distance_to(h.world)
+			if dd > float(C["near"]):
+				var nxt: Vector2 = oat + (h.world - oat) / dd * minf(dd - float(C["near"]), float(C["speed"]) * dt)
+				if _open(nxt):
+					o["x"] = nxt.x
+					o["y"] = nxt.y
 		o["next"] = float(o["next"]) - dt
 		if float(o["next"]) <= 0.0:
 			var r: Dictionary = h.loadout.r(i)
@@ -216,6 +226,11 @@ func _step_orbs(dt: float) -> void:
 
 func _use_evasive(at: Vector2, way: Vector2) -> void:
 	var def := _def(2)
+	# (UNIQUE ITEMS: the Short Way, Warp again soon enough and she snaps back to where she started, the Warp not spent)
+	var U = h.uniques
+	if U != null and not back.is_empty() and str(def["kind"]) == "warp" and U.wears("shortway") and U._clock <= float(back["until"]):
+		_snap_back()
+		return
 	at = _evasive_at(at, way)
 	if charges[2] < 1:
 		return
@@ -252,6 +267,10 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 	_say({"t": "burst", "x": land.x, "y": land.y, "r": 0.8, "el": "frost", "style": "warp"})
 	# (HER TREE: Frost Warp, Flame Warp; Storm Warp where she arrives)
 	_talent_warp(x0, land)
+	# (UNIQUE ITEMS: the Short Way, her Warp talents go off at both ends; and for a moment warping again snaps her back)
+	if U != null and U.wears("shortway"):
+		_talent_warp(land, x0)
+		back = {"at": x0, "until": U._clock + float(U.ut["shortWay"]["secs"])}
 	var rad: float = float(def["radius"]) * float(r["size"])
 	h._wake(2, x0, rad, float(r["count_dmg"]))
 	for k in int(r["count"]):
@@ -266,6 +285,85 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 
 ## (game.ts denyT: "No room" said no more than once in 0.8 s)
 var _deny := 0.0
+## (UNIQUE ITEMS, the Short Way: where she warped from, and until when warping again snaps her back: game.ts uq.back)
+var back := {}
+
+
+## (game.ts snapBack) THE SHORT WAY: back to where she warped from, as near as she may get from here.
+func _snap_back() -> void:
+	var to := _reach_point(back["at"], 99.0)
+	back = {}
+	if to.distance_to(h.world) < 0.5:
+		return
+	if not channel.is_empty():
+		_end_channel(true)
+	windup = {}
+	queued = {}
+	var x0: Vector2 = h.world
+	h.uses[2] += 1
+	h.sfx.play("warp")
+	_say({"t": "burst", "x": x0.x, "y": x0.y, "r": 0.8, "el": "frost", "style": "warp"})
+	_talent_warp(x0, to)
+	_talent_warp(to, x0)
+	h.warp_out()
+	h.world = to
+	h._place()
+	h.phase_in(0.22)
+	if h.move_safe():
+		h._invuln = maxf(h._invuln, 0.3)
+	_say({"t": "burst", "x": to.x, "y": to.y, "r": 0.8, "el": "frost", "style": "warp"})
+	h._tell({"t": "unique", "id": "shortway", "what": "back", "x": x0.x, "y": x0.y, "x1": to.x, "y1": to.y})
+	h.uniques._say({"id": "shortway", "what": "back"})
+	var r: Dictionary = h.loadout.r(2)
+	var rad: float = float(_def(2)["radius"]) * float(r["size"])
+	h._wake(2, x0, rad, float(r["count_dmg"]))
+	h._blast(2, to, rad, float(r["count_dmg"]), "nova", false, linear_to_db(0.8), 0, false)
+
+
+## (game.ts endProjectile) THE TIDE: the Wave, at the end of its way, comes back.
+func _end_shot(p: Dictionary) -> void:
+	if p.get("look", "") == "wave" and not p.get("home", false) and not p.get("blade", false) and h.uniques != null and h.uniques.wears("tide"):
+		_turn_tide(p)
+	super(p)
+
+
+## (game.ts turnTide) The Wave turns and passes through everything again on its way home, for the Tide's share.
+func _turn_tide(p: Dictionary) -> void:
+	var i: int = p["skill"]
+	if str(_def(i)["kind"]) != "wave":
+		return
+	var at := Vector2(p["x"], p["y"])
+	var d: float = at.distance_to(h.world)
+	if d < 0.8:
+		return
+	var u: Vector2 = (h.world - at) / d
+	var sp: float = Vector2(p["vx"], p["vy"]).length()
+	if sp <= 0.0:
+		sp = float(h.loadout.r(i)["proj_speed"])
+	shots.append({"x": at.x, "y": at.y, "vx": u.x * sp, "vy": u.y * sp, "r": p["r"], "dist": d, "dmg": float(p["dmg"]) * float(h.uniques.ut["tide"]["share"]),
+		"element": p["element"], "look": "wave", "pierce": true, "hit": [], "volley": false, "skill": i, "trail": 0.0, "words": p["words"], "age": 0.0,
+		"n": p["n"], "flown": 0.0, "home": true, "left": true})
+	h._tell({"t": "unique", "id": "tide", "what": "turn", "x": at.x, "y": at.y, "x1": h.world.x, "y1": h.world.y})
+	h.uniques._say({"id": "tide", "what": "turn"})
+	_say({"t": "wave", "x": at.x, "y": at.y, "dx": u.x, "dy": u.y, "w": p["r"], "el": p["element"], "words": p["words"], "echo": true})
+
+
+## (game.ts crossings) THE TUNING STAFF: a Wave through her Orb makes it pulse at once, harder.
+func tuning_cross(p: Dictionary, U) -> void:
+	if p.get("look", "") != "wave" or p.get("blade", false) or orbs.is_empty() or not U.wears("tuningstaff"):
+		return
+	var tuned: Array = p.get("tuned", [])
+	for o in orbs:
+		if tuned.has(o["id"]) or Vector2(o["x"], o["y"]).distance_to(Vector2(p["x"], p["y"])) > float(p["r"]) + 0.5:
+			continue
+		tuned.append(o["id"])
+		p["tuned"] = tuned
+		var i: int = o["skill"]
+		if str(_def(i)["kind"]) != "orb":
+			continue
+		h._tell({"t": "unique", "id": "tuningstaff", "what": "pulse", "x": o["x"], "y": o["y"]})
+		U._say({"id": "tuningstaff", "what": "pulse"})
+		_orb_wave(i, Vector2(o["x"], o["y"]), float(_def(i)["radius"]) * float(h.loadout.r(i)["size"]), float(o["frac"]) * float(U.ut["tuning"]["mult"]), false, false)
 
 
 func _move_step(_dt: float) -> void:

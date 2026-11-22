@@ -378,13 +378,13 @@ func _draw_globes(c: CanvasItem) -> void:
 	if not drain.is_empty():
 		var k := maxf(0.0, 1.0 - ((_clock - float(drain["t0"])) * 30.0) / 8.0)
 		var ss: Array = drain["slots"]
-		for i in 3:
+		for i in kit.most():
 			row.append(globe_of.call(ss[i] if i < ss.size() else null, k))
-		locked = ss.size() >= 3 and k >= 0.6
+		locked = ss.size() >= kit.most() and k >= 0.6
 	else:
-		for i in 3:
+		for i in kit.most():
 			row.append(globe_of.call(slots[i] if i < slots.size() else null, 1.0))
-		locked = slots.size() >= 3 and row.all(func(r): return r["kind"] == "fire" or (r["kind"] != "empty" and float(r["level"]) >= 1.0))
+		locked = slots.size() >= kit.most() and row.all(func(r): return r["kind"] == "fire" or (r["kind"] != "empty" and float(r["level"]) >= 1.0))
 	var img := _paint_globes(row, locked, floori(_clock * 30.0))
 	if _globe_tex == null or _globe_tex.get_size() != Vector2(img.get_size()):
 		_globe_tex = ImageTexture.create_from_image(img)

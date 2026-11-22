@@ -101,15 +101,26 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 		var steady: bool = primary and h.has("steadyaim") and still_t >= float(Talents.D["tune"]["steadyAim2"]["still"])
 		if steady:
 			still_t = 0.0
+		# (UNIQUE ITEMS: the Fan, each Shot three arrows in a fan, each a little weaker; one enemy takes only one of them)
+		var fanned: bool = primary and h.loadout.id(i) == "shot" and h.uniques != null and h.uniques.wears("fan")
+		var fans: Array = [0.0]
+		var share := 1.0
+		if fanned:
+			var F: Dictionary = h.uniques.ut["fan"]
+			fans = []
+			for q in int(F["arrows"]):
+				fans.append((q - (int(F["arrows"]) - 1) / 2.0) * float(F["spread"]))
+			share = float(F["share"])
 		var loose := func(at: Vector2, hit: Array) -> void:
 			var n: int = r["count"]
 			for k in n:
-				var a := base + (0.0 if n == 1 else (k - (n - 1) / 2.0) * 0.16)
-				var u := Vector2(cos(a), sin(a))
-				shots.append({"x": at.x + u.x * 0.4, "y": at.y + u.y * 0.4, "vx": u.x * float(r["proj_speed"]), "vy": u.y * float(r["proj_speed"]),
-					"r": minf(0.6, float(def["radius"]) * float(r["size"]) * (1.5 if float(r["splash"]) >= 1.5 else 1.0)), "dist": float(def["range"]),
-					"dmg": each, "element": r["element"], "pierce": bool(r["pierce"]) or steady, "hit": hit, "volley": n > 1, "skill": i, "trail": 0.0,
-					"words": words, "age": 0.0, "n": k, "flown": 0.0, "look": "arrow"})
+				for f in fans:
+					var a := base + (0.0 if n == 1 else (k - (n - 1) / 2.0) * 0.16) + float(f)
+					var u := Vector2(cos(a), sin(a))
+					shots.append({"x": at.x + u.x * 0.4, "y": at.y + u.y * 0.4, "vx": u.x * float(r["proj_speed"]), "vy": u.y * float(r["proj_speed"]),
+						"r": minf(0.6, float(def["radius"]) * float(r["size"]) * (1.5 if float(r["splash"]) >= 1.5 else 1.0)), "dist": float(def["range"]),
+						"dmg": each * share, "element": r["element"], "pierce": bool(r["pierce"]) or steady, "hit": hit, "volley": n > 1 or fanned, "skill": i, "trail": 0.0,
+						"words": words, "age": 0.0, "n": k, "flown": 0.0, "look": "arrow"})
 		# (the shots of one use keep one list of who they have hit between them: an enemy before the bow takes one of a Twin pair)
 		loose.call(from, [])
 		# (THE RANGER'S TREE REMADE: Quick Draw, every fifth arrow fires twice: the second a moment after, from where he is then)
@@ -156,16 +167,18 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 			h._tell({"t": "spark", "x": h.world.x, "y": h.world.y, "el": "phys", "n": 12})
 	elif def["kind"] == "volley":
 		# (up from the bow, and a moment later coming down round where it was aimed: as near there as he can see, within reach)
-		var p := _reach_point(to, float(def["range"]))
+		# (UNIQUE ITEMS: Rainwalker, Volley rains round him and goes with him)
+		var walker: bool = h.uniques != null and h.uniques.wears("rainwalker")
+		var p: Vector2 = h.world if walker else _reach_point(to, float(def["range"]))
 		var rad: float = float(def["radius"]) * float(r["size"])
 		h.sfx.play("volley", linear_to_db(0.5 if echo else 0.9))
 		_say({"t": "volleyUp", "x": from.x, "y": from.y, "tx": p.x, "ty": p.y, "r": rad, "el": r["element"], "words": words, "echo": echo})
 		_next_volley += 1
 		var vl := {"id": _next_volley, "x": p.x, "y": p.y, "r": rad, "t": -float(T["tune"]["volleyDelay"]), "n": 0,
 			"total": maxi(1, roundi(float(T["tune"]["volleyLife"]) / float(T["tune"]["volleyEvery"]))), "told": 0, "next": 0.0,
-			"skill": i, "frac": each, "count": r["count"], "element": r["element"], "echo": echo, "wake": primary}
-		# (THE RANGER'S TREE REMADE: Hail, the rain follows the enemy it was aimed at)
-		if h.has("hail") and h.monsters != null:
+			"skill": i, "frac": each, "count": r["count"], "element": r["element"], "echo": echo, "wake": primary, "walker": walker, "at": {}}
+		# (THE RANGER'S TREE REMADE: Hail, the rain follows the enemy it was aimed at; not the Rainwalker's, which goes with him)
+		if h.has("hail") and h.monsters != null and not walker:
 			var bd: float = Talents.D["tune"]["hail2"]["pick"]
 			for m in h.monsters.list:
 				if is_instance_valid(m) and not m.dead and not h.monsters.shut_in(m) and m.world.distance_to(p) < bd:
@@ -255,8 +268,9 @@ func _step_traps(dt: float) -> void:
 		t["life"] = float(t["life"]) - dt
 		if float(t["arm"]) > 0.0:
 			t["arm"] = float(t["arm"]) - dt
-		var go := false
-		if float(t["arm"]) <= 0.0:
+		# (UNIQUE ITEMS: the Hair Trigger, an arrow of his that crossed it has set it off)
+		var go: bool = t.has("shot")
+		if float(t["arm"]) <= 0.0 and not go:
 			var at := Vector2(t["x"], t["y"])
 			for m in h.monsters.list:
 				if is_instance_valid(m) and not m.dead and m.world.distance_to(at) <= float(T["tune"]["trapTrigger"]) + m.r:
@@ -297,10 +311,10 @@ func _step_traps(dt: float) -> void:
 						continue
 					m.throw_from(tat, -(dd - float(W["to"])), float(W["secs"]))
 				var sk: int = t["skill"]
-				var fr: float = t["frac"]
+				var fr: float = float(t["frac"]) * float(t.get("shot", 1.0))
 				_after(float(W["secs"]), func() -> void: h._blast(sk, tat, rad, fr, "blast", true, -4.0))
 			else:
-				h._blast(int(t["skill"]), tat, rad, float(t["frac"]), "blast", true, -4.0)
+				h._blast(int(t["skill"]), tat, rad, float(t["frac"]) * float(t.get("shot", 1.0)), "blast", true, -4.0)
 		elif float(t["life"]) <= 0.0:
 			traps.remove_at(i)
 
@@ -329,6 +343,10 @@ func _step_volleys(dt: float) -> void:
 		var words: Array = h.loadout.wfronts(i)
 		var reach: float = float(T["tune"]["volleyHit"]) * float(r["size"])
 		var every: float = T["tune"]["volleyEvery"]
+		# (UNIQUE ITEMS: Rainwalker, the rain is where he is)
+		if v.get("walker", false):
+			v["x"] = h.world.x
+			v["y"] = h.world.y
 		# (Hail: the rain goes after the enemy it was aimed at)
 		var fm = v.get("follow")
 		if fm != null:
@@ -345,6 +363,9 @@ func _step_volleys(dt: float) -> void:
 		while int(v["told"]) < int(v["total"]) and float(v["t"]) >= int(v["told"]) * every - float(T["volleySeen"]):
 			for c in int(v["count"]):
 				var at := _volley_spot(v, int(v["told"]), c)
+				# (where it was told it comes down is where it comes down, the rain moving meanwhile)
+				if v.get("walker", false):
+					v["at"][int(v["told"]) * int(v["count"]) + c] = at
 				_say({"t": "volleyDrop", "x": at.x, "y": at.y, "el": v["element"], "words": words, "n": c, "echo": v["echo"], "in": maxf(0.0, int(v["told"]) * every - float(v["t"]))})
 			v["told"] = int(v["told"]) + 1
 		while int(v["n"]) < int(v["total"]) and float(v["t"]) >= float(v["next"]) - 1e-9:
@@ -352,8 +373,15 @@ func _step_volleys(dt: float) -> void:
 				# (what the words behind it leave, it leaves once, as the first arrow lands)
 				v["wake"] = false
 				h._wake(i, Vector2(v["x"], v["y"]), float(v["r"]), float(v["frac"]))
+			# (UNIQUE ITEMS: the Poacher's Bow, where a Volley falls it leaves one of his traps, once, as its first arrow lands)
+			if not v.get("trapped", false) and not v["echo"] and h.uniques != null and h.uniques.wears("poachersbow"):
+				v["trapped"] = true
+				var tat := Vector2(v["x"], v["y"])
+				if str(_def(2)["kind"]) == "roll" and _open(tat):
+					_lay_trap(2, tat, float(h.loadout.r(2)["count_dmg"]) * float(h.uniques.ut["poacher"]["share"]))
+					h.uniques._say({"id": "poachersbow", "what": "trap"})
 			for c in int(v["count"]):
-				var at := _volley_spot(v, int(v["n"]), c)
+				var at: Vector2 = v["at"].get(int(v["n"]) * int(v["count"]) + c, _volley_spot(v, int(v["n"]), c))
 				var hits := 0
 				if h.monsters != null:
 					for m in h.monsters.list:
