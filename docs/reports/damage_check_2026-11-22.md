@@ -221,3 +221,22 @@ never going out the Burning Verse's, a unique) and the Curse thrown where he aim
 are still okay I'm fine with it being on a unique”. The Warlock (Fire II, Swift; Power II, Fleeting), without the unique:
 308,258 a second into the elite, the pack dead in 5.4 s (with his Curse 206,231, 7.7 s): among the rest, below the Ranger and
 the Tinkerer, about the Warrior.
+
+## Each hero's best words
+
+His words: “I love to know what the best word combos are.  Just for my knowledge”. For each hero (level 50, gear chosen for
+each set of words), the best four worked out, and the best with each kind of damage first in front; each fought, his quick attack
+alone (damage_check_2026-11-22_best_words.txt). Behind, in every one: Power II and Fleeting. Best into the elite / best into the
+pack:
+- Ranger: Contagion and Precise, 763,988 a second and 2.2 s, both (Frostbite and Precise 744,293, 2.6 s; Fumes and Precise
+  722,935, 2.9 s; Blight and Precise 477,355, 4.8 s)
+- Tinkerer: Frostbite and Precise 493,625 (5.9 s) / Contagion and Precise 3.4 s (449,251)
+- Warlock: Blight and Heavy 545,500 (5.3 s) / Volatile and Blight 5.2 s (373,377); his Fire II and Swift 314,562, 5.0 s
+- Warrior: Blight and Heavy, 341,906 and 6.6 s, both
+- Brawler: Frostbite and Heavy 275,160 (8.9 s) / Contagion and Heavy 4.9 s (272,175)
+- fire Mage: Fumes and Heavy 230,394 (10.5 s) / Wildfire and Twin 7.9 s (103,561); her Orb not counted
+- frost Mage: Fumes and Heavy 188,300 (11.9 s) / Wildfire and Twin 8.9 s (97,460); her Orb not counted
+What it shows: a poison meld (Blight, Contagion, Frostbite, Fumes) is in the best words of every hero, poison four doses deep or
+not; Contagion's arcs carry poison through a pack; the Ranger with Venom's eight doses and Contagion is the strongest of all.
+(The search worked out alone picks Blight for most; fought, the melds of poison with an element often beat it: the worked out
+counts one enemy, and not a meld's spreading.)
