@@ -11,6 +11,8 @@ extends RefCounted
 ## (a shot's burst hitting what is round what it struck: those are not struck by the shot itself, and set off none of what a hit
 ## of the shot's own does; the Warlock's Hex Chain and Blazing Arm: heroes/warlock.gd on_hit)
 var splashing := false
+## (the shot whose own hit is landing just now, or {}: Splitting breaks each of several shots of one use once of its own, city_words.gd)
+var striking := {}
 
 const Iso := preload("res://scripts/iso.gd")
 const Words := preload("res://scripts/words.gd")
@@ -638,7 +640,9 @@ func _shot_hit(p: Dictionary, m) -> void:
 		h.sfx.play("arrowHit", linear_to_db(0.5))
 	# (THE RANGER'S TREE REMADE: Far Sight, an arrow flown past eight tiles a certain critical)
 	var far: bool = arrow and float(p.get("flown", 0.0)) > float(Talents.D["tune"]["farSight2"]["at"]) and h.has("farsight")
+	striking = p
 	h.hit_monster(m, i, float(p["dmg"]), false, far)
+	striking = {}
 	# (THE MAGE'S BALL: it stops on what it hits and bursts there, hurting all round it: game.ts ballBurst)
 	if p.get("look", "") == "ball":
 		_ball_burst(p, m)

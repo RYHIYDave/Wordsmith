@@ -73,11 +73,22 @@ func pull_in(i: int, at: Vector2, rad: float, single: bool) -> void:
 
 
 ## SPLITTING in front: the first hit of a use of move `i`, on `m` at `at`, breaks into copies flying on to the nearest others.
+## EACH ARROW (defs.ts SPLIT_EACH, his pick of 12 Nov 2026, “Every arrow splits, 21 (Recommended)”): one of several shots loosed by
+## one use (a volley's, a Twin pair) breaks into copies of its own, once each; Split Shot's arrows split no more; anything else once
+## a use, as before.
+static var SPLIT_EACH := true
 func split_first(m, i: int, frac: float, at: Vector2) -> void:
 	var r: Dictionary = hero.loadout.r(i)
-	if float(r["split"]) <= 0.0 or copying or _split_use[i] == hero.uses[i]:
+	var shot = hero.kit.striking if SPLIT_EACH and hero.kit != null and hero.kit.get("striking") != null else {}
+	if not (shot is Dictionary and not shot.is_empty() and bool(shot.get("volley", false)) and not shot.get("split", false)):
+		shot = {}
+	var fresh: bool = not bool(shot.get("split_done", false)) if not shot.is_empty() else _split_use[i] != hero.uses[i]
+	if float(r["split"]) <= 0.0 or copying or not fresh:
 		return
-	_split_use[i] = hero.uses[i]
+	if not shot.is_empty():
+		shot["split_done"] = true
+	else:
+		_split_use[i] = hero.uses[i]
 	var S: Dictionary = C()["split"]
 	var near: Array = []
 	for o in _list():

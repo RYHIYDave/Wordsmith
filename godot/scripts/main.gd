@@ -2911,6 +2911,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_defence.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	if _arg("only") == "split":
+		await preload("res://scripts/check_split.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "curse":
 		await preload("res://scripts/check_curse.gd").new().run(self, hero, dir)
 		get_tree().quit()
