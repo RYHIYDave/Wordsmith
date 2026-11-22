@@ -250,6 +250,12 @@ without the master rune-stone finds the fallen wordsmith again in the next.
   for more fire. Your words: “Or a burning target takes more total fire damage.” A burning enemy
   takes a quarter more from every hero's fire hits (not from the burning itself): “It could still
   be some %more fire damage to burning enemies so you could spec into fire if you wanted to.”
+- **Poison's bonus adds, and poison is Dexterity's (the Godot game, 22 Nov 2026):** a poison dose
+  was its share of a hit already made bigger by the hit's own element bonus, then made bigger
+  again by Poison Damage; a poison meld on gear gave both on one piece, and every hero's best words
+  were poison (your question: “Yes why are poison melds so strong for everyone”). Now a dose is its
+  share of the hit without the hit's element bonus, made more by damage and Poison Damage added
+  together; and poison grows with Dexterity in any word, Blight too (your “Yes both”).
 - **What is one class's own is in its tree (the Godot game, 22 Nov 2026):** your words, “If we
   want something to be for only certain characters, it needs to be built into their tree / Like
   poison stacks 4 times naturally, but up to 8 for the ranger if you take the talent point / And

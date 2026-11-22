@@ -255,3 +255,20 @@ Poison Damage added together. With it, the best words found again: the Ranger's 
 (Blight and Swift 261,103, 7.9 s); the Warrior's Sunder and Swift 251,839, 9.8 s (Blight and Swift 168,984, 12.7 s). Poison no
 longer the first choice; the top of every hero lower. The Brawler's search came out far lower in the fight than worked out
 (96,429 a second against 170,948): to be looked at before anything is set by it.
+
+## Poison mended, and the heroes evened again
+
+His “Yes both”: poison's bonus added to damage's, not on top of the hit's (words.gd POISON_ADD on), and poison growing with
+Dexterity in any word, Blight too (POISON_DEX). The Brawler's punches did not read Twin, though his card says “hits twice”: now
+each blow lands twice (heroes/brawler.gd _hit; Fire II and Twin fought 102,217 a second before, 167,963 after; the heroes check,
+the Brawler, 7 steps, 7 as the game's). Then the Warrior and the Brawler the lowest: their quick attacks made more (words.gd
+WARRIOR_MORE 1.5 on Strike, Cleave, Chop and Smash; BRAWLER_MORE 2.0 on his punches). Each hero's best (quick attack alone; into
+the elite / the pack; damage_check_2026-11-22_poison_fixed.txt):
+- Ranger: Shiver and Swift 481,261 a second (3.4 s); Forking and Swift the pack in 3.1 s
+- Tinkerer: Forking and Swift 470,725, 2.1 s
+- Warlock: Eruption and Swift 356,821 (4.5 s); Wildfire and Swift the pack in 3.7 s
+- Brawler: Fire II and Twin 351,641, 7.0 s
+- Warrior: Sunder and Swift 349,238, 6.2 s
+- fire Mage: Scald and Twin 180,454 (12.2 s); Wildfire and Twin 7.2 s (her Orb not counted)
+- frost Mage: Eruption and Swift 148,328 (14.3 s); Wildfire and Twin 8.9 s (her Orb not counted)
+Poison no hero's first choice now; Blight's best 290,148 (the Ranger's). Behind, every one: Power II and Fleeting.
