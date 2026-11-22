@@ -77,8 +77,12 @@ const FILE := "res://assets/words/words.json"
 ##               a move's own bonus from its attribute, what every word on it grows by, and Dexterity's attack speed and
 ##               critical chance (loot.gd derive). His life, mana and cooldowns from his attributes are as they were.
 ## Both off, every number is the game's own resolveSkill's (checks/words_check.gd turns them off to hold it against the game).
+##   POISON_SPREAD  his word after that change's check (the poison was left doing millions: “Yes” to its share being of the
+##               hit over the whole of the poison's time, not each second of it): a dose is the same share of the hit, spread over
+##               its 4 s (a quarter as much a second); its doses still add up, eight deep, and what gear adds to poison is as it was.
 static var WORDS_ADD := true
 static var ATTR_CURVE := true
+static var POISON_SPREAD := true
 const ATTR_KNEE := 50.0
 const ATTR_SPAN := 100.0
 
@@ -492,10 +496,13 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	if has.call(front, "poison"):
 		# (a weaker hit, and the poison does the work: every hit adds a dose. BLIGHT: the hit is not weakened)
 		var dose: float = 20.0 * rk.call(front, "poison") + 0.4 * grows_by.call(front, "poison")
-		r["poison"] = dose / 100.0
+		r["poison"] = dose / 100.0 / (float(D["poison"]["time"]) if POISON_SPREAD else 1.0)
 		if meld != "blight":
 			dmg_mult *= 0.8
-		lines.append("Poison%s: %s for %s of the hit a second for %s s. Up to %s doses add up." % [rn.call(front, "poison"), "poisons" if meld == "blight" else "hits 20% softer; poisons", _pct(dose), _num(D["poison"]["time"]), _num(D["poison"]["stacks"])])
+		if POISON_SPREAD:
+			lines.append("Poison%s: %s for %s of the hit over %s s. Up to %s doses add up." % [rn.call(front, "poison"), "poisons" if meld == "blight" else "hits 20% softer; poisons", _pct(dose), _num(D["poison"]["time"]), _num(D["poison"]["stacks"])])
+		else:
+			lines.append("Poison%s: %s for %s of the hit a second for %s s. Up to %s doses add up." % [rn.call(front, "poison"), "poisons" if meld == "blight" else "hits 20% softer; poisons", _pct(dose), _num(D["poison"]["time"]), _num(D["poison"]["stacks"])])
 	if has.call(front, "volatile"):
 		var boom: float = 12.0 + 0.2 * grows_by.call(front, "volatile")
 		r["volatile"] = boom / 100.0

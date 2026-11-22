@@ -1373,7 +1373,9 @@ augment attacks.  I want things to compound as they are added to attacks or abil
   don't like a cap”): the bonuses of the words in front of a move (Power, Heavy, Precise, Thunder's bolt) are added up into one;
   an attribute counts in full to 50 (ATTR_KNEE), then 50 + 100 x ln(1 + the rest / 100) (ATTR_SPAN): 100 counts as 91, 200 as
   142, 340 as 186, 640 as 243, and on, never capped; read by a move's own bonus, every word's growth, and Dexterity's speed and
-  critical chance. `checks/words_check.gd` turns both off and holds the rest against the game's own: 341479 loadouts, 0 differ.
+  critical chance. And (his “Yes” to it after that change's check left the poison at millions) POISON_SPREAD: a poison dose is
+  its share of the hit over its 4 s, not each second of them (a quarter as much a second); eight doses still add up, gear's poison
+  as it was. `checks/words_check.gd` turns all three off and holds the rest against the game's own: 341479 loadouts, 0 differ.
 
 ## Not in it yet
 

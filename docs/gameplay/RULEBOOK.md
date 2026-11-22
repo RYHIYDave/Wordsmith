@@ -242,7 +242,9 @@ without the master rune-stone finds the fallen wordsmith again in the next.
   points count in full up to 50, then each a little less the more there are (at 150 half a point,
   at 250 a third), never stopping: no cap. That is what the attack's own bonus from its attribute,
   what every word grows by, and Dexterity's attack speed and critical chance read. Life, mana and
-  cooldowns from attributes are as they were.
+  cooldowns from attributes are as they were. And then, your “Yes” to poison's dose being its share
+  of the hit over its whole 4 seconds, not each second of them: a quarter as much a second, eight
+  doses still adding up.
 
 ## Builds
 
