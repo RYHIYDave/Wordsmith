@@ -27,6 +27,7 @@ extends Control
 signal resumed
 signal picked(cls: String, mode: String)
 
+const FoeWords := preload("res://scripts/foe_words.gd")
 const PF := preload("res://scripts/pixel_font.gd")
 const Ring := preload("res://scripts/title_ring.gd")
 const Cards := preload("res://scripts/class_cards.gd")
@@ -726,14 +727,16 @@ func _word_page(ci: CanvasItem, w: String, x: float, y0: float, pw: float, ph: f
 			gear_rows.append(line.call(str(page["note"]), true))
 	var dungeon: bool = k.get("dungeon", false)
 	var mt := str(wd.get("monsterText", ""))
-	var dun_text := ("Every monster in it: %s%s Richer loot, and words are likelier." % [mt.substr(0, 1).to_lower(), mt.substr(1)]) if dungeon and not meld else unknown
+	# (EVERY WORD ON A DUNGEON: a melded or ranked word's too, what it does to every monster there: foe_words.gd page)
+	var ft := FoeWords.page(w) if meld else mt
+	var dun_text := ("Every monster in it: %s%s %s" % [ft.substr(0, 1).to_lower(), ft.substr(1), "Counts as two words: richer loot, and words are likelier." if meld else "Richer loot, and words are likelier."]) if dungeon and (not meld or FoeWords.on()) else unknown
 	var parts: Array = [
 		[0.0, [[str(wd["about"]), P["white"], false, 0.0]]],
 		[4.0, [head.call("ON AN ATTACK"),
 			line.call("In front (%s ...): %s" % [str(wd["front"]).to_upper(), wd["frontText"]] if k.get("front", false) else "In front: " + unknown, k.get("front", false)),
 			line.call("Behind (... %s): %s" % [str(wd["behind"]).replace("of ", "OF ").to_upper(), wd["behindText"]] if k.get("behind", false) else "Behind: " + unknown, k.get("behind", false))]],
 		[2.0, gear_rows],
-		[2.0, [head.call("ON A DUNGEON"), line.call(dun_text, dungeon and not meld)]],
+		[2.0, [head.call("ON A DUNGEON"), line.call(dun_text, dungeon and (not meld or FoeWords.on()))]],
 	]
 	var end := y0 + ph
 	var y := y0

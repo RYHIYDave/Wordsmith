@@ -1125,9 +1125,26 @@ gear screen; on a floor each of the six bites and does its word), pictured.
 - `--upright=1` runs any check in a window shaped like a phone held upright; `--only=upright` (`check_glows.gd`): 6 checks, the
   switch both ways, pictured. Run upright and passing: title 16, services 9, trade 11, meld 15, camp 9, companions 19, lesson 9.
 
+## Every word on a dungeon: melded and ranked words, and their twists (the cloud chat, 22 Nov 2026)
+
+- **On the altar and the gate** (game/act1_holds.ts problem, wave; game/foe_melds.ts layProblem; `act1/holds.gd`,
+  `foe_words.gd`): a melded word (Hailstorm, Wildfire...) or a ranked word (Fire II...) may be laid, and counts as two words (how
+  hard the dungeon is, how rich its reward). A melded word brings its two elements, and no word of another element, nor a word
+  already in it (no Frost beside Hailstorm), may lie beside it; the same messages as the game's.
+- **On the monsters** (game/foe_melds.ts; defs.ts FOE_WORDS, FOE_RANK; `foe_words.gd`, `hero.gd` hurt_by, `monster.gd`,
+  `wakes.gd`): a monster given a melded word has its two parts too, and the meld's twist, all twenty, each with the game's own
+  numbers (FOE_TUNE): Eruption's heat, Avalanche, Thunder's clap, Blight, Scald, Wildfire's sparking fires, Fumes' cloud that
+  bursts if fire walks in, Hailstorm, Frostbite, Contagion, Demolition's and Powderkeg's dying blasts, Siphon (less healing while
+  poisoned), Cauterize, Forking, Shiver, Sunder, Fervor, Rime Ward and Implode's pull. A ranked word hits half as hard again
+  (FOE_RANK). The dungeon's card on the start screen and the gear screen tells each twist in the game's words.
+- `--only=foemelds` (`check_glows.gd` foewords): 21 checks (the altar's rules against the game's own, the count of two, each
+  twist's effect on a floor).
+
 ## Not in it yet
 
 The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick).
+Endless mode (the Shaft's Rim town, the endless levels, the Tablet Shards, the Twisted Wordsmith). The uniques' own looks on the
+heroes (a unique weapon drawn as itself). Sound batch 14 (fewer repeats: the enemies' kept cries, the longer music, more takes).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made

@@ -89,6 +89,7 @@ const Tails := preload("res://scripts/tails.gd")
 const Glow := preload("res://scripts/figure_glow.gd")
 const Sfx := preload("res://scripts/sfx.gd")
 const Words := preload("res://scripts/words.gd")
+const FoeWords := preload("res://scripts/foe_words.gd")
 
 const SPEED := 4.6
 const RADIUS := 0.3
@@ -346,6 +347,13 @@ var _slow_by := 0.0
 ## he walks (where he was at the last bite, `bleed_at`))
 var bleed_t := 0.0
 var bleed_dps := 0.0
+## EVERY WORD ON A DUNGEON (foe_words.gd; game/foe_melds.ts): Blight's poison on him, every blow this much harder; Frostbite's
+## cold, while he is chilled, so much a second; Siphon's poison on him, he heals this much less. Each gone with what laid it.
+var blight_more := 0.0
+var frostbite_dps := 0.0
+var siphon_less := 0.0
+## (game.ts blowBy: whose mark or ground it is that strikes him now, for the twists of its words: perils.gd, foe_words.gd)
+var blow_by = null
 var bleed_at := Vector2.INF
 ## (THE HIGH CITY, FLOOR 16: in the Swan Gardens' nettles, and a moment after, his pace times this: act3/garden.gd)
 var nettle_k := 1.0
@@ -1097,7 +1105,28 @@ func _vast_edge(r: Dictionary, rad: float, told: Dictionary) -> Dictionary:
 
 func heal_flat(n: float) -> void:
 	if n > 0.0 and alive:
-		life = minf(max_life, life + n)
+		life = minf(max_life, life + n * heal_k())
+
+
+## (game.ts healHero: EVERY WORD ON A DUNGEON, Siphon's poison on him, he heals less) What of a heal reaches him.
+## (EVERY WORD ON A DUNGEON's rules, main.gd `_foe`; null where it is off)
+func _foe():
+	var mm = monsters.main if monsters != null and is_instance_valid(monsters) else null
+	var f = mm.get("_foe") if mm != null else null
+	return f if f != null and f.on() else null
+
+
+## (game.ts hurtHero `by`) The monster whose blow it is: its own, or the one whose mark or ground it is.
+func _blow_src(src):
+	if src != null and is_instance_valid(src) and src.has_method("word_share"):
+		return src
+	if blow_by != null and is_instance_valid(blow_by) and blow_by.has_method("word_share"):
+		return blow_by
+	return null
+
+
+func heal_k() -> float:
+	return 1.0 - siphon_less if poison_t > 0.0 and siphon_less > 0.0 else 1.0
 
 
 func _process(dt: float) -> void:
@@ -1141,7 +1170,13 @@ func _process(dt: float) -> void:
 		if _down_for >= BACK_AFTER and not stays_down:
 			_back()
 		return
-	life = minf(max_life, life + stats["life_regen"] * dt)
+	life = minf(max_life, life + stats["life_regen"] * dt * heal_k())
+	# (what the monsters' melded words left on him goes with what laid it: game.ts updateHero)
+	if poison_t <= 0.0:
+		siphon_less = 0.0
+		blight_more = 0.0
+	if chill_t <= 0.0:
+		frostbite_dps = 0.0
 	# (his mana comes back, faster when it is what limits his moves: game.ts updateHero, MANA_MODE.regen; in THE PRACTICE ROOM a
 	# quarter of it a second besides, so the slow ability can be tried again and again: updatePractice)
 	mana = minf(max_mana, mana + mana_regen * (float(Words.data()["manaMode"]["regen"]) if by_mana() else 1.0) * dt)
@@ -1687,10 +1722,16 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 		last_blow = {"raw": raw, "el": el, "words": words, "blocked": true, "dmg": 0.0}
 		return
 	var hw: Array = hv.get("words", [])
-	var k := func(w: String) -> float: return 0.0 if not words.has(w) else (PACK_MINION if hw.has(w) else 1.0)
+	# (EVERY WORD ON A DUNGEON: a ranked word's word half as strong again: defs.ts wordShare, FOE_RANK)
+	var FW: Dictionary = Words.data().get("foe", {})
+	var rank_by: Dictionary = FW.get("rankBy", {}) if bool(FW.get("on", false)) else {}
+	var k := func(w: String) -> float: return 0.0 if not words.has(w) else (PACK_MINION if hw.has(w) else 1.0) * (float(FW["rank"]) if rank_by.has(w) and words.has(rank_by[w]) else 1.0)
 	var base: String = hv.get("base", "phys")
 	var el_k := PACK_MINION if not hv.is_empty() and el != base and hw.has(el) else 1.0
-	var parts: Array = [[el, el_k], [base, 1.0 - el_k]] if el_k < 1.0 else [[el, 1.0]]
+	# (EVERY WORD ON A DUNGEON: a melded word of two elements on it, Scald, Wildfire, Hailstorm: its blow half of each, and each
+	# leaves what it leaves, whole: foe_words.gd second_element)
+	var two: String = FoeWords.second_element(words, el) if not (el_k < 1.0 and not hv.is_empty()) else ""
+	var parts: Array = [[el, el_k], [base, 1.0 - el_k]] if el_k < 1.0 else ([[el, 0.5], [two, 0.5]] if two != "" else [[el, 1.0]])
 	var dmg := 0.0
 	var each: Array = []
 	var gaps: float = float(Words.data()["precise"]["armourIgnored"]) * float(k.call("precise"))
@@ -1736,6 +1777,10 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	# (UNIQUE ITEMS: The Moth's Wing, less from every hit; the Standing Stone, less while he stands still)
 	if uniques != null:
 		dmg *= uniques.hurt_k()
+	# (EVERY WORD ON A DUNGEON: Avalanche on him chilled, Blight's poison on him, Scald's crack, Shiver, Sunder, Fervor: foe_words.gd)
+	var foe = _foe()
+	if foe != null:
+		dmg *= foe.harder(k, parts, _blow_src(src))
 	dmg = maxf(1.0, roundf(dmg))
 	# HEAVY, on a monster: its blow knocks him back a step (game.ts knockHero)
 	var knocked := 0.0
@@ -1791,7 +1836,8 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 		poison_t = POISON_TIME * lasts
 	# (what each element of the blow leaves: a minion's half of Flame burns half as hard)
 	for p in parts:
-		var share: float = p[1]
+		# (EVERY WORD ON A DUNGEON: a melded word's two elements each whole, a ranked word's half as strong again)
+		var share: float = (1.0 if two != "" else float(p[1])) * FoeWords.rank_of_element(words, p[0])
 		match p[0]:
 			"fire":
 				burn_dps = maxf(burn_dps if burn_t > 0.0 else 0.0, dmg * 0.3 * share / 3.0 * (longer / lasts))
@@ -1801,6 +1847,9 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 				chill_t = 2.0 * longer
 			"lightning":
 				shock_t = maxf(shock_t, 3.0 * share)
+	# (EVERY WORD ON A DUNGEON: what its melded word leaves on him and round him: foe_words.gd after_blow)
+	if foe != null:
+		foe.after_blow(k, _blow_src(src), dmg, parts)
 	# LEECH, on a monster: it heals what its blow takes
 	var healed := 0.0
 	if src != null and is_instance_valid(src) and not src.dead and k.call("leech") > 0.0:
@@ -1822,6 +1871,18 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 		sfx.play("power", linear_to_db(0.9))
 	if life <= 0.0:
 		_fall()
+
+
+## (game.ts pullHero) Drawn a step toward `at` (`share` of Pulling's step), never into it: IMPLODE's pull (foe_words.gd).
+func pulled_to(at: Vector2, share := 1.0) -> void:
+	var C: Dictionary = Words.data().get("city", {})
+	if C.is_empty() or has("resolute"):
+		return
+	var d := at - world
+	var far := minf(float(C["pull"]["monster"]) * share, d.length() - 0.8)
+	if d.length() >= 0.01 and far > 0.05:
+		knock(d / d.length(), far)
+		_tell({"t": "heroPulled", "x": world.x, "y": world.y, "fromX": at.x, "fromY": at.y})
 
 
 ## (game.ts hurtHero, pullHero) THE CITY'S WORDS on the blow that struck him, `k` each word's share of it, from `by`.
@@ -1906,6 +1967,15 @@ func dots() -> void:
 		if life <= 0.0:
 			_fall()
 			return
+	# (EVERY WORD ON A DUNGEON: Frostbite, while he is chilled by it)
+	if chill_t > 0.0 and frostbite_dps > 0.0:
+		var f := maxf(1.0, roundf(frostbite_dps * 0.5))
+		if not unhurt:
+			life -= f
+		_tell({"t": "hit", "x": world.x, "y": world.y, "amount": f, "crit": false, "el": "frost", "onHero": true})
+		if life <= 0.0:
+			_fall()
+			return
 	# (THE LAST WORDS: a monster's Bleeding, more while he walks)
 	if bleed_t > 0.0 and bleed_dps > 0.0:
 		var moved: bool = bleed_at != Vector2.INF and world.distance_to(bleed_at) > 0.15
@@ -1962,7 +2032,7 @@ func _fall() -> void:
 
 
 func heal(share: float) -> void:
-	life = minf(max_life, life + max_life * share)
+	life = minf(max_life, life + max_life * share * heal_k())
 
 
 ## A NEW PLACE, or fallen and back (game.ts enterLevel: what was on him is over as he comes into a level): his might and

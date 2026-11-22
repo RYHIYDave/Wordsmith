@@ -70,7 +70,9 @@ func _by(src) -> Dictionary:
 func _hurt(p: Dictionary, dmg: float, at := Vector2.INF, el := "") -> void:
 	var by: Dictionary = p.get("by", {})
 	var from := at if at != Vector2.INF else Vector2(float(p.get("x", hero.world.x)), float(p.get("y", hero.world.y)))
+	hero.blow_by = p.get("src")
 	hero.hurt_by(dmg, el if el != "" else str(by.get("el", "phys")), by.get("words", []), by.get("half", {}), null, from)
+	hero.blow_by = null
 
 
 ## (`by`: what its blow carries, where it is not its monster's own: a dying blast's, of its element alone)

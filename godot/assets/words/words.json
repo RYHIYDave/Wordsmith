@@ -2143,6 +2143,186 @@
   "dust": "#5ce8f8",
   "heat": "#ff9a5a"
  },
+ "foe": {
+  "on": true,
+  "tune": {
+   "weight": 2,
+   "eruption": {
+    "heat": 4,
+    "r": 2.2,
+    "wait": 0.8,
+    "k": 1.4
+   },
+   "avalanche": 0.35,
+   "thunder": {
+    "every": 3,
+    "r": 2,
+    "wait": 0.75,
+    "k": 1
+   },
+   "blight": 0.2,
+   "scald": 0.5,
+   "wildfire": {
+    "r": 0.6,
+    "secs": 4,
+    "every": 1,
+    "reach": 1.4,
+    "k": 0.25,
+    "gap": 1.5,
+    "most": 8
+   },
+   "fumes": {
+    "r": 1.6,
+    "secs": 6,
+    "k": 0.15,
+    "blastR": 2.2,
+    "blastK": 2
+   },
+   "hailstorm": {
+    "every": 5,
+    "near": 9,
+    "r": 1.4,
+    "wait": 1.1,
+    "k": 0.8
+   },
+   "frostbite": 0.2,
+   "contagion": {
+    "r": 1.5,
+    "secs": 5,
+    "tick": 0.7,
+    "k": 0.12
+   },
+   "demolition": {
+    "r": 3.4,
+    "wait": 1.8,
+    "k": 2.2
+   },
+   "powderkeg": {
+    "r": 1.6,
+    "secs": 4,
+    "k": 0.2
+   },
+   "shatter": {
+    "n": 8,
+    "speed": 6,
+    "range": 6,
+    "k": 0.5
+   },
+   "chain": {
+    "near": 4.5,
+    "k": 0.6
+   },
+   "rupture": {
+    "r": 2,
+    "secs": 5,
+    "k": 0.15
+   },
+   "siphon": 0.5,
+   "cauterize": {
+    "below": 0.3,
+    "flash": 0.6,
+    "heal": 0.35
+   },
+   "forking": {
+    "r": 0.9,
+    "wait": 0.5,
+    "k": 0.45
+   },
+   "shiver": {
+    "chance": 0.22,
+    "crit": 1.5,
+    "freeze": 0.45
+   },
+   "sunder": {
+    "window": 2,
+    "k": 0.8
+   },
+   "fervor": {
+    "near": 5,
+    "most": 5,
+    "secs": 8,
+    "speed": 0.1,
+    "fire": 0.12
+   },
+   "rimeward": {
+    "chill": 0.4,
+    "secs": 1.5,
+    "every": 0.6
+   },
+   "implode": {
+    "r": 2.6,
+    "wait": 1.2,
+    "k": 1.8,
+    "pull": 4.5,
+    "every": 0.2,
+    "share": 0.55
+   }
+  },
+  "text": {
+   "eruption": "Builds heat as it fights; at full heat its next blow erupts around it.",
+   "avalanche": "Hits harder while you are chilled.",
+   "thunder": "Every few blows, a thunderclap bursts around it.",
+   "blight": "While its poison is on you, you take more damage from everything.",
+   "scald": "A fire hit while you are chilled, or a frost hit while you burn, cracks for more.",
+   "wildfire": "Its blows leave small fires that throw sparks at you.",
+   "fumes": "Dies in a poison cloud that explodes if anything burning walks in.",
+   "hailstorm": "Calls hail down around you every few seconds.",
+   "frostbite": "While you are chilled by it, you lose life.",
+   "contagion": "Leaves a poison cloud that shocks you where it dies.",
+   "demolition": "Its dying blast is huge, but slow to go off.",
+   "powderkeg": "Its dying blast leaves the ground burning.",
+   "shatter": "Bursts into a ring of ice shards when it dies.",
+   "chainreaction": "Its dying blast throws lightning at you.",
+   "rupture": "Bursts when it dies, splashing poison on the ground.",
+   "siphon": "While its poison is on you, you heal less.",
+   "cauterize": "When low on life, it sears its wounds shut and heals, once.",
+   "forking": "Each lightning blow forks: a second bolt strikes where you were.",
+   "shiver": "Its critical hits freeze you for a moment.",
+   "sunder": "Its next blow after knocking you back hits much harder.",
+   "fervor": "Each enemy dying near it makes it faster and its fire hotter.",
+   "rimeward": "Hitting its shield chills you.",
+   "implode": "When it dies it pulls you in, then bursts."
+  },
+  "rank": 1.5,
+  "rankBy": {
+   "power": "power2",
+   "fire": "fire2",
+   "frost": "frost2",
+   "lightning": "lightning2",
+   "poison": "poison2"
+  },
+  "page": {
+   "eruption": "Hits harder and has more life; deals fire damage and sets you burning. Builds heat as it fights; at full heat its next blow erupts around it.",
+   "avalanche": "Hits harder and has more life; deals frost damage and slows you. Hits harder while you are chilled.",
+   "thunder": "Hits harder and has more life; deals lightning damage and shocks you. Every few blows, a thunderclap bursts around it.",
+   "blight": "Hits harder and has more life; poisons you. While its poison is on you, you take more damage from everything.",
+   "scald": "Deals fire damage and sets you burning; deals frost damage and slows you. A fire hit while you are chilled, or a frost hit while you burn, cracks for more.",
+   "wildfire": "Deals fire damage and sets you burning; deals lightning damage and shocks you. Its blows leave small fires that throw sparks at you.",
+   "fumes": "Deals fire damage and sets you burning; poisons you. Dies in a poison cloud that explodes if anything burning walks in.",
+   "hailstorm": "Deals frost damage and slows you; deals lightning damage and shocks you. Calls hail down around you every few seconds.",
+   "frostbite": "Deals frost damage and slows you; poisons you. While you are chilled by it, you lose life.",
+   "contagion": "Deals lightning damage and shocks you; poisons you. Leaves a poison cloud that shocks you where it dies.",
+   "demolition": "Hits harder and has more life; explodes when it dies. Its dying blast is huge, but slow to go off.",
+   "powderkeg": "Deals fire damage and sets you burning; explodes when it dies. Its dying blast leaves the ground burning.",
+   "shatter": "Deals frost damage and slows you; explodes when it dies. Bursts into a ring of ice shards when it dies.",
+   "chainreaction": "Deals lightning damage and shocks you; explodes when it dies. Its dying blast throws lightning at you.",
+   "rupture": "Poisons you; explodes when it dies. Bursts when it dies, splashing poison on the ground.",
+   "siphon": "Heals when it hits you; poisons you. While its poison is on you, you heal less.",
+   "cauterize": "Heals when it hits you; deals fire damage and sets you burning. When low on life, it sears its wounds shut and heals, once.",
+   "forking": "Attacks twice; deals lightning damage and shocks you. Each lightning blow forks: a second bolt strikes where you were.",
+   "shiver": "Its hits find the gaps in your armour; deals frost damage and slows you. Its critical hits freeze you for a moment.",
+   "sunder": "Its blows knock you back; hits harder and has more life. Its next blow after knocking you back hits much harder.",
+   "fervor": "Speeds up as it is hurt; deals fire damage and sets you burning. Each enemy dying near it makes it faster and its fire hotter.",
+   "rimeward": "Carries a shield that soaks damage; deals frost damage and slows you. Hitting its shield chills you.",
+   "implode": "Its blows drag you toward it; explodes when it dies. When it dies it pulls you in, then bursts.",
+   "power2": "Hits harder and has more life, half as strong again.",
+   "fire2": "Deals fire damage and sets you burning, half as strong again.",
+   "frost2": "Deals frost damage and slows you, half as strong again.",
+   "lightning2": "Deals lightning damage and shocks you, half as strong again.",
+   "poison2": "Poisons you, half as strong again."
+  },
+  "holdLife": 0.25
+ },
  "pull": {
   "far": 1.5,
   "most": 2.5,

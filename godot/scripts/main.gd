@@ -167,6 +167,7 @@ var pad_live := false
 var _speech = null
 var _uniques = null
 var _companions = null
+var _foe = null
 ## (the small map top right, the large one and the pause panel: minimap.gd)
 var _mini
 var _veil: ColorRect
@@ -270,6 +271,10 @@ func _ready() -> void:
 	_companions.main = self
 	_companions.hero = hero
 	add_child(_companions)
+	# (EVERY WORD ON A DUNGEON: melded and ranked words on the monsters: foe_words.gd)
+	_foe = preload("res://scripts/foe_words.gd").new()
+	_foe.main = self
+	add_child(_foe)
 	guide = Guide.new()
 	guide.main = self
 	_gate = JSON.parse_string(FileAccess.get_file_as_string(TOWN_DIR + "/floor1_gate.json"))
@@ -353,7 +358,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -900,6 +905,7 @@ func _build(where: String, arrive: String) -> void:
 	wakes.monsters = monsters
 	wakes.sfx = sfx
 	wakes.fx = fx
+	wakes.foe = _foe
 	fx.wakes = wakes
 	_place.add_child(wakes)
 	_place.move_child(wakes, perils.get_index())
@@ -2416,6 +2422,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "uniqueswar":
 		await preload("res://scripts/check_glows.gd").new().uniqueswar(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "foemelds":
+		await preload("res://scripts/check_glows.gd").new().foewords(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "pad":

@@ -2723,6 +2723,17 @@ func _ws_trade(blink: bool, x0: float, w: float) -> void:
 
 
 ## A made word's page under it (ui/lexicon.ts drawWordPage, tight): its name and what it grows with; what it is; ON AN ATTACK, in
+## (ui/lexicon.ts) A word's ON A DUNGEON, once known there: what it does to every monster there (a melded or ranked word's, its
+## two words' and its twist: foe_words.gd page, and that it counts as two words).
+func _dungeon_line(w: String, k: Dictionary, unknown: String) -> String:
+	if not k.get("dungeon", false):
+		return unknown
+	var FW := preload("res://scripts/foe_words.gd")
+	var meld: bool = FW.is_meld(w) or FW.is_rank(w)
+	var t: String = FW.page(w) if meld else str(Words.word(w).get("monsterText", ""))
+	return "Every monster in it: %s%s %s" % [t.substr(0, 1).to_lower(), t.substr(1), "Counts as two words: richer loot, and words are likelier." if meld else "Richer loot, and words are likelier."]
+
+
 ## front and behind (known once made); ON GEAR (what it becomes there, once he has burned it into a piece); ON A DUNGEON (not in
 ## the Godot version: undiscovered). A part with no room left is not drawn, nor those after it.
 func _ws_page(w: String, x: float, y: float, pw: float, end: float) -> void:
@@ -2741,7 +2752,7 @@ func _ws_page(w: String, x: float, y: float, pw: float, end: float) -> void:
 			["In front (%s ...): %s" % [str(wd["front"]).to_upper(), wd["frontText"]] if k["front"] else "In front: " + unknown, TEXT if k["front"] else FAINT, SMALL, 4.0 * K],
 			["Behind (... %s): %s" % [str(wd["behind"]).replace("of ", "OF ").to_upper(), wd["behindText"]] if k["behind"] else "Behind: " + unknown, TEXT if k["behind"] else FAINT, SMALL, 4.0 * K]]],
 		[2.0 * K, [["ON GEAR", PICK, SMALL, 0.0], [gear, TEXT if k["gear"] else FAINT, SMALL, 4.0 * K]]],
-		[2.0 * K, [["ON A DUNGEON", PICK, SMALL, 0.0], [unknown, FAINT, SMALL, 4.0 * K]]],
+		[2.0 * K, [["ON A DUNGEON", PICK, SMALL, 0.0], [_dungeon_line(w, k, unknown), TEXT if k.get("dungeon", false) else FAINT, SMALL, 4.0 * K]]],
 	]
 	for part in parts:
 		var rows: Array = []

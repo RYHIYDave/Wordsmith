@@ -275,6 +275,16 @@ var stagger_cd := 0.0
 ## Whirlwind, 2 Lunge; -1 none): the move whose words its death answers to (hero.gd killed).
 var mark_t := 0.0
 var shield := 0.0
+## EVERY WORD ON A DUNGEON (foe_words.gd): Sunder, when a blow of its last knocked him back; Fervor, the deaths it has been fed and
+## how long still; Cauterize, its wounds seared shut, once; Rime Ward, when its shield last chilled him; Hailstorm's wait; Eruption's
+## and Thunder's count of its blows.
+var foe_sunder_at := -1e9
+var fervor_n := 0
+var fervor_t := 0.0
+var seared := false
+var rime_at := -1e9
+var hail_t := -1e9
+var foe_n := 0
 var last_skill := -1
 ## WORDMELDING (melds.gd; game/state.ts Monster): `scald_cd`, `fumes_cd`, how long before Scald's crack and Fumes' cloud can come
 ## of it again; `blight_t`, Blight behind: while poisoned it takes more from everything, so many seconds more; `bite_dps`,
@@ -458,6 +468,9 @@ func step(dt: float, hero) -> void:
 	bind_t = maxf(0.0, bind_t - dt)
 	bind_again = maxf(0.0, bind_again - dt)
 	dt *= time_of()
+	# (EVERY WORD ON A DUNGEON: Hailstorm, Cauterize, Fervor wearing off: foe_words.gd tick)
+	if mgr.main != null and mgr.main.get("_foe") != null and mgr.main._foe.on() and hero != null and is_instance_valid(hero):
+		mgr.main._foe.tick(self, real, world.distance_to(hero.world))
 	_anim_t += dt
 	_flash = maxf(0.0, _flash - real)
 	_bar = maxf(0.0, _bar - dt)
@@ -1172,7 +1185,12 @@ func half_of() -> Dictionary:
 func word_share(w: String) -> float:
 	if not words.has(w):
 		return 0.0
-	return PACK_MINION if half.has(w) and rally_t <= 0.0 else 1.0
+	# (EVERY WORD ON A DUNGEON: a ranked word laid with its word gives it half as strong again: defs.ts wordShare, FOE_RANK)
+	var rank := 1.0
+	var FW: Dictionary = Words.data().get("foe", {})
+	if bool(FW.get("on", false)) and FW["rankBy"].has(w) and words.has(FW["rankBy"][w]):
+		rank = float(FW["rank"])
+	return rank * (PACK_MINION if half.has(w) and rally_t <= 0.0 else 1.0)
 
 
 ## FRENZIED, on it (game.ts updateMonsters `rage`): the more it is hurt, the faster it moves and the sooner it attacks again, up
@@ -1182,7 +1200,9 @@ func rage() -> float:
 	var wither := 1.0
 	if curse_t > 0.0 and mgr != null and mgr.hero != null and mgr.hero.cls == "warlock" and mgr.hero.has("withering"):
 		wither = float(preload("res://scripts/talents.gd").D["warlockTalents"]["withering"]["pace"])
-	return wither * frenzy()
+	# (EVERY WORD ON A DUNGEON: and Fervor, fed by the deaths round it: foe_words.gd rage)
+	var foe = mgr.main.get("_foe") if mgr != null and mgr.main != null else null
+	return wither * frenzy() * (foe.rage(self) if foe != null else 1.0)
 
 
 ## FRENZIED, on it, alone (game.ts updateMonsters `rage`: 1, or more the more it is hurt), without Withering's slowing: what hurries
@@ -1319,6 +1339,9 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 		var soak := minf(shield, dmg)
 		shield -= soak
 		life -= dmg - soak
+		# (EVERY WORD ON A DUNGEON: Rime Ward, a blow of his on its shield chills him: foe_words.gd shield)
+		if skill >= 0 and not dot and not poison and mgr.main != null and mgr.main.get("_foe") != null and mgr.main._foe.on():
+			mgr.main._foe.shield(self, soak)
 	else:
 		life -= dmg
 	# (WORDMELDING, DEMOLITION in front: an elite or a boss bursts once at half its life: melds.gd)
@@ -1833,8 +1856,14 @@ func _die() -> void:
 		mgr.spread_burns(self)
 	clear_afflictions()
 	var blast := word_share("volatile")
+	var foe = mgr.main.get("_foe") if mgr.main != null else null
 	if blast > 0.0:
-		mgr.perils.warn(world.x, world.y, 1.8, 0.7, (dmg_min + dmg_max) / 2.0 * 1.5 * blast, null, {"el": element(), "words": [], "half": half_of()})
+		# (EVERY WORD ON A DUNGEON: Demolition's blast wider, slower and harder; Implode's: foe_words.gd blast)
+		var big: Dictionary = foe.blast(self) if foe != null else {}
+		var B := {"r": 1.8, "wait": 0.7, "k": 1.5} if big.is_empty() else big
+		mgr.perils.warn(world.x, world.y, float(B["r"]), float(B["wait"]), (dmg_min + dmg_max) / 2.0 * float(B["k"]) * blast, null, {"el": element(), "words": [], "half": half_of()})
+	if foe != null and foe.on():
+		foe.death(self)
 	# (THE CITY'S WORDS, Version 23.8: one carrying Splitting splits in two at half its life, a minion, of its leader's, too)
 	if word_share("splitting") > 0.0 and not split and not boss:
 		_split()

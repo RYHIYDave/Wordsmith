@@ -2228,3 +2228,174 @@ func pad(main, hero, dir: String) -> void:
 	await frames.call(3)
 	_line(not M.pad_live and M.guide.press_name(0) == "LEFT CLICK", "left idle: the prompts name the mouse's again (%s)" % M.guide.press_name(0))
 	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## EVERY WORD ON A DUNGEON (foe_words.gd; game/foe_melds.ts): the altar's rules for a melded and a ranked word, counted as two; a
+## ranked word's word half as strong again on a monster; a melded word's two elements each on his blow; and every twist, one at a
+## time, on a monster given its melded word.
+func foewords(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var FW := preload("res://scripts/foe_words.gd")
+	var F = M._foe
+	await M._wait(0.6)
+	# THE ALTAR'S RULES (static, as the game's layProblem)
+	_line(FW.lay_problem(["swift"], "scald", "stronghold") == "" and FW.lay_problem(["swift", "scald"], "frost", "stronghold") == "Already on it"
+		and FW.lay_problem(["swift", "scald"], "lightning", "stronghold") == "One element per stronghold" and FW.lay_problem(["swift", "scald"], "poison", "stronghold") == ""
+		and FW.words_weight(["swift", "scald"]) == 3
+		and FW.foe_words_of(["scald"]) == ["fire", "frost", "scald"] and FW.weight("fire2") == 2,
+		"the altar (as the game's layProblem): Scald beside Swift; Frost not (it is in Scald); Lightning not (one element); Poison yes (no element); Swift and Scald worth 3 words; Scald on a monster: %s" % [FW.foe_words_of(["scald"])])
+	# A MONSTER, given words one at a time
+	var foes: Array = M._monsters.list.filter(func(o): return is_instance_valid(o) and not o.dead and not o.boss)
+	var m = foes[0]
+	m.world = M._free_near(h.world + Vector2(1.2, 0))
+	m.state = "chase"
+	m.speed = 0.0
+	m.max_life = 100000.0
+	m.life = 100000.0
+	var give := func(ws: Array) -> void:
+		m.words = ws.duplicate()
+		m.half = []
+	var clear_hero := func() -> void:
+		h.burn_t = 0.0
+		h.chill_t = 0.0
+		h.poison_t = 0.0
+		h.shock_t = 0.0
+		h.held = 0.0
+		h.siphon_less = 0.0
+		h.blight_more = 0.0
+		h.frostbite_dps = 0.0
+		h.shield = 0.0
+	give.call(["fire", "fire2"])
+	_line(is_equal_approx(m.word_share("fire"), 1.5) and is_equal_approx(m.word_share("fire2"), 1.0), "Fire with its Rank II: its Fire half as strong again (%.2f)" % m.word_share("fire"))
+	clear_hero.call()
+	give.call(["fire", "frost", "scald"])
+	h.hurt_by(20.0, "fire", m.words, {}, m)
+	_line(h.burn_t > 0.0 and h.chill_t > 0.0, "Scald's blow, of Fire: half of it Frost too, and each leaves its own (burning %s, chilled %s)" % [h.burn_t > 0.0, h.chill_t > 0.0])
+	# SIPHON
+	clear_hero.call()
+	give.call(["leech", "poison", "siphon"])
+	h.hurt_by(20.0, "phys", m.words, {}, m)
+	var life0: float = h.life
+	h.life = h.max_life * 0.5
+	var before: float = h.life
+	h.heal_flat(20.0)
+	_line(h.siphon_less > 0.0 and is_equal_approx(h.life - before, 20.0 * (1.0 - h.siphon_less)), "Siphon: its poison on him, he heals less (a heal of 20 gives %.1f)" % (h.life - before))
+	h.life = life0
+	# SHIVER (now and then a critical, freezing him)
+	clear_hero.call()
+	give.call(["precise", "frost", "shiver"])
+	var froze := false
+	for i in 60:
+		h._invuln = 0.0
+		h.held = 0.0
+		h.hurt_by(10.0, "frost", m.words, {}, m)
+		if h.held > 0.0:
+			froze = true
+			break
+	_line(froze, "Shiver: now and then a critical, and he is frozen in place a moment")
+	# SUNDER (its next blow soon after, harder)
+	clear_hero.call()
+	give.call(["heavy", "power", "sunder"])
+	h._invuln = 0.0
+	h.hurt_by(10.0, "phys", m.words, {}, m)
+	var due: bool = m.foe_sunder_at > -1e8
+	h._invuln = 0.0
+	var n0: int = F.told.size()
+	h.hurt_by(10.0, "phys", m.words, {}, m)
+	_line(due and F.told.slice(n0).any(func(e): return e.get("text", "") == "Sundered"), "Sunder: its next blow soon after one, a follow-up, harder (Sundered)")
+	# FORKING, ERUPTION, THUNDER: marks
+	clear_hero.call()
+	give.call(["twin", "lightning", "forking"])
+	var w0: int = M._monsters.perils.list.size()
+	h._invuln = 0.0
+	h.hurt_by(10.0, "lightning", m.words, {}, m)
+	_line(M._monsters.perils.list.size() > w0, "Forking: its lightning blow forks, a second bolt marked where he was")
+	give.call(["power", "fire", "eruption"])
+	m.foe_n = 0
+	w0 = M._monsters.perils.list.size()
+	for i in 4:
+		h._invuln = 0.0
+		h.hurt_by(5.0, "fire", m.words, {}, m)
+	_line(M._monsters.perils.list.any(func(p): return p["kind"] == "warn" and Vector2(p["x"], p["y"]).distance_to(m.world) < 0.1), "Eruption: its fourth blow, its heat bursts round it (a ring)")
+	# WILDFIRE, FROSTBITE, BLIGHT, AVALANCHE
+	clear_hero.call()
+	give.call(["fire", "lightning", "wildfire"])
+	h._invuln = 0.0
+	h.hurt_by(10.0, "fire", m.words, {}, m)
+	_line(M.wakes.list.any(func(z): return z.get("foe") == "wildfire"), "Wildfire: a small fire where he stood")
+	clear_hero.call()
+	give.call(["frost", "poison", "frostbite"])
+	h._invuln = 0.0
+	h.hurt_by(10.0, "frost", m.words, {}, m)
+	_line(h.frostbite_dps > 0.0, "Frostbite: chilled by it, he bleeds cold (%.1f a second)" % h.frostbite_dps)
+	clear_hero.call()
+	give.call(["power", "poison", "blight"])
+	h._invuln = 0.0
+	h.hurt_by(10.0, "phys", m.words, {}, m)
+	var kb := func(w: String) -> float: return 0.0
+	_line(h.blight_more > 0.0 and F.harder(kb, [["phys", 1.0]], null) > 1.0, "Blight: its poison on him, every blow harder (x%.2f)" % F.harder(kb, [["phys", 1.0]], null))
+	clear_hero.call()
+	h.chill_t = 2.0
+	var ka := func(w: String) -> float: return 1.0 if w == "avalanche" else 0.0
+	_line(F.harder(ka, [["frost", 1.0]], null) > 1.0, "Avalanche: on him chilled, harder (x%.2f)" % F.harder(ka, [["frost", 1.0]], null))
+	# CAUTERIZE, HAILSTORM, FERVOR, RIME WARD
+	give.call(["leech", "fire", "cauterize"])
+	m.seared = false
+	m.life = m.max_life * 0.2
+	var low: float = m.life
+	await M._wait(1.0)
+	_line(m.seared and m.life > low, "Cauterize: low on life, it sears its wounds shut once (%.0f to %.0f)" % [low, m.life])
+	give.call(["frost", "lightning", "hailstorm"])
+	m.hail_t = 0.05
+	w0 = M._monsters.perils.list.size()
+	await M._wait(0.3)
+	_line(M._monsters.perils.list.any(func(p): return p["kind"] == "warn" and Vector2(p["x"], p["y"]).distance_to(h.world) < 0.5), "Hailstorm: hail marked round him")
+	give.call(["frenzied", "fire", "fervor"])
+	m.fervor_n = 0
+	var other = foes[1]
+	other.world = M._free_near(m.world + Vector2(1.0, 0))
+	other.words = []
+	other.damage(other.life + 10.0, "phys", false, false, [], false, false, 0)
+	await M._wait(0.1)
+	_line(m.fervor_n == 1 and m.rage() > 1.0, "Fervor: an enemy dying near it feeds it, faster (x%.2f)" % m.rage())
+	clear_hero.call()
+	give.call(["guarding", "frost", "rimeward"])
+	m.shield = 50.0
+	m.rime_at = -1e9
+	m.damage(10.0, "phys", false, false, [], false, false, 0)
+	_line(h.chill_t > 0.0, "Rime Ward: a blow of his on its shield chills him")
+	await M._snap(dir + "/foe_1_twists.png")
+	# AS THEY DIE
+	var die := func(o, ws: Array) -> void:
+		o.words = ws.duplicate()
+		o.half = []
+		o.world = M._free_near(h.world + Vector2(1.5, 0.5))
+		o.damage(o.life + 10.0, "phys", false, false, [], false, false, 0)
+	var left: Array = M._monsters.list.filter(func(o): return is_instance_valid(o) and not o.dead and not o.boss and o != m)
+	var grounds := func(id: String) -> bool: return M.wakes.list.any(func(z): return z.get("foe") == id)
+	die.call(left[0], ["fire", "poison", "fumes"])
+	die.call(left[1], ["lightning", "poison", "contagion"])
+	die.call(left[2], ["poison", "volatile", "rupture"])
+	await M._wait(0.1)
+	_line(grounds.call("fumes") and grounds.call("contagion") and grounds.call("rupture"), "Fumes, Contagion, Rupture: each dies into its cloud")
+	var a0: int = M._monsters._arrows.size()
+	die.call(left[3], ["frost", "volatile", "shatter"])
+	await M._wait(0.05)
+	_line(M._monsters._arrows.size() - a0 >= 8, "Shatter: a ring of %d ice shards" % (M._monsters._arrows.size() - a0))
+	die.call(left[4], ["fire", "volatile", "powderkeg"])
+	await M._wait(0.05)
+	var keg: Array = M.wakes.list.filter(func(z): return z.get("foe") == "powderkeg")
+	_line(not keg.is_empty() and float(keg[0]["t"]) < 0.0, "Powderkeg: burning ground, waiting for its blast")
+	w0 = M._monsters.perils.list.size()
+	die.call(left[5], ["power", "volatile", "demolition"])
+	await M._wait(0.05)
+	var big: Array = M._monsters.perils.list.filter(func(p): return p["kind"] == "warn" and float(p["r"]) > 3.0)
+	_line(not big.is_empty(), "Demolition: its blast wider (%.1f), slower and harder" % (float(big[0]["r"]) if not big.is_empty() else 0.0))
+	var at0: Vector2 = h.world
+	die.call(left[6], ["pulling", "volatile", "implode"])
+	await M._wait(0.6)
+	_line(grounds.call("implode") or h.world.distance_to(at0) > 0.05, "Implode: as it dies it pulls him in (moved %.2f)" % h.world.distance_to(at0))
+	await M._snap(dir + "/foe_2_deaths.png")
+	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

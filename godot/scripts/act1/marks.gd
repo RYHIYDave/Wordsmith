@@ -400,8 +400,20 @@ static func air(P, c: CanvasItem, p: Dictionary) -> void:
 static func glow(P, c: CanvasItem, p: Dictionary) -> void:
 	if M9.mine(p):
 		M9.glow(P, c, p)
-	elif _own(p) != null:
+	elif _own(p) != null and _glows(_own(p)):
 		_own(p).glow(P, c, p)
+
+
+static var _glow_of := {}
+# (not every boss's own marks have a glow over the dark: the Queen's, the Cantor's, the Stag's and the Unfinished's have none)
+static func _glows(s) -> bool:
+	if not _glow_of.has(s):
+		var has := false
+		for m in s.get_script_method_list():
+			if m["name"] == "glow":
+				has = true
+		_glow_of[s] = has
+	return _glow_of[s]
 
 
 # --- their lights in the dark (the game's c.spot; perils.gd _spots_of) ---

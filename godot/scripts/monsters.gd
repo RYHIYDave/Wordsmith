@@ -586,15 +586,20 @@ func _pass(i: int) -> bool:
 ## Something loosed at the hero from monster `from`, the way `dir` on the floor: an arrow (0.2 round), one of the Warden's
 ## bolts, or the marksman's great arrow (`pierce`: it goes through whoever it meets, and on to its end). It carries its
 ## monster's words as they were as it was loosed (game.ts shootAt: `element`, `words`, `half`).
-func shoot(from: Monster, dir: Vector2, speed: float, reach: float, dmg: float, look := "arrow", r := ARROW_R, pierce := false) -> void:
+func shoot(from: Monster, dir: Vector2, speed: float, reach: float, dmg: float, look := "arrow", r := ARROW_R, pierce := false, el := "") -> void:
 	var node := Arrow.new()
 	node.dir = dir
 	node.look = look
-	node.el = str(from.blow().get("el", "phys"))
+	# (`el`: an element of its own in place of its monster's: Shatter's shards are Frost, game.ts shootAt)
+	var by: Dictionary = from.blow()
+	if el != "":
+		by = by.duplicate()
+		by["el"] = el
+	node.el = str(by.get("el", "phys"))
 	node.r = r
 	stands.add_child(node)
 	# (THE LAST WORDS: PIERCING, on it, its shots fly on through walls, to the map's edge)
-	_arrows.append({"pos": from.world + dir * (from.r + 0.1), "dir": dir, "speed": speed, "left": reach, "dmg": dmg, "node": node, "r": r, "pierce": pierce, "hit": false, "by": from.blow(), "walls": from.words.has("piercing")})
+	_arrows.append({"pos": from.world + dir * (from.r + 0.1), "dir": dir, "speed": speed, "left": reach, "dmg": dmg, "node": node, "r": r, "pierce": pierce, "hit": false, "by": by, "walls": from.words.has("piercing"), "src": from})
 
 
 ## THE BONEWARD'S SPEAR (game.ts throwSpear): from its hand `at`, the way `dir`, as far as `reach` (where the hero stood); where
@@ -770,7 +775,9 @@ func _fly(dt: float) -> void:
 		if not gone and not a["hit"] and hero.alive and p.distance_to(hero.world) <= a["r"] + HERO_R:
 			# (with its monster's words, from a second back along its flight: game.ts updateProjectiles, hurtHero's (ox, oy))
 			var by: Dictionary = a["by"]
+			hero.blow_by = a.get("src")
 			hero.hurt_by(a["dmg"], by["el"], by["words"], by["half"], null, p - a["dir"] * float(a["speed"]))
+			hero.blow_by = null
 			a["hit"] = true
 			gone = not a["pierce"]
 		if gone:

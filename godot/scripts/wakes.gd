@@ -42,6 +42,8 @@ var sfx
 ## (what the fight shows: the rules tell it of each patch as it is laid, and of the storm's bolts: fx.gd)
 var fx
 var list: Array = []
+## (EVERY WORD ON A DUNGEON: the rules of the monsters' own grounds in this list, `hostile`: foe_words.gd)
+var foe = null
 
 
 ## FLAME, FROST or LIGHTNING behind move `skill` (addGround): its ground `zone` (words.gd resolve's: {kind, element, dps, slow,
@@ -268,6 +270,11 @@ func _process(dt: float) -> void:
 		return
 	for z in list.duplicate():
 		z["t"] += dt
+		# (a monster's ground: it harms him, not them: foe_words.gd zone)
+		if z.get("hostile", false):
+			if foe != null:
+				foe.zone(z, dt)
+			continue
 		if z["kind"] == "cracks":
 			_crack(z)
 			continue
@@ -295,7 +302,7 @@ func _process(dt: float) -> void:
 		if z["tick"] <= 0.0:
 			z["tick"] += 0.5
 			_bite(z)
-	list = list.filter(func(z): return z["t"] < z["dur"])
+	list = list.filter(func(z): return z["t"] < z["dur"] and not z.get("gone", false))
 	queue_redraw()
 
 
@@ -562,7 +569,9 @@ func _draw() -> void:
 	# are tended there from this list. The plain rings below only where there is no fx.)
 	if fx != null and is_instance_valid(fx) and fx.has_method("draw_wake"):
 		for z in list:
-			fx.draw_wake(self, z)
+			# (Powderkeg's burning ground waits for its blast: not there till then)
+			if float(z["t"]) >= 0.0:
+				fx.draw_wake(self, z)
 		return
 	for z in list:
 		var a := clampf((z["dur"] - z["t"]) / 0.5, 0.0, 1.0)

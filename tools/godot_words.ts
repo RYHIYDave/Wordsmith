@@ -27,6 +27,9 @@ import { resolveSkill, socketProblem } from '../src/game/words';
 import { DEEP_WORDS_FROM, DEEP_WORD_IDS, LAST_WORDS_FROM, LAST_WORD_IDS, MELD8_IDS, MELD_IDS, MELD_OF, PRISON_WORD_IDS, RANK_IDS, RANK_OF, VOLT_MELD_IDS, WORD_IDS } from '../src/game/types';
 import { MELD_DUST_COLOR, MELD_TUNE, RANK_TUNE, wordIds } from '../src/game/melds';
 import { MELD8_TUNE } from '../src/game/melds8';
+import { FOE_TEXT, FOE_TUNE, foeText } from '../src/game/foe_melds';
+import { FOE_RANK, FOE_WORDS, RANK_BY_WORD } from '../src/game/defs';
+import { HOLD_TUNE } from '../src/game/act1_holds';
 import { gearLines, gearNote } from '../src/ui/lexicon';
 import { NEW_GLYPH, NEW_RAMP } from '../src/render/words3';
 import { W10_RAMP } from '../src/render/words10';
@@ -157,6 +160,18 @@ writeFileSync(`${OUT}/words.json`, JSON.stringify({
     attr: ATTR_SPLIT.melds,
     dust: MELD_DUST_COLOR,
     heat: (/text: 'HEAT', color: '(#[0-9a-fA-F]{6})'/.exec(GAME_TS) ?? ['', '#ffffff'])[1],
+  },
+  // (EVERY WORD ON A DUNGEON, game/foe_melds.ts, FOE_WORDS on: a melded word and a ranked one laid on a stronghold's altar, each
+  // counting as two words; on a monster a melded word its two words and a twist of its own (FOE_TUNE's numbers, FOE_TEXT's
+  // lines), a ranked word its word half as strong again (FOE_RANK, RANK_BY_WORD); each such word's page ON A DUNGEON, foeText)
+  foe: {
+    on: FOE_WORDS.on,
+    tune: FOE_TUNE,
+    text: FOE_TEXT,
+    rank: FOE_RANK,
+    rankBy: RANK_BY_WORD,
+    page: Object.fromEntries(MADE.map((w) => [w, foeText(w as WordId)])),
+    holdLife: HOLD_TUNE.life,
   },
   // (PULLING, a city word, for the meld it is part of, Implode: its numbers, defs.ts PULL)
   pull: PULL,

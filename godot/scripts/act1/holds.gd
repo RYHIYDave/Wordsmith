@@ -31,6 +31,7 @@ const Look := preload("res://scripts/look.gd")
 const Monster := preload("res://scripts/monster.gd")
 const BakedFigure := preload("res://scripts/baked_figure.gd")
 const Words := preload("res://scripts/words.gd")
+const FoeWords := preload("res://scripts/foe_words.gd")
 const PF := preload("res://scripts/pixel_font.gd")
 
 const MSG_WORD := Color("#7af8f0")
@@ -102,18 +103,27 @@ func altar_near() -> int:
 	return -1
 
 
-## Why word `w` may not be laid on stronghold `n`'s altar, or "" (game.ts altarProblem, with FOE_WORDS: foe_melds.ts layProblem;
-## the Godot version's words are all plain ones).
+## Why word `w` may not be laid on stronghold `n`'s altar, or "" (game.ts altarProblem; EVERY WORD ON A DUNGEON, FOE_WORDS on: a
+## melded and a ranked word too, each counting as two: foe_words.gd lay_problem).
 func problem(n: int, w: String) -> String:
 	var s: Dictionary = st[n]
 	if s["open"]:
 		return "The door is open"
 	if int(loot.words.get(w, 0)) <= 0:
 		return "No spare word"
+	if not FoeWords.on() and FoeWords.is_meld(w):
+		return "A melded word goes on attacks and gear only"
+	if not FoeWords.on() and FoeWords.is_rank(w):
+		return "A ranked word goes on attacks and gear only"
 	if s["words"].size() >= int(T["most"]):
 		return "At most %d words" % int(T["most"])
 	if s["words"].has(w):
 		return "Already on the altar"
+	if FoeWords.on():
+		var why := FoeWords.lay_problem(s["words"], w, "stronghold")
+		if why != "":
+			return "Already on the altar" if why == "Already on it" else why
+		return ""
 	var el = Words.word(w).get("element")
 	if el != null:
 		for o in s["words"]:
@@ -345,8 +355,10 @@ func wave(n: int, k: int) -> void:
 	s["coming"] = false
 	var W: Dictionary = hold(n)["waves"][k - 1]
 	s["packs"] = W["packs"].map(func(x): return int(x))
-	var laid: Array = s["words"]
-	var more := (1.0 + float(T["life"]) * maxf(0.0, laid.size() - 1.0)) * (1.0 + float(Q["hold"]["waves"]["life"]) * (k - 1))
+	# (EVERY WORD ON A DUNGEON: what the words at the door come to on each monster, a melded word its two and itself; harder for
+	# each word's worth past the first, a melded or ranked word two: foe_words.gd)
+	var laid: Array = FoeWords.foe_words_of(s["words"])
+	var more := (1.0 + float(T["life"]) * maxf(0.0, FoeWords.words_weight(s["words"]) - 1.0)) * (1.0 + float(Q["hold"]["waves"]["life"]) * (k - 1))
 	if k > 1:
 		loot.say("Wave %d of %d" % [k, int(Q["hold"]["waves"]["n"])], MSG_FOE)
 		sfx.play("boss_roar", linear_to_db(0.5))
@@ -415,7 +427,8 @@ func _won(n: int) -> void:
 	var s: Dictionary = st[n]
 	s["won"] = true
 	var q := hold(n)
-	var k: int = s["words"].size()
+	# (as rich as the words' worth: a melded or ranked word two, his "Counts as two words")
+	var k: int = FoeWords.words_weight(s["words"])
 	var at := Vector2(q["fight"]["x"], q["fight"]["y"])
 	var L2: Dictionary = Q["hold"]["loot2"]
 	var dust := roundi(_up_to(T["dust"], k) * (float(L2["dust"]) if bool(L2["on"]) else 1.0))
