@@ -173,7 +173,12 @@ static var ELEMENT_SPLASH := 1.0
 ## (THE MAGE'S OWN, his “Do that.” to bringing her clearing of a pack to within about half again the Warrior's, her one enemy at a
 ## time left lower: her Wave and her Orb a third and more harder, MAGE_MORE, on top of the Wave's evening)
 const MAGE_MORE := 1.35
-const EVEN := {"shot": 1.303, "wave": 1.6 * MAGE_MORE, "vialtoss": 1.72, "hellbolt": 1.635, "orb": MAGE_MORE}
+## (and the Warrior's quick attacks and the Brawler's punches, when poison stopped carrying them: his “Yes both”, 22 Nov 2026, to
+## poison's bonus added and growing with Dexterity, and then the heroes evened against each other: WARRIOR_MORE, BRAWLER_MORE)
+const WARRIOR_MORE := 1.5
+const BRAWLER_MORE := 2.0
+const EVEN := {"shot": 1.303, "wave": 1.6 * MAGE_MORE, "vialtoss": 1.72, "hellbolt": 1.635, "orb": MAGE_MORE,
+	"cleave": WARRIOR_MORE, "chop": WARRIOR_MORE, "smash": WARRIOR_MORE, "vpunch": BRAWLER_MORE}
 const FROST_HIT := 1.0
 const ATTR_KNEE := 50.0
 const ATTR_SPAN := 100.0

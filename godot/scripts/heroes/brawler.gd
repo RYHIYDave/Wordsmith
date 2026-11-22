@@ -566,7 +566,18 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	var finisher: bool = int(mv["globe"]) == 2 and _has("vfullset") and globes.has("punch") and globes.has("kick") and (globes.has("punchFire") or globes.has("kickFire"))
 	if finisher:
 		share *= float(T["fullSet"]["mult"])
+	# (TWIN in front, as his move's card has it, “hits twice, each for” its share: each blow lands twice, the second a moment after;
+	# his punches did not read it, the damage check found: words.gd, Twin)
+	var tw: Dictionary = h.loadout.r(i)
+	var twice: int = int(tw["count"])
+	if twice > 1:
+		share *= float(tw["count_dmg"])
 	h.hit_monster(o, i, share, n >= 3)
+	for k2 in range(1, twice):
+		var again := share
+		_after(0.1 * k2, func() -> void:
+			if is_instance_valid(o) and not o.dead:
+				h.hit_monster(o, i, again, true))
 	# (Stoke: a fire move that lands takes two seconds off his jump's wait)
 	if first and fire and _has("vstoke") and charges[2] < 1:
 		cd[2] = maxf(0.01, cd[2] - float(T["stoke"]["secs"]))
