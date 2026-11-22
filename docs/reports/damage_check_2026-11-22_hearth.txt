@@ -59,3 +59,6 @@ ALL FOUR WORDS (in front scald, twin; behind power2, fleeting), in his hold too 
 
 THE WARLOCK, HEX CHAIN AND BLAZING ARM AT THE GAME'S OWN SHARES (70%, 50%)
 ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too (curse), burning's own +0%: into the elite, his quick attack alone 263265 a second, it and his hold 192507 a second; a tough pack (six of 2000000 life), quick alone dead in 4.5 s (2680086 a second), it and his hold 7.5 s (1605721 a second)
+
+THE WARLOCK, BURNING'S OWN HIS OWN (on what burns, in his hellfire too); Hex Chain and Blazing Arm halved, as set
+ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too (curse), burning's own +100%: into the elite, his quick attack alone 442283 a second, it and his hold 295743 a second; a tough pack (six of 2000000 life), quick alone dead in 3.1 s (3837131 a second), it and his hold 5.5 s (2179820 a second)
