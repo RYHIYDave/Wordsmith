@@ -1,0 +1,48 @@
+WHY POISON MELDS: where three best builds' pack damage came from (WS_DMG_TRACE; 'move -1 phys (over time)' is the poison)
+
+-- ranger
+hero: level 50, Str 143 Dex 406 Int 6; weapon 51-70 at 2.94 attacks a second; damage +54%, physical +0%, fire +0%, frost +0%, lightning +364%, poison +241%, poison added 0-0; critical 75% for +650%
+  where the pack's harm came from: move 0 lightning 6564191, move -1 phys (over time) 5771240, (of it, made more) 0
+  where the pack's harm came from: move -1 phys (over time) 4818585, move 1 lightning 4405463, move 0 lightning 3792551, (of it, made more) 0
+ALL FOUR WORDS (in front contagion, precise; behind power2, fleeting), in his hold too (volley), burning's own +25%: into the elite, his quick attack alone 716188 a second, it and his hold 802070 a second; a tough pack (six of 2000000 life), quick alone dead in 2.9 s (4143377 a second), it and his hold 2.3 s (5297681 a second)
+
+-- warrior
+hero: level 50, Str 379 Dex 116 Int 6; weapon 69-94 at 1.63 attacks a second; damage +0%, physical +405%, fire +0%, frost +0%, lightning +0%, poison +241%, poison added 0-0; critical 75% for +590%
+  where the pack's harm came from: move -1 phys (over time) 10224051, move 0 phys 2167087, move 1 phys 905697, move 0 phys (over time) 173401, move 1 phys (over time) 70408, (of it, made more) 0
+  where the pack's harm came from: move -1 phys (over time) 10399348, move 0 phys 1994635, move 1 phys 710146, move 0 phys (over time) 171824, move 1 phys (over time) 39938, (of it, made more) 0
+ALL FOUR WORDS (in front blight, heavy; behind fleeting, power2), in his hold too (whirlwind), burning's own +25%: into the elite, his quick attack alone 318648 a second, it and his hold 383291 a second; a tough pack (six of 2000000 life), quick alone dead in 6.9 s (1735256 a second), it and his hold 6.1 s (1951601 a second)
+
+-- brawler
+hero: level 50, Str 119 Dex 376 Int 6; weapon 69-94 at 2.13 attacks a second; damage +162%, physical +0%, fire +0%, frost +200%, lightning +0%, poison +323%, poison added 0-0; critical 69% for +470%
+  where the pack's harm came from: move -1 phys (over time) 9909779, move 0 frost 2165307, move -1 frost (over time) 326045, (of it, made more) 0
+  where the pack's harm came from: move -1 phys (over time) 10227233, move 0 frost 1149486, move 1 frost 689041, move -1 frost (over time) 352581, (of it, made more) 0
+ALL FOUR WORDS (in front frostbite, heavy; behind fleeting, power2), in his hold too (vkick), burning's own +25%: into the elite, his quick attack alone 268189 a second, it and his hold 313082 a second; a tough pack (six of 2000000 life), quick alone dead in 8.6 s (1401850 a second), it and his hold 8.6 s (1400613 a second)
+
+WITH POISON_ADD ON (poison's bonus added to damage's, not on top of the hit's element bonus): each hero's best words found again
+=== RANGER, POISON (Dexterity) ===
+TOP [best worked out] in front sunder, swift; behind power2, fleeting: worked out 275666 a second; his quick attack into the elite 379984 a second, the tough pack dead in 6.2 s
+TOP [fire] in front fumes, swift; behind power2, fleeting: worked out 384114 a second; his quick attack into the elite 431265 a second, the tough pack dead in 3.8 s
+TOP [frost] in front shiver, swift; behind power2, fleeting: worked out 447517 a second; his quick attack into the elite 493472 a second, the tough pack dead in 3.3 s
+TOP [lightning] in front forking, swift; behind power2, fleeting: worked out 467414 a second; his quick attack into the elite 259538 a second, the tough pack dead in 2.9 s
+TOP [poison] in front blight, swift; behind power2, fleeting: worked out 244719 a second; his quick attack into the elite 261103 a second, the tough pack dead in 7.9 s
+TOP [volatile] in front demolition, swift; behind power2, fleeting: worked out 220906 a second; his quick attack into the elite 236606 a second, the tough pack dead in 6.8 s
+TOP BY THE ELITE: [frost] in front shiver, swift; behind power2, fleeting 493472; [fire] in front fumes, swift; behind power2, fleeting 431265; [best worked out, power] in front sunder, swift; behind power2, fleeting 379984; [poison] in front blight, swift; behind power2, fleeting 261103; [lightning] in front forking, swift; behind power2, fleeting 259538; [volatile] in front demolition, swift; behind power2, fleeting 236606
+TOP BY THE PACK: [lightning] in front forking, swift; behind power2, fleeting 2.9 s; [frost] in front shiver, swift; behind power2, fleeting 3.3 s; [fire] in front fumes, swift; behind power2, fleeting 3.8 s; [best worked out, power] in front sunder, swift; behind power2, fleeting 6.2 s; [volatile] in front demolition, swift; behind power2, fleeting 6.8 s; [poison] in front blight, swift; behind power2, fleeting 7.9 s
+=== WARRIOR, POWER (Strength) ===
+TOP [best worked out] in front sunder, swift; behind power2, fleeting: worked out 132575 a second; his quick attack into the elite 251839 a second, the tough pack dead in 9.8 s
+TOP [fire] in front fire2, twin; behind power2, fleeting: worked out 184626 a second; his quick attack into the elite 211845 a second, the tough pack dead in 30.0 s
+TOP [frost] in front shiver, swift; behind power2, fleeting: worked out 143633 a second; his quick attack into the elite 185938 a second, the tough pack dead in 30.0 s
+TOP [lightning] in front forking, swift; behind power2, fleeting: worked out 137082 a second; his quick attack into the elite 182875 a second, the tough pack dead in 13.1 s
+TOP [poison] in front blight, swift; behind power2, fleeting: worked out 118491 a second; his quick attack into the elite 168984 a second, the tough pack dead in 12.7 s
+TOP [volatile] in front demolition, swift; behind power2, fleeting: worked out 103042 a second; his quick attack into the elite 151997 a second, the tough pack dead in 10.9 s
+TOP BY THE ELITE: [best worked out, power] in front sunder, swift; behind power2, fleeting 251839; [fire] in front fire2, twin; behind power2, fleeting 211845; [frost] in front shiver, swift; behind power2, fleeting 185938; [lightning] in front forking, swift; behind power2, fleeting 182875; [poison] in front blight, swift; behind power2, fleeting 168984; [volatile] in front demolition, swift; behind power2, fleeting 151997
+TOP BY THE PACK: [best worked out, power] in front sunder, swift; behind power2, fleeting 9.8 s; [volatile] in front demolition, swift; behind power2, fleeting 10.9 s; [poison] in front blight, swift; behind power2, fleeting 12.7 s; [lightning] in front forking, swift; behind power2, fleeting 13.1 s; [fire] in front fire2, twin; behind power2, fleeting 30.0 s; [frost] in front shiver, swift; behind power2, fleeting 30.0 s
+=== BRAWLER (Strength and Dexterity) ===
+TOP [best worked out] in front sunder, swift; behind power2, fleeting: worked out 170948 a second; his quick attack into the elite 96429 a second, the tough pack dead in 22.8 s
+TOP [fire] in front fumes, swift; behind power2, fleeting: worked out 225772 a second; his quick attack into the elite 113281 a second, the tough pack dead in 18.5 s
+TOP [frost] in front shiver, swift; behind power2, fleeting: worked out 252360 a second; his quick attack into the elite 78058 a second, the tough pack dead in 30.0 s
+TOP [lightning] in front forking, swift; behind power2, fleeting: worked out 264459 a second; his quick attack into the elite 44568 a second, the tough pack dead in 11.8 s
+TOP [poison] in front blight, swift; behind power2, fleeting: worked out 145860 a second; his quick attack into the elite 73485 a second, the tough pack dead in 26.9 s
+TOP [volatile] in front demolition, swift; behind power2, fleeting: worked out 135843 a second; his quick attack into the elite 49172 a second, the tough pack dead in 30.0 s
+TOP BY THE ELITE: [fire] in front fumes, swift; behind power2, fleeting 113281; [best worked out, power] in front sunder, swift; behind power2, fleeting 96429; [frost] in front shiver, swift; behind power2, fleeting 78058; [poison] in front blight, swift; behind power2, fleeting 73485; [volatile] in front demolition, swift; behind power2, fleeting 49172; [lightning] in front forking, swift; behind power2, fleeting 44568
+TOP BY THE PACK: [lightning] in front forking, swift; behind power2, fleeting 11.8 s; [fire] in front fumes, swift; behind power2, fleeting 18.5 s; [best worked out, power] in front sunder, swift; behind power2, fleeting 22.8 s; [poison] in front blight, swift; behind power2, fleeting 26.9 s; [frost] in front shiver, swift; behind power2, fleeting 30.0 s; [volatile] in front demolition, swift; behind power2, fleeting 30.0 s

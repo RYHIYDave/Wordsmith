@@ -240,3 +240,18 @@ What it shows: a poison meld (Blight, Contagion, Frostbite, Fumes) is in the bes
 not; Contagion's arcs carry poison through a pack; the Ranger with Venom's eight doses and Contagion is the strongest of all.
 (The search worked out alone picks Blight for most; fought, the melds of poison with an element often beat it: the worked out
 counts one enemy, and not a meld's spreading.)
+
+## Why the poison melds are so strong
+
+His question: “Yes why are poison melds so strong for everyone”. In the code (hero.gd hit_monster, monster.gd dose): a dose is its
+share of the hit as it lands, the hit already made more by damage, its element's bonus, the word bonuses and a critical; then
+Poison Damage makes the dose more again, on top. Two bonuses that multiply each other; and a poison meld burned into gear gives
+both on one piece (Contagion +40% lightning and +40% poison, where a plain word gives +54% of one, a Rank II +81% of one). Poison
+also adds up dose on dose, where burning does not. Contagion's arcs carry the poison to the rest of a pack.
+How much of the pack's harm was poison (damage_check_2026-11-22_poison_why.txt): the Warrior's Blight and Heavy 76%; the Brawler's
+Frostbite and Heavy 80%; the Ranger's Contagion and Precise 47% (his lightning hits the rest).
+A switch made to try (words.gd POISON_ADD, off): a dose is its share of the hit without the hit's element bonus, and damage and
+Poison Damage added together. With it, the best words found again: the Ranger's best Shiver and Swift, 493,472 a second, 3.3 s
+(Blight and Swift 261,103, 7.9 s); the Warrior's Sunder and Swift 251,839, 9.8 s (Blight and Swift 168,984, 12.7 s). Poison no
+longer the first choice; the top of every hero lower. The Brawler's search came out far lower in the fight than worked out
+(96,429 a second against 170,948): to be looked at before anything is set by it.
