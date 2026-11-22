@@ -2917,6 +2917,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_defence.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	if _arg("only") == "eclipse":
+		await preload("res://scripts/check_eclipse.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "charge":
 		await preload("res://scripts/check_charge.gd").new().run(self, hero, dir)
 		get_tree().quit()

@@ -41,8 +41,16 @@ static func step(P, p: Dictionary, _dt: float) -> bool:
 			if src == null or not is_instance_valid(src) or src.dead or src.state != "act" or src.h2.act == null or not is_same(src.h2.act, p.get("act")):
 				return false
 		"queen:eclipse":
-			_dark(P, p)
 			var E: Dictionary = QR.ECLIPSE
+			# (her death ends it, his “Start all that”, 22 Nov 2026, to the list's “The Carrion Queen's Eclipse goes on after she dies”:
+			# before its dark has fallen, gone; in its dark, the light coming back at once, and no more dives of her flock)
+			if src == null or not is_instance_valid(src) or src.dead:
+				if float(p["t"]) < float(E["hit"]):
+					return false
+				if float(p["t"]) < float(E["hit"]) + float(E["dark"]):
+					p["t"] = float(E["hit"]) + float(E["dark"])
+				p["c"] = INF
+			_dark(P, p)
 			var t: float = p["t"]
 			# (`c`: when the next dive may come)
 			if t >= float(p["c"]) and t <= float(E["hit"]) + float(E["dark"]) - float(E["warn"]) and hero.alive and hero._act != "lunge" and not QR.in_pool(QR.pools_of(p), hero.world):
