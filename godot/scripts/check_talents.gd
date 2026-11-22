@@ -131,6 +131,11 @@ func run(main, hero, d: String) -> void:
 	var cl2 := Talents.clean("warrior", 3, ["sweepingcut"])
 	_line(u1 == "Take another to swap" and u2 == "" and cl == ["greatsword", "sweepingcut"] and cl2 == ["greatsword"],
 		"the greatsword not undone but swapped ('%s'), Sweeping Cut undone (''); a save's list made safe at level 7: %s; an old one with no weapon, at level 3: %s" % [u1, cl, cl2])
+	# (WS_TALENTS_ONLY=warlock: his talents in play alone, for a change to them)
+	if OS.get_environment("WS_TALENTS_ONLY") == "warlock":
+		await _warlock()
+		print("TALENTS DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " %s" % [bad]])
+		return
 	# THE WARRIOR'S TALENTS IN PLAY (game.ts, TALENTS2's rules)
 	await _warrior()
 	# THE WARRIOR'S BATTLE AXE AND WARHAMMER, their moves and their talents
@@ -663,6 +668,20 @@ func _warlock() -> void:
 	m.curse_t = 0.0
 	h.hit_monster(m, 0, 0.1, false)
 	_line(o.curse_t > 0.0 and o.life < before, "Blazing Arm: his pact full, the bolt bursts: the one beside it cursed (%.1f s) and struck (%.0f to %.0f)" % [o.curse_t, before, o.life])
+	# (and only from the one the bolt itself struck: one its fire's burst caught round it sets off no burst and no chain of its own)
+	for q in [m, o]:
+		q.hell_t = 0.0
+		q.burn_t = 0.0
+		q.curse_dps = 0.0
+		q.curse_t = 3.0
+	await _run(0.3)
+	var m0: float = m.life
+	kit.splashing = true
+	h.hit_monster(o, 0, 0.1, true)
+	kit.splashing = false
+	m.hell_t = 0.0
+	await _run(0.3)
+	_line(m.life == m0, "a burst's catch: one caught in his bolt's burst sets off no Blazing Arm and no Hex Chain of its own (the one beside it %.0f, then %.0f)" % [m0, m.life])
 	kit.pact = 0.0
 	# Withering: cursed, they move and strike at half speed
 	h.talents = ["branded", "hexchain", "blazingarm", "withering"]

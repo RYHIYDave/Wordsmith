@@ -156,3 +156,21 @@ melded) 351,591, 5.7 s; Brawler 424,658, 7.2 s (his quick attack alone 6.6 s); W
 alone, the pack dead in 0.9 s: his Hex Chain (a bolt leaping on to three more cursed, 70% each), Blazing Arm (his bolt bursting
 round what it hits while his pact is full, 50%), his hellfire burning and burning's own on it, in a knot of six, about fourteen
 times the Warrior's clearing.
+
+## The Warlock's packs: the cause found and mended; the Brawler with his build
+
+The trace, counting each hit as it lands (after the curse, burning's own and the rest: monster.gd trace), showed the pack's life
+all but wholly from his Hellfire Bolt, half of it burning's own. The cause: with Fire in front his bolt bursts where it strikes,
+and every enemy caught in that burst was taken as struck by the bolt itself, each setting off a Hex Chain and a Blazing Arm burst
+of its own: in a knot of six one bolt came to some forty bolts' worth. Now only the one the bolt itself strikes sets them off
+(heroes/kit.gd splashing, heroes/warlock.gd on_hit; `--only=talents` with WS_TALENTS_ONLY=warlock: 20 checks, 0 wrong). Into the
+elite, and the tough pack dead in (his bolt alone; with his hold, the Curse): Hex Chain 35% and Blazing Arm 25%, halved as set,
+472,332 a second, 3.3 s (5.2 s); at the game's own 70% and 50%, 451,384, 2.9 s (4.2 s). Kept halved: beside the Tinkerer's 3.0 s
+(3.7 s), the quickest of the rest.
+
+The Brawler with his build (his words: “he's a dex/str hybrid so poison, power, and crit could make for a powerful combo”):
+Blight and Heavy in front, Power II and Fleeting behind, gear chosen for them (Strength 463, Dexterity 119; critical 75% for +470%;
+1.64 attacks a second): his quick attack into the elite 344,675 a second, the pack dead in 7.4 s (with his hold 271,669, 7.7 s).
+The build chosen before (Fumes and Heavy; Power II and Fleeting; Dexterity 376, 2.13 attacks a second): 452,975, 6.6 s (424,658,
+7.2 s). Fumes is fire and poison together, and burning's own doubles its fire half.
+(damage_check_2026-11-22_warlock_brawler2.txt)

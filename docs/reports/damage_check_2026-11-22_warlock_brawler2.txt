@@ -1,0 +1,27 @@
+THE BRAWLER, HIS BUILD (Blight, Heavy in front; Power II, Fleeting behind; gear chosen for them)
+=== BRAWLER (Strength and Dexterity) ===
+hero: level 50, Str 463 Dex 119 Int 6; weapon 69-94 at 1.64 attacks a second; damage +54%, physical +282%, fire +0%, frost +0%, lightning +0%, poison +241%, poison added 0-0; critical 75% for +470%
+talents: vstiffjab, vviperjab, vknockdown, vlauncher, vswitchkick, vlonglegs, vwallslam, vaftershock, vthunderknee, vfullset
+  mainhand: War Wraps + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), sunder (str 20.0, physPct 40.0), twin (critChance 12.0), piercing (critMult 60.0)
+  helm: War Helm + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  chest: War Plate + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  gloves: Studded Gloves + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), sunder (str 20.0, physPct 40.0), twin (critChance 12.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  boots: War Greaves + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  amulet: Obsidian Amulet + poison2 (poisonPct 81.0), power2 (physPct 81.0), twin (critChance 12.0), power (str 27.0)
+ALL FOUR WORDS (in front blight, heavy; behind power2, fleeting), in his hold too (vkick), burning's own +100%: into the elite, his quick attack alone 344675 a second, it and his hold 271669 a second; a tough pack (six of 2000000 life), quick alone dead in 7.4 s (1619866 a second), it and his hold 7.7 s (1559270 a second)
+
+THE WARLOCK, BEFORE THE FIX (harm counted as it lands)
+  where the pack's harm came from: (fire hit while burning) 11898498, move 0 fire 11833124, (of it, made more) 5949249, move -1 fire (over time) 156291, move 0 phys (over time) 88704, move 0 fire (over time) 79299, move 1 fire 65374
+  where the pack's harm came from: (fire hit while burning) 11415158, move 0 fire 11333210, (of it, made more) 5707579, move -1 fire (over time) 329310, move 0 fire (over time) 161757, move 0 phys (over time) 144648, move 1 fire 81948, move 1 phys (over time) 4264
+ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too (curse), burning's own +100%: into the elite, his quick attack alone 456223 a second, it and his hold 315132 a second; a tough pack (six of 2000000 life), quick alone dead in 1.4 s (8795302 a second), it and his hold 2.4 s (5002754 a second)
+
+THE WARLOCK, ONLY THE BOLT'S OWN HIT SETTING OFF HEX CHAIN AND BLAZING ARM; Hex Chain 35%, Blazing Arm 25% (halved, as set)
+  where the pack's harm came from: (fire hit while burning) 10910570, move 0 fire 10785142, (of it, made more) 5455285, move -1 fire (over time) 616579, move 0 fire (over time) 302116, move 0 phys (over time) 248922, move 1 fire 125428
+  where the pack's harm came from: (fire hit while burning) 10458618, move 0 fire 10181572, (of it, made more) 5229309, move -1 fire (over time) 909932, move 0 fire (over time) 419794, move 0 phys (over time) 340135, move 1 fire 277046, move 1 phys (over time) 34503
+ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too (curse), burning's own +100%: into the elite, his quick attack alone 472332 a second, it and his hold 311955 a second; a tough pack (six of 2000000 life), quick alone dead in 3.3 s (3666121 a second), it and his hold 5.2 s (2318113 a second)
+
+THE SAME, AT THE GAME'S OWN SHARES (Hex Chain 70%, Blazing Arm 50%)
+  where the pack's harm came from: (fire hit while burning) 11181266, move 0 fire 11077028, (of it, made more) 5590633, move -1 fire (over time) 473176, move 0 fire (over time) 188747, move 0 phys (over time) 153776, move 1 fire 104238, move 1 fire (over time) 51331
+  where the pack's harm came from: (fire hit while burning) 10915036, move 0 fire 10710036, (of it, made more) 5457518, move -1 fire (over time) 613303, move 0 fire (over time) 223754, move 1 fire 205000, move 0 phys (over time) 183877, move 1 fire (over time) 73082
+ALL FOUR WORDS (in front fire2, swift; behind power2, fleeting), in his hold too (curse), burning's own +100%: into the elite, his quick attack alone 451384 a second, it and his hold 306375 a second; a tough pack (six of 2000000 life), quick alone dead in 2.9 s (4076197 a second), it and his hold 4.2 s (2846330 a second)
