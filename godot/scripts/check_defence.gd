@@ -22,7 +22,8 @@ func _line(ok: bool, s: String) -> void:
 
 ## A plain piece of floor 20 as the game's tables make it (its base, what is built into it), worn in `slot`.
 func _piece(slot: String, base: String, imods: Array, implicit: Array) -> Dictionary:
-	return {"name": base, "base": base, "slot": slot.trim_suffix("1").trim_suffix("2"), "ilvl": 20, "req": 20, "rarity": 0,
+	var icon: String = {"chest": "robe" if base.ends_with("Robe") else "armor", "helm": "hood" if base.ends_with("Hood") else "helm"}.get(slot, slot) + ":2"
+	return {"name": base, "base": base, "icon": icon, "slot": slot.trim_suffix("1").trim_suffix("2"), "ilvl": 20, "req": 20, "rarity": 0, "weapon": false, "hands": 0, "aps": 0,
 		"imods": imods.duplicate(true), "mods": imods.duplicate(true), "implicit": implicit.duplicate(), "lines": [], "imbues": [], "affixes": 0, "has": []}
 
 
@@ -58,6 +59,9 @@ func run(main, hero, d: String) -> void:
 		m._cd = 1e9
 	await M._wait(0.6)
 	await M._snap(dir + "/def01_mage_barrier_full.png")
+	# (struck for real, for this: the checks keep him unhurt)
+	h.unhurt = false
+	h._invuln = 0.0
 	var b0: float = h.barrier
 	var l0: float = h.life
 	h.hurt_by(40.0, "phys", [], {}, null, h.world + Vector2(1, 0))
@@ -103,6 +107,8 @@ func run(main, hero, d: String) -> void:
 	var jerkin: Array = M.loot.implicit_lines(M.loot.gear["chest"])
 	_line(on5 > 0.0 and h.max_barrier == 0.0 and jerkin.any(func(l): return str(l).ends_with("Dodge")),
 		"a Ranger of level 20 (Dexterity %d) in a studded jerkin, a mail hood, studded boots: dodge %d, a %.0f%% chance on floor 5; the jerkin: %s" % [h.stats["dex"], h.stats["dodge"], on5 * 100.0, ", ".join(jerkin)])
+	h.unhurt = false
+	h._invuln = 0.0
 	var dodged := 0
 	var shown := false
 	for k in 200:
@@ -122,5 +128,10 @@ func run(main, hero, d: String) -> void:
 	await M._wait(0.2)
 	await M._snap(dir + "/def06_card_jerkin.png")
 	M._inv._hover = {}
+	M._inv._page = "stats"
+	M._inv.queue_redraw()
+	await M._wait(0.3)
+	await M._snap(dir + "/def07_stats_ranger.png")
+	M._inv._page = "gear"
 	M._inv.toggle()
 	print("DEFENCE: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

@@ -63,21 +63,23 @@ const EQUIP := ["mainhand", "offhand", "helm", "chest", "gloves", "belt", "boots
 ## its own defence built into it, and one small thing more:
 ##   HEAVY   (Iron, Steel, War: plate, helm, gauntlets, belt, greaves)  ARMOUR, as ever (and Strength his life, as ever)
 ##   LEATHER (Hide, Leather, Studded; the hoods)  DODGE in place of its armour, its speed or life kept: a chance that a blow misses
-##           him altogether, dodge / (dodge + 40 + 20 a floor) of hero.gd DODGE_K, never certain; Dexterity adds to it (DEX_DODGE a point,
-##           as the damage reads attributes: words.gd eff_attr)
+##           him altogether, dodge / (dodge + 40 + 20 a floor) of hero.gd DODGE_K, never certain; Dexterity makes it more (DEX_DODGE %
+##           a point, as the damage reads attributes: words.gd eff_attr)
 ##   CLOTH   (Linen, Silk, Velvet: robe, gloves, sash)  BARRIER in place of its mana, and a little cooldown recovery: a second life
 ##           in front of his life that takes every harm first (no less for it), and fills again when nothing has touched him for
-##           hero.gd BARRIER_WAIT seconds; Intelligence adds to it (INT_BARRIER a point)
+##           hero.gd BARRIER_WAIT seconds; Intelligence makes it more (INT_BARRIER % a point)
 ## A piece's defence is sized by its kind's heavy piece's armour at its level (HEAVY_ARMOUR: items.ts GEAR_KINDS), LEATHER_K of it
 ## for leather, LEATHER_K x BARRIER_K for cloth. OFF until he has seen it (its looks: the barrier round his life globe, its
 ## shimmer on him, DODGE over him): `--defence=1` for a run.
 static var DEFENCE_LAYERS := false
 const HEAVY_ARMOUR := {"helm": [5.0, 3.0], "chest": [8.0, 5.0], "gloves": [3.0, 2.0], "belt": [3.0, 2.0], "boots": [3.0, 2.0]}
 const LEATHER_K := 0.75
-const BARRIER_K := 2.3
+const BARRIER_K := 2.0
 const CLOTH_CDR := 0.05
-const DEX_DODGE := 1.0
-const INT_BARRIER := 2.0
+## (how much more each point of Dexterity makes his gear's dodge, and each of Intelligence his gear's barrier, %: as the damage
+## reads attributes, words.gd eff_attr; with no leather or cloth on, neither)
+const DEX_DODGE := 0.5
+const INT_BARRIER := 0.5
 ## (what the dodge chance and the barrier's filling are: hero.gd DODGE_K, BARRIER_WAIT, BARRIER_FILL)
 
 
@@ -436,8 +438,8 @@ func derive() -> void:
 	hero.set_max_life(maxf(1.0, life))
 	# (THE THREE DEFENCES: his dodge and his barrier, his gear's and what Dexterity and Intelligence add)
 	if DEFENCE_LAYERS:
-		hero.stats["dodge"] = g.call("dodge") + Words.eff_attr(dex) * DEX_DODGE
-		hero.set_max_barrier(g.call("barrier") + Words.eff_attr(int_) * INT_BARRIER)
+		hero.stats["dodge"] = roundf(g.call("dodge") * (1.0 + Words.eff_attr(dex) * DEX_DODGE / 100.0))
+		hero.set_max_barrier(roundf(g.call("barrier") * (1.0 + Words.eff_attr(int_) * INT_BARRIER / 100.0)))
 	else:
 		hero.stats["dodge"] = 0.0
 		hero.set_max_barrier(0.0)

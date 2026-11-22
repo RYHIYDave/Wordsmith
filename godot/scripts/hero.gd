@@ -1821,7 +1821,9 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	var dodge := dodge_chance() if not bare else 0.0
 	if dodge > 0.0 and randf() < dodge:
 		_tell({"t": "dodged", "x": world.x, "y": world.y, "fromX": by.x, "fromY": by.y})
-		_tell({"t": "text", "x": world.x, "y": world.y, "text": "Dodge", "color": "#7af8f0"})
+		if fx != null:
+			fx.float_text(world.x, world.y, "DODGE", Color("#7af8f0"), false, 34.0)
+		sfx.play("swing", linear_to_db(0.35))
 		last_blow = {"raw": raw, "el": el, "words": words, "dodged": true, "dmg": 0.0}
 		return
 	var hw: Array = hv.get("words", [])

@@ -485,7 +485,10 @@ func _fight_one(reach: float) -> float:
 		h.life = h.max_life
 		h.auto_attack = true
 		h.world = spot
-		_hold(dummy)
+		# (where it stands, whatever throws or slides it: Deep Freeze, The Big One, Long Shot)
+		if is_instance_valid(dummy):
+			dummy.world = spot + way * reach
+			_hold(dummy)
 		if at2 < 0.0 and t >= 2.0:
 			at2 = dummy.life
 	return (at2 - dummy.life) / 8.0

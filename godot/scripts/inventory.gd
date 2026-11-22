@@ -1294,6 +1294,7 @@ func _draw_glance(r: Rect2) -> void:
 	var rows := [
 		["LIFE", "%d" % roundi(hero.max_life)],
 		["ARMOUR", "%d" % roundi(s.get("armor", 0.0))],
+	] + ([["BARRIER", "%d" % roundi(hero.max_barrier)], ["DODGE", "%d%%" % roundi(hero.dodge_chance() * 100.0)]] if loot.DEFENCE_LAYERS else []) + [
 		["DAMAGE", "%d-%d" % [roundi(s["dmg_min"]), roundi(s["dmg_max"])]],
 		["A SECOND", "%.2f" % s["aps"]],
 		["CRITICAL", "%.1f%%" % s["crit_chance"]],
@@ -1339,6 +1340,12 @@ func _draw_stats(r: Rect2) -> void:
 		["LIFE", "%d / %d" % [ceili(hero.life), roundi(hero.max_life)]],
 		["LIFE A SECOND", "%.1f" % s.get("life_regen", 0.0)],
 		["ARMOUR", ("%d (%d%%)" % [roundi(armor), stop]) if armor > 0.0 else "0"],
+	]
+	# (THE THREE DEFENCES, loot.gd DEFENCE_LAYERS: his dodge, and its chance here; his barrier)
+	if loot.DEFENCE_LAYERS:
+		defence.append(["DODGE", ("%d (%d%%)" % [roundi(s.get("dodge", 0.0)), roundi(hero.dodge_chance() * 100.0)]) if s.get("dodge", 0.0) > 0.0 else "0"])
+		defence.append(["BARRIER", "%d / %d" % [ceili(hero.barrier), roundi(hero.max_barrier)]])
+	defence += [
 		["FIRE RESIST", "%d%%" % roundi(s.get("res_fire", 0.0))],
 		["FROST RESIST", "%d%%" % roundi(s.get("res_frost", 0.0))],
 		["LIGHTNING RESIST", "%d%%" % roundi(s.get("res_light", 0.0))],

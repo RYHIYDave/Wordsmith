@@ -2978,6 +2978,7 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "mana":
 		await preload("res://scripts/check_title.gd").new().mana_check(self, hero, dir)
+		get_tree().quit()
 		return
 	if _arg("only") == "practice":
 		await preload("res://scripts/check_title.gd").new().practice_check(self, hero, dir)
