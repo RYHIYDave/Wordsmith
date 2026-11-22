@@ -265,7 +265,7 @@ func arcs(m: Monster, n: int, dmg: float, skill := -1, meld := "") -> int:
 	var from := m.world
 	var near: Array = []
 	for o in list:
-		if is_instance_valid(o) and not o.dead and o.state != "rise" and o != m and o.world.distance_to(from) <= 3.5:
+		if is_instance_valid(o) and not o.dead and o.state != "rise" and o.chained != 1 and o != m and o.world.distance_to(from) <= 3.5:
 			near.append(o)
 	near.sort_custom(func(a, b) -> bool: return a.world.distance_to(from) < b.world.distance_to(from))
 	if near.size() > n:
@@ -316,7 +316,7 @@ func _jump(from: Monster, left: int, k: int, struck: Dictionary, dmg: float, rea
 		var next: Monster = null
 		var best := INF
 		for o in list:
-			if not is_instance_valid(o) or o.dead or o.state == "rise" or struck.has(o):
+			if not is_instance_valid(o) or o.dead or o.state == "rise" or o.chained == 1 or struck.has(o):
 				continue
 			var d: float = o.world.distance_to(from.world)
 			if d <= reach and d < best:
@@ -481,6 +481,9 @@ func rally(m: Monster) -> void:
 
 ## Pack-mates within 14 tiles wake with it; a boss roars, the others call out.
 func wake(m: Monster) -> void:
+	# (THE CHAINED RARE: nothing wakes him while his chains hold: chained_rare.gd)
+	if m.chained == 1:
+		return
 	var voice: String = Monster.VOICE.get(m.kind, "")
 	if m.boss and Monster.BOSS_VOICE.has(m.kind):
 		# (a boss who roars: his own roar as the fight begins: game.ts wakeUp)
@@ -575,6 +578,9 @@ func sees(a: Vector2, b: Vector2) -> bool:
 ## (game.ts shutIn) What is in a room whose door is shut is out of the hero's reach altogether, awake or not, for as long as he
 ## is outside it: no blow, blast or shot of his reaches it, and it is no fight.
 func shut_in(m) -> bool:
+	# (THE CHAINED RARE, held by his chains: out of his reach as what is shut in is, until he breaks them: chained_rare.gd)
+	if m is Object and m.get("chained") == 1:
+		return true
 	if map == null or map.doors.is_empty() or hero == null:
 		return false
 	for d in map.doors:

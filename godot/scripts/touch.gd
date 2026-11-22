@@ -35,7 +35,7 @@ const MODES := ["auto", "tap", "face", "one"]
 const LABEL := {"auto": "ATTACKS: AUTO AIM", "tap": "ATTACKS: WHERE YOU TAP", "face": "ATTACKS: THE WAY YOU FACE", "one": "ATTACKS: ONE HAND"}
 ## (main.ts SPOT_SIZE: how wide either side and how tall a thing is touched, game pixels)
 const SPOT_SIZE := {"way": [24, 26], "body": [22, 20], "wordsmith": [18, 54], "armourer": [18, 54], "mystic": [34, 40], "lexicon": [18, 44],
-	"stash": [20, 28], "stranger": [18, 54]}
+	"stash": [20, 28], "stranger": [18, 54], "chained": [16, 42]}
 const KEEP := "user://touch.cfg"
 ## (render.ts lockRing: its dots, dark under them)
 const RING := [Color("#120d18"), Color("#e8b030"), Color("#ffe070"), Color("#fff6c0")]
@@ -306,7 +306,8 @@ func _monster_at(p: Vector2):
 	var best = null
 	var bd := 1e9
 	for m in main._monsters.list:
-		if not is_instance_valid(m) or m.dead or not m.seen:
+		# (THE CHAINED RARE in his chains is no one to strike: a touch on him is a touch on what is used, _spot_at)
+		if not is_instance_valid(m) or m.dead or not m.seen or m.chained == 1:
 			continue
 		var s: Vector2 = Iso.to_screen(m.world.x, m.world.y) / 2.0
 		var tall: float = 18.0 + m.r * 30.0
@@ -496,7 +497,7 @@ func _process(dt: float) -> void:
 		var dd: float = h.world.distance_to(at)
 		if moving or float(errand["t"]) > 12.0 or (aim["active"] and aim["held"]):
 			errand = {}
-		elif dd < (0.4 if errand["kind"] == "way" else (1.0 if errand["kind"] == "body" else 1.6)):
+		elif dd < (0.4 if errand["kind"] == "way" else (1.0 if errand["kind"] == "body" else (2.0 if errand["kind"] == "chained" else 1.6))):
 			if errand["kind"] != "body":
 				_press("interact")
 				_after_interact = true
@@ -637,6 +638,11 @@ func _spot_at(p: Vector2) -> Dictionary:
 	elif main.loot != null and main.loot._body != null and not main.loot._body["searched"]:
 		var b: Vector2 = main.loot._body["at"]
 		test.call("body", "body", b, b)
+	# (THE CHAINED RARE, while his chains hold him: touched, he is walked to and his chains broken there: chained_rare.gd)
+	var cr = main.get("chained_rare")
+	if town == null and cr != null and is_instance_valid(cr) and cr.held():
+		var c: Vector2 = cr.m.world
+		test.call("chained", "chained", c, c)
 	return found["best"]
 
 

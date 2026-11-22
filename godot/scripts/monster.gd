@@ -250,6 +250,11 @@ var royal := ""
 ## long a minion's leader's words are whole yet since the skeleton champion's cry: game.ts rallyT)
 var rarity := ""
 var rally_t := 0.0
+## THE CHAINED RARE (chained_rare.gd): 1 while his chains hold him (he stands, never wakes, nothing of the hero's reaches him:
+## monsters.gd shut_in), 2 once they are broken (he fights, and his word falls wherever he dies: loot.gd on_kill), 0 for any
+## other. `tug`: how far his picture is pulled as he heaves at them, picture pixels.
+var chained := 0
+var tug := Vector2.ZERO
 ## (its number among the floor's monsters, the game's `id`: what a telling of a stun or a stagger names it by. One made here,
 ## the Warden's dead or a boss's brood, has its own.)
 var id := -1
@@ -514,6 +519,18 @@ func step(dt: float, hero) -> void:
 	# (thrown: it goes on its way, whatever else it is doing: game.ts updateMonsters, flyThrown)
 	if not thrown.is_empty():
 		_fly(real)
+	# (THE CHAINED RARE: held by his chains he stands where he is and turns to the hero in his sight; nothing wakes him but his
+	# chains broken: chained_rare.gd)
+	if chained == 1:
+		if hero != null and hero.alive:
+			var dc: float = hero.world.distance_to(world)
+			if dc <= 9.0 and mgr.sees(world, hero.world):
+				_turn_to(hero.world - world, dc)
+		_set_list("idle")
+		_place()
+		_show()
+		queue_redraw()
+		return
 	# (BOSS_INTRO: until his gate has fallen and his line is said, the boss stands and looks at the hero)
 	if waits:
 		var d0: float = hero.world.distance_to(world)
@@ -1288,7 +1305,7 @@ func harm_hero(hero, dmg: float) -> void:
 
 
 func wake_up() -> void:
-	if state == "sleep":
+	if state == "sleep" and chained != 1:
 		state = "chase"
 		_cd = randf_range(0.2, 0.9)
 
@@ -1296,7 +1313,7 @@ func wake_up() -> void:
 ## A blow on it that is no move of the hero's (a trap's spikes, a check's own blow): from before a Boneward's shield it glances
 ## off; else it is harmed. A hit of one of his moves, with its words, is hero.gd hit_monster.
 func hurt(dmg: float) -> void:
-	if dead or state == "rise":
+	if dead or state == "rise" or chained == 1:
 		return
 	if mgr.hero != null and glances(mgr.hero.world):
 		glance()
@@ -2018,7 +2035,7 @@ func _place() -> void:
 			var c := MM.frenzy_at(MM.move_age(state, _t, _moves[_move]["windup"], _moves[_move]["recover"]))
 			var ahead := MM.picture_ahead(face)
 			shift = Vector2(-roundf((ahead.x - ahead.y) * 16.0 * c), -roundf((ahead.x + ahead.y) * 8.0 * c)) * 2.0
-		_sprite.position = Vector2(shift.x, shift.y - _lift)
+		_sprite.position = Vector2(shift.x, shift.y - _lift) + tug
 
 
 func _show() -> void:

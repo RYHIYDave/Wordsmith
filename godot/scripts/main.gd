@@ -31,6 +31,7 @@ const Inventory := preload("res://scripts/inventory.gd")
 const Minimap := preload("res://scripts/minimap.gd")
 const Temple := preload("res://scripts/temple.gd")
 const Furnace := preload("res://scripts/furnace.gd")
+const ChainedRare := preload("res://scripts/chained_rare.gd")
 const Fx := preload("res://scripts/fx.gd")
 const Wakes := preload("res://scripts/wakes.gd")
 const Shadows := preload("res://scripts/shadows.gd")
@@ -535,6 +536,11 @@ var wakes: Wakes
 var quest610
 ## (FLOORS 11 TO 15 BESIDES THEIR FIGHTS: the Crier's jar, the unstruck pages, the clapper: act2/quest1115.gd)
 var quest1115
+## THE CHAINED RARE, floors 2 to 5 and an endless level of floors 1 to 5 (chained_rare.gd): the floor's own, null where none.
+## `chained_seed`: 0 or more, the same one in the same place each time (the checks); less, the floor's own luck.
+var chained_rare = null
+var chained_seed := -1
+var _chained_mdata := {}
 ## (FLOORS 16 TO 20 BESIDES THEIR FIGHTS: the clockwork songbird, the whole court, the captain's voice: act3/quest1620.gd)
 var quest1620
 ## (ACT 2, THE BELLS, the city floors' event: act2/bells.gd)
@@ -1346,6 +1352,7 @@ func _build(where: String, arrive: String) -> void:
 		if where != "final":
 			grow_packs(mdata, endless_power() if in_endless else int(map.depth))
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR, mdata)
+		_chained_mdata = mdata
 		# (THE BOTTOM OF THE SHAFT: its arena's rules, its round, its way back up: final_arena.gd)
 		arena = null
 		if where == "final":
@@ -1489,6 +1496,22 @@ func _build(where: String, arrive: String) -> void:
 	elif _hud != null:
 		_hud.floor_card = {}
 	loot.enter_place(map, stands, monsters, where == "floor1")
+	# (THE CHAINED RARE: floors 2 to 5 once words fall, and an endless level that is one of floors 1 to 5: chained_rare.gd)
+	chained_rare = null
+	if not is_home(where) and ChainedRare.wanted(self, where):
+		var cr := ChainedRare.new()
+		cr.main = self
+		cr.monsters = monsters
+		cr.map = map
+		cr.hero = hero
+		cr.loot = loot
+		cr.sfx = sfx
+		_place.add_child(cr)
+		if cr.lay(_chained_mdata, chained_seed):
+			chained_rare = cr
+		else:
+			cr.queue_free()
+	_chained_mdata = {}
 	# (the ways on from a floor that has no stairwell: floor 3's door, floor 4's cave, floor 5's cage: ways.gd)
 	ways = null
 	if not is_home(where) and map.stairs.is_empty():
@@ -1732,6 +1755,9 @@ func prompt() -> Array:
 	# (the knight-captain; the songbird in the Moth's fight: act3/quest1620.gd)
 	if quest1620 != null and str(quest1620.prompt()[0]) != "":
 		return quest1620.prompt()
+	# (THE CHAINED RARE, by him while his chains hold: chained_rare.gd)
+	if chained_rare != null and is_instance_valid(chained_rare) and str(chained_rare.prompt[0]) != "":
+		return chained_rare.prompt
 	return town.prompt if town != null else ["", ""]
 
 
@@ -2989,6 +3015,14 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "exits":
 		await preload("res://scripts/check_exits.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "chained":
+		await preload("res://scripts/check_chained.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "chained_film":
+		await preload("res://scripts/check_chained.gd").new().film(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "split":
