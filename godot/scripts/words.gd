@@ -120,16 +120,19 @@ static var BURN_MORE := 1.0
 ##               Warlock's, his own (his Hellfire Bolt's card says so), on what burns in his hellfire too. Off: every hero's fire,
 ##               on what burns, as it was.
 static var BURN_HEARTH := true
+## (and every other hero's fire a little: his words, “It could still be some %more fire damage to burning enemies so you could
+## spec into fire if you wanted to.”; WS_BURN_ALL for a run of the damage check)
+static var BURN_MORE_ALL := 0.25
 
 
-## How much more a burning enemy takes from a fire hit of `hero` (burning's own; while BURN_HEARTH, a Mage's with Hearth and a
-## Warlock's alone).
+## How much more a burning enemy takes from a fire hit of `hero` (burning's own; while BURN_HEARTH, all of it a Mage's with Hearth
+## and a Warlock's, every other hero's BURN_MORE_ALL).
 static func burn_more(hero) -> float:
 	if not BURN_HEARTH:
 		return BURN_MORE
 	if hero == null or not is_instance_valid(hero):
-		return 0.0
-	return BURN_MORE if hero.cls == "warlock" or (hero.cls == "mage" and hero.has("fuel")) else 0.0
+		return BURN_MORE_ALL
+	return BURN_MORE if hero.cls == "warlock" or (hero.cls == "mage" and hero.has("fuel")) else BURN_MORE_ALL
 ## (what Flame and Frost in front of a one-enemy move splash round what it hits, a share of the hit: the game's 1, all of it;
 ## WS_ELEMENT_SPLASH for a run of the damage check)
 static var ELEMENT_SPLASH := 1.0

@@ -67,6 +67,8 @@ func run(main, hero, d: String) -> void:
 	# (WS_BURN_MORE: burning's own, words.gd BURN_MORE, for sizing it)
 	if OS.has_environment("WS_BURN_MORE"):
 		Words.BURN_MORE = float(OS.get_environment("WS_BURN_MORE"))
+	if OS.has_environment("WS_BURN_ALL"):
+		Words.BURN_MORE_ALL = float(OS.get_environment("WS_BURN_ALL"))
 	h.unhurt = true
 	M.go_to("floor20", "start")
 	await M._wait(2.0)
@@ -626,11 +628,18 @@ func _build(b: Dictionary) -> void:
 		lo.behind[1] = [ws[2], ws[3]]
 		lo._r = [null, null, null]
 		# (WS_BURN_SET="0,0.5,1": the same fights for each size of burning's own, words.gd BURN_MORE)
+		# (WS_BURN_ALL_SET="0.25,0.5": the same for each size of every other hero's, words.gd BURN_MORE_ALL)
 		var burns: Array = [Words.BURN_MORE]
+		var all_set := OS.has_environment("WS_BURN_ALL_SET")
 		if OS.has_environment("WS_BURN_SET"):
 			burns = Array(OS.get_environment("WS_BURN_SET").split(",")).map(func(x): return float(x))
+		if all_set:
+			burns = Array(OS.get_environment("WS_BURN_ALL_SET").split(",")).map(func(x): return float(x))
 		for bm in burns:
-			Words.BURN_MORE = float(bm)
+			if all_set:
+				Words.BURN_MORE_ALL = float(bm)
+			else:
+				Words.BURN_MORE = float(bm)
 			var q1 := await _fight_one(reach)
 			var q2 := await _fight_one(reach, true)
 			var p1 := await _fight_pack(reach, false, TOUGH)
