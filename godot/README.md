@@ -1092,11 +1092,33 @@ standing, going and biting, a soft shadow under each, coming in over a third of 
 the talents; each talent's first out and drawn; picked in town and not out of it; the collar's choices, its first, its pick on the
 gear screen; on a floor each of the six bites and does its word), pictured.
 
+## Playing upright (the cloud chat, 22 Nov 2026)
+
+- **The screen fitted to the window, as the game's is** (engine/screen.ts resize; `main.gd` fit_screen): a whole number of screen
+  pixels to a game pixel, about 270 game pixels tall (on a phone a little bigger, and an even number where it may be), never
+  narrower than 270 nor shorter than 200 if a smaller number can help it; so a phone held sideways sees as much of the floor
+  across as the game shows it (no bars at the sides), and one held upright about 270 by 480 to 295 by 543. On a computer at 1920
+  by 1080, 480 by 270 as before.
+- **PLAY UPRIGHT** (main.ts turnLabel, flipTurn; `main.gd` turn_label, flip_turn): with a finger, in the pause panel and in the
+  start screen's OPTIONS (with ATTACKS: AUTO AIM, as the game's options have it with a finger), PLAY UPRIGHT holds the app
+  upright, PLAY SIDEWAYS turns it back; kept with the device. The pause panel with a finger is the game's: its taller buttons and
+  its table of the finger's moves (left thumb, tap, hold, swipe, tap it, tap an attack).
+- **The HUD with a finger** (ui/hud.ts): the life globe at the top left under the place's name, the gold and LV beside it, a larger
+  INVENTORY under it and what has just happened under that, newest first (this was missing from the touch play before, both ways
+  of holding it). **On a narrow screen** (under 380 game pixels across): the prompt and the news of a word under the corner
+  buttons (NARROW_TOP), up to three lines of the prompt before it shrinks; the two attacks one above the other where they will not
+  fit side by side, and then the Lunge's name not over its button.
+- **The gear screen, the TALENTS page and the services upright** (ui/inventory.ts invRect, gameRect; `inventory.gd` _tall, _ph):
+  the panel along the bottom, as wide as the screen and as tall as half of it (234 to 272 game pixels), the game (with the hero in
+  the middle of it) or the service above; a card read stands over the panel's top edge, across from what it is about. The start
+  screen, the class cards, the pause panel and the big map lay themselves out by the screen's size as the game's do (the class
+  cards as the game's to the pixel).
+- `--upright=1` runs any check in a window shaped like a phone held upright; `--only=upright` (`check_glows.gd`): 6 checks, the
+  switch both ways, pictured. Run upright and passing: title 16, services 9, trade 11, meld 15, camp 9, companions 19, lesson 9.
+
 ## Not in it yet
 
-The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
-pick); playing UPRIGHT (the game laid out for a phone held upright, its PLAY UPRIGHT switch: the Godot screen is laid out for one
-held sideways only).
+The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made

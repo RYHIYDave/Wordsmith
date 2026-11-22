@@ -2082,3 +2082,48 @@ func lesson(main, hero, dir: String) -> void:
 	b = G.banner()
 	_line(not b.get("lines", []).is_empty() and str(b["lines"][0]["how"]) == "LEFT CLICK" and G.gesture.is_empty(), "with a mouse: %s, and no ghost" % [b.get("lines", []).map(func(l): return l["how"])])
 	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## PLAYING UPRIGHT (main.gd fit_screen, turn_label, flip_turn; engine/screen.ts; main.ts turnLabel, flipTurn): with a finger the pause
+## panel offers PLAY UPRIGHT; pressed, the phone is held upright and the game laid out for it (about 270 game pixels wide): the
+## prompt under the corners, the gear screen along the bottom with the game above it; PLAY SIDEWAYS turns it back.
+func upright(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var T = M._touch
+	T.on = true
+	await M._wait(0.6)
+	var size0: Vector2 = M.get_viewport().get_visible_rect().size
+	M._mini.show_panel("pause")
+	await M._wait(0.3)
+	var turn = M._mini._hits.filter(func(x): return x[1] == "turn")
+	_line(not turn.is_empty() and M.turn_label() == "PLAY UPRIGHT" and size0 == Vector2(960, 540), "sideways (%s game pixels): the pause panel with a finger offers %s" % [size0 / 2.0, M.turn_label()])
+	await M._snap(dir + "/up_1_pause_sideways.png")
+	M._mini._press("turn")
+	await M._wait(0.5)
+	var size1: Vector2 = M.get_viewport().get_visible_rect().size
+	_line(M.upright and size1.y > size1.x and size1.x / 2.0 >= 270.0 and size1.x / 2.0 < 380.0 and M.turn_label() == "PLAY SIDEWAYS", "PLAY UPRIGHT pressed: held upright, the game %s game pixels; the switch now says %s" % [size1 / 2.0, M.turn_label()])
+	var cf := ConfigFile.new()
+	cf.load(M.SCREEN_KEEP)
+	_line(cf.get_value("screen", "upright", false) == true, "kept with the device")
+	await M._snap(dir + "/up_2_pause_upright.png")
+	M._mini._press("resume")
+	await M._wait(0.6)
+	await M._snap(dir + "/up_3_playing.png")
+	_line(M._hud._stacked == false and M._hud._notice_end >= 0.0, "the HUD laid out for it (the attacks side by side while they fit)")
+	M._inv.open_on(0)
+	M._inv._press("tab", "gear")
+	await M._wait(0.4)
+	await M._snap(dir + "/up_4_gear.png")
+	_line(M._inv._tall() and M._inv._ph() >= 234.0 * 2.0 and M._inv._ph() <= 272.0 * 2.0, "the gear screen along the bottom, %d game pixels tall, the game above it" % [M._inv._ph() / 2.0])
+	M._inv._press("close", null)
+	await M._wait(0.3)
+	M._mini.show_panel("pause")
+	await M._wait(0.2)
+	M._mini._press("turn")
+	await M._wait(0.5)
+	var size2: Vector2 = M.get_viewport().get_visible_rect().size
+	_line(not M.upright and size2 == size0 and M.turn_label() == "PLAY UPRIGHT", "PLAY SIDEWAYS pressed: sideways again, %s game pixels" % [size2 / 2.0])
+	M._mini._press("resume")
+	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

@@ -117,8 +117,9 @@ func run(main, hero, d: String) -> void:
 	_line(M.get_tree().paused and _ids(ts) == ["new", "lexicon", "options"] and ts._items()[0][4] and M.music.title_playing(),
 		"no hero saved: the screen up over the game held behind it (%s), its theme playing (%s); along the foot %s, NEW GAME the pink one" % [M.get_tree().paused, M.music.title_playing(), ", ".join(ts._items().map(func(m): return m[1]))])
 	var R: Dictionary = ts.K["ring"]
-	_line(ts._pic.position == Vector2(L["ox"], L["oy"]) * 2.0 and float(L["oy"]) == ts._H() - float(R["lift"]) - float(R["lip"]),
-		"the ring on the hill where smithLayout puts it: its foot's row %d above the screen's foot (at %s, game pixels); the name at row %d, %d times its size" % [R["lift"], Vector2(L["ox"], L["oy"]), L["nameY"], L["big"]])
+	# (sideways at the picture's own lift; upright, higher, a column of buttons under it: smithLayout)
+	_line(ts._pic.position == Vector2(L["ox"], L["oy"]) * 2.0 and float(L["oy"]) == ts._H() - float(L["lift"]) - float(R["lip"]) and (ts._W() < 400.0 or float(L["lift"]) == float(R["lift"])),
+		"the ring on the hill where smithLayout puts it: its foot's row %d above the screen's foot (at %s, game pixels); the name at row %d, %d times its size" % [L["lift"], Vector2(L["ox"], L["oy"]), L["nameY"], L["big"]])
 	# (the surge: the first SURGE_FIRST seconds in, its light up the column; its flash as it breaks into the sky)
 	var S: Dictionary = ts._pic.D["surge"]
 	while ts.t < float(S["first"]) + float(S["up"]) + 0.05:
@@ -129,7 +130,7 @@ func run(main, hero, d: String) -> void:
 	# OPTIONS
 	await _press(ts, "options")
 	await _snap("options")
-	_line(ts.page == "options" and _ids(ts) == ["mute", "guide", "practice", "floors", "back"], "OPTIONS: %s" % ", ".join(ts._items().map(func(m): return m[1])))
+	_line(ts.page == "options" and _ids(ts) == ["mute", "limit", "guide", "practice", "floors", "back"], "OPTIONS: %s" % ", ".join(ts._items().map(func(m): return m[1])))
 	var taught0: bool = loot.taught
 	await _press(ts, "guide")
 	var flipped: bool = loot.taught != taught0
@@ -162,9 +163,10 @@ func run(main, hero, d: String) -> void:
 	await _snap("lexicon_page_3")
 	var L3: Dictionary = ts._lex_layout()
 	_line(int(L3["at"]) == 2, "a tab pressed: its page, %s (%s)" % [L3["pages"][2]["name"], ", ".join(L3["pages"][2]["words"])])
-	ts.press_at(Vector2(4, 4))
+	# (upright it fills the screen: its close button)
+	ts.press_at((ts._lex_layout()["close"] as Rect2).get_center() if ts._W() < 400.0 else Vector2(4, 4))
 	await _frames(3)
-	_line(not ts.lex_open, "a press outside it closes it")
+	_line(not ts.lex_open, "a press outside it (upright, on its close button) closes it")
 	loot.known = known0
 	loot.lexicon = lex0
 	# NEW GAME: the class cards, BACK
@@ -360,7 +362,7 @@ func practice_check(main, hero, d: String) -> void:
 			await _frames(3)
 			await _press(ts, "options")
 			await _snap("options_all")
-			_line(ts._items().map(func(m): return m[0]) == ["mute", "guide", "practice", "floors", "back"], "OPTIONS: %s" % ", ".join(ts._items().map(func(m): return m[1])))
+			_line(ts._items().map(func(m): return m[0]) == ["mute", "limit", "guide", "practice", "floors", "back"], "OPTIONS: %s" % ", ".join(ts._items().map(func(m): return m[1])))
 			await _press(ts, "practice")
 			await M._wait(0.3)
 			var cc = ts.cards
