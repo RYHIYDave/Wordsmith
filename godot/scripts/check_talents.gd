@@ -131,7 +131,11 @@ func run(main, hero, d: String) -> void:
 	var cl2 := Talents.clean("warrior", 3, ["sweepingcut"])
 	_line(u1 == "Take another to swap" and u2 == "" and cl == ["greatsword", "sweepingcut"] and cl2 == ["greatsword"],
 		"the greatsword not undone but swapped ('%s'), Sweeping Cut undone (''); a save's list made safe at level 7: %s; an old one with no weapon, at level 3: %s" % [u1, cl, cl2])
-	# (WS_TALENTS_ONLY=warlock: his talents in play alone, for a change to them)
+	# (WS_TALENTS_ONLY=warlock or ranger: his talents in play alone, for a change to them)
+	if OS.get_environment("WS_TALENTS_ONLY") == "ranger":
+		await _ranger()
+		print("TALENTS DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " %s" % [bad]])
+		return
 	if OS.get_environment("WS_TALENTS_ONLY") == "warlock":
 		await _warlock()
 		print("TALENTS DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " %s" % [bad]])
@@ -699,6 +703,19 @@ func _warlock() -> void:
 	var filled: float = kit.pact
 	await _run(0.2)
 	_line(absf(filled - float(kit.W["pact"]["full"]) * float(T["soulDebt"]["share"])) < 0.01 and o.life < before, "Soul Debt: a cursed one's death fills a tenth of his pact (%.1f of %.0f); Pyre: it bursts, the one beside struck (%.0f to %.0f)" % [filled, kit.W["pact"]["full"], before, o.life])
+	# (Pyre: his curses never run out, words.gd POISON_TREE)
+	if is_instance_valid(o) and not o.dead:
+		o.curse_dps = 0.0
+		o.curse_t = 2.0
+		await _run(0.5)
+		var kept: float = o.curse_t
+		h.talents = ["branded"]
+		await _run(0.5)
+		_line(absf(kept - 2.0) < 0.01 and o.curse_t < 1.7, "Pyre: his curses never run out (one of 2 s still %.1f half a second on); without it, %.1f" % [kept, o.curse_t])
+		o.curse_t = 0.0
+		h.talents = ["branded", "hexchain", "blazingarm", "withering", "pyre", "souldebt"]
+	else:
+		_line(false, "Pyre: the one beside wanted alive to try his curse on")
 	# Phantom Step: his smoke step leaves his shadow where he stood; the enemies near go after it
 	h.talents = ["branded", "hexchain", "phantomstep"]
 	h.monsters.decoys.clear()
@@ -1333,6 +1350,19 @@ func _learn() -> void:
 	h.killed(m)
 	var after: int = h.wakes.list.filter(func(z): return z["kind"] == "venom").size()
 	_line(after == clouds + 1, "Venom: a poisoned one dying leaves a cloud of its poison (%d to %d)" % [clouds, after])
+	# (and with it his poison adds up eight doses deep, four without: words.gd POISON_TREE)
+	var pv = _foes([[2.5, 0.6]])[0]
+	pv.poison_t = 0.0
+	for k2 in 10:
+		pv.dose(1.0)
+	var with_v: int = pv.poison_n
+	_take(["keeneye"])
+	pv.poison_t = 0.0
+	for k2 in 10:
+		pv.dose(1.0)
+	var without_v: int = pv.poison_n
+	pv.poison_t = 0.0
+	_line(with_v == 8 and without_v == 4, "Venom: ten doses on one, %d add up with it, %d without" % [with_v, without_v])
 	h.picks = {}
 	_take([])
 	h.world = start

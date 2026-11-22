@@ -245,18 +245,23 @@ without the master rune-stone finds the fallen wordsmith again in the next.
   cooldowns from attributes are as they were. And then, your “Yes” to poison's dose being its share
   of the hit over its whole 4 seconds, not each second of them: a quarter as much a second, eight
   doses still adding up.
-- **Burning and poison differ (the Godot game, 22 Nov 2026):** poison stacks, eight doses deep, for
-  the long fight on one enemy; burning does not stack, it spreads (Searing) and readies an enemy
+- **Burning and poison differ (the Godot game, 22 Nov 2026):** poison adds up dose on dose, for
+  the long fight on one enemy; burning does not add up, it spreads (Searing) and readies an enemy
   for more fire. Your words: “Or a burning target takes more total fire damage.” A burning enemy
-  takes double damage from every fire hit (not from the burning itself), and that is the Mage's,
-  her fire tree's Hearth, so that fire is not the best choice for a Strength or Dexterity
-  hero: your words, “Maybe we change some stuff in the mages fire tree for the "burning enemies
-  take more fire damage" cause I don't like that fire is BiS for a str/dex character”. Hearth's
-  other half stays: standing in fire she made, nothing burns her. And the Warlock's, his own, on
-  what burns in his hellfire too: “It should be good for the mage since she's elemental, and good
-  for the warlock since he's DoT focused.  But not for everyone.” Every other hero's fire a
-  quarter more on what burns: “It could still be some %more fire damage to burning enemies so you
-  could spec into fire if you wanted to.”
+  takes a quarter more from every hero's fire hits (not from the burning itself): “It could still
+  be some %more fire damage to burning enemies so you could spec into fire if you wanted to.”
+- **What is one class's own is in its tree (the Godot game, 22 Nov 2026):** your words, “If we
+  want something to be for only certain characters, it needs to be built into their tree / Like
+  poison stacks 4 times naturally, but up to 8 for the ranger if you take the talent point / And
+  maybe the warlock gets some blanket for Damage over time like it has infinite duration or
+  something.  It can't be the same but the specialization in the tree is the point”. So:
+  - poison adds up four doses deep for every hero; the Ranger's Venom makes his eight.
+  - a burning enemy takes double from the Mage's fire with her fire tree's Hearth (“Maybe we
+    change some stuff in the mages fire tree for the "burning enemies take more fire damage"
+    cause I don't like that fire is BiS for a str/dex character”). Hearth's other half stays:
+    standing in fire she made, nothing burns her.
+  - the Warlock's Pyre: his curses never run out, what he has cursed smoulders till it dies (his
+    burns on a cursed enemy never going out are a unique's already, the Burning Verse's).
 
 ## Builds
 
