@@ -592,7 +592,7 @@ through them in their own opening pictures.
 
 `scripts/talents.gd` (game/talents.ts, from `tools/godot_talents.ts` -> `assets/talents.json`: the six trees as the released game
 has them, its switches as they stand: the remade talents' words, the Mage's and the Ranger's moves to swap, the Warrior's three
-weapons, the lines both ways, the companions off): a point every 5 levels, 10 in all; a talent open where its tree begins or
+weapons, the lines both ways, the Ranger's companions): a point every 5 levels, 10 in all; a talent open where its tree begins or
 once one joined to it by a line is his; the Warrior's first point his weapon, one only, its path its own, IRON once one is his;
 undone in town only, for 10 gold a level, and not while one taken hangs on it alone; kept in the save (`talents`, `picks`), and
 a saved list made safe. `scripts/talents_page.gd` (ui/talents.ts): the inventory's TALENTS page, the tree in its own shape with
@@ -656,7 +656,7 @@ puts them in their places (loadout `form_moves`; the bar's names and icons, hud.
 - SNARE (heroes/ranger.gd): thrown where he aims, 7 tiles at most, three at once; what walks in is held two seconds, then it bursts
   1.3 tiles round. SNIPE: held, it draws (full at 1.5 s); let go, an arrow through everything in its line, at its fullest 2.6 times
   as hard, 3.3 times as wide, 70% faster, knocking back 1.4 tiles. RALLY: his companions near him faster and harder for five
-  seconds (he has none in this port yet: COMPANIONS is off in the game too).
+  seconds (their waits running out 30% faster, their bites 30% harder: companions.gd).
 - A move held (kit.gd `_begin_channel`, `_update_channel`, `_end_channel`: game.ts beginChannel, updateChannel, endChannel), for
   any hero's kit; his pictures held while it goes on (the bake's `hold`), begun and let go where his pictures have them, and the
   moves' own (the bake's 129 to 132: the snare thrown, the rally called, the ball and the spear).
@@ -1055,11 +1055,34 @@ lights over the dark (town.gd `_ring_moments`):
   Verse, Unsigned Pact (the demon stays, feeding on his life), Cloven Boots; the Tinkerer's Second Whistle, Sticky Wrench (her vial
   stuck in pitch, blinking, bursting twice as wide), Foreman's Wrench, Tow Line (her Golem rides her Blast Jump and pounds where it
   lands), Company Scrip (no cooldown, for gold); the Brawler's Fourth Globe, Last Round, Winning Streak, Sprung Heels, Receipt.
-  `--only=uniquescls --cls=<hero>`: 22 checks across the five, pictured. (The Pack Collar comes with the Ranger's companions.)
+  `--only=uniquescls --cls=<hero>`: 22 checks across the five, pictured. (The Pack Collar comes with the Ranger's companions, below.)
+
+### The Ranger's companions, and the Pack Collar
+
+`scripts/companions.gd` (game/companions.ts; game.ts petsWanted, pickCompanion, pickCollarCompanion, updatePets, stepPet, petBite;
+render.ts drawPets), on in the released game (its COMPANIONS switch: `tools/godot_release.ts` sets the release's switches before
+`tools/godot_talents.ts` reads them, so `assets/talents.json` has the two talents and the Rally joined to the Wild Companion as the
+game has them). Two talents on her tree: the HUNTING COMPANION (a hawk, a snake or a wolf) and the WILD COMPANION (a bat, a fox or a
+tortoise), each bringing the one picked: in town, on its card on the TALENTS page (a row of the three, the one out lit); out of
+town a tap says "Choose companion in town"; the first of the three until one is picked. The hunting one keeps at her right, the
+wild at her left; each goes for a foe awake and near her (7 tiles; the tortoise only 2.5) and bites it, a share of her own hit
+(the hawk's 30%, the snake's 20%, the wolf's 35%, the bat's 20%, the fox's and the tortoise's 25%), every 1.2 to 2.4 seconds by its
+kind, and each bite does a word's work: the hawk's marks the foe (Precise: her next hit on it a certain critical, 5 s), the
+snake's poisons it, the wolf's holds it a second (Binding), the bat's heals her by half the bite (Leeching), the fox's makes her
+25% faster for 2 s (Swift), the tortoise's a shield of 6% of her life for 3 s (Guarding). Left 12 tiles behind, one is at her side
+again. Nothing fights them. THE PACK COLLAR (her own unique amulet): one more, behind her, of her companion talents' lists (the
+hunting list with neither), never one she has out; until picked, the next in the list after her hunting pick. Picked in town: the
+game shows the row on the collar's card; this gear screen has no card that stays up to press on, so with the collar worn or in the
+bag the row is on the GEAR page, at the foot of her numbers, under PACK COLLAR. Their pictures are the art chat's, baked by the
+game's own monster baker (`tools/godot_companions.mjs` -> `assets/companions/`): drawn from in front or behind as each faces,
+standing, going and biting, a soft shadow under each, coming in over a third of a second. The picks are kept with her talents'
+(`picks`: "pet:hunt", "pet:wild", "pet:collar"), so a save keeps them. `--only=companions --cls=ranger`: 17 checks (none without
+the talents; each talent's first out and drawn; picked in town and not out of it; the collar's choices, its first, its pick on the
+gear screen; on a floor each of the six bites and does its word), pictured.
 
 ## Not in it yet
 
-The Ranger's companions (on in the game since this port began; and with them the Pack Collar); the Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
+The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his
 pick); playing UPRIGHT (the game laid out for a phone held upright, its PLAY UPRIGHT switch: the Godot screen is laid out for one
 held sideways only); the first dungeon's ghosts of the gesture each prompt asks for on a phone.
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)

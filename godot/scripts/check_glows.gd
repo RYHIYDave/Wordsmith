@@ -1869,3 +1869,123 @@ func uniquescls(main, hero, dir: String) -> void:
 			_bare()
 	h.unhurt = false
 	print("UNIQUESCLS: %s: %d checks, %d wrong%s" % [h.cls, n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## THE RANGER'S COMPANIONS (companions.gd; game.ts petsWanted, pickCompanion, pickCollarCompanion, stepPet, petBite): none without
+## their talents; with each talent its first, kept by her; picked in town (on the talent's card) and not out of it; the Pack Collar's one more, of the
+## others; on a floor each goes for a foe near her and its bite does its kind's word.
+func companions(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var C = M._companions
+	var L = M.loot
+	L.level = 20
+	L.derive()
+	await M._wait(0.6)
+	_line(h.cls == "ranger" and C.pets.is_empty(), "the Ranger, no companion talent taken: no companion (%d out)" % C.pets.size())
+	h.talents.append("huntcompanion")
+	h.talents_changed()
+	await M._wait(0.6)
+	var kinds := func() -> Array: return C.pets.map(func(p): return p["kind"])
+	_line(kinds.call() == ["hawk"] and C.pets[0]["sprite"] != null and C.pets[0]["sprite"].texture != null, "the Hunting Companion taken: its first, the hawk, out and drawn (%s)" % [kinds.call()])
+	# (on the TALENTS page: the Hunting Companion's card, a row of its three, the one out lit; a press on SNAKE picks it)
+	M._inv.open_on(0)
+	M._inv._press("tab", "talents")
+	M._inv._tal.sel = "huntcompanion"
+	await M._wait(0.4)
+	await M._snap(dir + "/pets_talent_card.png")
+	var row: Array = M._inv._tal_buttons.filter(func(b): return b[1] == "tal_pet")
+	_line(row.map(func(b): return b[2]) == ["hawk", "snake", "wolf"], "the Hunting Companion's card on the TALENTS page: a row of %s" % [row.map(func(b): return b[2])])
+	for b in row:
+		if b[2] == "snake":
+			M._inv._pressed(b[0].get_center())
+	_line(C.picked_in("hunt") == "snake", "a press on SNAKE there: the snake picked (%s)" % C.picked_in("hunt"))
+	M._inv._press("close", null)
+	_line(C.pick("snake") == "" and C.pick("bat") == "Take its talent first", "in town the snake picked again; the bat (the wild list's) not till its talent is taken")
+	await M._wait(0.4)
+	h.talents.append("wildcompanion")
+	h.talents_changed()
+	_line(C.pick("fox") == "", "the Wild Companion taken, the fox picked")
+	await M._wait(0.6)
+	_line(kinds.call().has("snake") and kinds.call().has("fox") and kinds.call().size() == 2, "out now: %s" % [kinds.call()])
+	_wear("packcollar")
+	await M._wait(0.6)
+	var choices: Array = C.collar_choices()
+	_line(choices == ["hawk", "wolf", "bat", "tortoise"] and C.collar_pick() == "wolf" and kinds.call().size() == 3 and kinds.call().has("wolf"),
+		"the Pack Collar worn: one more, of the others (%s), the next after her hunting pick until picked: %s; out %s" % [choices, C.collar_pick(), kinds.call()])
+	_line(C.pick_collar("tortoise") == "" and C.pick_collar("snake") == "Not that one", "on the collar the tortoise picked; the snake, at her side already, not")
+	await M._wait(0.6)
+	_line(kinds.call().has("tortoise") and not kinds.call().has("wolf"), "out now: %s" % [kinds.call()])
+	# (the gear screen: the collar's row, the tortoise lit)
+	M._inv.open_on(0)
+	M._inv._press("tab", "gear")
+	await M._wait(0.4)
+	await M._snap(dir + "/pets_collar_row.png")
+	var rows: Array = M._inv._hits.filter(func(x): return x[1] == "collar")
+	_line(rows.size() == 4, "the gear screen: the collar's %d companions in a row to pick from" % rows.size())
+	M._inv._press("collar", "hawk")
+	_line(C.collar_pick() == "hawk", "a press on HAWK in town: the collar brings the hawk")
+	M._inv._press("close", null)
+	await M._wait(0.6)
+	await M._snap(dir + "/pets_town.png")
+	# ON A FLOOR: each goes for a foe near her, and its bite does its kind's word
+	M.way_depth = maxi(M.way_depth, 2)
+	await M.go_to("floor2", "down")
+	await M._wait(1.0)
+	_line(C.pick("wolf") == "Choose companion in town" and C.pick_collar("bat") == "Choose companion in town", "out of town a pick says: Choose companion in town")
+	var foes: Array = []
+	for o in h.monsters.list:
+		if is_instance_valid(o) and not o.dead and not o.boss and foes.size() < 3:
+			foes.append(o)
+	for k in foes.size():
+		var o = foes[k]
+		o.world = M._free_near(h.world + h.face * (1.6 + k * 0.5))
+		o.state = "chase"
+		o.seen = true
+		o.max_life = 100000.0
+		o.life = 100000.0
+		o.speed = 0.0
+	var did := {}
+	var rounds: Array = [{"hunt": "hawk", "wild": "bat", "collar": "wolf"}, {"hunt": "snake", "wild": "fox", "collar": "tortoise"}]
+	var snapped := false
+	for r in rounds:
+		h.picks["pet:hunt"] = r["hunt"]
+		h.picks["pet:wild"] = r["wild"]
+		h.picks["pet:collar"] = r["collar"]
+		var seen0: int = C.told.size()
+		for q in 300:
+			var life0: float = h.life
+			var shield0: float = h.shield
+			h.life = minf(h.life, h.max_life * 0.5)
+			life0 = h.life
+			await M._wait(0.02)
+			for e in C.told.slice(seen0):
+				if e["what"] != "bite" or did.has(e["kind"]):
+					continue
+				var ok := false
+				match e["kind"]:
+					"hawk":
+						ok = foes.any(func(o): return o.mark_t > 0.0)
+					"snake":
+						ok = foes.any(func(o): return o.poison_t > 0.0)
+					"wolf":
+						ok = foes.any(func(o): return o.bind_t > 0.0 or o.bind_again > 0.0)
+					"bat":
+						ok = h.life > life0
+					"fox":
+						ok = h.haste_t > 0.0
+					"tortoise":
+						ok = h.shield > shield0 or h.shield > 0.0
+				did[e["kind"]] = ok
+				if not snapped:
+					snapped = true
+					await M._snap(dir + "/pets_bite.png")
+			seen0 = C.told.size()
+			if [r["hunt"], r["wild"], r["collar"]].all(func(k): return did.has(k)):
+				break
+	for k in ["hawk", "snake", "wolf", "bat", "fox", "tortoise"]:
+		var what: String = {"hawk": "marks it (Precise)", "snake": "poisons it", "wolf": "holds it (Binding)", "bat": "heals her (Leeching)",
+			"fox": "gives her a burst of speed (Swift)", "tortoise": "a brief shield (Guarding)"}[k]
+		_line(did.get(k, false), "the %s bites%s and %s" % [k, "" if did.has(k) else " (no bite seen)", what])
+	print("GLOWS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

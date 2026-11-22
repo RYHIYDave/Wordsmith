@@ -8,6 +8,7 @@
 //                  (one every TALENT_EVERY levels, TALENT_MAX in all); the price of undoing one; the Warrior's weapons and their
 //                  three moves; and every word's rune and colours, for the stones that work with a word (ui/talents.ts).
 //   npx tsx tools/godot_talents.ts   -> godot/assets/talents.json
+import './godot_release';
 import { writeFileSync } from 'node:fs';
 import { gameSwitches } from './godot_switches';
 import { GLYPH, WORD_COLOR, WORD_GLOW } from '../src/art/icons';

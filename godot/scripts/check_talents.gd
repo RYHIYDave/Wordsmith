@@ -49,8 +49,8 @@ func run(main, hero, d: String) -> void:
 	var sizes := {}
 	for c in D["trees"]:
 		sizes[c] = (D["trees"][c]["talents"] as Array).size()
-	_line(sizes.size() == 6 and D["switches"]["talents2"] and D["switches"]["warriorTree2"] and D["switches"]["bothWays"] and not D["switches"]["companions"],
-		"six trees as the game has them (%s), its switches as released (the remade talents, the Warrior's weapons, the lines both ways; the companions off)" % sizes)
+	_line(sizes.size() == 6 and D["switches"]["talents2"] and D["switches"]["warriorTree2"] and D["switches"]["bothWays"] and D["switches"]["companions"],
+		"six trees as the game has them (%s), its switches as released (the remade talents, the Warrior's weapons, the lines both ways, the Ranger's companions)" % sizes)
 	# THE WAY: where a tree begins, and both ways along a line
 	var r1 := Talents.open("ranger", [], "huntsfocus") if not Talents.of("ranger", "huntsfocus").is_empty() else false
 	var starts: Array = []

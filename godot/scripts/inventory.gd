@@ -528,6 +528,12 @@ func _press(action: String, arg) -> void:
 				_say(loot.stash_item(int(arg)))
 			else:
 				loot.equip_from_bag(arg)
+		"collar":
+			# (THE PACK COLLAR: its companion picked, in town; out of town a tap says so: companions.gd pick_collar)
+			var why: String = main._companions.pick_collar(str(arg))
+			if why != "":
+				_say(why)
+			queue_redraw()
 		"yes":
 			# yes: the word is burned into the piece; (SPLITTING AND BINDING) the piece split in two, or the second bound into it
 			if not _pending.is_empty():
@@ -612,6 +618,12 @@ func _tal_press(action: String, arg) -> void:
 			hero.talents_changed()
 			if loot.sfx != null:
 				loot.sfx.play("gold")
+		"tal_pet":
+			# (THE RANGER'S COMPANIONS: in town, one of its three picked; out of town a tap says where: companions.gd)
+			var why: String = main._companions.pick(str(arg)) if main != null and main.get("_companions") != null else ""
+			if why != "":
+				_say(why)
+			queue_redraw()
 		"tal_pick":
 			var d := Talents.of(hero.cls, _tal.sel)
 			if d.get("pick") != null and d["pick"].get("lock", false) and hero.picks.has(_tal.sel):
@@ -1166,7 +1178,12 @@ func _draw_gear() -> void:
 	var gx := M + DOLL_W * K + 8.0 * K
 	# (a level gained: +5 to place, as the game's level-up asks (game.ts chooseAttr): a row of its own at the foot of his numbers)
 	var ask := 16.0 * K if loot.points > 0 else 0.0
-	_draw_glance(Rect2(gx, _page_y + K, W - M - gx, _page_h - K - ask))
+	# (THE PACK COLLAR's companions to pick from: rows of their own at the foot of his numbers, over the level-up's)
+	var pets := _collar_kinds()
+	var pet_h := 7.0 * K + ceilf(pets.size() / 2.0) * 14.0 * K if not pets.is_empty() else 0.0
+	_draw_glance(Rect2(gx, _page_y + K, W - M - gx, _page_h - K - ask - pet_h))
+	if not pets.is_empty():
+		_draw_collar_row(pets, Rect2(gx, _page_y + _page_h - ask - pet_h, W - M - gx, pet_h))
 	if loot.points > 0:
 		var bw := floorf((W - M - gx - 4.0 * K) / (3.0 * K)) * K
 		var bx := gx
@@ -1699,6 +1716,29 @@ func _draw_reading(blink: bool, first: bool) -> void:
 		_mid(r, b[0], NORMAL, Color.WHITE if pink else TEXT)
 		_card_buttons.append([r, b[1]])
 		bx += bw + 3.0 * K
+
+
+## THE PACK COLLAR, the Ranger's own (ui/inventory.ts: on its card, over its buttons, a row of the companions it may bring, the one it
+## brings lit; picked in town, and out of town a tap says so). This gear screen has no card that stays up to press on, so with the
+## collar worn or in the bag the row is on the GEAR page, at the foot of her numbers under PACK COLLAR, two to a line.
+func _collar_kinds() -> Array:
+	if main == null or main.get("_companions") == null or hero == null or hero.cls != "ranger":
+		return []
+	for it in loot.gear.values() + loot.bag:
+		if it is Dictionary and it.get("unique") == "packcollar":
+			return main._companions.collar_choices()
+	return []
+
+
+func _draw_collar_row(kinds: Array, r0: Rect2) -> void:
+	var now: String = main._companions.collar_pick()
+	_small(r0.position, "PACK COLLAR", DIM)
+	var bw := floorf((r0.size.x - 2.0 * K) / (2.0 * K)) * K
+	for i in kinds.size():
+		var k: String = kinds[i]
+		var r := Rect2(r0.position.x + (i % 2) * (bw + 2.0 * K), r0.position.y + 7.0 * K + floorf(i / 2.0) * 14.0 * K, bw, 12.0 * K)
+		_gbutton(r, str(main._companions.D["info"][k]["name"]).to_upper(), k == now, k == now or r.has_point(_mouse), true)
+		_hits.append([r, "collar", k, null])
 
 
 func _row_h(r: Dictionary) -> float:

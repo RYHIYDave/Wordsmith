@@ -577,13 +577,32 @@ func _lines(t: Dictionary, tree: Dictionary, cls: String) -> Array:
 	var out: Array = []
 	out.append({"text": str(t["name"]).to_upper(), "color": WHITE, "small": false})
 	out.append({"text": "%s%sTALENT" % ["BIG " if t["big"] else "", (str(path["name"]) + " ") if not path.is_empty() and str(path["name"]) != "" else ""], "color": Color(path["color"]) if not path.is_empty() else T["dim"], "small": true})
-	for l in _wrap(str(t["text"]), CARD - 10.0):
-		out.append({"text": l, "color": T["text"], "small": false})
+	# (THE RANGER'S COMPANIONS, taken: in place of its words, the one at his side and what it does; he picks another below)
+	var C = _pets()
+	var group: String = _pet_group(t["id"]) if C != null else ""
+	var pet: String = C.picked_in(group) if group != "" and inv.hero.talents.has(t["id"]) else ""
+	if pet == "":
+		for l in _wrap(str(t["text"]), CARD - 10.0):
+			out.append({"text": l, "color": T["text"], "small": false})
 	if t["word"] != null:
 		var wd: Dictionary = Talents.D["words"].get(str(t["word"]), {})
 		var name: String = inv._hud["words"].get(str(t["word"]), {}).get("name", str(t["word"]))
 		out.append({"text": "WORKS WITH %s" % name.to_upper(), "color": Color(wd.get("color", "#ffffff")), "small": true})
+	if pet != "":
+		var info: Dictionary = C.D["info"][pet]
+		for l in _wrap("%s: %s" % [str(info["name"]).to_upper(), info["short"]], CARD - 10.0):
+			out.append({"text": l, "color": T["accent"], "small": false})
 	return out
+
+
+## (the Ranger's companions: companions.gd)
+func _pets():
+	return inv.main.get("_companions") if inv.main != null else null
+
+
+## (companions.ts groupOfTalent) The group a companion talent brings, or "".
+func _pet_group(id: String) -> String:
+	return "hunt" if id == "huntcompanion" else ("wild" if id == "wildcompanion" else "")
 
 
 func _wrap(s: String, w: float) -> Array:
@@ -608,7 +627,10 @@ func draw_card(h, level: int, gold: int, in_town: bool, W: float, H: float) -> A
 	for l in lines:
 		text_h += (6.0 if l["small"] else 9.0) + (2.0 if l["small"] else 1.0)
 	var pick_row := bh + 3.0 if took and d["pick"] != null else 0.0
-	var ch := 5.0 + text_h + 3.0 + pick_row + bh + 5.0
+	# (THE RANGER'S COMPANIONS, taken: a row of its three to pick from; out of town a tap says where)
+	var pet_group: String = _pet_group(d["id"]) if _pets() != null and took else ""
+	var pet_row := bh + 3.0 if pet_group != "" else 0.0
+	var ch := 5.0 + text_h + 3.0 + pet_row + pick_row + bh + 5.0
 	# (over the game's half: the panel is on the right, the card against its edge, level with the stone; laid out in the other
 	# half's own lay, from W: inventory.gd _half)
 	var cr := Rect2(2.0 * W - 3.0 - CARD, maxf(2.0, minf(H - ch - 2.0, n["c"].y - 12.0)), CARD, ch)
@@ -628,6 +650,15 @@ func draw_card(h, level: int, gold: int, in_town: bool, W: float, H: float) -> A
 			_button(pr, str(d["pick"]["names"][k]), now == ids[k], false)
 			if now != ids[k]:
 				buttons.append([_screen(pr), "tal_pick", ids[k]])
+	if pet_group != "":
+		var C = _pets()
+		var kinds: Array = C.D["groups"][pet_group]["kinds"]
+		var now: String = C.picked_in(pet_group)
+		var pw := floorf((cr.size.x - 10.0 - 3.0 * (kinds.size() - 1)) / kinds.size())
+		for k in kinds.size():
+			var pr := Rect2(cr.position.x + 5.0 + k * (pw + 3.0), by - bh - 3.0 - pick_row, pw, bh)
+			_button(pr, str(C.D["info"][kinds[k]]["name"]).to_upper(), now == kinds[k], now == kinds[k])
+			buttons.append([_screen(pr), "tal_pet", kinds[k]])
 	if took:
 		_text(cr.position.x + 5.0, by + floorf((bh - 8.0) / 2.0) + 1.0, "TAKEN", T["good"])
 		var tw := _w("TAKEN") + 10.0
