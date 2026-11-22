@@ -8,6 +8,10 @@
 ## He walks through his attacks, slowed to 40% for 0.18 s as each begins.
 extends RefCounted
 
+## (a shot's burst hitting what is round what it struck: those are not struck by the shot itself, and set off none of what a hit
+## of the shot's own does; the Warlock's Hex Chain and Blazing Arm: heroes/warlock.gd on_hit)
+var splashing := false
+
 const Iso := preload("res://scripts/iso.gd")
 const Words := preload("res://scripts/words.gd")
 ## (THE SKILL TREES: talents.gd, its numbers for every class's tree)
@@ -668,7 +672,9 @@ func _shot_hit(p: Dictionary, m) -> void:
 				continue
 			if bool(p["volley"]):
 				(p["hit"] as Array).append(o)
+			splashing = true
 			h.hit_monster(o, i, float(p["dmg"]) * float(r["splash_dmg"]), true)
+			splashing = false
 		h._break_props(i, at, rad)
 	# (what the words behind it leave, once: the rune, the cloud, the ground)
 	if not p.get("left", false):

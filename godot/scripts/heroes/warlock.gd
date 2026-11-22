@@ -309,10 +309,12 @@ func on_hit(m, i: int, dmg: float) -> void:
 	# (HIS TREE: Branded, every Hellfire Bolt curses what it hits)
 	if not m.dead and bolt and h.has("branded"):
 		_curse_one(m, dmg)
-	# (HIS TREE: Hex Chain, a bolt on one cursed leaps on to the next; Blazing Arm, with his pact full his bolt bursts)
-	if bolt and _by == "" and was_cursed and h.has("hexchain"):
+	# (HIS TREE: Hex Chain, a bolt on one cursed leaps on to the next; Blazing Arm, with his pact full his bolt bursts. Each only from
+	# the one the bolt itself struck: not from every one its fire's burst caught round it (each of them setting off a chain and a
+	# burst of its own was a bolt in a pack some forty bolts' worth: the damage check, 22 Nov 2026))
+	if bolt and _by == "" and not splashing and was_cursed and h.has("hexchain"):
 		_hex_chain(m, i)
-	if bolt and (_by == "" or _by == "chain") and form != "demon" and bound.is_empty() and pact >= float(W["pact"]["full"]) and h.has("blazingarm"):
+	if bolt and (_by == "" or _by == "chain") and not splashing and form != "demon" and bound.is_empty() and pact >= float(W["pact"]["full"]) and h.has("blazingarm"):
 		_blaze(m, i, dmg)
 	var full: float = W["pact"]["full"]
 	var was := pact

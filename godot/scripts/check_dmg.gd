@@ -592,11 +592,19 @@ func _build(b: Dictionary) -> void:
 	_share_points(b)
 	# (the words first with plain pieces, then the gear for them, then the words again for the gear, then the gear again)
 	var ws: Array = [null, null, null, null]
-	_gear(b["cls"])
-	ws = _with_must(b, ws, [1, 2, 3])
-	var picks := _gear(b["cls"])
-	ws = _with_must(b, ws, [1, 2, 3])
-	picks = _gear(b["cls"])
+	var picks := {}
+	# (WS_DMG_WORDS: these four held from the first, and the gear chosen for them)
+	if OS.has_environment("WS_DMG_WORDS"):
+		ws = Array(OS.get_environment("WS_DMG_WORDS").split(",")).map(func(w): return null if w == "" or w == "-" else w)
+		_set_words(ws)
+		_gear(b["cls"])
+		picks = _gear(b["cls"])
+	else:
+		_gear(b["cls"])
+		ws = _with_must(b, ws, [1, 2, 3])
+		picks = _gear(b["cls"])
+		ws = _with_must(b, ws, [1, 2, 3])
+		picks = _gear(b["cls"])
 	_share_points(b)
 	_set_words(ws)
 	var s: Dictionary = h.stats

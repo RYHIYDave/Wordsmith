@@ -1323,9 +1323,8 @@ func _told_word(text: String, gap: float) -> void:
 static var trace := {}
 static var tracing := false
 func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison: bool, dot: bool, skill := -1) -> void:
-	if tracing:
-		var key := "move %d %s%s" % [skill, el, " (over time)" if dot or poison else ""]
-		trace[key] = float(trace.get(key, 0.0)) + dmg
+	var key0 := "move %d %s%s" % [skill, el, " (over time)" if dot or poison else ""]
+	var dmg0 := dmg
 	# (nor is a boss who waits: game.ts damageMonster, "Not yet")
 	if waits:
 		if _not_yet_t <= 0.0:
@@ -1375,6 +1374,14 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 			_tell({"t": "mirrorBack", "x0": world.x, "y0": world.y, "x1": mgr.hero.world.x, "y1": mgr.hero.world.y, "n": back})
 			mgr.hero.last.rec("mirror_back")
 			mgr.hero.hurt_by(back, "phys", [], {}, null, world)
+	# (the trace: the harm as it lands, and how much of it came of what made it more)
+	if tracing:
+		trace[key0] = float(trace.get(key0, 0.0)) + dmg
+		trace["(of it, made more)"] = float(trace.get("(of it, made more)", 0.0)) + dmg - dmg0
+		if hex_t > 0.0 and hex_more > 0.0:
+			trace["(hit while cursed)"] = float(trace.get("(hit while cursed)", 0.0)) + dmg
+		if Words.BURN_MORE > 0.0 and el == "fire" and burn_t > 0.0 and not dot:
+			trace["(fire hit while burning)"] = float(trace.get("(fire hit while burning)", 0.0)) + dmg
 	# (GUARDING, on it: its shield takes the harm first)
 	if shield > 0.0:
 		var soak := minf(shield, dmg)

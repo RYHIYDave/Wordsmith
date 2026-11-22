@@ -125,9 +125,14 @@ const WARLOCK_TUNE := {"hexChain": 0.35, "blazing": 0.25}
 
 static func _godot_tune() -> void:
 	var W: Dictionary = D.get("warlockTalents", {})
-	for k in WARLOCK_TUNE:
+	# (the damage check, WS_WARLOCK_TUNE="hexChain,blazing": other shares tried)
+	var tune := WARLOCK_TUNE.duplicate()
+	if OS.has_environment("WS_WARLOCK_TUNE"):
+		var t := OS.get_environment("WS_WARLOCK_TUNE").split(",")
+		tune = {"hexChain": float(t[0]), "blazing": float(t[1])}
+	for k in tune:
 		if W.has(k):
-			W[k]["share"] = WARLOCK_TUNE[k]
+			W[k]["share"] = tune[k]
 
 
 ## THE CARDS THIS PORT WORDS ITS OWN WAY (his word of 21 Nov 2026: the Tinkerer's Golem only shoots, small shots, its big shot on
