@@ -1408,7 +1408,10 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   here (`godot --headless --path godot --export-release "iOS" <dir>/Wordsmith.xcodeproj`, with the iOS template in
   ~/.local/share/godot/export_templates/4.7.2.stable/ios.zip); the app itself (.ipa) is made from it on a Mac (xcodebuild).
   Held sideways; the checks' data left out (the game's data 620 MB); the team ID and bundle identifier stand-ins until his
-  Apple developer account.
+  Apple developer account. ON ONE OF GITHUB'S MACS (`.github/workflows/ios.yml`, run by a change to it or to
+  `.github/ios_build.txt`; macos-26, Xcode 26, which Godot 4.7.2's template needs: Xcode 16.4 could not link it): Godot makes
+  the Xcode project there and Xcode builds it, not signed yet: run 2, 22 Nov 2026, BUILD SUCCEEDED, Wordsmith.app 690 MB, in
+  about 10 minutes. Signing and TestFlight to his phone wait on his account.
 
 ## Not in it yet
 
