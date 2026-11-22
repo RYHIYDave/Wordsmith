@@ -449,6 +449,65 @@ func _with_must(b: Dictionary, ws: Array, free: Array) -> Array:
 	return best
 
 
+## THE BEST WORDS FOR HIM (his words, 22 Nov 2026: “I love to know what the best word combos are.  Just for my knowledge”): the
+## best four with nothing held, worked out; then each other word in front in the first's place, the best of the rest round it;
+## the `n` best of all those (each the same four however they sit) given their own gear and fought: his quick attack alone into
+## the elite, and into the tough pack. Ranked by the elite, and by the pack.
+func _top(b: Dictionary, n: int, reach: float) -> void:
+	var free := [0, 1, 2, 3]
+	var ws: Array = [null, null, null, null]
+	_gear(b["cls"])
+	ws = _words(ws, free)
+	_gear(b["cls"])
+	ws = _words(ws, free)
+	var firsts: Array = []
+	for w in _all_words():
+		if w == ws[0]:
+			continue
+		var t: Array = [w, ws[1], ws[2], ws[3]]
+		if not _fits(t):
+			t[1] = null
+			if not _fits(t):
+				continue
+		_set_words(t)
+		firsts.append({"t": t, "v": _dps()})
+	firsts.sort_custom(func(a, c) -> bool: return float(a["v"]) > float(c["v"]))
+	var cands: Array = [ws]
+	for f in firsts.slice(0, n + 3):
+		cands.append(_words(f["t"], [1, 2, 3]))
+	var seen := {}
+	var uniq: Array = []
+	for t in cands:
+		var fr: Array = [str(t[0]), str(t[1])]
+		fr.sort()
+		var bh: Array = [str(t[2]), str(t[3])]
+		bh.sort()
+		var key := ",".join(fr) + "|" + ",".join(bh)
+		if seen.has(key):
+			continue
+		seen[key] = true
+		_set_words(t)
+		uniq.append({"t": t, "v": _dps()})
+	uniq.sort_custom(func(a, c) -> bool: return float(a["v"]) > float(c["v"]))
+	var rows: Array = []
+	for u in uniq.slice(0, n):
+		var t: Array = u["t"]
+		_set_words(t)
+		_gear(b["cls"])
+		_gear(b["cls"])
+		_share_points(b)
+		_set_words(t)
+		var est := _dps()
+		var q := await _fight_one(reach)
+		var p := await _fight_pack(reach, false, TOUGH)
+		rows.append({"w": _wname(t), "est": est, "q": q, "p": p})
+		_say("TOP %s: worked out %d a second; his quick attack into the elite %d a second, the tough pack dead in %.1f s" % [_wname(t), int(est), int(q), p])
+	rows.sort_custom(func(a, c) -> bool: return float(a["q"]) > float(c["q"]))
+	_say("TOP BY THE ELITE: " + "; ".join(rows.map(func(r): return "%s %d" % [r["w"], int(r["q"])])))
+	rows.sort_custom(func(a, c) -> bool: return float(a["p"]) < float(c["p"]))
+	_say("TOP BY THE PACK: " + "; ".join(rows.map(func(r): return "%s %.1f s" % [r["w"], r["p"]])))
+
+
 func _has_family(ws: Array, fam: String) -> bool:
 	for w in ws:
 		if w != null and _family(w).has(fam):
@@ -592,6 +651,10 @@ func _build(b: Dictionary) -> void:
 	if kind == "":
 		await _set_out()
 	_share_points(b)
+	# (WS_DMG_TOP=n: his best words found afresh, none held to the build's own kind, and the n best fought)
+	if OS.has_environment("WS_DMG_TOP"):
+		await _top(b, int(OS.get_environment("WS_DMG_TOP")), reach)
+		return
 	# (the words first with plain pieces, then the gear for them, then the words again for the gear, then the gear again)
 	var ws: Array = [null, null, null, null]
 	var picks := {}
