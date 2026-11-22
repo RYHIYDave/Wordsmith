@@ -32,7 +32,17 @@ export type MoreSide = 'front' | 'toward' | 'frontL' | 'sideL' | 'backL' | 'away
  * from his word of 11 Nov, by 22:23, on the first test page: BRING_IN.md, its foot.)
  * Off, each is as the game had them: two sides, the other two ways mirrored, the Brawler's moves his four ways.
  */
-export const EIGHT_MORE = { tinkerer: true, brawler: true };
+export const EIGHT_MORE = {
+  tinkerer: true,
+  brawler: true,
+  /**
+   * THE WARLOCK'S DEMON, THE LIVING SHADOW, FROM ALL EIGHT SIDES (art/shadow_art.ts makeShadowArt; the queue's
+   * draw-the-demon-from-eight-sides, 22 Nov 2026, the Skins chat; docs/mockups/demon_eight/README.md). OFF until his yes to its
+   * pictures: off, it is the two sides it has been. Its two (from in front; truly from behind, turned 90) are the same pictures
+   * either way, to the pixel; the six more are it truly turned 45 degrees apart, as the man is (art/warlock_up_art.ts).
+   */
+  demon: false,
+};
 
 /** The eight sides, the two the game has always had first (art/sides.ts EIGHT_ORDER's order). */
 export const MORE_SIDES: readonly MoreSide[] = ['front', 'back', 'toward', 'frontL', 'sideL', 'backL', 'away', 'side'];

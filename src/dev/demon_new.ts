@@ -41,6 +41,7 @@ import type { Cone, Drawn, Hit } from './sculpt';
 import { IVORY } from './sculpt_warlock';
 import { demonHand, tone5 } from './sculpt_demon';
 import { DEMON_B, RIG_CANVAS, demonAura, fireBehind } from './sculpt_demon_rig';
+import { EIGHT_MORE } from '../art/sides_more';
 
 export type NewDemon = 'pact' | 'pale' | 'mane';
 export const NEW_DEMONS: { id: NewDemon; name: string; says: string }[] = [
@@ -626,6 +627,17 @@ function noPixelAlone(d: Drawn): void {
 /** Whether its hide is carried by its bones (`carry`): off, every part laid along the world as before, in every pose. */
 export const HIDE_CARRIED = { on: true };
 let REST: Skeleton | undefined;
+/**
+ * MORE ROOM UNDER ITS FEET, from all eight sides (art/sides_more.ts EIGHT_MORE.demon; the queue's draw-the-demon-from-eight-sides,
+ * 22 Nov 2026). Its picture (RIG_CANVAS) has 44 of its pixels below its feet; running on all fours straight down the screen
+ * (`toward`) its forepaws reach past that and were cut off flat, and from in front a paw's tip just touched it twice (dropping
+ * down, landing from the smoke step). So, the switch on, its picture is SHADOW_BELOW taller, at the foot only: every pixel it
+ * had is where it was (the same top-left corner, the same floor point), and only what was cut is new. Off, as it was.
+ */
+export const SHADOW_BELOW = 40;
+function roomFor(): { w: number; h: number } {
+  return EIGHT_MORE.demon ? { w: RIG_CANVAS.w, h: RIG_CANVAS.h + SHADOW_BELOW } : RIG_CANVAS;
+}
 export function paintDemon(build: (k: Kit) => Built, view: GameView, pose: Bones, turn = 0, t = 2, tail = 0, paws = false, more: Moving = {}): Drawn {
   const pv: PaintView = view === 'back' ? 'rear' : view;
   const s = solve(WOLF_B, pose as Posed);
@@ -642,7 +654,7 @@ export function paintDemon(build: (k: Kit) => Built, view: GameView, pose: Bones
   const farL = nearOf(add(s.pelvis, [0, 20, 6])) < nearOf(s.pelvis);
   const k: Kit = { sc, s, far: (piece) => (piece.endsWith('L') ? farL : piece.endsWith('R') ? !farL : false), tail, paws, palm: more.palm, wings: more.wings, grip: more.grip, glow: more.glow, jaw: more.jaw, rest };
   const built = build(k);
-  const d = draw(sc, pv, RIG_CANVAS.ax, RIG_CANVAS.ay, RIG_CANVAS, undefined, FRIEND_RIM);
+  const d = draw(sc, pv, RIG_CANVAS.ax, RIG_CANVAS.ay, roomFor(), undefined, FRIEND_RIM);
   built.flames.forEach((f, i) => fireBehind(d, sc.at(f.p), f.size, t + i * 0.37, f.deep ?? 10));
   // (none at all where a move says its fire is out, dev/shadow_moves.ts its burning out: a fire of no size is still a white speck)
   built.floor.forEach((p, i) => {
