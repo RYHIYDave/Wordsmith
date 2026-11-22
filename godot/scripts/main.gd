@@ -238,6 +238,7 @@ static func has_floor(n: int) -> bool:
 
 
 func _ready() -> void:
+	_screen_start()
 	_inputs()
 	sfx = Sfx.new()
 	add_child(sfx)
@@ -528,6 +529,80 @@ func practice_run(c: String) -> Dictionary:
 	var h: Dictionary = P.get(c, P["warrior"])
 	return {"cls": c, "mode": "normal", "level": h.get("level", 10), "xp": 0, "points": 0, "attrs": h.get("attrs", {}), "gear": h.get("gear", {}),
 		"bag": (h.get("bag", []) as Array).filter(func(it): return it is Dictionary), "words": h.get("words", {}), "gold": 0, "depth": 4, "cleared": 0, "way": 1, "ring": true}
+
+
+# --- THE SCREEN (engine/screen.ts) ---
+## The game is laid out on a small screen of game pixels, about 270 tall, made bigger by a whole number so that every pixel stays
+## square; the picture holds two picture pixels to a game pixel (RES). On a phone the app is held sideways and turns with it;
+## PLAY UPRIGHT (the pause panel, the start screen's OPTIONS; main.ts turnLabel, flipTurn) holds it upright instead and lays the
+## game out for that (a phone upright: about 295 by 543), kept with the device. `--upright=1`, for the checks: a window the shape
+## of a phone held upright.
+const TARGET_H := 270.0
+const MIN_W := 270.0
+const MIN_H := 200.0
+## (EVEN_PIXELS: on a phone an odd number made one fewer, even, where the view stays within this many game pixels tall)
+const MAX_H := 324.0
+const SCREEN_KEEP := "user://touch.cfg"
+## The player's choice: held upright (true) or sideways.
+var upright := false
+
+
+func _screen_start() -> void:
+	var cf := ConfigFile.new()
+	# (the checks are not held to a choice kept on this machine by an earlier one)
+	if cf.load(SCREEN_KEEP) == OK and _arg("shots") == "":
+		upright = cf.get_value("screen", "upright", false) == true
+	if _arg("upright") != "":
+		upright = true
+		DisplayServer.window_set_size(Vector2i(590, 1086))
+	_turn()
+	get_tree().root.size_changed.connect(fit_screen)
+	fit_screen()
+
+
+## The phone held the chosen way (on a computer, nothing: its window is as it is).
+func _turn() -> void:
+	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_PORTRAIT if upright else DisplayServer.SCREEN_SENSOR_LANDSCAPE)
+
+
+## (engine/screen.ts resize) The game's screen, in game pixels, for the window as it is: the whole number of screen pixels to a
+## game pixel that makes it about 270 tall (a phone's a little bigger), no narrower than 270 nor shorter than 200 if a smaller one
+## can help it, and on a phone an even number where it may be.
+func fit_screen() -> void:
+	var win: Vector2i = DisplayServer.window_get_size()
+	var dw := float(maxi(1, win.x))
+	var dh := float(maxi(1, win.y))
+	var touch := DisplayServer.is_touchscreen_available()
+	var s: int = maxi(1, ceili(dh / TARGET_H - 0.15) if touch else roundi(dh / TARGET_H))
+	while s > 1 and (dw / s < MIN_W or dh / s < MIN_H):
+		s -= 1
+	if touch and s > 2 and s % 2 == 1 and dh / (s - 1) <= MAX_H:
+		s -= 1
+	# (two picture pixels to a game pixel: the screen pixels to a picture pixel, a whole number)
+	var k: int = maxi(1, s / 2)
+	var w: int = ceili(dw / (2.0 * k)) * 2
+	var h: int = ceili(dh / (2.0 * k)) * 2
+	get_tree().root.content_scale_size = Vector2i(w, h)
+
+
+## (main.ts turnLabel) The switch's words, on a phone: the other way to hold it.
+func turn_label() -> String:
+	return "PLAY SIDEWAYS" if upright else "PLAY UPRIGHT"
+
+
+## (main.ts flipTurn) Held the other way, kept with the device. (On a computer, for the checks, the window turned.)
+func flip_turn() -> void:
+	upright = not upright
+	var cf := ConfigFile.new()
+	cf.load(SCREEN_KEEP)
+	cf.set_value("screen", "upright", upright)
+	cf.save(SCREEN_KEEP)
+	_turn()
+	if not OS.has_feature("mobile"):
+		var win: Vector2i = DisplayServer.window_get_size()
+		if (win.y > win.x) != upright:
+			DisplayServer.window_set_size(Vector2i(win.y, win.x))
+	fit_screen()
 
 
 ## ABILITIES: COOLDOWNS or MANA turned (main.ts flipLimit): the device's choice, kept; his moves made again under the other.

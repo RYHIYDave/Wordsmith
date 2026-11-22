@@ -20,6 +20,8 @@ const R := 36
 const MH := 46.0
 ## (what the port's keys do: panels.ts drawPause's table, for the keys this version has)
 const HELP := [["MOVE", "WASD"], ["ATTACK", "left button"], ["SLOW ATTACK", "right button"], ["EVADE", "Space"], ["FLASK", "Q"], ["INTERACT", "E"], ["INVENTORY", "Tab"], ["MAP", "M"]]
+## (with a finger: ui/panels.ts drawPause, its table for a phone)
+const HELP_TOUCH := [["MOVE", "left thumb"], ["ATTACK", "tap"], ["SLOW ATTACK", "hold"], ["EVADE", "swipe"], ["FLASK", "tap it"], ["INVENTORY", "tap an attack"]]
 
 var main  # main.gd
 var hud  # hud.gd: its colours
@@ -162,6 +164,8 @@ func _press(what: String) -> void:
 		"aim":
 			if main._touch != null:
 				main._touch.flip_aim()
+		"turn":
+			main.flip_turn()
 
 
 # --- the game's drawing kit (ui/ui.ts), in game pixels, as hud.gd has it ---
@@ -487,17 +491,19 @@ func _large(W: float, H: float) -> void:
 
 ## panels.ts drawPause: the game held; the controls as a short table; RESUME and the sound.
 func _pause(W: float, H: float) -> void:
-	var bh := 13.0
+	# (on a phone, how the attacks are aimed, over the cooldowns' switch, and over that PLAY UPRIGHT or PLAY SIDEWAYS: ui/panels.ts
+	# drawPause, `opt.aim` and `turn` with a finger only; its buttons taller and its table a phone's)
+	var touch: bool = main._touch != null and main._touch.on
+	var bh := 18.0 if touch else 13.0
+	var help: Array = HELP_TOUCH if touch else HELP
 	var key_w := 0.0
 	var val_w := 0.0
-	for r in HELP:
+	for r in help:
 		key_w = maxf(key_w, PF.width(r[0], "small"))
 		val_w = maxf(val_w, PF.width(r[1], "small"))
 	key_w += 8
 	var pw := minf(W - 8, 250.0)
-	# (on a phone, how the attacks are aimed, over the cooldowns' switch: ui/panels.ts drawPause, `opt.aim` with a finger only)
-	var touch: bool = main._touch != null and main._touch.on
-	var ph := minf(H - 6, 18 + HELP.size() * 7 + 8 + bh + 3 + bh + 6 + (bh + 3 if touch else 0))
+	var ph := minf(H - 6, 18 + help.size() * 7 + 8 + bh + 3 + bh + 6 + ((bh + 3) * 2 if touch else 0))
 	var px := floorf((W - pw) / 2.0)
 	var py := maxf(3.0, floorf((H - ph) / 2.0))
 	var bw := floorf((pw - 16) / 3.0)
@@ -512,7 +518,7 @@ func _pause(W: float, H: float) -> void:
 	_text("Paused", px + floorf(pw / 2.0), py + 5, T["accent"], {"align": "center"})
 	var y := py + 18
 	var tx := px + maxf(7.0, floorf((pw - key_w - val_w) / 2.0))
-	for r in HELP:
+	for r in help:
 		_text(r[0], tx, y, T["dim"], {"font": "small"})
 		_text(r[1], tx + key_w, y, T["text"], {"font": "small"})
 		y += 7
@@ -522,6 +528,9 @@ func _pause(W: float, H: float) -> void:
 		var ay := ly - bh - 3
 		_hits.append([Rect2(px + 6, ay, pw - 12, bh), "aim"])
 		_button(px + 6, ay, pw - 12, bh, main._touch.label())
+		var ty := ay - bh - 3
+		_hits.append([Rect2(px + 6, ty, pw - 12, bh), "turn"])
+		_button(px + 6, ty, pw - 12, bh, main.turn_label())
 	_button(px + 6, by, bw, bh, "Resume", false, true)
 	_button(px + 8 + bw, by, bw, bh, "Sound off" if AudioServer.is_bus_mute(0) else "Sound on")
 	# (ui/panels.ts drawPause, its third: "End run" gives a hero of one's own up; a test hero's "Leave" leaves the save as it was)

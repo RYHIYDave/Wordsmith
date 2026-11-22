@@ -51,6 +51,14 @@ var _banner_at := -9.0
 ## (where the two attacks' plates, the Lunge's button and the INVENTORY button were last drawn, in game pixels: a press on
 ## one of them; and, in shot mode, where the pointer is taken to be, null for the mouse itself)
 var _plates: Array = []
+## (the two attacks' plates one above the other: a narrow screen, hud.ts `stacked`)
+var _stacked := false
+## (hud.ts TOP_GLOBE_Y: with fingers the life globe is at the top left, this far down; NARROW_TOP: on a narrow screen, a phone held
+## upright, where the prompt and the news of a word begin, under the map and the pause button)
+const TOP_GLOBE_Y := 29.0
+const NARROW_TOP := 74.0
+## (where the prompt or the news of a word ended this frame, 0 for none: on a narrow screen the messages go under it)
+var _notice_end := 0.0
 var _lunge := Rect2()
 ## THE FIRST LEVELS' MOMENT (hud.ts OPENING): the quick attack's plate slides over (`slide` s); the new plate opens out from its
 ## middle (`revealAt`, over `reveal`), with a flash, rings, rays and sparks in the friend's cyan and white (`flourish`, to `end`)
@@ -368,8 +376,10 @@ func _draw() -> void:
 	# ---- the life globe ----
 	var gy := H - 19
 	var life_x := 19.0
-	_globe(life_x, gy, 14, hero.life / hero.max_life, T["life"], T["lifeHi"], _life_rim())
-	_text("%d" % ceili(hero.life), life_x, gy - 3, P["white"], {"align": "center", "font": "small", "shadow": ink})
+	# (with fingers: out from under the left thumb, below the name of the place: hud.ts TOP_GLOBE_Y)
+	var life_y := TOP_GLOBE_Y if _touching() else gy
+	_globe(life_x, life_y, 14, hero.life / hero.max_life, T["life"], T["lifeHi"], _life_rim())
+	_text("%d" % ceili(hero.life), life_x, life_y - 3, P["white"], {"align": "center", "font": "small", "shadow": ink})
 	# (mana is only there to be seen when it is what limits the slow abilities: hud.ts, its globe at the right)
 	var by_mana: bool = hero.by_mana()
 	if by_mana:
@@ -413,6 +423,16 @@ func _draw() -> void:
 	var dodge_shown: bool = hero.move_open(2)
 	var slow_shown: bool = hero.move_open(1)
 	var dodge_in: float = float(opening["t"]) if not opening.is_empty() and int(opening["skill"]) == 2 else -1.0
+	# (whether the two attacks' plates must stand one above the other: a narrow screen, a phone held upright; then the Lunge's
+	# name is not written over its button: hud.ts `stacked`, `named`)
+	_moth_now()
+	var avail0 := 37.0 + (26.0 if _touching() else 20.0) + 5
+	var t0 := 0
+	var pc0 := [_phrase(0, 0), _phrase(1, 0)]
+	while _plate_w(pc0[0]) + _plate_w(pc0[1]) + 5 > (ex - 5) - avail0 and t0 < 2:
+		t0 += 1
+		pc0 = [_phrase(0, t0), _phrase(1, t0)]
+	_stacked = _plate_w(pc0[0]) + _plate_w(pc0[1]) + 5 > (ex - 5) - avail0
 	_lunge = Rect2(ex, py, ps, ps) if dodge_shown else Rect2()
 	if dodge_shown and _lunge.has_point(mouse):
 		hover_skill = 2
@@ -426,28 +446,40 @@ func _draw() -> void:
 		_draw_dodge(ex, py, ps, ready, skills, point, pulse, ink, W)
 
 	# ---- the two attacks, written out with their word sockets ----
-	var PH := 20.0
+	var PH := 22.0 if _touching() else 20.0
 	var PAD := 4.0
 	var avail_l := px + ps + 5
 	var avail_r := ex - 5
 	var tight := 0
-	_moth_now()
 	var pieces := [_phrase(0, 0), _phrase(1, 0)]
 	while _plate_w(pieces[0]) + _plate_w(pieces[1]) + 5 > avail_r - avail_l and tight < 2:
 		tight += 1
 		pieces = [_phrase(0, tight), _phrase(1, tight)]
+	if _stacked:
+		# (a narrow screen, a phone held upright: one above the other, above the globes, each as full as the screen lets it be)
+		for sk in 2:
+			var pp: Array = _phrase(sk, 0)
+			var kk := 1
+			while kk <= 2 and _plate_w(pp) > W - 8:
+				pp = _phrase(sk, kk)
+				kk += 1
+			pieces[sk] = pp
 	var w0 := _plate_w(pieces[0])
 	var w1 := _plate_w(pieces[1])
 	var x0 := roundf((avail_l + avail_r - w0 - w1 - 5) / 2.0)
 	var plates := [Rect2(x0, H - PH - 4, w0, PH), Rect2(x0 + w0 + 5, H - PH - 4, w1, PH)]
+	if _stacked:
+		plates = [Rect2(floorf((W - w0) / 2.0), H - 40 - PH * 2 - 9, w0, PH), Rect2(floorf((W - w1) / 2.0), H - 40 - PH, w1, PH)]
 	# (THE FIRST LEVELS: the quick one alone, in the middle where the two would be, till the slow one opens; then it slides over)
 	var alone := Rect2(roundf((avail_l + avail_r - w0) / 2.0), H - PH - 4, w0, PH)
+	if _stacked:
+		alone = Rect2(floorf((W - w0) / 2.0), H - 40 - PH, w0, PH)
 	if not slow_shown:
 		plates[0] = alone
 	var slow_in: float = float(opening["t"]) if not opening.is_empty() and int(opening["skill"]) == 1 and slow_shown else -1.0
 	if slow_in >= 0.0:
 		var k := _ease_in_out(minf(1.0, slow_in / OPEN_SLIDE))
-		plates[0] = Rect2(roundf(alone.position.x + (plates[0].position.x - alone.position.x) * k), plates[0].position.y, w0, PH)
+		plates[0] = Rect2(roundf(alone.position.x + (plates[0].position.x - alone.position.x) * k), roundf(alone.position.y + (plates[0].position.y - alone.position.y) * k), w0, PH)
 	_plates = plates if slow_shown else [plates[0]]
 	var keys := [str(skills[0].get("key", "LEFT CLICK")), str(skills[1].get("key", "HOLD RIGHT CLICK"))]
 	# (a plate is a button out of a fight: under the pointer it lights, and a press on it opens the gear screen at its move)
@@ -523,19 +555,25 @@ func _draw() -> void:
 	# ---- top left: where we are, gold, and the inventory ----
 	var spare: int = loot.spare() if loot != null else 0
 	var lx := 4.0
-	var btn_y := 24.0
-	var btn_h := 13.0
+	# (with fingers the life globe is here too: under the name of the place, with the gold and the level to its right and the
+	# inventory below, larger: hud.ts)
+	var btn_y := TOP_GLOBE_Y + 19.0 if _touching() else 24.0
+	var btn_h := 18.0 if _touching() else 13.0
 	var place: String = _data["places"].get(main.place if main != null else "", main.place_title() if main != null else "")
 	# (THE PRACTICE ROOM: its name, in the friend's cyan: hud.ts)
 	var practising: bool = main != null and main.get("practice") == true
 	if practising:
 		place = "Practice room"
 	_text(place, 4, 3, T["accent"] if practising else T["text"], {"shadow": ink})
-	_pic("gold", 4, 14)
-	_text("%d" % (loot.gold if loot != null else 0), 4 + _pic_size("gold").x + 2, 14, T["gold"], {"font": "small", "shadow": ink})
+	var stat_x := life_x + 19.0 if _touching() else 4.0
+	var gold_y := TOP_GLOBE_Y - 10.0 if _touching() else 14.0
+	_pic("gold", stat_x, gold_y)
+	_text("%d" % (loot.gold if loot != null else 0), stat_x + _pic_size("gold").x + 2, gold_y, T["gold"], {"font": "small", "shadow": ink})
+	if _touching():
+		_text("LV %d" % (loot.level if loot != null else 1), stat_x, gold_y + 11, T["text"], {"font": "small", "shadow": ink})
 	var inv_label := "INVENTORY" if _touching() else "INVENTORY (I)"
-	var iw := _width(inv_label, "small") + 10
-	_button(lx, btn_y, iw, btn_h, inv_label, true, spare > 0, spare > 0 and int(floorf(_t * 2.0)) % 2 == 0)
+	var iw := _width(inv_label, "normal" if _touching() else "small") + (14.0 if _touching() else 10.0)
+	_button(lx, btn_y, iw, btn_h, inv_label, not _touching(), spare > 0, spare > 0 and int(floorf(_t * 2.0)) % 2 == 0)
 	_inv_button = Rect2(lx, btn_y, iw, btn_h)
 	lx += iw + 3
 	if spare > 0:
@@ -617,17 +655,36 @@ func _draw() -> void:
 	if card_up and main != null:
 		main.guide.gesture = {}
 		main.guide.point = -1
+	# (a narrow screen's notices stand below its top row already, NARROW_TOP, under the boss's bar: only the Bells' clock moves them)
+	var notice_y := 4.0 + (20.0 * rows if boss_up else 0.0) + (22.0 if bells_up else 0.0) if W >= 380.0 else NARROW_TOP + (22.0 if bells_up else 0.0)
+	_notice_end = 0.0
 	if toast_up:
-		_toast(loot.toast["word"], loot.toast["t"], 4.0 + (20.0 * rows if boss_up else 0.0) + (22.0 if bells_up else 0.0), loot.toast["big"], W)
+		_toast(loot.toast["word"], loot.toast["t"], notice_y, loot.toast["big"], W)
 	elif main != null and not main.move_toast.is_empty() and not get_tree().paused:
-		_move_toast(int(main.move_toast["skill"]), float(main.move_toast["t"]), 4.0 + (20.0 * rows if boss_up else 0.0) + (22.0 if bells_up else 0.0), W)
+		_notice_end = _move_toast(int(main.move_toast["skill"]), float(main.move_toast["t"]), notice_y, W)
 	elif not b.is_empty() and not boss_up and not bells_up:
 		_banner(b, W)
 
-	# ---- what has just happened: above the flask, the newest lowest ----
-	if loot != null:
+	# ---- what has just happened ----
+	if loot != null and _touching():
+		# (with fingers: top left, under the inventory button, the newest first and the older below it; on a narrow screen under
+		# the prompt too; the place's own name, said on arriving, is written two lines above already: hud.ts)
+		var narrow := W < 380.0
+		var my2 := btn_y + btn_h + 4
+		if narrow and _notice_end > 0.0:
+			my2 = maxf(my2, _notice_end + 4)
+		for i in range(loot.msgs.size() - 1, maxi(-1, loot.msgs.size() - 5), -1):
+			var m: Dictionary = loot.msgs[i]
+			if str(m["text"]) == place:
+				continue
+			var a := clampf(float(m["life"]) - float(m["t"]), 0.0, 1.0)
+			for part in PF.wrap(m["text"], W - 12 if narrow else maxf(120.0, floorf(W / 2.0) - 62)):
+				_text(part, 4, my2, Color(m["color"], a), {"shadow": Color(ink, a)})
+				my2 += 9
+	elif loot != null:
+		# (with a mouse: above the flask, the newest lowest; when the attacks are stacked they reach across the screen, so above them)
 		var msg_w := maxf(120.0, floorf(W / 2.0) - 62)
-		var my := H - ps - 26
+		var my := bar_top - pbh - 26 if _stacked else H - ps - 26
 		for i in range(loot.msgs.size() - 1, maxi(-1, loot.msgs.size() - 5), -1):
 			var m: Dictionary = loot.msgs[i]
 			var parts: Array = PF.wrap(m["text"], msg_w)
@@ -801,7 +858,7 @@ func _draw_dodge(ex: float, py: float, ps: float, ready: Dictionary, skills: Arr
 		_text(str(int(ready["have"][2])), ex + ps - 2, py + ps - 7, P["white"], {"align": "right", "font": "small", "shadow": ink})
 	_text("SWIPE" if _touching() else "SPACE", ex + floorf(ps / 2.0), py - 7, T["accent"] if point == 2 else T["dim"], {"align": "center", "font": "small", "shadow": ink})
 	# (its name with its words, in the small letters over its button, once it has any)
-	var lunge_named: bool = not hero.loadout.fronts(2).is_empty() or not hero.loadout.behinds(2).is_empty()
+	var lunge_named: bool = (not hero.loadout.fronts(2).is_empty() or not hero.loadout.behinds(2).is_empty()) and not _stacked
 	if lunge_named:
 		var parts := _name_parts(2)
 		var nw := 0.0
@@ -1003,6 +1060,7 @@ func _toast(word: String, age: float, top: float, big: bool, W: float) -> void:
 		var bh := 14.0 + 9 * scale + 16
 		var bx := floorf((W - bw) / 2.0)
 		var by := top - roundf((1.0 - minf(1.0, age / 0.18)) * 10.0)
+		_notice_end = by + bh
 		var fade := maxf(0.0, 1.0 - (age - 3.0) / 0.5) if age > 3.0 else 1.0
 		_box(bx, by, bw, bh, Color(P["white"] if age < 0.1 else T["bg"], 0.92 * fade), Color(hue, 0.92 * fade))
 		_rect(bx + 2, by, bw - 4, 1.5, Color(hue, fade))
@@ -1020,6 +1078,7 @@ func _toast(word: String, age: float, top: float, big: bool, W: float) -> void:
 	var bw2 := maxf(tw2, _width("WORD FOUND", "small")) + 14
 	var bx2 := floorf((W - bw2) / 2.0)
 	var by2 := top - roundf((1.0 - minf(1.0, age / 0.14)) * 8.0)
+	_notice_end = by2 + 32
 	var fade2 := maxf(0.0, 1.0 - (age - 2.3) / 0.5) if age > 2.3 else 1.0
 	_box(bx2, by2, bw2, 32, Color(T["bg"], 0.9 * fade2), Color(hue, 0.9 * fade2))
 	_text("WORD FOUND", floorf(W / 2.0), by2 + 3, Color(T["accent"], fade2), {"align": "center", "font": "small"})
@@ -1044,21 +1103,24 @@ func _banner(b: Dictionary, W: float) -> void:
 		_banner_key = key
 		_banner_at = _t
 	var age := _t - _banner_at
-	var max_w := W - 156 - 16
+	# (on a wide screen it sits between the corners, the buttons on the left and the map on the right; on a narrow one, a phone
+	# held upright, below them: hud.ts drawBanner)
+	var wide := W >= 380.0
+	var max_w := (W - 156 if wide else W - 12) - 16
 	var cap: String = b["caption"]
 	var cap_color: Color = T["callHi"] if cap == "WORDSMITHING" else T["accent"]
 	var cx := floorf(W / 2.0)
 	var rows: Array = []  # [height, width, text, scale, font, kind]
 	var scale := 2
 	var parts: Array = PF.wrap(b["text"], floorf(max_w / 2.0))
-	if parts.size() > 1:
+	if parts.size() > (1 if wide else 3):
 		scale = 1
 		parts = PF.wrap(b["text"], max_w)
 	for r in parts:
 		rows.append([9.0 * scale, _width(r) * scale, r, scale, "normal", "text"])
 	var sub: String = b.get("sub", "")
 	if sub != "":
-		var font := "normal" if PF.wrap(sub, max_w).size() <= 2 else "small"
+		var font := "normal" if PF.wrap(sub, max_w).size() <= (2 if wide else 3) else "small"
 		var i := 0
 		for r in PF.wrap(sub, max_w, font):
 			rows.append([PF.line(font) + (1.0 if i == 0 else 0.0), _width(r, font), r, 1, font, "sub" if i > 0 else "sub0"])
@@ -1070,8 +1132,9 @@ func _banner(b: Dictionary, W: float) -> void:
 		bh += r[0]
 	var bw := cw + 16
 	var bx := floorf((W - bw) / 2.0)
-	# (it drops into place when the prompt changes; a panel like any other, the game showing through it a little)
-	var by := 3.0 - roundf((1.0 - minf(1.0, age / 0.16)) * 6.0)
+	# (it drops into place when the prompt changes; a panel like any other, the game showing through it a little; on a narrow
+	# screen below the corner buttons, the pause button included)
+	var by := (3.0 if wide else NARROW_TOP) - roundf((1.0 - minf(1.0, age / 0.16)) * 6.0)
 	_box(bx, by, bw, bh, Color(T["bg"], 0.9), Color(cap_color if age < 0.55 else T["edgeHi"], 0.9))
 	_text(cap, cx, by + 4, cap_color, {"align": "center", "font": "small"})
 	var y := by + 12
@@ -1082,6 +1145,7 @@ func _banner(b: Dictionary, W: float) -> void:
 		else:
 			_text(r[2], cx, y + (1.0 if r[5] == "sub0" else 0.0), T["text"], {"align": "center", "font": r[4], "shadow": P["ink"]})
 		y += r[0]
+	_notice_end = by + bh
 
 
 ## (hud.ts drawBanner, its lines: QUESTS610's hunt, ui/guide.ts huntBanner) A line for each thing to do: to do, a tick box, what
@@ -1097,7 +1161,8 @@ func _banner_lines(b: Dictionary, W: float) -> void:
 		_banner_key = key
 		_banner_at = _t
 	var age := _t - _banner_at
-	var max_w := W - 156 - 16
+	var wide := W >= 380.0
+	var max_w := (W - 156 if wide else W - 12) - 16
 	var cap: String = b["caption"]
 	var cap_color: Color = T["callHi"] if cap == "WORDSMITHING" else T["accent"]
 	var cx := floorf(W / 2.0)
@@ -1126,7 +1191,8 @@ func _banner_lines(b: Dictionary, W: float) -> void:
 		bh += r[0]
 	var bw := cw + 16
 	var bx := floorf((W - bw) / 2.0)
-	var by := 3.0 - roundf((1.0 - minf(1.0, age / 0.16)) * 6.0)
+	var by := (3.0 if wide else NARROW_TOP) - roundf((1.0 - minf(1.0, age / 0.16)) * 6.0)
+	_notice_end = by + bh
 	_box(bx, by, bw, bh, Color(T["bg"], 0.9), Color(cap_color if age < 0.55 else T["edgeHi"], 0.9))
 	_text(cap, cx, by + 4, cap_color, {"align": "center", "font": "small"})
 	var y := by + 12

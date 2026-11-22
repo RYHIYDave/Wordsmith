@@ -165,9 +165,11 @@ func _items() -> Array:
 			["mute", "SOUND: OFF" if AudioServer.is_bus_mute(0) else "SOUND: ON", "", false, false],
 			["limit", "ABILITIES: MANA" if main != null and main.loot.limit == "mana" else "ABILITIES: COOLDOWNS",
 				"No cooldowns: use them until you run dry" if main != null and main.loot.limit == "mana" else "No mana: each waits its turn", false, false],
+		] + ([["aim", main._touch.label(), "", false, false]] if _finger() else []) + [
 			["guide", "PROMPTS: OFF" if main != null and main.loot.taught else "PROMPTS: ON", "", false, false],
 			["practice", "PRACTICE ROOM", "", false, false],
 			["floors", "LEVEL SELECT", "", false, false],
+		] + ([["turn", main.turn_label(), "", false, false]] if _finger() else []) + [
 			["back", "BACK", "", false, false],
 		]
 	var out: Array = []
@@ -175,6 +177,11 @@ func _items() -> Array:
 		out.append(["resume", "CONTINUE", resume, true, true])
 	out.append_array([["new", "NEW GAME", "", resume == "", resume == ""], ["lexicon", "LEXICON", "", false, false], ["options", "OPTIONS", "", false, false]])
 	return out
+
+
+## (with a finger: the options a phone has, how the attacks are aimed and PLAY UPRIGHT: ui/panels.ts `opt.aim`, `opt.turn`)
+func _finger() -> bool:
+	return main != null and main._touch != null and main._touch.on
 
 
 static func _rows_h(n: int, bh: float, gap: float) -> float:
@@ -277,6 +284,10 @@ func _pressed(id: String) -> void:
 			main.loot.set_limit("cooldown" if main.loot.limit == "mana" else "mana")
 			if main.saving:
 				preload("res://scripts/save.gd").write(main, main._restored if not main._restored.is_empty() else null)
+		"aim":
+			main._touch.flip_aim()
+		"turn":
+			main.flip_turn()
 		"guide":
 			# (the switch is the device's, kept as "has been shown the game", or not: main.ts guideOn, meta.taught)
 			main.loot.taught = not main.loot.taught

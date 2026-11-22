@@ -89,6 +89,7 @@ func set_mode(m: String) -> void:
 	lock = null
 	_release_all()
 	var cf := ConfigFile.new()
+	cf.load(KEEP)
 	cf.set_value("touch", "aim", mode)
 	cf.save(KEEP)
 
