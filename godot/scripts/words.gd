@@ -108,8 +108,10 @@ const SWIFT_DODGE := 3.0
 ##   BURN_MORE   burning's own (his word, 22 Nov 2026, of what sets burning apart from poison: “Or a burning target takes more total
 ##               fire damage”; and “Yes” to sizing it by the damage check): a burning enemy takes this much more from every fire hit
 ##               (not from the burning itself: monster.gd _take). Poison stacks, eight doses deep, for the long fight on one; burning
-##               does not, it readies the enemy for fire, and spreads (Searing). 0 till it is sized; WS_BURN_MORE for a run.
-static var BURN_MORE := 0.0
+##               does not, it readies the enemy for fire, and spreads (Searing). Sized by the damage check (a fire Mage, her words
+##               held still, level 50: none, +50%, +100%: into one elite 121,648 / 161,765 / 230,125 a second, a tough pack dead in
+##               16.5 / 12.3 / 10.2 s; docs/reports/damage_check_2026-11-22.md): +100%. WS_BURN_MORE for a run.
+static var BURN_MORE := 1.0
 const EVEN := {"shot": 1.303, "wave": 1.6, "vialtoss": 1.72, "hellbolt": 1.635}
 const FROST_HIT := 1.0
 const ATTR_KNEE := 50.0

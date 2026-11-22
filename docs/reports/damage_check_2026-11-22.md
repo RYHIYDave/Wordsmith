@@ -134,3 +134,15 @@ burning (one at a time).
 ## The three defences: on at his “Yes.” to their pictures
 
 docs/mockups/defences; loot.gd DEFENCE_LAYERS on; `--only=defence`: 6 checks, 0 wrong.
+
+## The fairer fight, and burning's own
+
+His “Yes to both”: each hero's quick attack and his hold, the same four words in each, into the elite and into a tough pack (six of
+the floor's own, 2,000,000 life each, held where they stand), what one fight leaves to come gone off on nothing before the next
+(damage_check_2026-11-22_fair.txt). Into the elite, and the pack dead in: Ranger 504,260 a second, 6.2 s; Warrior 686,321, 5.2 s;
+Tinkerer 720,084, 3.7 s; fire Mage (Fumes, a poison meld) 259,430, 8.8 s; frost Mage 136,225, over 30 s (its pack slid out of
+reach: the pack now held where it stands).
+
+Burning's own (his word: “a burning target takes more total fire damage”; words.gd BURN_MORE): the fire Mage, her words held still
+(Fire II, Twin; Power II, Fleeting), none / +50% / +100%: into the elite 121,648 / 161,765 / 230,125 a second; the pack dead in
+16.5 / 12.3 / 10.2 s (damage_check_2026-11-22_burn.txt). Set at +100%.

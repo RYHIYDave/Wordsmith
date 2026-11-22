@@ -1,0 +1,17 @@
+FLOOR 20's own monsters, for the measure of it: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+
+=== MAGE, FIRE (Intelligence) ===
+hero: level 50, Str 86 Dex 116 Int 351; weapon 69-95 at 1.87 attacks a second; damage +108%, physical +0%, fire +323%, frost +0%, lightning +0%, poison +0%, poison added 0-0; critical 75% for +530%
+talents: kindling, searing, aura, flamewarp, fuel, inferno, lasting, charged, forking, ball
+  mainhand: Runed Staff + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), piercing (critMult 60.0)
+  helm: War Helm + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Amethyst Amulet + fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring1: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+ALL FOUR WORDS (in front fire2, twin; behind power2, fleeting), in his hold too (orb), burning's own +0%: into the elite, his quick attack alone 66823 a second, it and his hold 121648 a second; a tough pack (six of 2000000 life), quick alone dead in 26.0 s (462343 a second), it and his hold 16.5 s (728311 a second)
+ALL FOUR WORDS (in front fire2, twin; behind power2, fleeting), in his hold too (orb), burning's own +50%: into the elite, his quick attack alone 90216 a second, it and his hold 161765 a second; a tough pack (six of 2000000 life), quick alone dead in 21.0 s (570307 a second), it and his hold 12.3 s (977458 a second)
+ALL FOUR WORDS (in front fire2, twin; behind power2, fleeting), in his hold too (orb), burning's own +100%: into the elite, his quick attack alone 126269 a second, it and his hold 230125 a second; a tough pack (six of 2000000 life), quick alone dead in 17.5 s (684790 a second), it and his hold 10.2 s (1171857 a second)
