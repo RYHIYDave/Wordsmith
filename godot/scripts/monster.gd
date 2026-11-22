@@ -1354,9 +1354,9 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 	if hex_t > 0.0 and hex_more > 0.0:
 		dmg = maxf(1.0, roundf(dmg * (1.0 + hex_more)))
 	# (BURNING'S OWN, words.gd BURN_MORE: a burning enemy takes more from every fire hit; not from the burning itself. The Mage's
-	# alone, with Hearth: words.gd BURN_HEARTH)
+	# with Hearth and the Warlock's alone, his on what burns in his hellfire too: words.gd BURN_HEARTH)
 	var bm: float = Words.burn_more(mgr.hero if mgr != null else null)
-	if bm > 0.0 and el == "fire" and burn_t > 0.0 and not dot:
+	if bm > 0.0 and el == "fire" and (burn_t > 0.0 or hell_t > 0.0) and not dot:
 		dmg = maxf(1.0, roundf(dmg * (1.0 + bm)))
 	# (THE SKILL TREES REMADE: Giant Slayer's cracks in its guard: more from everything)
 	if cracks > 0:
@@ -1382,7 +1382,7 @@ func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison
 		trace["(of it, made more)"] = float(trace.get("(of it, made more)", 0.0)) + dmg - dmg0
 		if hex_t > 0.0 and hex_more > 0.0:
 			trace["(hit while cursed)"] = float(trace.get("(hit while cursed)", 0.0)) + dmg
-		if bm > 0.0 and el == "fire" and burn_t > 0.0 and not dot:
+		if bm > 0.0 and el == "fire" and (burn_t > 0.0 or hell_t > 0.0) and not dot:
 			trace["(fire hit while burning)"] = float(trace.get("(fire hit while burning)", 0.0)) + dmg
 	# (GUARDING, on it: its shield takes the harm first)
 	if shield > 0.0:
