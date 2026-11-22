@@ -102,6 +102,28 @@ func run(main, hero, d: String) -> void:
 	var tw4: bool = Talents.of("warrior", "twinaxes")["from"] == ["rend"] and Talents.of("warrior", "tremors")["from"] == ["heavyhead"] and not Talents.of("warrior", "gswhirlwind")["big"]
 	_line(tw1 == "Take one joined to it first" and tw2 == "" and tw3 == "" and tw4,
 		"the attacks changed, each a twig off its branch: Whirlwind with the greatsword alone '%s', after Sweeping Cut '%s'; the branch on up without it '%s'; Twin Axes off Rend, Tremors off Heavy Head, small stones (%s)" % [tw1, tw2, tw3, tw4])
+	# EVERY CLASS'S ATTACK SWAPS, A TWIG EACH (talents.gd TWIGS, RELINK): each a small stone joined only to its path's talent,
+	# not open before it, open after; nothing else joined to it, so no path runs through it. The Tinkerer's Mark II in Gun Arm's
+	# place on the Golem's ring, Fortune joined to Bombs Away alone
+	var bad: Array = []
+	var n_tw := 0
+	for c in ["ranger", "mage", "tinkerer"]:
+		for id in Talents.TWIGS[c]:
+			n_tw += 1
+			var mn: String = Talents.TWIGS[c][id]["from"]
+			var t: Dictionary = Talents.of(c, id)
+			var others := false
+			for o in Talents.tree(c)["talents"]:
+				if o["id"] != id and o["id"] != mn and ((o["from"] as Array).has(id) or (o["joined"] as Array).has(id)):
+					others = true
+			if t["from"] != [mn] or t["joined"] != [mn] or t["big"] or not (Talents.of(c, mn)["joined"] as Array).has(id) or others \
+					or Talents.take_problem(c, 50, [], id) == "" or Talents.take_problem(c, 50, [mn], id) != "":
+				bad.append("%s %s" % [c, id])
+	var mk := Talents.take_problem("tinkerer", 50, ["bombsaway", "lightningrod", "shrapnel"], "markii")
+	var pr := Talents.take_problem("tinkerer", 50, ["bombsaway", "lightningrod", "shrapnel", "markii"], "prospector")
+	var ring: bool = Talents.of("tinkerer", "markii")["at"] == [0, 2] and Talents.of("tinkerer", "fortune")["joined"] == ["bombsaway"]
+	_line(bad.is_empty() and n_tw == 8 and mk == "" and pr == "" and ring,
+		"every class's attack swaps a twig off its path (%d: Snare, Snipe, Rally, Ball, Beam, Spear, Contraption, Gun Arm; wrong %s); Mark II on the Golem's ring after Shrapnel '%s', Prospector after it '%s', Fortune off Bombs Away alone (%s)" % [n_tw, bad, mk, pr, ring])
 	# UNDOING, AND A LIST MADE SAFE
 	var u1 := Talents.unlearn_problem("warrior", ["greatsword", "sweepingcut"], "greatsword")
 	var u2 := Talents.unlearn_problem("warrior", ["greatsword", "sweepingcut"], "sweepingcut")

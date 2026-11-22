@@ -49,35 +49,71 @@ static func ready_up() -> void:
 		_twigs()
 
 
-## THE WARRIOR'S ATTACKS CHANGED, A TWIG EACH (his word of 22 Nov 2026: “the different weapon attacks are choices not mandatory in
-## the tree.  So swapping from whirl to whirlwind should be a small beach off the main tree.  Etc”): Whirlwind (Whirl made the
-## Whirlwind), Twin Axes (the throw two axes) and Tremors (the Earthquake three shakes) no longer big stones at the foot of their
-## weapons, where the tree seemed to begin with them: each a small stone on a short twig off the first talent of its weapon's own
-## branch (Sweeping Cut, Rend, Heavy Head), reached from it and leading nowhere, to take or leave.
+## THE ATTACKS CHANGED, A TWIG EACH (his word of 22 Nov 2026: “the different weapon attacks are choices not mandatory in the
+## tree.  So swapping from whirl to whirlwind should be a small beach off the main tree.  Etc”; and, asked whether the other
+## classes' should be so, “Yes other tree options of attack swapping should all be their own branch off the main paths”): every
+## talent that swaps one attack for another is a small stone on a short twig off its own path, reached from it and leading
+## nowhere, to take or leave; no path runs through it. THE WARRIOR: Whirlwind (Whirl made the Whirlwind) off Sweeping Cut, Twin
+## Axes off Rend, Tremors off Heavy Head. THE RANGER: Snare (for Shot) off Wide Traps, Snipe (for Volley) off Split Shot, Rally
+## (for Volley) off Wild Companion. THE MAGE: Ball, Beam and Spear off the first talents of fire, lightning and frost. THE
+## TINKERER: Contraption (for the Vial Toss) off Cluster Vials, the first of her vials; Gun Arm (the Golem's cannon for the tesla
+## coil) off Lightning Rod, the first of her Golem's; the Contraption no longer a way from Fortune to Mad Mixture, and MARK II
+## (which hung off Gun Arm) in Gun Arm's place on the Golem's ring (RELINK).
 const TWIGS := {
-	"gswhirlwind": {"from": "sweepingcut", "at": [2.62, 2.95]},
-	"twinaxes": {"from": "rend", "at": [0.62, 2.95]},
-	"tremors": {"from": "heavyhead", "at": [4.62, 2.95]},
+	"warrior": {
+		"gswhirlwind": {"from": "sweepingcut", "at": [2.62, 2.95]},
+		"twinaxes": {"from": "rend", "at": [0.62, 2.95]},
+		"tremors": {"from": "heavyhead", "at": [4.62, 2.95]},
+	},
+	"ranger": {
+		"snare": {"from": "widetraps", "at": [6.55, -0.05]},
+		"snipe": {"from": "splitshot", "at": [6.55, 4.05]},
+		"rally": {"from": "wildcompanion", "at": [2.25, 0.3]},
+	},
+	"mage": {
+		"ball": {"from": "kindling", "at": [1.35, -0.6]},
+		"beam": {"from": "charged", "at": [1.35, 1.4]},
+		"spear": {"from": "bittercold", "at": [1.35, 4.6]},
+	},
+	"tinkerer": {
+		"contraptions": {"from": "clustervials", "at": [-1.15, -0.6]},
+		"gunarm": {"from": "lightningrod", "at": [-1.15, 0.6]},
+	},
+}
+const RELINK := {
+	"tinkerer": {
+		"markii": {"at": [0, 2], "from": ["shrapnel"], "joined": ["shrapnel", "prospector"]},
+		"shrapnel": {"joined": ["lightningrod", "markii"]},
+		"prospector": {"from": ["markii"], "joined": ["markii", "overdrive"]},
+	},
 }
 
 
 static func _twigs() -> void:
-	if not D["switches"]["warriorTree2"]:
-		return
-	var by := {}
-	for t in D["trees"]["warrior"]["talents"]:
-		by[t["id"]] = t
-	for id in TWIGS:
-		if not by.has(id):
+	for cls in TWIGS:
+		if not D["trees"].has(cls) or (cls == "warrior" and not D["switches"]["warriorTree2"]):
 			continue
-		var t: Dictionary = by[id]
-		var main: String = TWIGS[id]["from"]
-		t["from"] = [main]
-		t["joined"] = [main]
-		t["at"] = TWIGS[id]["at"]
-		t["big"] = false
-		if not (by[main]["joined"] as Array).has(id):
+		var all: Array = D["trees"][cls]["talents"]
+		var by := {}
+		for t in all:
+			by[t["id"]] = t
+		for id in TWIGS[cls]:
+			if not by.has(id):
+				continue
+			var main: String = TWIGS[cls][id]["from"]
+			for o in all:
+				if o["id"] != id:
+					(o["from"] as Array).erase(id)
+					(o["joined"] as Array).erase(id)
+			var t: Dictionary = by[id]
+			t["from"] = [main]
+			t["joined"] = [main]
+			t["at"] = TWIGS[cls][id]["at"]
+			t["big"] = false
 			by[main]["joined"].append(id)
+		for id in RELINK.get(cls, {}):
+			for k in RELINK[cls][id]:
+				by[id][k] = (RELINK[cls][id][k] as Array).duplicate()
 
 
 ## THE CARDS THIS PORT WORDS ITS OWN WAY (his word of 21 Nov 2026: the Tinkerer's Golem only shoots, small shots, its big shot on

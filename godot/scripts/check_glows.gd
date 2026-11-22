@@ -3466,6 +3466,30 @@ func whirl1(main, hero, dir: String) -> void:
 func talpage(main, hero, dir: String) -> void:
 	M = main
 	h = hero
+	# (ANOTHER CLASS'S PAGE, --cls=<class>: its tree with nothing taken, then with each path's first talents taken)
+	var c: String = M._arg("cls")
+	if c != "" and c != "warrior":
+		M.set_class(c, true)
+		M.loot.level = 50
+		h.talents = []
+		h.talents_changed()
+		var iv = M._inv
+		if not iv.visible:
+			iv.toggle()
+		iv._page = "talents"
+		iv._tal.sel = ""
+		await M._wait(0.4)
+		await M._snap(dir + "/talpage_%s.png" % c)
+		var firsts: Array = []
+		for t in Talents.tree(c)["talents"]:
+			if (t["from"] as Array).is_empty():
+				firsts.append(t["id"])
+		h.talents = firsts
+		h.talents_changed()
+		await M._wait(0.4)
+		await M._snap(dir + "/talpage_%s_firsts.png" % c)
+		print("TALPAGE %s done (%s)" % [c, firsts])
+		return
 	M.set_class("warrior", true)
 	M.loot.level = 10
 	h.talents = ["greatsword"]

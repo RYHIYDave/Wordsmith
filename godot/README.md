@@ -1350,6 +1350,16 @@ augment attacks.  I want things to compound as they are added to attacks or abil
   AXES off Rend, TREMORS off Heavy Head. Each weapon's path goes straight on up without them. `--only=talents`: 83 checks
   (Whirlwind not open with the greatsword alone, open after Sweeping Cut; the path on up taken without it);
   docs/mockups/warrior_free_weapon/talents_page_twigs.png.
+  EVERY CLASS'S, the same (asked whether the others' should be so: “Yes other tree options of attack swapping should all be
+  their own branch off the main paths”; `talents.gd` TWIGS by class, RELINK): THE RANGER's Snare off Wide Traps, Snipe off
+  Split Shot, Rally off Wild Companion; THE MAGE's Ball, Beam and Spear off Kindling, Charged and Bitter Cold, each a small
+  stone now; THE TINKERER's Contraption off Cluster Vials (no longer the way from Fortune to Mad Mixture: Fortune off Bombs Away
+  alone) and Gun Arm (the Golem's cannon for the tesla coil) off Lightning Rod, the first of each of her paths, MARK II, which
+  hung off Gun Arm, in its place on the Golem's ring. The Brawler has no talent that swaps an attack; the Warlock's nearest,
+  Bound Demon (his change swapped for the demon at his side), is left a big stone, at the end of its path already, nothing
+  beyond it.
+  `--only=talpage --cls=<class>` pictures a class's page (nothing taken, then its first talents);
+  docs/mockups/attack_twigs/.
 
 ## Not in it yet
 
