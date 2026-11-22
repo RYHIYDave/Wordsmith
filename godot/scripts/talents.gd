@@ -4,10 +4,14 @@
 ## (Recommended)”). THE WARRIOR'S THREE WEAPONS (WARRIOR_TREE2): his first point picks the greatsword, the battle axe or the
 ## warhammer, only one, each with its own three moves; a weapon's own path is that weapon's alone; IRON opens once one is his.
 ## Undone in town only, for gold (unlearnPerLevel a level), and only when nothing taken hangs on it alone.
-## THE WARRIOR'S WEAPON, FREE (his word of 22 Nov 2026: “The warrior has an issue where he starts with the greatsword but would
-## have to pay a talent point to select greatsword.  So maybe he can swap to axe or hammer at level 1.”): his weapon costs no
-## point and is his from level 1; the greatsword his as he starts (`starting`); another taken in its place at any level, anywhere,
-## for nothing, so long as nothing more on the old one's path is taken (`swap_out`); his points go only on the rest (`spent`).
+## THE WARRIOR'S WEAPON, HIS FIRST POINT GIVEN EARLY (his words of 22 Nov 2026: “The warrior has an issue where he starts with the
+## greatsword but would have to pay a talent point to select greatsword.  So maybe he can swap to axe or hammer at level 1.”; and
+## the morning after, “And I don't like that warrior starts with a talent point.  How can we allow the switch at level 1 without
+## just giving the player a free talent point?”): his weapon is his first point, as the game has it, but his from level 1: the
+## greatsword his as he starts (`starting`), another taken in its place at any level, anywhere, for nothing more, so long as nothing
+## more on the old one's path is taken (`swap_out`). It is counted among his points spent (`spent`), so the point level 5 brings is
+## the one it took already: his next to spend comes at level 10 (`next_point`), and over the game he has ten, as every hero has,
+## one of them his weapon.
 ## IN THIS PORT: a talent whose rules are not brought over yet (PORTED) is shown, read and marked so, and cannot be taken.
 extends RefCounted
 
@@ -113,9 +117,20 @@ static func is_weapon(cls: String, id: String) -> bool:
 	return cls == "warrior" and D["switches"]["warriorTree2"] and _weapons().has(id)
 
 
-## The points spent: his weapon costs none.
+## The points spent: his weapon one of them (his first, given early).
 static func spent(cls: String, taken: Array) -> int:
-	return taken.filter(func(x): return not is_weapon(cls, str(x))).size()
+	return taken.size()
+
+
+## The level his next point to spend comes at, his points spent so far counted (the Warrior's weapon among them), or -1 when all
+## are his.
+static func next_point(cls: String, level: int, taken: Array) -> int:
+	ready_up()
+	var most: int = int(D["max"]) * int(D["every"])
+	for l in range(level + 1, most + 1):
+		if points(l) > spent(cls, taken):
+			return l
+	return -1
 
 
 ## A new hero's talents: the Warrior's greatsword his already (and, in the checks written for his Whirlwind before his Whirl was
@@ -178,7 +193,7 @@ static func take_problem(cls: String, level: int, taken: Array, id: String) -> S
 	if taken.has(id):
 		return "Taken"
 	if not is_weapon(cls, id) and spent(cls, taken) >= points(level):
-		var nx := next_level(level)
+		var nx := next_point(cls, level, taken)
 		return "No points left" if nx < 0 else "Next point at level %d" % nx
 	if not _way_open(t, taken):
 		return "Take one joined to it first"

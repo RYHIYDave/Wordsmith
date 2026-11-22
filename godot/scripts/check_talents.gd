@@ -87,18 +87,19 @@ func run(main, hero, d: String) -> void:
 	var f2 := Talents.take_problem("warrior", 1, ["greatsword"], "battleaxe")
 	var f3 := Talents.take_problem("warrior", 1, ["greatsword"], "sweepingcut")
 	var f4 := Talents.take_problem("warrior", 5, ["greatsword"], "sweepingcut")
+	var f4b := Talents.take_problem("warrior", 10, ["greatsword"], "sweepingcut")
 	var f5 := Talents.take_problem("warrior", 50, ["greatsword", "sweepingcut"], "warhammer")
 	var f6 := Talents.swap_out("warrior", ["battleaxe"], "warhammer")
 	var f7 := Talents.spent("warrior", ["warhammer", "heavyhead"])
 	var f8 := Talents.starting("mage")
-	_line(f1 == ["greatsword"] and f2 == "" and f3 == "Next point at level 5" and f4 == "" and f5 == "Undo the greatsword's talents first" and f6 == "battleaxe" and f7 == 1 and f8 == [],
-		"his weapon free: the greatsword his as he starts (%s); at level 1 the battle axe his for nothing ('%s'), its path's first waiting for his first point ('%s'; at level 5: '%s'); not swapped while more on its path is his ('%s'); the hammer in the axe's place (%s out); a weapon and one talent, %d point spent; a Mage starts with none (%s)" % [f1, f2, f3, f4, f5, f6, f7, f8])
+	_line(f1 == ["greatsword"] and f2 == "" and f3 == "Next point at level 10" and f4 == "Next point at level 10" and f4b == "" and f5 == "Undo the greatsword's talents first" and f6 == "battleaxe" and f7 == 2 and f8 == [],
+		"his weapon his first point, his from level 1: the greatsword his as he starts (%s); at level 1 the battle axe in its place ('%s'); level 5's point the one his weapon took, his next at 10 ('%s'; at level 5: '%s'; at 10: '%s'); not swapped while more on its path is his ('%s'); the hammer in the axe's place (%s out); a weapon and one talent, %d points spent; a Mage starts with none (%s)" % [f1, f2, f3, f4, f4b, f5, f6, f7, f8])
 	# UNDOING, AND A LIST MADE SAFE
 	var u1 := Talents.unlearn_problem("warrior", ["greatsword", "sweepingcut"], "greatsword")
 	var u2 := Talents.unlearn_problem("warrior", ["greatsword", "sweepingcut"], "sweepingcut")
 	var cl := Talents.clean("warrior", 7, ["greatsword", "greatsword", "kindling", "sweepingcut"])
 	var cl2 := Talents.clean("warrior", 3, ["sweepingcut"])
-	_line(u1 == "Take another to swap" and u2 == "" and cl == ["greatsword", "sweepingcut"] and cl2 == ["greatsword"],
+	_line(u1 == "Take another to swap" and u2 == "" and cl == ["greatsword"] and cl2 == ["greatsword"],
 		"the greatsword not undone but swapped ('%s'), Sweeping Cut undone (''); a save's list made safe at level 7: %s; an old one with no weapon, at level 3: %s" % [u1, cl, cl2])
 	# THE WARRIOR'S TALENTS IN PLAY (game.ts, TALENTS2's rules)
 	await _warrior()
@@ -169,8 +170,8 @@ func run(main, hero, d: String) -> void:
 	await _run(0.3)
 	await _snap("warrior_level1_back_to_greatsword_card")
 	var back_ok: bool = Talents.take_problem("warrior", 1, h.talents, "greatsword") == ""
-	_line(h.talents == ["battleaxe"] and free_take and back_ok and h.weapon == "battleaxe" and h.loadout.id(0) == "cleave" and Talents.spent("warrior", h.talents) == 0,
-		"a new Warrior at level 1: the battle axe his for nothing in the greatsword's place (%s), his tap now %s, no point spent; the greatsword his again as freely (%s)" % [h.talents, h.loadout.id(0), back_ok])
+	_line(h.talents == ["battleaxe"] and free_take and back_ok and h.weapon == "battleaxe" and h.loadout.id(0) == "cleave" and Talents.spent("warrior", h.talents) == 1 and Talents.next_point("warrior", 1, h.talents) == 10,
+		"a new Warrior at level 1: the battle axe in the greatsword's place (%s), his tap now %s, still his one point, the weapon's (his next at level %d); the greatsword his again as freely (%s)" % [h.talents, h.loadout.id(0), Talents.next_point("warrior", 1, h.talents), back_ok])
 	inv._tal_press("tal_take", "greatsword")
 	if inv.visible:
 		inv.toggle()

@@ -290,7 +290,7 @@ func draw(h, level: int, t: float, dt: float) -> void:
 	if sel != "" and not lay["at"].has(sel):
 		sel = ""
 	# the line over the tree: what it is, and the points
-	var nx := Talents.next_level(level)
+	var nx := Talents.next_point(h.cls, level, taken)
 	var pts := ("%d %s TO SPEND" % [left, "POINT" if left == 1 else "POINTS"]) if left > 0 else ("NEXT POINT AT LEVEL %d" % nx if nx >= 0 else "ALL TEN SPENT")
 	var what := "TALENTS: %s" % str(tree["shape"]).to_upper()
 	var pts_w := _w(pts, left <= 0)
