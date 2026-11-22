@@ -423,6 +423,7 @@ func _draw() -> void:
 	var avail_l := px + ps + 5
 	var avail_r := ex - 5
 	var tight := 0
+	_moth_now()
 	var pieces := [_phrase(0, 0), _phrase(1, 0)]
 	while _plate_w(pieces[0]) + _plate_w(pieces[1]) + 5 > avail_r - avail_l and tight < 2:
 		tight += 1
@@ -678,18 +679,20 @@ func _phrase(s: int, tight: int) -> Array:
 	# (an empty socket glows while a word he holds could go into it right now: words.ts socketProblem)
 	var glow_f := _fits(front)
 	var glow_b := _fits(behind)
-	for w in front:
-		out.append(_word_piece(w, "front", tight >= 2) if w != null else _empty(glow_f))
+	for k in front.size():
+		var w = front[k]
+		out.append(_word_piece(w, "front", tight >= 2, s, k) if w != null else _empty(glow_f))
 	var name: String = String(_skills()[s]["name"]).to_upper()
 	out.append({"kind": "name", "text": name, "color": P["white"], "w": _width(name)})
 	var first := true
-	for w in behind:
+	for k in behind.size():
+		var w = behind[k]
 		if w == null:
 			out.append(_empty(glow_b))
 			continue
 		var link := "of" if first else "and"
 		out.append({"kind": "link", "text": link, "color": T["dim"], "w": _width(link, "small")})
-		out.append(_word_piece(w, "behind", tight >= 1))
+		out.append(_word_piece(w, "behind", tight >= 1, s, k))
 		first = false
 	return out
 
@@ -718,12 +721,38 @@ func _name_parts(s: int) -> Array:
 	return parts
 
 
-func _word_piece(w: String, form: String, rune: bool) -> Dictionary:
+## UNIQUE ITEMS, THE MOTH'S WING (hud.ts MOTH, mothNow): the word of his a hit has darkened, written grey, its stone greyed; the one
+## just come back, a flash of white for 0.3 s.
+const MOTH_GREY := Color("#6a6478")
+var _moth_dark = null
+var _moth_back = null
+var _moth_back_at := -9.0
+
+
+func _moth_now() -> void:
+	var U = hero.uniques if hero != null else null
+	var now = U.uq["dark"] if U != null else null
+	var t := Time.get_ticks_msec() / 1000.0
+	if _moth_dark != null and now != _moth_dark:
+		_moth_back = _moth_dark
+		_moth_back_at = t
+	_moth_dark = now.duplicate() if now != null else null
+	if _moth_back != null and t - _moth_back_at > 0.3:
+		_moth_back = null
+
+
+static func _moth_is(q, s: int, side: String, k: int) -> bool:
+	return q != null and int(q["skill"]) == s and q["side"] == side and int(q["idx"]) == k
+
+
+func _word_piece(w: String, form: String, rune: bool, s := -1, k := -1) -> Dictionary:
 	var text: String = _data["words"][w][form]
-	# (ACT 2, THE HUSH on him: his words written dark, hud.ts HUSHED)
-	var c := HUSHED if hero.hush_t > 0.0 else Color(_data["word_color"][w])
+	# (ACT 2, THE HUSH on him: his words written dark, hud.ts HUSHED; UNIQUE ITEMS, the Moth's Wing: the dark one grey)
+	var dark := _moth_is(_moth_dark, s, form, k)
+	var back := not dark and _moth_is(_moth_back, s, form, k)
+	var c := HUSHED if hero.hush_t > 0.0 else (MOTH_GREY if dark else (Color.WHITE if back else Color(_data["word_color"][w])))
 	if rune:
-		return {"kind": "rune", "text": text, "color": c, "w": 12.0, "word": w}
+		return {"kind": "rune", "text": text, "color": c, "w": 12.0, "word": w, "grey": dark}
 	return {"kind": "word", "text": text, "color": c, "w": _width(text), "word": w}
 
 
@@ -927,7 +956,7 @@ func _draw_phrase(ps: Array, x0: float, y: float, h: float, pulse: bool) -> void
 				_text(p["text"], x, ty + 3, p["color"], {"font": "small"})
 			"rune":
 				var k: String = "word:" + p["word"]
-				_pic(k, x, y + floorf((h - _pic_size(k).y) / 2.0))
+				_pic(k, x, y + floorf((h - _pic_size(k).y) / 2.0), -1.0, -1.0, Color(0.5, 0.5, 0.55, 0.6) if p.get("grey", false) else Color.WHITE)
 			_:
 				# an empty socket: a dark notch with a plus in it, glowing while a spare word could go in
 				var sy := y + floorf((h - sh) / 2.0)
