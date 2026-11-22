@@ -31,6 +31,7 @@ func _init() -> void:
 	Words.ATTR_CURVE = false
 	Words.POISON_SPREAD = false
 	Words.POISON_DEX = false
+	Words.MELD_RANK2 = false
 	Words.EVEN_BASE = false
 	Words.ELEMENT_HIT = false
 	Words.DEFENCE_WORDS = false

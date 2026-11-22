@@ -142,6 +142,14 @@ static var POISON_ADD := true
 ##               poison being Dexterity's; the game's tables have Blight a Strength word, its poison growing with Strength): a
 ##               Strength hero's Blight has its Power whole and its poison weak. Off: as the game has it.
 static var POISON_DEX := true
+##   MELD_RANK2  a melded word is a Rank II word's worth (his words, 22 Nov 2026: “Oh I'd like the game to think of a meld as a lvl2
+##               word / Since a meld has 2 boosts of 40% and something like power II has 1 boost for 80%”): on gear it is already
+##               (two properties of 40% against one of 80%); in a move a Rank II word is its word half as strong again (150%), and a
+##               melded word was both its words whole (100% and 100%) and its twist besides. Now each of its two words MELD_PART of
+##               its own figure (75% and 75%, 150% in all), what the attribute adds on top as for a ranked word; its twist as it was.
+##               Off: both whole, as the game has it.
+static var MELD_RANK2 := true
+const MELD_PART := 0.75
 const POISON_MOST := 4
 
 
@@ -462,10 +470,15 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	var BOOST: float = float(bent.get("boost", 1.0))
 	var MB: float = float(bent.get("meld_boost", 1.0))
 	var st := func(side: Array, w: String) -> float:
-		if MB == 1.0:
-			return BOOST
 		var m = meld_in(side)
-		return BOOST * MB if m != null and parts_of(m).has(w) else BOOST
+		var part: bool = m != null and parts_of(m).has(w)
+		var k: float = BOOST
+		if part and MB != 1.0:
+			k *= MB
+		# (MELD_RANK2: each of a melded word's two words three quarters of its own figure, the two a Rank II word's worth)
+		if part and MELD_RANK2:
+			k *= MELD_PART
+		return k
 	var rk := func(side: Array, w: String) -> float: return (1.0 + step * (rank_in.call(side, w) - 1)) * st.call(side, w)
 	var rn := func(side: Array, w: String) -> String: return ["", "", " II", " III", " IV", " V"][rank_in.call(side, w)]
 	var dmg_mult: float = float(def["dmg"]) * (float(EVEN[id]) if EVEN_BASE and EVEN.has(id) else 1.0) * (1.0 + prim * float(D["primaryDmg"]) / 100.0)
