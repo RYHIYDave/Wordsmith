@@ -19,7 +19,9 @@ maxed”
 - Then the FIGHT, on floor 20 among its own monsters: his quick attack as he makes it, by itself, into one elite that cannot die
   (what it lost a second, seconds 2 to 10), and into a pack of six of the floor's own held in a knot (seconds till all are dead).
   “Worked out” is the same from his numbers by the fight's own sums; the two agree to within about half again either way (the
-  fight has his talents' extra blows and bleeds in it).
+  fight has his talents' extra blows and bleeds in it). The fire Mage was run again with the ground his moves leave cleared
+  between fights (the first run's burning ground from one fight had run on into the next); the others' fights may each carry a
+  little of the step before's.
 - Early on: a level 10 hero, his points in his attribute, his first two talents, the best plain weapon of floor 5 and nothing
   else, only words that are found.
 
@@ -35,11 +37,11 @@ Damage a second into one enemy, in the fight (worked out in brackets):
 | Warrior (Blight, Heavy; Power II, Fleeting) | 12,418 (8,185) | 4,133,110 (2,756,124) | 11,518,990 (8,314,056) | 85,599,347 (71,169,587) |
 | Ranger (Blight, Precise; Fleeting, Power II) | 33,788 (31,064) | 1,866,974 (1,403,591) | 2,955,063 (2,264,284) | 19,333,671 (13,666,029) |
 | Tinkerer (Contagion, Precise; Demolition, Fleeting) | 18,775 (16,635) | 1,027,593 (838,682) | 1,495,364 (1,237,348) | 8,106,251 (6,569,560) |
-| Mage, fire (Fumes, Precise; Fleeting, Power II) | MAGE_FIRE_0 | MAGE_FIRE_1 | MAGE_FIRE_2 | MAGE_FIRE_4 |
+| Mage, fire (Fumes, Precise; Fleeting, Power II) | 1,722 (1,440) | 206,681 (144,267) | 301,596 (212,964) | 1,044,665 (727,958) |
 | Mage, frost (Scald, Heavy; Power II, Fleeting) | 1,761 (1,762) | 28,961 (20,451) | 35,064 (26,996) | 110,725 (82,171) |
 
 One hit of the Warrior's Strike with all four: 129,425 (a critical 582,416). The same four words with only his class's starting
-attributes: 15,616,859 a second (the Ranger 6,207,155; the Tinkerer 1,749,825; the frost Mage 32,134).
+attributes: 15,616,859 a second (the Ranger 6,207,155; the Tinkerer 1,749,825; the fire Mage 442,755; the frost Mage 32,134).
 
 Early on (level 10, a floor 5 weapon and nothing else), damage a second in the fight:
 
@@ -48,7 +50,7 @@ Early on (level 10, a floor 5 weapon and nothing else), damage a second in the f
 | Ranger | 28 | 66 (Poison) | 92 (Power behind): x3.2 |
 | Warrior | 30 | 50 (Power) | 82 (Power behind): x2.7 |
 | Tinkerer | 22 | 25 (Lightning) | 29 (Power behind), 39 (Volatile behind) |
-| Mage, fire | EARLY_FIRE_0 | EARLY_FIRE_1 (Fire) | EARLY_FIRE_2 (Power behind) |
+| Mage, fire | 18 | 29 (Fire) | 37 (Power behind): x2.0 |
 | Mage, frost | 19 | 17 (Frost) | 22 (Power behind) |
 
 ## Why it skyrockets
@@ -72,3 +74,10 @@ Early on the same thing is small but felt: a word in front and one behind is abo
 x2.7), when a floor 5 monster has 22 to 115 life.
 
 The builds are far apart: the Warrior's best is about 770 times the frost Mage's.
+
+## What to do about it (for his word)
+
+Recommended: the words ADD their bonuses instead of multiplying them, and what a word gains from the attribute stops at a ceiling
+(for one, no more than its own starting figure again); attributes from gear and poison's doses looked at after, with this check
+run again to his targets (how many times the damage a word in front and one behind should give early on; how long a min/max hero
+should take over floor 20's boss).

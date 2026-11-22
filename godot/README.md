@@ -1361,6 +1361,13 @@ augment attacks.  I want things to compound as they are added to attacks or abil
   `--only=talpage --cls=<class>` pictures a class's page (nothing taken, then its first talents);
   docs/mockups/attack_twigs/.
 
+- **The damage check** (`--only=dmg`, `scripts/check_dmg.gd`; `tools/godot_dmg_gear.ts <ilvl> <file>` for `WS_DMG_GEAR`, and an item
+  level 5 one for `WS_DMG_EARLY`; `WS_DMG="ranger warrior"` for some): at his words (“I'd like you to check on damage.  I feel like
+  right about the time you get a word in back and in front of your attacks the damage kinda skyrockets. ...”), min/max heroes of
+  level 50 with the best floor 20 gear and words for their quick attack, step by step from no words to all four, measured into
+  an elite that cannot die and a pack of six on floor 20, and early on at level 10. What came out, and why:
+  docs/reports/damage_check_2026-11-22.md.
+
 ## Not in it yet
 
 Nothing of the game's own: every talent of every tree is in.
