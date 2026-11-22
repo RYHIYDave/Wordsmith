@@ -399,7 +399,13 @@ func setup(m: Dictionary, kind_def: Dictionary, figure: BakedFigure) -> void:
 		dmg_min *= float(S["dmg"])
 		dmg_max *= float(S["dmg"])
 		xp *= float(S["xp"])
-		var want := 3 if champion else (2 if elite else 0)
+		var want := (3 if champion else (2 if elite else 0)) if (S["life"] != 1.0 or S["dmg"] != 1.0) else 0
+		# (FOE_WORDS: the words burned in at the Rim's gate, every monster's at full strength, a minion's too)
+		for w in S.get("laid", []):
+			if not words.has(w):
+				words = words.duplicate()
+				words.append(w)
+			half = half.filter(func(x): return x != w)
 		if not boss and rarity != "minion" and words.size() < want:
 			words = words.duplicate()
 			var pool: Array = (S["words"] as Array).filter(func(w): return not words.has(w))

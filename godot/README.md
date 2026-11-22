@@ -1182,11 +1182,23 @@ game/world_sounds.ts; `sfx.gd`, `monsters.gd`, `monster.gd`, `town.gd`, `main.gd
   or Hardcore. What drops goes by its depth (the gold; the pieces and their chances as on floor 20, the game's tables going no
   deeper here); the vendors' too once it is open. Kept in the save; the deepest any hero cleared kept with the stash.
 - `--only=endless` (`check_glows.gd`): 10 checks, pictured.
+- **The Shaft's Rim, endless mode's town** (game/rim.ts, render/rim.ts; `rim.gd`, `town.gd` rim): his town once endless opens.
+  Its layout from the game (tools/godot_town.ts), its look recorded whole (tools/godot_record.mjs rim: its ground, the shaft and
+  its stair, the game's own things in its stone, its keepers, torches and posts); what changes on it drawn over that from the
+  art's own paintings (tools/godot_rim.ts): the RECORD STONE, a notch for each endless level reached (at most seventy), the
+  newest glowing on the visit it is cut ("A notch is cut in the record stone: Endless N."), its name the level reached and his
+  best ("ENDLESS 4, BEST 9"); the TROPHIES wall, a mount for each shard of the tablet he holds. He comes in before the gate, the
+  pit before him; back by the waypoint, on it. Walking round: the pit's brink, the standing stones and the braziers hold him off
+  by their own round, a step at the brink taken round it. THE GATE is a service here ("E: Gate: words for Endless N"): up to three
+  spare words laid in its sockets (each a gem of its colour in the gate), the game's rules for them ("One element per dungeon"),
+  ENTER ENDLESS N; burned into that level (known in the Lexicon), every monster there carries them, and they pay: +30% items, +25
+  rarity, +10% experience each, likelier words. Kept in the save (the stone's last cut, the gate's words; the shards with the stash).
+- `--only=rim` (`check_glows.gd`): 9 checks, pictured.
 
 ## Not in it yet
 
 The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick).
-Of endless mode: the Shaft's Rim town, the Tablet Shards, the Twisted Wordsmith, the fanfare as it opens.
+Of endless mode: the Tablet Shards, the Twisted Wordsmith, the fanfare as it opens.
 (The monsters' pictures are the final release 25.3.22's bake, a9b22fa26169: the Chained One's sheets laid afresh, and the rest as
 25.3.21's b982b7f72ca4 but for rounding.)
 

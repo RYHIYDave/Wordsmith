@@ -35,6 +35,7 @@
 extends Control
 
 const Words := preload("res://scripts/words.gd")
+const FoeWords := preload("res://scripts/foe_words.gd")
 ## THE GAME'S LETTERS (engine/font.ts: pixel_font.gd), its normal and its small
 const PF := preload("res://scripts/pixel_font.gd")
 
@@ -441,6 +442,9 @@ func _begin_drag() -> void:
 func _target_at(at: Vector2) -> Dictionary:
 	if altar >= 0 and at.x >= _hw():
 		return {"kind": "altar", "r": Rect2(_hw(), 0, _hw(), _vh())}
+	# (THE SHAFT'S RIM'S GATE: anywhere over its half, the next free socket)
+	if svc == "gate" and at.x >= _hw():
+		return {"kind": "gate", "r": Rect2(_hw(), 0, _hw(), _vh())}
 	# (WORDMELDING: over the wordsmith's half, melding: the next free hollow)
 	if wsmith == "meld" and at.x >= _hw():
 		var nx: int = meld_in.find(null)
@@ -577,6 +581,8 @@ func _press(action: String, arg) -> void:
 			toggle()
 		"altar_put", "altar_take", "altar_open":
 			_altar_press(action, arg)
+		"gate_put", "gate_take", "gate_enter":
+			_gate_press(action, arg)
 		"ws_tab", "ws_hollow", "ws_meld", "ws_to_meld", "ws_cell", "ws_buy", "ws_sell":
 			_ws_press(action, arg)
 		"gm_kind", "gm_throw", "st_take", "lx_tab", "lx_word", "lx_kept", "lx_take", "lx_keep":
@@ -724,6 +730,13 @@ func _drop(w: String, to: Dictionary) -> void:
 	_look = null
 	if to["kind"] == "altar":
 		var why: String = altar_holds.lay(altar, w)
+		if why != "":
+			_say(why)
+		else:
+			_word = ""
+		return
+	if to["kind"] == "gate":
+		var why: String = main.plan_word(w)
 		if why != "":
 			_say(why)
 		else:
@@ -2900,6 +2913,75 @@ func _svc_side(blink: bool) -> void:
 			_st_side(x0, w)
 		"lexicon":
 			_lx_side(blink, x0, w)
+		"gate":
+			_gate_side(blink, x0, w)
+
+
+# --- THE SHAFT'S RIM'S GATE (ui/town.ts gateSide; game.ts planWord, unplanWord, planProblem, enterEndless): its three sockets, the
+# words burned into the next endless level, what they add up to, and the way in (ENTER ENDLESS N). A word laid by pressing it and
+# then a socket, or dragging it there; pressed again, taken back (free until he goes in).
+
+func _gate_side(blink: bool, x0: float, w: float) -> void:
+	var where: String = main.endless_name(main.endless).to_upper()
+	_text(Vector2(x0, 22), "GATE: %s" % where, 16, PICK)
+	var y := 42.0
+	for l in _wrap("Burn up to three spare words into this dungeon. They are used up.", w, 10):
+		_text(Vector2(x0, y), l, 10, TEXT)
+		y += 13.0
+	y += 8.0
+	_text(Vector2(x0, y), "BURNED INTO THE DUNGEON", 9, DIM)
+	y += 8.0
+	var laid: Array = main.plan
+	var next := laid.size()
+	var hang: String = _word if _word != "" and not _over.is_empty() and _over["kind"] == "gate" else ""
+	var ok: bool = _word != "" and main.plan_problem(_word) == ""
+	for i in 3:
+		var r := Rect2(x0, y + i * (CELL + 12.0), CELL, CELL)
+		var row := Rect2(x0 - 6.0, r.position.y - 6.0, w + 12.0, CELL + 12.0)
+		var tx := x0 + CELL + 10.0
+		if i < laid.size():
+			_tile(r, laid[i], "name", {"stone": true, "lit": row.has_point(_mouse)})
+			_text(Vector2(tx, r.position.y + 16), str(Words.word(laid[i])["name"]).to_upper(), 12, loot.word_color(laid[i]))
+			_text(Vector2(tx, r.position.y + 32), "Every monster: %s" % _lower(str(Words.word(laid[i])["monsterText"])), 9, TEXT)
+			_hits.append([row, "gate_take", i, null])
+		else:
+			var here := i == next
+			var lit := here and ok
+			_gbox(r, (PICK_BG if blink else Color(PICK_BG, 0.6)) if lit else INK, (PICK if blink else PICK_LO) if lit else EDGE)
+			var c := r.get_center().floor()
+			draw_rect(Rect2(c.x - 6, c.y, 14, 2), PICK if lit else EDGE)
+			draw_rect(Rect2(c.x, c.y - 6, 2, 14), PICK if lit else EDGE)
+			if here and hang != "" and not ok:
+				_text(Vector2(tx, r.position.y + 24), main.plan_problem(hang), 11, BAD)
+			elif here and laid.is_empty():
+				_text(Vector2(tx, r.position.y + 24), "Click one of your words, then here. Or drag it here.", 9, FAINT)
+			_hits.append([row, "gate_put", i, null])
+	y += 3.0 * (CELL + 12.0) + 6.0
+	var n: float = FoeWords.words_weight(laid)
+	if n > 0:
+		for l in _wrap("Reward: +%d%% items, +%d rarity, +%d%% experience, likelier words." % [30 * n, 25 * n, 10 * n], w, 10):
+			_text(Vector2(x0, y), l, 10, PICK)
+			y += 13.0
+	_text(Vector2(x0, y), "Its boss waits at the end. %s." % main.ENDLESS_WARN, 10, BAD)
+	_svc_button("ENTER %s" % where, x0, w, "gate_enter", true, blink)
+
+
+func _gate_press(action: String, arg) -> void:
+	match action:
+		"gate_take":
+			main.unplan_word(int(arg))
+		"gate_put":
+			if _word != "":
+				var why: String = main.plan_word(_word)
+				if why != "":
+					_say(why)
+				else:
+					_word = ""
+			else:
+				_say("Pick one of your words first, or drag it here")
+		"gate_enter":
+			toggle()
+			main.enter_endless()
 
 
 func _svc_button(label: String, x0: float, w: float, action: String, can: bool, blink: bool) -> Rect2:

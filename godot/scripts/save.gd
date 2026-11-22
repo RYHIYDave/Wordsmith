@@ -48,6 +48,11 @@ static func run_of(main) -> Dictionary:
 	if int(main.endless) > 0:
 		run["endless"] = main.endless
 		run["endlessFloor"] = main.endless_floor
+	# (THE SHAFT'S RIM: the endless level its record stone was last cut to, the words laid on its gate: game.ts save `rimSeen`, `plan`)
+	if int(main.rim_seen) > 0:
+		run["rimSeen"] = main.rim_seen
+	if not main.plan.is_empty():
+		run["plan"] = main.plan.duplicate()
 	# (FLOORS 11 TO 15's quests: the jar, the pages, the clapper, and the armourer's pick laid out and not yet taken: game.ts save,
 	# act2/quest1115.gd)
 	var q11 = main.quest1115
@@ -88,7 +93,9 @@ static func meta_of(main) -> Dictionary:
 		# (ABILITIES: COOLDOWNS or MANA: the device's choice, main.ts meta.limit)
 		"limit": loot.limit,
 		# (ENDLESS MODE: the deepest endless level any of his heroes has cleared: game.ts meta.bestEndless)
-		"bestEndless": main.best_endless}
+		"bestEndless": main.best_endless,
+		# (ENDLESS_KEY: the shards of the tablet held, the account's, kept with the stash: game.ts meta.quarters)
+		"quarters": main.quarters}
 
 
 ## Written (main.ts writeSave). Not while he is down, nor between places: the run as it stands at a quiet moment. A FALLEN HERO
@@ -134,6 +141,7 @@ static func restore_meta(main, m: Dictionary) -> void:
 	loot.taught = m.get("taught", false) == true
 	main.deaths = maxi(0, int(_num(m.get("deaths"), 0)))
 	main.best_endless = maxi(0, int(_num(m.get("bestEndless"), 0)))
+	main.quarters = int(_num(m.get("quarters"), 0)) & 15
 	main.next_mode = "hardcore" if m.get("mode") == "hardcore" else "normal"
 	loot.limit = "mana" if m.get("limit") == "mana" else "cooldown"
 
@@ -178,6 +186,8 @@ static func restore_run(main, s: Dictionary) -> void:
 	main.endless = maxi(0, int(_num(s.get("endless"), 0)))
 	var ef := int(_num(s.get("endlessFloor"), 0))
 	main.endless_floor = (ef if ef >= 1 and ef <= main.last_built() else main.endless_floor_for(main.endless, 0)) if main.endless > 0 else 0
+	main.rim_seen = clampi(int(_num(s.get("rimSeen"), 0)), 0, main.endless)
+	main.plan = (s.get("plan") as Array).filter(func(w): return w is String) if s.get("plan") is Array else []
 	loot.body_searched = s.get("body", false) == true
 	loot.quest_given = s.get("asked", false) == true
 	loot.ring_lit = s.get("ring", false) == true

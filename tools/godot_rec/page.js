@@ -297,7 +297,7 @@
     return { state: p.state, asked: p.asked ? p.asked.size : 0, made: p.films ? p.films.size : 0, failed: p.stats ? p.stats.failed : [], films: p.stats ? Object.keys(p.stats.films) : [] };
   };
 
-  /** Go to a floor (0: stay in town; -1 the camp; -2 the practice room, a Warrior's, for the seed). */
+  /** Go to a floor (0: stay in town; -1 the camp; -2 the practice room, a Warrior's, for the seed; -3 the Shaft's Rim). */
   REC.enter = (depth, seed) => {
     if (depth === -2) {
       // (THE PRACTICE ROOM, the start screen's: game.ts forPractice, its arena: main.ts startPractice)
@@ -314,6 +314,15 @@
       g.wayDepth = 11;
       g.depth = 10;
       g.enterTown('gate');
+    } else if (depth === -3) {
+      // (THE SHAFT'S RIM, game/rim.ts: his town once endless mode is open to him, game.ts rimTown: its record stone uncut, its
+      // trophies wall empty, its gate bare; the Godot side draws those as they come to be)
+      g.wayDepth = 20;
+      g.depth = 20;
+      g.endless = 1;
+      g.endlessFloor = 1;
+      g.rimSeen = 1;
+      g.enterTown(null);
     }
     return { town: !!g.level.town, depth: g.depth, w: g.level.floor.w, h: g.level.floor.h };
   };

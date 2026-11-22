@@ -131,10 +131,16 @@ var _kept: Array = []
 ## world loops are off (game/world_sounds.ts WORLD_LOOPS).
 var camp := false
 const CAMP_DIR := "res://assets/camp"
+## THE SHAFT'S RIM (game/rim.ts), endless mode's town, his once it is open to him: its layout assets/rim/layout.json, its look
+## recorded whole (as the camp's), what changes on it and its round walking rim.gd; its gate a service: the words burned into the
+## next endless level (inventory.gd gate).
+var rim := false
+const RIM_DIR := "res://assets/rim"
+var rim_node = null
 
 
 func _ready() -> void:
-	data = JSON.parse_string(FileAccess.get_file_as_string((CAMP_DIR if camp else DIR) + "/layout.json"))
+	data = JSON.parse_string(FileAccess.get_file_as_string((RIM_DIR if rim else CAMP_DIR if camp else DIR) + "/layout.json"))
 	# (the services' names, over everything: render.ts, its labels drawn last)
 	_names = Node2D.new()
 	_names.z_index = 60
@@ -157,8 +163,11 @@ func _ready() -> void:
 	for l in _folk_data["lists"]:
 		_folk_lists[l["name"]] = l["at"]
 	_ring = data["ring"] if data.get("ring") != null else {"power": {"done": 0.0, "flare": 0.0}, "stones": []}
-	if camp:
+	if camp or rim:
+		_sounds()
 		_lay_gate()
+		if rim:
+			_rim_ready()
 		return
 	for p in data["props"]:
 		var kind: String = p["kind"]
@@ -246,12 +255,14 @@ func _process(dt: float) -> void:
 	if given_at >= 0.0 and _word_due > 0.0 and _t >= _word_due:
 		_word_due = -1.0
 		loot.give_word(loot.first_word())
-	if not camp:
+	if not camp and not rim:
 		_show()
-	else:
+	elif camp:
 		_camp_onward()
+	else:
+		rim_node.show_state()
 	_use()
-	if not camp:
+	if not camp and not rim:
 		_ring_moments()
 	_names.queue_redraw()
 	_step_gate(dt)
@@ -280,6 +291,11 @@ func _draw_names() -> void:
 			continue
 		var at: Vector2 = Iso.to_screen(float(s["x"]), float(s["y"])) / 2.0
 		labels.append({"x": at.x, "y": at.y - float(s.get("lift", NAME_LIFT[k])), "text": STATION_NAME[k], "color": Color.WHITE if k == near else Color("#b0f0dc")})
+	# (THE SHAFT'S RIM: the record stone's name, the endless level reached, and the trophies wall's: render/rim.ts names)
+	if rim and rim_node != null:
+		for q in rim_node.names():
+			var at: Vector2 = Iso.to_screen(q["at"].x, q["at"].y) / 2.0
+			labels.append({"x": at.x, "y": at.y - float(q["lift"]), "text": q["text"], "color": Color("#b0f0dc")})
 	labels.sort_custom(func(a, b): return a["y"] > b["y"])
 	_names.draw_set_transform(Vector2.ZERO, 0.0, Vector2(2, 2))
 	var placed: Array = []
@@ -470,7 +486,8 @@ func station_near() -> String:
 	var best := ""
 	var best_d := USE
 	for s in data["stations"]:
-		if str(s["kind"]) == "gate":
+		# (THE SHAFT'S RIM: its gate is a service, the words burned into the next endless level: game/rim.ts)
+		if str(s["kind"]) == "gate" and not rim:
 			continue
 		var d := Vector2(s["x"], s["y"]).distance_to(hero.world)
 		if d < best_d:
@@ -537,6 +554,9 @@ func _use() -> void:
 				prompt = ["E: " + main.quest1115.prompt_of(jar), "jar"]
 			else:
 				prompt = ["E: Mystic", "mystic"]
+		"gate":
+			# (THE SHAFT'S RIM: game.ts interactHint, "Gate: words for Endless N")
+			prompt = ["E: Gate: words for %s" % main.endless_name(main.endless), "gate"]
 		"stash", "lexicon", "stranger":
 			# (his half beside the gear screen: the stranger's gamble, the stash, the Lexicon: inventory.gd)
 			# (QUESTS1620: the stranger's whole court, asked for or brought, before his half: game.ts handInNear)
@@ -549,8 +569,27 @@ func _use() -> void:
 		_do(prompt[1])
 
 
+## THE SHAFT'S RIM (game/rim.ts): what changes on it drawn over its look (rim.gd), its round walking set on the map (the pit's
+## brink, the standing stones, the braziers; the tongue out to the landing), and its record stone cut as he comes in (main.gd).
+func _rim_ready() -> void:
+	var R := preload("res://scripts/rim.gd")
+	rim_node = R.new()
+	rim_node.main = main
+	rim_node.town = self
+	rim_node.stands = stands
+	rim_node.look = main.look if looked else null
+	add_child(rim_node)
+	var L: Dictionary = data
+	if main.map != null:
+		main.map.fence = func(x: float, y: float, r: float) -> bool: return R.holds(L, x, y, r)
+		main.map.rounder = func(at: Vector2, r: float, d: Vector2): return R.round_step(L, at, r, d)
+	main.come_to_rim(rim_node)
+
+
 func _do(what: String) -> void:
 	match what:
+		"gate":
+			main._inv.open_service("gate")
 		"talk":
 			if loot.ring_lit:
 				loot.say("The wordsmith: \"The ring burns. Go, and use what it gives you.\"", Color(0.35, 0.9, 1.0))

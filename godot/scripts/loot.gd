@@ -523,12 +523,14 @@ func on_kill(m) -> void:
 		var alchemy: bool = hero.kit != null and hero.kit.get("brewing") == true and hero.has("alchemy")
 		if randf() < 0.25 or alchemy:
 			_gold(at, randi_range(3, 8) * p)
-		if randf() < 0.04:
+		# (the words burned into the dungeon at the Rim's gate: 30% likelier items and words for each, game.ts dropLoot `bonus`)
+		var bonus: float = 1.0 + 0.3 * (main.burned_weight() if main != null else 0.0)
+		if randf() < 0.04 * bonus:
 			_item(at, 0)
 		if randf() < 0.06:
 			_orb(at)
 		# (an ordinary monster holds a word very rarely: TUNE.dropWord, the likelier the deeper)
-		if randf() < float(_tune["dropWord"]) * _growth() and words_fall():
+		if randf() < float(_tune["dropWord"]) * bonus * _growth() and words_fall():
 			_word(at, _found())
 
 
@@ -666,7 +668,9 @@ func words_found_at(d: int) -> Array:
 
 ## His magic find, % (game.ts rollGear: his gear's; the gate's words are not laid in the Godot version).
 func magic_find() -> float:
-	return float(hero.stats.get("magic_find", 0.0)) if hero != null else 0.0
+	# (and 25 for each word burned into the dungeon at the Rim's gate: game.ts rollGear, wordsWeight(dungeonWords))
+	var burned: float = main.burned_weight() if main != null else 0.0
+	return float(hero.stats.get("magic_find", 0.0)) + 25.0 * burned if hero != null else 0.0
 
 
 ## A piece of gear for this floor, of quality `quality` (game.ts rollGear: 0 an ordinary monster's, 1 a better one's, 2 a
@@ -1096,6 +1100,9 @@ func xp_to_next(l: int) -> float:
 
 
 func gain_xp(n: float) -> void:
+	# (10% more for each word burned into the dungeon at the Rim's gate: game.ts gainXp)
+	if main != null and main.burned_weight() > 0.0:
+		n = roundf(n * (1.0 + 0.1 * main.burned_weight()))
 	xp += n
 	while xp >= xp_to_next(level):
 		xp -= xp_to_next(level)
@@ -1514,6 +1521,12 @@ func _know(w: String) -> Dictionary:
 	if not known.has(w):
 		known[w] = {"found": false, "front": false, "behind": false, "gear": false}
 	return known[w]
+
+
+## (game.ts learn) A word used, its use known in the Lexicon: on the gate, burned into a dungeon ("dungeon").
+func learn(w: String, use := "dungeon") -> void:
+	_know(w)["found"] = true
+	_know(w)[use] = true
 
 
 ## The runedust he carries (act1/quest610.gd `dust`, counted as the game counts it).

@@ -27,6 +27,8 @@ import { TOWN } from '../src/game/level';
 import { TOWN_STAIR } from '../src/game/ways';
 import { doorTiles, doorFace, doorMiddle } from '../src/game/doors';
 import { PILLAR } from '../src/art/gates';
+import { LANDING, RIM, TONGUE } from '../src/art/shaft_rim';
+import { BRINK, RIM_ARRIVE, RIM_AT, RIM_NAME, RIM_RULES } from '../src/game/rim';
 
 declare const process: { argv: string[] };
 paintWithoutCanvas();
@@ -183,4 +185,41 @@ console.log(gate ? `floor 1's gate: ${gate.spot.alongX ? 'along x' : 'along y'} 
     onward: CL.ways?.onward ? { x: CL.ways.onward.x, y: CL.ways.onward.y } : null,
   }));
   console.log(`camp: ${cf.w}x${cf.h}, ${CL.props.length} pieces, ${CL.stations.length} services (${CL.stations.map((s) => s.kind).join(', ')}); he comes in at ${cg.hero.x},${cg.hero.y}; its waypoint ${CL.ways?.way ? `${CL.ways.way.x},${CL.ways.way.y}` : 'none'}; its way on to floor 11 ${CL.ways?.onward ? `${CL.ways.onward.x},${CL.ways.onward.y}` : 'none'}`);
+}
+
+// --- THE SHAFT'S RIM (game/rim.ts makeRim, by Game.enterTown once endless mode is open to him: game.ts rimTown): godot/assets/rim/
+// layout.json, for godot/scripts/town.gd with `rim` on. Its look (its ground, its pieces, the game's own things in its stone) is
+// recorded by tools/godot_record.mjs rim; what changes on it (the record stone's notches, the trophies wall, the gate's words) is
+// drawn over that by the Godot side (tools/godot_rim.ts: their pictures). Its round things (the pit's brink, the standing stones,
+// the braziers) hold a body off by their own round (`rounds`; the tongue and its landing out over the drop: `wayOut`).
+{
+  const rg = new Game('warrior', seed);
+  const R0 = rg as unknown as { wayDepth: number; endless: number; endlessFloor: number; rimSeen: number; enterTown(by?: string | null): void };
+  R0.wayDepth = 20;
+  rg.depth = 20;
+  R0.endless = 1;
+  R0.endlessFloor = 1;
+  R0.rimSeen = 1;
+  R0.enterTown(null);
+  const RL = rg.level;
+  const rf = RL.floor;
+  const RR = RL.rim!;
+  mkdirSync('godot/assets/rim', { recursive: true });
+  writeFileSync('godot/assets/rim/layout.json', JSON.stringify({
+    depth: 0, rim: true, seed, w: rf.w, h: rf.h, tiles: Array.from(rf.tiles), variant: Array.from(rf.variant), walk: Array.from(RL.walk),
+    start: { x: rg.hero.x, y: rg.hero.y, fx: rg.hero.fx, fy: rg.hero.fy },
+    rooms: rf.rooms.map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h })),
+    props: RL.props.map((p) => ({ kind: p.kind, name: (p as unknown as { name?: string }).name ?? null, x: p.x, y: p.y, variant: p.variant, solid: p.solid })),
+    stair: null, shaft: null, gate: null, ring: null,
+    stations: RL.stations,
+    way: RL.ways?.way ? { x: RL.ways.way.x, y: RL.ways.way.y } : null,
+    onward: null,
+    rounds: RR.rounds,
+    wayOut: { cx: RIM.cx, cy: RIM.cy, brink: BRINK, landing: LANDING, tongue: TONGUE, landIn: 0.28, tongueIn: 0.1 },
+    at: RIM_AT,
+    arrive: RIM_ARRIVE,
+    name: RIM_NAME,
+    recordRoom: RIM_RULES.recordRoom,
+  }));
+  console.log(`rim: ${rf.w}x${rf.h}, ${RL.props.length} pieces, ${RL.stations.length} services (${RL.stations.map((s) => s.kind).join(', ')}); he comes in at ${rg.hero.x},${rg.hero.y}; its waypoint ${RL.ways?.way ? `${RL.ways.way.x},${RL.ways.way.y}` : 'none'}; ${RR.rounds.length} round things`);
 }

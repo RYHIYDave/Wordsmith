@@ -68,6 +68,8 @@ var heaps = null
 ## of radius r may stand at (x, y); null, none. `fits` asks it first, as game.ts free does.
 var land = null
 var fence = null
+## (THE SHAFT'S RIM: a step one of its round things refused, taken round it: rim.gd round_step; hero.gd _slide)
+var rounder := Callable()
 ## (floor 10, THE SWAMP COLOSSUS'S STONE: its middle {cx, cy}, the world point; and the landing on the boss's ground the hero is
 ## carried across to it from {x, y}: game/act1_layout.ts. Null elsewhere.)
 var stone = null

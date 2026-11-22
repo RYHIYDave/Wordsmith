@@ -38,6 +38,7 @@ const Town := preload("res://scripts/town.gd")
 ## THE SAVED GAME (save.gd: main.ts writeSave, readSave; game.ts save, restore)
 const Save := preload("res://scripts/save.gd")
 const Words := preload("res://scripts/words.gd")
+const FoeWords := preload("res://scripts/foe_words.gd")
 const Guide := preload("res://scripts/guide.gd")
 const Look := preload("res://scripts/look.gd")
 const Doors := preload("res://scripts/doors.gd")
@@ -230,10 +231,106 @@ func next_endless() -> void:
 	go_to("floor%d" % endless_floor, "down" if endless_floor > 1 else "start")
 
 
-## (game.ts takeWay, the town's waypoint) Back to the endless level he reached: his pick, “Pick up where you left off”.
+## (game.ts takeWay, the town's waypoint) Back to the endless level he reached: his pick, “Pick up where you left off”. The words on
+## the Rim's gate burned into it (game.ts enterDungeon: used up, for good; known in the Lexicon).
 func go_endless() -> void:
 	in_endless = true
+	_burn_plan()
 	go_warp("floor%d" % endless_floor)
+
+
+## (game.ts enterEndless) THE SHAFT'S RIM: in at the gate's panel, down to the endless level he has reached, as its waypoint takes
+## him (the words on the gate burned into it).
+func enter_endless() -> void:
+	if endless <= 0:
+		return
+	in_endless = true
+	_burn_plan()
+	go_to("floor%d" % endless_floor, "down" if endless_floor > 1 else "start")
+
+
+func _burn_plan() -> void:
+	dungeon_words = plan
+	plan = []
+	for w in dungeon_words:
+		loot.learn(w)
+	if not dungeon_words.is_empty():
+		loot.say("Burned in: %s" % ", ".join(dungeon_words.map(func(w): return str(Words.word(w)["name"]))), Color("#7af8f0"))
+
+
+# --- THE SHAFT'S RIM (game/rim.ts; main.gd's part: its record stone as he comes in, the gate's words, the shards held) ---
+
+## The words laid on the Rim's gate (game.ts plan): burned into the next endless level he goes into; and those burned into the one
+## he is on (`dungeon_words`): every monster there carries them (FOE_WORDS), and they pay: +30% items, +25 rarity, +10% experience
+## for each, likelier words (game.ts rollGear, dropLoot, gainXp: wordsWeight).
+var plan: Array = []
+var dungeon_words: Array = []
+## The endless level his record stone was last cut to (game.ts rimSeen); the shards of the tablet held, the account's, bits 0 to 3
+## (game.ts meta.quarters: the bosses of floors 5, 10, 15 and 20).
+var rim_seen := 0
+var quarters := 0
+const PLAN_MAX := 3
+
+
+## (game.ts comeToRim) Its record stone cut to the endless level he has reached, a notch for each, the newest glowing if any was cut
+## this time; its trophies wall hung by the shards he holds.
+func come_to_rim(R) -> void:
+	var room: int = int(R.P["room"])
+	var was := mini(rim_seen, room)
+	R.notches = mini(endless, room)
+	R.fresh = endless > rim_seen
+	R.reached = endless
+	R.best = best_endless + 1 if best_endless > 0 else 0
+	R.held = quarters_held()
+	if R.fresh:
+		sfx.play("notch", linear_to_db(0.9))
+		if R.notches > was:
+			loot.say("A notch is cut in the record stone: %s." % endless_name(endless), Color("#7af8f0"))
+	rim_seen = endless
+	R.show_state()
+
+
+## (game.ts quartersHeld) Which of the four shards he holds.
+func quarters_held() -> Array:
+	return [0, 1, 2, 3].map(func(k): return (quarters & (1 << k)) != 0)
+
+
+## (game.ts planProblem) Why a word cannot be laid on the gate, or "".
+func plan_problem(w: String) -> String:
+	if int(loot.words.get(w, 0)) <= 0:
+		return "No spare word"
+	if plan.size() >= PLAN_MAX:
+		return "At most %d words" % PLAN_MAX
+	if plan.has(w):
+		return "Already burning"
+	var why: String = FoeWords.lay_problem(plan, w, "dungeon")
+	return "Already burning" if why == "Already on it" else why
+
+
+## (game.ts planWord) Lay a spare word on the gate: used up when he steps in.
+func plan_word(w: String) -> String:
+	var why := plan_problem(w)
+	if why != "":
+		return why
+	loot.words[w] = int(loot.words[w]) - 1
+	plan.append(w)
+	sfx.play("word")
+	return ""
+
+
+## (game.ts unplanWord) Take a word back off the gate (free until the dungeon is entered).
+func unplan_word(i: int) -> void:
+	if i < 0 or i >= plan.size():
+		return
+	var w: String = plan[i]
+	plan.remove_at(i)
+	loot.words[w] = int(loot.words.get(w, 0)) + 1
+	sfx.play("click")
+
+
+## (game.ts wordsWeight(dungeonWords)) How many words are burned into the dungeon he is on (a melded or ranked word two).
+func burned_weight() -> float:
+	return float(FoeWords.words_weight(dungeon_words)) if not dungeon_words.is_empty() else 0.0
 
 
 ## (game.ts spawn under ENDLESS) What an endless level does to its monsters, against the floor's own (the records are its depth's):
@@ -337,12 +434,15 @@ static func dir_of(where: String) -> String:
 
 ## A place that is his town: the prison town, or the camp inside Vellum's gate (game/camp.ts).
 static func is_home(where: String) -> bool:
-	return where == "town" or where == "camp"
+	return where == "town" or where == "camp" or where == "rim"
 
 
 ## His town now: from floor 10 on, once he has come through into it, the camp inside Vellum's gate (game.ts campTown, wayDepth 11
 ## or more: his pick, “Yes, the camp from then on (Recommended)”); before, the prison town.
 func home_place() -> String:
+	# (THE ENDLESS TOWN, game.ts rimTown: once endless is open to him, his town is the Shaft's Rim: his pick, “Once endless opens”)
+	if endless > 0 and FileAccess.file_exists("res://assets/rim/layout.json"):
+		return "rim"
 	return "camp" if way_depth >= 11 and FileAccess.file_exists("res://assets/camp/layout.json") else "town"
 
 
@@ -468,7 +568,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions", "endless"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions", "endless", "rim"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -946,6 +1046,9 @@ func _build(where: String, arrive: String) -> void:
 		"start":
 			if where == "town":
 				face = Vector2(-0.7071, -0.7071)
+			elif where == "rim":
+				# (game/rim.ts RIM_ARRIVE: before the gate, the pit before him)
+				face = Vector2(0.7071, 0.7071)
 		"stairs":
 			# (game.ts enterDungeon('gate'): 1.7 tiles inside floor 1's gate, facing into the room)
 			at = Vector2(_gate["hero"]["x"], _gate["hero"]["y"])
@@ -1036,6 +1139,11 @@ func _build(where: String, arrive: String) -> void:
 	if not is_home(where):
 		# (ENDLESS MODE: an endless level's monsters as strong as its level: endless_strength)
 		monsters.strength = endless_strength(map.depth) if in_endless else {}
+		# (FOE_WORDS: the words burned in at the gate, every monster's, a melded word its two words and itself: foe_melds.ts)
+		if not dungeon_words.is_empty():
+			if monsters.strength.is_empty():
+				monsters.strength = {"life": 1.0, "boss": 1.0, "dmg": 1.0, "xp": 1.0, "words": []}
+			monsters.strength["laid"] = FoeWords.foe_words_of(dungeon_words)
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)
 		# (ENDLESS MODE, NO STORY: floor 5's temple open, with no key-bearers)
 		if in_endless:
@@ -1217,9 +1325,13 @@ func _build(where: String, arrive: String) -> void:
 		town.flats = flats
 		town.looked = looked
 		town.camp = where == "camp"
+		town.rim = where == "rim"
+		# (game.ts enterTown: the words burned into a dungeon are gone with it)
+		dungeon_words = []
 		_place.add_child(town)
 		# (NO CONSTANT SOUND BUT THE MUSIC, game/world_sounds.ts WORLD_LOOPS off: no loop under either; the camp's breeze now and
 		# then, and in both a brazier's pop heard right beside it: ambientWants; the castle hall's breeze not, CASTLE_HALL off)
+		# (the Shaft's Rim: its loops off too, the rumble, the draught, the torches: a brazier's pop beside one)
 		sfx.ambient([sfx.AMBIENT["camp"], sfx.AMBIENT["fire"]] if where == "camp" else [sfx.AMBIENT["fire"]])
 		# (the camp at dusk: its vignette game/camp.ts CAMP_DUSK's, its dark and tint in its look)
 		_veil.material.set_shader_parameter("deep", Look._num(look.data.get("vignette"), 0.32 if where == "camp" else 0.26) if looked else 0.45)
@@ -2574,6 +2686,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "endless":
 		await preload("res://scripts/check_glows.gd").new().endless(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "rim":
+		await preload("res://scripts/check_glows.gd").new().rim(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "pad":

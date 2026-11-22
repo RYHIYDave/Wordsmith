@@ -2124,6 +2124,11 @@ func _slide(step: Vector2) -> void:
 	# (game.ts slide: along walls and slanting walls; a ledge is as solid as a wall, stairs are entered at their ends)
 	world = map.slide(world, RADIUS, step)
 	_into_door(step, was)
+	# (THE SHAFT'S RIM: a step one of its round things refused, the pit's brink, a standing stone, a fire, is taken round it: game/rim.ts)
+	if world == was and map.rounder.is_valid():
+		var to = map.rounder.call(world, RADIUS, step)
+		if to != null and map.fits(to.x, to.y, RADIUS):
+			world = to
 
 
 ## DOORS (game.ts intoDoor): a door is one tile wide in a hallway of three, and no direction he walks in runs along a hallway:

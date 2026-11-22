@@ -2622,3 +2622,64 @@ func endless(main, hero, dir: String) -> void:
 	for b in bad:
 		print("  WRONG: ", b)
 
+
+## THE SHAFT'S RIM (rim.gd, town.gd rim; game/rim.ts): his town once endless mode is open; its look; the record stone cut as he comes
+## in; its names; walking round the pit; its gate's words, burned into the next endless level and every monster's there.
+func rim(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	await M._wait(0.6)
+	M.open_endless(20)
+	M.go_to(M.home_place(), "start")
+	await M._wait(2.0)
+	var T = M.town
+	var R = T.rim_node if T != null else null
+	_line(M.place == "rim" and M.is_home("rim") and R != null and h.world.distance_to(Vector2(8.5, 8.4)) < 0.05, "endless open: his town the Shaft's Rim (%s); he stands before its gate at %.1f, %.1f" % [M.place, h.world.x, h.world.y])
+	_line(R != null and R.notches == 1 and R.fresh and R.record_line() == "ENDLESS 1" and _said("A notch is cut in the record stone: Endless 1.") != "", "the record stone cut: %d notch, glowing %s; its name '%s'" % [R.notches if R != null else -1, R.fresh if R != null else false, R.record_line() if R != null else ""])
+	await M._snap(dir + "/rim_01_arrive.png")
+	# WALKING ROUND: up to the kerb, never over it
+	var pit := Vector2(12.0, 12.0)
+	h.world = Vector2(12.0, 7.6)
+	var inward: Vector2 = (pit - h.world).normalized() * 0.05
+	for i in 40:
+		h._slide(inward)
+	var d: float = h.world.distance_to(pit)
+	_line(d >= 3.8 - 0.02 and d < 4.3, "walking into the pit: held at the kerb (%.2f tiles from its middle; the brink 3.82)" % d)
+	var was: Vector2 = h.world
+	for i in 20:
+		h._slide(Vector2(0.06, 0.06))
+	_line(h.world.distance_to(was) > 0.3 and h.world.distance_to(pit) >= 3.8, "a step at the brink taken round it (%.2f along; still %.2f from its middle)" % [h.world.distance_to(was), h.world.distance_to(pit)])
+	# THE GATE: its prompt, its words, the way in
+	var gate: Dictionary = {}
+	for st in T.data["stations"]:
+		if st["kind"] == "gate":
+			gate = st
+	h.world = Vector2(float(gate["x"]), float(gate["y"]))
+	await M._wait(0.2)
+	_line(T.prompt[0] == "E: Gate: words for Endless 1", "at the gate: '%s'" % T.prompt[0])
+	M.loot.words["fire"] = 2
+	M.loot.words["frost"] = 1
+	var why1: String = M.plan_word("fire")
+	var why2: String = M.plan_word("frost")
+	_line(why1 == "" and why2 == "One element per dungeon" and M.plan == ["fire"] and int(M.loot.words["fire"]) == 1, "Fire laid on the gate ('%s'); Frost refused: '%s'; the gate holds %s" % [why1, why2, M.plan])
+	M._inv.open_service("gate")
+	await M._wait(0.3)
+	R.show_state()
+	_line(R._gems.size() == 1, "its socket holds the word: %d gem" % R._gems.size())
+	await M._snap(dir + "/rim_02_gate.png")
+	M._inv.toggle()
+	M.enter_endless()
+	await M._wait(2.5)
+	var all_fire: bool = M._monsters.list.filter(func(o): return is_instance_valid(o) and not o.dead).all(func(o): return (o.words as Array).has("fire"))
+	_line(M.in_endless and M.dungeon_words == ["fire"] and M.plan.is_empty() and all_fire and absf(M.loot.magic_find() - float(M.hero.stats.get("magic_find", 0.0)) - 25.0) < 0.01 and _said("Burned in: Flame") != "", "ENTER ENDLESS 1: Fire burned in (%s), every monster carries it %s; +25 rarity (%.1f against %.1f); in endless %s; the gate now %s; '%s'" % [M.dungeon_words, all_fire, M.loot.magic_find(), float(M.hero.stats.get("magic_find", 0.0)), M.in_endless, M.plan, _said("Burned in")])
+	M.endless = 3
+	M.go_to(M.home_place(), "start")
+	await M._wait(2.0)
+	R = M.town.rim_node
+	_line(M.dungeon_words.is_empty() and R.notches == 3 and R.fresh and R.record_line() == "ENDLESS 3", "home again at Endless 3: three notches, the newest glowing; '%s'" % R.record_line())
+	await M._snap(dir + "/rim_03_three.png")
+	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+	for b in bad:
+		print("  WRONG: ", b)
+

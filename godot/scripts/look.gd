@@ -1363,6 +1363,21 @@ func _lighting2(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 
 ## One of the look's STATES shown so far along (0 to 1): a way opening, a door swinging, a chest open ("variants" in a recorded
 ## look: what of the place is hidden and what is drawn in its stead, frame by frame). Nothing where the look has none of it.
+## (THE SHAFT'S RIM, rim.gd) What stands with its anchor at `p` (game pixels, the look's own measure: x = (wx - wy) * 16, y = (wx + wy)
+## * 8), hidden: what the Godot side draws in its place as it changes (the record stone, the trophies wall). How many.
+func hide_stands_at(p: Vector2, tol := 0.75) -> int:
+	var n := 0
+	var items: Array = data.get("items", [])
+	for si in mini(items.size(), _s_node.size()):
+		var it: Dictionary = items[si]
+		if it.has("g") or _s_node[si] == null:
+			continue
+		if Vector2(float(it["x"]), float(it["y"])).distance_to(p) <= tol:
+			_s_node[si].visible = false
+			n += 1
+	return n
+
+
 func show_variant(name: String, k: float) -> void:
 	var V: Dictionary = data.get("variants", {})
 	if not V.has(name):

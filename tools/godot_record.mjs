@@ -5,7 +5,8 @@
 // as the game draws it, whatever floor it is: no second copy of the renderer's rules is kept here.
 //
 //   node tools/godot_record.mjs <place> [--seed 1] [--samples 120] [--page dist/godot_rec.html]
-//     <place>: town, camp, practice (the start screen's practice room: game.ts forPractice), or a floor's number (1 to 20).
+//     <place>: town, camp, practice (the start screen's practice room: game.ts forPractice), rim (the Shaft's Rim, endless mode's
+//     town: game/rim.ts), or a floor's number (1 to 20).
 //   The page is the game as it is in the working tree: node tools/build_to.mjs dist/godot_rec.html (made if it is not there).
 //
 // Written to godot/assets/looks/, for P = town or floor<N>:
@@ -53,11 +54,11 @@ const place = args.find((a) => !a.startsWith('--') && args[args.indexOf(a) - 1]?
 if (!place) { console.error('which place? town, camp, or a floor number'); process.exit(1); }
 // (camp: THE CAMP INSIDE VELLUM'S GATE, his town from floor 10 on: game/camp.ts; depth -1 here)
 // (practice: THE PRACTICE ROOM, the start screen's: game.ts forPractice, makeArena; depth -2 here)
-const depth = place === 'town' ? 0 : place === 'camp' ? -1 : place === 'practice' ? -2 : Number(place);
-if (place !== 'town' && place !== 'camp' && place !== 'practice' && !(depth >= 1 && depth <= 20)) { console.error(`not a place: ${place}`); process.exit(1); }
+const depth = place === 'town' ? 0 : place === 'camp' ? -1 : place === 'practice' ? -2 : place === 'rim' ? -3 : Number(place);
+if (place !== 'town' && place !== 'camp' && place !== 'practice' && place !== 'rim' && !(depth >= 1 && depth <= 20)) { console.error(`not a place: ${place}`); process.exit(1); }
 // (--hold n: a stronghold's hall on floors 6 to 10, as it is drawn from in it: floor<N>_hold<n>, REC.hall)
 const hold = opt('hold', null) === null ? null : Number(opt('hold', '0'));
-const name = depth === 0 ? 'town' : depth === -1 ? 'camp' : depth === -2 ? 'practice' : hold !== null ? `floor${depth}_hold${hold}` : `floor${depth}`;
+const name = depth === 0 ? 'town' : depth === -1 ? 'camp' : depth === -2 ? 'practice' : depth === -3 ? 'rim' : hold !== null ? `floor${depth}_hold${hold}` : `floor${depth}`;
 const seed = Number(opt('seed', '1'));
 const N = Number(opt('samples', '120'));
 const pageFile = path.resolve(ROOT, opt('page', 'dist/godot_rec.html'));
@@ -119,7 +120,7 @@ console.log(`${name}: ${where.w}x${where.h}, ${ready.props} props, ${ready.doors
     for (const t of lay.tiles) hash = (Math.imul(hash, 31) + t) | 0;
     const doors = (lay.doors ?? []).map((q) => `${q.kind}:${q.alongX ? 'x' : 'y'}:${q.a}:${q.plane}`);
     // (the camp's layout lists every piece of it, the floors' only their chests, barrels, urns and levers: held to its tiles alone)
-    const props = depth === -1 ? ready.sig.props : (lay.props ?? []).map((p) => `${p.i}:${p.kind}:${p.tx}:${p.ty}`);
+    const props = depth === -1 || depth === -3 ? ready.sig.props : (lay.props ?? []).map((p) => `${p.i}:${p.kind}:${p.tx}:${p.ty}`);
     const same = hash === ready.sig.tiles && JSON.stringify(doors) === JSON.stringify(ready.sig.doors) && JSON.stringify(props) === JSON.stringify(ready.sig.props);
     console.log(same ? '  the same level as godot/assets/' + name + '/layout.json (tiles, doors, chests, barrels, urns and levers)' : `  !! NOT the level in godot/assets/${name}/layout.json: tiles ${hash === ready.sig.tiles ? 'the same' : 'differ'}, doors ${JSON.stringify(doors) === JSON.stringify(ready.sig.doors) ? 'the same' : 'differ'}, props ${JSON.stringify(props) === JSON.stringify(ready.sig.props) ? 'the same' : `differ (${props.length} against ${ready.sig.props.length})`}`);
   } else console.log(`  (no godot/assets/${name}/layout.json to hold it against)`);
@@ -256,7 +257,7 @@ if (depth >= 6 && hold === null) {
 const skyRec = hold === null ? await page.evaluate(() => window.__rec.sky()) : null;
 if (skyRec) console.log(`  its sky: ${skyRec.wrap}x${skyRec.h} (${skyRec.done} painted)${skyRec.town ? `, the town below ${skyRec.town.w}x${skyRec.town.h} at ${skyRec.town.x},${skyRec.town.y}` : ''}`);
 const res = await page.evaluate(() => window.__rec.result);
-const sheets = await page.evaluate((grid) => window.__rec.sheets(4096, grid), depth >= 6 || depth === -1);
+const sheets = await page.evaluate((grid) => window.__rec.sheets(4096, grid), depth >= 6 || depth === -1 || depth === -3);
 const pageErrors = await page.evaluate(() => window.__rec.errors);
 for (const e of pageErrors) console.log('  !! ' + e);
 await browser.close();
