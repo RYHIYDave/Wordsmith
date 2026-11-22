@@ -2901,6 +2901,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_glows.gd").new().smooth(self, hero, dir)
 		get_tree().quit()
 		return
+	if _arg("only") == "dmg":
+		await preload("res://scripts/check_dmg.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "compound":
 		await preload("res://scripts/check_glows.gd").new().compound(self, hero, dir)
 		get_tree().quit()
