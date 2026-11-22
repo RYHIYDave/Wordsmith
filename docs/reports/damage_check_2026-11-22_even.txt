@@ -1,0 +1,185 @@
+FLOOR 20's own monsters, for the measure of it: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+
+=== RANGER, POISON (Dexterity) ===
+hero: level 50, Str 155 Dex 394 Int 6; weapon 66-97 at 2.92 attacks a second; damage +54%, physical +323%, fire +0%, frost +0%, lightning +0%, poison +282%, poison added 0-0; critical 89% for +530%
+talents: keeneye, venom, steadyaim, quickdraw, longshot, lightstep, huntersmark, splitshot, piercing, farsight
+  mainhand: Horn Bow + power2 (dmgMin 12.0, dmgMax 18.0), blight (physPct 40.0, poisonPct 40.0), twin (critChance 12.0), piercing (critMult 60.0)
+  offhand: Studded Quiver + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  helm: War Helm + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  chest: War Plate + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  gloves: Studded Gloves + power2 (dmgMin 12.0, dmgMax 18.0), blight (physPct 40.0, poisonPct 40.0), twin (critChance 12.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  boots: War Greaves + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  amulet: Obsidian Amulet + poison2 (poisonPct 81.0), power2 (physPct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring1: Ruby Ring + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), power2 (physPct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + power2 (dmgMin 12.0, dmgMax 18.0), poison2 (poisonPct 81.0), power2 (physPct 81.0), twin (critChance 12.0)
+no words                                                               worked out   25497 a second; one hit  1514 (critical  9543); IN THE FIGHT   25780 a second into the elite (x1.0 no words), the pack of six dead in 0.5 s
+one word in front (blight)                                             worked out  141314 a second; one hit  3000 (critical 18903); IN THE FIGHT  170768 a second into the elite (x6.6 no words), the pack of six dead in 0.0 s
+one in front and one behind (blight; fleeting)                         worked out  186720 a second; one hit  3000 (critical 18903); IN THE FIGHT  224175 a second into the elite (x8.7 no words), the pack of six dead in 0.0 s
+all four (in front blight, precise; behind power2, fleeting)           worked out  400243 a second; one hit  6431 (critical 40520); IN THE FIGHT  472166 a second into the elite (x18.3 no words), the pack of six dead in 0.0 s
+all four, no attribute points (his class's start)                      worked out  225626 a second; IN THE FIGHT  252564 a second into the elite
+EARLY ON: level 10, Str 8 Dex 59 Int 6, the best plain weapon of floor 5 (8-12) and nothing else; talents keeneye, venom (floor 5's monsters: 22 to 115 life, elites 130 to 764, the Fleshmancer 5,577)
+  no words                                                     worked out     39 a second; one hit   20; IN THE FIGHT     40 a second (x1.0 no words)
+  poison in front                                              worked out     46 a second; one hit   16; IN THE FIGHT     44 a second (x1.1 no words)
+  poison in front, power behind                                worked out     62 a second; one hit   22; IN THE FIGHT     64 a second (x1.6 no words)
+
+=== WARRIOR, POWER (Strength) ===
+hero: level 50, Str 379 Dex 116 Int 6; weapon 69-94 at 1.63 attacks a second; damage +0%, physical +405%, fire +0%, frost +0%, lightning +0%, poison +241%, poison added 0-0; critical 75% for +590%
+talents: greatsword, sweepingcut, drilledleap, footwork, honededge, giantslayer, executioner, mastertop, gswhirlwind, thickskin, shieldwall
+  mainhand: War Greatsword + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), twin (critChance 12.0), power2 (physPct 81.0), piercing (critMult 60.0)
+  helm: War Helm + twin (critMult 60.0), power (str 27.0), swift (dex 27.0), power (armor 111.0)
+  chest: War Plate + twin (critMult 60.0), power (str 27.0), swift (dex 27.0), power (armor 111.0)
+  gloves: Studded Gloves + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), twin (critChance 12.0), power2 (physPct 81.0), piercing (critMult 60.0)
+  belt: Studded Belt + twin (critMult 60.0), power (str 27.0), swift (dex 27.0), power (armor 111.0)
+  boots: War Greaves + twin (critMult 60.0), power (str 27.0), swift (dex 27.0), power (armor 111.0)
+  amulet: Obsidian Amulet + poison2 (poisonPct 81.0), twin (critChance 12.0), power2 (physPct 81.0), piercing (critMult 60.0)
+  ring1: Ruby Ring + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), twin (critChance 12.0), power2 (physPct 81.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), twin (critChance 12.0), power2 (physPct 81.0), piercing (critMult 60.0)
+no words                                                               worked out   10774 a second; one hit  1216 (critical  8395); IN THE FIGHT   17143 a second into the elite (x1.0 no words), the pack of six dead in 30.0 s
+one word in front (blight)                                             worked out  133397 a second; one hit  2949 (critical 20348); IN THE FIGHT  166684 a second into the elite (x9.7 no words), the pack of six dead in 0.6 s
+one in front and one behind (blight; fleeting)                         worked out  187039 a second; one hit  2949 (critical 20348); IN THE FIGHT  274866 a second into the elite (x16.0 no words), the pack of six dead in 0.6 s
+all four (in front blight, heavy; behind fleeting, power2)             worked out  403065 a second; one hit  6537 (critical 45110); IN THE FIGHT  502784 a second into the elite (x29.3 no words), the pack of six dead in 0.1 s
+all four, no attribute points (his class's start)                      worked out  139848 a second; IN THE FIGHT  160714 a second into the elite
+EARLY ON: level 10, Str 59 Dex 8 Int 6, the best plain weapon of floor 5 (14-21) and nothing else; talents greatsword, sweepingcut, drilledleap (floor 5's monsters: 22 to 115 life, elites 130 to 764, the Fleshmancer 5,577)
+  no words                                                     worked out     31 a second; one hit   27; IN THE FIGHT     29 a second (x1.0 no words)
+  power in front                                               worked out     49 a second; one hit   44; IN THE FIGHT     44 a second (x1.5 no words)
+  power in front, power behind                                 worked out     79 a second; one hit   70; IN THE FIGHT     79 a second (x2.7 no words)
+
+=== TINKERER, LIGHTNING AND VOLATILE ===
+hero: level 50, Str 106 Dex 403 Int 111; weapon 59-81 at 3.24 attacks a second; damage +216%, physical +0%, fire +0%, frost +0%, lightning +241%, poison +0%, poison added 0-0; critical 70% for +590%
+talents: bombsaway, clustervials, tar, madmixture, alchemy, thebigone, growthserum, lightningrod, shrapnel, fortune
+  mainhand: War Wrench + forking (critChance 9.0, lightMin 7.0, lightMax 9.0), power2 (dmgMin 12.0, dmgMax 18.0), lightning2 (lightPct 81.0), piercing (critMult 60.0)
+  offhand: War Shield + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  helm: War Helm + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + forking (critChance 9.0, lightMin 7.0, lightMax 9.0), thunder (dmgMin 7.0, dmgMax 9.0, lightPct 40.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Emerald Amulet + forking (critChance 9.0, lightPct 40.0), swift (atkSpeed 22.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring1: Ruby Ring + forking (critChance 9.0, lightMin 7.0, lightMax 9.0), thunder (dmgMin 7.0, dmgMax 9.0, lightPct 40.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring2: Ruby Ring + forking (critChance 9.0, lightMin 7.0, lightMax 9.0), thunder (dmgMin 7.0, dmgMax 9.0, lightPct 40.0), swift (atkSpeed 22.0), splitting (dmgPct 54.0)
+no words                                                               worked out   15288 a second; one hit   917 (critical  6331); IN THE FIGHT   15601 a second into the elite (x1.0 no words), the pack of six dead in 1.1 s
+one word in front (forking)                                            worked out  154333 a second; one hit  5789 (critical 39944); IN THE FIGHT   94508 a second into the elite (x6.1 no words), the pack of six dead in 0.1 s
+one in front and one behind (forking; power2)                          worked out  179890 a second; one hit  6747 (critical 46559); IN THE FIGHT   59994 a second into the elite (x3.8 no words), the pack of six dead in 0.1 s
+all four (in front forking, swift; behind demolition, fleeting)        worked out  412431 a second; one hit  6859 (critical 47329); IN THE FIGHT   27987 a second into the elite (x1.8 no words), the pack of six dead in 0.1 s
+all four, no attribute points (his class's start)                      worked out  174042 a second; IN THE FIGHT   19753 a second into the elite
+EARLY ON: level 10, Str 6 Dex 56 Int 11, the best plain weapon of floor 5 (9-13) and nothing else; talents bombsaway, clustervials (floor 5's monsters: 22 to 115 life, elites 130 to 764, the Fleshmancer 5,577)
+  no words                                                     worked out     39 a second; one hit   22; IN THE FIGHT     38 a second (x1.0 no words)
+  lightning in front                                           worked out     51 a second; one hit   29; IN THE FIGHT     54 a second (x1.4 no words)
+  lightning in front, power behind                             worked out     68 a second; one hit   39; IN THE FIGHT     66 a second (x1.7 no words)
+  lightning in front, volatile behind                          worked out     51 a second; one hit   29; IN THE FIGHT     87 a second (x2.3 no words)
+
+=== MAGE, FIRE (Intelligence) ===
+hero: level 50, Str 86 Dex 116 Int 351; weapon 69-95 at 1.87 attacks a second; damage +108%, physical +0%, fire +323%, frost +0%, lightning +0%, poison +0%, poison added 0-0; critical 75% for +530%
+talents: kindling, searing, aura, flamewarp, fuel, inferno, lasting, charged, forking, ball
+  mainhand: Runed Staff + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), piercing (critMult 60.0)
+  helm: War Helm + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Amethyst Amulet + fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring1: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+no words                                                               worked out    4779 a second; one hit   512 (critical  3228); IN THE FIGHT    5189 a second into the elite (x1.0 no words), the pack of six dead in 0.3 s
+one word in front (fire2)                                              worked out   57392 a second; one hit  4561 (critical 28738); IN THE FIGHT   59219 a second into the elite (x11.4 no words), the pack of six dead in 0.3 s
+one in front and one behind (fire2; power2)                            worked out   66619 a second; one hit  5295 (critical 33359); IN THE FIGHT   78919 a second into the elite (x15.2 no words), the pack of six dead in 0.0 s
+all four (in front fire2, twin; behind power2, fleeting)               worked out  125935 a second; one hit  5539 (critical 34899); IN THE FIGHT   80210 a second into the elite (x15.5 no words), the pack of six dead in 0.5 s
+all four, no attribute points (his class's start)                      worked out   56946 a second; IN THE FIGHT   26219 a second into the elite
+EARLY ON: level 10, Str 6 Dex 8 Int 59, the best plain weapon of floor 5 (14-21) and nothing else; talents kindling, searing (floor 5's monsters: 22 to 115 life, elites 130 to 764, the Fleshmancer 5,577)
+  no words                                                     worked out     30 a second; one hit   28; IN THE FIGHT     28 a second (x1.0 no words)
+  fire in front                                                worked out     61 a second; one hit   46; IN THE FIGHT     76 a second (x2.6 no words)
+  fire in front, power behind                                  worked out     82 a second; one hit   61; IN THE FIGHT     82 a second (x2.9 no words)
+
+=== MAGE, FROST (Intelligence) ===
+hero: level 50, Str 86 Dex 116 Int 351; weapon 69-95 at 1.87 attacks a second; damage +108%, physical +0%, fire +323%, frost +0%, lightning +0%, poison +0%, poison added 0-0; critical 75% for +530%
+talents: bittercold, deepfreeze, aura, frostwarp, rime, shatter, lasting, kindling, searing, spear
+  mainhand: Runed Staff + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), piercing (critMult 60.0)
+  helm: War Helm + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Amethyst Amulet + fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring1: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+no words                                                               worked out    4779 a second; one hit   512 (critical  3228); IN THE FIGHT    4942 a second into the elite (x1.0 no words), the pack of six dead in 0.3 s
+one word in front (scald)                                              worked out   53453 a second; one hit  4334 (critical 27306); IN THE FIGHT   81898 a second into the elite (x16.6 no words), the pack of six dead in 0.3 s
+one in front and one behind (scald; power2)                            worked out   62047 a second; one hit  5031 (critical 31696); IN THE FIGHT  116790 a second into the elite (x23.6 no words), the pack of six dead in 0.0 s
+all four (in front scald, twin; behind power2, fleeting)               worked out  116514 a second; one hit  5263 (critical 33160); IN THE FIGHT   37275 a second into the elite (x7.5 no words), the pack of six dead in 30.0 s
+all four, no attribute points (his class's start)                      worked out   51667 a second; IN THE FIGHT    2406 a second into the elite
+EARLY ON: level 10, Str 6 Dex 8 Int 59, the best plain weapon of floor 5 (14-21) and nothing else; talents bittercold, deepfreeze (floor 5's monsters: 22 to 115 life, elites 130 to 764, the Fleshmancer 5,577)
+  no words                                                     worked out     30 a second; one hit   28; IN THE FIGHT     28 a second (x1.0 no words)
+  frost in front                                               worked out     43 a second; one hit   40; IN THE FIGHT     43 a second (x1.5 no words)
+  frost in front, power behind                                 worked out     57 a second; one hit   53; IN THE FIGHT     51 a second (x1.8 no words)
+
+(the Tinkerer and both Mages run again, the elite held where it stands, Frost as hard as the rest:)
+FLOOR 20's own monsters, for the measure of it: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+
+=== TINKERER, LIGHTNING AND VOLATILE ===
+hero: level 50, Str 106 Dex 403 Int 111; weapon 59-81 at 3.24 attacks a second; damage +216%, physical +0%, fire +0%, frost +0%, lightning +241%, poison +0%, poison added 0-0; critical 70% for +590%
+talents: bombsaway, clustervials, tar, madmixture, alchemy, thebigone, growthserum, lightningrod, shrapnel, fortune
+  mainhand: War Wrench + forking (critChance 9.0, lightMin 7.0, lightMax 9.0), power2 (dmgMin 12.0, dmgMax 18.0), lightning2 (lightPct 81.0), piercing (critMult 60.0)
+  offhand: War Shield + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  helm: War Helm + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + forking (critChance 9.0, lightMin 7.0, lightMax 9.0), thunder (dmgMin 7.0, dmgMax 9.0, lightPct 40.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Emerald Amulet + forking (critChance 9.0, lightPct 40.0), swift (atkSpeed 22.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring1: Ruby Ring + forking (critChance 9.0, lightMin 7.0, lightMax 9.0), thunder (dmgMin 7.0, dmgMax 9.0, lightPct 40.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring2: Ruby Ring + forking (critChance 9.0, lightMin 7.0, lightMax 9.0), thunder (dmgMin 7.0, dmgMax 9.0, lightPct 40.0), swift (atkSpeed 22.0), splitting (dmgPct 54.0)
+no words                                                               worked out   15288 a second; one hit   917 (critical  6331); IN THE FIGHT   11172 a second into the elite (x1.0 no words), the pack of six dead in 0.1 s
+one word in front (forking)                                            worked out  154333 a second; one hit  5789 (critical 39944); IN THE FIGHT  163943 a second into the elite (x14.7 no words), the pack of six dead in 0.0 s
+one in front and one behind (forking; power2)                          worked out  179890 a second; one hit  6747 (critical 46559); IN THE FIGHT  196476 a second into the elite (x17.6 no words), the pack of six dead in 0.2 s
+all four (in front forking, swift; behind demolition, fleeting)        worked out  412431 a second; one hit  6859 (critical 47329); IN THE FIGHT  384605 a second into the elite (x34.4 no words), the pack of six dead in 0.1 s
+all four, no attribute points (his class's start)                      worked out  174042 a second; IN THE FIGHT  184041 a second into the elite
+EARLY ON: level 10, Str 6 Dex 56 Int 11, the best plain weapon of floor 5 (9-13) and nothing else; talents bombsaway, clustervials (floor 5's monsters: 22 to 115 life, elites 130 to 764, the Fleshmancer 5,577)
+  no words                                                     worked out     39 a second; one hit   22; IN THE FIGHT     37 a second (x1.0 no words)
+  lightning in front                                           worked out     51 a second; one hit   29; IN THE FIGHT     48 a second (x1.3 no words)
+  lightning in front, power behind                             worked out     68 a second; one hit   39; IN THE FIGHT     66 a second (x1.8 no words)
+  lightning in front, volatile behind                          worked out     51 a second; one hit   29; IN THE FIGHT     89 a second (x2.4 no words)
+
+=== MAGE, FIRE (Intelligence) ===
+hero: level 50, Str 86 Dex 116 Int 351; weapon 69-95 at 1.87 attacks a second; damage +108%, physical +0%, fire +323%, frost +0%, lightning +0%, poison +0%, poison added 0-0; critical 75% for +530%
+talents: kindling, searing, aura, flamewarp, fuel, inferno, lasting, charged, forking, ball
+  mainhand: Runed Staff + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), piercing (critMult 60.0)
+  helm: War Helm + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Amethyst Amulet + fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring1: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+no words                                                               worked out    4779 a second; one hit   512 (critical  3228); IN THE FIGHT    3955 a second into the elite (x1.0 no words), the pack of six dead in 0.3 s
+one word in front (fire2)                                              worked out   57392 a second; one hit  4561 (critical 28738); IN THE FIGHT   59508 a second into the elite (x15.0 no words), the pack of six dead in 0.3 s
+one in front and one behind (fire2; power2)                            worked out   66619 a second; one hit  5295 (critical 33359); IN THE FIGHT   80801 a second into the elite (x20.4 no words), the pack of six dead in 0.3 s
+all four (in front fire2, twin; behind power2, fleeting)               worked out  125935 a second; one hit  5539 (critical 34899); IN THE FIGHT   54509 a second into the elite (x13.8 no words), the pack of six dead in 0.7 s
+all four, no attribute points (his class's start)                      worked out   56946 a second; IN THE FIGHT   32009 a second into the elite
+EARLY ON: level 10, Str 6 Dex 8 Int 59, the best plain weapon of floor 5 (14-21) and nothing else; talents kindling, searing (floor 5's monsters: 22 to 115 life, elites 130 to 764, the Fleshmancer 5,577)
+  no words                                                     worked out     30 a second; one hit   28; IN THE FIGHT     30 a second (x1.0 no words)
+  fire in front                                                worked out     61 a second; one hit   46; IN THE FIGHT     79 a second (x2.6 no words)
+  fire in front, power behind                                  worked out     82 a second; one hit   61; IN THE FIGHT     83 a second (x2.7 no words)
+
+=== MAGE, FROST (Intelligence) ===
+hero: level 50, Str 86 Dex 116 Int 351; weapon 69-95 at 1.87 attacks a second; damage +108%, physical +0%, fire +323%, frost +0%, lightning +0%, poison +0%, poison added 0-0; critical 75% for +530%
+talents: bittercold, deepfreeze, aura, frostwarp, rime, shatter, lasting, kindling, searing, spear
+  mainhand: Runed Staff + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), piercing (critMult 60.0)
+  helm: War Helm + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Amethyst Amulet + fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring1: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+no words                                                               worked out    4779 a second; one hit   512 (critical  3228); IN THE FIGHT    5421 a second into the elite (x1.0 no words), the pack of six dead in 0.3 s
+one word in front (scald)                                              worked out   53453 a second; one hit  4334 (critical 27306); IN THE FIGHT   79145 a second into the elite (x14.6 no words), the pack of six dead in 0.3 s
+one in front and one behind (scald; power2)                            worked out   62047 a second; one hit  5031 (critical 31696); IN THE FIGHT   94980 a second into the elite (x17.5 no words), the pack of six dead in 0.3 s
+all four (in front scald, twin; behind power2, fleeting)               worked out  116514 a second; one hit  5263 (critical 33160); IN THE FIGHT  107947 a second into the elite (x19.9 no words), the pack of six dead in 30.0 s
+all four, no attribute points (his class's start)                      worked out   51667 a second; IN THE FIGHT   37630 a second into the elite
+EARLY ON: level 10, Str 6 Dex 8 Int 59, the best plain weapon of floor 5 (14-21) and nothing else; talents bittercold, deepfreeze (floor 5's monsters: 22 to 115 life, elites 130 to 764, the Fleshmancer 5,577)
+  no words                                                     worked out     30 a second; one hit   28; IN THE FIGHT     28 a second (x1.0 no words)
+  frost in front                                               worked out     49 a second; one hit   46; IN THE FIGHT     53 a second (x1.9 no words)
+  frost in front, power behind                                 worked out     65 a second; one hit   61; IN THE FIGHT     60 a second (x2.1 no words)

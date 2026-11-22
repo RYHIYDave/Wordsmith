@@ -1,4 +1,4 @@
-## THE THREE DEFENCES, SEEN (loot.gd DEFENCE_LAYERS, off till he has seen it: `--only=defence --defence=1 --shots=<dir>`): a Mage of
+## THE THREE DEFENCES, SEEN (loot.gd DEFENCE_LAYERS, on at his yes to these pictures: `--only=defence --shots=<dir>`): a Mage of
 ## level 20 in cloth (her barrier), a Ranger in leather (his dodge), each on floor 5 among its monsters: the barrier round her life
 ## globe and over her life, its shimmer on her, a blow taking some of it, the barrier filling again; a blow he dodges; the cards of
 ## a cloth robe and a leather jerkin. Lines of what each comes to.

@@ -586,9 +586,9 @@ static func has_floor(n: int) -> bool:
 func _ready() -> void:
 	# (the checks written for the Warrior's Whirlwind give him its talent; `--whirl1`, his one-spin Whirl as he starts: talents.gd)
 	preload("res://scripts/talents.gd").checks_whirlwind = _arg("shots") != "" and _arg("whirl1") == ""
-	# (THE THREE DEFENCES, off till he has seen them: `--defence=1` for a run: loot.gd DEFENCE_LAYERS)
-	if _arg("defence") == "1":
-		preload("res://scripts/loot.gd").DEFENCE_LAYERS = true
+	# (THE THREE DEFENCES, on at his yes: `--defence=0` to run without them: loot.gd DEFENCE_LAYERS)
+	if _arg("defence") == "0":
+		preload("res://scripts/loot.gd").DEFENCE_LAYERS = false
 	_screen_start()
 	_inputs()
 	sfx = Sfx.new()

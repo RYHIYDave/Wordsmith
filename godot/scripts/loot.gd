@@ -69,9 +69,9 @@ const EQUIP := ["mainhand", "offhand", "helm", "chest", "gloves", "belt", "boots
 ##           in front of his life that takes every harm first (no less for it), and fills again when nothing has touched him for
 ##           hero.gd BARRIER_WAIT seconds; Intelligence makes it more (INT_BARRIER % a point)
 ## A piece's defence is sized by its kind's heavy piece's armour at its level (HEAVY_ARMOUR: items.ts GEAR_KINDS), LEATHER_K of it
-## for leather, LEATHER_K x BARRIER_K for cloth. OFF until he has seen it (its looks: the barrier round his life globe, its
-## shimmer on him, DODGE over him): `--defence=1` for a run.
-static var DEFENCE_LAYERS := false
+## for leather, LEATHER_K x BARRIER_K for cloth. ON at his “Yes.” to its pictures (docs/mockups/defences: the barrier round his
+## life globe, its line over his life and its shimmer on him, DODGE over him, the cards and the stats page), 22 Nov 2026.
+static var DEFENCE_LAYERS := true
 const HEAVY_ARMOUR := {"helm": [5.0, 3.0], "chest": [8.0, 5.0], "gloves": [3.0, 2.0], "belt": [3.0, 2.0], "boots": [3.0, 2.0]}
 const LEATHER_K := 0.75
 const BARRIER_K := 2.0

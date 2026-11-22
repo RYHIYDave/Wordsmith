@@ -119,3 +119,18 @@ Mage (about 5.7 times) comes from:
   do not (Fire in front burns, it adds nothing to the hit; Fumes is weakened a fifth): x4.0 against x1.8;
 - Strength stacks faster than any other attribute on gear (Rank II Power is the only ranked word that gives one: +41 a piece,
   where the best Intelligence is +27), and Strength gives life besides.
+
+## After his “Yes”: the classes evened; then Frost as hard as the rest
+
+(words.gd EVEN_BASE, ELEMENT_HIT, EVEN_GEAR_ATTR, FROST_HIT 1; the whole run: damage_check_2026-11-22_even.txt; the Tinkerer and the
+Mages run again with the elite held where it stands, as their talents threw it out of reach.) All four words, in the fight (worked
+out): Warrior 502,784 (403,065); Ranger 472,166 (400,243); Tinkerer 384,605 (412,431); fire Mage 54,509 (125,935); frost Mage
+107,947 (116,514). Early on, the fire Mage's Fire in front x2.6 (was x1.6), the Tinkerer's Lightning x1.4 (was x1.1).
+
+What is left between the Mages and the rest: their attacks are slower (1.87 a second against the Ranger's 2.92 and the Tinkerer's
+3.24: Dexterity makes attacks faster and more often critical, Intelligence neither), and poison (eight doses deep) still out-does
+burning (one at a time).
+
+## The three defences: on at his “Yes.” to their pictures
+
+docs/mockups/defences; loot.gd DEFENCE_LAYERS on; `--only=defence`: 6 checks, 0 wrong.
