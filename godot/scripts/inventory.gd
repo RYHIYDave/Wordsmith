@@ -2321,7 +2321,13 @@ func _altar_side(blink: bool) -> void:
 	y += 3.0 * (CELL + 12.0) + 6.0
 	if not laid.is_empty():
 		var dust := int(_holds_dust(laid.size()))
-		for l in _wrap("Within: a yellow pack of the cult's best. Reward: %d runedust, and gear." % dust, w, 10):
+		# (THE HALL AS IT IS NOW, its waves (holds.gd HOLD_WAVES), not the yellow pack of the old hall the game's altar still
+		# promises: TO_LOOK_AT 32; his go-ahead of 22 Nov 2026, "Start all that")
+		var within := "Within: a yellow pack of the cult's best. Reward: %d runedust, and gear." % dust
+		var waves: Dictionary = altar_holds.Q.get("hold", {}).get("waves", {}) if altar_holds != null else {}
+		if bool(waves.get("on", false)):
+			within = "Within: %d waves of the floor's creatures and the cult, every one bearing these words. Reward: %d runedust, gear and gold." % [int(waves["n"]), dust]
+		for l in _wrap(within, w, 10):
 			_text(Vector2(x0, y), l, 10, PICK)
 			y += 13.0
 	var label := "OPEN THE DOOR"
