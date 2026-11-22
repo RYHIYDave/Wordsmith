@@ -254,7 +254,7 @@ func _notification(what: int) -> void:
 ## (a figure held only near him) Its sheets let go of, the frames cut from them with them: taken in again as one comes near. Those
 ## asked for and not yet come in are taken off the loader's hands first.
 func let_go() -> void:
-	if not (near or lazy):
+	if not (near or lazy or deferred):
 		return
 	for i in _asked.keys():
 		ResourceLoader.load_threaded_get(_paths[int(i)])

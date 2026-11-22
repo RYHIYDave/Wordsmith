@@ -1977,6 +1977,9 @@ func _show() -> void:
 	# (FLOOR 9'S SIDE BOSSES: none of their pictures taken in, nor any shown, until they are fetched as their lairs are entered,
 	# far beyond what he can see of them: monsters.gd FETCH_AT)
 	if art.deferred and not art.fetched:
+		if _sprite.texture != null:
+			_sprite.texture = null
+			_lit_f = {}
 		return
 	# (EVERY FLOOR'S OWN MONSTERS' PICTURES HELD ONLY NEAR HIM: monsters.gd NEAR_FETCH. One far off whose pictures are let go of shows
 	# none, and holds none; within NEAR_SHOW, one whose pictures have not come in yet (come up beside him) waits unseen the few

@@ -124,7 +124,7 @@ func _hold_near(dt: float) -> void:
 	_near_gone = 0.0
 	var nearest := {}
 	for m in list:
-		if is_instance_valid(m) and m.art != null and (m.art.near or m.art.lazy):
+		if is_instance_valid(m) and m.art != null and (m.art.near or m.art.lazy or m.art.deferred):
 			var d: float = m.world.distance_to(hero.world)
 			nearest[m.art] = minf(float(nearest.get(m.art, INF)), d)
 	for name in _figures:
@@ -132,10 +132,9 @@ func _hold_near(dt: float) -> void:
 		if art == null or not (art.near or art.deferred or art.lazy):
 			continue
 		art.collect()
-		if art.deferred:
-			continue
 		var d: float = float(nearest.get(art, INF))
-		if d <= NEAR_FETCH:
+		# (floor 9's side bosses are fetched as their lairs are entered, _fetch_lairs; let go of as any other once he is far)
+		if d <= NEAR_FETCH and not art.deferred:
 			art.fetch()
 		if d <= NEAR_DROP:
 			_far_for[name] = 0.0

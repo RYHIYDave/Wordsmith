@@ -2372,7 +2372,9 @@ func _tower() -> void:
 	await _run(0.2)
 	await _snap("tower_top")
 	_line(up and T.on_top(h.world), "up the tower's stair: the screen darkened, he comes up through the trapdoor onto the top, facing its middle")
-	# (the Moth awake to him, he off the trapdoor: it slams shut)
+	# (the Moth awake to him, he off the trapdoor: it slams shut. He is kept from harm from here: a blow of hers that takes all his
+	# life in one frame would lay him down, and the fallen hero's screen pauses the game, the trapdoor with it)
+	h.unhurt = true
 	var moth = T._moth()
 	var slammed := false
 	if moth != null:

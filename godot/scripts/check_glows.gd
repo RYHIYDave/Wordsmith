@@ -3066,10 +3066,40 @@ func _tex_groups() -> Array:
 	for n in figs:
 		for t in figs[n].sheets:
 			add.call("figure %s (nearest %.0f)" % [n, float(near.get(figs[n], INF))], t)
+	# (the other holders of pictures: the floor's look, its sheets and its blocks; the films of what the monsters mark; the hero's own)
+	if M.look != null:
+		add.call("look: its sheet", M.look._sheet)
+		for t in M.look._sheets:
+			add.call("look: its sheets", t)
+		for b in M.look._blocks:
+			add.call("look: its blocks", b.get("tex"))
+	for t in preload("res://scripts/perils.gd")._fx_sheets:
+		add.call("films (assets/fx)", t)
+	if M.look != null:
+		for key in M.look._pics:
+			var v = M.look._pics[key]
+			if v is Texture2D:
+				add.call("look: its made pictures", v)
+			elif v is Dictionary and v.get("tex") is Texture2D:
+				add.call("look: its made pictures", v["tex"])
+	if M.get("_stairs") != null and M._stairs.get("_film_sheet") != null:
+		add.call("the stairwell's film", M._stairs._film_sheet)
+	for key in h.arts:
+		var ha = h.arts[key]
+		if ha == null:
+			continue
+		for t in ha.sheets:
+			add.call("the hero's pictures", t)
+		for q in ha._ptex:
+			add.call("the hero's packs", ha._ptex[q])
 	var stack: Array = [M.get_tree().root]
 	while not stack.is_empty():
 		var node: Node = stack.pop_back()
 		stack.append_array(node.get_children())
+		if node is SubViewport:
+			var vp := node as SubViewport
+			by["off-screen surfaces (SubViewport)"] = float(by.get("off-screen surfaces (SubViewport)", 0.0)) + float(vp.size.x * vp.size.y * 4) / 1048576.0
+			count["off-screen surfaces (SubViewport)"] = int(count.get("off-screen surfaces (SubViewport)", 0)) + 1
 		for prop in ["texture", "normal_map"]:
 			var t = node.get(prop)
 			if t is Texture2D:
@@ -3126,6 +3156,7 @@ func memfloors(main, hero, dir: String) -> void:
 		await M._wait(11.0)
 		row.call("floor %d back" % k)
 		out.append_array(_tex_groups())
+
 	M.open_endless(20)
 	M.final_open = true
 	M.go_final()
@@ -3277,3 +3308,67 @@ func smooth(main, hero, dir: String) -> void:
 	f.close()
 	h.unhurt = false
 	print("SMOOTH DONE")
+
+
+## THE DEMON MADE TERRIBLE, ON FILM (heroes/warlock.gd DEMON2; for his yes): the Warlock on floor 2 before a pack, his pact full: he
+## changes, the demon roars out; it rakes, Damning, its Smoke Step through them, rakes again. The same fight with the switch off and
+## with it on (`--demon2=1`); run under `--write-movie <file>.avi --fixed-fps 30` with `--cls=warlock`, for a film at an even pace.
+func demonfilm(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var K = h.kit
+	await M._wait(1.0)
+	# the pack: the eight nearest, made to last the film, set in an arc before him
+	var pack: Array = []
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and not o.boss:
+			pack.append(o)
+	pack.sort_custom(func(a, b): return a.world.distance_to(h.world) < b.world.distance_to(h.world))
+	pack = pack.slice(0, 8)
+	var way := Vector2(1.0, 0.0)
+	h.face = way
+	var lay := func() -> void:
+		for k in pack.size():
+			var m = pack[k]
+			if not is_instance_valid(m) or m.dead:
+				continue
+			var a := (k - (pack.size() - 1) / 2.0) * 0.32
+			m.world = M._free_near(h.world + way.rotated(a) * (1.8 + 0.9 * (k % 3)))
+			m._place()
+	for m in pack:
+		m.max_life *= 6.0
+		m.life = m.max_life
+		M._monsters.wake(m)
+	lay.call()
+	K.pact = 30.0
+	await M._wait(0.8)
+	h.auto_change = true
+	await M._wait(3.2)
+	lay.call()
+	await M._wait(0.3)
+	for t in 10:
+		h.auto_attack = true
+		await M._wait(0.25)
+	h.auto_attack = false
+	await M._wait(0.4)
+	for m in pack:
+		if is_instance_valid(m) and not m.dead and m.curse_t <= 0.0:
+			m.curse_t = 3.0
+			m.curse_dps = 8.0
+	h.auto_whirl = true
+	await M._wait(1.6)
+	lay.call()
+	await M._wait(0.3)
+	h.auto_lunge = h.world + way * 4.5
+	await M._wait(1.6)
+	h.face = -way
+	way = -way
+	lay.call()
+	for t in 8:
+		h.auto_attack = true
+		await M._wait(0.25)
+	h.auto_attack = false
+	await M._wait(1.0)
+	h.unhurt = false
+	print("DEMONFILM done, switch %s" % ("on" if K.demon2() else "off"))

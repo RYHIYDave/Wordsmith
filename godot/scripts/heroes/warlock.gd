@@ -44,6 +44,18 @@ const D2 := {
 	"dread": {"r": 4.0, "pace": 0.75, "more": 0.2, "less": 0.3},
 	"roar": {"r": 4.0, "share": 1.0, "stun": 1.0, "kick": 8.0, "wide": 1.5},
 	"hitStop": 0.05, "rakeKick": 2.5, "deep": 0.8, "boundSecs": 8.0,
+	# HIS TREE'S NUMBERS: Hunger 3 s a kill (from 2); Bloodlust 15% a kill (from 10%); Hellwave every other rake, harder (every third,
+	# 0.8); Damned Souls' souls half as hard again; Hex Chain's leaps and Pyre's bursts as hard as the hit (0.7, 0.6); Soul Debt a
+	# sixth of his pact a death (a tenth)
+	"tree": {"hunger": {"secs": 3}, "bloodlust": {"each": 0.15}, "hellwave": {"every": 2, "share": 1.2}, "souls": {"share": 1.5},
+		"hexChain": {"share": 1.0}, "pyre": {"share": 1.0}, "soulDebt": {"share": 0.16}},
+	"texts": {
+		"hunger": "Every kill the demon makes puts three seconds back on its pact.",
+		"bloodlust": "Every kill makes the demon’s rakes quicker, up to twice as quick, until it burns out.",
+		"hellwave": "Every other rake throws a wave of hellfire on ahead, through everything in its way.",
+		"soulDebt": "Every cursed enemy that dies fills a sixth of his pact.",
+		"souldebt": "Every cursed enemy that dies fills a sixth of his pact.",
+	},
 }
 
 
@@ -94,7 +106,14 @@ static func _demon2_data() -> void:
 	S["damning"]["cooldown"] = D2["damning"]["cooldown"]
 	S["damning"]["desc"] = "Tear up the floor: the ground erupts under every enemy near you, throwing and stunning it; the cursed and burning pay every burn at once, and half as much again."
 	S["demonstep"]["desc"] = "Smash through them as smoke: what you pass through is raked, cursed and knocked aside, and you land in a blast that stuns and leaves the ground burning."
+	# (his tree's numbers: what leads to the demon and what it does, harder and sooner)
+	var WT: Dictionary = Talents.D["warlockTalents"]
+	for k in D2["tree"]:
+		for n in D2["tree"][k]:
+			WT[k][n] = D2["tree"][k][n]
 	for t in Talents.tree("warlock")["talents"]:
+		if D2["texts"].has(t["id"]):
+			t["text"] = D2["texts"][t["id"]]
 		if t["id"] == "bounddemon":
 			t["text"] = "When the demon burns out it tears free of him and fights at his side, roaring, for eight seconds more."
 		elif t["id"] == "terribleroar":
