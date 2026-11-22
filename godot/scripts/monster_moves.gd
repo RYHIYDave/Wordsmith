@@ -19,7 +19,7 @@ const MOVES := {
 	"guardian": [
 		{"id": "swing", "windup": 0.6, "dmg": 0.65, "cooldown": 0.0, "first": 0.0, "after": 1.7, "recover": 0.55, "near": 0.0, "far": 0.0},
 		{"id": "slam", "windup": 0.85, "dmg": 1.0, "cooldown": 7.0, "first": 2.0, "after": 2.3, "recover": 0.3, "near": 0.0, "far": 0.0},
-		{"id": "charge", "windup": 0.9, "dmg": 1.3, "cooldown": 9.0, "first": 0.0, "after": 2.2, "recover": 0.6, "near": 3.5, "far": 9.0},
+		{"id": "charge", "windup": 0.9, "dmg": 1.3, "cooldown": 9.0, "first": 0.0, "after": 2.2, "recover": 0.6, "near": 2.5, "far": 9.0},
 	],
 	# the skeleton champion, a pack's leader: his cleave, and his rallying cry (heard only by minions that carry his words:
 	# none do on floor 1, where no monster has words, so there he only cleaves)

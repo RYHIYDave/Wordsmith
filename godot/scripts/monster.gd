@@ -1050,6 +1050,11 @@ func wall_up() -> bool:
 
 ## THE RED TROLL'S CHARGE: his line, from him through where the hero stands and 1.5 on, if he has a clear run there (no wall
 ## between, and long enough to get past the hero); empty if not (game.ts chargeLane).
+## CHARGE_SHORT (his “Start all that”, 22 Nov 2026, to the list's “The red trolls never charge in their small lairs on floor 1”: a
+## lair is too small for a run that carries him past the hero): the run need only reach him (CHARGE_SHORT_PAST short of where he
+## stands at most); and the guardian charges from 2.5 tiles, not 3.5 (monster_moves.gd). Off: the game's.
+static var CHARGE_SHORT := true
+const CHARGE_SHORT_PAST := -0.1
 func _lane(dist: float) -> Dictionary:
 	if dist < 0.01:
 		return {}
@@ -1064,7 +1069,8 @@ func _lane(dist: float) -> Dictionary:
 			break
 		len = a
 		a += 0.2
-	if len < dist + 0.4:
+	# (CHARGE_SHORT: in a small lair the run need only reach where the hero stands; he pulls up against what is behind him)
+	if len < dist + (CHARGE_SHORT_PAST if CHARGE_SHORT else 0.4):
 		return {}
 	return {"a": world, "b": world + f * len}
 
