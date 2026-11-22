@@ -1884,11 +1884,13 @@ func companions(main, hero, dir: String) -> void:
 	L.derive()
 	await M._wait(0.6)
 	_line(h.cls == "ranger" and C.pets.is_empty(), "the Ranger, no companion talent taken: no companion (%d out)" % C.pets.size())
+	# (taken as the TALENTS page takes it: nothing in the way but a point)
+	var hunt_why: String = Talents.take_problem("ranger", L.level, h.talents, "huntcompanion")
 	h.talents.append("huntcompanion")
 	h.talents_changed()
 	await M._wait(0.6)
 	var kinds := func() -> Array: return C.pets.map(func(p): return p["kind"])
-	_line(kinds.call() == ["hawk"] and C.pets[0]["sprite"] != null and C.pets[0]["sprite"].texture != null, "the Hunting Companion taken: its first, the hawk, out and drawn (%s)" % [kinds.call()])
+	_line(hunt_why != "Not in the port yet" and Talents.ported("ranger", "huntcompanion") and Talents.ported("ranger", "wildcompanion") and kinds.call() == ["hawk"] and C.pets[0]["sprite"] != null and C.pets[0]["sprite"].texture != null, "the Hunting Companion in his tree to take, by its path ('%s' with none before it), and taken: its first, the hawk, out and drawn (%s)" % [hunt_why, kinds.call()])
 	# (on the TALENTS page: the Hunting Companion's card, a row of its three, the one out lit; a press on SNAKE picks it)
 	M._inv.open_on(0)
 	M._inv._press("tab", "talents")
@@ -3385,3 +3387,75 @@ func demonfilm(main, hero, dir: String) -> void:
 	await M._wait(1.0)
 	h.unhurt = false
 	print("DEMONFILM done, switch %s" % ("on" if K.demon2() else "off"))
+
+
+## THE WARRIOR'S WHIRL AND HIS WHIRLWIND (his word of 22 Nov 2026; hero.gd _begin_whirl1, _land_whirl1, arm; talents.gd gswhirlwind):
+## run with `--whirl1=1`, a new Warrior as he starts. Held, his Whirl is one spin: a fifth of a second in, everything within 2 tiles
+## of him cut once, for 1.4 of a Strike; one further out untouched; held on, nothing more; ready again 3 s after. With his tree's
+## Whirlwind taken, the same hold is the Whirlwind: round and round, every one near cut again and again, each cut softer.
+func whirl1(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	M.loot.level = 10
+	M.loot.derive()
+	await M._wait(1.0)
+	var lo = h.loadout
+	var pack: Array = []
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and not o.boss:
+			pack.append(o)
+	pack.sort_custom(func(a, b): return a.world.distance_to(h.world) < b.world.distance_to(h.world))
+	pack = pack.slice(0, 4)
+	var spots := [Vector2(1.2, 0.0), Vector2(-0.9, 0.9), Vector2(0.0, -1.4), Vector2(3.4, 0.0)]
+	var lay := func() -> void:
+		for k in pack.size():
+			var m = pack[k]
+			m.world = h.world + spots[k]
+			m.max_life = 100000.0
+			m.life = m.max_life
+			m.stun_for(30.0)
+			m._place()
+	lay.call()
+	await M._wait(0.3)
+	var name0: String = lo.r(1)["name"]
+	var k_whirl: float = float(lo.r(1)["dmg_mult"]) / float(lo.r(0)["dmg_mult"])
+	# held: one spin
+	var lost := func() -> Array: return pack.map(func(m): return roundi(m.max_life - m.life))
+	h.auto_whirl = true
+	await M._wait(0.12)
+	var before_hit: Array = lost.call()
+	await M._wait(0.1)
+	await M._snap(dir + "/whirl1_spin.png")
+	await M._wait(0.25)
+	var after: Array = lost.call()
+	await M._wait(1.2)
+	var held_on: Array = lost.call()
+	h.auto_whirl = false
+	var cd: float = h._whirl_cd
+	_line(lo.id(1) == "whirl" and name0 == "Whirl" and absf(k_whirl - 1.4) < 0.01 and before_hit == [0, 0, 0, 0] and after[0] > 0 and after[1] > 0 and after[2] > 0 and after[3] == 0 and held_on == after and cd > 1.0,
+		"a new Warrior's hold is %s, 1.4 of a Strike (%.2f): nothing before its fifth of a second (%s); then the three within 2 tiles cut, the one 3.4 tiles off not (%s); held on, nothing more (%s); ready again in %.1f s" % [name0, k_whirl, before_hit, after, held_on, cd])
+	# his tree's Whirlwind taken: the channel
+	h._whirl_cd = 0.0
+	h.talents.append("gswhirlwind")
+	h.talents_changed()
+	lay.call()
+	await M._wait(0.3)
+	var k_wind: float = float(lo.r(1)["dmg_mult"]) / float(lo.r(0)["dmg_mult"])
+	var l0: Array = lost.call()
+	h.auto_whirl = true
+	await M._wait(0.8)
+	await M._snap(dir + "/whirlwind_spin.png")
+	await M._wait(0.8)
+	var l1: Array = lost.call()
+	h.auto_whirl = false
+	await M._wait(0.6)
+	var cuts: Array = []
+	for k in 3:
+		cuts.append(roundi((l1[k] - l0[k]) / maxf(1.0, h.avg_hit(1, 1.0))))
+	_line(lo.id(1) == "whirlwind" and lo.r(1)["name"] == "Whirlwind" and absf(k_wind - 0.55) < 0.01 and cuts.min() >= 3 and l1[3] == l0[3],
+		"his tree's Whirlwind taken: the hold is %s, each cut 0.55 of a Strike (%.2f), held 1.6 s the three near cut again and again (about %s cuts each), the one off still untouched" % [lo.r(1)["name"], k_wind, cuts])
+	h.talents.erase("gswhirlwind")
+	h.talents_changed()
+	h.unhurt = false
+	print("WHIRL1: %d checks, %d wrong" % [n, bad.size()])

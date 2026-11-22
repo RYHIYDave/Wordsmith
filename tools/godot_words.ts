@@ -79,7 +79,11 @@ const warriorArms = [...WARRIOR_KITS.battleaxe, ...WARRIOR_KITS.warhammer];
 // the place of one of their own once their tree gives it)
 // (and THE TINKERER'S CONTRAPTION in her Vial Toss's place, once her tree gives it: game.ts refresh)
 const swapMoves: Record<string, string[]> = { mage: ['ball', 'spear', 'beam'], ranger: ['snare', 'snipe', 'rally'], tinkerer: ['contraption'] };
-const allMoves = [...new Set([...CLASS_IDS.flatMap((c) => classes[c].moves), ...demonKit, ...warriorArms, ...Object.values(swapMoves).flat()])];
+// (THE WARRIOR'S WHIRL, his word of 22 Nov 2026: “The warrior should start with WHIRL which 1 spin and does more damage in an AoE
+// around him than a single strike.  Whirlwind should then be the talent point that decreases the damage but adds the channel effect
+// for more spins.”: the greatsword's own Whirl, defs.ts SKILLS.whirl, game/talents.ts WARRIOR_KITS; the Whirlwind his once
+// gswhirlwind is taken, warriorKit)
+const allMoves = [...new Set([...CLASS_IDS.flatMap((c) => classes[c].moves), 'whirl', ...demonKit, ...warriorArms, ...Object.values(swapMoves).flat()])];
 const words = Object.fromEntries([...OURS, ...MADE].map((w) => [w, WORDS[w]]));
 // (THE PORT'S OWN WORDS FOR A MOVE: the Tinkerer's Golem only shoots, his word of 21 Nov 2026: “i think we should change the golem to
 // be ranged, small shots, then big shot on the whistle.”; asked, the big shot in place of its pound and its jump, “Replace them

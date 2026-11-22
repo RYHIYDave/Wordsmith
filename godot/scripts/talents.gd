@@ -15,15 +15,18 @@ const PATH := "res://assets/talents.json"
 static var D := {}
 
 ## The talents whose rules this port has (by class): the rest are shown and read, marked NOT IN THE PORT YET, and cannot be
-## taken. (The greatsword is the Warrior's weapon as he starts: taking it changes nothing but opens his tree. His Whirlwind is
-## his from the start in this port, at his pick of 14 Nov 2026, so the Whirlwind talent waits. The battle axe and the warhammer
-## bring their own three moves and pictures: hero.gd arm, heroes/warrior_arms.gd.)
+## taken. (The greatsword is the Warrior's weapon as he starts. His hold is WHIRL, one spin, and the WHIRLWIND talent makes it the
+## Whirlwind, more spins, each for less: his word of 22 Nov 2026, “The warrior should start with WHIRL which 1 spin and does more
+## damage in an AoE around him than a single strike.  Whirlwind should then be the talent point that decreases the damage but
+## adds the channel effect for more spins.”: hero.gd arm. The battle axe and the warhammer bring their own three moves and
+## pictures: hero.gd arm, heroes/warrior_arms.gd.)
 const PORTED := {
-	"warrior": ["greatsword", "sweepingcut", "drilledleap", "footwork", "thickskin", "shieldwall", "secondwind", "bulwark",
+	"warrior": ["greatsword", "gswhirlwind", "sweepingcut", "drilledleap", "footwork", "thickskin", "shieldwall", "secondwind", "bulwark",
 		"honededge", "giantslayer", "resolute", "executioner", "mastertop", "unbreakable",
 		"battleaxe", "twinaxes", "rend", "redmist", "headlong", "warhammer", "tremors", "heavyhead", "bulldozer", "wideswing"],
 	"ranger": ["fleet", "windrunner", "keeneye", "steadyaim", "quickdraw", "longshot", "lightstep", "huntersmark", "widetraps",
-		"minefield", "splitshot", "hail", "piercing", "farsight", "venom", "snare", "snipe", "rally"],
+		"minefield", "splitshot", "hail", "piercing", "farsight", "venom", "snare", "snipe", "rally",
+		"huntcompanion", "wildcompanion"],
 	"mage": ["kindling", "searing", "flamewarp", "fuel", "inferno", "charged", "forking", "stormwarp", "overload", "stormcaller",
 		"bittercold", "deepfreeze", "frostwarp", "rime", "shatter", "aura", "lasting", "ball", "beam", "spear"],
 	"warlock": ["hunger", "feast", "bloodlust", "branded", "hexchain", "phantomstep", "withering", "pyre", "blazingarm", "souldebt",
@@ -115,10 +118,14 @@ static func spent(cls: String, taken: Array) -> int:
 	return taken.filter(func(x): return not is_weapon(cls, str(x))).size()
 
 
-## A new hero's talents: the Warrior's greatsword his already.
+## A new hero's talents: the Warrior's greatsword his already (and, in the checks written for his Whirlwind before his Whirl was
+## his again, its talent too: `checks_whirlwind`, main.gd, `--whirl1` for the one spin).
+static var checks_whirlwind := false
 static func starting(cls: String) -> Array:
 	ready_up()
-	return ["greatsword"] if cls == "warrior" and D["switches"]["warriorTree2"] else []
+	if cls != "warrior" or not D["switches"]["warriorTree2"]:
+		return []
+	return ["greatsword", "gswhirlwind"] if checks_whirlwind else ["greatsword"]
 
 
 ## The weapon taking weapon `id` lets go of ("" if none), or why it cannot yet ("!" and the reason): nothing more on its path.

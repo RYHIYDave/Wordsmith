@@ -39,6 +39,8 @@ func _run(secs: float) -> void:
 func run(main, hero, d: String) -> void:
 	M = main
 	h = hero
+	# (this check reads his tree as a new Warrior has it: the greatsword alone, his Whirl his own)
+	Talents.checks_whirlwind = false
 	dir = d
 	Talents.ready_up()
 	var D := Talents.D
@@ -526,7 +528,7 @@ func _arms() -> void:
 	# BACK TO THE GREATSWORD: his tree undone, his own moves, pictures and weapon again
 	_take([])
 	mh = M.loot.gear["mainhand"]
-	_line(h.kit == null and h.weapon == "greatsword" and h.loadout.id(1) == "whirlwind" and mh["kind"] == "Greatsword",
+	_line(h.kit == null and h.weapon == "greatsword" and h.loadout.id(1) == "whirl" and mh["kind"] == "Greatsword",
 		"his tree undone: the greatsword's moves again (%s), its pictures, his weapon a %s, '%s'" % [h.loadout.id(0), mh["kind"], mh["name"]])
 	# (he and the monsters let go as they were for the others' checks)
 	h.world = start

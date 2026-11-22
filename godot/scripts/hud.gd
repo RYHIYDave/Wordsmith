@@ -1365,6 +1365,13 @@ func _skills() -> Array:
 	# (THE WARRIOR'S BATTLE AXE AND WARHAMMER: their three on his buttons once his tree picks one: hero.gd arm)
 	if hero != null and hero.cls == "warrior" and of.has("warrior:" + str(hero.weapon)):
 		return of["warrior:" + str(hero.weapon)]
+	# (THE WARRIOR'S WHIRL: in his hold's place, one spin pressed, till his tree's Whirlwind makes it the Whirlwind: hero.gd arm; his
+	# word of 22 Nov 2026)
+	if hero != null and hero.cls == "warrior" and hero.loadout.id(1) == "whirl" and of.has("warrior"):
+		var gs: Array = (of["warrior"] as Array).duplicate()
+		var wd: Dictionary = preload("res://scripts/words.gd").skill("whirl")
+		gs[1] = {"id": "whirl", "name": wd["name"], "icon": "whirl", "cooldown": wd["cooldown"], "channel": 0, "key": "RIGHT CLICK"}
+		return gs
 	# (THE MAGE'S AND THE RANGER'S MOVES TO LEARN, THE TINKERER'S CONTRAPTION: whatever is in each place now, its own name and icon: hud.json `skillInfo`)
 	var info: Dictionary = _data.get("skillInfo", {})
 	if hero != null and not hero.loadout.form_moves.is_empty() and of.has(hero.cls) and hero.cls in ["mage", "ranger", "tinkerer"]:

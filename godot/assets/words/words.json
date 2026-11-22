@@ -1165,6 +1165,23 @@
    "windup": 0,
    "follow": 0
   },
+  "whirl": {
+   "id": "whirl",
+   "name": "Whirl",
+   "kind": "burst",
+   "icon": "whirl",
+   "dmg": 1.4,
+   "cooldown": 3,
+   "mana": 12,
+   "range": 0,
+   "radius": 2,
+   "speed": 0,
+   "sockets": true,
+   "desc": "One great spin: everything around you is cut, harder than a Strike.",
+   "verb": "WHIRL",
+   "windup": 0.25,
+   "follow": 0.35
+  },
   "rake": {
    "id": "rake",
    "name": "Claw Rake",

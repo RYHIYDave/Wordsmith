@@ -614,8 +614,7 @@ IRON's Thick Skin, Shieldwall (the shield breaking bursts, throwing back and stu
 near, a second untouchable), Bulwark; the joins Honed Edge (a critical bleeds), Giant Slayer (an elite's or a boss's guard
 cracked, 3% more a crack, ten at most), Resolute, Executioner, Master Stroke and Unbreakable (once a dungeon). THE BATTLE AXE AND
 THE WARHAMMER, his first point's other two weapons, each with its own three moves and pictures (below), and their paths: Twin
-Axes, Rend, Red Mist, Headlong; Tremors, Heavy Head, Bulldozer, Wide Swing. Not yet: the Whirlwind talent (his Whirlwind is his
-from the start here, at his pick of 14 Nov 2026). THE VETERAN'S, ALL FIFTEEN: Stiff Jab, Viper Jab, Guard Up, Knockdown, Launcher; Light on His Feet, Fire
+Axes, Rend, Red Mist, Headlong; Tremors, Heavy Head, Bulldozer, Wide Swing; and Whirlwind (22 Nov 2026, below). THE VETERAN'S, ALL FIFTEEN: Stiff Jab, Viper Jab, Guard Up, Knockdown, Launcher; Light on His Feet, Fire
 Starter, Stoke, Hang Time, The Full Set; Switch Kick, Long Legs, Wall Slam, Aftershock, Thunder Knee (heroes/brawler.gd, by game.ts
 vetHit and its neighbours, VET_TALENTS' numbers). THE WARLOCK'S: Hunger, Feast, Bloodlust (the demon's kills), Branded, Hex
 Chain, Withering, Pyre, Blazing Arm, Soul Debt and Last Rites (heroes/warlock.gd: game.ts warlockHit, warlockKill, hexChain,
@@ -1326,12 +1325,20 @@ augment attacks.  I want things to compound as they are added to attacks or abil
   the game on his phone.
 - The city check's trapdoor (floor 20) keeps him from harm: a blow that took all his life in one frame laid him down, and
   the fallen hero's screen paused the game, the trapdoor's clock with it.
-- Asked of him: the Warrior's WHIRLWIND talent stands in his tree, NOT IN THE PORT YET, for his hold is the Whirlwind already
-  (his pick of 14 Nov 2026, “Give him the Whirlwind spin”): what it should give instead is his to say.
+- **The Warrior's Whirl, and the Whirlwind his tree's** (his word, the morning after: “The warrior should start with WHIRL which
+  1 spin and does more damage in an AoE around him than a single strike.  Whirlwind should then be the talent point that decreases
+  the damage but adds the channel effect for more spins.”; as the game has it, defs.ts SKILLS.whirl, game/talents.ts warriorKit;
+  `hero.gd` _begin_whirl1, _land_whirl1, arm; `hud.gd` _skills; `tools/godot_words.ts` now exports `whirl`): his hold, pressed,
+  is WHIRL, one spin, his whirlwind's picture gone round once; a fifth of a second in everything within 2 tiles of him is cut for
+  1.4 of a Strike, the screen shaken, what the words behind it leave left round him; ready again after 3 s (RIGHT CLICK, WHIRL on
+  its button). His tree's WHIRLWIND (gswhirlwind, takeable now) makes it the Whirlwind as before: held, round and round, each cut
+  0.55 of a Strike. The checks written for the Whirlwind give him its talent (talents.gd `checks_whirlwind`); `--only=whirl1
+  --whirl1=1`: 2 checks (one hold of Whirl cuts the three within 2 tiles once, 14, 16 and 16, not the one 3.4 tiles off, nothing
+  more while held; with the talent, about five cuts each in 1.6 s).
 
 ## Not in it yet
 
-The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick).
+Nothing of the game's own: every talent of every tree is in.
 (The monsters' pictures are the final release 25.3.22's bake, a9b22fa26169: the Chained One's sheets laid afresh, and the rest as
 25.3.21's b982b7f72ca4 but for rounding.)
 

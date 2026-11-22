@@ -9,8 +9,12 @@
 ##   STRIKE (left button; a controller's RT): lands 0.333 s in on the one monster before him within 1.7 tiles that is
 ##     nearest and most in front (game.ts strike); again every 1 / his attack rate; pressed again soon enough, the second
 ##     swing of the combo; a step forward each.
-##   WHIRLWIND (right button, held; LT): at his pick of 14 Nov 2026, "Give him the Whirlwind spin", the greatsword's
-##     Whirlwind (in the game a talent of the tree, talents.ts gswhirlwind: "Whirl becomes WHIRLWIND: you spin round and
+##   WHIRL (right button, held; LT): his word of 22 Nov 2026, “The warrior should start with WHIRL which 1 spin and does more
+##     damage in an AoE around him than a single strike.  Whirlwind should then be the talent point that decreases the damage
+##     but adds the channel effect for more spins.” (as the game has it: defs.ts SKILLS.whirl, a burst; game/talents.ts
+##     warriorKit): one great spin, his whirlwind's picture gone round once (figure.ts spinOnce), and at a fifth of a second in
+##     everything within 2 tiles of him is cut for 1.4 of a Strike; ready again after 3 s. Standing still while he spins.
+##   WHIRLWIND, once his tree's Whirlwind is taken (talents.ts gswhirlwind: "Whirl becomes WHIRLWIND: you spin round and
 ##     round, more hits, each for less"; defs.ts SKILLS.whirlwind, game.ts updateChannel): 0.12 s's wind-up, then for as
 ##     long as it is held, 2.4 s at most, he spins (1.6 turns a second), cutting everything within 2 tiles every 0.3 s for
 ##     x0.55, walking at 90% and through enemies; let go or run out, it is ready again after 3.5 s (less after a short
@@ -142,6 +146,9 @@ var last:
 const STRIKE := {"reach": 1.7, "windup": 0.333, "follow": 0.3, "combo": 0.5, "step": 0.33}
 const WHIRL := {"radius": 2.0, "windup": 0.12, "channel": 2.4, "tick": 0.3, "min_cool": 0.35, "follow": 0.25, "walk": 0.9, "spin": 1.6, "wake": 1.0}
 const WHIRL_LIST := 44
+## (THE ONE-SPIN WHIRL: its cut a fifth of a second in, as the picture's blow (render/figure.ts WHIRL_SPIN.hitAt, 6 / 30); then the
+## rest of its turn and its follow-through, defs.ts SKILLS.whirl `follow`)
+const WHIRL1 := {"hit": 0.2, "follow": 0.35, "kick": 2.5, "twin": 0.28}
 const LUNGE := {"range": 6.0, "radius": 1.6, "ahead": 1.0, "invuln": 0.06}
 const LEAP_LIST := 39
 const LAND_LIST := 45
@@ -1276,7 +1283,10 @@ func _process(dt: float) -> void:
 			if Input.is_action_just_pressed("whirl") or auto_whirl:
 				no_mana()
 		elif whirl_held and _whirl_cd <= 0.0 and (_act == "" or (_act == "strike" and _landed)):
-			_begin_whirl()
+			if loadout.id(1) == "whirl":
+				_begin_whirl1()
+			else:
+				_begin_whirl()
 		# (a Strike no sooner after the last was begun than his blows a second allow, whether he still stands in the last one or
 		# has walked out of it: game.ts useBasic, `swingT`)
 		elif strike_asked and ((_act == "" and _clock - _last_swing >= 1.0 / rate()) or (_act == "strike" and _act_t >= 1.0 / rate())):
@@ -1297,6 +1307,12 @@ func _process(dt: float) -> void:
 			# (he walks on while he spins, at 90%, not turning to his way: he is turning on the spot)
 			can_walk = true
 			slow = WHIRL["walk"]
+		"whirl1":
+			if not _landed and _act_t >= WHIRL1["hit"]:
+				_land_whirl1()
+			if _act_t >= WHIRL1["hit"] + WHIRL1["follow"]:
+				_end_act()
+				can_walk = true
 
 	if kit != null:
 		kit.walked_way = way if can_walk else Vector2.ZERO
@@ -1393,6 +1409,48 @@ func channel() -> Dictionary:
 	if _act == "whirl" and _spun >= 0.0 and not _landed:
 		return {"skill": 1, "t": _spun}
 	return {}
+
+
+## THE ONE-SPIN WHIRL begun (game.ts useHold, a burst): its wait and its mana now, his whirlwind's picture to go round once.
+func _begin_whirl1() -> void:
+	sfx.voice(cls, "attack")
+	if uniques != null:
+		uniques.uq["strikes"] = 0
+	var r: Dictionary = loadout.r(1)
+	_whirl_cd = float(r["cooldown"])
+	_whirl_full = _whirl_cd
+	mana -= float(r["mana"])
+	_landed = false
+	_start(WHIRL_LIST, "whirl1")
+
+
+## Its cut (game.ts deliver, kind burst; blast): everything within its radius round him struck, as its words make it (TWIN: twice,
+## the second a moment later; "of Echoes": a phantom's spin again from where he stood); the screen shaken; what the words behind it
+## leave, left round him.
+func _land_whirl1() -> void:
+	_landed = true
+	uses[1] += 1
+	_time_word_sound(1)
+	_cast(1, "burst", world, face)
+	_boons(1)
+	kick(float(WHIRL1["kick"]))
+	sfx.play("whirl", -2.0)
+	_whirl1_cut(world, 1.0, false)
+	var r: Dictionary = loadout.r(1)
+	if float(r["echo"]) > 0.0:
+		var at := world
+		_echo_of(1, "burst", at, face, func() -> void: _whirl1_cut(at, float(loadout.r(1)["echo"]), true))
+
+
+func _whirl1_cut(at: Vector2, frac: float, echo: bool) -> void:
+	var r: Dictionary = loadout.r(1)
+	var each: float = frac * float(r["count_dmg"])
+	var rad: float = float(Words.skill("whirl")["radius"]) * float(r["size"])
+	for k in int(r["count"]):
+		if k == 0:
+			_blast(1, at, rad, each, "slam", true, -6.0, 0, echo)
+		else:
+			_after(float(WHIRL1["twin"]) * k, func() -> void: _blast(1, at if echo else world, rad * 1.15, each, "slam", false, -8.0, k, echo))
 
 
 func _begin_whirl() -> void:
@@ -2201,7 +2259,7 @@ func _place() -> void:
 
 func _show() -> void:
 	# (a whirlwind is seen from the front for as long as it goes round: the picture turns him itself, figure.ts `spins`)
-	var side := BakedHero.SIDES.find("front") if _act == "whirl" else _side
+	var side := BakedHero.SIDES.find("front") if _act == "whirl" or _act == "whirl1" else _side
 	_flip = false
 	# (any other class: his kit picks his look (the Warlock: his arm blazing, the demon) and the picture, as the game's figure.ts does)
 	if kit != null:
@@ -2234,6 +2292,9 @@ func _show() -> void:
 	elif _act == "whirl":
 		# (his spin goes round at 30 frames a second, from its first frame as the wind-up begins)
 		i = int(_act_t * CLIP_FPS) % n
+	elif _act == "whirl1":
+		# (THE ONE-SPIN WHIRL: his spin gone round once, then held on its last as he follows through: figure.ts spinOnce)
+		i = mini(int(_act_t * CLIP_FPS), n - 1)
 	elif _act == "strike" or _landing:
 		i = mini(int(_t * CLIP_FPS), n - 1)
 	else:
@@ -2435,11 +2496,16 @@ func arm() -> void:
 	if cls != "warrior":
 		return
 	var w := Talents.warrior_weapon(talents)
+	# (THE GREATSWORD'S HOLD: Whirl, one spin, till his tree's Whirlwind makes it the Whirlwind: game/talents.ts warriorKit)
+	var gs: Array = ["strike", "whirlwind" if has("gswhirlwind") else "whirl", "leap"]
+	if w == "greatsword" and loadout.form_moves != gs:
+		loadout.form_moves = gs
+		loadout.refresh()
 	if w == weapon and (w == "greatsword") == (kit == null):
 		return
 	weapon = w
 	if w == "greatsword":
-		loadout.form_moves = []
+		loadout.form_moves = gs
 		kit = null
 	else:
 		loadout.form_moves = Words.data()["warriorKits"][w]
