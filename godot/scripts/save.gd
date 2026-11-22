@@ -146,7 +146,8 @@ static func restore_meta(main, m: Dictionary) -> void:
 	main.best_endless = maxi(0, int(_num(m.get("bestEndless"), 0)))
 	main.quarters = int(_num(m.get("quarters"), 0)) & 15
 	main.next_mode = "hardcore" if m.get("mode") == "hardcore" else "normal"
-	loot.limit = "mana" if m.get("limit") == "mana" else "cooldown"
+	# (the mana option gone: always cooldowns, loot.gd set_limit)
+	loot.limit = "cooldown"
 
 
 ## The run put back (game.ts restore), before his town is laid out.

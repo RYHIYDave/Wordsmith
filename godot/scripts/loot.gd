@@ -246,8 +246,11 @@ func lines_of(it: Dictionary, key := "lines") -> Array:
 
 
 ## The switch turned: his moves made again under the other limit, his mana full.
-func set_limit(l: String) -> void:
-	limit = "mana" if l == "mana" else "cooldown"
+## THE MANA OPTION GONE (his words, 22 Nov 2026: “We don't have mana, we have cooldowns”, “Mana option should go”): his moves
+## always wait on their cooldowns; the start screen and the pause panel no longer offer mana, and a save kept with it comes back
+## with cooldowns.
+func set_limit(_l: String) -> void:
+	limit = "cooldown"
 	if hero != null:
 		derive()
 		hero.mana = hero.max_mana

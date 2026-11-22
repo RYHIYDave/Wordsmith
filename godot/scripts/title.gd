@@ -164,8 +164,7 @@ func _items() -> Array:
 	if page == "options":
 		return [
 			["mute", "SOUND: OFF" if AudioServer.is_bus_mute(0) else "SOUND: ON", "", false, false],
-			["limit", "ABILITIES: MANA" if main != null and main.loot.limit == "mana" else "ABILITIES: COOLDOWNS",
-				"No cooldowns: use them until you run dry" if main != null and main.loot.limit == "mana" else "No mana: each waits its turn", false, false],
+			# (ABILITIES: COOLDOWNS or MANA: gone at his word, “Mana option should go”: loot.gd set_limit)
 		] + ([["aim", main._touch.label(), "", false, false]] if _finger() else []) + [
 			["guide", "PROMPTS: OFF" if main != null and main.loot.taught else "PROMPTS: ON", "", false, false],
 			["practice", "PRACTICE ROOM", "", false, false],
