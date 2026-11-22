@@ -43,6 +43,8 @@ const BUILDS := [
 		"talents": ["bittercold", "deepfreeze", "aura", "frostwarp", "rime", "shatter", "lasting", "kindling", "searing", "spear"]},
 ]
 const LEVEL := 50
+## (WS_DMG_ALL: the tough pack's life each)
+const TOUGH := 150000.0
 
 
 func _say(s: String) -> void:
@@ -464,7 +466,7 @@ static func _wname(ws: Array) -> String:
 # --- the fight ---
 
 ## His quick attack into the elite that cannot die: what it lost a second, from the 2nd second to the 10th.
-func _fight_one(reach: float) -> float:
+func _fight_one(reach: float, hold := false) -> float:
 	# (WS_DMG_FAST: worked out only, no fights: for trying a change quickly)
 	if OS.has_environment("WS_DMG_FAST"):
 		return 0.0
@@ -484,6 +486,9 @@ func _fight_one(reach: float) -> float:
 		t += M.get_process_delta_time()
 		h.life = h.max_life
 		h.auto_attack = true
+		# (WS_DMG_ALL: his hold too, as often as it is ready)
+		if hold:
+			h.auto_whirl = true
 		h.world = spot
 		# (where it stands, whatever throws or slides it: Deep Freeze, The Big One, Long Shot)
 		if is_instance_valid(dummy):
@@ -496,7 +501,7 @@ func _fight_one(reach: float) -> float:
 
 ## His quick attack into a pack, six of the floor's own held in a knot before him: seconds till all are dead (30 at most).
 var pack_life := 0.0
-func _fight_pack(reach: float) -> float:
+func _fight_pack(reach: float, hold := false, life := 0.0) -> float:
 	if OS.has_environment("WS_DMG_FAST"):
 		return 0.0
 	_clear()
@@ -505,6 +510,9 @@ func _fight_pack(reach: float) -> float:
 	for k in 6:
 		var a := TAU * k / 6.0
 		pack.append(_one(spot + way * (reach + 0.4) + Vector2(cos(a), sin(a)) * 0.5))
+		if life > 0.0:
+			pack[k].max_life = life
+			pack[k].life = life
 	pack_life = pack[0].max_life
 	h.world = spot
 	h._place()
@@ -514,6 +522,8 @@ func _fight_pack(reach: float) -> float:
 		t += M.get_process_delta_time()
 		h.life = h.max_life
 		h.auto_attack = true
+		if hold:
+			h.auto_whirl = true
 		h.world = spot
 		var alive := 0
 		for m in pack:
@@ -549,6 +559,26 @@ func _build(b: Dictionary) -> void:
 	_say("talents: %s" % ", ".join(b["talents"]))
 	for sl in picks:
 		_say("  %s: %s + %s" % [sl, picks[sl]["base"]["name"], ", ".join((picks[sl]["opts"] as Array).map(func(o): return "%s (%s)" % [o["word"], ", ".join((o["mods"] as Array).map(func(m): return "%s %s" % [m[0], m[1]]))]))])
+	# WS_DMG_ALL, THE FAIRER FIGHT (his “Yes to both”, 22 Nov 2026: the Mage's strengths are her abilities' waits, which Intelligence
+	# makes shorter, and fire's that spread; the quick attack alone into one enemy is Dexterity's and poison's): all four words in his
+	# quick attack and the same in his hold; his quick attack alone, and it and his hold as often as each is ready, into the elite,
+	# and into a tough pack (six of the floor's own, TOUGH life each, held in a knot), till all are dead (30 s at most)
+	if OS.has_environment("WS_DMG_ALL"):
+		_set_words(ws)
+		var lo = h.loadout
+		lo.front[1] = [ws[0], ws[1]]
+		lo.behind[1] = [ws[2], ws[3]]
+		lo._r = [null, null, null]
+		var q1 := await _fight_one(reach)
+		var q2 := await _fight_one(reach, true)
+		var p1 := await _fight_pack(reach, false, TOUGH)
+		var p2 := await _fight_pack(reach, true, TOUGH)
+		h.auto_whirl = false
+		_say("ALL FOUR WORDS (%s), in his hold too (%s): into the elite, his quick attack alone %d a second, it and his hold %d a second; a tough pack (six of %d life), quick alone dead in %.1f s (%d a second), it and his hold %.1f s (%d a second)" % [_wname(ws), h.loadout.id(1), int(q1), int(q2), int(TOUGH), p1, int(6.0 * TOUGH / p1), p2, int(6.0 * TOUGH / p2)])
+		lo.front[1] = [null, null]
+		lo.behind[1] = [null, null]
+		lo._r = [null, null, null]
+		return
 	# THE STEPS: no words; the front's damage word alone; it and the best one behind; all four; all four as his class starts
 	var full: Array = ws
 	var one_front: Array = [full[0], null, null, null]
