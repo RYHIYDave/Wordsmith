@@ -103,3 +103,19 @@ a word in front and one behind still about three times the damage for the Ranger
 What is left: the POISON. One poison meld in front (Blight, Contagion, Fumes) still multiplies the damage 22 to 109 times, the
 hit only 2 to 5 times of that: each hit's dose is a share of the hit A SECOND, eight doses deep, with poison damage on gear (up
 to +405%) on top.
+
+## After his “Yes”: a poison dose spread over its 4 s
+
+(The whole run: damage_check_2026-11-22_poison.txt.) All four words, in the fight: Warrior 487,966; Ranger 518,139; Tinkerer
+158,608; fire Mage 86,222; frost Mage 66,648. Early on: the Ranger's Poison in front x1.1 (was x2.2), Poison in front and Power behind
+x1.5 (was x3.1); the Warrior's Power in front and behind still x2.7.
+
+His word on it: “Frost is a bit more defensive so it having lower dps makes sense, but a warrior should not be 7x stronger.
+Especially if str is also adding bonus health for waaaay more survivability than the mage”. Where the Warrior's lead over the fire
+Mage (about 5.7 times) comes from:
+- before any word, his Strike a second is 1.6 times her Wave (greatsword 41-58 at 1.05 a second, Strike all of the hit; staff
+  41-59 at 1.0, Wave 0.65 of it);
+- his words in front add to the hit (Blight carries Power, and is not weakened as the other poison melds are; Heavy), hers mostly
+  do not (Fire in front burns, it adds nothing to the hit; Fumes is weakened a fifth): x4.0 against x1.8;
+- Strength stacks faster than any other attribute on gear (Rank II Power is the only ranked word that gives one: +41 a piece,
+  where the best Intelligence is +27), and Strength gives life besides.
