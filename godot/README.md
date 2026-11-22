@@ -1201,11 +1201,31 @@ game/world_sounds.ts; `sfx.gd`, `monsters.gd`, `monster.gd`, `town.gd`, `main.gd
   the four shards in the bench"): they burn, the flare goes up the shaft and the landing opens ("The landing at the shaft stands
   open."), the art's own frames; the tablet used up; walked into, "Down into the light." The landing stays open for that hero.
 - `--only=shards` (`check_glows.gd`): 10 checks, pictured.
+- **The bottom of the shaft and the Warped Wordsmith** (game/final_arena.ts, act1_rules/wsboss.ts, wsboss2.ts; art/endless_boss.ts,
+  render/act1_fx/wsboss.ts, wsboss2.ts; `final_arena.gd`, `act3/wsboss.gd`, `act3/ws_marks.gd`, `act3/ws_paint.gd`): down through
+  the open landing to his arena (its layout from the game, tools/godot_final.ts; its look recorded whole, tools/godot_record.mjs
+  final), "The Bottom of the Shaft", ENDLESS N, HARDCORE; he waits on his boar across the floor and wakes as the hero comes down,
+  as strong as the level reached. IN THE SADDLE the boar's moves (the charge down its lane, wheeling round, winded after; the gore;
+  the rear up and stomp, three rings) and his five words take turns, each drawn at random, never the same twice running: POWER's
+  hammer crushed down three times on his shadow, FLAME's meteors onto their marks and the floor burning, FROST's five lines of
+  spikes and the rime behind them, LIGHTNING's orb drifting after him and zapping, POISON's traps snapping into clouds. Every
+  warning before it can hurt, in the bosses' ground-warning pink. HIS RUNES, the Lexicon's own symbols, written at his claw stroke
+  by stroke and thrown. AT HALF HIS LIFE the boar's last charge: it dies ("Rest, old friend. Your fury lives in me."), he is thrown
+  clear and lands on his feet ("You will pay for this!"). ON FOOT his ten melds, each with its line: his rune and his shade's
+  written, wheeling up round each other, melded and driven down, the slam's ring over the whole floor, then the meld itself
+  (Eruption, Hailstorm, Thunder, Avalanche, Contagion, Scald, Blight, Fumes, Wildfire, Frostbite), each as the art chat drew it;
+  spent between them from half to a quarter, none below. HIS DEATH: he implodes in pink, held at 1 while it plays. His hoard (the
+  best drops in the game); "The Warped Wordsmith is undone."; the landing above closes behind him; "The light above is open: stand
+  in it to go back up."; stood in it, back at the Rim. His pictures baked a move at a time (tools/godot_bake_moth.mjs wsboss), seen
+  truly from each of his eight sides, never mirrored; his numbers, the art's times and tables, his hand's path for his runes and the
+  pieces painted ahead (the hammer, meteors, ice, orb, spores, traps and clouds, the Blight's trees) from the game itself
+  (tools/godot_wsboss.ts).
+- `--only=final` (`check_glows.gd`): 28 checks, 42 pictures (each move and meld, the fall, his death, his hoard).
 
 ## Not in it yet
 
 The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick).
-Of endless mode: the Twisted Wordsmith below the landing, the fanfare as it opens.
+Of endless mode: the fanfare as it opens.
 (The monsters' pictures are the final release 25.3.22's bake, a9b22fa26169: the Chained One's sheets laid afresh, and the rest as
 25.3.21's b982b7f72ca4 but for rounding.)
 

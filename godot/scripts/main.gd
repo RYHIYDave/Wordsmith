@@ -304,10 +304,23 @@ func enter_final() -> void:
 	if _going:
 		return
 	loot.say("Down into the light.", Loot.MSG_QUEST)
-	if has_method("go_final"):
-		call("go_final")
-	else:
-		loot.say("Below the landing, something waits. (The fight is still being built.)", Loot.MSG_QUEST)
+	go_final()
+
+
+## (game.ts enterArena) THE BOTTOM OF THE SHAFT (final_arena.gd): an endless level to the rest of the game, its own place.
+var in_final := false
+var final_data := {}
+var arena = null
+func go_final() -> void:
+	in_endless = true
+	dungeon_words = []
+	go_to("final", "start")
+	sfx.play("portal")
+
+
+## (endless.ts endlessPower) The depth endless level `level`'s strength is of.
+func endless_power_at(level: int) -> int:
+	return last_built() + maxi(1, level)
 
 
 ## (game.ts comeToRim) Its record stone cut to the endless level he has reached, a notch for each, the newest glowing if any was cut
@@ -610,7 +623,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions", "endless", "rim", "shards"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions", "endless", "rim", "shards", "final"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -1013,8 +1026,10 @@ func _build(where: String, arrive: String) -> void:
 	place = where
 	hero.in_town = is_home(where)
 	# (ENDLESS MODE: in town he is on no endless level; the waypoint takes him back to the one he reached)
-	if not where.begins_with("floor"):
+	if not where.begins_with("floor") and where != "final":
 		in_endless = false
+	# (THE BOTTOM OF THE SHAFT: an endless level to the rest of the game, its own place)
+	in_final = where == "final"
 	if not hero.arts.is_empty():
 		hero.art = hero.arts["town" if is_home(where) else "dungeon"]
 	_place = Node2D.new()
@@ -1091,6 +1106,9 @@ func _build(where: String, arrive: String) -> void:
 			elif where == "rim":
 				# (game/rim.ts RIM_ARRIVE: before the gate, the pit before him)
 				face = Vector2(0.7071, 0.7071)
+			elif where == "final":
+				# (final_arena.ts FINAL_ARRIVE: in the portal's light, looking across at him)
+				face = Vector2(-0.7071, -0.7071)
 		"stairs":
 			# (game.ts enterDungeon('gate'): 1.7 tiles inside floor 1's gate, facing into the room)
 			at = Vector2(_gate["hero"]["x"], _gate["hero"]["y"])
@@ -1180,13 +1198,28 @@ func _build(where: String, arrive: String) -> void:
 	_place.move_child(shadows, fx.get_index() + 1)
 	if not is_home(where):
 		# (ENDLESS MODE: an endless level's monsters as strong as its level: endless_strength)
-		monsters.strength = endless_strength(map.depth) if in_endless else {}
+		# (the arena's boss was made for Endless 1, at its depth: monsters.json `power`)
+		monsters.strength = endless_strength(endless_power_at(1) if where == "final" else map.depth) if in_endless else {}
 		# (FOE_WORDS: the words burned in at the gate, every monster's, a melded word its two words and itself: foe_melds.ts)
 		if not dungeon_words.is_empty():
 			if monsters.strength.is_empty():
 				monsters.strength = {"life": 1.0, "boss": 1.0, "dmg": 1.0, "xp": 1.0, "words": []}
 			monsters.strength["laid"] = FoeWords.foe_words_of(dungeon_words)
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR)
+		# (THE BOTTOM OF THE SHAFT: its arena's rules, its round, its way back up: final_arena.gd)
+		arena = null
+		if where == "final":
+			final_data = JSON.parse_string(FileAccess.get_file_as_string(dir + "/layout.json"))
+			var R: Dictionary = final_data["round"]
+			var c := Vector2(float(R["cx"]), float(R["cy"]))
+			var reach := float(R["floor"])
+			map.fence = func(x: float, y: float, r: float) -> bool: return Vector2(x, y).distance_to(c) <= reach - r
+			arena = preload("res://scripts/final_arena.gd").new()
+			arena.main = self
+			arena.hero = hero
+			arena.monsters = monsters
+			arena.D = final_data
+			_place.add_child(arena)
 		# (ENDLESS MODE, NO STORY: floor 5's temple open, with no key-bearers)
 		if in_endless:
 			for m in monsters.list.filter(func(o): return is_instance_valid(o) and (o.kind == "keyblade" or o.kind == "keyflame")):
@@ -1307,6 +1340,8 @@ func _build(where: String, arrive: String) -> void:
 		_hud.floor_card_for(where)
 		# (ENDLESS MODE: the floor's own name, the level under it, and the warning: his pick, a death here is the hero's end)
 		if in_endless and not _hud.floor_card.is_empty():
+			if where == "final":
+				_hud.floor_card["name"] = str(map.title.get("name", "The Bottom of the Shaft"))
 			_hud.floor_card["level"] = endless_name(endless)
 			_hud.floor_card["warn"] = ENDLESS_WARN
 			_hud.floor_card["secs"] = float(_hud.floor_card["secs"]) + ENDLESS_CARD_MORE
@@ -2738,6 +2773,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "shards":
 		await preload("res://scripts/check_glows.gd").new().shards(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "final":
+		await preload("res://scripts/check_glows.gd").new().final(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "pad":

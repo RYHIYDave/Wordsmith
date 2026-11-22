@@ -68,7 +68,9 @@ const OWN := {"unfinished": preload("res://scripts/act1/unfinished_marks.gd"), "
 	"xbow": preload("res://scripts/act3/marks19.gd"), "kknight": preload("res://scripts/act3/marks19.gd"),
 	"gking": preload("res://scripts/act3/gk_marks.gd"), "hshape": preload("res://scripts/act3/marks20.gd"),
 	"rshadow": preload("res://scripts/act3/marks20.gd"), "rshade": preload("res://scripts/act3/marks20.gd"),
-	"moth": preload("res://scripts/act3/moth_marks.gd")}
+	"moth": preload("res://scripts/act3/moth_marks.gd"),
+	# (endless mode's final boss: act3/ws_marks.gd, drawn by act3/ws_paint.gd)
+	"wsboss": preload("res://scripts/act3/ws_marks.gd")}
 
 
 static func _own(p: Dictionary):

@@ -2749,3 +2749,145 @@ func shards(main, hero, dir: String) -> void:
 	for b in bad:
 		print("  WRONG: ", b)
 
+
+
+## THE BOTTOM OF THE SHAFT, THE WARPED WORDSMITH'S WHOLE FIGHT (--only=final; final_arena.gd, act3/wsboss.gd, ws_marks.gd,
+## ws_paint.gd): down through the open landing; he waits on his boar, wakes; each of his moves in the saddle, its warning, his rune
+## written and thrown, what it lays; at half his life the boar's fall, he on foot; each of his ten melds, his and his shade's runes
+## melded and driven down, then the meld itself; his death; his hoard; the light above, and back up at the Rim. Pictured.
+func final(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	await M._wait(0.6)
+	M.open_endless(20)
+	M.final_open = true
+	M.go_final()
+	await M._wait(2.0)
+	var b = null
+	for m in M._monsters.list:
+		if is_instance_valid(m) and m.kind == "wsboss":
+			b = m
+	_line(M.place == "final" and b != null and M.arena != null, "at the bottom of the shaft (%s): the warped wordsmith there (%s), its arena's rules" % [M.place, b != null])
+	if b == null:
+		print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+		return
+	_line(b.state == "sleep" and b.boss, "he waits on his boar across the floor, asleep (%s)" % b.state)
+	await M._snap(dir + "/fi_01_arrive.png")
+	await M._wait(1.2)
+	_line(b.state != "sleep", "he wakes as the hero has come down (%s)" % b.state)
+	var A: Array = b.h2.acts()
+	var WS := preload("res://scripts/act3/wsboss.gd")
+	var count := func(name: String) -> int: return M._monsters.perils.list.filter(func(p): return p.get("kind") == "a1" and str(p["a1"]) == "wsboss:" + name).size()
+	var clear := func() -> void:
+		for p in M._monsters.perils.list:
+			if p.get("kind") == "a1" and str(p["a1"]).begins_with("wsboss:"):
+				p["dur"] = float(p["t"])
+	# IN THE SADDLE: each of his moves, forced, pictured at its height
+	var moves := [["charge", [0.6], ""], ["gore", [0.55], ""], ["stomp", [0.9, 1.35], "rings"], ["power", [0.45, 1.38, 1.6], "crater"],
+		["flame", [0.55, 0.95, 1.6], "meteor"], ["frost", [0.6, 1.25], "ice"], ["lightning", [0.5, 2.0], "orb"], ["poison", [0.55, 1.3, 2.4], "trap"]]
+	var k := 2
+	for mv in moves:
+		clear.call()
+		await M._wait(0.05)
+		h.world = M._free_near(b.world + Vector2(2.0 if mv[0] == "gore" else 3.6, 0.6))
+		b.h2.a1["runs"] = 1
+		b.h2.a1["run"] = 0
+		b.h2.a1["wheel"] = 0
+		b.h2.start_act(b, A, WS.ix(mv[0]), h)
+		var shows: int = count.call("show")
+		var at := 0.0
+		for when in mv[1]:
+			while b.h2.act != null and float(b.h2.act["t"]) < float(when):
+				b.h2.a1["wait"] = 99.0
+				await M._wait(0.02)
+			await M._snap("%s/fi_%02d_%s.png" % [dir, k, mv[0]])
+			k += 1
+		var lays: int = count.call(mv[2]) if mv[2] != "" else 1
+		_line(shows == 1 and lays > 0, "in the saddle, %s: its warning and runes shown (%d), what it lays (%s %d)" % [mv[0], shows, mv[2], lays])
+	# THE FALL: brought to half his life, on the boar's next charge it is killed; he lands on his feet
+	clear.call()
+	b.h2.act = null
+	b.state = "chase"
+	b.h2.a1["wait"] = 0.0
+	b.life = ceilf(b.max_life * 0.5)
+	h.world = M._free_near(b.world + Vector2(3.6, 0.6))
+	var saw_fall := false
+	for i in 400:
+		await M._wait(0.05)
+		if b.h2.act != null and b.h2._id() == "wsboss:fall":
+			saw_fall = true
+			if float(b.h2.act["t"]) >= 1.4:
+				break
+	_line(saw_fall, "at half his life the boar's last charge: it falls (%s)" % saw_fall)
+	await M._snap(dir + "/fi_%02d_fall.png" % k)
+	k += 1
+	for i in 200:
+		await M._wait(0.05)
+		if b.h2.act == null or b.h2._id() != "wsboss:fall":
+			break
+	_line(not b.h2.in_saddle() and not b.dead and b.life >= ceilf(b.max_life * 0.5) - 1.0, "thrown clear, risen, on foot (%s), held at half (%d of %d)" % [not b.h2.in_saddle(), b.life, b.max_life])
+	await M._wait(0.4)
+	await M._snap(dir + "/fi_%02d_foot.png" % k)
+	k += 1
+	# ON FOOT: each of his ten melds
+	var when_of := {"eruption": 1.6, "hailstorm": 2.0, "thunder": 1.7, "avalanche": 2.3, "contagion": 2.0, "scald": 3.0, "blight": 1.9, "fumes": 3.2, "wildfire": 3.5, "frostbite": 2.0}
+	var ids: Array = WS.D()["meldIds"]
+	for mi in ids:
+		clear.call()
+		await M._wait(0.05)
+		h.world = M._free_near(b.world + Vector2(3.2, 0.8))
+		b.h2.a1["meld"] = ids.find(mi)
+		b.h2.start_act(b, A, WS.ix("meld"), h)
+		while b.h2.act != null and b.h2._id() == "wsboss:meld" and float(b.h2.act["t"]) < 0.95:
+			await M._wait(0.02)
+		await M._snap("%s/fi_%02d_%s_runes.png" % [dir, k, mi])
+		k += 1
+		var p = null
+		for i in 200:
+			for q in M._monsters.perils.list:
+				if q.get("kind") == "a1" and str(q["a1"]) == "wsboss:" + mi:
+					p = q
+			if p != null and float(p["t"]) >= float(when_of[mi]):
+				break
+			b.h2.a1["meldUntil"] = float(b.h2.a1.get("clock", 0.0)) + 99.0
+			b.h2.a1["spentNext"] = 0
+			await M._wait(0.03)
+		_line(p != null and count.call("slamring") >= 0, "on foot, %s: his rune and his shade's melded and driven down; the meld laid (%s)" % [mi, p != null])
+		await M._snap("%s/fi_%02d_%s.png" % [dir, k, mi])
+		k += 1
+	# HIS DEATH: his life run out, whatever he is doing
+	clear.call()
+	await M._wait(0.1)
+	b.life = 1.0
+	var saw_death := false
+	for i in 40:
+		await M._wait(0.05)
+		if b.h2.act != null and b.h2._id() == "wsboss:death":
+			saw_death = true
+			if float(b.h2.act["t"]) >= 1.2:
+				break
+	_line(saw_death and not b.dead, "his life run out: his death plays, he held at 1 (%s)" % saw_death)
+	await M._snap(dir + "/fi_%02d_death.png" % k)
+	k += 1
+	var drops0: int = M.loot._drops.size()
+	for i in 120:
+		await M._wait(0.05)
+		if not is_instance_valid(b) or b.dead:
+			break
+	await M._wait(0.3)
+	_line(not is_instance_valid(b) or b.dead, "the last of his runes gone out: he is dead")
+	_line(M.loot._drops.size() >= drops0 + 8 and _said("The Warped Wordsmith is undone.") != "", "his hoard lies where he was (%d things); '%s'" % [M.loot._drops.size() - drops0, _said("The Warped Wordsmith")])
+	await M._snap(dir + "/fi_%02d_hoard.png" % k)
+	k += 1
+	await M._wait(2.2)
+	_line(_said("The light above is open") != "" and not M.final_open, "the landing above closed behind him; '%s'" % _said("The light above"))
+	var arrive := Vector2(float(M.final_data["arrive"]["x"]), float(M.final_data["arrive"]["y"]))
+	h.world = arrive
+	await M._wait(1.6)
+	await M._wait(1.5)
+	_line(M.place == M.home_place(), "stood in the light: back up at the Rim (%s)" % M.place)
+	h.unhurt = false
+	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+	for bb in bad:
+		print("  WRONG: ", bb)

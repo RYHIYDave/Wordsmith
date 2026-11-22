@@ -498,6 +498,30 @@ func on_kill(m) -> void:
 	# with a hoard's luck; a boss one more on floors 5, 10, 15 and 20, TUNE.bossItemsFifth)
 	var p := power()
 	var deep := p >= int(_uniques.get("loot2", {}).get("from", 6))
+	# (ENDLESS_KEY: THE WARPED WORDSMITH, the best drops in the game (game.ts finalLoot, final_arena.ts FINAL_LOOT): a great hoard of
+	# gold, six pieces of a boss's first quality, two words, a life orb; one kill in four, one of his own two uniques)
+	if m.kind == "wsboss":
+		var F: Dictionary = {"gold": [70, 110], "items": 6, "words": 2}
+		if main != null and main.get("final_data") is Dictionary and main.final_data.has("loot"):
+			F = main.final_data["loot"]
+		_gold(at, randi_range(int(F["gold"][0]), int(F["gold"][1])) * maxi(1, p))
+		for i in int(F["items"]):
+			_item(at, 4)
+		if words_fall():
+			for i in int(F["words"]):
+				_word(at, words_found_at(p).pick_random())
+		if not _uniques.is_empty() and randf() < float(_uniques["drops"].get("final", 0.0)):
+			var two: Array = []
+			for id in _uniques["defs"]:
+				if _uniques["defs"][id]["from"] == "final":
+					two.append(id)
+			if not two.is_empty():
+				var it = unique_piece(two.pick_random())
+				if it != null:
+					_drop("gear", _scatter(at), it["icon"], {"item": it})
+					sfx.play("rare", linear_to_db(0.9))
+		_orb(at)
+		return
 	if other != null:
 		say("%s falls. %s fights on alone." % [m.title, other.title], Color("#ff8a3a"))
 		_gold(at, randi_range(12, 22) * p)

@@ -92,11 +92,27 @@ func length(list: String) -> float:
 	return count(0, list) / fps(list)
 
 
+## Of a figure painted from all eight sides, the one it is seen from facing (fx, fy), as the game numbers them (art/sides.ts
+## EIGHT_ORDER; art/warrior_up_art.ts wuFacing: the nearest eighth, round from down and to the right).
+const EIGHT_ORDER := ["front", "back", "toward", "frontL", "sideL", "backL", "away", "side"]
+const EIGHT_ROUND := ["front", "toward", "frontL", "sideL", "backL", "away", "back", "side"]
+
+
+static func eight_side(fx: float, fy: float) -> int:
+	var a := rad_to_deg(atan2(fy, fx))
+	var k := ((int(floorf(a / 45.0 + 0.5)) % 8) + 8) % 8
+	return EIGHT_ORDER.find(EIGHT_ROUND[k])
+
+
 ## The frame: its picture, where to hang it from the figure's anchor, and whether it is mirrored; `fx`, `fy` the way
-## the figure faces on the floor.
-func frame(fx: float, fy: float, list: String, i: int) -> Dictionary:
+## the figure faces on the floor; `eight`: a figure painted from all eight sides seen truly from the one it faces.
+func frame(fx: float, fy: float, list: String, i: int, eight := false) -> Dictionary:
 	var left := fx - fy < 0.0
 	var side := 1 if fx + fy < -0.2 else 0
+	if eight and sides == 8:
+		# (one painted truly from each of the eight, never mirrored: the endless boss, art/act1_figs/wsboss.ts)
+		side = eight_side(fx, fy)
+		left = false
 	var n := count(side, list)
 	if n == 0:
 		side = 0

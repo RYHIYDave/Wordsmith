@@ -111,6 +111,8 @@ const BOSS_AI := {
 	# (floor 20's: the Hush in its own shapes)
 	"hshape": preload("res://scripts/act3/hshape.gd"), "rshadow": preload("res://scripts/act3/rshadow.gd"),
 	"rshade": preload("res://scripts/act3/rshade.gd"), "moth": preload("res://scripts/act3/moth.gd"),
+	# (endless mode's final boss, at the bottom of the shaft: act3/wsboss.gd)
+	"wsboss": preload("res://scripts/act3/wsboss.gd"),
 }
 ## (floors 6 to 8's: the chanter's ward over the cult near it, the jostle of those up in the air or under the lip: act1.gd)
 const Act1 := preload("res://scripts/act1/act1.gd")
@@ -1988,7 +1990,7 @@ func _show() -> void:
 	if own.has("list") and art.has(own["list"]):
 		list = own["list"]
 		i = clampi(int(own["i"]), 0, art.count(0, list) - 1)
-	var f := art.frame(face.x, face.y, list, i)
+	var f := art.frame(face.x, face.y, list, i, kind == "wsboss")
 	var had: bool = not (_lit_f.get("lights", []) as Array).is_empty()
 	_lit_f = f
 	if had or not (f.get("lights", []) as Array).is_empty():

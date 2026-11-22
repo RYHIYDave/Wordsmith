@@ -297,7 +297,7 @@
     return { state: p.state, asked: p.asked ? p.asked.size : 0, made: p.films ? p.films.size : 0, failed: p.stats ? p.stats.failed : [], films: p.stats ? Object.keys(p.stats.films) : [] };
   };
 
-  /** Go to a floor (0: stay in town; -1 the camp; -2 the practice room, a Warrior's, for the seed; -3 the Shaft's Rim). */
+  /** Go to a floor (0: stay in town; -1 the camp; -2 the practice room, a Warrior's, for the seed; -3 the Shaft's Rim; -4 the bottom of the shaft). */
   REC.enter = (depth, seed) => {
     if (depth === -2) {
       // (THE PRACTICE ROOM, the start screen's: game.ts forPractice, its arena: main.ts startPractice)
@@ -323,6 +323,12 @@
       g.endlessFloor = 1;
       g.rimSeen = 1;
       g.enterTown(null);
+    } else if (depth === -4) {
+      // (THE BOTTOM OF THE SHAFT, game/final_arena.ts: the warped wordsmith's arena, below the Rim's open landing, game.ts enterArena)
+      g.wayDepth = 20;
+      g.endless = 1;
+      g.endlessFloor = 1;
+      g.enterArena();
     }
     return { town: !!g.level.town, depth: g.depth, w: g.level.floor.w, h: g.level.floor.h };
   };

@@ -4094,5 +4094,86 @@
     "fps": 30
    }
   ]
+ },
+ "wsboss": {
+  "sides": 8,
+  "lists": [
+   {
+    "name": "idle",
+    "fps": 15
+   },
+   {
+    "name": "walk",
+    "fps": 1
+   },
+   {
+    "name": "attack",
+    "fps": 30
+   },
+   {
+    "name": "reel",
+    "fps": 30
+   },
+   {
+    "name": "charge",
+    "fps": 30
+   },
+   {
+    "name": "wheel",
+    "fps": 30
+   },
+   {
+    "name": "gore",
+    "fps": 30
+   },
+   {
+    "name": "stomp",
+    "fps": 30
+   },
+   {
+    "name": "winded",
+    "fps": 30
+   },
+   {
+    "name": "power",
+    "fps": 30
+   },
+   {
+    "name": "flame",
+    "fps": 30
+   },
+   {
+    "name": "frost",
+    "fps": 30
+   },
+   {
+    "name": "lightning",
+    "fps": 30
+   },
+   {
+    "name": "poison",
+    "fps": 30
+   },
+   {
+    "name": "fall",
+    "fps": 30
+   },
+   {
+    "name": "foot",
+    "fps": 15
+   },
+   {
+    "name": "hailstorm",
+    "fps": 30
+   },
+   {
+    "name": "spent",
+    "fps": 30
+   },
+   {
+    "name": "death",
+    "fps": 30
+   }
+  ]
  }
 }
