@@ -43,3 +43,23 @@ controller, upright play, the pause menu (END RUN included).
 15. **The stronghold's altar still promises “a yellow pack of the cult's best”**, an older hall.
 
 (These are from notes made while porting; 7 and 8 checked again in the Godot copy now, the rest not yet.)
+
+## Where each stands (22 Nov 2026, evening)
+
+His go-ahead: “Start all that, but I want the level 10 boss named the Drowned Eye.  The swamp colossus was just a description
+for the art”. So 8 stays as it is: floor 10's boss is The Drowned Eye.
+
+1. Done, behind EXIT_LABELS (on in the Godot copy; pictures in docs/mockups/exit_names/).
+2. Done (SPLIT_EACH).
+3. Waits on which phone he has.
+4. Done: the HUD, the small map and the gear screen kept within the phone's safe area (`--only=safe`).
+5. Done: the icon at a phone's sizes (godot/assets/app_icon/), the same picture.
+7. Done: the Lunge opens at level 2.
+9. Nothing to change: the Godot copy's floor 1 has no champion to rally.
+10. Done: the red trolls charge in floor 1's lairs.
+11. Done: the Eclipse ends with her.
+12. Done: the crash slows him.
+13. Done: Fervor quickens his attacks.
+14. Done: Twin a second blow on the Wilds' monsters and the bosses (they hit harder for it, as their names say); Vast a longer swing
+    and rings that strike as wide as drawn.
+15. Done: the altar tells of the hall's five waves.

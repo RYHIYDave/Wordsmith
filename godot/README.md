@@ -1377,6 +1377,30 @@ augment attacks.  I want things to compound as they are added to attacks or abil
   its share of the hit over its 4 s, not each second of them (a quarter as much a second); eight doses still add up, gear's poison
   as it was. `checks/words_check.gd` turns all three off and holds the rest against the game's own: 341479 loadouts, 0 differ.
 
+## Feature complete: the browser game's last features, the fun fixes, the phone (the cloud chat, 22 Nov 2026)
+
+His words: “So now the game runs well, the game is balanced, and with all the classes running at 30fps it looks good.  So now
+we gotta make sure it's fun and feature complete and we're good to go”; the list of what was missing
+(docs/reports/missing_features_2026-11-22.md), then “Start all that, but I want the level 10 boss named the Drowned Eye.  The
+swamp colossus was just a description for the art” (floor 10's boss keeps its name).
+
+- **Splitting breaks every arrow** (`city_words.gd` SPLIT_EACH, `heroes/kit.gd` striking): `--only=split`.
+- **The exits' names** over a way out once it opens (`ways.gd`, `stairs.gd` exit_labels, `exit_names.gd`; EXIT_LABELS):
+  `--only=exits`; docs/mockups/exit_names/.
+- **The fun fixes**: the Lunge open at level 2 (`words.gd` EVADE_AT; `--only=openings`); the red trolls charge in floor 1's small
+  lairs (`monster.gd` CHARGE_SHORT; `--only=charge`); the Carrion Queen's Eclipse ends with her (`act1/queen_marks.gd`;
+  `--only=eclipse`); the Colossus's crash slows him (`act1/colossus.gd`, `hero.gd` surge_k; `--only=crash`); Fervor quickens his
+  attacks (`melds.gd` fervor_pace); Twin a second blow on the Wilds' monsters and the bosses (`monster.gd` twice_act, TWIN_ACTS;
+  `perils.gd` _twin_mark), Vast a move's swing longer and a ring striking as wide as drawn (`monster.gd` _far, VAST_SWING;
+  `perils.gd` wide; `--only=twin`); the stronghold altar tells of the hall's waves (`inventory.gd`; `--only=quests610`). The
+  skeleton champion's rally on floor 1: none to change (the Godot copy's floor 1 has no champion).
+- **A phone's notch and rounded corners** (`main.gd` safe_insets, place_safe): the HUD, the small map and the gear screen kept
+  within the phone's safe area, as the browser game kept its canvas (engine/screen.ts env(safe-area-inset-*)), the world still
+  to every edge; `--only=safe --phone=2532x1170 --safe=141,0,141,63` (and `--upright=1 --phone=1170x2532 --safe=0,141,0,102`).
+- **The app's icon at a phone's sizes** (`assets/app_icon/`, made from `icon.png` at whole-number sizes, the art's own pixels kept):
+  `icon_1024.png` for an iPhone (no see-through; the rest made from it); `android_main_192.png`, and the adaptive icon's
+  `android_fore_432.png`, `android_back_432.png`, `android_mono_432.png` for Android. The export setup waits on which phone.
+
 ## Not in it yet
 
 Nothing of the game's own: every talent of every tree is in.
