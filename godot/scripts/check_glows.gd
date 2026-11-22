@@ -3039,3 +3039,46 @@ func finalmusic(main, hero, dir: String) -> void:
 	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
 	for bb in bad:
 		print("  WRONG: ", bb)
+
+
+## MEMORY ON THE LATER FLOORS (--only=memfloors; asked 22 Nov 2026 after the web game's crashes on his phone, “Will this be a problem
+## in godot?”): floors 11 to 20 one after another in one sitting, and the final arena, the hero walked to each room in turn so its
+## monsters are seen and their pictures taken in; at each floor, what Godot holds: its own memory, the textures' (pictures in the
+## graphics memory), and the objects alive. Written to <shots>/memfloors.txt.
+func memfloors(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var out: Array = []
+	var row := func(label: String) -> void:
+		var stat := Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0
+		var tex := Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0
+		var vid := Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0
+		var objs := Performance.get_monitor(Performance.OBJECT_COUNT)
+		var line := "%-18s memory %6.1f MB | textures %6.1f MB | video %6.1f MB | objects %d" % [label, stat, tex, vid, objs]
+		print("MEM ", line)
+		out.append(line)
+	await M._wait(1.0)
+	row.call("town")
+	for k in range(11, 21):
+		M.go_to("floor%d" % k, "start")
+		await M._wait(3.0)
+		row.call("floor %d start" % k)
+		var rooms: Array = M.map.rooms if M.map != null else []
+		var n := 0
+		for r in rooms:
+			h.world = M._free_near(Vector2(float(r["x"]) + float(r["w"]) / 2.0, float(r["y"]) + float(r["h"]) / 2.0))
+			await M._wait(0.4)
+			n += 1
+		await M._wait(1.0)
+		row.call("floor %d walked" % k)
+	M.open_endless(20)
+	M.final_open = true
+	M.go_final()
+	await M._wait(4.0)
+	row.call("final arena")
+	var f := FileAccess.open(dir + "/memfloors.txt", FileAccess.WRITE)
+	f.store_string("\n".join(out) + "\n")
+	f.close()
+	h.unhurt = false
+	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
