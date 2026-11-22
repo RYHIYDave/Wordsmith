@@ -151,8 +151,9 @@ static var POISON_DEX := true
 static var MELD_RANK2 := true
 ##   EVADE_AT    the evasive move (the Lunge, the roll, the warp, the smoke step...) opens at level 2, with the slow attack, not at 5
 ##               (his “Start all that”, 22 Nov 2026, to the list's “No evade on floor 1”: all of floor 1 and its boss bring a new hero
-##               to about level 3, so the game's 5 left floor 1 played without it). 0: the game's.
-static var EVADE_AT := 2
+##               to about level 3, so the game's 5 left floor 1 played without it). 0: the game's. OFF at his word the same
+##               evening: “I don't want the dodge in the first dungeon.  I like it unlocking later.”
+static var EVADE_AT := 0
 const MELD_PART := 0.75
 const POISON_MOST := 4
 

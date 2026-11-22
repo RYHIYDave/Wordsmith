@@ -1387,7 +1387,8 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
 - **Splitting breaks every arrow** (`city_words.gd` SPLIT_EACH, `heroes/kit.gd` striking): `--only=split`.
 - **The exits' names** over a way out once it opens (`ways.gd`, `stairs.gd` exit_labels, `exit_names.gd`; EXIT_LABELS):
   `--only=exits`; docs/mockups/exit_names/.
-- **The fun fixes**: the Lunge open at level 2 (`words.gd` EVADE_AT; `--only=openings`); the red trolls charge in floor 1's small
+- **The fun fixes**: (the Lunge open at level 2, `words.gd` EVADE_AT, made and then turned off at his word: “I don't want the
+  dodge in the first dungeon.  I like it unlocking later.”: it opens at 5, as the game has it); the red trolls charge in floor 1's small
   lairs (`monster.gd` CHARGE_SHORT; `--only=charge`); the Carrion Queen's Eclipse ends with her (`act1/queen_marks.gd`;
   `--only=eclipse`); the Colossus's crash slows him (`act1/colossus.gd`, `hero.gd` surge_k; `--only=crash`); Fervor quickens his
   attacks (`melds.gd` fervor_pace); Twin a second blow on the Wilds' monsters and the bosses (`monster.gd` twice_act, TWIN_ACTS;

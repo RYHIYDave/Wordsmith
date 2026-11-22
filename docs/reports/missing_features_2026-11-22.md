@@ -54,7 +54,7 @@ for the art”. So 8 stays as it is: floor 10's boss is The Drowned Eye.
 3. Waits on which phone he has.
 4. Done: the HUD, the small map and the gear screen kept within the phone's safe area (`--only=safe`).
 5. Done: the icon at a phone's sizes (godot/assets/app_icon/), the same picture.
-7. Done: the Lunge opens at level 2.
+7. Undone at his word: “I don't want the dodge in the first dungeon.  I like it unlocking later.” It opens at level 5 again.
 9. Nothing to change: the Godot copy's floor 1 has no champion to rally.
 10. Done: the red trolls charge in floor 1's lairs.
 11. Done: the Eclipse ends with her.
