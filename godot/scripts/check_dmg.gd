@@ -133,6 +133,11 @@ func _set_out() -> void:
 
 
 func _clear() -> void:
+	# (and nothing left of the last fight: the ground his moves left, his might and haste)
+	if M.wakes != null:
+		M.wakes.list.clear()
+	h.might = 0.0
+	h.might_t = 0.0
 	for o in M._monsters.list:
 		if is_instance_valid(o):
 			o.queue_free()
