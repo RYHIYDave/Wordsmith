@@ -1,5 +1,5 @@
 heroes=eccc11d9382f
-monsters=b982b7f72ca4
+monsters=a9b22fa26169
 sounds=c2516687bc3e
 colossus=f133999cbf23
-townsfolk=d4c898fe370d
+townsfolk=9ff1ce3dcc32

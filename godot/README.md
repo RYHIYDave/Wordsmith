@@ -1173,7 +1173,8 @@ game/world_sounds.ts; `sfx.gd`, `monsters.gd`, `monster.gd`, `town.gd`, `main.gd
 
 The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick).
 Endless mode (the Shaft's Rim town, the endless levels, the Tablet Shards, the Twisted Wordsmith).
-(The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
+(The monsters' pictures are the final release 25.3.22's bake, a9b22fa26169: the Chained One's sheets laid afresh, and the rest as
+25.3.21's b982b7f72ca4 but for rounding.)
 
 ## How it is made
 
