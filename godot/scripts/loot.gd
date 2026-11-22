@@ -54,6 +54,118 @@ const Perils := preload("res://scripts/perils.gd")
 
 const DIR := "res://assets/loot"
 const EQUIP := ["mainhand", "offhand", "helm", "chest", "gloves", "belt", "boots", "amulet", "ring1", "ring2"]
+
+## THE THREE DEFENCES (his words, 22 Nov 2026: “I was also thinking about other defensive layers like barrier that scales with int
+## or dodge that scales with dex.  What do you think about that?  Those values can be base values on pieces of gear.  Str gear with
+## armor, Dex gear with dodge and int gear with barrier.  Barrier differing from armor by not giving damage mitigation but a second
+## pool of HP before the life pool.”; then “I feel like some of the gear already tries to do this”, “We don't have mana, we have
+## cooldowns so we don't need that on cloth gear”, “So maybe cdr on cloth”). The three kinds of piece the gear already has, each
+## its own defence built into it, and one small thing more:
+##   HEAVY   (Iron, Steel, War: plate, helm, gauntlets, belt, greaves)  ARMOUR, as ever (and Strength his life, as ever)
+##   LEATHER (Hide, Leather, Studded; the hoods)  DODGE in place of its armour, its speed or life kept: a chance that a blow misses
+##           him altogether, dodge / (dodge + 40 + 20 a floor) of hero.gd DODGE_K, never certain; Dexterity adds to it (DEX_DODGE a point,
+##           as the damage reads attributes: words.gd eff_attr)
+##   CLOTH   (Linen, Silk, Velvet: robe, gloves, sash)  BARRIER in place of its mana, and a little cooldown recovery: a second life
+##           in front of his life that takes every harm first (no less for it), and fills again when nothing has touched him for
+##           hero.gd BARRIER_WAIT seconds; Intelligence adds to it (INT_BARRIER a point)
+## A piece's defence is sized by its kind's heavy piece's armour at its level (HEAVY_ARMOUR: items.ts GEAR_KINDS), LEATHER_K of it
+## for leather, LEATHER_K x BARRIER_K for cloth. OFF until he has seen it (its looks: the barrier round his life globe, its
+## shimmer on him, DODGE over him): `--defence=1` for a run.
+static var DEFENCE_LAYERS := false
+const HEAVY_ARMOUR := {"helm": [5.0, 3.0], "chest": [8.0, 5.0], "gloves": [3.0, 2.0], "belt": [3.0, 2.0], "boots": [3.0, 2.0]}
+const LEATHER_K := 0.75
+const BARRIER_K := 2.3
+const CLOTH_CDR := 0.05
+const DEX_DODGE := 1.0
+const INT_BARRIER := 2.0
+## (what the dodge chance and the barrier's filling are: hero.gd DODGE_K, BARRIER_WAIT, BARRIER_FILL)
+
+
+## The kind a piece of gear is of, by its base's name: "heavy", "leather", "cloth", or "" (a weapon, an off-hand, a ring...).
+static func family(it) -> String:
+	if it == null or not (it is Dictionary):
+		return ""
+	var slot: String = str(it.get("slot", "")).trim_suffix("1").trim_suffix("2")
+	if not HEAVY_ARMOUR.has(slot):
+		return ""
+	var base: String = str(it.get("base", it.get("name", "")))
+	if base.ends_with("Hood"):
+		return "leather"
+	for w in ["Hide ", "Leather ", "Studded "]:
+		if base.begins_with(w):
+			return "leather"
+	for w in ["Linen ", "Silk ", "Velvet "]:
+		if base.begins_with(w):
+			return "cloth"
+	for w in ["Iron ", "Steel ", "War "]:
+		if base.begins_with(w):
+			return "heavy"
+	return ""
+
+
+## What is built into a piece (its implicit), as the three defences make it: [[stat, value], ...].
+static func implicit_of(it: Dictionary) -> Array:
+	var im: Array = it.get("imods", [])
+	if not DEFENCE_LAYERS:
+		return im
+	var fam := family(it)
+	if fam == "" or fam == "heavy":
+		return im
+	var slot: String = str(it.get("slot", "")).trim_suffix("1").trim_suffix("2")
+	var H: Array = HEAVY_ARMOUR[slot]
+	var size: float = (float(H[0]) + float(H[1]) * (float(it.get("ilvl", 1)) - 1.0)) * LEATHER_K
+	var out: Array = []
+	if fam == "leather":
+		out.append(["dodge", roundf(size)])
+		for m in im:
+			if m[0] != "armor":
+				out.append(m)
+	else:
+		out.append(["barrier", roundf(size * BARRIER_K)])
+		var mana := 0.0
+		for m in im:
+			if m[0] == "maxMana":
+				mana += float(m[1])
+		out.append(["cdr", maxf(1.0, roundf(mana * 0.1 * CLOTH_CDR * 10.0))])
+	return out
+
+
+## Everything a piece gives (its `mods`, its implicit as the three defences make it).
+static func mods_of(it: Dictionary) -> Array:
+	var mods: Array = it.get("mods", [])
+	if not DEFENCE_LAYERS or family(it) in ["", "heavy"]:
+		return mods
+	var rest: Array = mods.duplicate()
+	for m in it.get("imods", []):
+		for k in rest.size():
+			if rest[k][0] == m[0] and float(rest[k][1]) == float(m[1]):
+				rest.remove_at(k)
+				break
+	return implicit_of(it) + rest
+
+
+## The lines of what is built into a piece, as the three defences make it (lines_of with "implicit").
+static func implicit_lines(it: Dictionary) -> Array:
+	var out: Array = []
+	for m in implicit_of(it):
+		match str(m[0]):
+			"dodge":
+				out.append("+%d Dodge" % int(m[1]))
+			"barrier":
+				out.append("+%d Barrier" % int(m[1]))
+			"cdr":
+				out.append("+%d%% Cooldown Recovery" % int(m[1]))
+			"moveSpeed":
+				out.append("+%d%% Movement Speed" % int(m[1]))
+			"atkSpeed":
+				out.append("+%d%% Attack Speed" % int(m[1]))
+			"maxLife":
+				out.append("+%d Max Life" % int(m[1]))
+			"armor":
+				out.append("+%d Armour" % int(m[1]))
+			_:
+				out.append("+%s %s" % [m[1], m[0]])
+	return out
 const BAG := 24
 const RARITY_COLOR := [Color("#cfc6bc"), Color("#6f8cff"), Color("#ffe070"), Color("#ff8a3a")]
 const PULL := 3.2
@@ -125,6 +237,9 @@ var limit := "cooldown"
 ## A piece's lines (`key`: "implicit", "lines"), or a word's on it, as they read under the limit: with mana, its Max Mana and Mana
 ## Regen as themselves and its cooldown recovery as less Mana Cost (items.ts statView, modLines; tools/godot_loot.ts `...Mana`).
 func lines_of(it: Dictionary, key := "lines") -> Array:
+	# (THE THREE DEFENCES: a leather or cloth piece's built-in lines as they make it)
+	if key == "implicit" and DEFENCE_LAYERS and family(it) in ["leather", "cloth"]:
+		return implicit_lines(it)
 	if limit == "mana" and it.get(key + "Mana") is Array:
 		return it[key + "Mana"]
 	return it.get(key, [])
@@ -269,7 +384,7 @@ func derive() -> void:
 		var it = gear[slot]
 		if it == null:
 			continue
-		for m in it["mods"]:
+		for m in mods_of(it):
 			s[m[0]] = s.get(m[0], 0.0) + float(m[1])
 	# (UNIQUE ITEMS: which work for him, their numbers as they rolled; what they add that is not written on them: uniques.gd)
 	var U = hero.uniques if hero != null else null
@@ -316,6 +431,13 @@ func derive() -> void:
 		"res_fire": g.call("fireRes"), "res_frost": g.call("frostRes"), "res_light": g.call("lightRes"), "res_poison": g.call("poisonRes"),
 	}
 	hero.set_max_life(maxf(1.0, life))
+	# (THE THREE DEFENCES: his dodge and his barrier, his gear's and what Dexterity and Intelligence add)
+	if DEFENCE_LAYERS:
+		hero.stats["dodge"] = g.call("dodge") + Words.eff_attr(dex) * DEX_DODGE
+		hero.set_max_barrier(g.call("barrier") + Words.eff_attr(int_) * INT_BARRIER)
+	else:
+		hero.stats["dodge"] = 0.0
+		hero.set_max_barrier(0.0)
 	# (his moves' words: the slots his level and the lit ring open, and the numbers the words read. Cooldown recovery as
 	# stats.ts derive has it: his gear's, a tenth of its mana and twice its mana regeneration, a quarter of his Intelligence,
 	# 60% at most)

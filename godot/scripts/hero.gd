@@ -232,6 +232,14 @@ var frenzy := 0
 var frenzy_t := 0.0
 var shield := 0.0
 var shield_t := 0.0
+## THE THREE DEFENCES (loot.gd DEFENCE_LAYERS): his barrier, a second life in front of his life that takes every harm first; full
+## again when nothing has touched him for a while (BARRIER_WAIT, then BARRIER_FILL of it a second).
+var barrier := 0.0
+var max_barrier := 0.0
+var _barrier_wait := 0.0
+const DODGE_K := 0.75
+const BARRIER_WAIT := 3.0
+const BARRIER_FILL := 0.5
 var uses: Array = [0, 0, 0]
 var _marked: Array = [-1, -1, -1]
 ## (FOR LASTING'S, FLEETING'S AND VAST'S LOOKS, fx_words10.gd, as render/words10.ts reads the game's Hero) WHICH OF HIS MOVES GAVE
@@ -414,6 +422,31 @@ func _ready() -> void:
 
 
 ## His most life (loot.gd derive): what he had more of comes with it, as the game's derive does.
+func set_max_barrier(v: float) -> void:
+	var was := max_barrier
+	max_barrier = maxf(0.0, v)
+	barrier = max_barrier if barrier >= was else minf(barrier, max_barrier)
+
+
+## THE THREE DEFENCES: the chance a blow misses him altogether (loot.gd DODGE_K x dodge / (dodge + 40 + 20 a floor)).
+func dodge_chance() -> float:
+	var d: float = stats.get("dodge", 0.0)
+	if d <= 0.0:
+		return 0.0
+	return DODGE_K * d / (d + 40.0 + 20.0 * maxf(1.0, float(map.depth) if map != null else 1.0))
+
+
+## THE THREE DEFENCES: harm taken by his barrier first; what is left of it, for his life. Every harm waits his barrier's filling.
+func _through_barrier(dmg: float) -> float:
+	_barrier_wait = BARRIER_WAIT
+	if barrier <= 0.0 or dmg <= 0.0:
+		return dmg
+	var took := minf(barrier, dmg)
+	barrier -= took
+	_tell({"t": "barrierHit", "x": world.x, "y": world.y, "left": barrier, "most": max_barrier})
+	return dmg - took
+
+
 func set_max_life(v: float) -> void:
 	var was := max_life
 	max_life = v
@@ -1178,6 +1211,11 @@ func _process(dt: float) -> void:
 			_back()
 		return
 	life = minf(max_life, life + stats["life_regen"] * dt * heal_k())
+	# (THE THREE DEFENCES: his barrier fills again when nothing has touched him for a while)
+	if max_barrier > 0.0:
+		_barrier_wait = maxf(0.0, _barrier_wait - dt)
+		if _barrier_wait <= 0.0 and barrier < max_barrier:
+			barrier = minf(max_barrier, barrier + max_barrier * BARRIER_FILL * dt)
 	# (what the monsters' melded words left on him goes with what laid it: game.ts updateHero)
 	if poison_t <= 0.0:
 		siphon_less = 0.0
@@ -1779,6 +1817,13 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 		sfx.play("hit", linear_to_db(0.5))
 		last_blow = {"raw": raw, "el": el, "words": words, "blocked": true, "dmg": 0.0}
 		return
+	# (THE THREE DEFENCES: DODGE, a chance the blow misses him altogether; a trap's, never)
+	var dodge := dodge_chance() if not bare else 0.0
+	if dodge > 0.0 and randf() < dodge:
+		_tell({"t": "dodged", "x": world.x, "y": world.y, "fromX": by.x, "fromY": by.y})
+		_tell({"t": "text", "x": world.x, "y": world.y, "text": "Dodge", "color": "#7af8f0"})
+		last_blow = {"raw": raw, "el": el, "words": words, "dodged": true, "dmg": 0.0}
+		return
 	var hw: Array = hv.get("words", [])
 	# (EVERY WORD ON A DUNGEON: a ranked word's word half as strong again: defs.ts wordShare, FOE_RANK)
 	var FW: Dictionary = Words.data().get("foe", {})
@@ -1866,6 +1911,9 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 				_shield_burst()
 	if soaked > 0.0 or ward > 0.0:
 		_tell({"t": "guarded", "x": world.x, "y": world.y, "fromX": by.x, "fromY": by.y})
+	# (THE THREE DEFENCES: BARRIER, his second life, takes what is left first)
+	if not unhurt:
+		dmg = _through_barrier(dmg)
 	if dmg <= 0.0:
 		last_blow = {"raw": raw, "el": el, "words": words, "half": hw, "parts": each, "shocked": shocked, "dmg": 0.0, "knock": knocked, "soaked": soaked, "ward": ward}
 		return
@@ -2012,7 +2060,7 @@ func dots() -> void:
 	if burn_t > 0.0:
 		var b := maxf(1.0, roundf(burn_dps * 0.5))
 		if not unhurt:
-			life -= b
+			life -= _through_barrier(b)
 		_tell({"t": "hit", "x": world.x, "y": world.y, "amount": b, "crit": false, "el": "fire", "onHero": true})
 		if life <= 0.0:
 			_fall()
@@ -2020,7 +2068,7 @@ func dots() -> void:
 	if poison_t > 0.0:
 		var p := maxf(1.0, roundf(poison_dps * 0.5))
 		if not unhurt:
-			life -= p
+			life -= _through_barrier(p)
 		_tell({"t": "hit", "x": world.x, "y": world.y, "amount": p, "crit": false, "el": "phys", "onHero": true, "poison": true})
 		if life <= 0.0:
 			_fall()
@@ -2029,7 +2077,7 @@ func dots() -> void:
 	if chill_t > 0.0 and frostbite_dps > 0.0:
 		var f := maxf(1.0, roundf(frostbite_dps * 0.5))
 		if not unhurt:
-			life -= f
+			life -= _through_barrier(f)
 		_tell({"t": "hit", "x": world.x, "y": world.y, "amount": f, "crit": false, "el": "frost", "onHero": true})
 		if life <= 0.0:
 			_fall()
@@ -2040,7 +2088,7 @@ func dots() -> void:
 		bleed_at = world
 		var b := maxf(1.0, roundf(bleed_dps * 0.5 * (float(Words.data()["last"]["bleed"]["moving"]) if moved else 1.0)))
 		if not unhurt:
-			life -= b
+			life -= _through_barrier(b)
 		_tell({"t": "hit", "x": world.x, "y": world.y, "amount": b, "crit": false, "el": "phys", "onHero": true})
 		if life <= 0.0:
 			_fall()
@@ -2423,8 +2471,16 @@ func phase_in(secs: float) -> void:
 func _draw() -> void:
 	if not alive:
 		return
+	# (THE THREE DEFENCES: while his barrier holds, a faint cyan shell shimmers round him, brighter the fuller it is)
+	if barrier > 0.0 and max_barrier > 0.0:
+		var bf := clampf(barrier / max_barrier, 0.0, 1.0)
+		var shim := 0.5 + 0.5 * sin(_clock * 3.0)
+		draw_set_transform(Vector2(0, -46.0 - _lift), 0.0, Vector2(1.0, 1.9))
+		draw_circle(Vector2.ZERO, 24.0, Color(0.48, 0.97, 0.94, 0.05 + 0.04 * bf))
+		draw_arc(Vector2.ZERO, 24.0, 0.0, TAU, 40, Color(0.48, 0.97, 0.94, (0.18 + 0.14 * shim) * (0.4 + 0.6 * bf)), 1.5)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	var fighting: bool = monsters != null and monsters.nearest(world, 9.0) != null
-	if not fighting and life >= max_life - 0.01:
+	if not fighting and life >= max_life - 0.01 and (max_barrier <= 0.0 or barrier >= max_barrier - 0.01):
 		# (the Warlock's pact: always while it is full, he is the demon, or he changes: render.ts)
 		if kit != null and kit.has_method("draw_over"):
 			kit.draw_over(self, -104.0 - _lift, 0.0)
@@ -2444,6 +2500,10 @@ func _draw() -> void:
 	var more := 4.0 if by_mana() else 0.0
 	draw_rect(Rect2(-w / 2 - 1, top - 1, w + 2, 7 + more), edge)
 	draw_rect(Rect2(-w / 2, top, w * clampf(life / max_life, 0.0, 1.0), 5), Color(0.86, 0.16, 0.24))
+	# (THE THREE DEFENCES: his barrier, a cyan line over his life)
+	if max_barrier > 0.0:
+		draw_rect(Rect2(-w / 2 - 1, top - 4, w + 2, 4), Color(0.04, 0.04, 0.1, 0.85))
+		draw_rect(Rect2(-w / 2, top - 3, w * clampf(barrier / max_barrier, 0.0, 1.0), 2), Color("#7af8f0"))
 	if more > 0.0:
 		draw_rect(Rect2(-w / 2 - 1, top + 5, w + 2, 2), Color(0.04, 0.04, 0.1))
 		draw_rect(Rect2(-w / 2, top + 7, w, 2), Color("#0e0c24"))
