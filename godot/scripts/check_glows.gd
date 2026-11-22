@@ -2494,3 +2494,62 @@ func sounds14(main, hero, dir: String) -> void:
 	for b in bad:
 		print("  WRONG: ", b)
 
+
+## THE UNIQUE WEAPONS DRAWN AS THEMSELVES (skins.gd, hero.gd dress; art/heroes.ts wornSkin): each hero in turn holding each of his
+## unique weapons, drawn with its own pictures in a dungeon and in town (the Warlock's arm blazing too, his demon his own whatever
+## book), and his own again once it is put down; the Warrior's only of the kind he is drawn with. A picture of each.
+func skins(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	await M._wait(0.4)
+	var Sk := preload("res://scripts/skins.gd")
+	var path_of := func(a) -> String:
+		if a == null or a.count(0, 0) == 0:
+			return ""
+		var f: Dictionary = a.frame(0, 0, 0)
+		return f["tex"].atlas.resource_path.get_file() if f["tex"] is AtlasTexture else f["tex"].resource_path.get_file()
+	var each := {
+		"mage": Sk.OF_UNIQUE["mage"].keys(), "ranger": Sk.OF_UNIQUE["ranger"].keys(), "tinkerer": Sk.OF_UNIQUE["tinkerer"].keys(),
+		"brawler": Sk.OF_UNIQUE["brawler"].keys(), "warlock": Sk.OF_UNIQUE["warlock"].keys(), "warrior": Sk.WARRIOR_KIND.keys(),
+	}
+	for c in each:
+		M.set_class(c, true)
+		_bare()
+		await M._wait(0.2)
+		var own: String = path_of.call(h.arts["dungeon"])
+		var demon0 = h.arts.get("demon")
+		for u in each[c]:
+			if c == "warrior":
+				var kind: String = Sk.WARRIOR_KIND[u]
+				h.talents = [] if kind == "" else ["battleaxe" if kind == "axe" else "warhammer"]
+				h.arm()
+				await M._wait(0.1)
+			var it: Dictionary = _wear(u)
+			await M._wait(0.25)
+			var want: String = Sk.worn(c, it, h.arms()).get("group", "")
+			var dung: String = path_of.call(h.arts["dungeon"])
+			var town: String = path_of.call(h.arts["town"])
+			var ok: bool = want != "" and h.skin == want and dung.begins_with(want + "-") and town.begins_with(want + "-") and h.art == h.arts["dungeon"]
+			if c == "warlock":
+				ok = ok and path_of.call(h.arts["blaze"]).begins_with(want + "-") and h.arts["demon"] == demon0 and path_of.call(h.arts["demon"]).begins_with("warlock-demon-")
+			_line(ok, "%s holding %s: drawn as %s (in a dungeon %s, in town %s%s)" % [c, u, h.skin, dung, town, (", blazing " + path_of.call(h.arts["blaze"]) + ", demon " + path_of.call(h.arts["demon"])) if c == "warlock" else ""])
+			await M._snap("%s/sk_%s_%s.png" % [dir, c, u])
+			_bare()
+		if c == "warrior":
+			h.talents = []
+			h.arm()
+		await M._wait(0.2)
+		_line(h.skin == "" and path_of.call(h.arts["dungeon"]) == own, "%s with it put down: his own again (%s)" % [c, path_of.call(h.arts["dungeon"])])
+	# (the Warrior holding an axe of his while his tree gives him the maul: his maul, not it)
+	h.talents = ["warhammer"]
+	h.arm()
+	await M._wait(0.1)
+	_wear("gyre")
+	await M._wait(0.25)
+	_line(h.skin == "" and path_of.call(h.arts["dungeon"]).begins_with("warrior-hammer-"), "the Warrior with the maul holding the Gyre (an axe): his maul as ever (%s)" % path_of.call(h.arts["dungeon"]))
+	_bare()
+	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+	for b in bad:
+		print("  WRONG: ", b)
+

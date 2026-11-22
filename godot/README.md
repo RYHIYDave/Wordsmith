@@ -1158,11 +1158,21 @@ game/world_sounds.ts; `sfx.gd`, `monsters.gd`, `monster.gd`, `town.gd`, `main.gd
   10 to 25 s, heard only within 2.5 tiles of one. (The game's braziers in the cult strongholds are not in this copy's floors.)
 - `--only=sounds14` (`check_glows.gd`): 8 checks.
 
+## The unique weapons drawn as themselves (the cloud chat, 22 Nov 2026)
+
+- **The heroes' pictures of the released game 25.3.22** (bake eccc11d9382f, tools/godot_heroes.mjs, read from the published game
+  as `scripts/baked_hero.gd` reads it; the packs of a hero kept in packs, one file in the bake since 25.3.22, cut into a sheet each
+  here as before): every group, the unique weapons' own among them, and the Warlock's demon a group of its own.
+- **Holding a unique weapon, drawn holding it** (art/heroes.ts wornSkin, render.ts heroArt; `skins.gd`, `hero.gd` dress): the
+  Mage's four staves, the Ranger's four bows, the Tinkerer's four wrenches, the Brawler's four wraps, the Warlock's four tomes (his
+  arm blazing with each too; his demon as ever), the Warrior's three great swords, four axes and three hammers, each only while he is
+  drawn with that kind (his tree's war axe or maul, or his great sword). Put down, his own again.
+- `--only=skins` (`check_glows.gd`): 37 checks, a picture of each of the thirty.
+
 ## Not in it yet
 
 The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick).
-Endless mode (the Shaft's Rim town, the endless levels, the Tablet Shards, the Twisted Wordsmith). The uniques' own looks on the
-heroes (a unique weapon drawn as itself).
+Endless mode (the Shaft's Rim town, the endless levels, the Tablet Shards, the Twisted Wordsmith).
 (The monsters' pictures are the released game 25.3.21's bake, b982b7f72ca4: the Censor's ten sheets, the Glass Queen's reflections.)
 
 ## How it is made

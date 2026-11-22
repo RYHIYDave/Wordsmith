@@ -358,7 +358,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -693,10 +693,12 @@ func set_class(c: String, fresh: bool) -> void:
 	# (in his town, the camp and the rim, his weapon on his back: render.ts, the heroes' art `town: game.level.town`; the bake's
 	# `town` key, art/heroes3.ts; anywhere else, the dungeon's)
 	hero.arts = {"dungeon": BakedHero.new(HERO_DIR, c), "town": BakedHero.new(HERO_DIR, c, "town")}
-	# (THE WARLOCK: his arm blazing while his pact is full, and the demon: the bake's `blaze` and `demon` keys)
+	# (THE WARLOCK: his arm blazing while his pact is full, the bake's `blaze` key; and the demon, a group of its own since 25.3.22)
 	if c == "warlock":
 		hero.arts["blaze"] = BakedHero.new(HERO_DIR, c, "blaze")
-		hero.arts["demon"] = BakedHero.new(HERO_DIR, c, "demon")
+		hero.arts["demon"] = BakedHero.new(HERO_DIR, "warlock-demon", "demon")
+	# (his own pictures: a unique weapon he holds is looked at again next frame, hero.gd dress)
+	hero.skin = ""
 	hero.art = hero.arts["town" if is_home(place) else "dungeon"]
 	hero.loadout.cls = c
 	hero.loadout.refresh()
@@ -1166,6 +1168,9 @@ func _notification(what: int) -> void:
 func _process(dt: float) -> void:
 	if hero != null and not hero.alive and hero.stays_down:
 		_fallen(dt)
+	# (THE UNIQUE WEAPON IN HIS HAND drawn as itself: hero.gd dress)
+	if hero != null and loot != null and not hero.arts.is_empty():
+		hero.dress(loot.gear["mainhand"])
 	if saving:
 		_save_t += dt
 		if _save_t > 5.0:
@@ -2429,6 +2434,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "sounds14":
 		await preload("res://scripts/check_glows.gd").new().sounds14(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "skins":
+		await preload("res://scripts/check_glows.gd").new().skins(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "pad":

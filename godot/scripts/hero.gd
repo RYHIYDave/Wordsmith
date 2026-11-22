@@ -2433,23 +2433,61 @@ func arm() -> void:
 	if w == weapon and (w == "greatsword") == (kit == null):
 		return
 	weapon = w
-	var dir := "res://assets/heroes"
 	if w == "greatsword":
 		loadout.form_moves = []
-		arts = {"dungeon": BakedHero.new(dir, "warrior"), "town": BakedHero.new(dir, "warrior", "town")}
 		kit = null
 	else:
 		loadout.form_moves = Words.data()["warriorKits"][w]
-		var place := "axe" if w == "battleaxe" else "hammer"
-		var group := "warrior-" + place
-		arts = {"dungeon": BakedHero.new(dir, group, place), "town": BakedHero.new(dir, group, place + "Town")}
 		kit = load("res://scripts/heroes/warrior_arms.gd").new(self, w)
 	loadout.refresh()
-	art = arts["town" if in_town else "dungeon"]
+	# (his pictures with it, or with a unique of its kind he holds)
+	_lay_arts(Skins.worn(cls, _held, arms()))
 	_act = ""
 	_list = BakedHero.IDLE
 	if on_armed.is_valid():
 		on_armed.call()
+
+
+## THE UNIQUE WEAPON IN HIS HAND (render.ts heroArt, art/heroes.ts wornSkin; skins.gd): holding one drawn as itself, his pictures
+## are its own (`skin`: its group of the bake), else his class's own (the Warrior's with his tree's war axe or maul, once given).
+## Looked at each frame (main.gd), changed only when what he would be drawn with changes.
+const Skins := preload("res://scripts/skins.gd")
+var skin := ""
+var _held = null
+func dress(item) -> void:
+	_held = item
+	var s: Dictionary = Skins.worn(cls, item, arms())
+	if str(s.get("group", "")) == skin:
+		return
+	_lay_arts(s)
+
+
+## (heroes.ts heavyDrawn) The Warrior's war axe or maul once his tree has given it ("axe", "hammer"); "" for his great sword.
+func arms() -> String:
+	if cls != "warrior" or weapon == "greatsword":
+		return ""
+	return "axe" if weapon == "battleaxe" else "hammer"
+
+
+## His picture sets, by `s` (a skin, Skins.worn) or his own: in a dungeon, in town; the Warlock's arm blazing too, and his demon (a
+## group of its own, kept whatever book he wears).
+func _lay_arts(s: Dictionary) -> void:
+	var dir := "res://assets/heroes"
+	var group := cls
+	var places := {"dungeon": "dungeon", "town": "town", "blaze": "blaze"}
+	if not s.is_empty():
+		group = s["group"]
+		places = s
+	elif arms() != "":
+		group = "warrior-" + arms()
+		places = {"dungeon": arms(), "town": arms() + "Town"}
+	skin = str(s.get("group", ""))
+	var demon = arts.get("demon")
+	arts = {"dungeon": BakedHero.new(dir, group, places["dungeon"]), "town": BakedHero.new(dir, group, places["town"])}
+	if cls == "warlock":
+		arts["blaze"] = BakedHero.new(dir, group, places["blaze"])
+		arts["demon"] = demon if demon != null else BakedHero.new(dir, "warlock-demon", "demon")
+	art = arts["town" if in_town else "dungeon"]
 
 
 ## Whether talent `id` is his (game.ts has).
