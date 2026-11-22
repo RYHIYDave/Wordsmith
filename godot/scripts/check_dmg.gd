@@ -535,10 +535,14 @@ func _fight_pack(reach: float, hold := false, life := 0.0) -> float:
 		h.world = spot
 		var alive := 0
 		var left := 0.0
-		for m in pack:
+		for k2 in pack.size():
+			var m = pack[k2]
 			if is_instance_valid(m) and not m.dead:
 				alive += 1
 				left += m.life
+				# (where it stands, whatever throws or slides it, as the elite)
+				var a2 := TAU * k2 / 6.0
+				m.world = spot + way * (reach + 0.4) + Vector2(cos(a2), sin(a2)) * 0.5
 				_hold(m)
 		# (WS_DMG_TRACE: the pack's life frame by frame, its first half second)
 		if OS.has_environment("WS_DMG_TRACE") and t < 0.5:

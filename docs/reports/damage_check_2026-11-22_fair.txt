@@ -1,0 +1,73 @@
+FLOOR 20's own monsters, for the measure of it: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+
+=== RANGER, POISON (Dexterity) ===
+hero: level 50, Str 155 Dex 394 Int 6; weapon 66-97 at 2.92 attacks a second; damage +54%, physical +323%, fire +0%, frost +0%, lightning +0%, poison +282%, poison added 0-0; critical 89% for +530%
+talents: keeneye, venom, steadyaim, quickdraw, longshot, lightstep, huntersmark, splitshot, piercing, farsight
+  mainhand: Horn Bow + power2 (dmgMin 12.0, dmgMax 18.0), blight (physPct 40.0, poisonPct 40.0), twin (critChance 12.0), piercing (critMult 60.0)
+  offhand: Studded Quiver + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  helm: War Helm + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  chest: War Plate + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  gloves: Studded Gloves + power2 (dmgMin 12.0, dmgMax 18.0), blight (physPct 40.0, poisonPct 40.0), twin (critChance 12.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  boots: War Greaves + power (str 27.0), twin (critMult 60.0), swift (dex 27.0), power (armor 111.0)
+  amulet: Obsidian Amulet + poison2 (poisonPct 81.0), power2 (physPct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring1: Ruby Ring + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), power2 (physPct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + power2 (dmgMin 12.0, dmgMax 18.0), poison2 (poisonPct 81.0), power2 (physPct 81.0), twin (critChance 12.0)
+ALL FOUR WORDS (in front blight, precise; behind power2, fleeting), in his hold too (volley): into the elite, his quick attack alone 462026 a second, it and his hold 504260 a second; a tough pack (six of 2000000 life), quick alone dead in 6.4 s (1874406 a second), it and his hold 6.2 s (1935225 a second)
+
+=== WARRIOR, POWER (Strength) ===
+hero: level 50, Str 379 Dex 116 Int 6; weapon 69-94 at 1.63 attacks a second; damage +0%, physical +405%, fire +0%, frost +0%, lightning +0%, poison +241%, poison added 0-0; critical 75% for +590%
+talents: greatsword, sweepingcut, drilledleap, footwork, honededge, giantslayer, executioner, mastertop, gswhirlwind, thickskin, shieldwall
+  mainhand: War Greatsword + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), twin (critChance 12.0), power2 (physPct 81.0), piercing (critMult 60.0)
+  helm: War Helm + twin (critMult 60.0), power (str 27.0), swift (dex 27.0), power (armor 111.0)
+  chest: War Plate + twin (critMult 60.0), power (str 27.0), swift (dex 27.0), power (armor 111.0)
+  gloves: Studded Gloves + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), twin (critChance 12.0), power2 (physPct 81.0), piercing (critMult 60.0)
+  belt: Studded Belt + twin (critMult 60.0), power (str 27.0), swift (dex 27.0), power (armor 111.0)
+  boots: War Greaves + twin (critMult 60.0), power (str 27.0), swift (dex 27.0), power (armor 111.0)
+  amulet: Obsidian Amulet + poison2 (poisonPct 81.0), twin (critChance 12.0), power2 (physPct 81.0), piercing (critMult 60.0)
+  ring1: Ruby Ring + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), twin (critChance 12.0), power2 (physPct 81.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), twin (critChance 12.0), power2 (physPct 81.0), piercing (critMult 60.0)
+ALL FOUR WORDS (in front blight, heavy; behind fleeting, power2), in his hold too (whirlwind): into the elite, his quick attack alone 464973 a second, it and his hold 686321 a second; a tough pack (six of 2000000 life), quick alone dead in 5.6 s (2151340 a second), it and his hold 5.2 s (2309880 a second)
+
+=== TINKERER, LIGHTNING AND VOLATILE ===
+hero: level 50, Str 106 Dex 403 Int 111; weapon 54-72 at 2.67 attacks a second; damage +162%, physical +0%, fire +0%, frost +0%, lightning +323%, poison +282%, poison added 0-0; critical 70% for +530%
+talents: bombsaway, clustervials, tar, madmixture, alchemy, thebigone, growthserum, lightningrod, shrapnel, fortune
+  mainhand: War Wrench + forking (critChance 9.0, lightMin 7.0, lightMax 9.0), thunder (dmgMin 7.0, dmgMax 9.0, lightPct 40.0), poison2 (poisonPct 81.0), splitting (dmgPct 54.0)
+  offhand: War Shield + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  helm: War Helm + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + forking (critChance 9.0, lightMin 7.0, lightMax 9.0), blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), lightning2 (lightPct 81.0), piercing (critMult 60.0)
+  belt: Studded Belt + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Emerald Amulet + forking (critChance 9.0, lightPct 40.0), poison2 (poisonPct 81.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring1: Ruby Ring + forking (critChance 9.0, lightMin 7.0, lightMax 9.0), blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), lightning2 (lightPct 81.0), splitting (dmgPct 54.0)
+  ring2: Ruby Ring + forking (critChance 9.0, lightMin 7.0, lightMax 9.0), blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), lightning2 (lightPct 81.0), piercing (critMult 60.0)
+ALL FOUR WORDS (in front contagion, precise; behind demolition, fleeting), in his hold too (golem): into the elite, his quick attack alone 665652 a second, it and his hold 720084 a second; a tough pack (six of 2000000 life), quick alone dead in 3.0 s (3954529 a second), it and his hold 3.7 s (3227014 a second)
+
+=== MAGE, FIRE (Intelligence) ===
+hero: level 50, Str 86 Dex 182 Int 339; weapon 69-95 at 1.72 attacks a second; damage +0%, physical +0%, fire +323%, frost +0%, lightning +0%, poison +323%, poison added 0-0; critical 66% for +350%
+talents: kindling, searing, aura, flamewarp, fuel, inferno, lasting, charged, forking, ball
+  mainhand: Runed Staff + poison2 (poisonPct 81.0), eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), piercing (critMult 60.0)
+  helm: War Helm + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), fire2 (firePct 81.0), fire2 (fireMin 12.0, fireMax 18.0), swift (dex 27.0)
+  belt: Studded Belt + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + twin (critMult 60.0), swift (dex 27.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Emerald Amulet + poison2 (poisonPct 81.0), fire2 (firePct 81.0), twin (critChance 12.0), swift (dex 27.0)
+  ring1: Ruby Ring + blight (dmgMin 7.0, dmgMax 9.0, poisonPct 40.0), fire2 (firePct 81.0), twin (critChance 12.0), fire2 (fireMin 12.0, fireMax 18.0)
+  ring2: Ruby Ring + poison2 (poisonPct 81.0), eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fire2 (fireMin 12.0, fireMax 18.0)
+ALL FOUR WORDS (in front fumes, precise; behind power2, fleeting), in his hold too (orb): into the elite, his quick attack alone 207371 a second, it and his hold 259430 a second; a tough pack (six of 2000000 life), quick alone dead in 9.2 s (1307533 a second), it and his hold 8.8 s (1370705 a second)
+
+=== MAGE, FROST (Intelligence) ===
+hero: level 50, Str 86 Dex 116 Int 351; weapon 69-95 at 1.87 attacks a second; damage +108%, physical +0%, fire +323%, frost +0%, lightning +0%, poison +0%, poison added 0-0; critical 75% for +530%
+talents: bittercold, deepfreeze, aura, frostwarp, rime, shatter, lasting, kindling, searing, spear
+  mainhand: Runed Staff + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), piercing (critMult 60.0)
+  helm: War Helm + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  chest: War Plate + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  gloves: Studded Gloves + eruption (dmgMin 7.0, dmgMax 9.0, firePct 40.0), twin (critChance 12.0), fervor (atkSpeed 16.0, fireMin 7.0, fireMax 9.0), splitting (dmgPct 54.0)
+  belt: Studded Belt + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  boots: War Greaves + swift (dex 27.0), twin (critMult 60.0), demolition (str 20.0, int 20.0), power (armor 111.0)
+  amulet: Amethyst Amulet + fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0), splitting (dmgPct 54.0)
+  ring1: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+  ring2: Ruby Ring + eruption (dmgMin 7.0, dmgMax 9.0, fireMin 7.0, fireMax 9.0), fire2 (firePct 81.0), twin (critChance 12.0), piercing (critMult 60.0)
+ALL FOUR WORDS (in front scald, twin; behind power2, fleeting), in his hold too (orb): into the elite, his quick attack alone 96047 a second, it and his hold 136225 a second; a tough pack (six of 2000000 life), quick alone dead in 30.0 s (400000 a second), it and his hold 30.0 s (400000 a second)
