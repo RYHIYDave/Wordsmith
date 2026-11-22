@@ -1,1 +1,2 @@
 First iPhone build: unsigned, to prove the Mac step works (22 Nov 2026).
+Second run: on a Mac with Xcode 26 (Godot 4.7.2's iPhone template needs it).
