@@ -96,6 +96,10 @@ test('THE BRIDGES: every crossing one bridge, square to the stream, as long as t
       const y = Math.floor(i / W) + 0.5;
       // (a stronghold's court is laid whole wherever it falls, over the stream too, as it was before: not the bridges')
       if (land.holds.some((q) => x > q.gx - 3 && x < q.gx + 3 && y > q.gy && y < q.gy + 3)) continue;
+      // (nor a stronghold's hall and its hallway, laid apart from the open ground and drawn as a dungeon's room: the river's line,
+      // drawn across the whole floor's bounds, runs through them only on paper; seed 13's hallway crosses it)
+      const inRect = (r: { x: number; y: number; w: number; h: number } | undefined): boolean => !!r && x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h;
+      if (land.holds.some((q) => inRect(q.inside) || inRect(q.way))) continue;
       if (laneDist({ pts: river, w: 0 }, x, y) < 0.6) assert.ok((land.bridges ?? []).some((b) => b.tiles.includes(i)), `seed ${seed}: tile ${x - 0.5}, ${y - 0.5} in the water is a bridge's`);
     }
   }

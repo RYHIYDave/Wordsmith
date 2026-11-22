@@ -132,8 +132,11 @@ export function squareBridge(river: readonly [number, number][], cx: number, cy:
     return out;
   };
   let best: { x: number; y: number; tiles: number[] } | null = null;
-  for (const band of [BRIDGE.band, 0.72, 0.85, 1.0]) {
-    for (let k = 0; k <= 10; k++) {
+  // (the band as narrow as joins, slid a quarter of a tile either way; where none does, slid up to a whole tile, the band never
+  // past the deck's edge, so that every tile's middle is under it (tests/f8f9.test.ts THE BRIDGES; seed 1's third crossing of
+  // floor 9 joined only at 0.85: a tile half off the deck, over the water); only then wider)
+  for (const [band, slide] of [[BRIDGE.band, 10], [0.72, 10], [BRIDGE.band, 40], [0.72, 40], [0.79, 40], [0.85, 10], [1.0, 10]]) {
+    for (let k = 0; k <= slide; k++) {
       // (slid along the stream by up to half a tile, nearest first)
       const s = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.05;
       const x = cx + tx * s;
