@@ -113,6 +113,8 @@ func show_panel(what: String) -> void:
 
 ## (TOUCH, touch.gd) Whether a touch here is a press of the small map (it opens the large one) or of the pause button.
 func claims(p: Vector2) -> bool:
+	# (in its own game pixels: it stands within the phone's safe area, main.gd place_safe)
+	p -= position / 2.0
 	var W := floorf(size.x / 2.0)
 	var mw := minf(66.0, floorf(W * 0.2))
 	if main != null and not main.is_home(main.place) and Rect2(W - mw - 4, 4, mw, MH).has_point(p):
@@ -125,7 +127,7 @@ func _input(e: InputEvent) -> void:
 		return
 	if main == null or main.hero == null or (inv != null and inv.visible):
 		return
-	var p: Vector2 = e.position / 2.0
+	var p: Vector2 = (e.position - position) / 2.0
 	if open == "map":
 		show_panel("")
 		get_viewport().set_input_as_handled()
@@ -199,7 +201,7 @@ func _text(s: String, x: float, y: float, c: Color, opts := {}) -> float:
 
 ## ui.ts drawButton: a pink block for the one thing to press, else a plain one (brighter under the pointer); its label.
 func _button(x: float, y: float, w: float, h: float, label: String, small := false, primary := false, color = null) -> void:
-	var hot := Rect2(x, y, w, h).has_point(get_viewport().get_mouse_position() / 2.0)
+	var hot := Rect2(x, y, w, h).has_point((get_viewport().get_mouse_position() - position) / 2.0)
 	if primary:
 		_box(x, y, w, h, T["callHi"] if hot else T["call"], P["white"] if hot else T["callHi"])
 	else:

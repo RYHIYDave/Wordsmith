@@ -675,6 +675,7 @@ func _ready() -> void:
 	_curtain.color = Color(0, 0, 0, 0)
 	layer.add_child(_curtain)
 	add_child(layer)
+	place_safe()
 	# (FLOORS 6 TO 10 BESIDES THEIR FIGHTS: act1/quest610.gd)
 	quest610 = preload("res://scripts/act1/quest610.gd").new()
 	quest610.main = self
@@ -921,6 +922,11 @@ func _screen_start() -> void:
 	if _arg("upright") != "":
 		upright = true
 		DisplayServer.window_set_size(Vector2i(590, 1086))
+	# (`--phone=WxH`, for the checks: a window a phone's screen's size in its own pixels, as 2532x1170)
+	if _arg("phone") != "":
+		var wh := _arg("phone").split("x")
+		if wh.size() == 2:
+			DisplayServer.window_set_size(Vector2i(int(wh[0]), int(wh[1])))
 	_turn()
 	get_tree().root.size_changed.connect(fit_screen)
 	fit_screen()
@@ -949,6 +955,44 @@ func fit_screen() -> void:
 	var w: int = ceili(dw / (2.0 * k)) * 2
 	var h: int = ceili(dh / (2.0 * k)) * 2
 	get_tree().root.content_scale_size = Vector2i(w, h)
+	place_safe()
+
+
+## A PHONE'S NOTCH AND ROUNDED CORNERS (engine/screen.ts: the browser game kept its whole canvas within the page's
+## env(safe-area-inset-*)): the screen's own things (the HUD, the small map and its panels, the gear screen) kept within the
+## part of the screen the phone calls safe, the world still drawn out to every edge. How far in from each edge, in game pixels
+## (l, t, r, b): none on a computer; `--safe=L,T,R,B`, in screen pixels, for the checks: a phone's as if.
+func safe_insets() -> Dictionary:
+	var out := {"l": 0.0, "t": 0.0, "r": 0.0, "b": 0.0}
+	var win: Vector2i = DisplayServer.window_get_size()
+	if win.x <= 0 or win.y <= 0:
+		return out
+	var cut := [0, 0, 0, 0]
+	if _arg("safe") != "":
+		var parts := _arg("safe").split(",")
+		for i in mini(4, parts.size()):
+			cut[i] = int(parts[i])
+	elif OS.has_feature("mobile"):
+		var safe: Rect2i = DisplayServer.get_display_safe_area()
+		if safe.size.x > 0 and safe.size.y > 0:
+			cut = [safe.position.x, safe.position.y, win.x - safe.end.x, win.y - safe.end.y]
+	# (screen pixels to game pixels: the view is content_scale_size picture pixels across, two to a game pixel)
+	var k: float = float(get_tree().root.content_scale_size.x) / float(win.x) / 2.0
+	var keys := ["l", "t", "r", "b"]
+	for i in 4:
+		out[keys[i]] = ceilf(maxf(0.0, float(cut[i])) * k)
+	return out
+
+
+## The HUD, the small map and the gear screen set within the safe part of the screen (safe_insets), as the screen is now.
+func place_safe() -> void:
+	var s := safe_insets()
+	for c in [_hud, _mini, _inv]:
+		if c != null and is_instance_valid(c):
+			c.offset_left = s["l"] * 2.0
+			c.offset_top = s["t"] * 2.0
+			c.offset_right = -s["r"] * 2.0
+			c.offset_bottom = -s["b"] * 2.0
 
 
 ## (main.ts turnLabel) The switch's words, on a phone: the other way to hold it.
@@ -2931,6 +2975,9 @@ func _shoot(hero: Hero, dir: String) -> void:
 		get_tree().quit()
 	if _arg("only") == "twin":
 		await preload("res://scripts/check_twin.gd").new().run(self, hero, dir)
+		get_tree().quit()
+	if _arg("only") == "safe":
+		await preload("res://scripts/check_safe.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "exits":

@@ -954,14 +954,20 @@ func _draw() -> void:
 			hero._cam.offset.x = W / 2.0 / maxf(0.01, hero._cam.zoom.x)
 	# (THE PANEL, on the right half: ui/inventory.ts invRect; laid out from 0 and drawn moved over: _half)
 	_half(1)
-	draw_rect(Rect2(0, 0, W, _vh()), PANEL)
+	# (A PHONE'S NOTCH AND CORNERS: the screen within the safe part of it, main.gd place_safe; the panel's grounds carried out
+	# under them to the screen's edges, on its own sides: sideways, not the game's half's)
+	var gl := offset_left if _tall() else 0.0
+	var gt := 0.0 if _tall() else offset_top
+	var gr := -offset_right
+	var gb := -offset_bottom
+	draw_rect(Rect2(-gl, -gt, W + gl + gr, _vh() + gt + gb), PANEL)
 	# (the bottom that never changes stands on a ground of its own; not on THE SKILL TREES' page)
 	if _page != "talents":
-		draw_rect(Rect2(0, _strip_y - 3.0 * K, W, _vh() - _strip_y + 3.0 * K), BOX)
-		draw_rect(Rect2(0, _strip_y - 3.0 * K, W, 1), EDGE)
+		draw_rect(Rect2(-gl, _strip_y - 3.0 * K, W + gl + gr, _vh() - _strip_y + 3.0 * K + gb), BOX)
+		draw_rect(Rect2(-gl, _strip_y - 3.0 * K, W + gl + gr, 1), EDGE)
 	# (its edge against the game: a line, and a hair of light along it)
-	draw_rect(Rect2(0, 0, K, _vh()), EDGE_HI)
-	draw_rect(Rect2(0, 0, 1, _vh()), PICK_LO)
+	draw_rect(Rect2(0, -gt, K, _vh() + gt + gb), EDGE_HI)
+	draw_rect(Rect2(0, -gt, 1, _vh() + gt + gb), PICK_LO)
 	var first: bool = loot.first_word_waits()
 	for tb in _tabs:
 		var on: bool = tb["page"] == _page

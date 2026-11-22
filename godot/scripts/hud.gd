@@ -147,6 +147,8 @@ func _pad() -> bool:
 ## (TOUCH, touch.gd) Whether a touch here is a press of the HUD's own things (main.ts isUi, ui.claim): the INVENTORY and TALENTS
 ## buttons, the flask, a move's plate or the Lunge's button out of a fight.
 func claims(p: Vector2) -> bool:
+	# (in the HUD's own game pixels: it stands within the phone's safe area, main.gd place_safe)
+	p -= position / 2.0
 	if _inv_button.has_point(p) or _talent_button.has_point(p) or _flask.has_point(p):
 		return true
 	if main != null and not main._in_fight():
@@ -158,18 +160,24 @@ func claims(p: Vector2) -> bool:
 	return false
 
 
+## A point of the view's (a press, the mouse) in the HUD's own game pixels: it stands within the phone's safe area (main.gd
+## place_safe), on a computer at the view's corner.
+func _here(v: Vector2) -> Vector2:
+	return (v - position) / 2.0
+
+
 func _input(e: InputEvent) -> void:
 	if not (e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT):
 		return
 	# (THE FLASK: a press of it drinks, as Q does: hud.ts `potion (tap or Q)`)
-	if main != null and hero != null and hero.alive and not get_tree().paused and _flask.has_point(e.position / 2.0):
+	if main != null and hero != null and hero.alive and not get_tree().paused and _flask.has_point(_here(e.position)):
 		Input.action_press("potion")
 		get_tree().create_timer(0.05).timeout.connect(func(): Input.action_release("potion"))
 		get_viewport().set_input_as_handled()
 		return
 	if main == null or hero == null or not hero.alive or get_tree().paused or main._inv == null:
 		return
-	var p: Vector2 = e.position / 2.0
+	var p: Vector2 = _here(e.position)
 	if _inv_button.has_point(p):
 		main._inv.toggle()
 		get_viewport().set_input_as_handled()
@@ -433,7 +441,7 @@ func _draw() -> void:
 	var ex := W - 37.0 - ps if by_mana else W - ps - 5
 	# (what the prompt points at, an attack's plate or the Lunge's button, and which of them is under the pointer)
 	var point: int = int(main.guide.point) if main != null else -1
-	var mouse: Vector2 = pointer if pointer != null else get_viewport().get_mouse_position() / 2.0
+	var mouse: Vector2 = pointer if pointer != null else _here(get_viewport().get_mouse_position())
 	var hover_skill := -1
 	# (THE FIRST LEVELS: a move not open yet is not shown at all, and the moment it opens is a moment: hud.ts OPENING)
 	var opening: Dictionary = main.move_toast if main != null and not main.move_toast.is_empty() and float(main.move_toast["t"]) < OPEN_END else {}
