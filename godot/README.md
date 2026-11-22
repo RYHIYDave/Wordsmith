@@ -1284,15 +1284,16 @@ warrior has an issue where he starts with the greatsword but would have to pay a
 he can swap to axe or hammer at level 1.”, “And make sure the words, talents, and uniques all work together correctly to
 augment attacks.  I want things to compound as they are added to attacks or abilities.”
 
-- **The Warrior's weapon, his first point given early** (`talents.gd` is_weapon, spent, next_point, starting, swap_out;
-  `inventory.gd`, `talents_page.gd`, `hud.gd`): first made free, then, at his word the morning after (“And I don't like that
-  warrior starts with a talent point.  How can we allow the switch at level 1 without just giving the player a free talent
-  point?”), his first point as the game has it, but his from level 1: the greatsword his as he starts; the battle axe or the
-  warhammer taken in its place at any level, anywhere, for nothing more (SWAP TO IT (FREE) on its card), so long as nothing
-  more on the old one's path is taken (“Undo the greatsword's talents first”); a weapon is never undone, only swapped (“Take
-  another to swap”). It counts among his points: the point level 5 brings is the one his weapon took, so his next to spend comes
-  at level 10 (NEXT POINT AT LEVEL 10 over his tree), and over the game he has ten, as every hero has, one of them his weapon.
-  `--only=talents`: 82 checks (a new Warrior at level 1 swapping to the axe and back).
+- **The Warrior's weapon, a pre-point** (`talents.gd` is_weapon, spent, pre_point, next_point, starting, swap_out;
+  `talents_page.gd` lay_out, draw: the WEAPON row; `inventory.gd`, `hud.gd`): at his words the morning after (“No I mean I don't
+  like the trees starting with a weapon swap.  I want the swap to be available but not be part of the talent tree pathing.  Like
+  it's a pre-point, something that can be allocated in the talent tree area but before you get into an actual branch”), his
+  weapon is no stone of his tree: a row of its own under the tree on the TALENTS page, WEAPON, then the battle axe, the
+  greatsword and the warhammer, the one he holds lit; pressed, its card (WEAPON: FREE TO SWAP; SWAP TO IT (NO POINT), or YOURS).
+  The greatsword his as he starts; another in its place at any level, anywhere, so long as nothing more on the old one's path is
+  taken (“Undo the greatsword's talents first”). It costs no point: his ten go on the tree's own, the first at level 5, as every
+  hero's. The tree begins at each path's own first talents, drawn from where the tree begins; only his weapon's open.
+  `--only=talents`: 82 checks (a new Warrior at level 1 swapping to the axe and back, the row under the tree).
 - **What he adds compounds** (`hero.gd` side, word_k, talent_hit; `words.gd` resolve `word_k`): a blow of one of his moves
   was made of everything already, each a multiplier on the rest. What else he sets off now is too: a talent's arc or its
   burning ground, a unique's own blow, a companion's bite, the Golem's coil, the ground a word behind leaves, the last

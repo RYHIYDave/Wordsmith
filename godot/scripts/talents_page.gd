@@ -19,6 +19,8 @@ const Talents := preload("res://scripts/talents.gd")
 const STONE := 11
 const BIG_STONE := 15
 const CARD := 136.0
+## (the height of the Warrior's weapons' row under his tree, game pixels)
+const PRE_H := 20.0
 
 # ---- the runes on the stones (ui/talents.ts): 'X' the colour, 'o' the glow --------------------------------------------------
 const ARROW := ["....X..", ".....X.", "XXXXXXo", ".....X.", "....X.."]
@@ -93,7 +95,9 @@ func lay_out(cls: String, r: Rect2) -> Dictionary:
 	var maxx: float = b[2]
 	var maxy: float = b[3]
 	var head_y := r.position.y + 1.0
-	var area := Rect2(r.position.x + 9.0, r.position.y + 19.0, r.size.x - 18.0, r.size.y - 29.0)
+	# (THE WARRIOR'S WEAPON, A PRE-POINT: a row of its own under the tree, before any branch: talents.gd)
+	var pre := Talents.pre_point(cls)
+	var area := Rect2(r.position.x + 9.0, r.position.y + 19.0, r.size.x - 18.0, r.size.y - 29.0 - (PRE_H if pre else 0.0))
 	var sx := area.size.x / maxf(0.01, maxx - minx)
 	var sy := area.size.y / maxf(0.01, maxy - miny)
 	var ox := 0.0
@@ -108,12 +112,28 @@ func lay_out(cls: String, r: Rect2) -> Dictionary:
 		return Vector2(roundf(area.position.x + ox + (x - minx) * sx), roundf(area.position.y + oy + (y - miny) * sy))
 	var nodes: Array = []
 	var at := {}
+	var weapons: Array = []
 	for d in tree["talents"]:
+		if pre and Talents.is_weapon(cls, d["id"]):
+			weapons.append(d)
+			continue
 		var c: Vector2 = to.call(float(d["at"][0]), float(d["at"][1]))
 		var s := BIG_STONE if d["big"] else STONE
 		var n := {"def": d, "r": Rect2(c.x - floorf(s / 2.0), c.y - floorf(s / 2.0), s, s), "c": c}
 		nodes.append(n)
 		at[d["id"]] = n
+	# (the weapons' row: WEAPON, then each, left to right as their paths stand in the tree)
+	var pre_r := Rect2()
+	if pre:
+		weapons.sort_custom(func(a, b): return float(a["at"][0]) < float(b["at"][0]))
+		pre_r = Rect2(area.position.x - 6.0, area.end.y + 6.0, area.size.x + 12.0, PRE_H - 8.0)
+		var lw := _w("WEAPON", true) + 6.0
+		var bw := floorf((pre_r.size.x - lw - 2.0 * (weapons.size() - 1)) / maxf(1.0, weapons.size()))
+		for k in weapons.size():
+			var br := Rect2(pre_r.position.x + lw + k * (bw + 2.0), pre_r.position.y, bw, pre_r.size.y)
+			var n := {"def": weapons[k], "r": br, "c": br.get_center(), "weapon": true}
+			nodes.append(n)
+			at[weapons[k]["id"]] = n
 	var root = to.call(float(tree["root"][0]), float(tree["root"][1])) if tree["root"] != null else null
 	# (each path's name beside one of its talents, in the small letters)
 	var labels: Array = []
@@ -121,6 +141,9 @@ func lay_out(cls: String, r: Rect2) -> Dictionary:
 		if str(p["name"]) == "":
 			continue
 		var n = at.get(p["label"]["node"])
+		# (a weapon's path named on its button in the weapons' row, not in the tree)
+		if n != null and n.get("weapon", false):
+			continue
 		var w := _w(p["name"], true)
 		var x := r.position.x
 		var y := r.position.y + 10.0
@@ -140,7 +163,7 @@ func lay_out(cls: String, r: Rect2) -> Dictionary:
 					x = n["c"].x - floorf(w / 2.0)
 					y = n["c"].y + half + 2.0
 		labels.append({"text": p["name"], "x": maxf(r.position.x, minf(r.position.x + r.size.x - w, x)), "y": maxf(r.position.y + 10.0, minf(r.position.y + r.size.y - 6.0, y)), "color": Color(p["color"])})
-	lay = {"cls": cls, "tree": tree, "nodes": nodes, "at": at, "root": root, "labels": labels, "head_y": head_y, "unit": minf(sx, sy), "to": to, "r": r}
+	lay = {"cls": cls, "tree": tree, "nodes": nodes, "at": at, "root": root, "labels": labels, "head_y": head_y, "unit": minf(sx, sy), "to": to, "r": r, "pre": pre_r}
 	return lay
 
 
@@ -349,13 +372,19 @@ func draw(h, level: int, t: float, dt: float) -> void:
 	# the lines: between each talent and the ones that lead to it; and from the mage's rune
 	if lay["root"] != null:
 		for n in lay["nodes"]:
-			if not (n["def"]["from"] as Array).is_empty():
+			if n.get("weapon", false):
+				continue
+			# (THE WARRIOR'S WEAPON, A PRE-POINT: a weapon's path begins at its own first talents, from where the tree begins)
+			var from_weapon: bool = (n["def"]["from"] as Array).any(func(f): return at.has(f) and at[f].get("weapon", false))
+			if not (n["def"]["from"] as Array).is_empty() and not from_weapon:
 				continue
 			var lit: bool = taken.has(n["def"]["id"])
 			_line(lay["root"].x, lay["root"].y, n["c"].x, n["c"].y, T["accent"] if lit else T["edgeHi"], 1.0 if lit else 0.7)
 	for n in lay["nodes"]:
+		if n.get("weapon", false):
+			continue
 		for fr in n["def"]["from"]:
-			if not at.has(fr):
+			if not at.has(fr) or at[fr].get("weapon", false):
 				continue
 			var m: Dictionary = at[fr]
 			var lit: bool = taken.has(n["def"]["id"]) and taken.has(fr)
@@ -368,10 +397,29 @@ func draw(h, level: int, t: float, dt: float) -> void:
 	# the captions of the paths
 	for l in lay["labels"]:
 		_text(l["x"], l["y"], l["text"], l["color"], true)
+	# the weapons' row, before the tree (THE WARRIOR'S WEAPON, A PRE-POINT)
+	var pre_r: Rect2 = lay.get("pre", Rect2())
+	if pre_r.size.x > 0.0:
+		_text(pre_r.position.x, pre_r.position.y + floorf((pre_r.size.y - 6.0) / 2.0) + 1.0, "WEAPON", T["dim"], true)
 	# the stones
 	for n in lay["nodes"]:
 		var d: Dictionary = n["def"]
 		var took: bool = taken.has(d["id"])
+		if n.get("weapon", false):
+			var br: Rect2 = n["r"]
+			var wc: Color = T["text"]
+			for p in tree["paths"]:
+				if p["id"] == d["path"]:
+					wc = Color(p["color"])
+			_box(br.position.x, br.position.y, br.size.x, br.size.y, T["hot"] if took else T["bg2"], T["accent"] if took else T["edgeHi"])
+			var nm := str(d["name"]).to_upper()
+			_text(br.position.x + floorf((br.size.x - _w(nm, true)) / 2.0), br.position.y + floorf((br.size.y - 6.0) / 2.0) + 1.0, nm, WHITE if took else wc, true)
+			if sel == d["id"]:
+				_rect(br.position.x - 2, br.position.y - 2, br.size.x + 4, 1, T["accent"])
+				_rect(br.position.x - 2, br.position.y + br.size.y + 1, br.size.x + 4, 1, T["accent"])
+				_rect(br.position.x - 2, br.position.y - 2, 1, br.size.y + 4, T["accent"])
+				_rect(br.position.x + br.size.x + 1, br.position.y - 2, 1, br.size.y + 4, T["accent"])
+			continue
 		var opened: bool = not took and Talents.open(h.cls, taken, d["id"])
 		var can: bool = opened and left > 0 and Talents.ported(h.cls, d["id"])
 		var rune := _rune_of(tree, d)
@@ -576,7 +624,10 @@ func _lines(t: Dictionary, tree: Dictionary, cls: String) -> Array:
 			path = p
 	var out: Array = []
 	out.append({"text": str(t["name"]).to_upper(), "color": WHITE, "small": false})
-	out.append({"text": "%s%sTALENT" % ["BIG " if t["big"] else "", (str(path["name"]) + " ") if not path.is_empty() and str(path["name"]) != "" else ""], "color": Color(path["color"]) if not path.is_empty() else T["dim"], "small": true})
+	if Talents.is_weapon(cls, t["id"]):
+		out.append({"text": "WEAPON: FREE TO SWAP", "color": Color(path["color"]) if not path.is_empty() else T["dim"], "small": true})
+	else:
+		out.append({"text": "%s%sTALENT" % ["BIG " if t["big"] else "", (str(path["name"]) + " ") if not path.is_empty() and str(path["name"]) != "" else ""], "color": Color(path["color"]) if not path.is_empty() else T["dim"], "small": true})
 	# (THE RANGER'S COMPANIONS, taken: in place of its words, the one at his side and what it does; he picks another below)
 	var C = _pets()
 	var group: String = _pet_group(t["id"]) if C != null else ""
@@ -662,8 +713,9 @@ func draw_card(h, level: int, gold: int, in_town: bool, W: float, H: float, pric
 			_button(pr, str(C.D["info"][kinds[k]]["name"]).to_upper(), now == kinds[k], now == kinds[k])
 			buttons.append([_screen(pr), "tal_pet", kinds[k]])
 	if took:
-		_text(cr.position.x + 5.0, by + floorf((bh - 8.0) / 2.0) + 1.0, "TAKEN", T["good"])
-		var tw := _w("TAKEN") + 10.0
+		var took_word := "YOURS" if Talents.is_weapon(h.cls, d["id"]) else "TAKEN"
+		_text(cr.position.x + 5.0, by + floorf((bh - 8.0) / 2.0) + 1.0, took_word, T["good"])
+		var tw := _w(took_word) + 10.0
 		var no := Talents.unlearn_problem(h.cls, h.talents, d["id"])
 		if no == "" and not in_town:
 			no = "Undone in town only"
@@ -677,7 +729,7 @@ func draw_card(h, level: int, gold: int, in_town: bool, W: float, H: float, pric
 			_text(cr.position.x + 5.0 + tw, by + floorf((bh - 6.0) / 2.0) + 1.0, no.to_upper(), T["dim"], true)
 	elif why == "":
 		var tr := Rect2(cr.position.x + 5.0, by, cr.size.x - 10.0, bh)
-		_button(tr, ("SWAP TO IT  (FREE)" if Talents.swap_out(h.cls, h.talents, d["id"]) != "" else "TAKE  (FREE)") if Talents.is_weapon(h.cls, d["id"]) else "TAKE  (1 POINT)", false, true)
+		_button(tr, "SWAP TO IT  (NO POINT)" if Talents.is_weapon(h.cls, d["id"]) else "TAKE  (1 POINT)", false, true)
 		buttons.append([_screen(tr), "tal_take", d["id"]])
 	else:
 		_text(cr.position.x + 5.0, by + floorf((bh - 6.0) / 2.0) + 1.0, why.to_upper(), T["dim"], true)

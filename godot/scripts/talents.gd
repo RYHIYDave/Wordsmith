@@ -4,14 +4,14 @@
 ## (Recommended)”). THE WARRIOR'S THREE WEAPONS (WARRIOR_TREE2): his first point picks the greatsword, the battle axe or the
 ## warhammer, only one, each with its own three moves; a weapon's own path is that weapon's alone; IRON opens once one is his.
 ## Undone in town only, for gold (unlearnPerLevel a level), and only when nothing taken hangs on it alone.
-## THE WARRIOR'S WEAPON, HIS FIRST POINT GIVEN EARLY (his words of 22 Nov 2026: “The warrior has an issue where he starts with the
-## greatsword but would have to pay a talent point to select greatsword.  So maybe he can swap to axe or hammer at level 1.”; and
-## the morning after, “And I don't like that warrior starts with a talent point.  How can we allow the switch at level 1 without
-## just giving the player a free talent point?”): his weapon is his first point, as the game has it, but his from level 1: the
-## greatsword his as he starts (`starting`), another taken in its place at any level, anywhere, for nothing more, so long as nothing
-## more on the old one's path is taken (`swap_out`). It is counted among his points spent (`spent`), so the point level 5 brings is
-## the one it took already: his next to spend comes at level 10 (`next_point`), and over the game he has ten, as every hero has,
-## one of them his weapon.
+## THE WARRIOR'S WEAPON, A PRE-POINT (his words of 22 Nov 2026: “The warrior has an issue where he starts with the greatsword but
+## would have to pay a talent point to select greatsword.  So maybe he can swap to axe or hammer at level 1.”; and the morning
+## after, “No I mean I don't like the trees starting with a weapon swap.  I want the swap to be available but not be part of the
+## talent tree pathing.  Like it's a pre-point, something that can be allocated in the talent tree area but before you get into an
+## actual branch”): his weapon is no talent of the tree: picked on the TALENTS page in a row of its own under the tree, before any
+## branch (talents_page.gd), the greatsword his as he starts (`starting`), another in its place at any level, anywhere, for nothing,
+## so long as nothing more on the old one's path is taken (`swap_out`). It costs no point (`spent`): his ten go on the tree's own,
+## the first at level 5, as every hero's; each weapon's path begins at its own first talents, open once it is his weapon.
 ## IN THIS PORT: a talent whose rules are not brought over yet (PORTED) is shown, read and marked so, and cannot be taken.
 extends RefCounted
 
@@ -117,9 +117,15 @@ static func is_weapon(cls: String, id: String) -> bool:
 	return cls == "warrior" and D["switches"]["warriorTree2"] and _weapons().has(id)
 
 
-## The points spent: his weapon one of them (his first, given early).
+## The points spent: his weapon none of them (a pre-point, not a talent).
 static func spent(cls: String, taken: Array) -> int:
-	return taken.size()
+	return taken.filter(func(x): return not is_weapon(cls, str(x))).size()
+
+
+## Whether `cls`'s tree has its weapons picked apart from it (the Warrior's, WARRIOR_TREE2 on).
+static func pre_point(cls: String) -> bool:
+	ready_up()
+	return cls == "warrior" and D["switches"]["warriorTree2"]
 
 
 ## The level his next point to spend comes at, his points spent so far counted (the Warrior's weapon among them), or -1 when all
