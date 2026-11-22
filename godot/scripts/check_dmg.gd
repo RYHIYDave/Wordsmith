@@ -537,6 +537,9 @@ func _fight_pack(reach: float, hold := false, life := 0.0) -> float:
 	pack_life = pack[0].max_life
 	h.world = spot
 	h._place()
+	var Mon := preload("res://scripts/monster.gd")
+	Mon.trace = {}
+	Mon.tracing = OS.has_environment("WS_DMG_TRACE")
 	var t := 0.0
 	while t < 30.0:
 		await M.get_tree().process_frame
@@ -561,8 +564,20 @@ func _fight_pack(reach: float, hold := false, life := 0.0) -> float:
 		if OS.has_environment("WS_DMG_TRACE") and t < 0.5:
 			print("DMG TRACE t %.3f alive %d life %d hero life %d" % [t, alive, int(left), int(h.life)])
 		if alive == 0:
+			_trace_out()
 			return t
+	_trace_out()
 	return 30.0
+
+
+func _trace_out() -> void:
+	var Mon := preload("res://scripts/monster.gd")
+	if not Mon.tracing:
+		return
+	Mon.tracing = false
+	var keys: Array = Mon.trace.keys()
+	keys.sort_custom(func(a, b) -> bool: return Mon.trace[a] > Mon.trace[b])
+	_say("  where the pack's harm came from: " + ", ".join(keys.slice(0, 8).map(func(k): return "%s %d" % [k, int(Mon.trace[k])])))
 
 
 # --- a build ---

@@ -1319,7 +1319,13 @@ func _told_word(text: String, gap: float) -> void:
 	_tell({"t": "text", "x": world.x, "y": world.y, "text": text, "color": "#ffd27a"})
 
 
+## (the damage check, WS_DMG_TRACE: every harm taken, by the move it came of, its element, and whether it burned or poisoned)
+static var trace := {}
+static var tracing := false
 func _take(dmg: float, el: String, crit: bool, heavy: bool, front: Array, poison: bool, dot: bool, skill := -1) -> void:
+	if tracing:
+		var key := "move %d %s%s" % [skill, el, " (over time)" if dot or poison else ""]
+		trace[key] = float(trace.get(key, 0.0)) + dmg
 	# (nor is a boss who waits: game.ts damageMonster, "Not yet")
 	if waits:
 		if _not_yet_t <= 0.0:
