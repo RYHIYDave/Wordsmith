@@ -114,6 +114,8 @@ func tick(m, dt: float, _dist: float, hero) -> bool:
 		a1["fight"] = F.new()
 	var f = a1["fight"]
 	var p := F.world_to_stone(S, hero.world.x, hero.world.y)
+	# (the crash's surge slows him where it runs: colossus_fight.gd pace_at, CRASH.slow)
+	hero.surge_k = f.pace_at(p)
 	# (his bar is the screen's: none over him, as the game draws none over a boss)
 	m._bar = 0.0
 	_shove(hero, dt)

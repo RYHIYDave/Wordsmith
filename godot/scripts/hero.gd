@@ -372,6 +372,9 @@ var blow_by = null
 var bleed_at := Vector2.INF
 ## (THE HIGH CITY, FLOOR 16: in the Swan Gardens' nettles, and a moment after, his pace times this: act3/garden.gd)
 var nettle_k := 1.0
+## (FLOOR 10: the crash of the Colossus's two waves, its surge slowing him: act1/colossus_fight.gd pace_at, set each frame by
+## act1/colossus.gd; the game's own rule, read by nothing till his “Start all that”, 22 Nov 2026)
+var surge_k := 1.0
 ## (game.ts held: hooked by the Chained One, for so many seconds more he cannot walk or dodge: he goes where he is dragged.
 ## chained.gd sets it)
 var held := 0.0
@@ -490,6 +493,7 @@ func walk_pace() -> float:
 		sp *= 1.0 - _slow_by
 	# (THE HIGH CITY, FLOOR 16: slowed in the nettles, and a moment after: act3/garden.gd)
 	sp *= nettle_k
+	sp *= surge_k
 	# (UNIQUE ITEMS: The Half-Carved Hand, below half his life, faster on his feet)
 	if uniques != null:
 		sp *= uniques.feet_pace()

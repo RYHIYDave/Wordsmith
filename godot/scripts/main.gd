@@ -1385,6 +1385,7 @@ func _build(where: String, arrive: String) -> void:
 		_place.add_child(props)
 		hero.props = props
 	# (the stairwell down in the boss's hall, shut until he falls: stairs.gd)
+	hero.surge_k = 1.0
 	_stairs = null
 	if not map.stairs.is_empty():
 		var stairs := Stairs.new()
@@ -2915,6 +2916,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "defence":
 		await preload("res://scripts/check_defence.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "crash":
+		await preload("res://scripts/check_crash.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "eclipse":
