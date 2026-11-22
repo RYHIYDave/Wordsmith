@@ -37,6 +37,17 @@ const PF := preload("res://scripts/pixel_font.gd")
 ##   HIS TREE: BOUND DEMON no longer keeps him a man: when the demon burns out it tears free of him and fights at his side, roaring,
 ##     for BOUND_SECS more; TERRIBLE ROAR's roar half as wide again.
 const DEMON2 := false
+## HIS CURSE THROWN (his words, 22 Nov 2026: “Oh, the curse attack for the warlock.  I need it to be a ranged ability.  I think
+## now it's just an aoe around him? / That should make cursing everything much easier and thus make his burns last forever
+## easier as well”): his Curse thrown where he aims, CURSE_REACH tiles at most (as near there as he can see), a streak of smoke
+## to it, and every enemy within CURSE_RAD of where it lands that it can see struck and cursed, chains of smoke to each. Off
+## (pictures first): every enemy within 4.5 tiles of him, as the game has it. `--curse=ranged` for its pictures and checks.
+static var CURSE_RANGED := false
+const CURSE_REACH := 9.0
+const CURSE_RAD := 3.5
+## (its flight: a ball of his hellfire arcing from his claw to the spot, then the ring of where it lands, and the chains)
+const CURSE_FLY := 0.25
+const CURSE_CARD := "Throw chains of smoke where you aim: every enemy near where they land is cursed. The cursed smoulder, and when one dies every burn on it spreads to those near it."
 const D2 := {
 	"rake": {"range": 2.6, "arcCos": -0.15, "dmg": 1.7},
 	"damning": {"cooldown": 4.5, "pay": 1.5, "throw": 2.4, "stun": 0.6},
@@ -92,6 +103,13 @@ func _init(hero) -> void:
 	super(hero, "warlock")
 	if demon2():
 		_demon2_data()
+	curse_card()
+
+
+## (CURSE_RANGED) His Curse's card as the switch has it.
+static func curse_card() -> void:
+	if CURSE_RANGED:
+		Words.data()["skills"]["curse"]["desc"] = CURSE_CARD
 
 
 ## (THE DEMON MADE TERRIBLE) The demon's three as the switch has them, and his tree's two talents' words.
@@ -181,11 +199,23 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 		if primary:
 			h.sfx.play("curse", linear_to_db(0.8))
 		var rad: float = float(def["radius"]) * float(r["size"])
-		for k in int(r["count"]):
-			if k == 0:
-				_curse_all(i, from, rad, each, 0, echo)
-			else:
-				_after(0.28 * k, func() -> void: _curse_all(i, h.world, rad, each, k, echo))
+		# (CURSE_RANGED: thrown where he aims, a streak of smoke to the spot; Twin's second there too)
+		var at: Vector2 = from
+		if CURSE_RANGED:
+			at = _reach_point(to, CURSE_REACH) if primary else from + (to - from).limit_length(CURSE_REACH)
+			rad = CURSE_RAD * float(r["size"])
+			_say({"t": "curseThrow", "x0": from.x, "y0": from.y, "x1": at.x, "y1": at.y, "r": rad, "fly": CURSE_FLY})
+		var count: int = r["count"]
+		var land := func() -> void:
+			for k in count:
+				if k == 0:
+					_curse_all(i, at, rad, each, 0, echo)
+				else:
+					_after(0.28 * k, func() -> void: _curse_all(i, at if CURSE_RANGED else h.world, rad, each, k, echo))
+		if CURSE_RANGED:
+			_after(CURSE_FLY, land)
+		else:
+			land.call()
 	elif kind == "melee":
 		# (the demon's rake: one claw, then the other; Twin, a second blow a moment after)
 		for k in int(r["count"]):

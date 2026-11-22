@@ -118,15 +118,17 @@ static var BURN_MORE := 1.0
 ##               focused.  But not for everyone.”): only fire of a Mage who has taken Hearth, her fire tree's (talents.gd
 ##               OWN_WORDS, its card; its other half, her mana back the faster, nothing in this port, which has no mana). (The
 ##               Warlock's for a while, his own, till his words: “If we want something to be for only certain characters, it needs
-##               to be built into their tree”: his own in his tree is POISON_TREE's Pyre.) What burns in his hellfire burns. Off:
+##               to be built into their tree”: see POISON_TREE.) What burns in his hellfire burns. Off:
 ##               every hero's fire, on what burns, as it was.
 static var BURN_HEARTH := true
 ##   POISON_TREE what is a class's own is in its tree (his words, 22 Nov 2026: “If we want something to be for only certain
 ##               characters, it needs to be built into their tree / Like poison stacks 4 times naturally, but up to 8 for the ranger
 ##               if you take the talent point / And maybe the warlock gets some blanket for Damage over time like it has infinite
 ##               duration or something.  It can't be the same but the specialization in the tree is the point”): poison's doses add
-##               up POISON_MOST deep, eight for a Ranger with Venom; a Warlock with Pyre, his curses never run out (monster.gd _dots;
-##               his burns on what is cursed never going out already the Burning Verse's, a unique). Off: eight for all, as it was.
+##               up POISON_MOST deep, eight for a Ranger with Venom. (A Warlock with Pyre, his curses never running out, a while, till
+##               his words: “I mean, if he already has the talent he doesn't need another one.”: his burns on what is cursed never
+##               going out the Burning Verse's, a unique; his Curse thrown at range in its place, heroes/warlock.gd CURSE_RANGED.)
+##               Off: eight for all, as it was.
 static var POISON_TREE := true
 const POISON_MOST := 4
 

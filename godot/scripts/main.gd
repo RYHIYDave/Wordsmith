@@ -589,6 +589,9 @@ func _ready() -> void:
 	# (THE THREE DEFENCES, on at his yes: `--defence=0` to run without them: loot.gd DEFENCE_LAYERS)
 	if _arg("defence") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_LAYERS = false
+	# (HIS CURSE THROWN, off till his yes to its pictures: `--curse=ranged`: heroes/warlock.gd CURSE_RANGED)
+	if _arg("curse") == "ranged":
+		preload("res://scripts/heroes/warlock.gd").CURSE_RANGED = true
 	_screen_start()
 	_inputs()
 	sfx = Sfx.new()
@@ -2906,6 +2909,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "defence":
 		await preload("res://scripts/check_defence.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "curse":
+		await preload("res://scripts/check_curse.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "dmg":

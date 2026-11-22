@@ -705,19 +705,6 @@ func _warlock() -> void:
 	var filled: float = kit.pact
 	await _run(0.2)
 	_line(absf(filled - float(kit.W["pact"]["full"]) * float(T["soulDebt"]["share"])) < 0.01 and o.life < before, "Soul Debt: a cursed one's death fills a tenth of his pact (%.1f of %.0f); Pyre: it bursts, the one beside struck (%.0f to %.0f)" % [filled, kit.W["pact"]["full"], before, o.life])
-	# (Pyre: his curses never run out, words.gd POISON_TREE)
-	if is_instance_valid(o) and not o.dead:
-		o.curse_dps = 0.0
-		o.curse_t = 2.0
-		await _run(0.5)
-		var kept: float = o.curse_t
-		h.talents = ["branded"]
-		await _run(0.5)
-		_line(absf(kept - 2.0) < 0.01 and o.curse_t < 1.7, "Pyre: his curses never run out (one of 2 s still %.1f half a second on); without it, %.1f" % [kept, o.curse_t])
-		o.curse_t = 0.0
-		h.talents = ["branded", "hexchain", "blazingarm", "withering", "pyre", "souldebt"]
-	else:
-		_line(false, "Pyre: the one beside wanted alive to try his curse on")
 	# Phantom Step: his smoke step leaves his shadow where he stood; the enemies near go after it
 	h.talents = ["branded", "hexchain", "phantomstep"]
 	h.monsters.decoys.clear()

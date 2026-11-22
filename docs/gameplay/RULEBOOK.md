@@ -260,8 +260,10 @@ without the master rune-stone finds the fallen wordsmith again in the next.
     change some stuff in the mages fire tree for the "burning enemies take more fire damage"
     cause I don't like that fire is BiS for a str/dex character”). Hearth's other half stays:
     standing in fire she made, nothing burns her.
-  - the Warlock's Pyre: his curses never run out, what he has cursed smoulders till it dies (his
-    burns on a cursed enemy never going out are a unique's already, the Burning Verse's).
+  - the Warlock: no second “lasts forever” of his own (your words: “I mean, if he already has the
+    talent he doesn't need another one.”): his burns on a cursed enemy never going out are the
+    Burning Verse's, a unique; his Curse to be thrown where he aims instead (“I need it to be a
+    ranged ability”), waiting on your yes to its pictures (docs/mockups/warlock_curse).
 
 ## Builds
 

@@ -28,6 +28,8 @@ var HELL: Array = []
 var SMOKE: Array = []
 var chains: Array = []
 var rivers: Array = []
+## (his Curse thrown, heroes/warlock.gd CURSE_RANGED: a ball of his hellfire arcing to the spot; landed, its ring and a burst)
+var throws: Array = []
 var leaps: Array = []
 var bursts: Array = []
 var erupts: Array = []
@@ -83,6 +85,8 @@ func on_event(e: Dictionary, _fx) -> void:
 		"curse":
 			if not e.get("echo", false) or not (e["to"] as Array).is_empty():
 				chains.append({"x": e["x"], "y": e["y"], "to": (e["to"] as Array).duplicate(), "t": 0.0})
+		"curseThrow":
+			throws.append({"x0": e["x0"], "y0": e["y0"], "x1": e["x1"], "y1": e["y1"], "r": e["r"], "fly": e["fly"], "t": 0.0})
 		"smoke":
 			rivers.append({"x0": e["x0"], "y0": e["y0"], "x1": e["x1"], "y1": e["y1"], "t": 0.0, "demon": e.get("demon", false)})
 		"damning":
@@ -116,6 +120,13 @@ func _process(dt: float) -> void:
 			list[i]["t"] = float(list[i]["t"]) + dt
 			if float(list[i]["t"]) >= float(pair[1]):
 				list.remove_at(i)
+	for i in range(throws.size() - 1, -1, -1):
+		var th: Dictionary = throws[i]
+		th["t"] = float(th["t"]) + dt
+		if float(th["t"]) >= float(th["fly"]):
+			rings.append({"x": th["x1"], "y": th["y1"], "r": th["r"], "t": 0.0})
+			bursts.append({"x": th["x1"], "y": th["y1"], "t": 0.0})
+			throws.remove_at(i)
 	for i in range(waves.size() - 1, -1, -1):
 		var w: Dictionary = waves[i]
 		w["t"] = float(w["t"]) + dt
@@ -285,6 +296,16 @@ func draw_air(c: CanvasItem) -> void:
 			j += 1
 	for b in bursts:
 		_piece(c, "burst:%d" % mini(7, floori(float(b["t"]) / BURST * 8.0)), _gx(b["x"], b["y"]), _gy(b["x"], b["y"]) - 14.0)
+	for th in throws:
+		# (the ball and a tail of it behind, fading: a comet of his hellfire)
+		for j in 5:
+			var k: float = float(th["t"]) / float(th["fly"]) - j * 0.07
+			if k < 0.0:
+				continue
+			var x := float(th["x0"]) + (float(th["x1"]) - float(th["x0"])) * k
+			var y := float(th["y0"]) + (float(th["y1"]) - float(th["y0"])) * k
+			var up := sin(PI * k) * 34.0 + 18.0 * (1.0 - k) + 10.0
+			_piece(c, "ball:%d" % ((floori(_t * 20.0) + j) % 4), _gx(x, y), _gy(x, y) - up, 1.0 - j * 0.2)
 	for l in leaps:
 		var k := float(l["t"]) / LEAP
 		var x := float(l["x0"]) + (float(l["x1"]) - float(l["x0"])) * k
