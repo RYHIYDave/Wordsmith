@@ -1033,6 +1033,10 @@ lights over the dark (town.gd `_ring_moments`):
   cracked with light, the brand turning under it and burning away with its seconds, and fights for him; its blows' cyan bursts; it
   falls and fades), the Crier's Hush (the Hush's grey ring closing on what it darkens, its wisps), and the beam of the uniques'
   orange over any unique lying on the floor, shooting up as it lands. `--only=uniqueslook`: 5 checks, pictured.
+- **The Warrior's greatsword's** (game.ts useBasic, windBlade, updateChannel, land; render/unique_fx.ts drawBlade): the Windcutter
+  (every third Strike in a row sends a blade of wind on ahead through everything in its line, a crescent of rushing air with his
+  cyan edge, a gust off his sword as it goes), Millstone (the Whirlwind spins for as long as it is held), the Pivot (Lunge lands in a
+  free turn of Whirlwind); the Press with the rest above. `--only=uniqueswar`: 3 checks, pictured.
 
 ## Not in it yet
 

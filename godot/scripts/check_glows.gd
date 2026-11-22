@@ -1476,3 +1476,71 @@ func uniqueslook(main, hero, dir: String) -> void:
 	_line(M.fx != null and M.fx.uq._drops().size() >= 1, "a unique lying on the floor: its beam over it")
 	h.unhurt = false
 	print("UNIQUESLOOK: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## THE WARRIOR'S UNIQUES (uniques.gd; game.ts useBasic, release, windBlade, updateChannel, land; render/unique_fx.ts drawBlade): the
+## greatsword's Millstone, Windcutter and Pivot.
+func uniqueswar(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	var U = M._uniques
+	var L = M.loot
+	M.way_depth = maxi(M.way_depth, 2)
+	await M.go_to("floor2", "down")
+	await M._wait(1.0)
+	L.level = 20
+	L.derive()
+	var foes: Array = []
+	for o in h.monsters.list:
+		if is_instance_valid(o) and not o.dead and not o.boss and foes.size() < 3:
+			foes.append(o)
+	for k in foes.size():
+		var o = foes[k]
+		o.world = M._free_near(h.world + h.face * (2.5 + k * 1.2))
+		o.state = "chase"
+		o.max_life = 100000.0
+		o.life = 100000.0
+	# THE WINDCUTTER: three Strikes in a row, and a blade of wind flies on through everything in its line
+	_wear("windcutter")
+	var far = foes[foes.size() - 1]
+	var life0: float = far.life
+	var shot := false
+	for k in 3:
+		h._turn((foes[0].world - h.world).normalized())
+		h._begin_strike()
+		var waited := 0.0
+		while waited < 1.0 / h.rate() + 0.02:
+			await M._wait(0.03)
+			waited += 0.03
+			if not shot and not U.blades.is_empty():
+				shot = true
+				await M._wait(0.06)
+				await M._snap(dir + "/uw01_the_windcutters_blade.png")
+	await M._wait(0.6)
+	var cut: bool = U.told.any(func(e): return e["id"] == "windcutter" and e["what"] == "cut")
+	_line(U.told.any(func(e): return e["id"] == "windcutter" and e["what"] == "blade") and cut, "the Windcutter: his third Strike in a row sends a blade of wind on, cutting what is in its line")
+	_bare()
+	# MILLSTONE: the Whirlwind goes on for as long as it is held
+	_wear("millstone")
+	h._whirl_cd = 0.0
+	Input.action_press("whirl")
+	await M._wait(0.1)
+	h._begin_whirl()
+	var length: float = float(h.WHIRL["channel"]) * float(h.loadout.r(1)["last"])
+	await M._wait(length + 1.5)
+	var still_spinning: bool = h._act == "whirl" and not h._landed
+	Input.action_release("whirl")
+	await M._wait(0.6)
+	_bare()
+	_line(still_spinning, "Millstone: held %.1f s, past the Whirlwind's %.1f, and still spinning" % [length + 1.5, length])
+	# THE PIVOT: Lunge ends in a free turn of Whirlwind where he lands
+	_wear("pivot")
+	h._lunge_cd = 0.0
+	var n0: int = U.told.size()
+	h._begin_lunge(h.world + Vector2(2.0, 1.0))
+	await M._wait(0.8)
+	_line(U.told.slice(n0).any(func(e): return e["id"] == "pivot"), "the Pivot: his Lunge lands and turns into a free turn of Whirlwind")
+	_bare()
+	h.unhurt = false
+	print("UNIQUESWAR: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

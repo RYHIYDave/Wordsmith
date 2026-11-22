@@ -40,8 +40,10 @@ var halves := {}
 var uq := {
 	"full": true, "vow_t": 0.0, "vow": 0.0, "dark": null, "dark_t": 0.0, "borrowed": null, "borrowed_t": 0.0,
 	"blood_t": 0.0, "coat_hits": 0, "still": 0.0, "hurt_at": -1e9,
-	"arm_t": 0.0, "arm_m": null, "arm_at": -1e9, "talon_at": -1e9,
+	"arm_t": 0.0, "arm_m": null, "arm_at": -1e9, "talon_at": -1e9, "strikes": 0,
 }
+## THE WINDCUTTER'S BLADES in flight: {at, v, r, left, hit: [monsters], age, words, el}
+var blades: Array = []
 ## (defs.ts ALLY_DAMAGE: a hit of what fights beside him, the tentacle's or a bird's, made as hard as allies hit now)
 const ALLY_MORE := 1.0
 ## THE FLESHMANCER'S BRAND (game.ts risen): the elite risen to fight for him, or null: {art, kind, champion, at, f, r, t, act, act_t,
@@ -436,6 +438,8 @@ func _process(dt: float) -> void:
 		return
 	if risen != null:
 		_step_risen(dt)
+	if not blades.is_empty():
+		_step_blades(dt)
 	var walked: float = 0.0 if _was == Vector2.INF else hero.world.distance_to(_was)
 	_was = hero.world
 	if worn.is_empty():
@@ -732,3 +736,50 @@ func _step_risen(dt: float) -> void:
 		p["act"] = "walk" if moved > 0.001 else "stand"
 	else:
 		p["act"] = "stand"
+
+
+# --- THE WARRIOR'S (his greatsword's) ---
+
+## (game.ts useBasic) THE WINDCUTTER: a Strike begun; `recent`, it follows the last soon enough to be one more in a row.
+func struck_on(recent: bool) -> void:
+	if wears("windcutter"):
+		uq["strikes"] = int(uq["strikes"]) + 1 if recent else 1
+
+
+## (game.ts release) A Strike's blow landed: every third in a row sends a blade of wind on ahead.
+func strike_landed() -> void:
+	if int(uq["strikes"]) >= int(ut["windcutter"]["every"]) and wears("windcutter"):
+		uq["strikes"] = 0
+		_wind_blade()
+
+
+## (game.ts windBlade) A blade of wind flies on ahead from his third Strike in a row, through everything in its line: it carries his
+## Strike's words on what it hits, and leaves nothing behind it.
+func _wind_blade() -> void:
+	var W: Dictionary = ut["windcutter"]
+	var r: Dictionary = hero.loadout.r(0)
+	var f: Vector2 = hero.face
+	blades.append({"at": hero.world + f * 0.6, "v": f * float(W["speed"]), "r": float(W["half"]) * float(r["size"]), "left": float(W["range"]),
+		"hit": [], "age": 0.0, "el": r["element"]})
+	hero._tell({"t": "unique", "id": "windcutter", "what": "blade", "x": hero.world.x, "y": hero.world.y, "x1": hero.world.x + f.x * float(W["range"]), "y1": hero.world.y + f.y * float(W["range"]), "r": float(W["half"]) * float(r["size"])})
+	hero.sfx.play("wave", linear_to_db(0.8))
+	_say({"id": "windcutter", "what": "blade"})
+
+
+## The blades in flight, each step: on through everything in their line, each struck once for the Windcutter's share of a Strike.
+func _step_blades(dt: float) -> void:
+	var W: Dictionary = ut["windcutter"]
+	for b in blades:
+		var step: Vector2 = b["v"] * dt
+		b["at"] += step
+		b["left"] = float(b["left"]) - step.length()
+		b["age"] = float(b["age"]) + dt
+		if hero.map != null and not hero.map.walkable(floori(b["at"].x), floori(b["at"].y)):
+			b["left"] = 0.0
+		for m in hero.monsters.list:
+			if not _fine(m) or (b["hit"] as Array).has(m) or m.world.distance_to(b["at"]) > float(b["r"]) + m.r:
+				continue
+			b["hit"].append(m)
+			hero.hit_monster(m, 0, float(W["share"]), false)
+			_say({"id": "windcutter", "what": "cut"})
+	blades = blades.filter(func(b): return float(b["left"]) > 0.0)

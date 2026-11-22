@@ -1276,8 +1276,12 @@ func _begin_strike() -> void:
 	_aim_at_foe()
 	# (his voice, now and then, as he attacks: game.ts begin, engine/audio.ts heroVoice)
 	sfx.voice(cls, "attack")
-	var combo := _clock - _last_swing <= 1.0 / rate() + STRIKE["combo"] and not _combo_next
+	var recent := _clock - _last_swing <= 1.0 / rate() + STRIKE["combo"]
+	var combo := recent and not _combo_next
 	_combo_next = combo
+	# (UNIQUE ITEMS: the Windcutter, Strikes in a row counted: one that follows the last soon enough: uniques.gd)
+	if uniques != null:
+		uniques.struck_on(recent)
 	_last_swing = _clock
 	_start(BakedHero.ATTACK2 if combo and art.count(_side, BakedHero.ATTACK2) > 0 else BakedHero.ATTACK, "strike")
 	_slide(face * STRIKE["step"])
@@ -1290,6 +1294,9 @@ func _land_strike() -> void:
 	sfx.play("swing", -6.0)
 	uses[0] += 1
 	_deliver_strike(world, face, 1.0, true)
+	# (UNIQUE ITEMS: the Windcutter, every third Strike in a row sends a blade of wind on ahead)
+	if uniques != null:
+		uniques.strike_landed()
 
 
 ## STRIKE MADE (game.ts deliver, a melee move): from `from` the way `way`, `frac` of it. TWIN in front: two blows, each for its
@@ -1330,6 +1337,8 @@ func channel() -> Dictionary:
 
 func _begin_whirl() -> void:
 	sfx.voice(cls, "attack")
+	if uniques != null:
+		uniques.uq["strikes"] = 0
 	_whirl_cd = float(loadout.r(1)["cooldown"])
 	_whirl_full = _whirl_cd
 	_bites = 0
@@ -1348,7 +1357,9 @@ func _spin(dt: float, held: bool) -> void:
 	var r1: Dictionary = loadout.r(1)
 	var length: float = WHIRL["channel"] * float(r1["last"])
 	var tick: float = WHIRL["tick"] / float(r1["pace"])
-	if _spun >= 0.0 and _spun >= length + WHIRL["follow"]:
+	# (UNIQUE ITEMS: Millstone, Whirlwind has no time limit: he spins for as long as he holds)
+	var endless: bool = uniques != null and uniques.wears("millstone")
+	if _spun >= 0.0 and _spun >= length + WHIRL["follow"] and (_landed or not endless):
 		_end_act()
 		return
 	if _act_t < WHIRL["windup"]:
@@ -1368,7 +1379,7 @@ func _spin(dt: float, held: bool) -> void:
 		return
 	# (ABILITIES: MANA: it goes on while he has the mana for it, paid as it goes: game.ts updateChannel)
 	var by_m: bool = float(r1["mana"]) > 0.0
-	if _bites > 0 and (not held or (mana <= 0.0 if by_m else _spun >= length - 1e-6)):
+	if _bites > 0 and (not held or (mana <= 0.0 if by_m else _spun >= length - 1e-6 and not endless)):
 		_end_channel(true)
 		return
 	if _next_bite <= 1e-9:
@@ -1463,6 +1474,8 @@ func _begin_lunge(target: Vector2) -> void:
 	uses[2] += 1
 	_end_act()
 	_combo_next = false
+	if uniques != null:
+		uniques.uq["strikes"] = 0
 	_turn(dir)
 	_lunge_cd = float(loadout.r(2)["cooldown"])
 	_lunge_full = _lunge_cd
@@ -1512,6 +1525,13 @@ func _fly(dt: float) -> void:
 		_landing = true
 		_list = LAND_LIST
 		_t = 0.0
+		# (UNIQUE ITEMS: the Pivot, Lunge ends in a free turn of Whirlwind where he lands)
+		if uniques != null and uniques.wears("pivot") and Words.move_open(1, int(stats["level"])) and str(Words.skill(loadout.id(1)).get("kind", "")) == "whirl":
+			var P: Dictionary = uniques.ut["pivot"]
+			_tell({"t": "unique", "id": "pivot", "what": "turn", "x": world.x, "y": world.y, "secs": float(P["gap"]) * float(P["cuts"])})
+			uniques._say({"id": "pivot", "what": "turn"})
+			for n in int(P["cuts"]):
+				_after(float(P["gap"]) * n, func() -> void: _bite(world, face, 1.0, false, n == 0))
 
 
 # --- the rest ---

@@ -17,6 +17,7 @@
 extends RefCounted
 
 const Iso := preload("res://scripts/iso.gd")
+const L := preload("res://scripts/fx_looks.gd")
 const DIR := "res://assets/uniques"
 const RISEN_SHADER := """
 shader_type canvas_item;
@@ -72,6 +73,7 @@ var cracks: Array = []
 var blows: Array = []
 var falls: Array = []
 var _wisp_t := 0.0
+var _grit_t := 0.0
 ## (what stands, each frame laid again: Sprite2Ds among the figures, made as wanted and hidden when not)
 var _sprites: Array[Sprite2D] = []
 var _used := 0
@@ -186,6 +188,15 @@ func handle(e: Dictionary) -> void:
 			var c: Color = fx.monsters.main.loot.word_color(m.words[0]) if fx.monsters.main.loot != null else Color.WHITE
 			fx.ring(x, y, 1.1, 0.26, PackedColorArray([Color.WHITE, c, c]), false)
 			fx.spray(x, y, 8, PackedColorArray([c, Color.WHITE]), 1.1, 70.0, roundf(top * 0.6))
+	elif id == "windcutter" and what == "blade":
+		# A GUST OFF HIS SWORD as the blade leaves it: hoops of air thrown out the way it goes, a puff of grit round his feet
+		var AIR: Array = C["AIR"]
+		var d := Vector2(float(e["x1"]) - x, float(e["y1"]) - y)
+		var u := d / maxf(0.0001, d.length())
+		fx.ring(x + u.x * 0.7, y + u.y * 0.7, 0.75, 0.18, cols([AIR[0], AIR[1], AIR[2], AIR[3]]), false)
+		fx.ring(x + u.x * 1.3, y + u.y * 1.3, 0.5, 0.15, cols([AIR[1], AIR[2], AIR[3]]), false)
+		fx.spray(x, y, 8, PackedColorArray([L.P["st6"], L.P["st5"], L.P["st4"]]), 1.4, 40.0, 1.0)
+		fx.kick(1.2)
 	elif id == "queenstalons" and what == "dive":
 		# (from in front or behind, and which way round on the screen, by the way it flies: as a monster is shown)
 		var x1: float = float(e["x1"])
@@ -297,6 +308,14 @@ func update(dt: float) -> void:
 	for b in blows:
 		b["t"] += dt
 	blows = blows.filter(func(b): return b["t"] * 30.0 < float(TU["RISEN_BLOW_FRAMES"]))
+	# THE WINDCUTTER: grit kicked up off the floor under its blade as it goes
+	_grit_t += dt
+	var U = _uq()
+	if U != null and _grit_t >= float(TU["BLADE"]["grit"]):
+		_grit_t = 0.0
+		for bl in U.blades:
+			if float(bl["left"]) > 0.3:
+				fx.spray(bl["at"].x, bl["at"].y, 1, PackedColorArray([L.P["st6"], L.P["st5"], L.P["st4"]]), 0.9, 35.0, 1.0)
 	# THE CRIER'S HUSH: wisps of the Hush drifting up off each it has hushed, a few a second
 	_wisp_t += dt
 	if _wisp_t >= 0.2 and fx.monsters != null and is_instance_valid(fx.monsters):
@@ -605,7 +624,94 @@ func draw_air(c: CanvasItem) -> void:
 		if age >= int(TU["RISEN_BLOW_FRAMES"]):
 			continue
 		_draw_pic(c, pic("blow|%d|%d" % [age, int(b["seed"]) % 4]), roundf(_gx(b["x"], b["y"])) * 2.0, roundf(_gy(b["x"], b["y"]) - b["z"]) * 2.0)
+	var U = _uq()
+	if U != null:
+		for bl in U.blades:
+			_blade(c, bl)
 	_lit(c)
+
+
+## (render/unique_fx.ts drawBlade) THE WINDCUTTER'S BLADE in flight: a crescent of rushing air standing at the height of his swing,
+## bowed the way it flies, tallest in its middle, drawn point by point in the world; its shadow on the floor; wind streaming back off
+## it in broken lines that run as it flies; its body a sheet of air, white at its front thinning back into the air's greys; its top
+## his cyan. It spreads off his sword in its first moments and frays into wind over the end of its flight.
+func _blade(c: CanvasItem, p: Dictionary) -> void:
+	var B: Dictionary = D["tune"]["BLADE"]
+	var AIR: Array = D["colors"]["AIR"]
+	var air: Array = AIR.map(func(h): return Color(h))
+	var sp: float = maxf(0.0001, (p["v"] as Vector2).length())
+	var fxv: float = p["v"].x / sp
+	var fyv: float = p["v"].y / sp
+	var born := minf(1.0, float(p["age"]) / float(B["spreads"]))
+	var fade := clampf(float(p["left"]) / float(B["frays"]), 0.0, 1.0)
+	var span := float(B["span"]) * (0.45 + 0.55 * born)
+	var R := float(p["r"]) * float(B["wide"]) / sin(float(B["span"]))
+	var run := floori(t * 30.0)
+	var px: float = p["at"].x
+	var py: float = p["at"].y
+	var at := func(a: float, back: float) -> Vector2:
+		var rj := R - back
+		var ca := cos(a) * rj - R
+		var sa := sin(a) * rj
+		return Vector2(px + fxv * ca - fyv * sa, py + fyv * ca + fxv * sa)
+	var steps := maxi(12, ceili(span * R * 2.0 * 24.0))
+	var tall := func(mid: float) -> float:
+		return maxf(1.0, roundf((float(B["low"]) + (float(B["tall"]) - float(B["low"])) * pow(mid, 0.7)) * (0.5 + 0.5 * born) * (0.55 + 0.45 * fade)))
+	var dot := func(x: float, y: float, w: float, h: float, col: Color, a: float) -> void:
+		c.draw_rect(Rect2(x * 2.0, y * 2.0, w * 2.0, h * 2.0), Color(col, clampf(a, 0.0, 1.0)))
+	var high: float = float(B["high"])
+	# ITS SHADOW on the floor under it
+	var k := 0
+	while k <= steps:
+		var q: Vector2 = at.call(-span + 2.0 * span * k / steps, 0.1)
+		dot.call(roundf(_gx(q.x, q.y)), roundf(_gy(q.x, q.y)), 2.0, 1.0, Color.BLACK, 0.22 * fade * born)
+		k += 2
+	# THE WIND STREAMING BACK OFF IT
+	for i in 7:
+		var a: float = span * 0.85 * (-1.0 + 2.0 * i / 6.0)
+		var mid: float = 1.0 - absf(a) / span
+		var h: float = tall.call(mid)
+		for lr in [[0.85, 0], [0.5, 1], [0.15, 2]]:
+			var lvl: float = lr[0]
+			var row: int = lr[1]
+			var long: float = float(B["streams"]) * (0.3 + 0.7 * mid) * (1.0 if row == 1 else 0.7) * (1.0 + 0.8 * (1.0 - fade)) * born
+			var z: float = high - h / 2.0 + h * lvl
+			var bk := 0.1
+			var n := 0
+			while bk < long:
+				if (n + run + i * 3 + row * 2) % 6 >= 2:
+					var kk: float = bk / long
+					var q: Vector2 = at.call(a, bk)
+					dot.call(roundf(_gx(q.x, q.y)), roundf(_gy(q.x, q.y)) - roundf(z), 1.0, 1.0, air[1] if kk < 0.35 else (air[2] if kk < 0.7 else air[3]), (1.0 - kk) * (0.8 if row == 1 else 0.6) * (0.45 + 0.55 * fade))
+				bk += 0.05
+				n += 1
+	# ITS BODY, back to front
+	for j in [2, 1, 0]:
+		var sj: float = span * (1.0 - j * 0.1) * (0.65 + 0.35 * fade if fade < 1.0 else 1.0)
+		for kb in steps + 1:
+			var a: float = -sj + 2.0 * sj * kb / steps
+			var mid: float = 1.0 - absf(a) / sj
+			if fade < 1.0 and (kb * 7 + run * 3 + j) % 10 >= roundi(10.0 * fade):
+				continue
+			var q: Vector2 = at.call(a, 0.04 + j * 0.1)
+			var h: float = maxf(1.0, roundf(tall.call(mid) * (1.0 - j * 0.2)))
+			var X := roundf(_gx(q.x, q.y))
+			var top := roundf(_gy(q.x, q.y)) - roundf(high + h / 2.0)
+			for r in int(h):
+				if j > 0 and (r + j + ((kb + run * 2) >> 1)) % 3 == 0:
+					continue
+				var col: Color = (air[0] if r < h / 2.0 else air[1]) if j == 0 else (air[2] if j == 1 else air[3])
+				dot.call(X, top + r, 2.0, 1.0, col, (0.85 if j == 0 else (0.4 if j == 1 else 0.22)) * (0.4 + 0.6 * fade))
+	# ITS EDGE, along its top, his cyan
+	var edge := Color(B["edge"])
+	for ke in steps + 1:
+		var a: float = -span + 2.0 * span * ke / steps
+		var mid: float = 1.0 - absf(a) / span
+		if mid <= 0.15:
+			continue
+		var q: Vector2 = at.call(a, -0.03)
+		var h: float = tall.call(mid)
+		dot.call(roundf(_gx(q.x, q.y)), roundf(_gy(q.x, q.y)) - roundf(high + h / 2.0) - 1.0, 2.0, 1.0, edge, fade * born)
 
 
 ## (engine/px.ts drawGlow) The risen one's cold light, added over what is there.
