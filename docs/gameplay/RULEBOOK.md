@@ -234,6 +234,15 @@ without the master rune-stone finds the fallen wordsmith again in the next.
   attack takes one damage word on each side. Still to come, in the plan you said yes to on 8 Oct:
   Mystical, which does for spells what Power does for attacks (its stack shows as ARCANA), with
   Power for attacks only and Volatile's hidden bomb. Mystified comes later.
+- **How words and attributes add up (the Godot game, 22 Nov 2026):** after the damage check
+  (docs/reports/damage_check_2026-11-22.md) showed a min/max hero's quick attack at millions a second, your words:
+  “I like the additive bonus to words, but maybe just have attributes have diminishing returns on
+  scaling.  I don't like a cap”. So: what the words in front of an attack add to its hit is added
+  up into one bonus, not each multiplying the others (+60% and +80% make +140%); and an attribute's
+  points count in full up to 50, then each a little less the more there are (at 150 half a point,
+  at 250 a third), never stopping: no cap. That is what the attack's own bonus from its attribute,
+  what every word grows by, and Dexterity's attack speed and critical chance read. Life, mana and
+  cooldowns from attributes are as they were.
 
 ## Builds
 

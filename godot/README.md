@@ -1368,6 +1368,13 @@ augment attacks.  I want things to compound as they are added to attacks or abil
   an elite that cannot die and a pack of six on floor 20, and early on at level 10. What came out, and why:
   docs/reports/damage_check_2026-11-22.md.
 
+- **Words add up; attributes give less and less** (`words.gd` WORDS_ADD, ATTR_CURVE, eff_attr; `loot.gd` derive): his word after
+  the damage check (“I like the additive bonus to words, but maybe just have attributes have diminishing returns on scaling.  I
+  don't like a cap”): the bonuses of the words in front of a move (Power, Heavy, Precise, Thunder's bolt) are added up into one;
+  an attribute counts in full to 50 (ATTR_KNEE), then 50 + 100 x ln(1 + the rest / 100) (ATTR_SPAN): 100 counts as 91, 200 as
+  142, 340 as 185, 640 as 243, and on, never capped; read by a move's own bonus, every word's growth, and Dexterity's speed and
+  critical chance. `checks/words_check.gd` turns both off and holds the rest against the game's own: 341479 loadouts, 0 differ.
+
 ## Not in it yet
 
 Nothing of the game's own: every talent of every tree is in.

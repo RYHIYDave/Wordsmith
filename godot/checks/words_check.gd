@@ -25,6 +25,9 @@ const FLAGS := {"precise": "precise", "mark": "mark", "frenzy": "frenzy", "frenz
 
 
 func _init() -> void:
+	# (the game's own numbers: words that multiply, attributes in full: words.gd WORDS_ADD, ATTR_CURVE off)
+	Words.WORDS_ADD = false
+	Words.ATTR_CURVE = false
 	var path := "res://assets/words/check.json"
 	if not FileAccess.file_exists(path):
 		print("WORDS CHECK: no check.json: run `npx tsx tools/godot_words.ts check` first")

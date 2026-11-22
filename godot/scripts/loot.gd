@@ -294,13 +294,13 @@ func derive() -> void:
 	hero.stats = {
 		"str": str_, "dex": dex, "int": int_, "level": level,
 		"dmg_min": dmin, "dmg_max": dmax,
-		"aps": aps * (1.0 + (g.call("atkSpeed") + dex * float(_attr["dexSpeed"])) / 100.0),
+		"aps": aps * (1.0 + (g.call("atkSpeed") + Words.eff_attr(dex) * float(_attr["dexSpeed"])) / 100.0),
 		# (his damage's bonuses, %: all of it; and by the element of the blow, as game.ts hitMonster adds them: a plain blow his
 		# physical, a word's element its own; his poison's)
 		"dmg_pct": g.call("dmgPct"),
 		"phys_pct": g.call("physPct"), "fire_pct": g.call("firePct"), "frost_pct": g.call("frostPct"), "light_pct": g.call("lightPct"),
 		"poison_pct": g.call("poisonPct"),
-		"crit_chance": float(_tune["baseCrit"]) + g.call("critChance") + dex * float(_attr["dexCrit"]),
+		"crit_chance": float(_tune["baseCrit"]) + g.call("critChance") + Words.eff_attr(dex) * float(_attr["dexCrit"]),
 		"crit_mult": float(_tune["baseCritMult"]) + g.call("critMult"),
 		"life_regen": float(_tune["baseLifeRegen"]) + g.call("lifeRegen"),
 		"life_on_hit": g.call("lifeOnHit"), "life_on_kill": g.call("lifeOnKill"),

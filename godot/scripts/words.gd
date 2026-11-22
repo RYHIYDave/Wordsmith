@@ -66,6 +66,29 @@ extends RefCounted
 
 const FILE := "res://assets/words/words.json"
 
+## HOW HARD ATTRIBUTES AND WORDS ADD UP (his words, 22 Nov 2026, after the damage check showed a min/max hero's quick attack at
+## millions a second, a word in front and one behind three times the damage early on: “I like the additive bonus to words, but
+## maybe just have attributes have diminishing returns on scaling.  I don't like a cap”; docs/reports/damage_check_2026-11-22.md):
+##   WORDS_ADD   what the words in front add to the hit (Power, Heavy, Precise, Thunder's bolt) is ADDED UP and made one
+##               bonus, not each a multiple of the others (+60% and +80% are +140%, not x2.88). What weakens a hit (Poison's
+##               20%, Vast's, an element behind) still takes its share.
+##   ATTR_CURVE  an attribute's points count in full up to ATTR_KNEE; past it each counts for less the more there are (at
+##               ATTR_KNEE + ATTR_SPAN, half; at twice that, a third), and never stops counting: there is no cap. What reads it so:
+##               a move's own bonus from its attribute, what every word on it grows by, and Dexterity's attack speed and
+##               critical chance (loot.gd derive). His life, mana and cooldowns from his attributes are as they were.
+## Both off, every number is the game's own resolveSkill's (checks/words_check.gd turns them off to hold it against the game).
+static var WORDS_ADD := true
+static var ATTR_CURVE := true
+const ATTR_KNEE := 50.0
+const ATTR_SPAN := 100.0
+
+
+## An attribute as the damage reads it (ATTR_CURVE): in full to the knee, then less and less for each point, never capped.
+static func eff_attr(a: float) -> float:
+	if not ATTR_CURVE or a <= ATTR_KNEE:
+		return a
+	return ATTR_KNEE + ATTR_SPAN * log(1.0 + (a - ATTR_KNEE) / ATTR_SPAN)
+
 static var _data := {}
 
 
@@ -317,12 +340,13 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	var prim: float = d[attr]
 	if not lone and CL["two"] != null:
 		prim = maxf(0.0, float(d[CL["two"][0]]) + float(d[CL["two"][1]]) - float(D["hybridLess"]))
+	prim = eff_attr(prim)
 	# (HOW MUCH A WORD HERE GROWS, defs.ts ATTR_SPLIT: by the attribute of the melded word it is a part of, on that side; fire, frost
 	# and lightning set alone, by the move's own attribute; any other word by its own)
 	var grows_by := func(side: Array, w: String) -> float:
 		var m = meld_in(side)
 		var a: String = word_attr(m) if m != null and parts_of(m).has(w) else word_attr(w)
-		return float(d[attr if a == "" else a])
+		return eff_attr(float(d[attr if a == "" else a]))
 	# (RANK II: a ranked word on this side is its word half as strong again: the word's own figure grows, what the attribute adds
 	# stays on top; and its rank is named in its line)
 	var rank_in := func(side: Array, w: String) -> int:
@@ -377,6 +401,8 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	}
 	var frenzy: Dictionary = D["frenzy"]
 	var guard: Dictionary = D["guard"]
+	# (WORDS_ADD: the bonuses of the words in front, added up, made one at the end)
+	var front_more := 0.0
 
 	# ----- in front: the hit -----
 	if has.call(front, "power"):
@@ -384,7 +410,10 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		var k: float = rk.call(front, "power")
 		var dmg := 25.0 * k + 0.6 * a
 		var big := 20.0 * k + 0.3 * a
-		dmg_mult *= 1.0 + dmg / 100.0
+		if WORDS_ADD:
+			front_more += dmg
+		else:
+			dmg_mult *= 1.0 + dmg / 100.0
 		size *= 1.0 + big / 100.0
 		if single:
 			r["splash"] = maxf(r["splash"], 1.2)
@@ -474,7 +503,10 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	if has.call(front, "heavy"):
 		# (slower, much harder, and it stuns)
 		var more: float = 50.0 + 0.5 * grows_by.call(front, "heavy")
-		dmg_mult *= 1.0 + more / 100.0
+		if WORDS_ADD:
+			front_more += more
+		else:
+			dmg_mult *= 1.0 + more / 100.0
 		if waits and by_mana:
 			mana *= float(heavy["slower"])
 		elif waits:
@@ -487,7 +519,10 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		# (more damage, not a critical chance; and a smaller area)
 		var more: float = 30.0 + 0.5 * grows_by.call(front, "precise")
 		var area: float = D["precise"]["area"]
-		dmg_mult *= 1.0 + more / 100.0
+		if WORDS_ADD:
+			front_more += more
+		else:
+			dmg_mult *= 1.0 + more / 100.0
 		size *= area
 		r["precise"] = true
 		lines.append("Precise: +%s damage, %s smaller area." % [_pct(more), _pct((1.0 - area) * 100.0)])
@@ -717,7 +752,10 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 				# (one big bolt instead of arcs, and it stuns)
 				r["arcs"] = 0
 				r["arc_dmg"] = 0.0
-				dmg_mult *= 1.0 + float(T["thunder"]["bolt"])
+				if WORDS_ADD:
+					front_more += float(T["thunder"]["bolt"]) * 100.0
+				else:
+					dmg_mult *= 1.0 + float(T["thunder"]["bolt"])
 				r["stun"] = maxf(r["stun"], float(T["thunder"]["stun"]))
 				said = "one bolt %s harder instead of arcs; it stuns for %s s." % [_pct(float(T["thunder"]["bolt"]) * 100.0), _num(T["thunder"]["stun"])]
 			"blight":
@@ -842,6 +880,7 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	r["haste"] *= r["boost"]
 	r["shield"] *= r["boost"]
 
+	dmg_mult *= 1.0 + front_more / 100.0
 	r["dmg_mult"] = dmg_mult
 	# (WHAT ITS WORDS MAKE OF ITS HITS, over the move with none in it: what else it sets off grows with them too, hero.gd side)
 	r["word_k"] = dmg_mult / dmg_bare if dmg_bare > 0.0 else 1.0
