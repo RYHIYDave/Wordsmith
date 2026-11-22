@@ -589,9 +589,9 @@ func _ready() -> void:
 	# (THE THREE DEFENCES, on at his yes: `--defence=0` to run without them: loot.gd DEFENCE_LAYERS)
 	if _arg("defence") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_LAYERS = false
-	# (HIS CURSE THROWN, off till his yes to its pictures: `--curse=ranged`: heroes/warlock.gd CURSE_RANGED)
-	if _arg("curse") == "ranged":
-		preload("res://scripts/heroes/warlock.gd").CURSE_RANGED = true
+	# (HIS CURSE THROWN, on at his yes to its pictures: `--curse=round` to run without it: heroes/warlock.gd CURSE_RANGED)
+	if _arg("curse") == "round":
+		preload("res://scripts/heroes/warlock.gd").CURSE_RANGED = false
 	_screen_start()
 	_inputs()
 	sfx = Sfx.new()

@@ -348,7 +348,7 @@ func _warlock() -> void:
 	await _run(1.1, Callable(), keep)
 	_line(look_ok and burning and A.hell_dps > 0.0 and A.life < after_hit and K.pact >= 1.0,
 		"Hellfire Bolt: his bolt flies (%s) and strikes (%.0f to %.0f); it burns in his hellfire (%.1f a second, %.1f s left), and goes on burning (to %.0f); his pact %.0f of 30" % [look_ok, a0, after_hit, A.hell_dps, A.hell_t, A.life, K.pact])
-	# CURSE: every one within 4.5 tiles struck and cursed
+	# CURSE: thrown where he aims (heroes/warlock.gd CURSE_RANGED; round him, 4.5 tiles, `--curse=round`): those within reach struck and cursed
 	put.call(A, home + way * 2.0)
 	put.call(B, home + way * 3.0 + side * 1.0)
 	put.call(C, home + way * 9.0)

@@ -40,9 +40,10 @@ const DEMON2 := false
 ## HIS CURSE THROWN (his words, 22 Nov 2026: “Oh, the curse attack for the warlock.  I need it to be a ranged ability.  I think
 ## now it's just an aoe around him? / That should make cursing everything much easier and thus make his burns last forever
 ## easier as well”): his Curse thrown where he aims, CURSE_REACH tiles at most (as near there as he can see), a streak of smoke
-## to it, and every enemy within CURSE_RAD of where it lands that it can see struck and cursed, chains of smoke to each. Off
-## (pictures first): every enemy within 4.5 tiles of him, as the game has it. `--curse=ranged` for its pictures and checks.
-static var CURSE_RANGED := false
+## to it, and every enemy within CURSE_RAD of where it lands that it can see struck and cursed, chains of smoke to each. On at
+## his “That's fine.” to its pictures (docs/mockups/warlock_curse). Off (`--curse=round`): every enemy within 4.5 tiles of him,
+## as the game has it.
+static var CURSE_RANGED := true
 const CURSE_REACH := 9.0
 const CURSE_RAD := 3.5
 ## (its flight: a ball of his hellfire arcing from his claw to the spot, then the ring of where it lands, and the chains)

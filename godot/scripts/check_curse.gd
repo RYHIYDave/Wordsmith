@@ -1,4 +1,4 @@
-## HIS CURSE THROWN (heroes/warlock.gd CURSE_RANGED; off till his yes to these pictures: `--only=curse --shots=<dir>`): the Warlock
+## HIS CURSE THROWN (heroes/warlock.gd CURSE_RANGED; on at his yes to these pictures: `--only=curse --shots=<dir>`): the Warlock
 ## on floor 5 and a pack of five some seven tiles off. As the game has it, his Curse round him (4.5 tiles) reaches none of them;
 ## thrown, the streak of smoke to where he aims and the chains from there curse every one within 3.5 tiles of it. Its card. Lines of
 ## what each comes to.
