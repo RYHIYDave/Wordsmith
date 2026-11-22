@@ -86,8 +86,11 @@ const FILE := "res://assets/words/words.json"
 ##   EVEN_BASE    every class's quick attack as hard a second before its words as the Warrior's Strike with his greatsword
 ##                (EVEN: what its share of the weapon's hit is made, for its own weapon's speed and damage: the bow's Shot, the
 ##                staff's Wave, the wrench's Vial Toss, the tome's Hellbolt; the Brawler's wraps are the greatsword's already).
-##   ELEMENT_HIT  Flame and Lightning in front add to the hit as Power does, Frost two thirds of that (FROST_HIT), each besides
-##                its own burn, arcs or chill; of the damage words in front (a melded word's two among them), only the best one's.
+##   ELEMENT_HIT  Flame, Frost and Lightning in front add to the hit as Power does, each besides its own burn, chill or arcs; of
+##                the damage words in front (a melded word's two among them), only the best one's. FROST as much as the rest (his
+##                word: “I don't think frost should be less damage, I just think it doesn't have the damage talent tree points or
+##                extra damage through burns or bolts.  It has an extra defensive layer of chilling or freezing.  That's the trade
+##                off.  Less extra top-end damage for more survivability”): FROST_HIT 1.
 ##   EVEN_GEAR_ATTR (loot.gd imbue_options) a ranked word burned into gear gives no more Strength, Dexterity or Intelligence than
 ##                its plain word: no attribute stacks faster than another.
 static var WORDS_ADD := true
@@ -97,7 +100,7 @@ static var EVEN_BASE := true
 static var ELEMENT_HIT := true
 static var EVEN_GEAR_ATTR := true
 const EVEN := {"shot": 1.303, "wave": 1.6, "vialtoss": 1.72, "hellbolt": 1.635}
-const FROST_HIT := 2.0 / 3.0
+const FROST_HIT := 1.0
 const ATTR_KNEE := 50.0
 const ATTR_SPAN := 100.0
 
