@@ -1,0 +1,53 @@
+# THE IPHONE APP, built on one of GitHub's Macs (the Godot copy, godot/). Godot 4.7.2 makes the Xcode project
+# (godot/export_presets.cfg, "iOS"); Xcode builds it. Not signed yet: that waits on his Apple developer account
+# (then: its certificate, its profile, and TestFlight to his phone).
+# Runs when this file or .github/ios_build.txt changes on the branch, or by hand.
+name: iPhone build
+
+on:
+  push:
+    branches: [claude/sharp-lamport-ey7q0l]
+    paths: ['.github/workflows/ios.yml', '.github/ios_build.txt']
+  workflow_dispatch:
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: godot
+
+      - name: Godot 4.7.2 and its iPhone template
+        run: |
+          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_macos.universal.zip
+          unzip -q godot.zip
+          curl -sSL -o templates.tpz https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz
+          T="$HOME/Library/Application Support/Godot/export_templates/4.7.2.stable"
+          mkdir -p "$T"
+          unzip -q -j templates.tpz templates/ios.zip templates/version.txt -d "$T"
+          rm templates.tpz godot.zip
+          ls -la "$T"
+
+      - name: The Xcode project
+        run: |
+          G=./Godot.app/Contents/MacOS/Godot
+          $G --headless --path godot --import > import.log 2>&1 || true
+          tail -5 import.log
+          mkdir -p build/ios
+          $G --headless --path godot --export-release "iOS" "$PWD/build/ios/Wordsmith.xcodeproj" > export.log 2>&1
+          grep -E "ERROR|failed" export.log || true
+          ls -la build/ios
+          du -sh build/ios/Wordsmith.pck
+
+      - name: Built by Xcode (not signed)
+        run: |
+          cd build/ios
+          xcodebuild -list -project Wordsmith.xcodeproj
+          set -o pipefail
+          xcodebuild -project Wordsmith.xcodeproj -scheme Wordsmith -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build 2>&1 | tail -60
+          du -sh dd/Build/Products/Release-iphoneos/*.app

@@ -1,0 +1,1 @@
+First iPhone build: unsigned, to prove the Mac step works (22 Nov 2026).
