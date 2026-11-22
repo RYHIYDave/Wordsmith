@@ -7,6 +7,9 @@
 ##   THE FIGHT IS OVER (4 s after the last of them has died or lost him, FIGHT_MUSIC.calm): the fight faded out over 1.5 s and
 ##   stopped; the walk faded back up over 1.5 s, where it had got to. Never in town.
 ## Each track's loudness is ramped as the game ramps its gain (straight from one to the other), and turned into decibels.
+##   THE BOTTOM OF THE SHAFT (the fight with the Twisted Wordsmith, endless mode's final boss): the title theme as its walk, his
+## words to the sound chat, 14 Nov 2026: “i want to use the main theme for the fight with the twisted wordsmith”: from its start
+## once, then round between its loop points (music.json `final`), at the level music's gain; no fight music over it.
 ##   THE TITLE THEME (engine/audio.ts titleMusic), on while the start screen is up: from its start once, then round between its
 ## two loop points for ever (music.json `title`: the file cut at the loop's end, Godot looping it back to the loop's start), at the
 ## game's gain for it; the start screen gone, let go of over 0.6 s.
@@ -114,6 +117,8 @@ func _vol() -> float:
 func _start(t: Dictionary, at: float, gain: float) -> _Track:
 	var s: AudioStreamOggVorbis = load(DIR + t["file"])
 	s.loop = true
+	# (a loop that is not from 0, the title theme's in the final arena: from its start once, then round from `loopStart`)
+	s.loop_offset = float(t.get("loopStart", 0.0))
 	var tr := _Track.new()
 	tr.gain = gain
 	tr.target = gain

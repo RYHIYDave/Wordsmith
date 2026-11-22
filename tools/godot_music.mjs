@@ -72,5 +72,9 @@ else {
   console.log(`title: ${tm[1]} -> ${title.file} (loops ${title.loopStart} to ${title.loopEnd} s)`);
 }
 
+// THE BOTTOM OF THE SHAFT: the fight with the Twisted Wordsmith, endless mode's final boss, to the title theme as it is (his words,
+// 14 Nov 2026, to the sound chat: “i want to use the main theme for the fight with the twisted wordsmith”; the queue's
+// final-boss-fights-to-title-theme): from its start once, then round between its two loop points, the title's own file
+places.final = { walk: { file: title.file, loop: title.loopEnd, loopStart: title.loopStart } };
 writeFileSync(join(OUT, 'music.json'), JSON.stringify({ music: MUSIC, places, title }, null, 1) + '\n');
 console.log('music.json:', JSON.stringify(MUSIC));

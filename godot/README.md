@@ -1221,6 +1221,10 @@ game/world_sounds.ts; `sfx.gd`, `monsters.gd`, `monster.gd`, `town.gd`, `main.gd
   pieces painted ahead (the hammer, meteors, ice, orb, spores, traps and clouds, the Blight's trees) from the game itself
   (tools/godot_wsboss.ts).
 - `--only=final` (`check_glows.gd`): 28 checks, 42 pictures (each move and meld, the fall, his death, his hoard).
+- **His fight to the title theme** (his words to the sound chat, 14 Nov 2026: “i want to use the main theme for the fight with the
+  twisted wordsmith”; `music.gd` `final`, music.json by tools/godot_music.mjs): at the bottom of the shaft the title theme plays,
+  from its start, then round between its loop points (94.024 to 162.275 s), at the level music's gain; no fight music over it.
+  `--only=finalmusic` (`check_glows.gd`): 3 checks.
 - **The fanfare as endless opens** (ui/endless_fanfare.ts, ui/endless_splash_draw.ts, art/endless_stair.ts; `endless_splash.gd`,
   `main.gd` endless_fanfare): the last floor beaten and he in his town, the game waits under THE SPLASH, the art chat's stair with
   no bottom (his pick: “2 The stair with no bottom”): out of the dark the storeys wake one after another down the shaft, each with a

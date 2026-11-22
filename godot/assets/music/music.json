@@ -123,6 +123,13 @@
     "loop": 51.061563,
     "fightIn": 1.206
    }
+  },
+  "final": {
+   "walk": {
+    "file": "music_title.ogg",
+    "loop": 162.275,
+    "loopStart": 94.024
+   }
   }
  },
  "title": {

@@ -3010,3 +3010,32 @@ func packs(main, hero, dir: String) -> void:
 	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
 	for bb in bad:
 		print("  WRONG: ", bb)
+
+
+## THE FINAL FIGHT'S MUSIC (--only=finalmusic; music.gd `final`, main.gd _music_place): at the bottom of the shaft the title theme
+## plays, from its start, round between its loop points (94.024 to 162.275 s); back up at the Rim, none.
+func finalmusic(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	await M._wait(0.6)
+	M.open_endless(20)
+	M.final_open = true
+	M.go_final()
+	await M._wait(2.0)
+	var mu = M.music
+	var w = mu._walk
+	var ok: bool = w != null and is_instance_valid(w) and w.playing
+	var file := str(w.stream.resource_path).get_file() if ok else ""
+	var off: float = w.stream.loop_offset if ok else -1.0
+	var at: float = w.get_playback_position() if ok else -1.0
+	_line(M.place == "final" and mu._place == "final" and ok and file == "music_title.ogg" and absf(off - 94.024) < 0.001 and at < 5.0,
+		"at the bottom of the shaft: the title theme (%s), from its start (%.1f s in), round from %.3f s" % [file, at, off])
+	_line(mu._fight == null, "no fight music over it, the boss awake (%s)" % (mu._fight != null))
+	M.go_to(M.home_place(), "start")
+	await M._wait(2.0)
+	_line(M.place == "rim" and mu._place == "", "back up at the Rim: no music there, as in the game (%s)" % mu._place)
+	h.unhurt = false
+	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+	for bb in bad:
+		print("  WRONG: ", bb)
