@@ -114,7 +114,8 @@ func _process(dt: float) -> void:
 	if main != null and not main.move_toast.is_empty() and not get_tree().paused:
 		main.move_toast["t"] = float(main.move_toast["t"]) + dt
 		if float(main.move_toast["t"]) > 3.4:
-			main.move_toast = {}
+			var then: Array = main.move_toast.get("then", [])
+			main.move_toast = {} if then.is_empty() else {"skill": then[0], "t": 0.0, "then": then.slice(1)}
 	if not card.is_empty():
 		if not get_tree().paused:
 			card["t"] += dt

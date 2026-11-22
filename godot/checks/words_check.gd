@@ -32,6 +32,8 @@ func _init() -> void:
 	Words.POISON_SPREAD = false
 	Words.POISON_DEX = false
 	Words.MELD_RANK2 = false
+	Words.EVADE_AT = 0
+	Words.data()["moveOpens"][2] = 5
 	Words.EVEN_BASE = false
 	Words.ELEMENT_HIT = false
 	Words.DEFENCE_WORDS = false

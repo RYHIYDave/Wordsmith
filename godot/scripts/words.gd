@@ -149,6 +149,10 @@ static var POISON_DEX := true
 ##               its own figure (75% and 75%, 150% in all), what the attribute adds on top as for a ranked word; its twist as it was.
 ##               Off: both whole, as the game has it.
 static var MELD_RANK2 := true
+##   EVADE_AT    the evasive move (the Lunge, the roll, the warp, the smoke step...) opens at level 2, with the slow attack, not at 5
+##               (his “Start all that”, 22 Nov 2026, to the list's “No evade on floor 1”: all of floor 1 and its boss bring a new hero
+##               to about level 3, so the game's 5 left floor 1 played without it). 0: the game's.
+static var EVADE_AT := 2
 const MELD_PART := 0.75
 const POISON_MOST := 4
 
@@ -205,6 +209,9 @@ static var _data := {}
 static func data() -> Dictionary:
 	if _data.is_empty():
 		_data = JSON.parse_string(FileAccess.get_file_as_string(FILE))
+		# (EVADE_AT: the evasive move open at this level, not the game's 5)
+		if EVADE_AT > 0:
+			_data["moveOpens"][2] = EVADE_AT
 	return _data
 
 
