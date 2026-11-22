@@ -581,17 +581,26 @@ func _build(b: Dictionary) -> void:
 	# quick attack and the same in his hold; his quick attack alone, and it and his hold as often as each is ready, into the elite,
 	# and into a tough pack (six of the floor's own, TOUGH life each, held in a knot), till all are dead (30 s at most)
 	if OS.has_environment("WS_DMG_ALL"):
+		# (WS_DMG_WORDS="a,b,c,d": these four in place of the chosen, to hold one thing still while another is tried)
+		if OS.has_environment("WS_DMG_WORDS"):
+			ws = Array(OS.get_environment("WS_DMG_WORDS").split(",")).map(func(w): return null if w == "" or w == "-" else w)
 		_set_words(ws)
 		var lo = h.loadout
 		lo.front[1] = [ws[0], ws[1]]
 		lo.behind[1] = [ws[2], ws[3]]
 		lo._r = [null, null, null]
-		var q1 := await _fight_one(reach)
-		var q2 := await _fight_one(reach, true)
-		var p1 := await _fight_pack(reach, false, TOUGH)
-		var p2 := await _fight_pack(reach, true, TOUGH)
-		h.auto_whirl = false
-		_say("ALL FOUR WORDS (%s), in his hold too (%s): into the elite, his quick attack alone %d a second, it and his hold %d a second; a tough pack (six of %d life), quick alone dead in %.1f s (%d a second), it and his hold %.1f s (%d a second)" % [_wname(ws), h.loadout.id(1), int(q1), int(q2), int(TOUGH), p1, int(6.0 * TOUGH / p1), p2, int(6.0 * TOUGH / p2)])
+		# (WS_BURN_SET="0,0.5,1": the same fights for each size of burning's own, words.gd BURN_MORE)
+		var burns: Array = [Words.BURN_MORE]
+		if OS.has_environment("WS_BURN_SET"):
+			burns = Array(OS.get_environment("WS_BURN_SET").split(",")).map(func(x): return float(x))
+		for bm in burns:
+			Words.BURN_MORE = float(bm)
+			var q1 := await _fight_one(reach)
+			var q2 := await _fight_one(reach, true)
+			var p1 := await _fight_pack(reach, false, TOUGH)
+			var p2 := await _fight_pack(reach, true, TOUGH)
+			h.auto_whirl = false
+			_say("ALL FOUR WORDS (%s), in his hold too (%s), burning's own +%d%%: into the elite, his quick attack alone %d a second, it and his hold %d a second; a tough pack (six of %d life), quick alone dead in %.1f s (%d a second), it and his hold %.1f s (%d a second)" % [_wname(ws), h.loadout.id(1), roundi(float(bm) * 100.0), int(q1), int(q2), int(TOUGH), p1, int(6.0 * TOUGH / p1), p2, int(6.0 * TOUGH / p2)])
 		lo.front[1] = [null, null]
 		lo.behind[1] = [null, null]
 		lo._r = [null, null, null]
