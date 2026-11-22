@@ -270,6 +270,44 @@ var dungeon_words: Array = []
 var rim_seen := 0
 var quarters := 0
 const PLAN_MAX := 3
+## (ENDLESS_KEY, game/endless_key.ts) The shards lying on the floor (shards.gd); the landing at the Rim open for this hero, the four
+## set in the bench (game.ts hero.finalOpen: open until he goes through and wins below).
+var shards
+var final_open := false
+
+
+## (game.ts tabletDue) At the Shaft's Rim, the four held and the landing not yet open for him: the wordsmith can set them.
+func tablet_due() -> bool:
+	return place == "rim" and (quarters & 15) == 15 and not final_open
+
+
+## (game.ts setTablet) THE FOUR SET IN THE BENCH: they burn (the art's moment), and as its flare goes up the shaft the landing opens.
+## The tablet is used up (his pick, “Used up, collect again (Recommended)”): the account holds none after; the landing stays open for
+## this hero until he goes through.
+func set_tablet() -> void:
+	if not tablet_due() or town == null or town.rim_node == null:
+		return
+	var R = town.rim_node
+	quarters = 0
+	final_open = true
+	R.key = {"age": 0.0, "open": false}
+	R.held = quarters_held()
+	R.show_state()
+	hero.kick(3.0)
+	fx.float_text(hero.world.x, hero.world.y, "THE TABLET", Color("#7fe8ff"))
+	sfx.play("power", linear_to_db(0.9))
+	loot.say("The four shards are set in the bench. The landing opens.", Loot.MSG_QUEST)
+
+
+## (game.ts enterFinal) Down through the open landing, into its light, to the bottom of the shaft.
+func enter_final() -> void:
+	if _going:
+		return
+	loot.say("Down into the light.", Loot.MSG_QUEST)
+	if has_method("go_final"):
+		call("go_final")
+	else:
+		loot.say("Below the landing, something waits. (The fight is still being built.)", Loot.MSG_QUEST)
 
 
 ## (game.ts comeToRim) Its record stone cut to the endless level he has reached, a notch for each, the newest glowing if any was cut
@@ -545,6 +583,10 @@ func _ready() -> void:
 	quest1620 = preload("res://scripts/act3/quest1620.gd").new()
 	quest1620.main = self
 	add_child(quest1620)
+	# (ENDLESS_KEY: the tablet's shards, dropped by the endless levels' bosses of floors 5, 10, 15 and 20: shards.gd)
+	shards = preload("res://scripts/shards.gd").new()
+	shards.main = self
+	add_child(shards)
 	bells = preload("res://scripts/act2/bells.gd").new()
 	bells.main = self
 	add_child(bells)
@@ -568,7 +610,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions", "endless", "rim"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions", "endless", "rim", "shards"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -1359,6 +1401,8 @@ func _build(where: String, arrive: String) -> void:
 	# (after the city's: floor 12's second jar is these quests')
 	if quest1620 != null:
 		quest1620.enter(where if story_here() else "town")
+	if shards != null:
+		shards.enter()
 	if bells != null:
 		bells.enter(where)
 	if garden != null:
@@ -2690,6 +2734,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "rim":
 		await preload("res://scripts/check_glows.gd").new().rim(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "shards":
+		await preload("res://scripts/check_glows.gd").new().shards(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "pad":

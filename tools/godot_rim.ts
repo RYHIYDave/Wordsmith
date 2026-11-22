@@ -3,7 +3,8 @@
 // bare); these are drawn over it as they come to be, each the art chat's own painting (art/shaft_props.ts rimProps, render/rim.ts):
 //   record|<n>|<fresh>   the record stone with n notches (0 to RECORD_ROOM), the newest glowing (fresh 1) or not;
 //   trophies|<bits>      the trophies wall, each of its four mounts filled (bit k: the boss of floor 5, 10, 15, 20) or empty;
-//   socket|<bits>        (ENDLESS_KEY) the tablet in the wordsmith's bench, the quarters he holds lying in it, dark;
+//   quarter|<k>          (ENDLESS_KEY) a shard of the tablet lying where its boss fell (art/endless_tablet.ts paintQuarter);
+//   socket|<bits>        the tablet in the wordsmith's bench, the quarters he holds lying in it, dark;
 //   lit|<f>              the four set and burning, frame f at 30 a second (art/endless_tablet.ts SOCKET_LIT: kindling, the flare,
 //                        then burning on, the last SOCKET_LIT.burn going round);
 //   portal|floor|<f>, portal|rise|<f>   the landing's portal opening and standing open (art/endless_portal.ts: PORTAL_OPEN_FRAMES, then
@@ -18,7 +19,7 @@ import { Px } from '../src/engine/px';
 import { gameSwitches } from './godot_switches';
 import { GATE_SOCKETS, rimPieces, rimProps } from '../src/art/shaft_props';
 import { RIM_SLAB } from '../src/art/shaft_town';
-import { SOCKET_LIT, SOCKET_LIT_FRAMES, paintSocketTablet } from '../src/art/endless_tablet';
+import { QUARTER_N, SOCKET_LIT, SOCKET_LIT_FRAMES, paintQuarter, paintSocketTablet } from '../src/art/endless_tablet';
 import { PORTAL_IDLE, PORTAL_OPEN_FRAMES, paintPortalFloor, paintPortalRise } from '../src/art/endless_portal';
 import { RIM_RULES } from '../src/game/rim';
 import { KEY_TIMES, PORTAL_NEAR, KEY_TEXT, QUARTER_FLOORS, QUARTER_BOSS } from '../src/game/endless_key';
@@ -47,6 +48,8 @@ for (let bits = 1; bits < 16; bits++) {
   const p = paintSocketTablet([0, 1, 2, 3].map((k) => (bits & (1 << k)) !== 0));
   add(`socket|${bits}`, p.px, p.ox, p.oy);
 }
+// (a shard lying where its boss fell: its item picture, its middle its anchor: render.ts)
+for (let k = 0; k < 4; k++) add(`quarter|${k}`, paintQuarter(k), QUARTER_N / 2, QUARTER_N / 2);
 for (let f = 0; f < SOCKET_LIT_FRAMES; f++) {
   const p = paintSocketTablet([true, true, true, true], f);
   add(`lit|${f}`, p.px, p.ox, p.oy);

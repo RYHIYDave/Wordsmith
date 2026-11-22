@@ -2683,3 +2683,69 @@ func rim(main, hero, dir: String) -> void:
 	for b in bad:
 		print("  WRONG: ", b)
 
+
+## THE TABLET'S SHARDS AND THE PORTAL (shards.gd, rim.gd key; game/endless_key.ts): an endless level's boss of floor 5 drops his shard,
+## taken by walking up to it; none again while it is held; the four on the trophies wall and in the bench; set by the wordsmith,
+## they burn and the landing opens; walked into, down into the light.
+func shards(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	await M._wait(0.6)
+	M.open_endless(20)
+	M.endless_floor = 5
+	M.go_endless()
+	await M._wait(2.5)
+	var boss = null
+	for m in M._monsters.list:
+		if is_instance_valid(m) and m.boss:
+			boss = m
+	_line(M.place == "floor5" and boss != null, "Endless 1 on floor 5: its boss %s" % (boss.kind if boss != null else "none"))
+	if boss == null:
+		print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+		return
+	h.world = M._free_near(boss.world + Vector2(2.5, 0))
+	M.loot.on_kill(boss)
+	await M._wait(0.1)
+	var lying: int = M.shards._things.size()
+	var at: Vector2 = M.shards._things[0]["at"] if lying > 0 else Vector2.ZERO
+	_line(lying == 1 and int(M.shards._things[0]["k"]) == 0, "the Fleshmancer down: his shard lies by him (%d, the first of the four)" % lying)
+	await M._snap(dir + "/sh_01_lying.png")
+	h.world = at
+	await M._wait(1.0)
+	_line(M.shards._things.is_empty() and M.quarters == 1 and _said("A Tablet Shard. 1 of 4 (kept with the stash).") != "", "walked up to: taken, the account's (%d); '%s'" % [M.quarters, _said("A Tablet Shard")])
+	M.loot.on_kill(boss)
+	await M._wait(0.1)
+	_line(M.shards._things.is_empty(), "his shard held: none drops again (%d)" % M.shards._things.size())
+	# THE FOUR, AT THE RIM
+	M.quarters = 15
+	M.go_to(M.home_place(), "start")
+	await M._wait(2.0)
+	var R = M.town.rim_node
+	_line(R.held == [true, true, true, true] and R._socket.visible and M.tablet_due(), "at the Rim with the four: the trophies wall full %s, the tablet lying in the bench %s" % [R.held, R._socket.visible])
+	var ws: Dictionary = {}
+	for st in M.town.data["stations"]:
+		if st["kind"] == "wordsmith":
+			ws = st
+	h.world = M._free_near(Vector2(float(ws["x"]), float(ws["y"])) + Vector2(0.8, 0.0))
+	await M._wait(0.3)
+	_line(M.town.prompt[0] == "E: Wordsmith: set the four shards in the bench", "by the wordsmith: '%s'" % M.town.prompt[0])
+	await M._snap(dir + "/sh_02_four.png")
+	M.town._do("tablet")
+	await M._wait(1.0)
+	_line(M.quarters == 0 and M.final_open and not R.key.is_empty() and _said("The four shards are set in the bench.") != "", "set: the tablet used up (%d held), the landing open for him %s; '%s'" % [M.quarters, M.final_open, _said("The four shards")])
+	await M._snap(dir + "/sh_03_burning.png")
+	await M._wait(5.0)
+	_line(R.key["open"] and R._portal_rise.visible and _said("The landing at the shaft stands open.") != "", "the flare up the shaft, the landing opens: '%s'" % _said("The landing at the shaft"))
+	var land := Vector2(float(M.town.data["wayOut"]["landing"][0]), float(M.town.data["wayOut"]["landing"][1]))
+	h.world = land + Vector2(0.6, 0.6)
+	await M._snap(dir + "/sh_04_open.png")
+	h.world = land
+	await M._wait(0.5)
+	_line(_said("Down into the light.") != "", "walked into the open landing: '%s'" % _said("Down into the light"))
+	var run: Dictionary = Save.run_of(M)
+	_line(run.get("finalOpen", false) == true, "the save holds the landing open (%s)" % run.get("finalOpen", false))
+	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+	for b in bad:
+		print("  WRONG: ", b)
+

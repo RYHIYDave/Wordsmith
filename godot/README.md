@@ -1194,11 +1194,18 @@ game/world_sounds.ts; `sfx.gd`, `monsters.gd`, `monster.gd`, `town.gd`, `main.gd
   ENTER ENDLESS N; burned into that level (known in the Lexicon), every monster there carries them, and they pay: +30% items, +25
   rarity, +10% experience each, likelier words. Kept in the save (the stone's last cut, the gate's words; the shards with the stash).
 - `--only=rim` (`check_glows.gd`): 9 checks, pictured.
+- **The tablet's shards and the portal** (game/endless_key.ts; `shards.gd`, `rim.gd` key): on an endless level the boss of floor
+  5, 10, 15 or 20 drops his shard if the account lacks it (TABLET SHARD over it in the uniques' orange, bobbing), taken by walking
+  up to it ("A Tablet Shard. 2 of 4 (kept with the stash)."; SHARD 2 / 4 over him): the account's, kept with the stash. Held, they
+  hang on the Rim's trophies wall and lie dark in the wordsmith's bench. With all four, the wordsmith sets them ("E: Wordsmith: set
+  the four shards in the bench"): they burn, the flare goes up the shaft and the landing opens ("The landing at the shaft stands
+  open."), the art's own frames; the tablet used up; walked into, "Down into the light." The landing stays open for that hero.
+- `--only=shards` (`check_glows.gd`): 10 checks, pictured.
 
 ## Not in it yet
 
 The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick).
-Of endless mode: the Tablet Shards, the Twisted Wordsmith, the fanfare as it opens.
+Of endless mode: the Twisted Wordsmith below the landing, the fanfare as it opens.
 (The monsters' pictures are the final release 25.3.22's bake, a9b22fa26169: the Chained One's sheets laid afresh, and the rest as
 25.3.21's b982b7f72ca4 but for rounding.)
 

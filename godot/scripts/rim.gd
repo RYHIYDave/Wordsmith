@@ -36,6 +36,15 @@ var reached := 0
 var best := 0
 var held: Array = [false, false, false, false]
 var _shown := ""
+## (ENDLESS_KEY, game/endless_key.ts) The tablet set in the bench: seconds since it was set (a large number if set on an earlier
+## visit), and the landing open; {} not set. What is drawn of it: the tablet in the bench's socket over the slab (the shards held
+## lying in it dark; set, burning: art/endless_tablet.ts SOCKET_LIT), and the landing's portal opening and standing open.
+var key := {}
+var _socket: Sprite2D
+var _portal_floor: Sprite2D
+var _portal_rise: Sprite2D
+var _slab := Vector2(-1, -1)
+var flats: Node2D
 
 
 func _ready() -> void:
@@ -57,7 +66,83 @@ func _ready() -> void:
 		n.texture = _sheet
 		stands.add_child(n)
 		_pieces[str(pc["kind"])] = {"node": n, "at": at, "d": d}
+	for p in town.data["props"]:
+		if p["kind"] == "runeSlab":
+			_slab = Vector2(float(p["x"]), float(p["y"]))
+	_socket = _sprite(stands)
+	_portal_floor = _sprite(flats if flats != null else stands)
+	_portal_rise = _sprite(stands)
 	show_state()
+
+
+func _sprite(into: Node2D) -> Sprite2D:
+	var n := Sprite2D.new()
+	n.centered = false
+	n.region_enabled = true
+	n.texture = _sheet
+	n.visible = false
+	into.add_child(n)
+	return n
+
+
+## (ENDLESS_KEY: game.ts updateKey) Each frame: the key's clock; the landing open ("The landing at the shaft stands open."); the
+## open landing walked into, down through it (main.gd enter_final).
+func _process(dt: float) -> void:
+	if main == null:
+		return
+	if key.is_empty() and main.final_open:
+		key = {"age": 1e4, "open": true}
+	if not key.is_empty():
+		key["age"] = float(key["age"]) + dt
+		var K: Dictionary = P["key"]
+		if not key["open"] and float(key["age"]) >= float(K["portalAt"]) + float(K["portalOpen"]) / 30.0:
+			key["open"] = true
+			main.loot.say(str(K["text"]["open"]), Color("#8af078"))
+		var land := Vector2(float(town.data["wayOut"]["landing"][0]), float(town.data["wayOut"]["landing"][1]))
+		if key["open"] and not main._going and main.hero.alive and main.hero.world.distance_to(land) < float(K["near"]):
+			main.enter_final()
+	_show_key()
+
+
+func _show_key() -> void:
+	var K: Dictionary = P["key"]
+	var sk := ""
+	if not key.is_empty():
+		var f := floori(float(key["age"]) * 30.0)
+		var burn: int = int(K["lit"]["kindle"]) + int(K["lit"]["flare"])
+		sk = "lit|%d" % (f if f < int(K["litFrames"]) else burn + (f - burn) % int(K["lit"]["burn"]))
+	else:
+		var bits := 0
+		for k in 4:
+			if k < held.size() and held[k]:
+				bits |= 1 << k
+		sk = "socket|%d" % bits if bits > 0 else ""
+	_on(_socket, sk, _slab, _slab.x + _slab.y + 0.002)
+	var pf := -1
+	if not key.is_empty():
+		var g := floori((float(key["age"]) - float(K["portalAt"])) * 30.0)
+		if g >= 0:
+			var o := int(K["portalOpen"])
+			pf = g if g < o else o + (g - o) % int(K["portalIdle"])
+	var land := Vector2(float(town.data["wayOut"]["landing"][0]), float(town.data["wayOut"]["landing"][1]))
+	_on(_portal_floor, "portal|floor|%d" % pf if pf >= 0 else "", land, -1.0)
+	_on(_portal_rise, "portal|rise|%d" % pf if pf >= 0 else "", land, land.x + land.y)
+
+
+func _on(n: Sprite2D, k: String, at: Vector2, d: float) -> void:
+	if n == null:
+		return
+	if k == "" or not P["pics"].has(k) or at.x < 0.0:
+		n.visible = false
+		return
+	var q: Array = P["pics"][k]
+	n.visible = true
+	n.region_rect = Rect2(q[0], q[1], q[2], q[3])
+	n.offset = -Vector2(q[4], q[5])
+	if d < 0.0:
+		n.position = Iso.to_screen(at.x, at.y)
+	else:
+		_lay(n, at, d)
 
 
 ## Set it as it stands now: the record stone, the trophies wall, the gate's words (main.gd come_to_rim; the gate's panel).

@@ -53,6 +53,9 @@ static func run_of(main) -> Dictionary:
 		run["rimSeen"] = main.rim_seen
 	if not main.plan.is_empty():
 		run["plan"] = main.plan.duplicate()
+	# (ENDLESS_KEY: the landing open for him: game.ts save `finalOpen`)
+	if main.final_open:
+		run["finalOpen"] = true
 	# (FLOORS 11 TO 15's quests: the jar, the pages, the clapper, and the armourer's pick laid out and not yet taken: game.ts save,
 	# act2/quest1115.gd)
 	var q11 = main.quest1115
@@ -187,6 +190,7 @@ static func restore_run(main, s: Dictionary) -> void:
 	var ef := int(_num(s.get("endlessFloor"), 0))
 	main.endless_floor = (ef if ef >= 1 and ef <= main.last_built() else main.endless_floor_for(main.endless, 0)) if main.endless > 0 else 0
 	main.rim_seen = clampi(int(_num(s.get("rimSeen"), 0)), 0, main.endless)
+	main.final_open = s.get("finalOpen") == true
 	main.plan = (s.get("plan") as Array).filter(func(w): return w is String) if s.get("plan") is Array else []
 	loot.body_searched = s.get("body", false) == true
 	loot.quest_given = s.get("asked", false) == true

@@ -509,6 +509,9 @@ func _use() -> void:
 			# (game.ts handInNear: the rune-stone; the Meldstone (MELD_HAND_IN); his ask for it (QUEST_TEXT.meldAskPrompt))
 			if given_at >= 0.0 and _word_due > 0.0:
 				prompt = ["", ""]
+			elif main.tablet_due():
+				# (ENDLESS_KEY: at the Shaft's Rim, the four shards held: game.ts handInNear, KEY_TEXT.prompt)
+				prompt = ["E: Wordsmith: set the four shards in the bench", "tablet"]
 			elif loot.quest == "heart":
 				prompt = ["E: Give the rune-stone", "give"]
 			elif loot.meld == "stone":
@@ -577,6 +580,7 @@ func _rim_ready() -> void:
 	rim_node.main = main
 	rim_node.town = self
 	rim_node.stands = stands
+	rim_node.flats = flats
 	rim_node.look = main.look if looked else null
 	add_child(rim_node)
 	var L: Dictionary = data
@@ -590,6 +594,8 @@ func _do(what: String) -> void:
 	match what:
 		"gate":
 			main._inv.open_service("gate")
+		"tablet":
+			main.set_tablet()
 		"talk":
 			if loot.ring_lit:
 				loot.say("The wordsmith: \"The ring burns. Go, and use what it gives you.\"", Color(0.35, 0.9, 1.0))

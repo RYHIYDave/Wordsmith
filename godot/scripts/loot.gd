@@ -471,6 +471,9 @@ func on_kill(m) -> void:
 	var r: String = str(m.get("royal")) if m.get("royal") != null else ""
 	if r != "" and royal_floor():
 		_card(at, r)
+	# (ENDLESS_KEY: the boss of an endless level on floor 5, 10, 15 or 20, his shard of the tablet: shards.gd)
+	if main != null and main.get("shards") != null:
+		main.shards.boss_down(m)
 	# (ENDLESS MODE, NO STORY: none of the quests' pieces from what dies on an endless level: game.ts storyHere)
 	var story: bool = main == null or main.story_here()
 	# (FLOORS 6 TO 10: a piece of the ward-stone it carried, the Queen's feather and her eyrie's scene: act1/quest610.gd)
