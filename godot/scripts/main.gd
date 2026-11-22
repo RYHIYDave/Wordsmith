@@ -1451,6 +1451,12 @@ func _build(where: String, arrive: String) -> void:
 		ways.look = look if looked else null
 		ways.sfx = sfx
 		_place.add_child(ways)
+	# (THE EXITS' NAMES over the way out once it opens: exit_names.gd)
+	if not is_home(where):
+		var names := preload("res://scripts/exit_names.gd").new()
+		names.main = self
+		names.z_index = 46
+		_place.add_child(names)
 	# (floor 10: THE SWAMP COLOSSUS'S STONE, the landing that carries him across to it, the picture drawn back on it: act1/stone.gd)
 	stone = null
 	if not is_home(where) and map.stone != null:
@@ -2909,6 +2915,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "defence":
 		await preload("res://scripts/check_defence.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "exits":
+		await preload("res://scripts/check_exits.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "split":

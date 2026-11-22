@@ -40,6 +40,17 @@ var _still: Sprite2D
 var _down := false
 
 
+## (THE EXITS' NAMES, ways.gd EXIT_LABELS) Its name once it has broken open: STAIRS over its middle (ways.ts stairMiddle).
+func exit_labels() -> Array:
+	if opened < 0 or t < STAIR_OPENING:
+		return []
+	var st: Dictionary = map.stairs[opened]
+	var long: float = float(st.get("long", STAIR_LONG))
+	var wide: float = float(st.get("wide", STAIR_WIDE))
+	var at := Vector2(float(st["x"]) + long / 2.0, float(st["y"]) + wide / 2.0) if str(st.get("way", "x")) == "x" else Vector2(float(st["x"]) + wide / 2.0, float(st["y"]) + long / 2.0)
+	return [{"at": at, "text": "STAIRS", "lift": 18.0}]
+
+
 func _process(dt: float) -> void:
 	if opened < 0:
 		var boss = _boss()

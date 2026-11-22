@@ -73,9 +73,61 @@ func _ready() -> void:
 	_w = map.ways if map.ways != null else {}
 
 
+## THE EXITS' NAMES (game/exit_labels.ts, EXIT_LABELS on, as the game has it: his words, 23 Oct 2026, “I'd like the exits to be
+## labeled like the stash once they open when the boss dies.”; what a label says, “What it is”): once the floor's way out has opened
+## as its boss died, its name stands over it as the town's services' names stand over theirs (render.ts, the labels): STAIRS, DOOR
+## (floor 3), CAVE, CAGE; the ways on of floors 6 to 16 by what each is (ONWARD_NAME); a way on that is a column of light, WAY ON,
+## once awake. Only where he has seen; white when he is within 3 tiles, else the friend's pale cyan (exit_names.gd draws them; the
+## stairwell's of floors 1 and 2 are stairs.gd's).
+const EXIT_LABELS := {"on": true}
+const ONWARD_NAME := {6: "STAIRS", 7: "CHIMNEY", 8: "SLOT", 9: "TRAIL", 10: "CAUSEWAY", 11: "GRATE", 12: "OUTFALL", 13: "POSTERN", 14: "DOOR", 15: "GREAT DOORS", 16: "GATE"}
+## (the ways on that stand in a square, not in a wall: the name lower over them; ways.ts ONWARD place)
+const ONWARD_SQUARE := [11]
+
+
+## The names of the floor's open exits: [{at, text, lift}] (exit_labels.ts exitLabels).
+func exit_labels() -> Array:
+	var out: Array = []
+	if not EXIT_LABELS["on"]:
+		return out
+	match way_kind():
+		"stair":
+			if state == "open" and not _stair.is_empty():
+				var long := 2.4
+				var wide := STAIR_WIDE
+				var at := Vector2(float(_stair["x"]) + long / 2.0, float(_stair["y"]) + wide / 2.0) if str(_stair.get("way", "x")) == "x" else Vector2(float(_stair["x"]) + wide / 2.0, float(_stair["y"]) + long / 2.0)
+				out.append({"at": at, "text": "STAIRS", "lift": 18.0})
+		"exit":
+			if state == "open":
+				var d: Dictionary = _w["exit"]
+				var at := Vector2(float(d["a"]) + 1.0, float(d["line"]) + 0.5) if bool(d["alongX"]) else Vector2(float(d["line"]) + 0.5, float(d["a"]) + 1.0)
+				out.append({"at": at, "text": "DOOR", "lift": 56.0})
+		"cave":
+			if state == "open":
+				var c: Dictionary = _w["cave"]["spot"]
+				var line: float = float(c["plane"]) if float(c["out"]) > 0.0 else float(c["plane"]) - 1.0
+				var at := Vector2(float(c["a"]) + 1.5, line + 0.5) if bool(c["alongX"]) else Vector2(line + 0.5, float(c["a"]) + 1.5)
+				out.append({"at": at, "text": "CAVE", "lift": 52.0})
+		"shaft":
+			if state == "open":
+				out.append({"at": Vector2(float(_w["shaft"]["x"]) + 0.5, float(_w["shaft"]["y"]) + 0.5), "text": "CAGE", "lift": 56.0})
+		"onward":
+			if state == "open":
+				var a1: Dictionary = _w["a1"]
+				var f := int(a1["floor"])
+				out.append({"at": Vector2(float(a1["way"]["at"]["x"]), float(a1["way"]["at"]["y"])), "text": ONWARD_NAME.get(f, "WAY ON"), "lift": 16.0 if ONWARD_SQUARE.has(f) else 44.0})
+		"plain":
+			if state in ["opening", "open"]:
+				out.append({"at": Vector2(float(_w["onward"]["x"]), float(_w["onward"]["y"])), "text": "WAY ON", "lift": 50.0})
+	return out
+
+
+
+
 func _process(dt: float) -> void:
 	if hero == null or monsters == null or main == null:
 		return
+
 	if not _boss_dead and _boss_fallen():
 		_boss_dead = true
 		_open()
