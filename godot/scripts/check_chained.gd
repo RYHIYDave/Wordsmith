@@ -2,7 +2,8 @@
 ## on each of 2 to 5, a rare alone (his yellow name, his words, a bonus word not one of his over his head, in an ordinary room, three
 ## stakes). On floor 4: left alone he never wakes, beside the hero or as the floor round him wakes, and nothing of the hero's reaches
 ## him; by him the prompt; a touch on him is no blow but an errand, which walks the hero to him and breaks his chains; then he fights,
-## is struck, and killed leaves the bonus word. Before the ring is lit, none. Endless levels on floors 1 and 3: one each (three words
+## is struck, and killed leaves the bonus word; beaten there, never chained on floor 4 again (and his save keeps it), floor 2's still
+## is, and one freed and left alive is chained again. Before the ring is lit, none. Endless levels on floors 1 and 3: one each (three words
 ## at an endless level's depth), and on floor 1 his word falls too; endless on floor 6, none. Pictures: held, heaving, snapping, free.
 extends RefCounted
 
@@ -206,6 +207,24 @@ func run(main, hero, d: String) -> void:
 	await _wait(0.4)
 	var dropped := _words_dropped()
 	_line(r.dead and dropped.size() == dropped0 + 1 and dropped.has(cr.bonus), "killed, he leaves %s (the word over his head %s)" % [dropped.slice(dropped0), cr.bonus])
+	# ONCE PER FLOOR: beaten on floor 4, never chained there again for this hero (kept in his save); floor 2 still has its own
+	_line(cr.phase == "beaten" and M.loot.chained_beaten == [4], "beaten on floor 4: kept with the hero %s" % [M.loot.chained_beaten])
+	var Save := preload("res://scripts/save.gd")
+	var saved: Dictionary = Save.run_of(M)
+	M.loot.chained_beaten = []
+	Save.restore_run(M, JSON.parse_string(JSON.stringify(saved)))
+	_line(M.loot.chained_beaten == [4], "his save keeps it: %s, read back %s" % [saved.get("chainedBeaten"), M.loot.chained_beaten])
+	await _go("floor4")
+	_line(M.chained_rare == null, "floor 4 laid again: %s" % ("none, he is beaten" if M.chained_rare == null else "one again"))
+	await _go("floor2")
+	_line(M.chained_rare != null, "floor 2 laid again: %s" % ("its own still chained" if M.chained_rare != null else "none"))
+	# (freed and left alive: there again the next time)
+	if M.chained_rare != null:
+		_beside(M.chained_rare.m.world, 1.8)
+		M.chained_rare.unchain()
+		await _wait(CR.BREAK + 0.2)
+		await _go("floor2")
+		_line(M.chained_rare != null and M.chained_rare.held(), "floor 2, freed and left alive, laid again: %s" % ("chained there again" if M.chained_rare != null else "none"))
 	# BEFORE THE RING IS LIT: none
 	M.loot.ring_lit = false
 	await _go("floor3")
@@ -235,6 +254,7 @@ func run(main, hero, d: String) -> void:
 			await _wait(0.4)
 			var w1 := _words_dropped()
 			_line(e.dead and w1.size() == w0 + 1 and w1.has(ce.bonus) and not M.loot.words_fall(), "endless floor 1, where no other word falls (%s): freed and killed he leaves %s" % [M.loot.words_fall(), w1.slice(w0)])
+			_line(M.loot.chained_beaten == [4], "an endless level beaten is not kept against the story's floor 1: %s" % [M.loot.chained_beaten])
 	M.in_endless = false
 	_end()
 

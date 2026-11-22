@@ -1424,7 +1424,10 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   (`monsters.gd shut_in`), is never locked onto and strikes at no one. A touch on him walks the hero to him and breaks the chains
   (`touch.gd _spot_at`, errand "chained"); E within 2.4 tiles too ("Break the chains"). The links fly, and half a second later he
   fights as any elite; killed, he always leaves the bonus word (`loot.gd on_kill`), on an endless level's floor 1 as well.
-  `--only=chained --shots=<dir>` (32 checks, and pictures held, heaving, snapping, free); `--only=chained_film --shots=<dir>`
+  ONCE PER FLOOR (his pick, asked whether he should come back each time a floor is laid fresh: “Once per floor”): beaten on a
+  floor of the story he is never chained there again for that hero (`loot.gd chained_beaten`, in his save); freed and left alive,
+  he is back the next time; every endless level has its own. `--only=chained --shots=<dir>` (38 checks, and pictures held,
+  heaving, snapping, free); `--only=chained_film --shots=<dir>`
   with `--fixed-fps 30`, a film of it frame by frame (both run under `xvfb-run -a ... --rendering-driver opengl3`).
 
 ## Not in it yet

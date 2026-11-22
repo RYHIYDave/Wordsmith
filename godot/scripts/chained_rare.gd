@@ -19,6 +19,9 @@
 ##     tiles (B with a controller; the prompt, "Break the chains"): the chains snap, their links flying, and half a second later he
 ##     roars and fights as any elite of his kind. Killed, he leaves the bonus word, always (loot.gd on_kill), and all an elite leaves.
 ##   The first time he is in the hero's sight within 9 tiles, a line says what he is and what he carries.
+##   ONCE PER FLOOR: beaten on a floor of the story, he is never chained there again for that hero (loot.gd chained_beaten, kept in
+##     his save); freed and left alive, he is there again the next time the floor is laid. Every endless level has its own. His pick,
+##     22 Nov 2026, asked whether he should come back each time a floor is laid fresh: “Once per floor”.
 ## His chains and stakes are painted here in code, in the game's grain (two picture pixels to a game pixel), iron lit from the upper
 ## left on the dungeon's deep indigo, no black outlines (docs/art/RULEBOOK.md). `--only=chained`: check_chained.gd.
 extends Node
@@ -74,7 +77,7 @@ var sfx
 var m = null
 ## (where his stakes stand, tiles)
 var stakes: Array[Vector2] = []
-## "held", "breaking" (his chains snapped, he is not yet in the fight), "free"; "" while none is laid
+## "held", "breaking" (his chains snapped, he is not yet in the fight), "free", "beaten" (killed); "" while none is laid
 var phase := ""
 ## What E does where the hero stands: [what is shown, what it does] (main.gd prompt).
 var prompt := ["", ""]
@@ -102,7 +105,8 @@ static func wanted(game, where: String) -> bool:
 		return false
 	if game.in_endless:
 		return true
-	return d >= STORY_FROM and game.loot.words_fall()
+	# (ONCE PER FLOOR: beaten on a floor of the story, he is not chained there again for this hero: loot.gd chained_beaten)
+	return d >= STORY_FROM and game.loot.words_fall() and not game.loot.chained_beaten.has(d)
 
 
 ## Whether his chains still hold him.
@@ -310,6 +314,11 @@ func _process(dt: float) -> void:
 			m.chained = 2
 			m.tug = Vector2.ZERO
 			monsters.wake(m)
+	elif phase == "free" and m.dead:
+		# (ONCE PER FLOOR: beaten on a floor of the story, kept with the hero; an endless level is a new one each time)
+		phase = "beaten"
+		if not main.in_endless and not loot.chained_beaten.has(int(map.depth)):
+			loot.chained_beaten.append(int(map.depth))
 	if _back != null:
 		_back.queue_redraw()
 		_front.queue_redraw()

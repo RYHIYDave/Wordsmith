@@ -291,6 +291,9 @@ var meld := ""
 var meld_ask := false
 ## (game.ts toldCarrier: what the rune over a monster's head means has been said)
 var told_carrier := false
+## THE CHAINED RARE: the floors of the story whose chained rare he has beaten; there he is never chained again (chained_rare.gd).
+## His pick, 22 Nov 2026, asked whether one should come back each time the floor is laid: “Once per floor”.
+var chained_beaten: Array = []
 ## A NEW PLAYER'S FIRST WORD HAS BEEN SET IN AN ATTACK (game.ts guide.set, endGuide): the lesson of the first word is over.
 ## Until then a word he holds is pressed on him (guide.gd), and goes on an attack and nowhere else.
 var taught := false
