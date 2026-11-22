@@ -40,6 +40,10 @@ const Glow := preload("res://scripts/figure_glow.gd")
 const HideClip := preload("res://scripts/hide_clip.gd")
 const Iso := preload("res://scripts/iso.gd")
 const BakedFigure := preload("res://scripts/baked_figure.gd")
+## (a monster whose figure's pictures are held only near him is drawn from them within this many tiles of him: past what he can see
+## of it, a tall one on a phone held upright among them (its screen reaches about 25 tiles from him at its corners); monsters.gd
+## NEAR_FETCH asks for them well before)
+const NEAR_SHOW := 30.0
 const MM := preload("res://scripts/monster_moves.gd")
 const Words := preload("res://scripts/words.gd")
 const Headsman := preload("res://scripts/headsman.gd")
@@ -1971,6 +1975,20 @@ func _show() -> void:
 	# far beyond what he can see of them: monsters.gd FETCH_AT)
 	if art.deferred and not art.fetched:
 		return
+	# (EVERY FLOOR'S OWN MONSTERS' PICTURES HELD ONLY NEAR HIM: monsters.gd NEAR_FETCH. One far off whose pictures are let go of shows
+	# none, and holds none; within NEAR_SHOW, one whose pictures have not come in yet (come up beside him) waits unseen the few
+	# frames till they have: taken in at once, the game would stand still that long, and its blows skip their moments)
+	# (and one taken in a move at a time, the Moth, far off: none of hers drawn, so that they are let go of: monsters.gd NEAR_DROP)
+	if (art.near and not art.whole()) or art.lazy:
+		var far: bool = mgr.hero == null or world.distance_to(mgr.hero.world) > NEAR_SHOW
+		if not far:
+			art.fetch()
+		if far or (art.near and not art.whole()):
+			if _sprite.texture != null:
+				_sprite.texture = null
+				_lit_f = {}
+				_lights.queue_redraw()
+			return
 	var list := _list
 	# (FROZEN, it is its first standing picture, held: render.ts `m.frozenT > 0`; a Boneward whose spear is gone, its bare one)
 	var held := frozen_t > 0.0 and not dead

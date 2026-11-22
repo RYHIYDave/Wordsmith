@@ -1240,6 +1240,40 @@ game/world_sounds.ts; `sfx.gd`, `monsters.gd`, `monster.gd`, `town.gd`, `main.gd
   all the talent points in practice mode?”).
 - `--only=packs` (`check_glows.gd`): 4 checks.
 
+## Memory: held only when wanted (the cloud chat, 22 Nov 2026)
+
+Asked after the web game crashed on his phone on the later floors (“I was having some bad crashes in the later levels.”; then
+“Will this be a problem in godot?”): measured floor by floor (`--only=memfloors`, `check_glows.gd`: what Godot holds in town, at
+each of floors 11 to 20 as it begins, once he has been through every room, once he has stood there, and back at its start, and the
+final arena; with each figure's pictures held and how near its nearest monster is, written to `<shots>/memfloors.txt`;
+`WS_MEM_FLOORS="16 17"` for only those floors). Two things were held that need not be:
+
+- **The item tables** (tools/godot_loot_split.mjs, run at the end of tools/godot_loot.ts; `loot.gd` imbue_options,
+  `_piece_of`, `_gamble_pieces`): items.json was 40 MB of text and 687 MB once read whole, before the title screen. Now what a
+  word becomes on each piece is read one option at a time as it is asked for (each of its 4,422 options written once:
+  `imbue.json` + `imbue_opts.bin`), each floor's pieces only for the floor of the last drop (`depth/<d>.json`), and the
+  stranger's only as he throws (`gamble/<d>.json`). What Godot holds in town: 842 MB before, 194 MB now. Every one of the 12,208
+  lists, the 20 floors' pieces and the 20 gamble tables read back exactly as the whole file had them.
+- **The monsters' pictures** (`baked_figure.gd` `near`, fetch, collect, whole, let_go; `monsters.gd` NEAR_FETCH 40 tiles,
+  NEAR_DROP 52, NEAR_KEEP 10 s; `monster.gd` NEAR_SHOW 30): every floor's own figures were taken in whole as it began, a boss's among
+  them though he waits in his own room at its end (the Censor 147 MB, the Scraper 98, the Crier 79, the King 77, the Rat King 73).
+  Now a figure's pictures are asked for off the game's thread once one of its monsters is within 40 tiles of him, and let go of
+  once none has been within 52 for 10 seconds. A monster is drawn within 30 tiles (past the screen's edge every way it is held: a
+  phone upright reaches about 25 at its corners); one come up beside him before its pictures are in waits unseen the few frames
+  till they are, for taken in at once the game stood still that long and blows skipped their moments (floor 13's check: 11 or 12
+  of 13 so, 13 of 13 now). Pictures asked for and come in are taken into hand at once, and those still on their way when a floor
+  is dropped taken off the loader's hands, for Godot's loader holds any it is never asked for again. The Moth's, taken in a move
+  at a time, let go of the same way while he is below her tower, and asked for as he goes up its stair (the screen kept dark, at
+  most 3 s, till they are in: `act3/tower.gd`). Floor 9's side bosses as before (fetched as their lairs are entered).
+- Pictures held as each floor begins, before and now (MB): floor 11 345 / 239, 13 445 / 236, 15 407 / 195, 17 432 / 359,
+  19 406 / 230, 20 461 / 276; back at a floor's start after the whole of it has been walked: 11 249, 13 246, 15 195, 16 243,
+  17 354, 19 288, 20 288. The final arena 181 / 114.
+- Checked: the city's and the High City's (`--only=city --floor=11` ... `20`): 11 to 19 every step as the game's; 20, 23 of 26
+  (a grip, a comb and a charge that land in some runs and not in others, with this switched off as much as on; and the trapdoor,
+  which some runs does not open after the Moth's death as the game is left paused then, off as on: not yet looked into);
+  `--only=lairfetch` 4 of 4, `--only=boss` (floor 3) and `--only=final` 28 of 28.
+- `check.json` (assets/words, 399 MB, for the words check only) is never kept in the repository, so it is in no build.
+
 ## Not in it yet
 
 The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick).
@@ -1256,7 +1290,7 @@ The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick
 | `assets/looks/floor3` to `floor10` | `node tools/godot_record.mjs 3` (4 ... 10; under the open sky, floors 6 to 10, only what a view from where he can stand reaches, and the Ledge Road's sky as `floor7_sky.png` and `floor7_skytown.png`): the floor's look taken from the game itself in a headless browser (needs the Playwright the repository's playtests use; it builds `dist/godot_rec.html` if it is not there), with its states and what is seen when; it says whether the level it drew is the level in `assets/floor<N>/layout.json` |
 | `assets/monsters/*.json`, `*-N.png` | the packs unpacked: `node tools/godot_unpack_monsters.mjs` |
 | `assets/monsters/lists.json` | each figure's lists named, from the game's art: `npx tsx tools/godot_monster_lists.ts` |
-| `assets/loot` | the game's own gear rolled on floor 1, the vendors' shelves, prices, its pictures, the fallen wordsmith, every word (the 28 melding makes among them) on gear and its rune stone: `npx tsx tools/godot_loot.ts 1` |
+| `assets/loot` | the game's own gear rolled on floor 1, the vendors' shelves, prices, its pictures, the fallen wordsmith, every word (the 28 melding makes among them) on gear and its rune stone: `npx tsx tools/godot_loot.ts 1` (which ends by splitting items.json so that Godot reads each part only when it is wanted: `tools/godot_loot_split.mjs`) |
 | `assets/words` | the words' tables and numbers, the made words' among them: `npx tsx tools/godot_words.ts` (`check` also writes check.json, not kept, for `checks/words_check.gd`) |
 | `assets/town` | the town a new game begins in, its pictures, floor 1's gate up: `npx tsx tools/godot_town.ts 1` |
 | `assets/camp` | the camp inside Vellum's gate, his town from floor 10 on (game/camp.ts makeCamp, as he comes in from the Fen): `npx tsx tools/godot_town.ts 1` too; its look `assets/looks/camp*`: `node tools/godot_record.mjs camp` |

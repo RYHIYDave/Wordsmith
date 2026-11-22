@@ -131,7 +131,11 @@ static func wave_at(t: float) -> float:
 
 func spawned(m) -> void:
 	a1["beat"] = 0.0
-	# (her pictures, a move at a time: her hover, her drift and her flinch read ahead)
+	# (her pictures, a move at a time: her hover, her drift and her flinch read ahead; only once he is near, as every figure's:
+	# baked_figure.gd fetch, monsters.gd NEAR_FETCH)
+	var h = m.mgr.hero
+	if h != null and m.world.distance_to(h.world) > 40.0:  # (monsters.gd NEAR_FETCH)
+		return
 	for l in ["idle", "walk", "reel"]:
 		m.art.want(l, 1 if m.face.x + m.face.y < -0.2 else 0)
 

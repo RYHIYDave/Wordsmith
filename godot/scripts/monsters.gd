@@ -100,6 +100,51 @@ const FETCH_INTO := 1.6
 const FETCH_NEAR := 18.0
 
 
+## EVERY FLOOR'S OWN MONSTERS' PICTURES HELD ONLY NEAR HIM (baked_figure.gd `near`): a figure's sheets asked for off the game's thread
+## once one of its monsters is within NEAR_FETCH tiles of him (beyond what he can see: a monster is drawn from its pictures within
+## monster.gd NEAR_SHOW), and let go of once none has been within NEAR_DROP for NEAR_KEEP seconds. Looked at NEAR_EVERY seconds.
+const NEAR_FETCH := 40.0
+const NEAR_DROP := 52.0
+const NEAR_KEEP := 10.0
+const NEAR_EVERY := 0.25
+var _near_in := 0.0
+## (the time gone since it was last looked at: the slower the frames, the more each look counts)
+var _near_gone := 0.0
+## (figure name -> how long none of its has been within NEAR_DROP)
+var _far_for := {}
+
+
+func _hold_near(dt: float) -> void:
+	_near_in -= dt
+	_near_gone += dt
+	if _near_in > 0.0 or hero == null:
+		return
+	_near_in = NEAR_EVERY
+	var gone := _near_gone
+	_near_gone = 0.0
+	var nearest := {}
+	for m in list:
+		if is_instance_valid(m) and m.art != null and (m.art.near or m.art.lazy):
+			var d: float = m.world.distance_to(hero.world)
+			nearest[m.art] = minf(float(nearest.get(m.art, INF)), d)
+	for name in _figures:
+		var art = _figures[name]
+		if art == null or not (art.near or art.deferred or art.lazy):
+			continue
+		art.collect()
+		if art.deferred:
+			continue
+		var d: float = float(nearest.get(art, INF))
+		if d <= NEAR_FETCH:
+			art.fetch()
+		if d <= NEAR_DROP:
+			_far_for[name] = 0.0
+			continue
+		_far_for[name] = float(_far_for.get(name, 0.0)) + gone
+		if float(_far_for[name]) >= NEAR_KEEP and (art.fetched or art.held() > 0):
+			art.let_go()
+
+
 func _fetch_lairs() -> void:
 	if hero == null or map == null:
 		return
@@ -124,7 +169,7 @@ func load_floor(path: String, figures_dir: String, given := {}) -> void:
 	for m in data["monsters"]:
 		var figure: String = m["figure"]
 		if not _figures.has(figure):
-			_figures[figure] = BakedFigure.new(figures_dir, figure, info, FETCH_AT.has(figure))
+			_figures[figure] = BakedFigure.new(figures_dir, figure, info, FETCH_AT.has(figure), not FETCH_AT.has(figure))
 		# (the first plain one of each kind, wordless, of no pack's rank: what a boss calls up of it is made as it is: call_up)
 		if not _plain.has(m["kind"]) and not m["boss"] and not m["elite"] and not m["champion"] and (m["words"] as Array).is_empty() and m.get("rarity") == null:
 			_plain[m["kind"]] = m
@@ -139,6 +184,7 @@ func load_floor(path: String, figures_dir: String, given := {}) -> void:
 func _process(dt: float) -> void:
 	_run_later(dt)
 	_fetch_lairs()
+	_hold_near(dt)
 	_flow_in -= dt
 	if _flow_in <= 0.0:
 		_flow_in = FLOW_EVERY

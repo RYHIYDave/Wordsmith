@@ -2396,8 +2396,11 @@ func _tower() -> void:
 		await _snap("moth_dies_light")
 		_line(words, "the Moth's death: her scream; every word she swallowed flying home; she comes apart into drifting light")
 		var opened: bool = await _run(9.0, func(): return not T.shut)
+		if not opened:
+			var mo = T._moth()
+			print("CITY TRAPDOOR NOT OPEN: shut %s, going %s, paused %s, fell %.2f, clock %.2f, moth %s dead %s same %s, moths %d" % [T.shut, T._going, M.get_tree().paused, T._fell, T._clock, mo != null, mo.dead if mo != null else "-", mo == moth, M._monsters.list.filter(func(o): return is_instance_valid(o) and o.kind == "moth").size()])
 		await _snap("tower_trapdoor_open")
-		_line(slammed and stayed and opened, "the trapdoor: slammed shut behind him as the Moth woke to him (standing on it takes him nowhere); open again once its death has played out")
+		_line(slammed and stayed and opened, "the trapdoor: slammed shut behind him as the Moth woke to him (standing on it takes him nowhere); open again once its death has played out (slammed %s, stayed %s, opened %s)" % [slammed, stayed, opened])
 	else:
 		_line(false, "floor 20 has no Moth")
 	h.world = trap + Vector2(0.9, 0.0)

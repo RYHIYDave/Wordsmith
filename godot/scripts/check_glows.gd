@@ -3058,9 +3058,14 @@ func _tex_groups() -> Array:
 		by[key] = float(by.get(key, 0.0)) + float(t.get_width() * t.get_height() * 4) / 1048576.0
 		count[key] = int(count.get(key, 0)) + 1
 	var figs: Dictionary = M._monsters._figures if M._monsters != null else {}
+	# (each figure's nearest monster to him, tiles: what is held should be near)
+	var near := {}
+	for m in (M._monsters.list if M._monsters != null else []):
+		if is_instance_valid(m) and m.art != null:
+			near[m.art] = minf(float(near.get(m.art, INF)), m.world.distance_to(h.world))
 	for n in figs:
 		for t in figs[n].sheets:
-			add.call("figure " + str(n), t)
+			add.call("figure %s (nearest %.0f)" % [n, float(near.get(figs[n], INF))], t)
 	var stack: Array = [M.get_tree().root]
 	while not stack.is_empty():
 		var node: Node = stack.pop_back()
@@ -3097,10 +3102,14 @@ func memfloors(main, hero, dir: String) -> void:
 		out.append(line)
 	await M._wait(1.0)
 	row.call("town")
-	for k in range(11, 21):
+	out.append_array(_tex_groups())
+	# (WS_MEM_FLOORS="16 17": only those floors)
+	var floors: Array = Array(OS.get_environment("WS_MEM_FLOORS").split(" ", false)).map(func(x): return int(x)) if OS.has_environment("WS_MEM_FLOORS") else range(11, 21)
+	for k in floors:
 		M.go_to("floor%d" % k, "start")
 		await M._wait(3.0)
 		row.call("floor %d start" % k)
+		var start_at: Vector2 = h.world
 		var rooms: Array = M.map.rooms if M.map != null else []
 		var n := 0
 		for r in rooms:
@@ -3109,6 +3118,13 @@ func memfloors(main, hero, dir: String) -> void:
 			n += 1
 		await M._wait(1.0)
 		row.call("floor %d walked" % k)
+		# (and once he has stood where he ended for longer than a figure far off is held: monsters.gd NEAR_KEEP)
+		await M._wait(11.0)
+		row.call("floor %d stood" % k)
+		out.append_array(_tex_groups())
+		h.world = M._free_near(start_at)
+		await M._wait(11.0)
+		row.call("floor %d back" % k)
 		out.append_array(_tex_groups())
 	M.open_endless(20)
 	M.final_open = true

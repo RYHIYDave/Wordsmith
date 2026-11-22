@@ -9,6 +9,8 @@ extends Node
 
 const TOWER := {"up": 1.75, "down": 0.6, "slamFrom": 1.2, "openAfter": 6.0}
 const CURTAIN := 0.35
+## (the most the screen is kept dark going up, for the Moth's pictures to come in: _through)
+const LOAD_WAIT_MS := 3000
 
 var main
 ## the export's plan: {split, stair {x, y, back}, top {cx, cy, r, trap, arrive}}; empty off floor 20
@@ -92,9 +94,20 @@ func _process(dt: float) -> void:
 func _through(up: bool) -> void:
 	_going = true
 	main.sfx.play("door", linear_to_db(0.5))
+	# (MEMORY, 22 Nov 2026: the Moth's pictures are let go of while he is below, as every figure's far from him (monsters.gd
+	# NEAR_DROP); going up, her standing, her drift and her flinch asked for off the game's thread, and the screen kept dark, at
+	# most LOAD_WAIT, till they are in, so that the fight never stands still to take them in)
+	var moth = _moth() if up else null
+	if moth != null and moth.art != null and moth.art.lazy:
+		for l in ["idle", "walk", "reel"]:
+			moth.art.want(l)
 	var tw := create_tween()
 	tw.tween_property(main._curtain, "color:a", 1.0, CURTAIN)
 	await tw.finished
+	if moth != null and is_instance_valid(moth) and moth.art != null and moth.art.lazy:
+		var t0 := Time.get_ticks_msec()
+		while not (moth.art.ready("idle") and moth.art.ready("walk") and moth.art.ready("reel")) and Time.get_ticks_msec() - t0 < LOAD_WAIT_MS:
+			await get_tree().process_frame
 	var h = main.hero
 	var at: Dictionary = plan["top"]["arrive"] if up else plan["stair"]["back"]
 	h.world = Vector2(at["x"], at["y"])
