@@ -3275,6 +3275,19 @@ func smooth(main, hero, dir: String) -> void:
 			var now := Time.get_ticks_usec()
 			var ms := (now - last) / 1000.0
 			last = now
+			# (a stall as it comes, against the frames so far: when, where, and the nearest monster and what it was doing)
+			if times.size() > 20:
+				var so_far: Array = times.slice(maxi(0, times.size() - 60))
+				so_far.sort()
+				var mid_now: float = so_far[so_far.size() / 2]
+				if ms > maxf(mid_now * 3.0, mid_now + 120.0):
+					var nm = null
+					for o in M._monsters.list:
+						if is_instance_valid(o) and (nm == null or o.world.distance_to(h.world) < nm.world.distance_to(h.world)):
+							nm = o
+					print("SMOOTH STALL %s at %.1f s: %.0f ms (middle %.0f); nearest %s %s %.1f tiles, %s" % [place, (now - started) / 1e6, ms, mid_now,
+						nm.kind if nm != null else "-", nm.state if nm != null else "", nm.world.distance_to(h.world) if nm != null else 0.0,
+						"its pictures in hand" if nm != null and nm.art != null and nm.art.held() > 0 else "its pictures not in hand"])
 			times.append(ms)
 			mem_most = maxf(mem_most, Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0)
 			tex_most = maxf(tex_most, Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0)
@@ -3337,7 +3350,7 @@ func demonfilm(main, hero, dir: String) -> void:
 			m.world = M._free_near(h.world + way.rotated(a) * (1.8 + 0.9 * (k % 3)))
 			m._place()
 	for m in pack:
-		m.max_life *= 6.0
+		m.max_life *= 40.0
 		m.life = m.max_life
 		M._monsters.wake(m)
 	lay.call()

@@ -1567,6 +1567,11 @@ func save_now() -> bool:
 func _notification(what: int) -> void:
 	if what in [NOTIFICATION_WM_CLOSE_REQUEST, NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_GO_BACK_REQUEST]:
 		save_now()
+	# (A GAME IN AN APP, 22 Nov 2026: the phone put away in a dungeon, the game waits under the pause panel, so that he comes back to
+	# it as he left it and not into a fight already going on; never in the checks, whose window may lose the focus by itself)
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT] and _arg("shots") == "" and _mini != null \
+			and _mini.open == "" and hero != null and hero.alive and not is_home(place) and not get_tree().paused:
+		_mini.show_panel("pause")
 
 
 func _process(dt: float) -> void:
