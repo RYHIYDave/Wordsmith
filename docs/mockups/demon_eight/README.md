@@ -15,8 +15,8 @@ mirrors.
 The demon in the game is the Living Shadow (`src/art/shadow_art.ts`, LIVING_SHADOW on since 25.3.14), from two sides: from in
 front, and from behind (truly turned 90). ITS EIGHT SIDES WERE ALREADY SETTLED WITH HIM, as a film of eight panels each truly
 turned (docs/mockups/warlock_up2/README.md, “Its eight sides”: his “Yes, all eight are right (Recommended)”, 12 Nov 2026, by
-13:30); they were never put into the game's lists. Now they are, behind a switch that is off: `src/art/sides_more.ts`
-EIGHT_MORE.demon.
+13:30); they were never put into the game's lists. Now they are, behind a switch, `src/art/sides_more.ts` EIGHT_MORE.demon:
+off until his yes to the film below, on since.
 
 - **FIVE TRULY TURNED**, before the game's own camera 45 degrees apart (`MORE_TURN`), every move painted from each with nothing
   new to it (its painter and everything its moves leave in the air and on the floor already took a turn): `front` (0), `toward`
@@ -75,4 +75,10 @@ walking slashes a pack each), and asked for ahead from the man's side whichever 
 Shadow, its packs and the sides (`--only`, below). `tsc --noEmit -p tsconfig.json`: clean but for `tests/relief.test.ts`
 line 378, which is on `main` as it is (not this branch's).
 
-WAITING FOR HIS WORD.
+SHOWN HIM SO, 22 Nov 2026, by 09:41 (Eastern): the film sent, with the two things done beyond the ask (its burning out not
+mirrored, for the man's arm; more room under its feet, its claws' tips cut running straight down the screen and twice from in
+front in the game today); asked by pop-up whether it looks right from all eight sides in every move. **HIS WORD, 22 Nov 2026,
+by 09:41: “Yes, all eight are right (Recommended)”.** SO EIGHT_MORE.demon IS ON (`src/art/sides_more.ts`), and the tests say so
+(`tests/shadow_eight.test.ts` 1, `tests/sides_more.test.ts`; `tests/warlock_packs.test.ts` 3 kept from its two sides with the
+switch off for it, 4 asked for ahead from its eight). Handed back on the queue page's ship list,
+`draw-the-demon-from-eight-sides`, for the Godot chat to bake (above, “For the Godot chat”).

@@ -1,5 +1,6 @@
 // THE WARLOCK'S DEMON, THE LIVING SHADOW, FROM ALL EIGHT SIDES (art/sides_more.ts EIGHT_MORE.demon; art/shadow_art.ts
-// makeShadowArt; the queue's draw-the-demon-from-eight-sides, 22 Nov 2026; docs/mockups/demon_eight/README.md). Five sides truly
+// makeShadowArt; the queue's draw-the-demon-from-eight-sides, 22 Nov 2026; docs/mockups/demon_eight/README.md; ON at his yes to
+// its film, 22 Nov 2026, by 09:41: “Yes, all eight are right (Recommended)”). Five sides truly
 // turned and three their mirrors, at his word of 22 Nov 2026, 09:01: “He can flip since he doesn’t have a weapon or anything in
 // one hand so it should be exactly 8.” Held here:
 //   1. off, its two sides as ever; on, all eight, in the game's order, each mirror's turn the very side it stands for;
@@ -92,7 +93,8 @@ function shape(s: AnimSet): unknown {
 test('1. off, its two sides; on, all eight in the game\'s order, each mirror\'s turn the side it stands for', () => {
   const off = art(false);
   assert.deepEqual(Object.keys(off).sort(), ['back', 'front'], 'off: from in front and from behind');
-  assert.equal(EIGHT_MORE.demon, false, 'off in the game until his yes to its pictures');
+  // (ON at his yes to its film, 22 Nov 2026, by 09:41: “Yes, all eight are right (Recommended)”)
+  assert.equal(EIGHT_MORE.demon, true, 'on in the game, at his yes');
   const on = art(true);
   assert.deepEqual(Object.keys(on).sort(), [...MORE_SIDES].sort(), 'on: its eight');
   assert.ok(isEight(on as never), 'the game reads it as eight-sided');

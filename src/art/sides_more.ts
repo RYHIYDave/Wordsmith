@@ -37,11 +37,13 @@ export const EIGHT_MORE = {
   brawler: true,
   /**
    * THE WARLOCK'S DEMON, THE LIVING SHADOW, FROM ALL EIGHT SIDES (art/shadow_art.ts makeShadowArt; the queue's
-   * draw-the-demon-from-eight-sides, 22 Nov 2026, the Skins chat; docs/mockups/demon_eight/README.md). OFF until his yes to its
-   * pictures: off, it is the two sides it has been. Its two (from in front; truly from behind, turned 90) are the same pictures
-   * either way, to the pixel; the six more are it truly turned 45 degrees apart, as the man is (art/warlock_up_art.ts).
+   * draw-the-demon-from-eight-sides, 22 Nov 2026, the Skins chat; docs/mockups/demon_eight/README.md). ON at his yes to its film
+   * (every move from all eight sides), 22 Nov 2026, by 09:41 (Eastern): “Yes, all eight are right (Recommended)”. Off, it is the
+   * two sides it had been. Its two (from in front; truly from behind, turned 90) are the same pictures either way, to the pixel,
+   * but for more room under its feet (dev/demon_new.ts SHADOW_BELOW); of the six more, three truly turned 45 degrees apart as the
+   * man is (art/warlock_up_art.ts) and three their mirrors, at his word (art/shadow_art.ts SHADOW_MIRRORS).
    */
-  demon: false,
+  demon: true,
 };
 
 /** The eight sides, the two the game has always had first (art/sides.ts EIGHT_ORDER's order). */
