@@ -192,7 +192,7 @@ func _dps() -> float:
 		var P: Dictionary = Words.data()["poison"]
 		var flat: float = (float(h.stats.get("poison_min", 0.0)) + float(h.stats.get("poison_max", 0.0))) / 2.0 / float(P["time"])
 		var dose: float = (hit * float(r["poison"]) * float(r["pace"]) + flat) * (1.0 + float(h.stats.get("poison_pct", 0.0)) / 100.0)
-		dps += dose * float(P["stacks"])
+		dps += dose * float(Words.poison_most(h))
 	if float(r["ignite"]) > 0.0:
 		dps += hit * n * float(r["ignite"]) / 3.0 * float(r["pace"])
 	h.might = 0.0

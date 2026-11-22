@@ -116,23 +116,43 @@ static var BURN_MORE := 1.0
 ##               fire tree for the "burning enemies take more fire damage" cause I don't like that fire is BiS for a str/dex
 ##               character”; then “It should be good for the mage since she's elemental, and good for the warlock since he's DoT
 ##               focused.  But not for everyone.”): only fire of a Mage who has taken Hearth, her fire tree's (talents.gd
-##               OWN_WORDS, its card; its other half, her mana back the faster, nothing in this port, which has no mana), and every
-##               Warlock's, his own (his Hellfire Bolt's card says so), on what burns in his hellfire too. Off: every hero's fire,
-##               on what burns, as it was.
+##               OWN_WORDS, its card; its other half, her mana back the faster, nothing in this port, which has no mana). (The
+##               Warlock's for a while, his own, till his words: “If we want something to be for only certain characters, it needs
+##               to be built into their tree”: his own in his tree is POISON_TREE's Pyre.) What burns in his hellfire burns. Off:
+##               every hero's fire, on what burns, as it was.
 static var BURN_HEARTH := true
+##   POISON_TREE what is a class's own is in its tree (his words, 22 Nov 2026: “If we want something to be for only certain
+##               characters, it needs to be built into their tree / Like poison stacks 4 times naturally, but up to 8 for the ranger
+##               if you take the talent point / And maybe the warlock gets some blanket for Damage over time like it has infinite
+##               duration or something.  It can't be the same but the specialization in the tree is the point”): poison's doses add
+##               up POISON_MOST deep, eight for a Ranger with Venom; a Warlock with Pyre, his curses never run out (monster.gd _dots;
+##               his burns on what is cursed never going out already the Burning Verse's, a unique). Off: eight for all, as it was.
+static var POISON_TREE := true
+const POISON_MOST := 4
+
+
+## How many doses of poison add up on an enemy poisoned by `hero`.
+static func poison_most(hero) -> int:
+	if not POISON_TREE:
+		return int(data()["poison"]["stacks"])
+	if hero != null and is_instance_valid(hero) and hero.cls == "ranger" and hero.has("venom"):
+		return int(data()["poison"]["stacks"])
+	return POISON_MOST
+
+
 ## (and every other hero's fire a little: his words, “It could still be some %more fire damage to burning enemies so you could
 ## spec into fire if you wanted to.”; WS_BURN_ALL for a run of the damage check)
 static var BURN_MORE_ALL := 0.25
 
 
-## How much more a burning enemy takes from a fire hit of `hero` (burning's own; while BURN_HEARTH, all of it a Mage's with Hearth
-## and a Warlock's, every other hero's BURN_MORE_ALL).
+## How much more a burning enemy takes from a fire hit of `hero` (burning's own; while BURN_HEARTH, all of it a Mage's with Hearth,
+## every other hero's BURN_MORE_ALL).
 static func burn_more(hero) -> float:
 	if not BURN_HEARTH:
 		return BURN_MORE
 	if hero == null or not is_instance_valid(hero):
 		return BURN_MORE_ALL
-	return BURN_MORE if hero.cls == "warlock" or (hero.cls == "mage" and hero.has("fuel")) else BURN_MORE_ALL
+	return BURN_MORE if hero.cls == "mage" and hero.has("fuel") else BURN_MORE_ALL
 ## (what Flame and Frost in front of a one-enemy move splash round what it hits, a share of the hit: the game's 1, all of it;
 ## WS_ELEMENT_SPLASH for a run of the damage check)
 static var ELEMENT_SPLASH := 1.0
@@ -158,9 +178,6 @@ static var _data := {}
 static func data() -> Dictionary:
 	if _data.is_empty():
 		_data = JSON.parse_string(FileAccess.get_file_as_string(FILE))
-		# (burning's own his, BURN_HEARTH: his Hellfire Bolt's card says so)
-		if BURN_HEARTH and _data["skills"].has("hellbolt"):
-			_data["skills"]["hellbolt"]["desc"] = "Hurl a bolt of hellfire at one enemy. It burns, hard, and whatever burns takes double damage from your fire."
 	return _data
 
 
@@ -586,7 +603,7 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		if meld != "blight":
 			dmg_mult *= 0.8
 		if POISON_SPREAD:
-			lines.append("Poison%s: %s for %s of the hit over %s s. Up to %s doses add up." % [rn.call(front, "poison"), "poisons" if meld == "blight" else "hits 20% softer; poisons", _pct(dose), _num(D["poison"]["time"]), _num(D["poison"]["stacks"])])
+			lines.append("Poison%s: %s for %s of the hit over %s s. Up to %s doses add up." % [rn.call(front, "poison"), "poisons" if meld == "blight" else "hits 20% softer; poisons", _pct(dose), _num(D["poison"]["time"]), (str(POISON_MOST) + (" (%s with Venom)" % _num(D["poison"]["stacks"]) if cls == "ranger" else "")) if POISON_TREE else _num(D["poison"]["stacks"])])
 		else:
 			lines.append("Poison%s: %s for %s of the hit a second for %s s. Up to %s doses add up." % [rn.call(front, "poison"), "poisons" if meld == "blight" else "hits 20% softer; poisons", _pct(dose), _num(D["poison"]["time"]), _num(D["poison"]["stacks"])])
 	if has.call(front, "volatile"):

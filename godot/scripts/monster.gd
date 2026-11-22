@@ -1524,7 +1524,8 @@ func _afflicted(dt: float) -> bool:
 	# (THE WARLOCK: his hellfire and the curse run out)
 	if hell_t > 0.0 and not lasts:
 		hell_t = maxf(0.0, hell_t - dt)
-	if curse_t > 0.0:
+	# (a Warlock with Pyre, his curses never run out: words.gd POISON_TREE)
+	if curse_t > 0.0 and not (Words.POISON_TREE and mgr.hero != null and is_instance_valid(mgr.hero) and mgr.hero.cls == "warlock" and mgr.hero.has("pyre")):
 		curse_t = maxf(0.0, curse_t - dt)
 	if frozen_t <= 0.0 and stun_t <= 0.0:
 		_surge(dt)
@@ -1670,7 +1671,7 @@ func dose(dps: float, secs := -1.0) -> void:
 		poison_n = 0
 		_tell({"t": "poisoned", "x": world.x, "y": world.y})
 		mgr.sfx.play("poison", linear_to_db(0.5))
-	var most := int(tune["stacks"])
+	var most := Words.poison_most(mgr.hero if mgr != null else null)
 	if poison_n < most:
 		poison_dps += dps
 		poison_n += 1

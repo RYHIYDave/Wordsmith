@@ -139,6 +139,14 @@ static func _godot_tune() -> void:
 ## her whistle in place of its ground pound; the Gun Arm swaps its cannon for the tesla coil, no pick: “we can keep the tesla coil
 ## for now, but i feel like it will need to be changed in the future”).
 const OWN_WORDS := {
+	# (WHAT IS A CLASS'S OWN IN ITS TREE, words.gd POISON_TREE: the Ranger's Venom, his poison eight doses deep; the Warlock's Pyre,
+	# his curses never running out)
+	"ranger": {
+		"venom": "Your poison adds up eight doses deep, not four; and a poisoned enemy that dies bursts in a cloud that poisons those near it.",
+	},
+	"warlock": {
+		"pyre": "His curses never run out: what he has cursed smoulders till it dies. A cursed enemy that dies bursts in hellfire, striking everything near it.",
+	},
 	# (Hearth: burning's own hers alone, words.gd BURN_HEARTH; in place of her mana back the faster, which this port has not)
 	"mage": {
 		"fuel": "Standing in fire you made, nothing burns you; and a burning enemy takes double damage from your fire.",
