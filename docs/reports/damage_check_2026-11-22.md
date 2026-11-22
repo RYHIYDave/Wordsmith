@@ -81,3 +81,25 @@ Recommended: the words ADD their bonuses instead of multiplying them, and what a
 (for one, no more than its own starting figure again); attributes from gear and poison's doses looked at after, with this check
 run again to his targets (how many times the damage a word in front and one behind should give early on; how long a min/max hero
 should take over floor 20's boss).
+
+## After his word: words in front add up, attributes give less and less (no cap)
+
+His words: “I like the additive bonus to words, but maybe just have attributes have diminishing returns on scaling.  I don't like a
+cap”. Built in the Godot game (`words.gd` WORDS_ADD, ATTR_CURVE: an attribute counts in full to 50, then 50 + 100 x ln(1 + the rest
+/ 100)), and the check run again, the gear and words chosen afresh for the new rules (the whole run:
+damage_check_2026-11-22_after.txt). Damage a second into one enemy, in the fight, all four words (before in brackets):
+
+| Hero | no words | one in front | one in front, one behind | all four | one hit (critical) |
+|---|---|---|---|---|---|
+| Warrior | 14,664 | 1,011,540 | 1,393,728 | 2,307,014 (85,599,347) | 9,576 (43,092) |
+| Ranger | 19,200 | 420,981 | 603,299 | 1,278,333 (19,333,671) | 4,318 (29,796) |
+| Tinkerer | 4,507 | 272,903 | 428,304 | 1,130,759 (8,106,251) | 2,974 (16,956) |
+| Mage, fire | 852 | 92,975 | 135,515 | 300,906 (1,044,665) | 1,983 (8,927) |
+| Mage, frost | 1,190 | 15,970 | 31,627 | 74,564 (110,725) | 2,409 (16,625) |
+
+The best Warrior is now about 31 times the frost Mage (was about 770). Early on, nothing changed (attributes are below 50 there):
+a word in front and one behind still about three times the damage for the Ranger and the Warrior.
+
+What is left: the POISON. One poison meld in front (Blight, Contagion, Fumes) still multiplies the damage 22 to 109 times, the
+hit only 2 to 5 times of that: each hit's dose is a share of the hit A SECOND, eight doses deep, with poison damage on gear (up
+to +405%) on top.
