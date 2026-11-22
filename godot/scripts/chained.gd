@@ -343,7 +343,7 @@ func _whirl(m, a: Dictionary, t0: float, t1: float, dt: float, hero) -> void:
 	if _at(t0, t1, warn):
 		m.mgr.perils.mark(m.world.x, m.world.y, RING["whirl"], maxf(0.05, hit - warn), m)
 	if _at(t0, t1, hit):
-		if ring_strikes(hero.world - m.world, RING["whirl"] + HERO_R * 0.5):
+		if ring_strikes(hero.world - m.world, RING["whirl"] * m.mgr.perils.wide(m) + HERO_R * 0.5):
 			_blow(m, hero, WHIRL["ringDmg"])
 			_knock(m.world, hero, 1.0)
 		m.mgr.perils.co_ring(m.world.x, m.world.y, RING["whirl"])
@@ -395,7 +395,7 @@ func _hook(m, a: Dictionary, t0: float, t1: float, hero) -> void:
 		m.mgr.perils.mark(c.x, c.y, RING["hammer"], maxf(0.05, HOOK_BLOW - HOOK["warn"]), m)
 	if _at(t0, t1, HOOK_BLOW):
 		var spot := Vector2(act["x"], act["y"])
-		if ring_strikes(hero.world - spot, RING["hammer"] + HERO_R * 0.5):
+		if ring_strikes(hero.world - spot, RING["hammer"] * m.mgr.perils.wide(m) + HERO_R * 0.5):
 			_blow(m, hero, HOOK["blowDmg"])
 		m.mgr.perils.co_ring(spot.x, spot.y, RING["hammer"])
 		hero.kick(4.0)
@@ -418,7 +418,7 @@ func _ball(m, a: Dictionary, t0: float, t1: float, hero) -> void:
 	if _at(t0, t1, BALL_LET):
 		m.mgr.sfx.play("swing")
 	if _at(t0, t1, BALL_LAND):
-		if ring_strikes(hero.world - spot, RING["ball"] + HERO_R * 0.5):
+		if ring_strikes(hero.world - spot, RING["ball"] * m.mgr.perils.wide(m) + HERO_R * 0.5):
 			_blow(m, hero, a["dmg"])
 			_knock(spot, hero, 1.0)
 		m.mgr.perils.co_ring(spot.x, spot.y, RING["ball"])
@@ -486,6 +486,7 @@ func died(m) -> void:
 ## What a blow of his own does to the hero, `mult` times his blow.
 func _blow(m, hero, mult: float) -> void:
 	if hero.alive:
+		m.twice_act(hero, mult)
 		# (with his words: bosses.ts blow, hurtHero(roll, monsterElement(m), m.words, m))
 		m.harm_hero(hero, m._roll() * mult)
 

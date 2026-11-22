@@ -314,6 +314,7 @@ class Bearer extends RefCounted:
 	## What a blow of his own does to the hero, `mult` times his blow (BossRules.blow).
 	func _blow(m, hero, mult: float) -> void:
 		if hero.alive:
+			m.twice_act(hero, mult)
 			# (with his words: bosses.ts blow, hurtHero(roll, monsterElement(m), m.words, m))
 			m.harm_hero(hero, m._roll() * mult)
 

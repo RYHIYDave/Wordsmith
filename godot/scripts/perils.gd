@@ -71,8 +71,62 @@ func _hurt(p: Dictionary, dmg: float, at := Vector2.INF, el := "") -> void:
 	var by: Dictionary = p.get("by", {})
 	var from := at if at != Vector2.INF else Vector2(float(p.get("x", hero.world.x)), float(p.get("y", hero.world.y)))
 	hero.blow_by = p.get("src")
-	hero.hurt_by(dmg, el if el != "" else str(by.get("el", "phys")), by.get("words", []), by.get("half", {}), null, from)
+	var e := el if el != "" else str(by.get("el", "phys"))
+	hero.hurt_by(dmg, e, by.get("words", []), by.get("half", {}), null, from)
 	hero.blow_by = null
+	_twin_mark(p, dmg, e, by, from)
+
+
+## TWIN ON A MONSTER THAT FIGHTS BY ACTS (the Wilds' own kinds and the bosses; in the browser game only the old kind of monster
+## reads Twin: TO_LOOK_AT 26; his go-ahead of 22 Nov 2026, “Start all that”, the list's fun fixes): each mark of its strikes
+## again `TWIN_ACTS.after` s after it first lands, at its Twin's share, as the old kind's blow does (monster.gd _twice), if it
+## lives and he is still where it reaches: within a ring's round, or near where he stood. A mark that lies and hurts again and
+## again comes again for its first hurt alone.
+static var TWIN_ACTS := {"on": true, "after": 0.28, "near": 0.6}
+var _echoes: Array = []
+
+
+func _twin_mark(p: Dictionary, dmg: float, el: String, by: Dictionary, from: Vector2) -> void:
+	if not bool(TWIN_ACTS["on"]) or p.get("twinned", false) or dmg <= 0.0:
+		return
+	var src = p.get("src")
+	if src == null or not is_instance_valid(src) or not src.has_method("twin"):
+		return
+	var share: float = src.twin()
+	if share <= 0.0:
+		return
+	p["twinned"] = true
+	var ring := p.has("r") and p.has("x") and p.has("y")
+	_echoes.append({"t": float(TWIN_ACTS["after"]), "dmg": dmg * share, "el": el, "by": by, "from": from, "src": src,
+		"c": Vector2(float(p["x"]), float(p["y"])) if ring else hero.world,
+		"r": float(p["r"]) + 0.1 if ring else float(TWIN_ACTS["near"])})
+
+
+func _twin_step(dt: float) -> void:
+	if _echoes.is_empty():
+		return
+	var keep: Array = []
+	for e in _echoes:
+		e["t"] -= dt
+		if e["t"] > 0.0:
+			keep.append(e)
+			continue
+		var src = e["src"]
+		if not is_instance_valid(src) or bool(src.get("dead")) or hero == null or not hero.alive:
+			continue
+		if hero.world.distance_to(e["c"]) > float(e["r"]):
+			continue
+		var by: Dictionary = e["by"]
+		hero.blow_by = src
+		hero.hurt_by(e["dmg"], e["el"], by.get("words", []), by.get("half", {}), null, e["from"])
+		hero.blow_by = null
+	_echoes = keep
+
+
+## VAST, on `src`, as its marks are drawn: how many times as wide; a blow that strikes within a ring it marked reads this too, so
+## that it strikes as wide as its ring is drawn (TO_LOOK_AT 27: a Vast quarry golem's hammer ring drawn 30% wider than it struck).
+func wide(src) -> float:
+	return _vast(_by(src))
 
 
 ## (`by`: what its blow carries, where it is not its monster's own: a dying blast's, of its element alone)
@@ -195,6 +249,7 @@ func smoke(x: float, y: float, dmg: float, src: Object) -> void:
 ## THE HERO FALLEN AND COME BACK: what his enemies had sent out is gone, and what of it stood among the figures with it; a
 ## Boneward's spear still lies where it fell (its Boneward, put back to sleep, is still bare-handed).
 func clear() -> void:
+	_echoes.clear()
 	var keep: Array = []
 	for p in list:
 		if p["kind"] == "spear" or p["kind"] == "fm_circle":
@@ -782,6 +837,7 @@ class _Air extends Node2D:
 
 func _process(dt: float) -> void:
 	_clock += dt
+	_twin_step(dt)
 	var keep: Array = []
 	for p in list:
 		p["t"] += dt

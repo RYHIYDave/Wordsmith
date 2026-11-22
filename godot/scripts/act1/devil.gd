@@ -102,7 +102,7 @@ func acting(m, a: Dictionary, t0: float, t1: float, _dt: float, hero) -> void:
 	a1["scour"] = float(a1["scour"]) - dt
 	if d2 <= float(TW["r"]) and float(a1["scour"]) <= 0.0 and not lunging:
 		a1["scour"] = TW["tick"]
-		blow(m, hero, float(a["dmg"]) * float(TWISTER["scour"]))
+		blow(m, hero, float(a["dmg"]) * float(TWISTER["scour"]), false)
 	# (its lightning, round its foot as its pictures throw it)
 	for b in BOLTS:
 		if not crossed(t0, t1, b[0]):

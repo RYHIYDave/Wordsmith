@@ -359,6 +359,7 @@ func died(m) -> void:
 
 func _blow(m, hero, mult: float) -> void:
 	if hero.alive:
+		m.twice_act(hero, mult)
 		# (with its words: bosses.ts blow, hurtHero(roll, monsterElement(m), m.words, m))
 		m.harm_hero(hero, m._roll() * mult)
 

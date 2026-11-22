@@ -55,7 +55,7 @@ func acting(m, a: Dictionary, t0: float, t1: float, _dt: float, hero) -> void:
 			m.mgr.perils.mark(s.x, s.y, HAMMER["r"], float(HAMMER["hit"]) - float(HAMMER["marked"]), m)
 		if not crossed(t0, t1, a["hit"]):
 			return
-		if h.distance_to(s) <= float(HAMMER["r"]):
+		if h.distance_to(s) <= float(HAMMER["r"]) * m.mgr.perils.wide(m):
 			blow(m, hero, a["dmg"])
 			if hero._act != "lunge" and hero._invuln <= 0.0:
 				knock(hero, m.world, HAMMER["knock"])

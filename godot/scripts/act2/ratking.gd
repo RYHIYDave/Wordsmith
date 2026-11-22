@@ -420,7 +420,7 @@ func acting(m, a: Dictionary, t0: float, t1: float, _dt: float, hero) -> void:
 					var q := r.x / len
 					if q >= sp.x - 0.05 and q <= sp.y + 0.05 and absf(r.y) <= float(SWARM9["half"]) + HERO_R * 0.5 and (float(a1["bit"]) < 0.0 or t1 - float(a1["bit"]) >= float(UNKNOT["every"])):
 						a1["bit"] = t1
-						blow(m, hero, float(a["dmg"]))
+						blow(m, hero, float(a["dmg"]), false)
 			if crossed(t0, t1, out + float(SWARM9["for"])):
 				m.mgr.voice("ratking_roar", 0.0, linear_to_db(0.3))
 

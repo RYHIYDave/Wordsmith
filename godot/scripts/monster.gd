@@ -761,13 +761,14 @@ func _land(hero, dist: float, reach: float) -> void:
 		_move_cd[_move] = mv["cooldown"] * swift
 	match mv["id"]:
 		"swing":
-			_blow(hero, dist, reach, mv["dmg"])
-			_twice(hero, func() -> bool: return hero.world.distance_to(world) <= _reach() + 0.45 + HERO_R, mv["dmg"])
+			# (VAST, on it: a move's swing reaches further too, as its one blow does: TO_LOOK_AT 27, his go-ahead of 22 Nov 2026)
+			_blow(hero, dist, _far(), mv["dmg"])
+			_twice(hero, func() -> bool: return hero.world.distance_to(world) <= _far() + 0.45 + HERO_R, mv["dmg"])
 		"bash":
 			# (the Boneward's shield, while its spear is gone, shoves the hero back too)
-			if _blow(hero, dist, reach, mv["dmg"]):
+			if _blow(hero, dist, _far(), mv["dmg"]):
 				hero.knock((hero.world - world).normalized() if dist > 0.01 else face, MM.SPEAR["knock"])
-			_twice(hero, func() -> bool: return hero.world.distance_to(world) <= _reach() + 0.45 + HERO_R, mv["dmg"])
+			_twice(hero, func() -> bool: return hero.world.distance_to(world) <= _far() + 0.45 + HERO_R, mv["dmg"])
 		"throw":
 			# (its spear, from its hand, at where the hero stands; its hand is empty till it picks the spear up again)
 			var hand := world + face * MM.SPEAR["hand"]
@@ -790,7 +791,7 @@ func _land(hero, dist: float, reach: float) -> void:
 		"rampage":
 			# (the slam: the ring where it was marked, or before him if it never was, and out it goes)
 			var rg: Vector2 = _carry["ring"] if _carry.get("marked", false) else world + face * MM.RING["ahead"]
-			if hero.alive and hero.world.distance_to(rg) <= MM.RING["radius"]:
+			if hero.alive and hero.world.distance_to(rg) <= MM.RING["radius"] * mgr.perils.wide(self):
 				harm_hero(hero, _roll() * mv["dmg"] * MM.RAMPAGE["slam"])
 			mgr.perils.drop(self, ["warn"])
 			mgr.perils.ring(rg.x, rg.y, MM.RING["radius"])
@@ -868,6 +869,18 @@ func twin() -> float:
 	return word_share("twin")
 
 
+## TWIN ON A MONSTER THAT FIGHTS BY ACTS (the Wilds' own kinds and the bosses; in the browser game only the old kind reads Twin:
+## TO_LOOK_AT 26; his go-ahead of 22 Nov 2026, “Start all that”, the list's fun fixes): an act's blow on him comes again as the
+## old kind's does (`_twice`), if he is still near where it struck him (the marks it lays: perils.gd _twin_mark). TWIN_ACTS off,
+## as the browser game.
+static var TWIN_ACTS := true
+func twice_act(hero, share: float) -> void:
+	if not TWIN_ACTS:
+		return
+	var at: Vector2 = hero.world
+	_twice(hero, func() -> bool: return hero.world.distance_to(at) <= 0.6, share)
+
+
 ## TWIN, on it: its blow comes again 0.28 s later, `share` of a roll and its Twin's share of that, if it lives and the hero is
 ## still where it reaches (`reaches`) (game.ts monsterAttack, landMove, rampageSwing).
 func _twice(hero, reaches: Callable, share: float) -> void:
@@ -893,6 +906,12 @@ func _blow(hero, dist: float, reach: float, share: float) -> bool:
 ## How far its blow reaches beyond its body (game.ts reachOf): a Boneward whose spear is gone, its shield's.
 func _reach() -> float:
 	return (MM.SPEAR["bash"] if bare else float(def["range"])) + (r - 0.32)
+
+
+## How far a move's swing strikes beyond its body: its reach, Vast's more of it (VAST_SWING; off, as the browser game: reachOf).
+static var VAST_SWING := true
+func _far() -> float:
+	return (MM.SPEAR["bash"] if bare else float(def["range"])) * (vast() if VAST_SWING else 1.0) + (r - 0.32)
 
 
 ## A charge's numbers by whose it is (action_f3.ts chargeOf): the red troll's, or the green troll's bull rush. `past`: how

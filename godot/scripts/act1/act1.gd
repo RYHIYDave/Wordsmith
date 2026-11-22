@@ -355,10 +355,13 @@ func rel(m, hero) -> Vector2:
 
 
 ## blow: what one of its blows does to the hero, `mult` times its blow, with its words (hurtHero(roll, monsterElement(m),
-## m.words, m)).
-func blow(m, hero, mult: float) -> void:
+## m.words, m)); with TWIN on it, it comes again a moment after (monster.gd twice_act); `again` false for a blow that comes
+## again and again of itself (the Devil's twister scouring him at its foot, the Rat King's swarm biting).
+func blow(m, hero, mult: float, again := true) -> void:
 	if hero.alive:
 		m.harm_hero(hero, m._roll() * mult)
+		if again:
+			m.twice_act(hero, mult)
 
 
 ## Whether the hero can be struck now (the game not over; not unhurtable; not in the air of his lunge: h.move).

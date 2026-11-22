@@ -2929,6 +2929,9 @@ func _shoot(hero: Hero, dir: String) -> void:
 	if _arg("only") == "charge":
 		await preload("res://scripts/check_charge.gd").new().run(self, hero, dir)
 		get_tree().quit()
+	if _arg("only") == "twin":
+		await preload("res://scripts/check_twin.gd").new().run(self, hero, dir)
+		get_tree().quit()
 		return
 	if _arg("only") == "exits":
 		await preload("res://scripts/check_exits.gd").new().run(self, hero, dir)
