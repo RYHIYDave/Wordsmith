@@ -1398,9 +1398,17 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
 - **A phone's notch and rounded corners** (`main.gd` safe_insets, place_safe): the HUD, the small map and the gear screen kept
   within the phone's safe area, as the browser game kept its canvas (engine/screen.ts env(safe-area-inset-*)), the world still
   to every edge; `--only=safe --phone=2532x1170 --safe=141,0,141,63` (and `--upright=1 --phone=1170x2532 --safe=0,141,0,102`).
-- **The app's icon at a phone's sizes** (`assets/app_icon/`, made from `icon.png` at whole-number sizes, the art's own pixels kept):
+- **The app's icon: the wordsmith** (his pick of four mock-ups, docs/mockups/app_icon/: “D, the full wordsmith”): the wordsmith
+  writing a rune in the air (the released game's townsfolk pictures, 'wordsmith:act' at its brightest) on the town's night blue,
+  the ring's cyan glow behind him; `icon.png` and `icon.ico` (the window's) too. At a phone's sizes (`assets/app_icon/`, at
+  whole-number sizes, the art's own pixels kept):
   `icon_1024.png` for an iPhone (no see-through; the rest made from it); `android_main_192.png`, and the adaptive icon's
-  `android_fore_432.png`, `android_back_432.png`, `android_mono_432.png` for Android. The export setup waits on which phone.
+  `android_fore_432.png`, `android_back_432.png`, `android_mono_432.png` for Android.
+- **The iPhone export** (his word: “My phone is an iPhone”; `export_presets.cfg`, iOS): Godot 4.7 makes the whole Xcode project
+  here (`godot --headless --path godot --export-release "iOS" <dir>/Wordsmith.xcodeproj`, with the iOS template in
+  ~/.local/share/godot/export_templates/4.7.2.stable/ios.zip); the app itself (.ipa) is made from it on a Mac (xcodebuild).
+  Held sideways; the checks' data left out (the game's data 620 MB); the team ID and bundle identifier stand-ins until his
+  Apple developer account.
 
 ## Not in it yet
 

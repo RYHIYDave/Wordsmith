@@ -17,3 +17,5 @@ town's night blue with the ring's cyan glow behind him:
 - `wordsmith_bust_1024.png`: C, close (head to hands, the rune, running off the foot).
 - `wordsmith_full_1024.png`: D, all of him.
 - `wordsmith_choices.png`: C, D and A side by side, as an iPhone cuts them, big and at a home screen's size.
+
+HIS PICK: “D, the full wordsmith”. In the game as its icon (godot/assets/app_icon/, godot/icon.png).
