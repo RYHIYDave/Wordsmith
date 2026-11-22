@@ -208,6 +208,32 @@ func story_here() -> bool:
 	return not in_endless
 
 
+## ENDLESS MODE'S FANFARE (endless_splash.gd; main.ts the panel 'endless', on the event endlessOpens): once he is in his town (as the
+## game holds the splash's clock while its loading screen is up), the splash, then the card; the game waits under both.
+var fanfare: CanvasLayer = null
+func endless_fanfare() -> void:
+	while _going:
+		await get_tree().process_frame
+	if fanfare != null:
+		return
+	var layer := CanvasLayer.new()
+	layer.layer = 45
+	var s := preload("res://scripts/endless_splash.gd").new()
+	s.main = self
+	s.sfx = sfx
+	layer.add_child(s)
+	add_child(layer)
+	fanfare = layer
+	sfx.process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().paused = true
+	s.done.connect(func() -> void:
+		fanfare.queue_free()
+		fanfare = null
+		sfx.process_mode = Node.PROCESS_MODE_INHERIT
+		get_tree().paused = false
+		sfx.play("click"))
+
+
 ## (game.ts takeWay 'on' from the last floor) The last floor built beaten: the endless levels open to him; the waypoint takes him on.
 func open_endless(from: int) -> bool:
 	if endless > 0 or in_endless or from < last_built():
@@ -623,7 +649,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions", "endless", "rim", "shards", "final"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "companions", "endless", "rim", "shards", "final", "fanfare"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -2777,6 +2803,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "final":
 		await preload("res://scripts/check_glows.gd").new().final(self, hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "fanfare":
+		await preload("res://scripts/check_glows.gd").new().fanfare(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "pad":

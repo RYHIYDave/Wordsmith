@@ -1221,11 +1221,18 @@ game/world_sounds.ts; `sfx.gd`, `monsters.gd`, `monster.gd`, `town.gd`, `main.gd
   pieces painted ahead (the hammer, meteors, ice, orb, spores, traps and clouds, the Blight's trees) from the game itself
   (tools/godot_wsboss.ts).
 - `--only=final` (`check_glows.gd`): 28 checks, 42 pictures (each move and meld, the fall, his death, his hoard).
+- **The fanfare as endless opens** (ui/endless_fanfare.ts, ui/endless_splash_draw.ts, art/endless_stair.ts; `endless_splash.gd`,
+  `main.gd` endless_fanfare): the last floor beaten and he in his town, the game waits under THE SPLASH, the art chat's stair with
+  no bottom (his pick: “2 The stair with no bottom”): out of the dark the storeys wake one after another down the shaft, each with a
+  flash, a kick of the screen and dust off its ledge; the far fire takes; ENDLESS lands on the top of the shaft; THE WAY GOES ON,
+  then HARDCORE. 3.2 s, or a press after 0.8 s; then THE CARD, what endless mode is, until GO ON (Enter or Space once it has been up
+  half a second). The picture, its stage map and its living pieces from the game itself (tools/godot_splash.ts); laid up as the game
+  lays them, pixel for pixel the game's own at every moment pictured.
+- `--only=fanfare` (`check_glows.gd`): 7 checks, 11 pictures (the splash at nine moments, the card, the game on).
 
 ## Not in it yet
 
 The Warrior's Whirlwind talent (his Whirlwind is his from the start, at his pick).
-Of endless mode: the fanfare as it opens.
 (The monsters' pictures are the final release 25.3.22's bake, a9b22fa26169: the Chained One's sheets laid afresh, and the rest as
 25.3.21's b982b7f72ca4 but for rounding.)
 

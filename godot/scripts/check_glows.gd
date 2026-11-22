@@ -2891,3 +2891,82 @@ func final(main, hero, dir: String) -> void:
 	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
 	for bb in bad:
 		print("  WRONG: ", bb)
+
+
+## ENDLESS MODE'S FANFARE (--only=fanfare; endless_splash.gd, main.gd endless_fanfare): as endless opens, once he is in his town,
+## the splash (the stair with no bottom waking down the shaft, ENDLESS landing, THE WAY GOES ON, HARDCORE), the game waiting under it;
+## a press before 0.8 s does nothing, after it goes on; the card, what endless mode is; GO ON, the game on. The dust reckoned as the
+## game reckons it. Pictured at moments of the splash and the card.
+func fanfare(main, hero, dir: String) -> void:
+	M = main
+	h = hero
+	h.unhurt = true
+	await M._wait(0.6)
+	M.open_endless(20)
+	M.go_to(M.home_place(), "start")
+	M.endless_fanfare()
+	await M._wait(2.0)
+	var L = M.fanfare
+	_line(L != null and M.get_tree().paused, "endless opened, he in his town: the splash up over it, the game waiting under it (%s)" % M.get_tree().paused)
+	if L == null:
+		print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+		return
+	var s = L.get_child(0)
+	# (the dust as the game reckons it: art/endless_stair.ts, its grains sampled by tools/godot_splash.ts)
+	var worst := 0.0
+	var gone_ok := true
+	for d in s.D["dustSeen"]:
+		var g: Array = s.dust_grain(int(d[0]), int(d[3]), float(d[2]), int(d[1]) == 1)
+		if d.size() == 5:
+			gone_ok = gone_ok and g.is_empty()
+		elif g.is_empty():
+			gone_ok = false
+		else:
+			for i in 4:
+				worst = maxf(worst, absf(float(g[i]) - float(d[4 + i])))
+	_line(gone_ok and worst < 0.01, "its dust falls as the game's (%d grains, off by %.4f at most)" % [s.D["dustSeen"].size(), worst])
+	var k := 1
+	s.hold = true
+	for when in [0.06, 0.3, 0.55, 0.9, 1.0, 1.1, 1.4, 1.6, 2.6]:
+		s.t = float(when)
+		s.card_at = -1.0
+		await M.get_tree().process_frame
+		await M._snap("%s/ef_%02d_splash_%.2f.png" % [dir, k, when])
+		k += 1
+	s.hold = false
+	# (a press before 0.8 s: nothing; after: the card)
+	s.t = 0.4
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = true
+	s._input(ev)
+	_line(s.card_at < 0.0, "a press 0.4 s in: the splash stays (it goes on only after 0.8 s)")
+	s.t = 1.0
+	s._input(ev)
+	_line(s.card_at >= 0.0, "a press 1 s in: on to the card")
+	await M._wait(0.1)
+	await M._snap("%s/ef_%02d_card.png" % [dir, k])
+	k += 1
+	var key := InputEventKey.new()
+	key.keycode = KEY_ENTER
+	key.pressed = true
+	s.card_at = s.t
+	s._input(key)
+	_line(M.fanfare != null, "Enter as the card comes up: not yet (it waits half a second)")
+	await M._wait(0.6)
+	s._input(key)
+	await M._wait(0.2)
+	_line(M.fanfare == null and not M.get_tree().paused, "Enter, the card up half a second: GO ON, the game on (%s)" % M.get_tree().paused)
+	await M._snap("%s/ef_%02d_after.png" % [dir, k])
+	# (the splash again, its time running on its own: 3.2 s, then the card)
+	M.endless_fanfare()
+	await M._wait(0.3)
+	var s2 = M.fanfare.get_child(0)
+	await M._wait(3.4)
+	_line(s2.card_at >= 0.0, "left alone, the splash runs its 3.2 s and the card comes up (%.1f s)" % s2.card_at)
+	s2.go_on()
+	await M._wait(0.2)
+	h.unhurt = false
+	print("GLOWS: %d checks, %d wrong" % [n, bad.size()])
+	for bb in bad:
+		print("  WRONG: ", bb)
