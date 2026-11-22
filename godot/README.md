@@ -1315,6 +1315,15 @@ augment attacks.  I want things to compound as they are added to attacks or abil
   Souls, Hex Chain and Pyre harder, Soul Debt a sixth of his pact. Its hero check 11/11 on and off; on, a rake 16 (10),
   Damning 120 (58), thrown 2.1 tiles (1.3). The film: `--only=demonfilm --cls=warlock` under `--write-movie <file>.avi
   --fixed-fps 30`, with and without `--demon2=1` (docs/mockups/demon2/).
+- Floor 20's stalls, looked at (`--only=smooth` names each as it comes, how much of the frame was the game's own work): 0.17 to
+  0.24 s frames, two to fourteen in a walk as the fights fall out, while the Rime Shade, the Order and the Hush in its own shape
+  fight near him; the game's own work, not the drawing, and not the monsters' own steps (none over 60 ms): the effects' or the
+  ground's work, for a profiler's session to find.
+- A GAME IN AN APP: the phone put away in a dungeon, the game waits under the pause panel and comes back as he left it (`main.gd`
+  _notification; it saved already, and still does); never in the checks. And what an app's build packs: pictures, sounds and
+  `.json` only, so nothing the game reads is kept in another kind of file (the gear options' `.bin` was the one: now in
+  `imbue.json`). Not here yet: the app's own build settings (export presets for Android and iOS), his to start when he wants
+  the game on his phone.
 - The city check's trapdoor (floor 20) keeps him from harm: a blow that took all his life in one frame laid him down, and
   the fallen hero's screen paused the game, the trapdoor's clock with it.
 - Asked of him: the Warrior's WHIRLWIND talent stands in his tree, NOT IN THE PORT YET, for his hold is the Whirlwind already

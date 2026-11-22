@@ -3285,7 +3285,7 @@ func smooth(main, hero, dir: String) -> void:
 					for o in M._monsters.list:
 						if is_instance_valid(o) and (nm == null or o.world.distance_to(h.world) < nm.world.distance_to(h.world)):
 							nm = o
-					print("SMOOTH STALL %s at %.1f s: %.0f ms (middle %.0f); nearest %s %s %.1f tiles, %s" % [place, (now - started) / 1e6, ms, mid_now,
+					print("SMOOTH STALL %s at %.1f s: %.0f ms (middle %.0f; the game's own work %.0f ms, its drawing the rest); nearest %s %s %.1f tiles, %s" % [place, (now - started) / 1e6, ms, mid_now, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
 						nm.kind if nm != null else "-", nm.state if nm != null else "", nm.world.distance_to(h.world) if nm != null else 0.0,
 						"its pictures in hand" if nm != null and nm.art != null and nm.art.held() > 0 else "its pictures not in hand"])
 			times.append(ms)
