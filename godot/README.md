@@ -1310,7 +1310,7 @@ augment attacks.  I want things to compound as they are added to attacks or abil
   middle). FLOOR 9'S SIDE BOSSES (the Troll Chieftain's and the Mist Wolf's pictures, 169 and 116 MB), fetched as their
   lairs are entered, are now let go of once he is far, as every figure's: floor 9 back at its start 999 -> 623 MB.
   `--only=memfloors` counts the floor's look, the films and the hero's own pictures as well as the figures'.
-- **The Warlock's demon made terrible** (`heroes/warlock.gd` DEMON2, D2; behind its switch, OFF till his yes to the film;
+- **The Warlock's demon made terrible** (`heroes/warlock.gd` DEMON2, D2; behind its switch, OFF till the demon's new art is in and he has seen it: “Let's wait for the new demon art before anything happens”, 22 Nov 2026;
   `--demon2=1` on for a run): his look kept, every picture of it; CLAW RAKE a sweep through everything in a wide arc before
   it (2.6 tiles), 1.7 of a hit (1.3), what it tears cursed and burning in his hellfire, each rake that lands shaking the
   screen and stopping the world a breath; DAMNING every 4.5 s (6) under every enemy near, not only the cursed and burning,
