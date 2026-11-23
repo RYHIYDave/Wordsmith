@@ -24,17 +24,19 @@ const BEHIND := {"flashfreeze": "flashfreeze:sheet", "aftershock": "aftershock:q
 
 
 ## (whose twist is seen on a kill, or on one stunned already)
-const KILL := ["quickfuse", "concussion"]
+const KILL := ["quickfuse", "concussion", "smoulder"]
 ## (whose twist wants one alone, certain criticals, a frenzy built up: the film makes it so)
 const SOLO := ["duelist"]
+## (seen only as he moves: him darting aside after each blow in the film)
+const MOVES := ["blink", "tailwind"]
 const SHIELD := ["bulwark", "hemlock", "cinderward", "static", "windward", "fortress"]
 const CRITS := ["needle", "brand", "seeker"]
 const FRENZY := ["berserk", "fever", "whiteout", "overcharge", "blur", "juggernaut"]
 ## (whose moment behind is a kill's: its orb, its frenzy's)
 const KILL_BEHIND := ["bloodlust", "coldblood", "secondwind", "berserk", "fever", "whiteout", "overcharge", "blur"]
 ## (whose moment comes later than the others': a burn going out and lighting again)
-const LONGER := {"rekindle:front": 2.6, "rekindle:behind": 2.0}
-const STUNNED := ["pressurepoint"]
+const LONGER := {"rekindle:front": 2.6, "rekindle:behind": 2.0, "bloat:front": 1.6, "jolt:behind": 1.2, "smoulder:front": 1.0}
+const STUNNED := ["pressurepoint", "daze"]
 
 
 func _init(main, hero) -> void:
@@ -146,6 +148,18 @@ func run(only := "") -> void:
 var _dir := ""
 
 
+## The film waiting `secs`; for a meld seen only as he moves (MOVES), him darting aside (`way` 1 one way, -1 back) as the blow
+## finishes (a second at the least, so the dart is seen whole).
+func _walk(k: int, secs: float, id: String, way: float) -> int:
+	if not MOVES.has(id):
+		return await _frames(k, secs)
+	k = await _frames(k, 0.15)
+	h.auto_dir = Vector2(way, 0.3 * way).normalized()
+	k = await _frames(k, 0.75)
+	h.auto_dir = Vector2.ZERO
+	return await _frames(k, maxf(0.1, secs - 0.9))
+
+
 func _frames(k: int, secs: float) -> int:
 	var t := 0.0
 	while t < secs - 0.001:
@@ -226,9 +240,9 @@ func film(only := "") -> void:
 				h.frenzy_t = 5.0
 			k = await _frames(k, 0.25)
 			M._w_strike(h)
-			k = await _frames(k, 0.6)
+			k = await _walk(k, 0.6, id, 1.0)
 			M._w_strike(h)
-			k = await _frames(k, (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0)))
+			k = await _walk(k, (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0)), id, -1.0)
 		# (carried by one of the pack, which comes for him: its two runes and the meld, as an altar lays them)
 		_fresh()
 		# (a Guarding meld: his shield up as the monster comes, to show what it does to what strikes it)

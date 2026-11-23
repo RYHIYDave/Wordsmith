@@ -17,6 +17,6 @@ looked at beside Forking, Siphon, Eruption and Shatter; what falls short is fixe
 | Precise (6) | yes (fx_m52p_precise.gd) | yes: every moment told; Brand's symbol, Quickdraw's glint, Pressure Point's needles enlarged after the first look |
 | Frenzied (6) | yes (fx_m52p_precise.gd) | yes: every moment told; Blur's streaks doubled |
 | Guarding (6) | yes (fx_m52p_guard.gd) | yes: every moment told (the films raise his shield as the monster comes); the shield's dressing sized to the game's own shell and made bolder after two looks |
-| Lasting (7) | | |
-| Fleeting (7) | | |
+| Lasting (7) | yes (fx_m52p_last.gd) | yes: every moment told; Momentum's band, Canker's and Permafrost's marks, Bedrock's ring and the dunes made bolder after the first look |
+| Fleeting (7) | yes (fx_m52p_last.gd) | yes: every moment told (the films walk him aside for Blink and Tailwind, seen only as he moves); Blink's after-images drawn as his own picture, pixel for pixel, in its pale light; Tailwind a ribbon along where he went; Haymaker's arc and Flashfire's flare made bigger |
 | Vast (7) | | |

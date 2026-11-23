@@ -272,6 +272,8 @@ func more(m, i: int, quiet: bool) -> float:
 		"daze":
 			if m.stun_t > 0.0:
 				k *= 1.0 + float(_tune("daze")["more"])
+				if not quiet:
+					_tell({"id": "daze", "what": "thud", "x": m.world.x, "y": m.world.y, "m": m})
 		"cataclysm":
 			var C := _tune("cataclysm")
 			var n := 0
@@ -280,6 +282,9 @@ func more(m, i: int, quiet: bool) -> float:
 				if _alive(o) and o.world.distance_to(m.world) <= reach:
 					n += 1
 			k *= 1.0 + minf(float(C["most"]), float(C["each"]) * maxi(0, n - 1))
+			if n >= 3 and time - float(_throttle.get("cataclysm", -9.0)) > 0.3:
+				_throttle["cataclysm"] = time
+				_tell({"id": "cataclysm", "what": "star", "x": m.world.x, "y": m.world.y, "n": n})
 	# DUELIST behind: the one it marked takes more from everything until the mark is spent
 	if m.mark_t > 0.0 and str(m.m52.get("mark", "")) == "duelist":
 		k *= 1.0 + float(_tune("duelist")["more"])
@@ -313,6 +318,12 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 	var r: Dictionary = h.loadout.r(i)
 	if f == "":
 		return
+	if f == "haymaker" and not quiet and time - float(_throttle.get("haymaker", -9.0)) > 0.2:
+		_throttle["haymaker"] = time
+		_tell({"id": "haymaker", "what": "snap", "x": at.x, "y": at.y, "m": m})
+	if f == "miasma" and not quiet and time - float(_throttle.get("miasma", -9.0)) > 0.3:
+		_throttle["miasma"] = time
+		_tell({"id": "miasma", "what": "haze", "x": at.x, "y": at.y, "r": 1.2 * float(r["size"]) + 1.0})
 	if f == "momentum":
 		momentum = mini(int(_tune("momentum")["most"]), (momentum if time - momentum_at <= float(_tune("momentum")["hold"]) else 0) + 1)
 		momentum_at = time
@@ -366,6 +377,8 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 			if not quiet:
 				_tell({"id": "whiteout", "what": "snow", "n": h.frenzy, "x": at.x, "y": at.y, "m": m})
 		"permafrost":
+			_tag(m)
+			m.m52["permafrost"] = time
 			var P := _tune("permafrost")
 			if m.chill_t > 0.0:
 				m.chill_t = maxf(m.chill_t, 2.5 * float(P["chill"]))
@@ -375,7 +388,12 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 			if m.burn_t > 0.0:
 				_tag(m)
 				m.m52["smoulder"] = true
+		"canker", "bedrock":
+			_tag(m)
+			m.m52[f] = time
 		"tempest":
+			_tag(m)
+			m.m52["tempest"] = time
 			m.shock_t = maxf(m.shock_t, float(preload("res://scripts/talents.gd").D["tune"]["shockSecs"]) * float(_tune("tempest")["shock"]))
 			if not quiet:
 				webs.append({"t": float(_tune("tempest")["web"]), "i": i, "dmg": dmg * float(_tune("tempest")["zap"])})
@@ -491,7 +509,7 @@ func killed(m, i: int) -> void:
 				if _alive(o) and o.world.distance_to(m.world) <= rad + o.r:
 					o.stun_for(float(_tune("concussion")["stun"]))
 			_tell({"id": "concussion", "what": "boom", "x": m.world.x, "y": m.world.y, "r": rad})
-	if bool(m.m52.get("smoulder", false)) and h.wakes != null:
+	if (bool(m.m52.get("smoulder", false)) or (f == "smoulder" and m.burn_t > 0.0)) and h.wakes != null:
 		var S := _tune("smoulder")
 		h.wakes.add_patch(i, "burn", m.world, 1.0, float(S["ground"]), maxf(1.0, h.avg_hit(i, 1.0) * float(S["groundDps"])), "fire", "smoulder")
 		_tell({"id": "smoulder", "what": "coals", "x": m.world.x, "y": m.world.y})
