@@ -5,9 +5,10 @@
 // frame shown meanwhile. Where he is not baked in packs, asking does nothing.
 //
 // (NO IMPORTS of the art: the side is worked out as art/sides_more.ts moreSideOf works it out, its numbers as art/sides.ts
-// EIGHT_ORDER has them; the demon's two sides as render/figure.ts chooses them.)
+// EIGHT_ORDER has them; the demon's two sides as render/figure.ts chooses them, or its eight, art/sides_more.ts EIGHT_MORE.demon,
+// as the man's.)
 
-import { MORE_SIDES, moreSideOf } from '../art/sides_more';
+import { EIGHT_MORE, MORE_SIDES, moreSideOf } from '../art/sides_more';
 
 /** Ask for a pack of his: its name (render/baked.ts warlockPacksOf), the side (as art/sides.ts numbers them), and whether it is shown now. */
 export type AskPack = (pack: string, side: number, now: boolean) => void;
@@ -32,8 +33,8 @@ export function warlockAskAhead(ask: AskPack, h: WarlockAsked, full: boolean, to
     FACING.side = eight;
     FACING.since = at;
   }
-  // (the demon from its two sides: from behind while it faces up the screen, render/figure.ts)
-  const two = h.fx + h.fy < -0.2 ? 1 : 0;
+  // (the demon from its two sides: from behind while it faces up the screen, render/figure.ts; from eight, the man's side)
+  const two = EIGHT_MORE.demon ? eight : h.fx + h.fy < -0.2 ? 1 : 0;
   const demon = h.form === 'demon';
   // CHANGING: the change from his side, then the demon's stand; changing back, the demon's burning out, then his stand
   if (h.change) {

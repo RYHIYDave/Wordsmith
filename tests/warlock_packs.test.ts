@@ -17,6 +17,7 @@ import type { BakeKey, PackOf } from '../src/render/baked';
 import { makeWarlockArt } from '../src/art/warlock_art';
 import { WARLOCK_UP } from '../src/art/warlock_up';
 import { LIVING_SHADOW } from '../src/art/shadow_art';
+import { EIGHT_MORE } from '../src/art/sides_more';
 import { heroSides } from '../src/art/sides';
 import { bakeLists } from '../src/art/heroes3';
 import type { AnimSet } from '../src/art/actor_types';
@@ -84,6 +85,10 @@ test('2. the man brought up: his run held; his stand, spells, step, struck, fall
 });
 
 test('3. the Living Shadow: its run held; every other move of it a pack, one a side', () => {
+  // (from its two sides, as it was: art/sides_more.ts EIGHT_MORE.demon off here; from eight, tests/shadow_eight.test.ts)
+  const eightWas = EIGHT_MORE.demon;
+  EIGHT_MORE.demon = false;
+  try {
   switches(true, true, () => {
     const sides = sidesOf('demon');
     const plan = packsOf(key('demon'), sides);
@@ -100,6 +105,9 @@ test('3. the Living Shadow: its run held; every other move of it a pack, one a s
   });
   // (the game's own demon, with no rearing up, is not packed: the switch for the Living Shadow off)
   switches(true, false, () => assert.equal(packsOf(key('demon'), sidesOf('demon')), null, 'the game\'s demon not packed'));
+  } finally {
+    EIGHT_MORE.demon = eightWas;
+  }
 });
 
 test('4. asked for ahead: what he shows from his side, and what a press may make him show next', () => {
@@ -109,15 +117,16 @@ test('4. asked for ahead: what he shows from his side, and what a press may make
     warlockAskAhead((p, s, now) => out.push(`${p}:${s}${now ? '!' : ''}`), h, full, town, over, clock);
     return out;
   };
-  // (facing down and right: side 0; straight down: 2, 'toward'; up the screen: the demon from behind, 1)
+  // (facing down and right: side 0; straight down: 2, 'toward'; up the screen: 6, 'away'. The demon from all eight sides, its side
+  // the man's: art/sides_more.ts EIGHT_MORE.demon, on at his yes of 22 Nov 2026)
   assert.deepEqual(asked({ fx: 1, fy: 0 }), ['stand:0!', 'bolt:0'], 'a man standing in a fight: his stand, and his bolt (a tap)');
   assert.deepEqual(asked({ fx: 0.71, fy: 0.71 }, true), ['standBlaze:2!', 'bolt:2'], 'his pact full, just turned this way: blazing');
   clock += CHANGE_AHEAD;
   assert.deepEqual(asked({ fx: 0.71, fy: 0.71 }, true), ['standBlaze:2!', 'bolt:2', 'change:2'], 'his pact full, facing this way a moment: the change from it too');
   clock += 1;
   assert.deepEqual(asked({ fx: 1, fy: 0 }, false, true), ['stand:0!'], 'in town only his stand');
-  assert.deepEqual(asked({ fx: 0.71, fy: 0.71, change: { to: 'demon', t: 0, dur: 2.4 } }), ['change:2!', 'it-stand:0'], 'changing: the change, then its stand');
-  assert.deepEqual(asked({ fx: -0.71, fy: -0.71, form: 'demon', change: { to: 'man', t: 0, dur: 2 } }), ['it-burn:1!', 'stand:6'], 'burning out: it, then his stand');
-  assert.deepEqual(asked({ fx: -0.71, fy: -0.71, form: 'demon' }), ['it-stand:1!', 'it-slashL:1'], 'the demon in a fight: its stand, and its first slash (a tap)');
+  assert.deepEqual(asked({ fx: 0.71, fy: 0.71, change: { to: 'demon', t: 0, dur: 2.4 } }), ['change:2!', 'it-stand:2'], 'changing: the change, then its stand');
+  assert.deepEqual(asked({ fx: -0.71, fy: -0.71, form: 'demon', change: { to: 'man', t: 0, dur: 2 } }), ['it-burn:6!', 'stand:6'], 'burning out: it, then his stand');
+  assert.deepEqual(asked({ fx: -0.71, fy: -0.71, form: 'demon' }), ['it-stand:6!', 'it-slashL:6'], 'the demon in a fight: its stand, and its first slash (a tap)');
   assert.deepEqual(asked({ fx: 1, fy: 0 }, false, false, true), ['fall:0!'], 'his life run out: his fall');
 });

@@ -120,7 +120,8 @@ export function packsOf(k: BakeKey, sides: readonly AnimSet[]): (PackOf | null)[
  */
 function warlockPacksOf(k: BakeKey, sides: readonly AnimSet[]): (PackOf | null)[][] | null {
   if (k.place === 'card') return null;
-  const shadow = k.place === 'demon' && sides.length === 2 && !!sides[0].stops?.length;
+  // (the Living Shadow from its two sides, or from all eight: art/sides_more.ts EIGHT_MORE.demon)
+  const shadow = k.place === 'demon' && (sides.length === 2 || sides.length === 8) && !!sides[0].stops?.length;
   const man = k.place !== 'demon' && sides.length === 8;
   if (!shadow && !man) return null;
   return sides.map((side) => {
@@ -149,6 +150,8 @@ function warlockPacksOf(k: BakeKey, sides: readonly AnimSet[]): (PackOf | null)[
       put(c?.attack?.frames, 'it-slashL');
       put(c?.attack2?.frames, 'it-slashR');
       (c?.attackWalk ?? []).forEach((w, i) => put(w.frames, `it-walkSlash${i}`));
+      // (from eight sides, its right claw's four made walking too, each a pack: held, they would be a sheet of their own a side)
+      if (sides.length === 8) (c?.attack2Walk ?? []).forEach((w, i) => put(w.frames, `it-walkSlashR${i}`));
       put(c?.heavy?.frames, 'it-damning');
       put(c?.leap?.frames, 'it-step');
       put(c?.land?.frames, 'it-step');

@@ -119,7 +119,9 @@ test('the game has the Tinkerer and the Brawler on; OFF, each has the game\'s tw
   // (THE TINKERER'S ON, live since 25.3.6, 11 Nov 2026, at his “Yes, hand both to main (Recommended)”; THE BRAWLER'S ON, at his word
   // from the phone on the packed test page, 12 Nov 2026, by 20:28: “Smooth, switch him on” (docs/mockups/eight_sides/PACKED.md, its
   // foot). The three lines that say so: this one, tests/veteran_art.test.ts's `was` and tests/veteran_rules.test.ts's `eightWas`.)
-  assert.deepEqual(EIGHT_MORE, { tinkerer: true, brawler: true }, 'the Tinkerer live, the Brawler on at his word from the phone');
+  // (and THE WARLOCK'S DEMON'S ON, at his yes to its film, 22 Nov 2026, by 09:41: “Yes, all eight are right (Recommended)”;
+  // tests/shadow_eight.test.ts)
+  assert.deepEqual(EIGHT_MORE, { tinkerer: true, brawler: true, demon: true }, 'the Tinkerer live, the Brawler on at his word from the phone, the demon at his yes');
   asOff(() => {
     const t = makeTinkererArt();
     const v = makeVeteranArt();
