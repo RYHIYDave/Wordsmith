@@ -63,6 +63,8 @@ var _web_tick := 0.0
 var _tagged: Array = []
 ## (a monster's melds' marks on him: Rekindle's burn to light again, Bloat's burst, Flashfire's flare: foe_melds52.gd)
 var on_him := {}
+## (moments told no oftener than this: the last time each was told)
+var _throttle := {}
 var _him_burn := 0.0
 var _him_poison := 0.0
 
@@ -243,6 +245,9 @@ func more(m, i: int, quiet: bool) -> float:
 		"bloodlust":
 			if h.life >= h.max_life - 0.5:
 				k *= 1.0 + float(_tune("bloodlust")["over"])
+				if not quiet and time - float(_throttle.get("bloodlust", -9.0)) > 0.15:
+					_throttle["bloodlust"] = time
+					_tell({"id": "bloodlust", "what": "fury", "x": m.world.x, "y": m.world.y, "m": m})
 		"coldsnap":
 			if m.chill_t > 0.0 and m.frozen_t <= 0.0:
 				k *= 1.0 + float(_tune("coldsnap")["snap"])
@@ -282,6 +287,7 @@ func heal_k(m, i: int) -> float:
 		"coldblood":
 			if m.chill_t > 0.0 or m.frozen_t > 0.0:
 				k *= float(_tune("coldblood")["heal"])
+				_tell({"id": "coldblood", "what": "drink", "x": m.world.x, "y": m.world.y, "m": m})
 		"marrow":
 			if m.stun_t > 0.0:
 				k *= float(_tune("marrow")["heal"])
@@ -518,6 +524,7 @@ func killed(m, i: int) -> void:
 						on_ice = true
 			if on_ice and randf() < float(_tune("coldblood")["orbMore"]) and h.monsters.loot != null:
 				h.monsters.loot.orb_at(m.world)
+				_tell({"id": "coldblood", "what": "orb", "x": m.world.x, "y": m.world.y})
 				h._tell({"t": "orb", "x": m.world.x, "y": m.world.y})
 
 
@@ -578,7 +585,7 @@ func arc_struck(o, i: int) -> void:
 	if fid(i) == "conduit":
 		var r: Dictionary = h.loadout.r(i)
 		h.heal_flat(float(r["leech"]) * float(_tune("conduit")["share"]))
-		_tell({"id": "conduit", "what": "bead", "x": o.world.x, "y": o.world.y})
+		_tell({"id": "conduit", "what": "bead", "x": o.world.x, "y": o.world.y, "x1": h.world.x, "y1": h.world.y})
 
 
 # --- what a move leaves ---
@@ -837,7 +844,7 @@ func _grounds(dt: float) -> void:
 					for o in _mons():
 						if _alive(o) and o.stagger_t > 0.0 and o.world.distance_to(at) <= rad + o.r:
 							h.heal_flat(float(_tune("marrow")["drain"]))
-							_tell({"id": "marrow", "what": "drain", "x": o.world.x, "y": o.world.y})
+							_tell({"id": "marrow", "what": "drain", "x": o.world.x, "y": o.world.y, "x1": h.world.x, "y1": h.world.y})
 			"pressurepoint":
 				for o in _mons():
 					if _alive(o) and o.stagger_t > 0.0 and o.mark_t <= 0.0 and o.world.distance_to(at) <= rad + o.r:
@@ -855,7 +862,7 @@ func _grounds(dt: float) -> void:
 					for o in _mons():
 						if _alive(o) and o.world.distance_to(at) <= rad + o.r:
 							h.heal_flat(float(_tune("conduit")["storm"]))
-							_tell({"id": "conduit", "what": "bead", "x": o.world.x, "y": o.world.y})
+							_tell({"id": "conduit", "what": "bead", "x": o.world.x, "y": o.world.y, "x1": h.world.x, "y1": h.world.y})
 							break
 			"hemlock":
 				if tick:

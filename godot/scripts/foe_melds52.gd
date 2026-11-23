@@ -25,6 +25,7 @@ static func harder(F, k: Callable, parts: Array, by) -> float:
 	var crit := false
 	if float(k.call("bloodlust")) > 0.0 and alive_by and by.life >= by.max_life - 0.5:
 		mult *= 1.0 + float(_t("bloodlust")["foeMore"])
+		h.m52._tell({"id": "bloodlust", "what": "foe", "x": by.world.x, "y": by.world.y, "m": by})
 	if float(k.call("duelist")) > 0.0 and alive_by:
 		var alone := true
 		for o in F.main._monsters.list:
@@ -86,14 +87,18 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 		F._warn(h.world, float(A["foeR"]), float(A["foeDelay"]), F._avg(by) * float(A["foeShare"]), "phys", by)
 	if s.call("coldblood") > 0.0 and alive_by and h.chill_t > 0.0:
 		by.life = minf(by.max_life, by.life + by.max_life * 0.03)
+		h.m52._tell({"id": "coldblood", "what": "foe", "x": h.world.x, "y": h.world.y, "x1": by.world.x, "y1": by.world.y})
 	if s.call("conduit") > 0.0 and parts.any(func(p): return p[0] == "lightning"):
 		for o in F.main._monsters.list:
 			if is_instance_valid(o) and not o.dead and o.world.distance_to(h.world) <= 3.0:
 				o.life = minf(o.max_life, o.life + o.max_life * 0.02)
+				h.m52._tell({"id": "conduit", "what": "foe", "x": h.world.x, "y": h.world.y, "x1": o.world.x, "y1": o.world.y})
 	if s.call("secondwind") > 0.0 and alive_by:
 		by.m52["foe_wind_t"] = float(_t("secondwind")["foeSecs"])
+		h.m52._tell({"id": "secondwind", "what": "foe", "x": by.world.x, "y": by.world.y, "m": by})
 	if s.call("marrow") > 0.0 and alive_by and (s.call("heavy") > 0.0 or h._knock_t > 0.0):
 		by.life = minf(by.max_life, by.life + by.max_life * float(_t("marrow")["foeHeal"]))
+		h.m52._tell({"id": "marrow", "what": "foe", "x": h.world.x, "y": h.world.y, "x1": by.world.x, "y1": by.world.y})
 	if alive_by:
 		var crit: String = str(by.m52.get("foe_crit", ""))
 		by.m52.erase("foe_crit")
@@ -224,6 +229,7 @@ static func death(F, m) -> void:
 		var away: Vector2 = (h.world - m.world).normalized() if h.world.distance_to(m.world) > 0.01 else Vector2(1, 0)
 		h.knock(away, float(_t("concussion")["foeShove"]))
 		h.held = maxf(h.held, float(_t("concussion")["foeStun"]))
+		h.m52._tell({"id": "concussion", "what": "foe", "x": m.world.x, "y": m.world.y, "r": 2.2})
 		F._say(h.world, "Stunned", "#ff8a80")
 
 

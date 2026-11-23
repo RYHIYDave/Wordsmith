@@ -13,12 +13,41 @@ const M52 := preload("res://scripts/melds52.gd")
 const L := preload("res://scripts/fx_looks.gd")
 ## (those of the 52 painted as the game's own melds are: fx_m52paint.gd)
 const Paint := preload("res://scripts/fx_m52paint.gd")
+const PAINTERS := ["res://scripts/fx_m52p_leech.gd"]
 
 var fx:
 	set(v):
 		fx = v
-		paint.fx = v
+		for p in painters:
+			p.fx = v
 var paint := Paint.new()
+## (every painter: Twin's, then each group's)
+var painters: Array = [paint]
+var _by_id := {}
+
+
+func _init() -> void:
+	for path in PAINTERS:
+		painters.append(load(path).new())
+	for id in Paint.PAINTED:
+		_by_id[id] = paint
+	for p in painters.slice(1):
+		for id in p.ids():
+			_by_id[id] = p
+
+
+func draw_floor(c: CanvasItem) -> void:
+	for p in painters:
+		p.draw_floor(c)
+
+
+func draw_air(c: CanvasItem) -> void:
+	for p in painters:
+		p.draw_air(c)
+
+
+func alive() -> bool:
+	return painters.any(func(p): return p.alive())
 var _ramps := {}
 var _t := 0.0
 var _carriers := {}
@@ -45,8 +74,8 @@ func _pa(a: Array) -> PackedColorArray:
 
 func handle(e: Dictionary) -> void:
 	var id: String = e.get("id", "")
-	if Paint.painted(id):
-		paint.handle(e)
+	if _by_id.has(id):
+		_by_id[id].handle(e)
 		return
 	var what: String = e.get("what", "")
 	var x: float = e.get("x", 0.0)
@@ -233,7 +262,8 @@ func handle(e: Dictionary) -> void:
 
 
 func update(dt: float) -> void:
-	paint.update(dt)
+	for p in painters:
+		p.update(dt)
 	_t += dt
 	if fmod(_t, 0.12) >= dt:
 		return
@@ -298,4 +328,5 @@ func _carrier(m) -> String:
 
 func clear() -> void:
 	_carriers = {}
-	paint.clear()
+	for p in painters:
+		p.clear()

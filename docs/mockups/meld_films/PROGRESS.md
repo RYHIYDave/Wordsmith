@@ -1,0 +1,22 @@
+# Painting the 52 melds to the game's standard (his word, 23 Nov 2026: “Do the rest, but check your work”)
+
+The first animations (fx_melds52.gd's rings and sparks) fell short of the game's own melds (side by side:
+https://claude.ai/artifact/WXGxciiNxtTFwtHMc7VUbP). Each is now painted beat by beat as fx_melds8.gd paints its own:
+godot/scripts/fx_m52kit.gd (the brushes), one painter per rune group (fx_m52paint.gd Twin's; fx_m52p_<group>.gd the rest),
+handed the rules' `m52` tellings by fx_melds52.gd.
+
+How each group is checked: `--only=words --cases=m52film:<ids>` (--fixed-fps 30) films it; the run prints the moments each
+film's rules told (`MELDS52 TOLD`), every moment of the animation doc must be there; close-up frames of each moment are
+looked at beside Forking, Siphon, Eruption and Shatter; what falls short is fixed and filmed again.
+
+| Group | Painted | Filmed and looked at |
+|---|---|---|
+| Twin (6) | yes | yes (his "Do the rest") |
+| Leech (5) | yes (fx_m52p_leech.gd) | yes: every moment told in its film; Coldblood, Conduit, Second Wind, Marrow made bolder after the first look; wisps dark-edged |
+| Volatile (2) | yes (fx_m52p_leech.gd) | yes |
+| Precise (6) | | |
+| Frenzied (6) | | |
+| Guarding (6) | | |
+| Lasting (7) | | |
+| Fleeting (7) | | |
+| Vast (7) | | |

@@ -25,6 +25,8 @@ const BEHIND := {"flashfreeze": "flashfreeze:sheet", "aftershock": "aftershock:q
 
 ## (whose twist is seen on a kill, or on one stunned already)
 const KILL := ["quickfuse", "concussion"]
+## (whose moment behind is a kill's: its orb, its frenzy's)
+const KILL_BEHIND := ["bloodlust", "coldblood", "secondwind", "berserk", "fever", "whiteout", "overcharge", "blur"]
 ## (whose moment comes later than the others': a burn going out and lighting again)
 const LONGER := {"rekindle:front": 2.6, "rekindle:behind": 2.0}
 const STUNNED := ["pressurepoint"]
@@ -200,11 +202,12 @@ func film(only := "") -> void:
 		M._monsters.perils.clear()
 		M.fx.clear()
 		var k := 0
+		h.m52.told = {}
 		for side in ["front", "behind"]:
 			_fresh()
 			M._w_set(h, 0, side, [id])
 			for m in M._w_pack:
-				if KILL.has(id) and side == "front":
+				if (KILL.has(id) and side == "front") or (KILL_BEHIND.has(id) and side == "behind"):
 					m.life = 1.0
 				if STUNNED.has(id) and side == "front":
 					m.stun_t = 3.0
@@ -235,6 +238,7 @@ func film(only := "") -> void:
 			DirAccess.remove_absolute(_dir + "/" + f)
 		DirAccess.remove_absolute(_dir)
 		print("MELDS52 FILM %s: %d frames, ffmpeg %d" % [id, k, code])
+		print("MELDS52 TOLD %s: %s" % [id, ", ".join(PackedStringArray(h.m52.told.keys()))])
 	M52.ON = was
 
 
