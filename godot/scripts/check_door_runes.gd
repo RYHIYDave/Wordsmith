@@ -2,7 +2,7 @@
 ## for drops on an endless level, many times over, with runes burned in at the door: each burned rune three times as likely as any
 ## other; a meld both its runes three times; a Rank II its rune five times (two of it: the door takes a rune only once, so this is
 ## the stacking); three laid together each by its own; nothing burned in, nothing changed. Then, at the Rim, Lightning's Rank II,
-## Twin and Vast laid on the gate (its page pictured with the line naming them, switched on for the picture) and an endless level
+## Twin and Vast laid on the gate (its page pictured with the line naming them) and an endless level
 ## of floor 8 entered: what its monsters carry is tilted toward them (the rune over each one's head what it leaves).
 extends RefCounted
 
@@ -84,13 +84,10 @@ func run(main, hero, dir: String) -> void:
 		whys.append(M.plan_word(w))
 	var twice: String = M.plan_word("lightning2")
 	_line(M.plan == ["lightning2", "twin", "vast"] and whys == ["", "", ""] and twice != "", "laid on the gate: %s (refused a fourth: '%s')" % [M.plan, twice])
-	var Inv = M._inv.get_script()
-	Inv.DOOR_ODDS_LINE = true
 	M._inv.open_service("gate")
 	await _wait(0.3)
 	await M._snap(dir + "/door_odds_line.png")
 	M._inv.toggle()
-	Inv.DOOR_ODDS_LINE = false
 	# AN ENDLESS LEVEL OF FLOOR 8 ENTERED WITH THEM BURNED IN: what its monsters carry
 	M.enter_endless()
 	await _wait(2.0)

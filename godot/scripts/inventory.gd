@@ -2975,8 +2975,9 @@ func _monster_text(w: String) -> String:
 	return t
 
 
-## (THE RIM'S DOOR: the line naming what each burned rune drops more often, on the gate's page. OFF until his yes to a picture)
-static var DOOR_ODDS_LINE := false
+## (THE RIM'S DOOR: the line naming what each burned rune drops more often, on the gate's page. On at his word to its picture,
+## 23 Nov 2026: “K”)
+static var DOOR_ODDS_LINE := true
 
 # --- THE SHAFT'S RIM'S GATE (ui/town.ts gateSide; game.ts planWord, unplanWord, planProblem, enterEndless): its three sockets, the
 # words burned into the next endless level, what they add up to, and the way in (ENTER ENDLESS N). A word laid by pressing it and
@@ -3023,8 +3024,7 @@ func _gate_side(blink: bool, x0: float, w: float) -> void:
 		for l in _wrap("Reward: +%d%% items, +%d rarity, +%d%% experience, likelier words." % [30 * n, 25 * n, 10 * n], w, 10):
 			_text(Vector2(x0, y), l, 10, PICK)
 			y += 13.0
-		# (THE RIM'S DOOR: what is burned in drops more, each rune by how many times: loot.gd tilt_word. OFF until his yes to a
-		# picture of it: pictures first)
+		# (THE RIM'S DOOR: what is burned in drops more, each rune by how many times: loot.gd tilt_word)
 		if DOOR_ODDS_LINE:
 			var B: Dictionary = loot.burned_runes(laid)
 			var bits: Array = []
