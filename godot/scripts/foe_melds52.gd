@@ -42,8 +42,8 @@ static func harder(F, k: Callable, parts: Array, by) -> float:
 	if float(k.call("pressurepoint")) > 0.0 and alive_by and bool(by.m52.get("foe_point", false)):
 		by.m52["foe_point"] = false
 		crit = true
-	var needle: bool = float(k.call("needle")) > 0.0 and randf() < 0.2
-	var brand: bool = float(k.call("brand")) > 0.0 and randf() < 0.2
+	var needle: bool = float(k.call("needle")) > 0.0 and randf() < float(_t("needle").get("foeCrit", 0.2))
+	var brand: bool = float(k.call("brand")) > 0.0 and randf() < float(_t("brand").get("foeCrit", 0.2))
 	if needle or brand:
 		crit = true
 		if alive_by:

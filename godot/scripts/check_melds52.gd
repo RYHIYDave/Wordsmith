@@ -39,7 +39,7 @@ const BEHIND := {"flashfreeze": "flashfreeze:sheet", "aftershock": "aftershock:q
 const FOE_LIFE := 600.0
 const FOE_LOW := {"lifeline": 0.4, "rampage": 0.5, "rapier": 0.4, "hairtrigger": 0.3, "shieldwall": 0.7, "fury": 0.5}
 const FOE_DIES := ["cluster", "bloodbloom", "blastwave", "mayhem", "timebomb", "minefield", "quickfuse", "concussion", "smoulder"]
-const FOE_TUNE := {"hornet": {"foeWindow": 99.0}, "rapier": {"foeEach": 10.0}, "doubletap": {"foeCrit": 1.0}, "vendetta": {"foeCrit": 1.0},
+const FOE_TUNE := {"needle": {"foeCrit": 1.0}, "brand": {"foeCrit": 1.0}, "hornet": {"foeWindow": 99.0}, "rapier": {"foeEach": 10.0}, "doubletap": {"foeCrit": 1.0}, "vendetta": {"foeCrit": 1.0},
 	"detonator": {"foeCrit": 1.0}, "lancet": {"foeCrit": 1.0}, "bullseye": {"foeCrit": 1.0}}
 const FOE_TAIL := {"sanctuary": 3.6, "timebomb": 2.4, "detonator": 1.8}
 ## (whose twist is seen on a kill, or on one stunned already)
@@ -315,7 +315,12 @@ func film(only := "") -> void:
 			M._w_strike(h)
 		var m = M._w_pack[0]
 		m.words = FoeWordsOf.call(id)
-		m.world = h.world + h.face * 1.2
+		# (a Guarding carrier starts back out of his opening blow's reach, so its own shell is seen as it comes)
+		m.world = h.world + h.face * (2.4 if SHIELD.has(id) else 1.2)
+		# (Duelist's waits on it coming for him alone: the rest of the pack drawn off)
+		if SOLO.has(id):
+			for j in range(1, M._w_pack.size()):
+				M._w_pack[j].world = h.world + Vector2(7.0, 7.0)
 		# (a carrier as the game lays one: a monster's life, not the test pack's million, and Guarding's shield, a fifth of it)
 		m.max_life = FOE_LIFE
 		m.life = FOE_LIFE * float(FOE_LOW.get(id, 1.0))

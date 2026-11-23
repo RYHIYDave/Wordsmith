@@ -400,8 +400,7 @@ func paint_air(b: Dictionary) -> void:
 			var thick := 2
 			var n := 3
 			if key == "lamprey:drink" and int(b["n"]) >= 1:
-				thick = 3
-				n = 4
+				n = 5
 			if key == "feedingfrenzy:jaws":
 				thick = 1 + mini(2, int(b["n"]) / 2)
 				n = 2 + mini(3, int(b["n"]))
@@ -695,12 +694,15 @@ func paint_air(b: Dictionary) -> void:
 			var ey := _wy(b["x"], b["y"]) - 8.0
 			var dx := ex - sx
 			var dy := ey - sy
-			var l := sqrt(dx * dx + dy * dy)
-			if l < 8.0:
-				var f: Vector2 = fx.hero().face if fx.hero() != null else Vector2(1, 0)
-				dx = (f.x - f.y) * 16.0
-				dy = (f.x + f.y) * 8.0
-				l = maxf(1.0, sqrt(dx * dx + dy * dy))
+			# (thrown the way he faces, at the height of what it strikes, not down into the floor at his feet)
+			var f := Vector2(float(b["dx"]), float(b["dy"]))
+			if f.length() < 0.01 and fx.hero() != null:
+				f = fx.hero().face
+			if f.length() < 0.01:
+				f = Vector2(1, 0)
+			dx = (f.x - f.y) * 16.0
+			dy = (f.x + f.y) * 8.0 + 4.0
+			var l := maxf(1.0, sqrt(dx * dx + dy * dy))
 			var reach := maxf(70.0, float(b.get("r", 3.0)) * 22.6)
 			dx = dx / l * reach
 			dy = dy / l * reach

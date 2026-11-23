@@ -91,16 +91,17 @@ func _shell(id: String, cx: float, cy: float, rx: float, ry: float, sd: int) -> 
 	match id:
 		"bulwark":
 			# (the boss at its front: a riveted iron stud, a spike at its heart, glowing)
-			var bx := cx
-			var by := cy + ry * 0.2
-			_glow(bx, by, 12.0, R[4], 0.5)
-			_disc(bx, by, 5.0, [R[0], R[2], R[3], R[4], R[5]])
+			# (on the shell's rim, low at its front corner, beside him, not on him: his Art Rulebook's Animations 4)
+			var bx := cx + rx * 0.62
+			var by := cy + ry * 0.62
+			_glow(bx, by, 9.0, R[4], 0.5)
+			_disc(bx, by, 3.0, [R[0], R[2], R[3], R[4], R[5]])
 			for k in 4:
 				var ka := float(k) * PI * 0.5 + PI * 0.25
 				_fs(R[1])
-				_fill(_ri(bx + cos(ka) * 6.5) - 1, _ri(by + sin(ka) * 6.5) - 1, 2, 2)
+				_fill(_ri(bx + cos(ka) * 5.0) - 1, _ri(by + sin(ka) * 5.0) - 1, 2, 2)
 				_fs(R[4])
-				_fill(_ri(bx + cos(ka) * 6.5) - 1, _ri(by + sin(ka) * 6.5) - 1, 1, 1)
+				_fill(_ri(bx + cos(ka) * 5.0) - 1, _ri(by + sin(ka) * 5.0) - 1, 1, 1)
 			_fs(R[5])
 			_fill(_ri(bx) - 1, _ri(by) - 2, 1, 2)
 			_fs(R[5])
