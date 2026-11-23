@@ -22,6 +22,8 @@
 extends Node
 
 const Words := preload("res://scripts/words.gd")
+## (THE 52 DESIGNED MELDS on a monster: foe_melds52.gd)
+const Foe52 := preload("res://scripts/foe_melds52.gd")
 
 var main
 ## (the game's clock, its own: what Sunder's and Rime Ward's moments are measured on)
@@ -196,13 +198,14 @@ func harder(k: Callable, parts: Array, by) -> float:
 		_tell({"t": "burst", "x": h.world.x, "y": h.world.y, "r": 0.7, "el": "frost", "style": "shock", "words": [], "n": 0, "echo": false})
 	if h.poison_t > 0.0 and h.blight_more > 0.0:
 		mult *= 1.0 + h.blight_more
-	return mult
+	return mult * Foe52.harder(self, k, parts, by)
 
 
 ## (foeAfterBlow) After a blow from `by` (or a mark of its) has hurt him `dmg`: what its words leave on him and round him.
 func after_blow(k: Callable, by, dmg: float, parts: Array) -> void:
 	var h = main.hero
 	var U := T()
+	Foe52.after_blow(self, k, by, dmg, parts)
 	var alive_by: bool = by != null and is_instance_valid(by) and not by.dead
 	if float(k.call("siphon")) > 0.0 and h.poison_t > 0.0:
 		if h.siphon_less <= 0.0:
@@ -251,6 +254,7 @@ func after_blow(k: Callable, by, dmg: float, parts: Array) -> void:
 ## (foeTick) A monster's turn, awake and near: Hailstorm's hail round him; Cauterize, once, low on life; Fervor wearing off.
 func tick(m, dt: float, dist: float) -> void:
 	var U := T()
+	Foe52.tick(self, m, dt, dist)
 	if m.fervor_t > 0.0:
 		m.fervor_t = maxf(0.0, m.fervor_t - dt)
 		if m.fervor_t <= 0.0:
@@ -288,6 +292,9 @@ func tick(m, dt: float, dist: float) -> void:
 func blast(m) -> Dictionary:
 	if not on():
 		return {}
+	var q: Dictionary = Foe52.blast(m)
+	if not q.is_empty():
+		return q
 	if m.word_share("demolition") > 0.0:
 		return T()["demolition"]
 	if m.word_share("implode") > 0.0:
@@ -297,13 +304,15 @@ func blast(m) -> Dictionary:
 
 ## (foeRage) Its pace and the quickness of its blows, as Fervor's feeding hurries it.
 func rage(m) -> float:
+	var k52: float = Foe52.rage(self, m) if on() else 1.0
 	if not on() or m.fervor_n <= 0:
-		return 1.0
-	return 1.0 + float(T()["fervor"]["speed"]) * m.fervor_n * maxf(0.5, m.word_share("fervor"))
+		return k52
+	return k52 * (1.0 + float(T()["fervor"]["speed"]) * m.fervor_n * maxf(0.5, m.word_share("fervor")))
 
 
 ## (foeShield) A blow of his on its shield (`soaked` of it): Rime Ward chills him.
 func shield(m, soaked: float) -> void:
+	Foe52.shield(self, m, soaked)
 	var k: float = m.word_share("rimeward")
 	var R: Dictionary = T()["rimeward"]
 	if k <= 0.0 or soaked <= 0.0 or m.rime_at > clock - float(R["every"]):
@@ -323,6 +332,7 @@ func death(m) -> void:
 	var U := T()
 	var avg := _avg(m)
 	var s := func(w: String) -> float: return m.word_share(w)
+	Foe52.death(self, m)
 	var F: Dictionary = U["fervor"]
 	for o in main._monsters.list:
 		if o == m or not is_instance_valid(o) or o.dead or o.word_share("fervor") <= 0.0 or o.world.distance_to(m.world) > float(F["near"]):

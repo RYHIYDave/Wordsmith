@@ -36,6 +36,7 @@
 ##     it carries over an elite's or a boss's head, bobbing: what its death will leave (`_Over`).
 extends Node2D
 
+const Melds52T := preload("res://scripts/melds52.gd")
 const Glow := preload("res://scripts/figure_glow.gd")
 const HideClip := preload("res://scripts/hide_clip.gd")
 const Iso := preload("res://scripts/iso.gd")
@@ -604,7 +605,7 @@ func step(dt: float, hero) -> void:
 			elif _moves.is_empty() and _cd <= 0.0 and los and ((def["ranged"] and dist <= float(def["range"])) or (not def["ranged"] and dist <= reach + HERO_R)):
 				_turn_to(to, dist)
 				state = "windup"
-				_t = float(def["windup"])
+				_t = float(def["windup"]) * (float(Melds52T.tune("haymaker")["windup"]) if word_share("haymaker") > 0.0 else 1.0)
 				_move = -1
 				_set_list("attack", true)
 			elif def["ranged"]:
@@ -713,7 +714,8 @@ func _start(i: int, hero, dist: float) -> void:
 	var mv: Dictionary = _moves[i]
 	_move = i
 	state = "windup"
-	_t = mv["windup"]
+	# (THE 52 DESIGNED MELDS: Haymaker, its blows with less warning)
+	_t = mv["windup"] * (float(Melds52T.tune("haymaker")["windup"]) if word_share("haymaker") > 0.0 else 1.0)
 	_turn_to(hero.world - world, dist)
 	_set_list(MM.picture_of(art.name, mv["id"]), true)
 	mgr.used[mv["id"]] = mgr.used.get(mv["id"], 0) + 1
@@ -1740,6 +1742,9 @@ func dose(dps: float, secs := -1.0, el := "") -> void:
 func stun_for(secs: float, meld := "") -> void:
 	if dead or boss:
 		return
+	# (THE 52 DESIGNED MELDS: Fortress, while its shield holds nothing stops it)
+	if shield > 0.0 and word_share("fortress") > 0.0:
+		return
 	var t := secs / 2.0 if elite else secs
 	if t <= stun_t:
 		return
@@ -1755,6 +1760,8 @@ func stun_for(secs: float, meld := "") -> void:
 ## broken off; that ground cannot stagger it again for 1.5 s after. Never a boss.
 func stagger_from(from: Vector2) -> void:
 	if dead or boss or stagger_cd > 0.0:
+		return
+	if shield > 0.0 and word_share("fortress") > 0.0:
 		return
 	var heavy: Dictionary = Words.data()["heavy"]
 	stagger_t = float(heavy["stagger"])

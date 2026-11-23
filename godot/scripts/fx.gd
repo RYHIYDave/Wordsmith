@@ -66,6 +66,9 @@ const UFx := preload("res://scripts/fx_uniques.gd")
 const Monster := preload("res://scripts/monster.gd")
 ## (floors 6 to 10's words at work: Twin's, Leech's, Volatile's, Precise's, Frenzied's and Guarding's looks: fx_words610.gd)
 const Words610 := preload("res://scripts/fx_words610.gd")
+## (THE 52 DESIGNED MELDS' OWN LOOKS: fx_melds52.gd)
+const Melds52Fx := preload("res://scripts/fx_melds52.gd")
+var m52fx: Melds52Fx
 ## (the city's five words at work, their looks: Pulling's, Splitting's, Hexing's, Stilling's and Binding's: fx_city3.gd)
 const City3 := preload("res://scripts/fx_city3.gd")
 var city3: City3
@@ -246,6 +249,8 @@ func _init() -> void:
 	city3 = City3.new()
 	city3.fx = self
 	w610 = Words610.new()
+	m52fx = Melds52Fx.new()
+	m52fx.fx = self
 	w610.fx = self
 	w10 = Words10.new()
 	w10.fx = self
@@ -290,6 +295,7 @@ func _exit_tree() -> void:
 	words3.clear()
 	figures.clear()
 	w610.clear()
+	m52fx.clear()
 	city3.clear()
 	w10.clear()
 	w7.clear()
@@ -505,6 +511,7 @@ func clear() -> void:
 	ground.clear()
 	figures.clear()
 	w610.clear()
+	m52fx.clear()
 	city3.clear()
 	w10.clear()
 	w7.clear()
@@ -998,7 +1005,9 @@ func _handle(e: Dictionary) -> void:
 		_:
 			# (floors 6 to 10's words' own tellings: echo, mark, leech, orb, markOn, markSpent, frenzy, frenzyFed, shield,
 			# guarded, blocked)
-			if not city3.handle(e):
+			if str(e.get("t", "")) == "m52":
+				m52fx.handle(e)
+			elif not city3.handle(e):
 				w610.handle(e)
 
 
@@ -1639,6 +1648,7 @@ func update(dt: float, real: float) -> void:
 	city3.tick(dt)
 	figures.tick(dt)
 	w610.update(dt)
+	m52fx.update(dt)
 	w10.update(dt)
 	# (w7: render.ts tickW7; and the sounds of moments only its pictures know, main.ts soundsW7)
 	w7.update(dt)

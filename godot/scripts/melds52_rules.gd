@@ -61,6 +61,10 @@ var _wards: Array = []
 var _web_tick := 0.0
 ## the monsters these have written on (monster.gd m52): only these are looked at each frame
 var _tagged: Array = []
+## (a monster's melds' marks on him: Rekindle's burn to light again, Bloat's burst, Flashfire's flare: foe_melds52.gd)
+var on_him := {}
+var _him_burn := 0.0
+var _him_poison := 0.0
 
 
 func _init(hero) -> void:
@@ -101,8 +105,14 @@ func _tune(id: String) -> Dictionary:
 	return M52.tune(id)
 
 
+## (what each has been seen to do, "id:what", for its check: check_melds52.gd)
+var told := {}
+
+
 func _tell(e: Dictionary) -> void:
 	e["t"] = "m52"
+	var k := "%s:%s" % [e.get("id", ""), e.get("what", "")]
+	told[k] = int(told.get(k, 0)) + 1
 	h._tell(e)
 
 
@@ -759,6 +769,29 @@ func step(dt: float) -> void:
 		if o.mark_t > 0.0 and str(o.m52.get("mark", "")) == "brand":
 			o.set_alight(maxf(1.0, h.avg_hit(0, 1.0) * float(_tune("brand")["burn"]) / 3.0), maxf(o.burn_t, 0.5))
 	_grounds(dt)
+	_on_him()
+
+
+## (ON HIM, a monster's melds: Rekindle's burn lights again once as it goes out; Flashfire's flares round him; Bloat's poison
+## bursts round him as it runs out)
+func _on_him() -> void:
+	if h.burn_t <= 0.0 and _him_burn > 0.0:
+		if int(on_him.get("rekindle", 0)) > 0:
+			on_him.erase("rekindle")
+			h.burn_t = 3.0
+			_tell({"id": "rekindle", "what": "relight", "x": h.world.x, "y": h.world.y, "foe": true})
+		if on_him.has("flare"):
+			var d: float = on_him["flare"]
+			on_him.erase("flare")
+			h.hurt_by(d * 0.5, "fire", [], {}, null, h.world)
+			_tell({"id": "flashfire", "what": "flare", "x": h.world.x, "y": h.world.y, "r": 1.2, "foe": true})
+	if h.poison_t <= 0.0 and _him_poison > 0.0 and on_him.has("bloat"):
+		var d: float = on_him["bloat"]
+		on_him.erase("bloat")
+		h.hurt_by(d * 0.6, "poison", [], {}, null, h.world)
+		_tell({"id": "bloat", "what": "burst", "x": h.world.x, "y": h.world.y, "r": 1.2, "foe": true})
+	_him_burn = h.burn_t
+	_him_poison = h.poison_t
 
 
 ## The ground his melds left, each its own (wakes.list's patches marked `m52`).
@@ -1052,6 +1085,7 @@ func forget() -> void:
 	_wards.clear()
 	_tagged.clear()
 	momentum = 0
+	last_use = [-99.0, -99.0, -99.0]
 	flurry_n = 2
 	blink_t = 0.0
 	tail_t = 0.0

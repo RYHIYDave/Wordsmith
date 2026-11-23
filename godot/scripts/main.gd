@@ -3719,6 +3719,10 @@ func _words_shots(h: Hero, dir: String) -> void:
 		await get_tree().process_frame
 		frames += get_process_delta_time()
 	_w_frame = frames / 30.0
+	# (THE 52 DESIGNED MELDS AND THE 11 LEVEL 2 RUNES: `--cases=m52`, or `--cases=m52:<id>,<id>`: check_melds52.gd)
+	if _arg("cases").begins_with("m52"):
+		await preload("res://scripts/check_melds52.gd").new(self, h).run(_arg("cases").trim_prefix("m52").trim_prefix(":"))
+		return
 	# (the first seven's cases; floors 6 to 10's nine have their own, at the end: check_words610.gd. `--cases=610`: theirs alone;
 	# `--cases=610:<word>`, one word's)
 	var words: Array = Hero.Words.ids().filter(func(w): return not Hero.Words.data()["wilds"].has(w) and not Hero.Words.data().get("city", {}).get("ids", []).has(w))

@@ -70,14 +70,16 @@ static func add_to(D: Dictionary) -> void:
 		M["attr"][id] = t["attr"][id]
 		if D.has("page"):
 			D["page"][id] = t["page"][id]
-		if not (D["made"] as Array).has(id):
-			D["made"].append(id)
 	for id in t["of"]:
 		M["of"][id] = t["of"][id]
 	for id in t["rankOf"]:
 		M["rankOf"][id] = t["rankOf"][id]
 	M["d52"] = t["melds"]
 	M["ranks52"] = t["ranks"]
+	# (on a monster, a level 2 rune laid with its rune makes it half as strong again: monster.gd word_share, foe.rankBy)
+	if D.has("foe") and D["foe"].has("rankBy"):
+		for id in t["rankOf"]:
+			D["foe"]["rankBy"][t["rankOf"][id]["word"]] = id
 
 
 static func _attr_name(a: String) -> String:
