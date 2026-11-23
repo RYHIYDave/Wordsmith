@@ -13,7 +13,7 @@ const M52 := preload("res://scripts/melds52.gd")
 const L := preload("res://scripts/fx_looks.gd")
 ## (those of the 52 painted as the game's own melds are: fx_m52paint.gd)
 const Paint := preload("res://scripts/fx_m52paint.gd")
-const PAINTERS := ["res://scripts/fx_m52p_leech.gd", "res://scripts/fx_m52p_precise.gd"]
+const PAINTERS := ["res://scripts/fx_m52p_leech.gd", "res://scripts/fx_m52p_precise.gd", "res://scripts/fx_m52p_guard.gd"]
 
 var fx:
 	set(v):

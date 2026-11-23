@@ -16,7 +16,7 @@ looked at beside Forking, Siphon, Eruption and Shatter; what falls short is fixe
 | Volatile (2) | yes (fx_m52p_leech.gd) | yes |
 | Precise (6) | yes (fx_m52p_precise.gd) | yes: every moment told; Brand's symbol, Quickdraw's glint, Pressure Point's needles enlarged after the first look |
 | Frenzied (6) | yes (fx_m52p_precise.gd) | yes: every moment told; Blur's streaks doubled |
-| Guarding (6) | | |
+| Guarding (6) | yes (fx_m52p_guard.gd) | yes: every moment told (the films raise his shield as the monster comes); the shield's dressing sized to the game's own shell and made bolder after two looks |
 | Lasting (7) | | |
 | Fleeting (7) | | |
 | Vast (7) | | |

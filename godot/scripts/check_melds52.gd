@@ -27,6 +27,7 @@ const BEHIND := {"flashfreeze": "flashfreeze:sheet", "aftershock": "aftershock:q
 const KILL := ["quickfuse", "concussion"]
 ## (whose twist wants one alone, certain criticals, a frenzy built up: the film makes it so)
 const SOLO := ["duelist"]
+const SHIELD := ["bulwark", "hemlock", "cinderward", "static", "windward", "fortress"]
 const CRITS := ["needle", "brand", "seeker"]
 const FRENZY := ["berserk", "fever", "whiteout", "overcharge", "blur", "juggernaut"]
 ## (whose moment behind is a kill's: its orb, its frenzy's)
@@ -230,8 +231,11 @@ func film(only := "") -> void:
 			k = await _frames(k, (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0)))
 		# (carried by one of the pack, which comes for him: its two runes and the meld, as an altar lays them)
 		_fresh()
-		M._w_put(h, 0, "front", [])
+		# (a Guarding meld: his shield up as the monster comes, to show what it does to what strikes it)
+		M._w_put(h, 0, "front", [id] if SHIELD.has(id) else [])
 		M._w_reset(h)
+		if SHIELD.has(id):
+			M._w_strike(h)
 		var m = M._w_pack[0]
 		m.words = FoeWordsOf.call(id)
 		m.world = h.world + h.face * 1.2

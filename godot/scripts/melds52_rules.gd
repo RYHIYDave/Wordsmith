@@ -263,6 +263,8 @@ func more(m, i: int, quiet: bool) -> float:
 		"bulwark":
 			if _shielded():
 				k *= 1.0 + float(_tune("bulwark")["more"])
+				if not quiet:
+					_tell({"id": "bulwark", "what": "hot", "x": m.world.x, "y": m.world.y, "m": m})
 		"momentum":
 			if time - momentum_at > float(_tune("momentum")["hold"]):
 				momentum = 0
@@ -991,13 +993,17 @@ func struck_him(src) -> void:
 		src.dose(maxf(1.0, h.avg_hit(0, 1.0) * float(_tune("hemlock")["dose"]) / 4.0), 4.0, "poison")
 		_tell({"id": "hemlock", "what": "thorns", "x": src.world.x, "y": src.world.y})
 	if any_has("static"):
-		h._tell({"t": "arc", "x0": h.world.x, "y0": h.world.y, "x1": src.world.x, "y1": src.world.y, "meld": "static"})
+		_tell({"id": "static", "what": "zap", "x": h.world.x, "y": h.world.y, "x1": src.world.x, "y1": src.world.y})
 		src.damage(maxf(1.0, roundf(h.avg_hit(0, 1.0) * float(_tune("static")["arc"]))), "lightning", false, false, [], false, false, 0)
 
 
 ## FORTRESS: while his shield holds, nothing knocks him back or stuns him.
 func planted() -> bool:
-	return any_has("fortress") and _shielded()
+	var p: bool = any_has("fortress") and _shielded()
+	if p and time - float(_throttle.get("fortress", -9.0)) > 0.3:
+		_throttle["fortress"] = time
+		_tell({"id": "fortress", "what": "clang", "x": h.world.x, "y": h.world.y})
+	return p
 
 
 ## How much faster he moves: Blur at a full frenzy, Windward behind his shield or in its ward, Tailwind, Blink.
