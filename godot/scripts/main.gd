@@ -650,6 +650,12 @@ func _ready() -> void:
 	# (THE THREE DEFENCES, on at his yes: `--defence=0` to run without them: loot.gd DEFENCE_LAYERS)
 	if _arg("defence") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_LAYERS = false
+	# (THE FIFTEEN OF THE THREE DEFENCES, on at his yes: `--defuniques=0` to run without them dropping: loot.gd DEFENCE_UNIQUES)
+	if _arg("defuniques") == "0":
+		preload("res://scripts/loot.gd").DEFENCE_UNIQUES = false
+	# (THE FIFTEEN'S OWN PICTURES, on at his yes: `--defart=0` to run without them)
+	if _arg("defart") == "0":
+		preload("res://scripts/loot.gd").DEFENCE_ART = false
 	# (HIS CURSE THROWN, on at his yes to its pictures: `--curse=round` to run without it: heroes/warlock.gd CURSE_RANGED)
 	if _arg("curse") == "round":
 		preload("res://scripts/heroes/warlock.gd").CURSE_RANGED = false
@@ -3080,6 +3086,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "defence":
 		await preload("res://scripts/check_defence.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE UNIQUES' DEFENCES AND THE FIFTEEN OF THE THREE DEFENCES: --only=defuniques: check_defuniques.gd)
+	if _arg("only") == "defuniques":
+		await preload("res://scripts/check_defuniques.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "crash":

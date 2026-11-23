@@ -124,6 +124,35 @@ export const UNIQUE_TUNE = {
   heels: { jumps: 2 },
   /** THE RECEIPT: a blow from within this of straight ahead (cosine), from within `reach`, answered with a punch of this share of his hit; no more often than `gap`. */
   receipt: { share: 1, cos: 0.5, reach: 2.6, gap: 0.4 },
+  // ---- THE FIFTEEN OF THE THREE DEFENCES (DEFENCE_DEFS, below: the Godot game's; off until his yes) ----
+  /** ANVILHEART: his armour turns this share of what it turns of a plain blow from a blow of Flame, Frost or Lightning too. */
+  anvil: { share: 0.5 },
+  /** THE BURR: an enemy that strikes him takes this share of his armour as damage. */
+  burr: { share: 0.4 },
+  /** BALLAST: he hits this much harder for every `per` armour, up to so much; his feet this much slower (%), its price. */
+  ballast: { per: 100, more: 0.06, most: 0.4, slow: 10 },
+  /** THE UNBOWED: no blow takes more than this share of his life. Its price: he cannot dodge. */
+  unbowed: { most: 0.3 },
+  /** WORKHARDENED: each blow he takes, this much more armour for so many seconds, up to so many times. */
+  temper: { each: 0.1, secs: 5, most: 5 },
+  /** QUICKGLASS: his barrier begins to fill this long after a hit (hero.gd BARRIER_WAIT without it: 3). */
+  quick: { wait: 1.5 },
+  /** SHATTERGLASS: his barrier breaking bursts, striking all within `r` of him for this share of his full barrier. */
+  shatter: { share: 1, r: 2.6 },
+  /** HALO: while his barrier is full he hits this much harder. */
+  halo: { more: 0.25 },
+  /** THE GLAZIER'S RING: all the armour on his gear is barrier instead, so much for each point. */
+  glazier: { per: 1.5 },
+  /** FEINT: a blow dodged, he hits this much harder for so many seconds. */
+  feint: { more: 0.4, secs: 3 },
+  /** AFTERIMAGE: a blow dodged, he is this much faster (%) for so many seconds (Swift's haste: hero.gd haste). */
+  after: { haste: 30, secs: 3 },
+  /** FEATHERWEIGHT: his dodge this much more. Its price: he has no armour. */
+  feather: { more: 0.5 },
+  /** CLOSE CALL: each blow he dodges heals him this share of his life. */
+  close: { heal: 0.04 },
+  /** TAILWIND: his movement speed is dodge too, so much for each 1%. */
+  tail: { per: 3 },
   // ---- SET 1, THE BATTLE AXE AND THE WARHAMMER (SET1, below: off until his yes to their pictures) ----
   /** GYRE: his thrown axe, at the end of its flight, spins there so many seconds, cutting all within `r` every `tick` seconds for this share of the throw's hit; so many at once (another takes the oldest's place). */
   gyre: { secs: 3, r: 1.3, tick: 0.35, share: 0.3, most: 2 },
@@ -175,6 +204,8 @@ export const UNIQUE_RULES = {
 // THE LIST
 
 export type UniqueFrom = 'pool' | 'boss' | 'final' | 'level';
+/** THE THREE DEFENCES (godot/scripts/loot.gd): armour, the Strength heroes'; dodge, the Dexterity heroes'; barrier, the Intelligence heroes'. */
+export type Defence = 'armor' | 'dodge' | 'barrier';
 
 export interface UniqueDef {
   id: string;
@@ -188,6 +219,14 @@ export interface UniqueDef {
   floor?: number;
   /** Whose it is: a weapon unique's hero, a hero-only piece's. Absent: anyone's. */
   cls?: ClassId;
+  /**
+   * THE THREE DEFENCES (the Godot game's: godot/scripts/loot.gd DEFENCE_LAYERS, `udef`): the defence it carries, where that is not
+   * its base's kind's own (heavy armour, leather dodge, cloth barrier). On a piece of armour its base's defence is this one
+   * instead, as big as a piece of that kind is at its level; on anything else (an amulet, a ring) one more thing built in, as big
+   * as a pair of gloves'; on a leveling unique, what its `armor` is. See THE UNIQUES' DEFENCES, below. The TypeScript game, which
+   * has armour alone, does not read it.
+   */
+  defence?: Defence;
   /** A hero-only piece: it names him and works only for him. */
   only?: true;
   /** Which half of his “Half and half”: it bends wordsmithing, or the hero's rules. */
@@ -331,14 +370,14 @@ export const UNIQUE_DEFS: readonly UniqueDef[] = [
   // ---- THE RANGER ----
   { id: 'fan', name: 'Threefold', stem: 'bow', from: 'pool', cls: 'ranger', bends: 'hero', stats: ['atkSpeed', 'critChance'], does: () => ['Each Shot looses three arrows in a fan.'], rolled: ['fan.share'], price: (it) => `Each arrow hits for ${pc(tuned(it, 'fan.share'))}.` },
   { id: 'poachersbow', name: "The Poacher's Bow", stem: 'bow', from: 'pool', cls: 'ranger', bends: 'hero', stats: ['dmgPct', 'dex'], does: () => ['Where a Volley falls, it leaves one of your traps.'] },
-  { id: 'packcollar', name: 'The Pack Collar', stem: 'dexamulet', from: 'pool', cls: 'ranger', only: true, bends: 'hero', stats: ['maxLife', 'lifeOnKill'], does: () => ['One more companion, at full strength: a second pick from the same list.'] },
+  { id: 'packcollar', name: 'The Pack Collar', stem: 'dexamulet', from: 'pool', cls: 'ranger', only: true, bends: 'hero', defence: 'dodge', stats: ['maxLife', 'lifeOnKill'], does: () => ['One more companion, at full strength: a second pick from the same list.'] },
   { id: 'hairtrigger', name: 'The Hair Trigger', stem: 'leathergloves', from: 'pool', cls: 'ranger', only: true, bends: 'hero', stats: ['critChance', 'dex'], does: () => ['An arrow of yours that crosses one of your traps sets it off at once, twice as hard.'] },
 
   // ---- THE MAGE ----
   { id: 'tide', name: 'Ebb and Flow', stem: 'staff', from: 'pool', cls: 'mage', bends: 'hero', stats: ['dmgPct', 'critChance'], rolled: ['tide.share'], does: (it) => [`The Wave comes back: it turns and passes through everything again on its way home, for ${pc(tuned(it, 'tide.share'))}.`] },
   { id: 'tuningstaff', name: 'Resonance', stem: 'staff', from: 'pool', cls: 'mage', bends: 'hero', stats: ['atkSpeed', 'areaPct'], does: () => ['A Wave that passes through your Orb makes it pulse at once, twice as hard.'] },
-  { id: 'prism', name: 'Prismheart', stem: 'intamulet', from: 'pool', cls: 'mage', only: true, bends: 'hero', stats: ['dmgPct', 'maxMana'], does: () => ['Fire, frost and lightning each count as all three: what burns is chilled and shocked too.'] },
-  { id: 'shortway', name: 'Shortcut', stem: 'leatherboots', from: 'pool', cls: 'mage', only: true, bends: 'hero', stats: ['maxMana', 'int'], rolled: ['shortWay.secs'], does: (it) => [`Warp again within ${secs(tuned(it, 'shortWay.secs'))} seconds to snap back to where you started.`] },
+  { id: 'prism', name: 'Prismheart', stem: 'intamulet', from: 'pool', cls: 'mage', only: true, bends: 'hero', defence: 'barrier', stats: ['dmgPct'], does: () => ['Fire, frost and lightning each count as all three: what burns is chilled and shocked too.'] },
+  { id: 'shortway', name: 'Shortcut', stem: 'leatherboots', from: 'pool', cls: 'mage', only: true, bends: 'hero', defence: 'barrier', stats: ['maxMana', 'int'], rolled: ['shortWay.secs'], does: (it) => [`Warp again within ${secs(tuned(it, 'shortWay.secs'))} seconds to snap back to where you started.`] },
 
   // ---- THE WARLOCK ----
   { id: 'ledgerofdebts', name: 'The Ledger of Debts', stem: 'tome', from: 'pool', cls: 'warlock', bends: 'hero', stats: ['firePct', 'int'], rolled: ['ledger.each', 'ledger.most'], does: (it) => [`The Hellfire Bolt hits ${pc(tuned(it, 'ledger.each'))} harder for every cursed enemy near you, up to ${pc(tuned(it, 'ledger.most'))}.`] },
@@ -350,7 +389,7 @@ export const UNIQUE_DEFS: readonly UniqueDef[] = [
   // ---- THE TINKERER ----
   { id: 'stickywrench', name: 'Tarwrench', stem: 'wrench', from: 'pool', cls: 'tinkerer', bends: 'hero', stats: ['areaPct', 'dex'], does: () => ['Vials stick to what they hit and burst a moment later, twice as wide.'] },
   { id: 'foremanswrench', name: "The Foreman's Wrench", stem: 'wrench', from: 'pool', cls: 'tinkerer', bends: 'hero', stats: ['atkSpeed', 'int'], does: () => ['Whenever you toss a vial, each of your Golems lobs one as well.'] },
-  { id: 'towline', name: 'The Tow Line', stem: 'heavybelt', from: 'pool', cls: 'tinkerer', only: true, bends: 'hero', stats: ['maxLife', 'dex'], does: () => ['The Golem rides the Blast Jump with you and lands with a ground pound.'] },
+  { id: 'towline', name: 'The Tow Line', stem: 'heavybelt', from: 'pool', cls: 'tinkerer', only: true, bends: 'hero', defence: 'dodge', stats: ['maxLife', 'dex'], does: () => ['The Golem rides the Blast Jump with you and lands with a ground pound.'] },
   { id: 'companyscrip', name: 'The Company Scrip', stem: 'lifering', from: 'pool', cls: 'tinkerer', only: true, bends: 'hero', stats: ['goldFind', 'dex'], does: () => ['The whistle and the Blast Jump have no cooldown.'], price: () => 'Each use costs gold.' },
 
   // ---- THE BRAWLER ----
@@ -472,7 +511,7 @@ export const LEVEL_DEFS: readonly UniqueDef[] = [
   { id: 'packstrap', name: 'The Packstrap', stem: 'leatherbelt', from: 'level', level: 11, bends: 'hero', stats: [], specials: { size: [8, 12], back: [3.2, 4.8] }, does: (it) => [`You always have Guarding's shield: ${U(it, () => lv('packstrap'), 'size')}% of your life. Broken, it comes back after ${urollOf(it, lv('packstrap'), 'back').toFixed(1)} seconds without taking damage.`] },
   { id: 'hornbook', name: 'The Hornbook', stem: 'tome', from: 'level', level: 12, cls: 'warlock', bends: 'hero', powers: 0, stats: ['firePct', 'cdr'], rolls: [R('firePct', 40, 60), R('cdr', 12, 18)], does: () => [] },
   { id: 'borrowedspanner', name: 'The Borrowed Spanner', stem: 'wrench', from: 'level', level: 13, cls: 'tinkerer', bends: 'hero', powers: 0, stats: ['atkSpeed', 'dex'], rolls: [R('atkSpeed', 20, 30), R('dex', 16, 24)], does: () => [] },
-  { id: 'quiltedcoat', name: 'The Quilted Coat', stem: 'jerkin', from: 'level', level: 14, bends: 'hero', powers: 0, stats: ['armor', 'maxLife'], rolls: [R('armor', 96, 144), R('maxLife', 64, 96)], does: () => [] },
+  { id: 'quiltedcoat', name: 'The Quilted Coat', stem: 'jerkin', from: 'level', level: 14, bends: 'hero', defence: 'dodge', powers: 0, stats: ['armor', 'maxLife'], rolls: [R('armor', 96, 144), R('maxLife', 64, 96)], does: () => [] },
   { id: 'poisonerslocket', name: "The Poisoner's Locket", stem: 'dexamulet', from: 'level', level: 16, bends: 'hero', powers: 0, stats: ['poisonPct', 'poisonMin'], rolls: [R('poisonPct', 32, 48), PAIR('poisonMin', 'poisonMax', 8, 12, 14, 22)], does: () => [] },
   // (his idea, typed into a pop-up: “You gotta have something that has 100% chance to crit, crits do no extra damage.  Always a
   // classic”; “Yes, level 18 ring (Recommended)”. It has no number to roll)
@@ -489,7 +528,54 @@ export const LEVEL_DEFS: readonly UniqueDef[] = [
   { id: 'lastword', name: 'The Last Word', stem: 'manaring', from: 'level', level: 30, bends: 'words', stats: [], specials: { words: [40, 60], cool: [50, 100] }, does: (it) => [`Every word on your tap and hold attacks is ${U(it, () => lv('lastword'), 'words')}% stronger.`], price: (it) => `Your abilities' cooldowns are ${U(it, () => lv('lastword'), 'cool')}% longer.` },
 ];
 
-const BY_ID = new Map<string, UniqueDef>([...ALL_DEFS, ...LEVEL_DEFS].map((d) => [d.id, d]));
+// =============================================================================================
+// THE UNIQUES' DEFENCES, AND THE FIFTEEN OF THE THREE DEFENCES (the Godot game's)
+//
+// HIS WORDS, 23 Nov 2026: “We made changes to defenses in Wordsmith and added dodge and barrier. Armor staying the same. I'd like
+// you to go back and look at our uniques that we made and change them to reflect what the class that would be using them would be
+// most likely using as a defense. So if it's a mage unique and it has some flat armor on it, change that to barrier. Or if it's a
+// ranger unique, add dodge. That sort of thing. And then give me maybe 15 more uniques that each sort of go with, 5 for armor, 5
+// for barrier, 5 for dodge. So we can sort of include those new mechanics in the move pool. Sorry, not the move pool, the item
+// pool.”
+//
+// THE UNIQUES WE HAD. In the Godot game a piece's defence is its base's kind's (loot.gd: heavy armour, leather dodge, cloth
+// barrier), so most were right as they stood: the hoods, jerkins and leather boots and gloves dodge, the robes, sashes and silk
+// gloves barrier, the plate armour. Changed (`defence`, above), each to its hero's own:
+//   SHORTCUT (the Mage's leather boots)      barrier in place of its dodge
+//   PRISMHEART (the Mage's amulet)           barrier in place of its mana (“We don't have mana, we have cooldowns”, 22 Nov)
+//   THE PACK COLLAR (the Ranger's amulet)    dodge added
+//   THE TOW LINE (the Tinkerer's heavy belt) dodge in place of its armour (she grows Dexterity and Intelligence, not Strength)
+//   THE QUILTED COAT (a jerkin, level 14)    its 96 to 144 armour is dodge: flat armour on leather
+// And a leveling unique carries nothing of its base (“nothing but 20% movement speed”), so no dodge or barrier of its base's kind
+// either (loot.gd `bare`).
+//
+// THE FIFTEEN: five for each defence, the pool's, anyone's, made at the floor's level as the 62 are. Each rule works with the
+// defence its piece carries. THE GODOT GAME'S ALONE (godot/scripts/uniques.gd, THE FIFTEEN OF THE THREE DEFENCES): the TypeScript
+// game has armour alone and never makes them (they are not in liveDefs). ON at his yes, 23 Nov 2026 (loot.gd DEFENCE_UNIQUES): every name
+// and number here a proposal, his to change.
+const DT = UNIQUE_TUNE;
+export const DEFENCE_DEFS: readonly UniqueDef[] = [
+  // ---- ARMOUR ----
+  { id: 'anvilheart', name: 'Anvilheart', stem: 'plate', from: 'pool', bends: 'hero', stats: ['maxLife', 'str'], rolled: ['anvil.share'], does: (it) => [`Your armour works against Flame, Frost and Lightning too, at ${pc(tuned(it, 'anvil.share'))} of its strength.`] },
+  { id: 'theburr', name: 'The Burr', stem: 'gauntlets', from: 'pool', bends: 'hero', stats: ['str', 'lifeOnHit'], rolled: ['burr.share'], does: (it) => [`An enemy that strikes you takes ${pc(tuned(it, 'burr.share'))} of your armour as damage.`] },
+  { id: 'ballast', name: 'Ballast', stem: 'heavybelt', from: 'pool', bends: 'hero', stats: ['maxLife'], rolled: ['ballast.more'], does: (it) => [`You hit ${pc(tuned(it, 'ballast.more'))} harder for every ${DT.ballast.per} armour, up to ${pc(DT.ballast.most)}.`], price: () => `-${DT.ballast.slow}% Movement Speed.` },
+  { id: 'unbowed', name: 'The Unbowed', stem: 'helm', from: 'pool', bends: 'hero', stats: ['str', 'maxLife'], rolled: ['unbowed.most'], does: (it) => [`No blow takes more than ${pc(tuned(it, 'unbowed.most'))} of your life.`], price: () => 'You cannot dodge.' },
+  { id: 'workhardened', name: 'Workhardened', stem: 'greaves', from: 'pool', bends: 'hero', stats: ['moveSpeed', 'maxLife'], rolled: ['temper.each'], does: (it) => [`Each blow you take hardens you: +${pc(tuned(it, 'temper.each'))} armour for ${secs(DT.temper.secs)} seconds, up to ${DT.temper.most} times.`] },
+  // ---- BARRIER ----
+  { id: 'quickglass', name: 'Quickglass', stem: 'robe', from: 'pool', bends: 'hero', stats: ['int', 'maxLife'], rolled: ['quick.wait'], does: (it) => [`Your barrier begins to fill ${secs(tuned(it, 'quick.wait'))} seconds after a hit, not 3.`] },
+  { id: 'decanter', name: 'The Decanter', stem: 'sash', from: 'pool', bends: 'hero', stats: ['maxLife', 'cdr'], does: () => ['Drinking a flask fills your barrier.'] },
+  { id: 'shatterglass', name: 'Shatterglass', stem: 'silkgloves', from: 'pool', bends: 'hero', stats: ['int', 'critChance'], rolled: ['shatter.share'], does: (it) => [`When your barrier breaks it bursts, striking everything near you for ${pc(tuned(it, 'shatter.share'))} of your full barrier.`] },
+  { id: 'halo', name: 'Halo', stem: 'intamulet', from: 'pool', bends: 'hero', defence: 'barrier', stats: ['dmgPct'], rolled: ['halo.more'], does: (it) => [`While your barrier is full you hit ${pc(tuned(it, 'halo.more'))} harder.`] },
+  { id: 'glaziersring', name: "The Glazier's Ring", stem: 'manaring', from: 'pool', bends: 'hero', stats: ['int'], rolled: ['glazier.per'], does: (it) => [`All the armour on your gear is barrier instead: ${tuned(it, 'glazier.per').toFixed(1)} barrier for each point.`] },
+  // ---- DODGE ----
+  { id: 'feint', name: 'Feint', stem: 'leathergloves', from: 'pool', bends: 'hero', stats: ['dex', 'critChance'], rolled: ['feint.more'], does: (it) => [`After you dodge a blow you hit ${pc(tuned(it, 'feint.more'))} harder for ${secs(DT.feint.secs)} seconds.`] },
+  { id: 'afterimage', name: 'Afterimage', stem: 'hood', from: 'pool', bends: 'hero', stats: ['cdr'], rolled: ['after.secs'], does: (it) => [`After you dodge a blow you are ${DT.after.haste}% faster for ${secs(tuned(it, 'after.secs'))} seconds.`] },
+  { id: 'featherweight', name: 'Featherweight', stem: 'jerkin', from: 'pool', bends: 'hero', stats: ['dex', 'moveSpeed'], rolled: ['feather.more'], does: (it) => [`Your dodge is ${pc(tuned(it, 'feather.more'))} more.`], price: () => 'You have no armour.' },
+  { id: 'closecall', name: 'Close Call', stem: 'leatherbelt', from: 'pool', bends: 'hero', stats: ['maxLife', 'dex'], rolled: ['close.heal'], does: (it) => [`Each blow you dodge heals you for ${(tuned(it, 'close.heal') * 100).toFixed(1)}% of your life.`] },
+  { id: 'tailwind', name: 'Tailwind', stem: 'dexamulet', from: 'pool', bends: 'hero', defence: 'dodge', stats: ['moveSpeed'], rolled: ['tail.per'], does: (it) => [`Your movement speed is dodge too: ${tuned(it, 'tail.per').toFixed(1)} for each 1%.`] },
+];
+
+const BY_ID = new Map<string, UniqueDef>([...ALL_DEFS, ...LEVEL_DEFS, ...DEFENCE_DEFS].map((d) => [d.id, d]));
 
 /** The unique of that id, if there is one. */
 export function uniqueDef(id: string | undefined): UniqueDef | undefined {

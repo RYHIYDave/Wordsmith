@@ -440,6 +440,9 @@ func set_max_barrier(v: float) -> void:
 
 ## THE THREE DEFENCES: the chance a blow misses him altogether (loot.gd DODGE_K x dodge / (dodge + 40 + 20 a floor)).
 func dodge_chance() -> float:
+	# (THE FIFTEEN OF THE THREE DEFENCES: the Unbowed, its price: he cannot dodge)
+	if uniques != null and uniques.no_dodge():
+		return 0.0
 	var d: float = stats.get("dodge", 0.0)
 	# (THE THREE DEFENCES' WORDS: Swift behind, his haste is dodge too while it lasts: words.gd SWIFT_DODGE)
 	if Words.DEFENCE_WORDS and haste_t > 0.0 and haste > 0.0:
@@ -451,12 +454,16 @@ func dodge_chance() -> float:
 
 ## THE THREE DEFENCES: harm taken by his barrier first; what is left of it, for his life. Every harm waits his barrier's filling.
 func _through_barrier(dmg: float) -> float:
-	_barrier_wait = BARRIER_WAIT
+	# (THE FIFTEEN OF THE THREE DEFENCES: Quickglass, it begins to fill sooner)
+	_barrier_wait = uniques.barrier_wait(BARRIER_WAIT) if uniques != null else BARRIER_WAIT
 	if barrier <= 0.0 or dmg <= 0.0:
 		return dmg
 	var took := minf(barrier, dmg)
 	barrier -= took
 	_tell({"t": "barrierHit", "x": world.x, "y": world.y, "left": barrier, "most": max_barrier})
+	# (Shatterglass: his barrier breaking bursts)
+	if barrier <= 0.0 and uniques != null:
+		uniques.barrier_broke()
 	# (THE SKILL TREES: Shieldwall, his barrier breaking bursts outward, as Guarding's shield did)
 	if barrier <= 0.0 and has("shieldwall"):
 		_shield_burst()
@@ -1803,7 +1810,8 @@ func hurt(dmg: float, raw := false) -> void:
 ## most 75%; the floor is never less than the first: game.ts `Math.max(1, this.power)`).
 func armour_cut(ignored := 0.0) -> float:
 	# (PRECISE, on a monster: its blows find the gaps in his armour, so much of it as if it were not there)
-	var a: float = stats.get("armor", 0.0) * (1.0 - ignored)
+	# (THE FIFTEEN OF THE THREE DEFENCES: Workhardened, more armour for each blow lately taken)
+	var a: float = stats.get("armor", 0.0) * (1.0 - ignored) * (uniques.armour_k() if uniques != null else 1.0)
 	if a <= 0.0:
 		return 0.0
 	return minf(0.75, a / (a + 40.0 + 20.0 * maxf(1.0, float(map.depth) if map != null else 1.0)))
@@ -1867,6 +1875,9 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 			fx.float_text(world.x, world.y, "DODGE", Color("#7af8f0"), false, 34.0)
 		sfx.play("swing", linear_to_db(0.35))
 		last_blow = {"raw": raw, "el": el, "words": words, "dodged": true, "dmg": 0.0}
+		# (THE FIFTEEN OF THE THREE DEFENCES: Feint, Afterimage, Close Call: what a blow dodged does)
+		if uniques != null:
+			uniques.dodged()
 		return
 	# (THE LAST FLOOR 1–10 MELDS: Parry, his brief shell or its ward, and nothing gets through: melds46_rules.gd)
 	if m52.parried(by):
@@ -1890,6 +1901,9 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	var gaps: float = float(Words.data()["precise"]["armourIgnored"]) * float(k.call("precise"))
 	for p in parts:
 		var part: float = raw * float(p[1]) * (1.0 - ((0.0 if bare else armour_cut(gaps)) if p[0] == "phys" else resist(p[0]) / 100.0))
+		# (THE FIFTEEN OF THE THREE DEFENCES: Anvilheart, his armour against Flame, Frost and Lightning too, at a share of its strength)
+		if p[0] in ["fire", "frost", "light"] and not bare and uniques != null:
+			part *= 1.0 - armour_cut(gaps) * uniques.armour_on_elements()
 		each.append([p[0], p[1], part])
 		dmg += part
 	var shocked := shock_t > 0.0
@@ -1935,6 +1949,11 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	if foe != null:
 		dmg *= foe.harder(k, parts, _blow_src(src))
 	dmg = maxf(1.0, roundf(dmg))
+	# (THE FIFTEEN OF THE THREE DEFENCES: the Unbowed, no blow more than a share of his life; the Burr and Workhardened, a blow that
+	# struck him)
+	if uniques != null:
+		dmg = uniques.cap_blow(dmg)
+		uniques.struck(src)
 	# HEAVY, on a monster: its blow knocks him back a step (game.ts knockHero)
 	var knocked := 0.0
 	if k.call("heavy") > 0.0:
