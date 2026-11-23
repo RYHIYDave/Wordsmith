@@ -472,11 +472,8 @@ func paint_air(b: Dictionary) -> void:
 				var y1 := _wy(s.x, s.y)
 				var x := lerpf(x0, x1, u)
 				var y := lerpf(y0, y1, u) - sin(u * PI) * 22.0
-				_ga(1.0)
-				_fs(R[1])
-				_fill(_ri(x) - 2, _ri(y) - 2, 5, 5)
-				_fs(R[4])
-				_fill(_ri(x) - 1, _ri(y) - 2, 3, 3)
+				# (a round bomblet, its fuse spitting as it flies)
+				_disc(x, y, 3.0, [R[0], R[1], R[3], R[4], R[5]])
 				_fs(FIRE[5])
 				_fill(_ri(x) + 1, _ri(y) - 4, 1, 2)
 		"cluster:pop", "cluster:foe", "detonator:burst", "detonator:boom", "mayhem:burst", "minefield:mine", "timebomb:boom", "hairtrigger:trigger", "hairtrigger:touch", "hairtrigger:foe":
@@ -693,11 +690,21 @@ func paint_air(b: Dictionary) -> void:
 			var hh := _hero_at(b)
 			var sx := _wx(hh.x, hh.y)
 			var sy := _wy(hh.x, hh.y) - 18.0
+			# (out to the edge of what it reaches, along his blow)
 			var ex := _wx(b["x"], b["y"])
 			var ey := _wy(b["x"], b["y"]) - 8.0
 			var dx := ex - sx
 			var dy := ey - sy
-			var l := maxf(1.0, sqrt(dx * dx + dy * dy))
+			var l := sqrt(dx * dx + dy * dy)
+			if l < 8.0:
+				var f: Vector2 = fx.hero().face if fx.hero() != null else Vector2(1, 0)
+				dx = (f.x - f.y) * 16.0
+				dy = (f.x + f.y) * 8.0
+				l = maxf(1.0, sqrt(dx * dx + dy * dy))
+			var reach := maxf(70.0, float(b.get("r", 3.0)) * 22.6)
+			dx = dx / l * reach
+			dy = dy / l * reach
+			l = reach
 			var nx := -dy / l
 			var ny := dx / l
 			var snap := _ease(_c01(bt / 0.12))
