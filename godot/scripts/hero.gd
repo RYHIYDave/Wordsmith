@@ -124,6 +124,13 @@ var melds:
 		if _melds == null:
 			_melds = Melds.new(self)
 		return _melds
+## (THE 52 DESIGNED MELDS AND THE 11 LEVEL 2 RUNES at work on his moves: melds52_rules.gd)
+var _m52 = null
+var m52:
+	get:
+		if _m52 == null:
+			_m52 = preload("res://scripts/melds52_rules.gd").new(self)
+		return _m52
 ## (THE CITY'S FIVE WORDS in his moves: their drag, copies, shards, holds and snares: city_words.gd)
 const CityWords := preload("res://scripts/city_words.gd")
 const LastWords := preload("res://scripts/last_words.gd")
@@ -438,8 +445,8 @@ func dodge_chance() -> float:
 	if Words.DEFENCE_WORDS and haste_t > 0.0 and haste > 0.0:
 		d += haste * Words.SWIFT_DODGE
 	if d <= 0.0:
-		return 0.0
-	return DODGE_K * d / (d + 40.0 + 20.0 * maxf(1.0, float(map.depth) if map != null else 1.0))
+		return m52.dodge()
+	return DODGE_K * d / (d + 40.0 + 20.0 * maxf(1.0, float(map.depth) if map != null else 1.0)) + m52.dodge()
 
 
 ## THE THREE DEFENCES: harm taken by his barrier first; what is left of it, for his life. Every harm waits his barrier's filling.
@@ -486,7 +493,7 @@ func walk_pace() -> float:
 	# (BINDING, on a monster: rooted, he walks nowhere; his evade still takes him away)
 	if root_t > 0.0:
 		return 0.0
-	var sp: float = SPEED * (1.0 + stats["move_speed"] / 100.0) * (1.0 + haste / 100.0)
+	var sp: float = SPEED * (1.0 + stats["move_speed"] / 100.0) * (1.0 + haste / 100.0) * m52.pace()
 	if chill_t > 0.0:
 		sp *= 1.0 - chill_k
 	if _slow_t > 0.0:
@@ -517,7 +524,7 @@ func _hammer_stun(m, secs: float) -> void:
 
 ## How much faster his attacks are played (game.ts frenzyPace x handPace): the frenzy's, and the Half-Carved Hand's below half life.
 func attack_pace() -> float:
-	return frenzy_pace() * (uniques.hand_pace() if uniques != null else 1.0) * melds.fervor_pace()
+	return frenzy_pace() * (uniques.hand_pace() if uniques != null else 1.0) * melds.fervor_pace() * m52.rate_k()
 
 
 ## UNIQUE ITEMS: BROKEN SHACKLES, he can be hit during his swipe move: nothing his moves do keeps blows off him (game.ts hitInMove).
@@ -562,7 +569,7 @@ func _run_later(dt: float) -> void:
 
 ## How long into a Strike its blow lands (useBasic): its wind-up, never more than two fifths of the time between blows.
 func _strike_windup() -> float:
-	return minf(STRIKE["windup"], 0.4 / rate())
+	return minf(STRIKE["windup"], 0.4 / rate()) * m52.windup_k(0)
 
 
 # --- his words in the fight ---
@@ -622,6 +629,7 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	var el: String = r["element"]
 	var base := base_for(el)
 	var was_frozen_t: float = m.frozen_t
+	var was_shocked: bool = m.shock_t > 0.0
 	# (FERVOR, melds.gd: its kills burning hotter a while)
 	var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(el) + melds.fervor_pct(el) + might) / 100.0)
 	# (THE SKILL TREES: what the talents make of a hit: game.ts talentHitMult)
@@ -644,6 +652,10 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	if spent:
 		crit = true
 		m.mark_t = 0.0
+		m52.mark_spent(m)
+	# (THE 52 DESIGNED MELDS: Duelist, Quickdraw and Pressure Point's certain criticals; what makes a hit land harder: melds52_rules.gd)
+	crit = m52.crit(m, i, crit, quiet)
+	dmg *= m52.more(m, i, quiet)
 	# (THE LEVELING UNIQUES: The Sure Thing, every hit a critical one, and a critical hit no harder)
 	var sure_thing: bool = uniques != null and uniques.sure_thing()
 	if sure_thing:
@@ -664,7 +676,7 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	# FLAME in front: what it strikes burns for `ignite` of the hit more, over 3 s (LASTING: as hard a second, for longer;
 	# FLEETING: harder a second, the same in all in its shorter time)
 	if r["ignite"] > 0.0:
-		m.set_alight(dmg * float(r["ignite"]) / 3.0 * float(r["pace"]), 3.0 * float(r["last"]))
+		m.set_alight(dmg * float(r["ignite"]) / 3.0 * float(r["pace"]) * float(r.get("burn_k", 1.0)), 3.0 * float(r["last"]) * float(r.get("burn_t", 1.0)))
 	# FROST in front: it is chilled; a second chilling hit freezes it
 	if r["chill"] > 0.0:
 		m.chill_by(r["chill"])
@@ -733,6 +745,8 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 			_tell({"t": "vastSplash", "x": at.x, "y": at.y, "r": reach, "ids": ids, "el": el})
 	# (WORDMELDING, THE EIGHT ACROSS THE GROUPS: Shiver, a critical hit freezes; Sunder; Cauterize and Fervor, a kill: melds.gd)
 	melds.struck8(m, i, crit, was_burning)
+	# (THE 52 DESIGNED MELDS: each one's twist on what this hit has done: melds52_rules.gd)
+	m52.struck(m, i, dmg, crit, at, quiet, was_burning, was_chilled, was_frozen_t > 0.0, was_shocked)
 	# (THE WARLOCK, game.ts warlockHit: his bolt sets it burning in his hellfire; the curse, the smoke steps and the rakes curse it;
 	# and every hit feeds his pact: heroes/warlock.gd on_hit)
 	if kit != null and kit.has_method("on_hit"):
@@ -748,7 +762,7 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	if dose > 0.0 and (p_min != 0.0 or p_max != 0.0):
 		dose += randf_range(p_min, maxf(p_min, p_max)) / float(Words.data()["poison"]["time"])
 	if dose > 0.0:
-		m.dose(dose, float(Words.data()["poison"]["time"]) * float(r["last"]), el)
+		m.dose(dose * float(r.get("poison_k", 1.0)), float(Words.data()["poison"]["time"]) * float(r["last"]) * float(r.get("poison_t", 1.0)), el)
 	# (WORDMELDING: the melded word's twist on this hit, in front and behind: melds.gd)
 	if r["meld"] != null or r["meld_behind"] != null:
 		melds.hit(m, i, dmg, at, quiet, was_burning, was_chilled)
@@ -758,6 +772,7 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 			_marked[i] = uses[i]
 			m.mark_t = float(Words.data()["precise"]["markTime"])
 			_tell({"t": "markOn", "id": m.id, "x": at.x, "y": at.y, "secs": m.mark_t})
+			m52.marked(m, i)
 		# THE CITY'S WORDS (Version 23.8): HEXING in front curses what it hits; STILLING in front slows it in time; BINDING in front
 		# holds it in place
 		var CW: Dictionary = CityWords.C()
@@ -809,7 +824,7 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 				m.stun_for(float(heavy["stun"]))
 	# LEECH in front: life back for every enemy it hits (LEECH.cap: none, a second, in the game as it starts)
 	if r["leech"] > 0.0:
-		heal_flat(r["leech"])
+		heal_flat(r["leech"] * m52.heal_k(m, i))
 		_tell({"t": "leech", "x": at.x, "y": at.y, "n": r["leech"]})
 	heal_flat(stats["life_on_hit"])
 	# LIGHTNING in front: it jumps to the nearest other enemies, and on from each (monsters.gd arcs)
@@ -824,9 +839,9 @@ func _landed_on(i: int) -> void:
 	var more: float = loadout.r(i)["might"]
 	if more <= 0.0:
 		return
-	might = minf(more * 5.0, might + more)
+	might = minf(more * m52.might_most(i), might + more * m52.might_k(i))
 	# (LASTING and FLEETING: as long as everything its move gives)
-	might_t = maxf(might_t, 5.0 * float(loadout.r(i)["last"]))
+	might_t = maxf(might_t, 5.0 * float(loadout.r(i)["last"]) * m52.might_secs(i))
 	boost_by["might"] = i
 	_tell({"t": "buff", "kind": "might", "x": world.x, "y": world.y, "stacks": maxi(1, roundi(might / more))})
 
@@ -836,15 +851,16 @@ func _boons(i: int) -> void:
 	var r: Dictionary = loadout.r(i)
 	var fast: float = r["haste"]
 	if fast > 0.0:
-		haste = fast
-		haste_t = 3.0 * float(r["last"])
+		var hk: Array = m52.haste_k(i)
+		haste = fast * float(hk[0])
+		haste_t = 3.0 * float(r["last"]) * float(hk[1])
 		boost_by["haste"] = i
 		_tell({"t": "buff", "kind": "haste", "x": world.x, "y": world.y, "stacks": 1, "secs": haste_t})
 	# FRENZIED in front: each use adds to the frenzy, up to its most, and holds it a while longer
 	if r["frenzy"]:
 		var F: Dictionary = Words.data()["frenzy"]
 		frenzy = mini(int(F["max"]), frenzy + 1)
-		frenzy_t = maxf(frenzy_t, float(F["hold"]) * float(r["last"]))
+		frenzy_t = maxf(frenzy_t, float(F["hold"]) * float(r["last"]) * float(r.get("frenzy_k", 1.0)))
 		boost_by["frenzy"] = i
 		_tell({"t": "frenzy", "x": world.x, "y": world.y, "dx": face.x, "dy": face.y, "n": frenzy})
 	# GUARDING in front: each use gives a shield (a new one never weaker than what is left of the last)
@@ -897,6 +913,8 @@ func killed(m) -> void:
 	# (WORDMELDING: Shatter in front, a frozen one bursts into shards; Rupture, a poisoned one bursts its poison: melds.gd)
 	if r["meld"] != null:
 		melds.killed(m, r, i)
+	# (THE 52 DESIGNED MELDS: what a kill does with them, in front and behind: melds52_rules.gd)
+	m52.killed(m, i)
 	# (THE LAST WORDS: Reaping's soul and spirit, Plundering's gold: last_words.gd)
 	last.killed(m, i)
 	if r["orb_chance"] > 0.0 and randf() < float(r["orb_chance"]):
@@ -930,6 +948,8 @@ func _explode(m, r: Dictionary, i: int) -> void:
 ## The words on move `i` told as it is made (game.ts deliver, beginChannel, useEvasive: `cast`), where it has any: from `at`,
 ## the way `way`; `kind` the game's name for what sort of move it is.
 func _cast(i: int, kind: String, at: Vector2, way: Vector2, echo := false) -> void:
+	# (THE 52 DESIGNED MELDS: a use of the move, its own or its echo: Flurry, Quickdraw, Overcharge, Tailwind, Blink: melds52_rules.gd)
+	m52.used(i, echo)
 	var front: Array = loadout.wfronts(i)
 	var behind: Array = loadout.wbehinds(i)
 	if front.is_empty() and behind.is_empty() and not echo:
@@ -987,6 +1007,7 @@ func _wake(i: int, at: Vector2, rad: float, frac: float, ground := true) -> void
 	if wakes == null or not is_instance_valid(wakes):
 		return
 	var r: Dictionary = loadout.r(i)
+	var from52: int = wakes.list.size()
 	# (WORDMELDING: what a melded word behind leaves is its own, its twist and all: wakes.gd; `ground` false: a beam lays its ground
 	# along its line, not here)
 	if r["zone"] != null and ground:
@@ -1002,6 +1023,8 @@ func _wake(i: int, at: Vector2, rad: float, frac: float, ground := true) -> void
 	# GUARDING behind: a ward circle (game.ts leavePatches, addPatch 'ward')
 	if r["ward"] > 0.0:
 		wakes.add_ward(i, at, maxf(1.5, rad), float(Words.data()["guard"]["wardTime"]) * float(r["last"]), r["ward"])
+	# (THE 52 DESIGNED MELDS: what each one behind makes of the ground it laid: melds52_rules.gd)
+	m52.wake(i, at, rad, from52)
 	# THE CITY'S WORDS BEHIND (game.ts leavePatches): Pulling's vortex, Hexing's circle, Stilling's bubble; Splitting's shards; Binding's
 	# snare
 	var CW: Dictionary = CityWords.C()
@@ -1214,6 +1237,7 @@ func _process(dt: float) -> void:
 	_run_later(dt)
 	# (WORDMELDING: Implode's bursts to come, Fervor's time: melds.gd)
 	melds.step(dt)
+	m52.step(dt)
 	city.step(dt)
 	last.step(dt)
 	_cam.offset = Vector2(0, -24 - _lift) + lean + (Vector2(randf_range(-3, 3), randf_range(-3, 3)) if _shake > 0.0 else Vector2.ZERO)
@@ -1441,13 +1465,16 @@ func _deliver_strike(from: Vector2, way: Vector2, frac: float, primary: bool) ->
 		_time_word_sound(0)
 	for k in int(r["count"]):
 		if k == 0:
-			_strike(0, from, way, each, 0, echo)
+			_strike(0, from, way, each * m52.blow(0, 0), 0, echo)
 		else:
-			_after(0.13 * k, func() -> void: _strike(0, from if echo else world, way, each, k, echo))
+			_after(0.13 * k, func() -> void: _strike(0, from if echo else world, way, each * m52.blow(0, k), k, echo))
 	if primary:
 		_boons(0)
 		if r["echo"] > 0.0:
-			var delay: float = Words.data()["echo"]["delay"]
+			var delay: float = float(Words.data()["echo"]["delay"]) * m52.echo_k(0)
+			# (Twin II behind: it repeats twice, the second weaker again)
+			if int(r.get("echo_n", 1)) >= 2:
+				_after(delay * 2.0, func() -> void: _deliver_strike(from, way, frac * float(loadout.r(0)["echo"]) * float(loadout.r(0)["echo"]), false))
 			_tell({"t": "echo", "x": from.x, "y": from.y, "dx": way.x, "dy": way.y, "kind": "melee", "delay": delay})
 			_after(delay, func() -> void: _deliver_strike(from, way, frac * float(loadout.r(0)["echo"]), false))
 		# (THE LAST WORDS: Surging's shockwave, Mirroring's reflection and its mirrors)
@@ -1503,7 +1530,7 @@ func _whirl1_cut(at: Vector2, frac: float, echo: bool) -> void:
 		if k == 0:
 			_blast(1, at, rad, each, "slam", true, -6.0, 0, echo)
 		else:
-			_after(float(WHIRL1["twin"]) * k, func() -> void: _blast(1, at if echo else world, rad * 1.15, each, "slam", false, -8.0, k, echo))
+			_after(float(WHIRL1["twin"]) * k, func() -> void: _blast(1, at if echo else world, rad * 1.15, each * m52.blow(1, k), "slam", false, -8.0, k, echo))
 
 
 func _begin_whirl() -> void:
@@ -1602,7 +1629,7 @@ func _bite(at: Vector2, way: Vector2, frac: float, echo: bool, leaves: bool) -> 
 		if k == 0:
 			_blast(1, at, rad, each, "whirl", leaves, -8.0, 0, echo)
 		else:
-			_after(0.12 * k, func() -> void: _blast(1, at if echo else world, rad, each, "whirl", false, -8.0, k, echo))
+			_after(0.12 * k, func() -> void: _blast(1, at if echo else world, rad, each * m52.blow(1, k), "whirl", false, -8.0, k, echo))
 
 
 # --- Lunge ---
@@ -1743,7 +1770,7 @@ func _end_act() -> void:
 func knock(way: Vector2, dist: float) -> void:
 	# (THE SKILL TREES REMADE: Resolute, nothing knocks him back, nor drags him: game.ts knockHero, pullHero)
 	# (UNIQUE ITEMS: The Standing Stone, nothing shoves him while he stands still)
-	if _act == "lunge" or has("resolute") or (uniques != null and uniques.rooted()):
+	if _act == "lunge" or has("resolute") or (uniques != null and uniques.rooted()) or m52.planted():
 		return
 	_knock = way * dist
 	_knock_t = 0.12
@@ -1841,6 +1868,8 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 		sfx.play("swing", linear_to_db(0.35))
 		last_blow = {"raw": raw, "el": el, "words": words, "dodged": true, "dmg": 0.0}
 		return
+	# (THE 52 DESIGNED MELDS: Hemlock and Static, a blow on his shield answered: melds52_rules.gd)
+	m52.struck_him(src)
 	var hw: Array = hv.get("words", [])
 	# (EVERY WORD ON A DUNGEON: a ranked word's word half as strong again: defs.ts wordShare, FOE_RANK)
 	var FW: Dictionary = Words.data().get("foe", {})

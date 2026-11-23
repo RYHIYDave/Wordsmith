@@ -285,6 +285,9 @@ var stagger_cd := 0.0
 ## life as it comes into the world: the floor's monsters.json); `last_skill`, which of his moves last struck it (0 Strike, 1
 ## Whirlwind, 2 Lunge; -1 none): the move whose words its death answers to (hero.gd killed).
 var mark_t := 0.0
+## (THE 52 DESIGNED MELDS: what the hero's melds keep on it: melds52_rules.gd; and its burning a moment ago, for Rekindle)
+var m52 := {}
+var burn_dps_was := 0.0
 var shield := 0.0
 ## EVERY WORD ON A DUNGEON (foe_words.gd): Sunder, when a blow of its last knocked him back; Fervor, the deaths it has been fed and
 ## how long still; Cauterize, its wounds seared shut, once; Rime Ward, when its shield last chilled him; Hailstorm's wait; Eruption's
@@ -1572,6 +1575,10 @@ func _afflicted(dt: float) -> bool:
 		_surge(dt)
 	if burn_t > 0.0 and not lasts:
 		burn_t -= dt
+		if burn_dps > 0.0:
+			burn_dps_was = burn_dps
+		if burn_t <= 0.0 and not m52.is_empty() and mgr.hero != null and is_instance_valid(mgr.hero):
+			mgr.hero.m52.status_end(self, "burn")
 	if chill_t > 0.0:
 		chill_t -= dt
 	if freeze_immune > 0.0:
@@ -1585,6 +1592,8 @@ func _afflicted(dt: float) -> bool:
 		if poison_t <= 0.0:
 			poison_dps = 0.0
 			poison_n = 0
+			if not m52.is_empty() and mgr.hero != null and is_instance_valid(mgr.hero):
+				mgr.hero.m52.status_end(self, "poison")
 	if frozen_t > 0.0:
 		frozen_t -= dt
 		if frozen_t <= 0.0:

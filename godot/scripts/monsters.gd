@@ -268,12 +268,18 @@ func arcs(m: Monster, n: int, dmg: float, skill := -1, meld := "") -> int:
 		if is_instance_valid(o) and not o.dead and o.state != "rise" and o.chained != 1 and o != m and o.world.distance_to(from) <= 3.5:
 			near.append(o)
 	near.sort_custom(func(a, b) -> bool: return a.world.distance_to(from) < b.world.distance_to(from))
+	# (THE 52 DESIGNED MELDS: Seeker's lightning to the weakest, and to the one it marked first: melds52_rules.gd)
+	if hero != null and is_instance_valid(hero):
+		near = hero.m52.arc_pick(near, skill)
 	if near.size() > n:
 		near.resize(n)
 	for o in near:
 		_tell(_melded({"t": "arc", "x0": from.x, "y0": from.y, "x1": o.world.x, "y1": o.world.y}, meld))
 		o.shock_t = float(preload("res://scripts/talents.gd").D["tune"]["shockSecs"])
 		o.damage(dmg, "lightning", false, false, [], false, false, skill)
+		# (Conduit: each one an arc strikes heals him)
+		if hero != null and is_instance_valid(hero):
+			hero.m52.arc_struck(o, skill)
 		if meld != "" and hero != null and is_instance_valid(hero):
 			hero.melds.arc(o, m, skill, dmg, near)
 	if near.is_empty():

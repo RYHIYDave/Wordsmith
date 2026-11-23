@@ -100,6 +100,11 @@ func _ready() -> void:
 	add_child(_over)
 	_data = JSON.parse_string(FileAccess.get_file_as_string(DIR + "hud.json"))
 	_tex = load(DIR + "hud.png")
+	# (THE 52 DESIGNED MELDS AND THE 11 LEVEL 2 RUNES, melds52.gd: their colours, names and stones)
+	var M52 := preload("res://scripts/melds52.gd")
+	M52.add_hud(_data)
+	var wp: Array = _data["pics"].get("word:power", [0, 0, 24, 24, 12, 20])
+	_tex = M52.stones(_tex, func(id, r): _data["pics"]["word:" + id] = [r.position.x, r.position.y, r.size.x, r.size.y, wp[4], wp[5]])
 	for k in _data["theme"]:
 		T[k] = Color(_data["theme"][k])
 	for k in _data["palette"]:

@@ -65,6 +65,7 @@
 extends RefCounted
 
 const FILE := "res://assets/words/words.json"
+const Melds52 := preload("res://scripts/melds52.gd")
 
 ## HOW HARD ATTRIBUTES AND WORDS ADD UP (his words, 22 Nov 2026, after the damage check showed a min/max hero's quick attack at
 ## millions a second, a word in front and one behind three times the damage early on: “I like the additive bonus to words, but
@@ -210,6 +211,8 @@ static var _data := {}
 static func data() -> Dictionary:
 	if _data.is_empty():
 		_data = JSON.parse_string(FileAccess.get_file_as_string(FILE))
+		# (THE 52 DESIGNED MELDS AND THE 11 LEVEL 2 RUNES, melds52.gd: always known, made at the bench only while it is ON)
+		Melds52.add_to(_data)
 		# (EVADE_AT: the evasive move open at this level, not the game's 5)
 		if EVADE_AT > 0:
 			_data["moveOpens"][2] = EVADE_AT
@@ -282,6 +285,11 @@ static func rank_up(w: String) -> String:
 ## What two words make when melded, or "" (melds.ts meldOf): two of a damage word, its next rank; two different words, the melded
 ## word of the ten, Volatile's five or the eight that is made of them.
 static func meld_of(a: String, b: String) -> String:
+	# (THE 52 DESIGNED MELDS AND THE 11 LEVEL 2 RUNES, melds52.gd, while ON)
+	if Melds52.ON:
+		var n := Melds52.makes(a, b)
+		if n != "":
+			return n
 	if a == b:
 		return rank_up(a) if str(word(a)["kind"]) == "damage" else ""
 	var M: Dictionary = data()["melds"]
@@ -301,6 +309,9 @@ static func meld_problem(a: String, b: String) -> String:
 		return "Rank II is the top, for now" if a == b else "A ranked word melds no further"
 	if is_meld(a) or is_meld(b):
 		return "A melded word melds no further"
+	# (THE 52 DESIGNED MELDS AND THE 11 LEVEL 2 RUNES, melds52.gd, while ON: their two runes meld, two of one its level 2)
+	if Melds52.ON and Melds52.makes(a, b) != "":
+		return ""
 	# (THE EIGHT ACROSS THE GROUPS: their two words meld, whatever their groups)
 	var m := meld_of(a, b)
 	if m != "" and data()["melds"]["eight"].has(m):
@@ -1030,6 +1041,13 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		if said != "":
 			lines.append("%s: %s" % [word(meld_behind)["behind"], said])
 
+	# (THE 52 DESIGNED MELDS AND THE 11 LEVEL 2 RUNES: what each makes of the move's numbers, melds52.gd)
+	var loc52 := {"dmg_mult": dmg_mult, "size": size, "cooldown": cooldown, "rate": rate, "waits": waits}
+	Melds52.resolve(r, loc52, front, behind, lines)
+	dmg_mult = loc52["dmg_mult"]
+	size = loc52["size"]
+	cooldown = loc52["cooldown"]
+	rate = loc52["rate"]
 	# (LASTING and FLEETING on what it leaves and the boosts it gives: its ground longer or shorter, Fleeting's as much in all; the
 	# boosts Fleeting's stronger)
 	if r["zone"] != null:

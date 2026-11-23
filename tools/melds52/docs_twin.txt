@@ -1,0 +1,35 @@
+Onslaught
+Twin and Power. Twin's second blow, made heavy. On a move: Onslaught Strike, Strike of Onslaught.
+In front: strikes twice, and the second blow lands at full strength instead of weaker, shoving what it hits a step back.
+Behind: repeats itself a moment later, at full strength.
+On enemies: attacks twice; hits harder and has more life. Its second blow lands as hard as the first and knocks you back.
+Viper
+Twin and Poison. Two fangs. On a move: Viper Strike, Strike of the Viper.
+In front: a weaker hit that bites twice: two doses of poison at once, and its poison eats twice as fast (the same poison in half the time).
+Behind: leaves two poison clouds; the second creeps toward the nearest enemy.
+On enemies: attacks twice; poisons you. Each blow leaves two doses of poison on you.
+Flash Freeze
+Twin and Frost. The first blow chills, the second freezes, all at once. On a move: Flash-Freezing Strike, Strike of the Flash Freeze.
+In front: frost damage, striking twice: the first blow chills, the second freezes it on the spot (never a boss). A frozen enemy can't be flash-frozen again for a few seconds.
+Behind: passes through and leaves ice twice: a second patch forms a moment after the first and freezes whatever stands in it.
+On enemies: attacks twice; deals frost damage and slows you. If you are already chilled, its second blow freezes you for a moment.
+Rekindle
+Twin and Flame. A fire that comes back. On a move: Rekindling Strike, Strike of Rekindling.
+In front: fire damage that explodes and sets enemies burning; each burn lights again once when it goes out, as hot as before.
+Behind: passes through and leaves burning ground that flares up once more after it dies down.
+On enemies: attacks twice; deals fire damage and sets you burning. Its burn on you lights again once after it goes out.
+Flurry
+Twin and Swift. Speed that turns into extra blows. On a move: Flurry Strike, Strike of Flurries.
+In front: faster to use again, and each use within a second of the last adds one more blow to it, up to four blows, each a little weaker.
+Behind: repeats itself sooner, and each repeat that lands gives you a burst of speed.
+On enemies: attacks twice; moves and attacks faster, and faster still while its blows keep landing on you.
+Aftershock
+Twin and Heavy. The blow lands, then the ground answers. On a move: Aftershock Strike, Strike of Aftershocks.
+In front: slower, hits much harder and stuns; a moment later an aftershock bursts round where it hit, hurting and staggering everything near.
+Behind: its cracked ground quakes twice, as it forms and again a second later, staggering whatever is on it both times.
+On enemies: attacks twice; its blows knock you back. A moment after each blow, an aftershock bursts where you stood: step out of its ring.
+Twin II
+Twin and Twin. On a move: Twin II Strike, Strike of Echoes II.
+In front: strikes, fires or bursts three times, each a little weaker.
+Behind: repeats itself twice, each repeat weaker.
+On enemies: attacks three times.

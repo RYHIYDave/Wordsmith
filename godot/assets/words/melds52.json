@@ -1,0 +1,3100 @@
+{
+ "order": [
+  "onslaught",
+  "viper",
+  "flashfreeze",
+  "rekindle",
+  "flurry",
+  "aftershock",
+  "bloodlust",
+  "coldblood",
+  "conduit",
+  "secondwind",
+  "marrow",
+  "quickfuse",
+  "concussion",
+  "duelist",
+  "needle",
+  "brand",
+  "seeker",
+  "quickdraw",
+  "pressurepoint",
+  "berserk",
+  "fever",
+  "whiteout",
+  "overcharge",
+  "blur",
+  "juggernaut",
+  "bulwark",
+  "hemlock",
+  "cinderward",
+  "static",
+  "windward",
+  "fortress",
+  "momentum",
+  "canker",
+  "permafrost",
+  "smoulder",
+  "tempest",
+  "tailwind",
+  "bedrock",
+  "haymaker",
+  "bloat",
+  "coldsnap",
+  "flashfire",
+  "jolt",
+  "blink",
+  "daze",
+  "cataclysm",
+  "miasma",
+  "glacier",
+  "inferno",
+  "stormfront",
+  "gale",
+  "earthquake",
+  "twin2",
+  "leech2",
+  "volatile2",
+  "precise2",
+  "frenzied2",
+  "guarding2",
+  "lasting2",
+  "fleeting2",
+  "vast2",
+  "swift2",
+  "heavy2"
+ ],
+ "melds": [
+  "onslaught",
+  "viper",
+  "flashfreeze",
+  "rekindle",
+  "flurry",
+  "aftershock",
+  "bloodlust",
+  "coldblood",
+  "conduit",
+  "secondwind",
+  "marrow",
+  "quickfuse",
+  "concussion",
+  "duelist",
+  "needle",
+  "brand",
+  "seeker",
+  "quickdraw",
+  "pressurepoint",
+  "berserk",
+  "fever",
+  "whiteout",
+  "overcharge",
+  "blur",
+  "juggernaut",
+  "bulwark",
+  "hemlock",
+  "cinderward",
+  "static",
+  "windward",
+  "fortress",
+  "momentum",
+  "canker",
+  "permafrost",
+  "smoulder",
+  "tempest",
+  "tailwind",
+  "bedrock",
+  "haymaker",
+  "bloat",
+  "coldsnap",
+  "flashfire",
+  "jolt",
+  "blink",
+  "daze",
+  "cataclysm",
+  "miasma",
+  "glacier",
+  "inferno",
+  "stormfront",
+  "gale",
+  "earthquake"
+ ],
+ "ranks": [
+  "twin2",
+  "leech2",
+  "volatile2",
+  "precise2",
+  "frenzied2",
+  "guarding2",
+  "lasting2",
+  "fleeting2",
+  "vast2",
+  "swift2",
+  "heavy2"
+ ],
+ "words": {
+  "onslaught": {
+   "id": "onslaught",
+   "kind": "meld",
+   "name": "Onslaught",
+   "front": "Onslaught",
+   "behind": "of Onslaught",
+   "attr": "dex",
+   "element": null,
+   "about": "Twin and Power, melded. Twin's second blow, made heavy.",
+   "frontText": "Strikes twice, and the second blow lands at full strength instead of weaker, shoving what it hits a step back.",
+   "behindText": "Repeats itself a moment later, at full strength.",
+   "monsterText": "Attacks twice; hits harder and has more life. Its second blow lands as hard as the first and knocks you back.",
+   "melds52": true,
+   "of": [
+    "twin",
+    "power"
+   ]
+  },
+  "viper": {
+   "id": "viper",
+   "kind": "meld",
+   "name": "Viper",
+   "front": "Viper",
+   "behind": "of the Viper",
+   "attr": "dex",
+   "element": null,
+   "about": "Twin and Poison, melded. Two fangs.",
+   "frontText": "A weaker hit that bites twice: two doses of poison at once, and its poison eats twice as fast (the same poison in half the time).",
+   "behindText": "Leaves two poison clouds; the second creeps toward the nearest enemy.",
+   "monsterText": "Attacks twice; poisons you. Each blow leaves two doses of poison on you.",
+   "melds52": true,
+   "of": [
+    "twin",
+    "poison"
+   ]
+  },
+  "flashfreeze": {
+   "id": "flashfreeze",
+   "kind": "meld",
+   "name": "Flash Freeze",
+   "front": "Flash-Freezing",
+   "behind": "of the Flash Freeze",
+   "attr": "dex",
+   "element": "frost",
+   "about": "Twin and Frost, melded. The first blow chills, the second freezes, all at once.",
+   "frontText": "Frost damage, striking twice: the first blow chills, the second freezes it on the spot (never a boss). A frozen enemy can't be flash-frozen again for a few seconds.",
+   "behindText": "Passes through and leaves ice twice: a second patch forms a moment after the first and freezes whatever stands in it.",
+   "monsterText": "Attacks twice; deals frost damage and slows you. If you are already chilled, its second blow freezes you for a moment.",
+   "melds52": true,
+   "of": [
+    "twin",
+    "frost"
+   ]
+  },
+  "rekindle": {
+   "id": "rekindle",
+   "kind": "meld",
+   "name": "Rekindle",
+   "front": "Rekindling",
+   "behind": "of Rekindling",
+   "attr": "dex",
+   "element": "fire",
+   "about": "Twin and Flame, melded. A fire that comes back.",
+   "frontText": "Fire damage that explodes and sets enemies burning; each burn lights again once when it goes out, as hot as before.",
+   "behindText": "Passes through and leaves burning ground that flares up once more after it dies down.",
+   "monsterText": "Attacks twice; deals fire damage and sets you burning. Its burn on you lights again once after it goes out.",
+   "melds52": true,
+   "of": [
+    "twin",
+    "fire"
+   ]
+  },
+  "flurry": {
+   "id": "flurry",
+   "kind": "meld",
+   "name": "Flurry",
+   "front": "Flurry",
+   "behind": "of Flurries",
+   "attr": "dex",
+   "element": null,
+   "about": "Twin and Swift, melded. Speed that turns into extra blows.",
+   "frontText": "Faster to use again, and each use within a second of the last adds one more blow to it, up to four blows, each a little weaker.",
+   "behindText": "Repeats itself sooner, and each repeat that lands gives you a burst of speed.",
+   "monsterText": "Attacks twice; moves and attacks faster, and faster still while its blows keep landing on you.",
+   "melds52": true,
+   "of": [
+    "twin",
+    "swift"
+   ]
+  },
+  "aftershock": {
+   "id": "aftershock",
+   "kind": "meld",
+   "name": "Aftershock",
+   "front": "Aftershock",
+   "behind": "of Aftershocks",
+   "attr": "dex",
+   "element": null,
+   "about": "Twin and Heavy, melded. The blow lands, then the ground answers.",
+   "frontText": "Slower, hits much harder and stuns; a moment later an aftershock bursts round where it hit, hurting and staggering everything near.",
+   "behindText": "Its cracked ground quakes twice, as it forms and again a second later, staggering whatever is on it both times.",
+   "monsterText": "Attacks twice; its blows knock you back. A moment after each blow, an aftershock bursts where you stood: step out of its ring.",
+   "melds52": true,
+   "of": [
+    "twin",
+    "heavy"
+   ]
+  },
+  "bloodlust": {
+   "id": "bloodlust",
+   "kind": "meld",
+   "name": "Bloodlust",
+   "front": "Bloodlust",
+   "behind": "of Bloodlust",
+   "attr": "str",
+   "element": null,
+   "about": "Leech and Power, melded. Healing you can't use becomes force.",
+   "frontText": "More damage and a bigger hit that heals you for every enemy it hits; while you are at full life, the healing becomes extra damage instead.",
+   "behindText": "Enemies it kills drop life orbs, and picking one up gives Power's damage bonus.",
+   "monsterText": "Heals when it hits you; hits harder and has more life. At full life, its blows hit harder instead of healing it.",
+   "melds52": true,
+   "of": [
+    "leech",
+    "power"
+   ]
+  },
+  "coldblood": {
+   "id": "coldblood",
+   "kind": "meld",
+   "name": "Coldblood",
+   "front": "Coldblooded",
+   "behind": "of Coldblood",
+   "attr": "str",
+   "element": "frost",
+   "about": "Leech and Frost, melded. Drinking the warmth out of what it freezes.",
+   "frontText": "Frost damage that chills, then freezes; it heals you twice as much from chilled or frozen enemies.",
+   "behindText": "Leaves ice that slows; enemies that die on the ice drop life orbs more often.",
+   "monsterText": "Heals when it hits you; deals frost damage and slows you. It heals twice as much while you are chilled.",
+   "melds52": true,
+   "of": [
+    "leech",
+    "frost"
+   ]
+  },
+  "conduit": {
+   "id": "conduit",
+   "kind": "meld",
+   "name": "Conduit",
+   "front": "Conduit",
+   "behind": "of the Conduit",
+   "attr": "str",
+   "element": "lightning",
+   "about": "Leech and Lightning, melded. Life carried back along the bolt.",
+   "frontText": "Lightning damage that arcs to nearby enemies; every enemy an arc strikes heals you too.",
+   "behindText": "Leaves a storm; each enemy its bolts strike heals you a little.",
+   "monsterText": "Heals when it hits you; deals lightning damage and shocks you. Its arcs heal the monsters they pass through.",
+   "melds52": true,
+   "of": [
+    "leech",
+    "lightning"
+   ]
+  },
+  "secondwind": {
+   "id": "secondwind",
+   "kind": "meld",
+   "name": "Second Wind",
+   "front": "Second Wind",
+   "behind": "of the Second Wind",
+   "attr": "str",
+   "element": null,
+   "about": "Leech and Swift, melded. Each heal hurries you on.",
+   "frontText": "Faster to use again, and each time it heals you, its cooldown shortens a little more.",
+   "behindText": "Enemies it kills drop life orbs, and picking one up gives you a burst of speed.",
+   "monsterText": "Heals when it hits you; moves and attacks faster. Each time it heals, it speeds up for a moment.",
+   "melds52": true,
+   "of": [
+    "leech",
+    "swift"
+   ]
+  },
+  "marrow": {
+   "id": "marrow",
+   "kind": "meld",
+   "name": "Marrow",
+   "front": "Marrow",
+   "behind": "of Marrow",
+   "attr": "str",
+   "element": null,
+   "about": "Leech and Heavy, melded. Crush it, then drink.",
+   "frontText": "Slower, hits much harder and stuns; hitting a stunned enemy heals you three times as much.",
+   "behindText": "Its cracked ground drains a little life from whatever it staggers, for you.",
+   "monsterText": "Heals when it hits you; its blows knock you back. Knocking you back heals it a chunk.",
+   "melds52": true,
+   "of": [
+    "leech",
+    "heavy"
+   ]
+  },
+  "quickfuse": {
+   "id": "quickfuse",
+   "kind": "meld",
+   "name": "Quickfuse",
+   "front": "Quickfuse",
+   "behind": "of the Quickfuse",
+   "attr": "int",
+   "element": null,
+   "about": "Volatile and Swift, melded. No wait between the kill and the blast.",
+   "frontText": "Faster to use again; enemies it kills explode at once, and each explosion that kills shortens its cooldown a little.",
+   "behindText": "Leaves a rune that goes off almost at once.",
+   "monsterText": "Moves and attacks faster; explodes when it dies. Its dying blast goes off at once, with no time to step away.",
+   "melds52": true,
+   "of": [
+    "volatile",
+    "swift"
+   ]
+  },
+  "concussion": {
+   "id": "concussion",
+   "kind": "meld",
+   "name": "Concussion",
+   "front": "Concussive",
+   "behind": "of Concussion",
+   "attr": "int",
+   "element": null,
+   "about": "Volatile and Heavy, melded. A blast that knocks the sense out of what it hits.",
+   "frontText": "Slower, hits much harder and stuns; enemies it kills explode, and the blast stuns everything it catches.",
+   "behindText": "Leaves a rune whose blast cracks the ground, staggering whatever walks over it after.",
+   "monsterText": "Its blows knock you back; explodes when it dies. Its dying blast knocks you back and stuns you for a moment.",
+   "melds52": true,
+   "of": [
+    "volatile",
+    "heavy"
+   ]
+  },
+  "duelist": {
+   "id": "duelist",
+   "kind": "meld",
+   "name": "Duelist",
+   "front": "Duelist's",
+   "behind": "of the Duelist",
+   "attr": "dex",
+   "element": null,
+   "about": "Precise and Power, melded. Deadly one on one.",
+   "frontText": "More damage, a smaller area; an enemy with no other enemy near it always takes a critical hit.",
+   "behindText": "Marks an enemy; the marked one takes more damage from everything until the mark is spent.",
+   "monsterText": "Hits harder and has more life; its hits find the gaps in your armour. When you are alone, every hit from it is critical.",
+   "melds52": true,
+   "of": [
+    "precise",
+    "power"
+   ]
+  },
+  "needle": {
+   "id": "needle",
+   "kind": "meld",
+   "name": "Needle",
+   "front": "Needle",
+   "behind": "of the Needle",
+   "attr": "dex",
+   "element": null,
+   "about": "Precise and Poison, melded. The venom goes in exactly where it hurts.",
+   "frontText": "A weaker hit that poisons; a critical hit puts three doses on at once.",
+   "behindText": "Marks an enemy: your next hit on it is a certain critical and doubles the poison already on it.",
+   "monsterText": "Its hits find the gaps in your armour; poisons you. Its critical hits poison you three times over.",
+   "melds52": true,
+   "of": [
+    "precise",
+    "poison"
+   ]
+  },
+  "brand": {
+   "id": "brand",
+   "kind": "meld",
+   "name": "Brand",
+   "front": "Branding",
+   "behind": "of the Brand",
+   "attr": "dex",
+   "element": "fire",
+   "about": "Precise and Flame, melded. A mark burned in.",
+   "frontText": "Fire damage that explodes and burns; a critical hit brands the enemy, and a branded enemy burns twice as hot.",
+   "behindText": "Marks an enemy with a burning brand: it burns until the mark is spent, and your next hit on it is a certain critical.",
+   "monsterText": "Its hits find the gaps in your armour; deals fire damage and sets you burning. Its critical hits brand you: your burn runs twice as hot.",
+   "melds52": true,
+   "of": [
+    "precise",
+    "fire"
+   ]
+  },
+  "seeker": {
+   "id": "seeker",
+   "kind": "meld",
+   "name": "Seeker",
+   "front": "Seeking",
+   "behind": "of the Seeker",
+   "attr": "dex",
+   "element": "lightning",
+   "about": "Precise and Lightning, melded. Lightning that picks its target.",
+   "frontText": "Lightning damage whose arcs jump to the enemies with the least life, and arcs can be critical hits too.",
+   "behindText": "Marks an enemy; lightning from any of your moves arcs to the marked one first.",
+   "monsterText": "Its hits find the gaps in your armour; deals lightning damage and shocks you. While you are shocked, its hits are critical.",
+   "melds52": true,
+   "of": [
+    "precise",
+    "lightning"
+   ]
+  },
+  "quickdraw": {
+   "id": "quickdraw",
+   "kind": "meld",
+   "name": "Quickdraw",
+   "front": "Quickdraw",
+   "behind": "of the Quickdraw",
+   "attr": "dex",
+   "element": null,
+   "about": "Precise and Swift, melded. The first shot is the one that counts.",
+   "frontText": "Faster to use again; the first use after two seconds without using it is a certain critical.",
+   "behindText": "Marks an enemy; landing the marked critical gives you a burst of speed and shortens its cooldown.",
+   "monsterText": "Moves and attacks faster; its hits find the gaps in your armour. Its first blow after a pause is critical.",
+   "melds52": true,
+   "of": [
+    "precise",
+    "swift"
+   ]
+  },
+  "pressurepoint": {
+   "id": "pressurepoint",
+   "kind": "meld",
+   "name": "Pressure Point",
+   "front": "Pressure Point",
+   "behind": "of the Pressure Point",
+   "attr": "dex",
+   "element": null,
+   "about": "Precise and Heavy, melded. Strike the stunned where it's weakest.",
+   "frontText": "Slower, hits much harder and stuns; every hit on a stunned enemy is a certain critical.",
+   "behindText": "Its cracked ground marks whatever it staggers: your next hit on it is a certain critical.",
+   "monsterText": "Its blows knock you back; its hits find the gaps in your armour. Its next blow after knocking you back is critical.",
+   "melds52": true,
+   "of": [
+    "precise",
+    "heavy"
+   ]
+  },
+  "berserk": {
+   "id": "berserk",
+   "kind": "meld",
+   "name": "Berserk",
+   "front": "Berserk",
+   "behind": "of the Berserker",
+   "attr": "str",
+   "element": null,
+   "about": "Frenzied and Power, melded. The faster you go, the harder you hit.",
+   "frontText": "More damage and a bigger hit; each use makes the next faster and harder, up to five times.",
+   "behindText": "Kills keep the frenzy going, and each kill adds to Power's damage bonus.",
+   "monsterText": "Speeds up as it is hurt; hits harder and has more life. It hits harder too as it is hurt.",
+   "melds52": true,
+   "of": [
+    "frenzied",
+    "power"
+   ]
+  },
+  "fever": {
+   "id": "fever",
+   "kind": "meld",
+   "name": "Fever",
+   "front": "Fevered",
+   "behind": "of Fever",
+   "attr": "str",
+   "element": null,
+   "about": "Frenzied and Poison, melded. The poison quickens with your pulse.",
+   "frontText": "A weaker hit that poisons; each use while frenzied adds one more dose, up to five.",
+   "behindText": "Kills keep the frenzy going, and a poisoned enemy dying holds it twice as long.",
+   "monsterText": "Speeds up as it is hurt; poisons you. Its poison works faster the more hurt it is.",
+   "melds52": true,
+   "of": [
+    "frenzied",
+    "poison"
+   ]
+  },
+  "whiteout": {
+   "id": "whiteout",
+   "kind": "meld",
+   "name": "Whiteout",
+   "front": "Whiteout",
+   "behind": "of the Whiteout",
+   "attr": "str",
+   "element": "frost",
+   "about": "Frenzied and Frost, melded. A storm of blows that buries them in cold.",
+   "frontText": "Frost damage; each use makes the next faster, and the faster you are, the harder it slows.",
+   "behindText": "Kills keep the frenzy going and freeze the enemies near the one that died for a moment.",
+   "monsterText": "Speeds up as it is hurt; deals frost damage and slows you. The more hurt it is, the more it slows you.",
+   "melds52": true,
+   "of": [
+    "frenzied",
+    "frost"
+   ]
+  },
+  "overcharge": {
+   "id": "overcharge",
+   "kind": "meld",
+   "name": "Overcharge",
+   "front": "Overcharged",
+   "behind": "of Overcharge",
+   "attr": "str",
+   "element": "lightning",
+   "about": "Frenzied and Lightning, melded. The current builds with every swing.",
+   "frontText": "Lightning damage; each use makes the next faster and adds one more arc, up to five.",
+   "behindText": "Kills keep the frenzy going, and each kill throws a bolt at the nearest enemy.",
+   "monsterText": "Speeds up as it is hurt; deals lightning damage and shocks you. As it is hurt, its lightning arcs farther.",
+   "melds52": true,
+   "of": [
+    "frenzied",
+    "lightning"
+   ]
+  },
+  "blur": {
+   "id": "blur",
+   "kind": "meld",
+   "name": "Blur",
+   "front": "Blurring",
+   "behind": "of the Blur",
+   "attr": "str",
+   "element": null,
+   "about": "Frenzied and Swift, melded. Too fast to see.",
+   "frontText": "Faster to use again; at a full frenzy of five you also move faster and dodge more.",
+   "behindText": "Kills keep the frenzy going and give you a burst of speed.",
+   "monsterText": "Speeds up as it is hurt; moves and attacks faster. Badly hurt, it becomes a blur for a few seconds, very fast.",
+   "melds52": true,
+   "of": [
+    "frenzied",
+    "swift"
+   ]
+  },
+  "juggernaut": {
+   "id": "juggernaut",
+   "kind": "meld",
+   "name": "Juggernaut",
+   "front": "Juggernaut",
+   "behind": "of the Juggernaut",
+   "attr": "str",
+   "element": null,
+   "about": "Frenzied and Heavy, melded. Slow to start, impossible to stop.",
+   "frontText": "Slower, hits much harder and stuns; each use makes the next faster, and at a full frenzy it is no slower at all.",
+   "behindText": "Kills keep the frenzy going; at a full frenzy its cracked ground spreads twice as wide.",
+   "monsterText": "Speeds up as it is hurt; its blows knock you back. The more hurt it is, the farther it knocks you.",
+   "melds52": true,
+   "of": [
+    "frenzied",
+    "heavy"
+   ]
+  },
+  "bulwark": {
+   "id": "bulwark",
+   "kind": "meld",
+   "name": "Bulwark",
+   "front": "Bulwark",
+   "behind": "of the Bulwark",
+   "attr": "str",
+   "element": null,
+   "about": "Guarding and Power, melded. Strong behind a strong shield.",
+   "frontText": "More damage and a bigger hit; each use gives you a brief shield, and while it holds your hits land harder.",
+   "behindText": "Leaves a ward circle; inside it Power's damage bonus builds twice as fast.",
+   "monsterText": "Carries a shield that soaks damage; hits harder and has more life. While its shield holds, it hits harder.",
+   "melds52": true,
+   "of": [
+    "guarding",
+    "power"
+   ]
+  },
+  "hemlock": {
+   "id": "hemlock",
+   "kind": "meld",
+   "name": "Hemlock",
+   "front": "Hemlock",
+   "behind": "of Hemlock",
+   "attr": "str",
+   "element": null,
+   "about": "Guarding and Poison, melded. A shield that bites back.",
+   "frontText": "A weaker hit that poisons; each use gives you a brief shield, and whatever strikes the shield is poisoned.",
+   "behindText": "Leaves a ward circle that poisons enemies standing in it.",
+   "monsterText": "Carries a shield that soaks damage; poisons you. Hitting its shield poisons you.",
+   "melds52": true,
+   "of": [
+    "guarding",
+    "poison"
+   ]
+  },
+  "cinderward": {
+   "id": "cinderward",
+   "kind": "meld",
+   "name": "Cinderward",
+   "front": "Cinderward",
+   "behind": "of the Cinderward",
+   "attr": "str",
+   "element": "fire",
+   "about": "Guarding and Flame, melded. When the shield breaks, it burns.",
+   "frontText": "Fire damage that explodes and burns; each use gives you a brief shield that bursts in flame round you when it breaks or fades.",
+   "behindText": "Leaves a ward circle ringed in fire: enemies crossing its edge are set burning.",
+   "monsterText": "Carries a shield that soaks damage; deals fire damage and sets you burning. When its shield breaks, it bursts in flame.",
+   "melds52": true,
+   "of": [
+    "guarding",
+    "fire"
+   ]
+  },
+  "static": {
+   "id": "static",
+   "kind": "meld",
+   "name": "Static",
+   "front": "Static",
+   "behind": "of Static",
+   "attr": "str",
+   "element": "lightning",
+   "about": "Guarding and Lightning, melded. Touch the shield and get shocked.",
+   "frontText": "Lightning damage that arcs; each use gives you a brief shield, and whatever strikes the shield is struck by an arc.",
+   "behindText": "Leaves a ward circle whose edge throws arcs at enemies inside it.",
+   "monsterText": "Carries a shield that soaks damage; deals lightning damage and shocks you. Hitting its shield shocks you.",
+   "melds52": true,
+   "of": [
+    "guarding",
+    "lightning"
+   ]
+  },
+  "windward": {
+   "id": "windward",
+   "kind": "meld",
+   "name": "Windward",
+   "front": "Windward",
+   "behind": "of the Windward",
+   "attr": "str",
+   "element": null,
+   "about": "Guarding and Swift, melded. Sheltered and quick.",
+   "frontText": "Faster to use again; each use gives you a brief shield, and while it holds you move faster.",
+   "behindText": "Leaves a ward circle; inside it you move faster and take less damage.",
+   "monsterText": "Carries a shield that soaks damage; moves and attacks faster. While its shield holds, it is faster still.",
+   "melds52": true,
+   "of": [
+    "guarding",
+    "swift"
+   ]
+  },
+  "fortress": {
+   "id": "fortress",
+   "kind": "meld",
+   "name": "Fortress",
+   "front": "Fortress",
+   "behind": "of the Fortress",
+   "attr": "str",
+   "element": null,
+   "about": "Guarding and Heavy, melded. Nothing moves you.",
+   "frontText": "Slower, hits much harder and stuns; each use gives you a shield, and while it holds nothing knocks you back or stuns you.",
+   "behindText": "Leaves a ward circle; enemies stepping into it are staggered.",
+   "monsterText": "Carries a shield that soaks damage; its blows knock you back. While its shield holds, nothing staggers or stops it.",
+   "melds52": true,
+   "of": [
+    "guarding",
+    "heavy"
+   ]
+  },
+  "momentum": {
+   "id": "momentum",
+   "kind": "meld",
+   "name": "Momentum",
+   "front": "Momentum",
+   "behind": "of Momentum",
+   "attr": "int",
+   "element": null,
+   "about": "Lasting and Power, melded. Force that keeps building while you keep hitting.",
+   "frontText": "More damage and a bigger hit; each hit that lands makes the next a little harder, and the build-up holds until you go three seconds without landing one.",
+   "behindText": "Power's damage bonus lasts half again as long and builds two steps higher.",
+   "monsterText": "Hits harder and has more life; each blow it lands makes its next harder, until it stops landing them.",
+   "melds52": true,
+   "of": [
+    "lasting",
+    "power"
+   ]
+  },
+  "canker": {
+   "id": "canker",
+   "kind": "meld",
+   "name": "Canker",
+   "front": "Cankered",
+   "behind": "of the Canker",
+   "attr": "int",
+   "element": null,
+   "about": "Lasting and Poison, melded. A poison that won't wear off.",
+   "frontText": "A weaker hit that poisons; its poison lasts twice as long and doesn't wear off while you keep hitting.",
+   "behindText": "Leaves a poison cloud that lasts twice as long.",
+   "monsterText": "Its poison lasts longer on you; poisons you. Its poison doesn't wear off while it keeps hitting you.",
+   "melds52": true,
+   "of": [
+    "lasting",
+    "poison"
+   ]
+  },
+  "permafrost": {
+   "id": "permafrost",
+   "kind": "meld",
+   "name": "Permafrost",
+   "front": "Permafrost",
+   "behind": "of Permafrost",
+   "attr": "int",
+   "element": "frost",
+   "about": "Lasting and Frost, melded. Cold that never lets go.",
+   "frontText": "Frost damage; its chill lasts twice as long, and what it freezes stays frozen half again as long.",
+   "behindText": "Leaves ice that slows and lasts until the fight is over.",
+   "monsterText": "Its chill lasts longer on you; deals frost damage and slows you. Its slow keeps deepening while you stay within its reach.",
+   "melds52": true,
+   "of": [
+    "lasting",
+    "frost"
+   ]
+  },
+  "smoulder": {
+   "id": "smoulder",
+   "kind": "meld",
+   "name": "Smoulder",
+   "front": "Smouldering",
+   "behind": "of the Smoulder",
+   "attr": "int",
+   "element": "fire",
+   "about": "Lasting and Flame, melded. The fire outlives its fuel.",
+   "frontText": "Fire damage that explodes; burns last twice as long, and an enemy that dies burning leaves smouldering ground where it fell.",
+   "behindText": "Leaves burning ground that lasts much longer.",
+   "monsterText": "Its burning lasts longer on you; deals fire damage and sets you burning. Where it dies, the ground smoulders.",
+   "melds52": true,
+   "of": [
+    "lasting",
+    "fire"
+   ]
+  },
+  "tempest": {
+   "id": "tempest",
+   "kind": "meld",
+   "name": "Tempest",
+   "front": "Tempest",
+   "behind": "of the Tempest",
+   "attr": "int",
+   "element": "lightning",
+   "about": "Lasting and Lightning, melded. The storm stays.",
+   "frontText": "Lightning damage; enemies it shocks stay shocked longer, and for three seconds arcs keep leaping between them.",
+   "behindText": "Leaves a storm that lasts twice as long.",
+   "monsterText": "Its shock lasts longer on you; deals lightning damage and shocks you. While you are shocked, small arcs keep striking you.",
+   "melds52": true,
+   "of": [
+    "lasting",
+    "lightning"
+   ]
+  },
+  "tailwind": {
+   "id": "tailwind",
+   "kind": "meld",
+   "name": "Tailwind",
+   "front": "Tailwind",
+   "behind": "of the Tailwind",
+   "attr": "int",
+   "element": null,
+   "about": "Lasting and Swift, melded. Speed that stays with you.",
+   "frontText": "Faster to use again; each use also gives a burst of speed that lasts while you keep using it.",
+   "behindText": "Each use gives you a burst of speed that lasts half again as long.",
+   "monsterText": "Moves and attacks faster; stays fast long after each blow.",
+   "melds52": true,
+   "of": [
+    "lasting",
+    "swift"
+   ]
+  },
+  "bedrock": {
+   "id": "bedrock",
+   "kind": "meld",
+   "name": "Bedrock",
+   "front": "Bedrock",
+   "behind": "of Bedrock",
+   "attr": "int",
+   "element": null,
+   "about": "Lasting and Heavy, melded. The ground stays broken.",
+   "frontText": "Slower, hits much harder, and its stun lasts half again as long.",
+   "behindText": "Leaves cracked ground that lasts until the fight is over.",
+   "monsterText": "Its blows knock you back; you stay staggered longer after each.",
+   "melds52": true,
+   "of": [
+    "lasting",
+    "heavy"
+   ]
+  },
+  "haymaker": {
+   "id": "haymaker",
+   "kind": "meld",
+   "name": "Haymaker",
+   "front": "Haymaker",
+   "behind": "of the Haymaker",
+   "attr": "dex",
+   "element": null,
+   "about": "Fleeting and Power, melded. A hard blow with no warning.",
+   "frontText": "More damage and a bigger hit, and it lands sooner: less wind-up before the blow.",
+   "behindText": "Power's damage bonus builds twice as fast and fades in half the time.",
+   "monsterText": "Hits harder and has more life; its blows come with less warning.",
+   "melds52": true,
+   "of": [
+    "fleeting",
+    "power"
+   ]
+  },
+  "bloat": {
+   "id": "bloat",
+   "kind": "meld",
+   "name": "Bloat",
+   "front": "Bloating",
+   "behind": "of Bloat",
+   "attr": "dex",
+   "element": null,
+   "about": "Fleeting and Poison, melded. The poison works fast, then bursts out.",
+   "frontText": "A weaker hit that poisons; its poison works in a third less time, and when it runs out the enemy bursts in a small cloud of it.",
+   "behindText": "Leaves a poison cloud that fades fast and bursts on whatever is inside as it goes.",
+   "monsterText": "Its poison hurts you faster; poisons you. When its poison on you runs out, it bursts round you.",
+   "melds52": true,
+   "of": [
+    "fleeting",
+    "poison"
+   ]
+  },
+  "coldsnap": {
+   "id": "coldsnap",
+   "kind": "meld",
+   "name": "Cold Snap",
+   "front": "Cold Snap",
+   "behind": "of the Cold Snap",
+   "attr": "dex",
+   "element": "frost",
+   "about": "Fleeting and Frost, melded. A sudden, biting cold.",
+   "frontText": "Frost damage; its chill is shorter but deeper, and hitting a chilled enemy snaps the chill off for extra damage.",
+   "behindText": "Leaves ice that melts fast, freezing what stands on it as it goes.",
+   "monsterText": "Its chill on you is short but deep; deals frost damage and slows you.",
+   "melds52": true,
+   "of": [
+    "fleeting",
+    "frost"
+   ]
+  },
+  "flashfire": {
+   "id": "flashfire",
+   "kind": "meld",
+   "name": "Flashfire",
+   "front": "Flashfire",
+   "behind": "of the Flashfire",
+   "attr": "dex",
+   "element": "fire",
+   "about": "Fleeting and Flame, melded. Burns that go up all at once.",
+   "frontText": "Fire damage; its burns do all their harm in half the time, and a burn ending sends up a flare that hits those near.",
+   "behindText": "Leaves burning ground that burns hotter and dies faster.",
+   "monsterText": "Its burning hurts you faster; deals fire damage and sets you burning. When its burn on you ends, it flares.",
+   "melds52": true,
+   "of": [
+    "fleeting",
+    "fire"
+   ]
+  },
+  "jolt": {
+   "id": "jolt",
+   "kind": "meld",
+   "name": "Jolt",
+   "front": "Jolting",
+   "behind": "of the Jolt",
+   "attr": "dex",
+   "element": "lightning",
+   "about": "Fleeting and Lightning, melded. All the shock in one instant.",
+   "frontText": "Lightning damage; a shocked enemy takes all of the shock's harm in a single jolt the next time you hit it.",
+   "behindText": "Leaves a storm that lets loose all its bolts in one moment.",
+   "monsterText": "Deals lightning damage and shocks you; its shock hits you all at once.",
+   "melds52": true,
+   "of": [
+    "fleeting",
+    "lightning"
+   ]
+  },
+  "blink": {
+   "id": "blink",
+   "kind": "meld",
+   "name": "Blink",
+   "front": "Blink",
+   "behind": "of the Blink",
+   "attr": "dex",
+   "element": null,
+   "about": "Fleeting and Swift, melded. Gone before they see you move.",
+   "frontText": "Faster to use again, and for a moment after each use you move very fast.",
+   "behindText": "Each use gives a burst of speed a third as long and much faster.",
+   "monsterText": "Moves and attacks faster; darts at you in short, very fast bursts.",
+   "melds52": true,
+   "of": [
+    "fleeting",
+    "swift"
+   ]
+  },
+  "daze": {
+   "id": "daze",
+   "kind": "meld",
+   "name": "Daze",
+   "front": "Dazing",
+   "behind": "of the Daze",
+   "attr": "dex",
+   "element": null,
+   "about": "Fleeting and Heavy, melded. A short stun that leaves them wide open.",
+   "frontText": "Slower, hits much harder; its stun is shorter, but every hit on a stunned enemy lands harder.",
+   "behindText": "Its cracked ground staggers in quick, short jolts, more often.",
+   "monsterText": "Its blows knock you back; while you are staggered, it hits you harder.",
+   "melds52": true,
+   "of": [
+    "fleeting",
+    "heavy"
+   ]
+  },
+  "cataclysm": {
+   "id": "cataclysm",
+   "kind": "meld",
+   "name": "Cataclysm",
+   "front": "Cataclysm",
+   "behind": "of the Cataclysm",
+   "attr": "str",
+   "element": null,
+   "about": "Vast and Power, melded. The bigger the crowd, the bigger the blow.",
+   "frontText": "A much bigger area; the hit lands harder for every enemy it catches.",
+   "behindText": "Each hit splashes harder onto the enemies near what it hits.",
+   "monsterText": "Hits harder and has more life; its attacks reach much wider.",
+   "melds52": true,
+   "of": [
+    "vast",
+    "power"
+   ]
+  },
+  "miasma": {
+   "id": "miasma",
+   "kind": "meld",
+   "name": "Miasma",
+   "front": "Miasma",
+   "behind": "of the Miasma",
+   "attr": "str",
+   "element": null,
+   "about": "Vast and Poison, melded. A haze that thickens as it spreads.",
+   "frontText": "A weaker hit over a much bigger area that poisons everything it touches; the more enemies it poisons at once, the stronger each dose.",
+   "behindText": "Leaves a poison cloud that slowly grows.",
+   "monsterText": "Poisons you; its attacks reach wider and leave a haze of poison where they land.",
+   "melds52": true,
+   "of": [
+    "vast",
+    "poison"
+   ]
+  },
+  "glacier": {
+   "id": "glacier",
+   "kind": "meld",
+   "name": "Glacier",
+   "front": "Glacial",
+   "behind": "of the Glacier",
+   "attr": "str",
+   "element": "frost",
+   "about": "Vast and Frost, melded. The cold spreads from one to the next.",
+   "frontText": "Frost damage over a much bigger area; when it freezes an enemy, the ice spreads to those touching it and chills them.",
+   "behindText": "Leaves a wide field of ice that slowly creeps outward.",
+   "monsterText": "Deals frost damage and slows you; its attacks reach wider and frost the ground where they land.",
+   "melds52": true,
+   "of": [
+    "vast",
+    "frost"
+   ]
+  },
+  "inferno": {
+   "id": "inferno",
+   "kind": "meld",
+   "name": "Inferno",
+   "front": "Inferno",
+   "behind": "of the Inferno",
+   "attr": "str",
+   "element": "fire",
+   "about": "Vast and Flame, melded. Fire that runs across the floor.",
+   "frontText": "Fire damage over a much bigger area; burning enemies set the ground alight where they walk.",
+   "behindText": "Leaves burning ground that spreads outward for a few seconds.",
+   "monsterText": "Deals fire damage and sets you burning; its attacks reach wider and set the ground alight.",
+   "melds52": true,
+   "of": [
+    "vast",
+    "fire"
+   ]
+  },
+  "stormfront": {
+   "id": "stormfront",
+   "kind": "meld",
+   "name": "Stormfront",
+   "front": "Stormfront",
+   "behind": "of the Stormfront",
+   "attr": "str",
+   "element": "lightning",
+   "about": "Vast and Lightning, melded. One hit links the whole crowd.",
+   "frontText": "Lightning damage over a much bigger area; every enemy it hits is linked, and lightning flicks between linked enemies for a few seconds.",
+   "behindText": "Leaves a storm that drifts wide, striking anything in a much bigger area.",
+   "monsterText": "Deals lightning damage and shocks you; its attacks and its lightning reach wider.",
+   "melds52": true,
+   "of": [
+    "vast",
+    "lightning"
+   ]
+  },
+  "gale": {
+   "id": "gale",
+   "kind": "meld",
+   "name": "Gale",
+   "front": "Gale",
+   "behind": "of the Gale",
+   "attr": "str",
+   "element": null,
+   "about": "Vast and Swift, melded. A sweep that clears the room.",
+   "frontText": "Faster to use again, a much bigger area, and it blows the enemies it hits back to its edge.",
+   "behindText": "Each use gives a burst of speed to you and every ally near you.",
+   "monsterText": "Moves and attacks faster; its attacks reach wider and push you away.",
+   "melds52": true,
+   "of": [
+    "vast",
+    "swift"
+   ]
+  },
+  "earthquake": {
+   "id": "earthquake",
+   "kind": "meld",
+   "name": "Earthquake",
+   "front": "Earthquake",
+   "behind": "of the Earthquake",
+   "attr": "str",
+   "element": null,
+   "about": "Vast and Heavy, melded. The stun rolls out like a wave.",
+   "frontText": "Slower, hits much harder, and its stun rolls out in a wide wave from where it lands, reaching the far side a moment late.",
+   "behindText": "Leaves a wide field of cracked ground.",
+   "monsterText": "Its blows knock you back from much farther away.",
+   "melds52": true,
+   "of": [
+    "vast",
+    "heavy"
+   ]
+  },
+  "twin2": {
+   "id": "twin2",
+   "kind": "rank",
+   "name": "Twin II",
+   "front": "Twin II",
+   "behind": "of Echoes II",
+   "attr": "dex",
+   "element": null,
+   "about": "Two Twin, melded: Twin at level 2.",
+   "frontText": "Strikes, fires or bursts three times, each a little weaker.",
+   "behindText": "Repeats itself twice, each repeat weaker.",
+   "monsterText": "Attacks three times.",
+   "melds52": true
+  },
+  "leech2": {
+   "id": "leech2",
+   "kind": "rank",
+   "name": "Leech II",
+   "front": "Leeching II",
+   "behind": "of Leeching II",
+   "attr": "str",
+   "element": null,
+   "about": "Two Leech, melded: Leech at level 2.",
+   "frontText": "Heals you for every enemy hit, half as much again.",
+   "behindText": "Enemies it kills drop life orbs more often.",
+   "monsterText": "Heals when it hits you, half as much again.",
+   "melds52": true
+  },
+  "volatile2": {
+   "id": "volatile2",
+   "kind": "rank",
+   "name": "Volatile II",
+   "front": "Volatile II",
+   "behind": "of Ruin II",
+   "attr": "int",
+   "element": null,
+   "about": "Two Volatile, melded: Volatile at level 2.",
+   "frontText": "Enemies it kills explode, half as big and hard again.",
+   "behindText": "Leaves a rune that detonates half as big and hard again.",
+   "monsterText": "Explodes when it dies, half as hard again.",
+   "melds52": true
+  },
+  "precise2": {
+   "id": "precise2",
+   "kind": "rank",
+   "name": "Precise II",
+   "front": "Precise II",
+   "behind": "of the Mark II",
+   "attr": "dex",
+   "element": null,
+   "about": "Two Precise, melded: Precise at level 2.",
+   "frontText": "More damage still, a smaller area still.",
+   "behindText": "Marks an enemy: your next two hits on it are certain criticals.",
+   "monsterText": "Its hits find the gaps in your armour, half as much again.",
+   "melds52": true
+  },
+  "frenzied2": {
+   "id": "frenzied2",
+   "kind": "rank",
+   "name": "Frenzied II",
+   "front": "Frenzied II",
+   "behind": "of Frenzy II",
+   "attr": "str",
+   "element": null,
+   "about": "Two Frenzied, melded: Frenzied at level 2.",
+   "frontText": "Each use makes the next faster, each step half as big again, up to five times.",
+   "behindText": "Kills keep the frenzy going, half as long again.",
+   "monsterText": "Speeds up as it is hurt, half as much again.",
+   "melds52": true
+  },
+  "guarding2": {
+   "id": "guarding2",
+   "kind": "rank",
+   "name": "Guarding II",
+   "front": "Guarding II",
+   "behind": "of Warding II",
+   "attr": "str",
+   "element": null,
+   "about": "Two Guarding, melded: Guarding at level 2.",
+   "frontText": "Each use gives you a brief shield, half as big again.",
+   "behindText": "Leaves a ward circle; inside it you take even less damage.",
+   "monsterText": "Carries a shield half as big again.",
+   "melds52": true
+  },
+  "lasting2": {
+   "id": "lasting2",
+   "kind": "rank",
+   "name": "Lasting II",
+   "front": "Lasting II",
+   "behind": "of Ages II",
+   "attr": "int",
+   "element": null,
+   "about": "Two Lasting, melded: Lasting at level 2.",
+   "frontText": "Everything it makes and gives lasts twice as long.",
+   "behindText": "Everything it makes and gives lasts twice as long.",
+   "monsterText": "Its poison, burning and chill last longer still on you.",
+   "melds52": true
+  },
+  "fleeting2": {
+   "id": "fleeting2",
+   "kind": "rank",
+   "name": "Fleeting II",
+   "front": "Fleeting II",
+   "behind": "of Moments II",
+   "attr": "dex",
+   "element": null,
+   "about": "Two Fleeting, melded: Fleeting at level 2.",
+   "frontText": "Everything it makes and gives is half as long, and does as much in that time.",
+   "behindText": "Everything it makes and gives is half as long, and does as much in that time.",
+   "monsterText": "Its poison and burning hurt you faster still.",
+   "melds52": true
+  },
+  "vast2": {
+   "id": "vast2",
+   "kind": "rank",
+   "name": "Vast II",
+   "front": "Vast II",
+   "behind": "of the Expanse II",
+   "attr": "str",
+   "element": null,
+   "about": "Two Vast, melded: Vast at level 2.",
+   "frontText": "An even bigger area, a little less damage.",
+   "behindText": "Each hit splashes harder onto the enemies near what it hits.",
+   "monsterText": "Its attacks reach even wider.",
+   "melds52": true
+  },
+  "swift2": {
+   "id": "swift2",
+   "kind": "rank",
+   "name": "Swift II",
+   "front": "Swift II",
+   "behind": "of Swiftness II",
+   "attr": "dex",
+   "element": null,
+   "about": "Two Swift, melded: Swift at level 2.",
+   "frontText": "Faster to use again, half as much again.",
+   "behindText": "Each use gives you a burst of speed, half as big again.",
+   "monsterText": "Moves and attacks faster, half as much again.",
+   "melds52": true
+  },
+  "heavy2": {
+   "id": "heavy2",
+   "kind": "rank",
+   "name": "Heavy II",
+   "front": "Heavy II",
+   "behind": "of Quakes II",
+   "attr": "str",
+   "element": null,
+   "about": "Two Heavy, melded: Heavy at level 2.",
+   "frontText": "Slower, hits harder still, and stuns half as long again.",
+   "behindText": "Leaves wider cracked ground that staggers longer.",
+   "monsterText": "Its blows knock you back farther.",
+   "melds52": true
+  }
+ },
+ "of": {
+  "onslaught": [
+   "twin",
+   "power"
+  ],
+  "viper": [
+   "twin",
+   "poison"
+  ],
+  "flashfreeze": [
+   "twin",
+   "frost"
+  ],
+  "rekindle": [
+   "twin",
+   "fire"
+  ],
+  "flurry": [
+   "twin",
+   "swift"
+  ],
+  "aftershock": [
+   "twin",
+   "heavy"
+  ],
+  "bloodlust": [
+   "leech",
+   "power"
+  ],
+  "coldblood": [
+   "leech",
+   "frost"
+  ],
+  "conduit": [
+   "leech",
+   "lightning"
+  ],
+  "secondwind": [
+   "leech",
+   "swift"
+  ],
+  "marrow": [
+   "leech",
+   "heavy"
+  ],
+  "quickfuse": [
+   "volatile",
+   "swift"
+  ],
+  "concussion": [
+   "volatile",
+   "heavy"
+  ],
+  "duelist": [
+   "precise",
+   "power"
+  ],
+  "needle": [
+   "precise",
+   "poison"
+  ],
+  "brand": [
+   "precise",
+   "fire"
+  ],
+  "seeker": [
+   "precise",
+   "lightning"
+  ],
+  "quickdraw": [
+   "precise",
+   "swift"
+  ],
+  "pressurepoint": [
+   "precise",
+   "heavy"
+  ],
+  "berserk": [
+   "frenzied",
+   "power"
+  ],
+  "fever": [
+   "frenzied",
+   "poison"
+  ],
+  "whiteout": [
+   "frenzied",
+   "frost"
+  ],
+  "overcharge": [
+   "frenzied",
+   "lightning"
+  ],
+  "blur": [
+   "frenzied",
+   "swift"
+  ],
+  "juggernaut": [
+   "frenzied",
+   "heavy"
+  ],
+  "bulwark": [
+   "guarding",
+   "power"
+  ],
+  "hemlock": [
+   "guarding",
+   "poison"
+  ],
+  "cinderward": [
+   "guarding",
+   "fire"
+  ],
+  "static": [
+   "guarding",
+   "lightning"
+  ],
+  "windward": [
+   "guarding",
+   "swift"
+  ],
+  "fortress": [
+   "guarding",
+   "heavy"
+  ],
+  "momentum": [
+   "lasting",
+   "power"
+  ],
+  "canker": [
+   "lasting",
+   "poison"
+  ],
+  "permafrost": [
+   "lasting",
+   "frost"
+  ],
+  "smoulder": [
+   "lasting",
+   "fire"
+  ],
+  "tempest": [
+   "lasting",
+   "lightning"
+  ],
+  "tailwind": [
+   "lasting",
+   "swift"
+  ],
+  "bedrock": [
+   "lasting",
+   "heavy"
+  ],
+  "haymaker": [
+   "fleeting",
+   "power"
+  ],
+  "bloat": [
+   "fleeting",
+   "poison"
+  ],
+  "coldsnap": [
+   "fleeting",
+   "frost"
+  ],
+  "flashfire": [
+   "fleeting",
+   "fire"
+  ],
+  "jolt": [
+   "fleeting",
+   "lightning"
+  ],
+  "blink": [
+   "fleeting",
+   "swift"
+  ],
+  "daze": [
+   "fleeting",
+   "heavy"
+  ],
+  "cataclysm": [
+   "vast",
+   "power"
+  ],
+  "miasma": [
+   "vast",
+   "poison"
+  ],
+  "glacier": [
+   "vast",
+   "frost"
+  ],
+  "inferno": [
+   "vast",
+   "fire"
+  ],
+  "stormfront": [
+   "vast",
+   "lightning"
+  ],
+  "gale": [
+   "vast",
+   "swift"
+  ],
+  "earthquake": [
+   "vast",
+   "heavy"
+  ]
+ },
+ "rankOf": {
+  "twin2": {
+   "word": "twin",
+   "rank": 2
+  },
+  "leech2": {
+   "word": "leech",
+   "rank": 2
+  },
+  "volatile2": {
+   "word": "volatile",
+   "rank": 2
+  },
+  "precise2": {
+   "word": "precise",
+   "rank": 2
+  },
+  "frenzied2": {
+   "word": "frenzied",
+   "rank": 2
+  },
+  "guarding2": {
+   "word": "guarding",
+   "rank": 2
+  },
+  "lasting2": {
+   "word": "lasting",
+   "rank": 2
+  },
+  "fleeting2": {
+   "word": "fleeting",
+   "rank": 2
+  },
+  "vast2": {
+   "word": "vast",
+   "rank": 2
+  },
+  "swift2": {
+   "word": "swift",
+   "rank": 2
+  },
+  "heavy2": {
+   "word": "heavy",
+   "rank": 2
+  }
+ },
+ "attr": {
+  "onslaught": "dex",
+  "viper": "dex",
+  "flashfreeze": "dex",
+  "rekindle": "dex",
+  "flurry": "dex",
+  "aftershock": "dex",
+  "bloodlust": "str",
+  "coldblood": "str",
+  "conduit": "str",
+  "secondwind": "str",
+  "marrow": "str",
+  "quickfuse": "int",
+  "concussion": "int",
+  "duelist": "dex",
+  "needle": "dex",
+  "brand": "dex",
+  "seeker": "dex",
+  "quickdraw": "dex",
+  "pressurepoint": "dex",
+  "berserk": "str",
+  "fever": "str",
+  "whiteout": "str",
+  "overcharge": "str",
+  "blur": "str",
+  "juggernaut": "str",
+  "bulwark": "str",
+  "hemlock": "str",
+  "cinderward": "str",
+  "static": "str",
+  "windward": "str",
+  "fortress": "str",
+  "momentum": "int",
+  "canker": "int",
+  "permafrost": "int",
+  "smoulder": "int",
+  "tempest": "int",
+  "tailwind": "int",
+  "bedrock": "int",
+  "haymaker": "dex",
+  "bloat": "dex",
+  "coldsnap": "dex",
+  "flashfire": "dex",
+  "jolt": "dex",
+  "blink": "dex",
+  "daze": "dex",
+  "cataclysm": "str",
+  "miasma": "str",
+  "glacier": "str",
+  "inferno": "str",
+  "stormfront": "str",
+  "gale": "str",
+  "earthquake": "str",
+  "twin2": "dex",
+  "leech2": "str",
+  "volatile2": "int",
+  "precise2": "dex",
+  "frenzied2": "str",
+  "guarding2": "str",
+  "lasting2": "int",
+  "fleeting2": "dex",
+  "vast2": "str",
+  "swift2": "dex",
+  "heavy2": "str"
+ },
+ "page": {
+  "onslaught": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "viper": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "flashfreeze": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "rekindle": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "flurry": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "aftershock": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bloodlust": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Hit or Life on Kill, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Max Life or Life Regen, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "coldblood": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Hit or Life on Kill, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Max Life or Life Regen, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "conduit": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Hit or Life on Kill, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Max Life or Life Regen, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "secondwind": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Hit or Life on Kill, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Max Life or Life Regen, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "marrow": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Hit or Life on Kill, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Max Life or Life Regen, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "quickfuse": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "concussion": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "duelist": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "needle": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "brand": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "seeker": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "quickdraw": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "pressurepoint": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "berserk": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Strength, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Movement Speed or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "fever": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Strength, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Movement Speed or Strength, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "whiteout": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Strength, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Movement Speed or Strength, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "overcharge": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Strength, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Movement Speed or Strength, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "blur": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Strength, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Movement Speed or Strength, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "juggernaut": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Strength, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Movement Speed or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bulwark": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Barrier or Strength, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Barrier or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "hemlock": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Barrier or Strength, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Barrier or Strength, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "cinderward": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Barrier or Strength, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Barrier or Strength, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "static": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Barrier or Strength, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Barrier or Strength, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "windward": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Barrier or Strength, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Barrier or Strength, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "fortress": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Barrier or Strength, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Barrier or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "momentum": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "canker": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Intelligence, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "permafrost": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Intelligence, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "smoulder": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Intelligence, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "tempest": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Intelligence, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "tailwind": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Life Regen or Intelligence, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bedrock": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "haymaker": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Dexterity, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bloat": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Dexterity, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Dexterity, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "coldsnap": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Dexterity, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Dexterity, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "flashfire": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Dexterity, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Dexterity, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "jolt": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Dexterity, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Dexterity, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "blink": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Dexterity, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Dexterity, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "daze": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Dexterity, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "cataclysm": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Strength, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "miasma": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Strength, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "glacier": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Strength, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "inferno": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Strength, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "stormfront": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Strength, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "gale": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Strength, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "earthquake": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Strength, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "twin2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity."
+   ],
+   "note": "Half as strong again as Twin."
+  },
+  "leech2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Max Life or Life Regen."
+   ],
+   "note": "Half as strong again as Leech."
+  },
+  "volatile2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
+   ],
+   "note": "Half as strong again as Volatile."
+  },
+  "precise2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity."
+   ],
+   "note": "Half as strong again as Precise."
+  },
+  "frenzied2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Movement Speed or Strength."
+   ],
+   "note": "Half as strong again as Frenzied."
+  },
+  "guarding2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Barrier or Strength.",
+    "Off hand, helm, chest, belt, boots: Barrier or Strength."
+   ],
+   "note": "Half as strong again as Guarding."
+  },
+  "lasting2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Intelligence."
+   ],
+   "note": "Half as strong again as Lasting."
+  },
+  "fleeting2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Dexterity."
+   ],
+   "note": "Half as strong again as Fleeting."
+  },
+  "vast2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength."
+   ],
+   "note": "Half as strong again as Vast."
+  },
+  "swift2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Dodge or Dexterity."
+   ],
+   "note": "Half as strong again as Swift."
+  },
+  "heavy2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength."
+   ],
+   "note": "Half as strong again as Heavy."
+  }
+ },
+ "color": {
+  "onslaught": "#e0604c",
+  "viper": "#86c838",
+  "flashfreeze": "#8ad0fa",
+  "rekindle": "#ff9e3c",
+  "flurry": "#8ed868",
+  "aftershock": "#b89a62",
+  "bloodlust": "#e8464c",
+  "coldblood": "#a8b8f8",
+  "conduit": "#ffcc78",
+  "secondwind": "#b0e08c",
+  "marrow": "#ead6bc",
+  "quickfuse": "#b476ea",
+  "concussion": "#a888b8",
+  "duelist": "#f2c8c0",
+  "needle": "#d2ee72",
+  "brand": "#ffae6a",
+  "seeker": "#fff6a8",
+  "quickdraw": "#eaf8d0",
+  "pressurepoint": "#e2d0ae",
+  "berserk": "#ff4238",
+  "fever": "#d4e044",
+  "whiteout": "#dceeff",
+  "overcharge": "#ffb63c",
+  "blur": "#c2ee7c",
+  "juggernaut": "#cc7a4c",
+  "bulwark": "#7aa84a",
+  "hemlock": "#8cc432",
+  "cinderward": "#ec8c3e",
+  "static": "#e2ee44",
+  "windward": "#6ed88e",
+  "fortress": "#8e9868",
+  "momentum": "#d66a62",
+  "canker": "#9cb24e",
+  "permafrost": "#a6d6fe",
+  "smoulder": "#c27a46",
+  "tempest": "#e6dea0",
+  "tailwind": "#a2d878",
+  "bedrock": "#9a8060",
+  "haymaker": "#f2a0a0",
+  "bloat": "#c2e27e",
+  "coldsnap": "#c6e6ff",
+  "flashfire": "#ffcc8a",
+  "jolt": "#fff07a",
+  "blink": "#e2f6e2",
+  "daze": "#e0c6e8",
+  "cataclysm": "#c4583a",
+  "miasma": "#8e9c42",
+  "glacier": "#9ccaea",
+  "inferno": "#ea6c30",
+  "stormfront": "#cccc84",
+  "gale": "#b2d8a0",
+  "earthquake": "#a27a50",
+  "twin2": "#58c0b0",
+  "leech2": "#ff8a80",
+  "volatile2": "#9858d0",
+  "precise2": "#eef4fa",
+  "frenzied2": "#ff5c33",
+  "guarding2": "#30a868",
+  "lasting2": "#aa8880",
+  "fleeting2": "#f8e4f8",
+  "vast2": "#6e4e2e",
+  "swift2": "#84c84c",
+  "heavy2": "#ac8753"
+ },
+ "stones": {
+  "onslaught": [
+   0,
+   0
+  ],
+  "viper": [
+   25,
+   0
+  ],
+  "flashfreeze": [
+   50,
+   0
+  ],
+  "rekindle": [
+   75,
+   0
+  ],
+  "flurry": [
+   100,
+   0
+  ],
+  "aftershock": [
+   125,
+   0
+  ],
+  "bloodlust": [
+   150,
+   0
+  ],
+  "coldblood": [
+   175,
+   0
+  ],
+  "conduit": [
+   200,
+   0
+  ],
+  "secondwind": [
+   225,
+   0
+  ],
+  "marrow": [
+   250,
+   0
+  ],
+  "quickfuse": [
+   275,
+   0
+  ],
+  "concussion": [
+   300,
+   0
+  ],
+  "duelist": [
+   325,
+   0
+  ],
+  "needle": [
+   350,
+   0
+  ],
+  "brand": [
+   375,
+   0
+  ],
+  "seeker": [
+   0,
+   25
+  ],
+  "quickdraw": [
+   25,
+   25
+  ],
+  "pressurepoint": [
+   50,
+   25
+  ],
+  "berserk": [
+   75,
+   25
+  ],
+  "fever": [
+   100,
+   25
+  ],
+  "whiteout": [
+   125,
+   25
+  ],
+  "overcharge": [
+   150,
+   25
+  ],
+  "blur": [
+   175,
+   25
+  ],
+  "juggernaut": [
+   200,
+   25
+  ],
+  "bulwark": [
+   225,
+   25
+  ],
+  "hemlock": [
+   250,
+   25
+  ],
+  "cinderward": [
+   275,
+   25
+  ],
+  "static": [
+   300,
+   25
+  ],
+  "windward": [
+   325,
+   25
+  ],
+  "fortress": [
+   350,
+   25
+  ],
+  "momentum": [
+   375,
+   25
+  ],
+  "canker": [
+   0,
+   50
+  ],
+  "permafrost": [
+   25,
+   50
+  ],
+  "smoulder": [
+   50,
+   50
+  ],
+  "tempest": [
+   75,
+   50
+  ],
+  "tailwind": [
+   100,
+   50
+  ],
+  "bedrock": [
+   125,
+   50
+  ],
+  "haymaker": [
+   150,
+   50
+  ],
+  "bloat": [
+   175,
+   50
+  ],
+  "coldsnap": [
+   200,
+   50
+  ],
+  "flashfire": [
+   225,
+   50
+  ],
+  "jolt": [
+   250,
+   50
+  ],
+  "blink": [
+   275,
+   50
+  ],
+  "daze": [
+   300,
+   50
+  ],
+  "cataclysm": [
+   325,
+   50
+  ],
+  "miasma": [
+   350,
+   50
+  ],
+  "glacier": [
+   375,
+   50
+  ],
+  "inferno": [
+   0,
+   75
+  ],
+  "stormfront": [
+   25,
+   75
+  ],
+  "gale": [
+   50,
+   75
+  ],
+  "earthquake": [
+   75,
+   75
+  ],
+  "twin2": [
+   100,
+   75
+  ],
+  "leech2": [
+   125,
+   75
+  ],
+  "volatile2": [
+   150,
+   75
+  ],
+  "precise2": [
+   175,
+   75
+  ],
+  "frenzied2": [
+   200,
+   75
+  ],
+  "guarding2": [
+   225,
+   75
+  ],
+  "lasting2": [
+   250,
+   75
+  ],
+  "fleeting2": [
+   275,
+   75
+  ],
+  "vast2": [
+   300,
+   75
+  ],
+  "swift2": [
+   325,
+   75
+  ],
+  "heavy2": [
+   350,
+   75
+  ]
+ },
+ "glyph": {
+  "onslaught": [
+   "...o...",
+   "..X.X..",
+   ".X...X.",
+   "...o...",
+   "..XXX..",
+   ".XX.XX.",
+   "XX...XX"
+  ],
+  "viper": [
+   "XXXXXX",
+   "XX..XX",
+   ".X..X.",
+   ".X..X.",
+   "......",
+   ".o..o."
+  ],
+  "flashfreeze": [
+   ".X...X.",
+   ".X...X.",
+   "XoX.XoX",
+   "XoX.XoX",
+   "XoX.XoX",
+   ".X...X.",
+   ".X...X."
+  ],
+  "rekindle": [
+   ".X....",
+   ".XX...",
+   "XXX..X",
+   "XoX.XX",
+   "XoXXoX",
+   ".XX.X."
+  ],
+  "flurry": [
+   "X...X..",
+   ".X...X.",
+   "..o...o",
+   ".......",
+   "X...X..",
+   ".X...X.",
+   "..o...o"
+  ],
+  "aftershock": [
+   "..XX..",
+   ".XooX.",
+   ".XXXX.",
+   "......",
+   "X.XX.X",
+   ".X..X."
+  ],
+  "bloodlust": [
+   "..XX..",
+   ".XXXX.",
+   "XXooXX",
+   ".XXXX.",
+   ".X..X.",
+   "X....X"
+  ],
+  "coldblood": [
+   "...X...",
+   "..X.X..",
+   ".X.o.X.",
+   "X.ooo.X",
+   "X..o..X",
+   ".X...X.",
+   "..XXX.."
+  ],
+  "conduit": [
+   "...X..",
+   "..XXX.",
+   ".XXoXX",
+   ".XoXXX",
+   ".XXoXX",
+   "..XXX."
+  ],
+  "secondwind": [
+   "....X.",
+   "...XXX",
+   "XX.XoX",
+   "...XoX",
+   "XX.XXX",
+   "....X."
+  ],
+  "marrow": [
+   "X.X...",
+   ".X....",
+   ".X..X.",
+   ".X.XoX",
+   ".X..X.",
+   "X.X..."
+  ],
+  "quickfuse": [
+   "....oX",
+   "...X..",
+   ".XXX..",
+   "XXooX.",
+   "XXooX.",
+   ".XXX.."
+  ],
+  "concussion": [
+   "X..X..X",
+   ".X.X.X.",
+   "..XoX..",
+   "XXoooXX",
+   "..XoX..",
+   ".......",
+   "XXX.XXX"
+  ],
+  "duelist": [
+   "X.....X",
+   ".X...X.",
+   "..X.X..",
+   "...o...",
+   "..X.X..",
+   ".X...X.",
+   "X.....X"
+  ],
+  "needle": [
+   ".....X",
+   "....XX",
+   "...XX.",
+   "..XX..",
+   ".o....",
+   "oo...."
+  ],
+  "brand": [
+   ".XXXXX.",
+   "X.....X",
+   "X..X..X",
+   "X.XoX.X",
+   "X.XoX.X",
+   "X.....X",
+   ".XXXXX."
+  ],
+  "seeker": [
+   ".......",
+   "..XXX..",
+   ".X..oX.",
+   "X..oo.X",
+   ".Xo..X.",
+   "..XXX..",
+   "......."
+  ],
+  "quickdraw": [
+   ".......",
+   "....X..",
+   ".....X.",
+   "XX.XXoX",
+   ".....X.",
+   "....X..",
+   "......."
+  ],
+  "pressurepoint": [
+   "...X...",
+   ".......",
+   "..XXX..",
+   "X.XoX.X",
+   "..XXX..",
+   ".......",
+   "...X..."
+  ],
+  "berserk": [
+   "X.X.X.",
+   "X.X.X.",
+   ".X.X.X",
+   "......",
+   "..oo..",
+   "XX..XX"
+  ],
+  "fever": [
+   "..X...",
+   ".X.X..",
+   ".XoX..",
+   ".XoX..",
+   "XoooX.",
+   ".XXX.."
+  ],
+  "whiteout": [
+   ".......",
+   "XXXX.o.",
+   ".......",
+   ".o.XXXX",
+   ".......",
+   "XXXX.o.",
+   "......."
+  ],
+  "overcharge": [
+   "..XX..",
+   ".XXXX.",
+   ".X.oX.",
+   ".XooX.",
+   ".Xo.X.",
+   ".XXXX."
+  ],
+  "blur": [
+   ".......",
+   "o..X...",
+   ".o..X..",
+   "..o..X.",
+   ".o..X..",
+   "o..X...",
+   "......."
+  ],
+  "juggernaut": [
+   "..XX..",
+   ".X..X.",
+   ".XXXX.",
+   "XoXoXX",
+   "XXoXoX",
+   "XXXXXX"
+  ],
+  "bulwark": [
+   "XXXXXX",
+   "X.oo.X",
+   "X.XX.X",
+   "XX..XX",
+   ".X..X.",
+   "..XX.."
+  ],
+  "hemlock": [
+   "o.o.o.",
+   ".XXX..",
+   "..X...",
+   "..X...",
+   "..X.X.",
+   "..XX.."
+  ],
+  "cinderward": [
+   "XXXXXX",
+   "X.X..X",
+   "X.XX.X",
+   "XXooXX",
+   ".XooX.",
+   "..XX.."
+  ],
+  "static": [
+   "XXXXXXX",
+   "X...o.X",
+   "X..o..X",
+   "X.ooo.X",
+   ".X.o.X.",
+   "..X.X..",
+   "...X..."
+  ],
+  "windward": [
+   "XXXXXXX",
+   "X.....X",
+   "Xoooo.X",
+   "X....oX",
+   ".Xoo.X.",
+   "..X.X..",
+   "...X..."
+  ],
+  "fortress": [
+   "X.XX.X",
+   "XXXXXX",
+   "XXooXX",
+   "XXooXX",
+   "XX..XX",
+   "XX..XX"
+  ],
+  "momentum": [
+   ".....o",
+   "....XX",
+   "...XXX",
+   "..XXXX",
+   ".XXXXX",
+   "......"
+  ],
+  "canker": [
+   "XXXXXX",
+   ".XooX.",
+   "..XX..",
+   "..XX..",
+   ".X..X.",
+   "XXXXXX"
+  ],
+  "permafrost": [
+   "XXXXXXX",
+   "X..X..X",
+   "X.XoX.X",
+   "XXoooXX",
+   "X.XoX.X",
+   "X..X..X",
+   "XXXXXXX"
+  ],
+  "smoulder": [
+   "..o....",
+   "...o...",
+   "..o....",
+   "...XX..",
+   ".XXooX.",
+   "XooXXoX",
+   "XXXXXXX"
+  ],
+  "tempest": [
+   ".XXXX.",
+   "XXXXXX",
+   "XXooXX",
+   ".XXXX.",
+   ".X..X.",
+   "X..X.."
+  ],
+  "tailwind": [
+   "XXXX..",
+   "....X.",
+   "XXXX.o",
+   "......",
+   "XXX...",
+   "...Xo."
+  ],
+  "bedrock": [
+   "XXXXXX",
+   "......",
+   "XXoXXX",
+   "......",
+   "XXXXoX",
+   "XXXXXX"
+  ],
+  "haymaker": [
+   ".......",
+   ".X.X.X.",
+   "XXXXXXX",
+   "XoXoXoX",
+   "XXXXXXX",
+   ".XXXXX.",
+   "..XXX.."
+  ],
+  "bloat": [
+   "...o..",
+   ".XXXX.",
+   "XXooXX",
+   "XooooX",
+   "XXooXX",
+   ".XXXX."
+  ],
+  "coldsnap": [
+   "XXXXXX",
+   ".X.XX.",
+   ".X..X.",
+   ".o..X.",
+   "....o.",
+   "......"
+  ],
+  "flashfire": [
+   "X..X..X",
+   ".......",
+   "...X...",
+   "..XoX..",
+   "X.XoX.X",
+   "..XXX..",
+   "......."
+  ],
+  "jolt": [
+   "....XX",
+   "...XX.",
+   ".XXoXX",
+   "XXoXX.",
+   ".XX...",
+   "XX...."
+  ],
+  "blink": [
+   ".o.....",
+   "o.o....",
+   ".o.....",
+   "...o...",
+   ".....X.",
+   "....XXX",
+   ".....X."
+  ],
+  "daze": [
+   ".X...X.",
+   "XoX.XoX",
+   ".X...X.",
+   ".......",
+   "...X...",
+   "..XoX..",
+   "...X..."
+  ],
+  "cataclysm": [
+   "......o",
+   ".....o.",
+   "...XX..",
+   "..XXX..",
+   "..XX...",
+   "X.....X",
+   "XXoooXX"
+  ],
+  "miasma": [
+   ".......",
+   ".oo..oo",
+   "o..oo..",
+   ".......",
+   ".XX..XX",
+   "X..XX..",
+   "......."
+  ],
+  "glacier": [
+   ".......",
+   "...X...",
+   "..XoX..",
+   ".XoooX.",
+   "XXoooXX",
+   "XXXXXXX",
+   "......."
+  ],
+  "inferno": [
+   "...X...",
+   ".X.X.X.",
+   ".XXXXX.",
+   "XXoXoXX",
+   "XooooXX",
+   ".XXXXX.",
+   "......."
+  ],
+  "stormfront": [
+   ".XXXXX.",
+   "XXXXXXX",
+   ".......",
+   ".XX.XX.",
+   "..X..X.",
+   ".XX.XX.",
+   "..o..o."
+  ],
+  "gale": [
+   "XXXXX..",
+   ".....X.",
+   "XXXXXXo",
+   ".....X.",
+   "XXXX...",
+   ".......",
+   "......."
+  ],
+  "earthquake": [
+   "...X...",
+   "...XX..",
+   "..XX...",
+   "..X.X..",
+   ".XX..X.",
+   ".X...XX",
+   "XX....."
+  ]
+ },
+ "tune": {
+  "about": "The numbers of each meld's twist (melds52.gd): in front, behind, and on a monster that carries it (foe).",
+  "onslaught": {
+   "second": 1.0,
+   "shove": 1.0,
+   "echo": 1.0,
+   "foeShove": 1.4
+  },
+  "viper": {
+   "doses": 2,
+   "pace": 2.0,
+   "creep": 1.6,
+   "second": 0.5,
+   "foeDoses": 2
+  },
+  "flashfreeze": {
+   "freeze": 1.2,
+   "again": 4.0,
+   "second": 0.7,
+   "foeFreeze": 0.6
+  },
+  "rekindle": {
+   "again": 1,
+   "flare": 0.8
+  },
+  "flurry": {
+   "window": 1.0,
+   "most": 4,
+   "each": 0.85,
+   "sooner": 0.5,
+   "haste": 20,
+   "hasteSecs": 1.5,
+   "foeFaster": 0.1,
+   "foeMost": 0.4
+  },
+  "aftershock": {
+   "delay": 0.5,
+   "r": 1.8,
+   "share": 0.5,
+   "again": 1.0,
+   "foeDelay": 0.9,
+   "foeR": 1.4,
+   "foeShare": 0.6
+  },
+  "bloodlust": {
+   "over": 1.0,
+   "orbMight": 1,
+   "foeMore": 0.25
+  },
+  "coldblood": {
+   "heal": 2.0,
+   "orbMore": 0.3
+  },
+  "conduit": {
+   "share": 0.5,
+   "storm": 1.0
+  },
+  "secondwind": {
+   "cut": 0.15,
+   "orbHaste": 25,
+   "hasteSecs": 2.0,
+   "foeFaster": 0.3,
+   "foeSecs": 1.5
+  },
+  "marrow": {
+   "heal": 3.0,
+   "drain": 0.5,
+   "foeHeal": 0.05
+  },
+  "quickfuse": {
+   "cut": 0.2,
+   "rune": 0.25,
+   "foeWait": 0.0
+  },
+  "concussion": {
+   "stun": 0.8,
+   "cracks": 3.0,
+   "foeStun": 0.6,
+   "foeShove": 1.2
+  },
+  "duelist": {
+   "alone": 3.0,
+   "more": 0.25,
+   "markSecs": 6.0
+  },
+  "needle": {
+   "doses": 3,
+   "double": 2.0
+  },
+  "brand": {
+   "hot": 2.0,
+   "secs": 4.0,
+   "burn": 0.3
+  },
+  "seeker": {
+   "crit": true
+  },
+  "quickdraw": {
+   "rest": 2.0,
+   "cut": 0.3,
+   "haste": 25,
+   "hasteSecs": 1.5,
+   "foeRest": 2.0
+  },
+  "pressurepoint": {
+   "foeSecs": 3.0
+  },
+  "berserk": {
+   "each": 0.06,
+   "mightKill": 1,
+   "foeMore": 0.4
+  },
+  "fever": {
+   "most": 5,
+   "hold": 2.0,
+   "foeFaster": 1.0
+  },
+  "whiteout": {
+   "slowEach": 0.06,
+   "freeze": 0.8,
+   "r": 2.0,
+   "foeSlow": 0.3
+  },
+  "overcharge": {
+   "most": 5,
+   "bolt": 0.5,
+   "reach": 5.0,
+   "foeReach": 1.0
+  },
+  "blur": {
+   "move": 0.25,
+   "dodge": 30,
+   "haste": 30,
+   "hasteSecs": 1.5,
+   "foeBelow": 0.35,
+   "foeSecs": 3.0,
+   "foeFaster": 0.8
+  },
+  "juggernaut": {
+   "wide": 2.0
+  },
+  "bulwark": {
+   "more": 0.2,
+   "might": 2.0,
+   "foeMore": 0.25
+  },
+  "hemlock": {
+   "dose": 0.5,
+   "ward": 0.2
+  },
+  "cinderward": {
+   "burst": 0.6,
+   "r": 2.2,
+   "edge": 0.25
+  },
+  "static": {
+   "arc": 0.6,
+   "ward": 0.4,
+   "every": 0.6
+  },
+  "windward": {
+   "move": 0.2,
+   "wardMove": 0.25,
+   "foeFaster": 0.25
+  },
+  "fortress": {
+   "stagger": true
+  },
+  "momentum": {
+   "each": 0.04,
+   "most": 10,
+   "hold": 3.0,
+   "might": 2,
+   "longer": 0.5,
+   "foeEach": 0.06
+  },
+  "canker": {
+   "longer": 2.0,
+   "cloud": 2.0
+  },
+  "permafrost": {
+   "chill": 2.0,
+   "freeze": 1.5,
+   "ice": 60.0,
+   "foeDeeper": 0.1,
+   "foeMost": 0.6
+  },
+  "smoulder": {
+   "burn": 2.0,
+   "ground": 4.0,
+   "groundDps": 0.15,
+   "longer": 3.0
+  },
+  "tempest": {
+   "shock": 2.0,
+   "web": 3.0,
+   "every": 0.5,
+   "zap": 0.2,
+   "storm": 2.0,
+   "foeZap": 0.04
+  },
+  "tailwind": {
+   "haste": 15,
+   "hold": 1.2,
+   "longer": 0.5
+  },
+  "bedrock": {
+   "stun": 1.5,
+   "cracks": 60.0,
+   "foeLonger": 0.6
+  },
+  "haymaker": {
+   "windup": 0.4,
+   "build": 2.0,
+   "fade": 0.5
+  },
+  "bloat": {
+   "faster": 1.5,
+   "burst": 1.0,
+   "r": 1.5,
+   "fade": 0.4
+  },
+  "coldsnap": {
+   "chill": 0.6,
+   "deeper": 1.5,
+   "snap": 0.5,
+   "melt": 0.4,
+   "freeze": 1.0
+  },
+  "flashfire": {
+   "faster": 2.0,
+   "flare": 0.5,
+   "r": 1.8,
+   "hotter": 1.6,
+   "fade": 0.5
+  },
+  "jolt": {
+   "jolt": 1.5,
+   "foeJolt": 1.0
+  },
+  "blink": {
+   "haste": 60,
+   "secs": 0.6,
+   "behindShort": 0.33,
+   "behindMore": 2.5,
+   "foeDart": 2.2,
+   "foeEvery": 2.0,
+   "foeSecs": 0.4
+  },
+  "daze": {
+   "stun": 0.5,
+   "more": 0.3,
+   "pulse": 0.35,
+   "foeMore": 0.3
+  },
+  "cataclysm": {
+   "wider": 0.6,
+   "each": 0.08,
+   "most": 0.8,
+   "splash": 1.6,
+   "foeWider": 0.6
+  },
+  "miasma": {
+   "wider": 0.6,
+   "each": 0.1,
+   "most": 0.8,
+   "grow": 0.25,
+   "foeHaze": 3.0,
+   "foeDps": 0.15
+  },
+  "glacier": {
+   "wider": 0.5,
+   "touch": 1.2,
+   "creep": 0.25,
+   "foeFrost": 4.0
+  },
+  "inferno": {
+   "wider": 0.5,
+   "trail": 0.6,
+   "trailSecs": 2.0,
+   "spread": 0.35,
+   "foeFire": 3.0
+  },
+  "stormfront": {
+   "wider": 0.5,
+   "link": 4.0,
+   "every": 0.5,
+   "zap": 0.25,
+   "storm": 1.8,
+   "foeWider": 0.5
+  },
+  "gale": {
+   "wider": 0.6,
+   "edge": true,
+   "haste": 20,
+   "hasteSecs": 3.0,
+   "allies": 5.0,
+   "foeShove": 1.6
+  },
+  "earthquake": {
+   "wider": 0.5,
+   "wave": 3.5,
+   "speed": 7.0,
+   "cracks": 2.0,
+   "foeReach": 0.8
+  },
+  "twin2": {
+   "count": 3,
+   "each": 0.9
+  },
+  "leech2": {
+   "k": 1.5
+  },
+  "volatile2": {
+   "k": 1.5
+  },
+  "precise2": {
+   "more": 1.5,
+   "area": 0.85
+  },
+  "frenzied2": {
+   "k": 1.5
+  },
+  "guarding2": {
+   "k": 1.5
+  },
+  "lasting2": {
+   "k": 2.0
+  },
+  "fleeting2": {
+   "k": 0.5
+  },
+  "vast2": {
+   "wider": 1.5,
+   "softer": 0.1
+  },
+  "swift2": {
+   "k": 1.5
+  },
+  "heavy2": {
+   "more": 1.25,
+   "stun": 1.5,
+   "wide": 1.5,
+   "foeShove": 1.4
+  }
+ }
+}

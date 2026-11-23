@@ -1,0 +1,349 @@
+Floor 6–10 Melds
+·
+The other eight floor 6–10 runes melded with the floor 1–5 runes, and each with itself: 46 new melds and 10 level 2 runes, made the way Twin's were. Melds already in the game are named, not redone.
+Burned into gear, a meld gives one property of each of its two runes, each a quarter weaker than alone, as your melds do now. A level 2 rune gives its rune's, half as strong again. What each rune gives:
+Rune
+Weapon, gloves, ring, amulet
+Off hand, helm, chest, belt, boots
+Leech
+Life on Hit or Life on Kill
+Max Life or Life Regen
+Volatile
+Area of Effect or Intelligence
+Cooldown Recovery or Intelligence
+Precise
+Critical Chance or Dexterity
+Critical Damage or Dexterity
+Frenzied
+Attack Speed or Strength
+Movement Speed or Strength
+Guarding
+Barrier or Strength
+Barrier or Strength
+Lasting
+Damage or Intelligence
+Life Regen or Intelligence
+Fleeting
+Cooldown Recovery or Dexterity
+Cooldown Recovery or Dexterity
+Vast
+Area of Effect or Strength
+Armour or Strength
+Power
+Physical Damage, Added Damage or Strength
+Armour or Strength
+Poison
+Poison Damage or Poison Resistance
+Poison Resistance
+Frost
+Frost Damage or Frost Resistance
+Frost Resistance
+Flame
+Fire Damage or Fire Resistance
+Fire Resistance
+Lightning
+Lightning Damage or Lightning Resistance
+Lightning Resistance
+Swift
+Attack Speed or Dexterity (boots: Movement Speed)
+Dodge or Dexterity
+Heavy
+Chance to Stun or Strength
+Armour or Strength
+Two properties of the same kind never pair (Precise's Dexterity with Swift's Dexterity, say).
+Leech
+Already in the game: Siphon (Poison), Cauterize (Flame).
+Bloodlust
+Leech and Power. Healing you can't use becomes force. On a move: Bloodlust Strike, Strike of Bloodlust.
+In front: more damage and a bigger hit that heals you for every enemy it hits; while you are at full life, the healing becomes extra damage instead.
+Behind: enemies it kills drop life orbs, and picking one up gives Power's damage bonus.
+On enemies: heals when it hits you; hits harder and has more life. At full life, its blows hit harder instead of healing it.
+Coldblood
+Leech and Frost. Drinking the warmth out of what it freezes. On a move: Coldblooded Strike, Strike of Coldblood.
+In front: frost damage that chills, then freezes; it heals you twice as much from chilled or frozen enemies.
+Behind: leaves ice that slows; enemies that die on the ice drop life orbs more often.
+On enemies: heals when it hits you; deals frost damage and slows you. It heals twice as much while you are chilled.
+Conduit
+Leech and Lightning. Life carried back along the bolt. On a move: Conduit Strike, Strike of the Conduit.
+In front: lightning damage that arcs to nearby enemies; every enemy an arc strikes heals you too.
+Behind: leaves a storm; each enemy its bolts strike heals you a little.
+On enemies: heals when it hits you; deals lightning damage and shocks you. Its arcs heal the monsters they pass through.
+Second Wind
+Leech and Swift. Each heal hurries you on. On a move: Second Wind Strike, Strike of the Second Wind.
+In front: faster to use again, and each time it heals you, its cooldown shortens a little more.
+Behind: enemies it kills drop life orbs, and picking one up gives you a burst of speed.
+On enemies: heals when it hits you; moves and attacks faster. Each time it heals, it speeds up for a moment.
+Marrow
+Leech and Heavy. Crush it, then drink. On a move: Marrow Strike, Strike of Marrow.
+In front: slower, hits much harder and stuns; hitting a stunned enemy heals you three times as much.
+Behind: its cracked ground drains a little life from whatever it staggers, for you.
+On enemies: heals when it hits you; its blows knock you back. Knocking you back heals it a chunk.
+Leech II
+Leech and Leech. On a move: Leeching II Strike, Strike of Leeching II.
+In front: heals you for every enemy hit, half as much again.
+Behind: enemies it kills drop life orbs more often.
+On enemies: heals when it hits you, half as much again.
+Volatile
+Already in the game: Demolition (Power), Rupture (Poison), Shatter (Frost), Powderkeg (Flame), Chain Reaction (Lightning).
+Quickfuse
+Volatile and Swift. No wait between the kill and the blast. On a move: Quickfuse Strike, Strike of the Quickfuse.
+In front: faster to use again; enemies it kills explode at once, and each explosion that kills shortens its cooldown a little.
+Behind: leaves a rune that goes off almost at once.
+On enemies: moves and attacks faster; explodes when it dies. Its dying blast goes off at once, with no time to step away.
+Concussion
+Volatile and Heavy. A blast that knocks the sense out of what it hits. On a move: Concussive Strike, Strike of Concussion.
+In front: slower, hits much harder and stuns; enemies it kills explode, and the blast stuns everything it catches.
+Behind: leaves a rune whose blast cracks the ground, staggering whatever walks over it after.
+On enemies: its blows knock you back; explodes when it dies. Its dying blast knocks you back and stuns you for a moment.
+Volatile II
+Volatile and Volatile. On a move: Volatile II Strike, Strike of Ruin II.
+In front: enemies it kills explode, half as big and hard again.
+Behind: leaves a rune that detonates half as big and hard again.
+On enemies: explodes when it dies, half as hard again.
+Precise
+Already in the game: Shiver (Frost).
+Duelist
+Precise and Power. Deadly one on one. On a move: Duelist's Strike, Strike of the Duelist.
+In front: more damage, a smaller area; an enemy with no other enemy near it always takes a critical hit.
+Behind: marks an enemy; the marked one takes more damage from everything until the mark is spent.
+On enemies: hits harder and has more life; its hits find the gaps in your armour. When you are alone, every hit from it is critical.
+Needle
+Precise and Poison. The venom goes in exactly where it hurts. On a move: Needle Strike, Strike of the Needle.
+In front: a weaker hit that poisons; a critical hit puts three doses on at once.
+Behind: marks an enemy: your next hit on it is a certain critical and doubles the poison already on it.
+On enemies: its hits find the gaps in your armour; poisons you. Its critical hits poison you three times over.
+Brand
+Precise and Flame. A mark burned in. On a move: Branding Strike, Strike of the Brand.
+In front: fire damage that explodes and burns; a critical hit brands the enemy, and a branded enemy burns twice as hot.
+Behind: marks an enemy with a burning brand: it burns until the mark is spent, and your next hit on it is a certain critical.
+On enemies: its hits find the gaps in your armour; deals fire damage and sets you burning. Its critical hits brand you: your burn runs twice as hot.
+Seeker
+Precise and Lightning. Lightning that picks its target. On a move: Seeking Strike, Strike of the Seeker.
+In front: lightning damage whose arcs jump to the enemies with the least life, and arcs can be critical hits too.
+Behind: marks an enemy; lightning from any of your moves arcs to the marked one first.
+On enemies: its hits find the gaps in your armour; deals lightning damage and shocks you. While you are shocked, its hits are critical.
+Quickdraw
+Precise and Swift. The first shot is the one that counts. On a move: Quickdraw Strike, Strike of the Quickdraw.
+In front: faster to use again; the first use after two seconds without using it is a certain critical.
+Behind: marks an enemy; landing the marked critical gives you a burst of speed and shortens its cooldown.
+On enemies: moves and attacks faster; its hits find the gaps in your armour. Its first blow after a pause is critical.
+Pressure Point
+Precise and Heavy. Strike the stunned where it's weakest. On a move: Pressure Point Strike, Strike of the Pressure Point.
+In front: slower, hits much harder and stuns; every hit on a stunned enemy is a certain critical.
+Behind: its cracked ground marks whatever it staggers: your next hit on it is a certain critical.
+On enemies: its blows knock you back; its hits find the gaps in your armour. Its next blow after knocking you back is critical.
+Precise II
+Precise and Precise. On a move: Precise II Strike, Strike of the Mark II.
+In front: more damage still, a smaller area still.
+Behind: marks an enemy: your next two hits on it are certain criticals.
+On enemies: its hits find the gaps in your armour, half as much again.
+Frenzied
+Already in the game: Fervor (Flame).
+Berserk
+Frenzied and Power. The faster you go, the harder you hit. On a move: Berserk Strike, Strike of the Berserker.
+In front: more damage and a bigger hit; each use makes the next faster and harder, up to five times.
+Behind: kills keep the frenzy going, and each kill adds to Power's damage bonus.
+On enemies: speeds up as it is hurt; hits harder and has more life. It hits harder too as it is hurt.
+Fever
+Frenzied and Poison. The poison quickens with your pulse. On a move: Fevered Strike, Strike of Fever.
+In front: a weaker hit that poisons; each use while frenzied adds one more dose, up to five.
+Behind: kills keep the frenzy going, and a poisoned enemy dying holds it twice as long.
+On enemies: speeds up as it is hurt; poisons you. Its poison works faster the more hurt it is.
+Whiteout
+Frenzied and Frost. A storm of blows that buries them in cold. On a move: Whiteout Strike, Strike of the Whiteout.
+In front: frost damage; each use makes the next faster, and the faster you are, the harder it slows.
+Behind: kills keep the frenzy going and freeze the enemies near the one that died for a moment.
+On enemies: speeds up as it is hurt; deals frost damage and slows you. The more hurt it is, the more it slows you.
+Overcharge
+Frenzied and Lightning. The current builds with every swing. On a move: Overcharged Strike, Strike of Overcharge.
+In front: lightning damage; each use makes the next faster and adds one more arc, up to five.
+Behind: kills keep the frenzy going, and each kill throws a bolt at the nearest enemy.
+On enemies: speeds up as it is hurt; deals lightning damage and shocks you. As it is hurt, its lightning arcs farther.
+Blur
+Frenzied and Swift. Too fast to see. On a move: Blurring Strike, Strike of the Blur.
+In front: faster to use again; at a full frenzy of five you also move faster and dodge more.
+Behind: kills keep the frenzy going and give you a burst of speed.
+On enemies: speeds up as it is hurt; moves and attacks faster. Badly hurt, it becomes a blur for a few seconds, very fast.
+Juggernaut
+Frenzied and Heavy. Slow to start, impossible to stop. On a move: Juggernaut Strike, Strike of the Juggernaut.
+In front: slower, hits much harder and stuns; each use makes the next faster, and at a full frenzy it is no slower at all.
+Behind: kills keep the frenzy going; at a full frenzy its cracked ground spreads twice as wide.
+On enemies: speeds up as it is hurt; its blows knock you back. The more hurt it is, the farther it knocks you.
+Frenzied II
+Frenzied and Frenzied. On a move: Frenzied II Strike, Strike of Frenzy II.
+In front: each use makes the next faster, each step half as big again, up to five times.
+Behind: kills keep the frenzy going, half as long again.
+On enemies: speeds up as it is hurt, half as much again.
+Guarding
+Already in the game: Rime Ward (Frost).
+Bulwark
+Guarding and Power. Strong behind a strong shield. On a move: Bulwark Strike, Strike of the Bulwark.
+In front: more damage and a bigger hit; each use gives you a brief shield, and while it holds your hits land harder.
+Behind: leaves a ward circle; inside it Power's damage bonus builds twice as fast.
+On enemies: carries a shield that soaks damage; hits harder and has more life. While its shield holds, it hits harder.
+Hemlock
+Guarding and Poison. A shield that bites back. On a move: Hemlock Strike, Strike of Hemlock.
+In front: a weaker hit that poisons; each use gives you a brief shield, and whatever strikes the shield is poisoned.
+Behind: leaves a ward circle that poisons enemies standing in it.
+On enemies: carries a shield that soaks damage; poisons you. Hitting its shield poisons you.
+Cinderward
+Guarding and Flame. When the shield breaks, it burns. On a move: Cinderward Strike, Strike of the Cinderward.
+In front: fire damage that explodes and burns; each use gives you a brief shield that bursts in flame round you when it breaks or fades.
+Behind: leaves a ward circle ringed in fire: enemies crossing its edge are set burning.
+On enemies: carries a shield that soaks damage; deals fire damage and sets you burning. When its shield breaks, it bursts in flame.
+Static
+Guarding and Lightning. Touch the shield and get shocked. On a move: Static Strike, Strike of Static.
+In front: lightning damage that arcs; each use gives you a brief shield, and whatever strikes the shield is struck by an arc.
+Behind: leaves a ward circle whose edge throws arcs at enemies inside it.
+On enemies: carries a shield that soaks damage; deals lightning damage and shocks you. Hitting its shield shocks you.
+Windward
+Guarding and Swift. Sheltered and quick. On a move: Windward Strike, Strike of the Windward.
+In front: faster to use again; each use gives you a brief shield, and while it holds you move faster.
+Behind: leaves a ward circle; inside it you move faster and take less damage.
+On enemies: carries a shield that soaks damage; moves and attacks faster. While its shield holds, it is faster still.
+Fortress
+Guarding and Heavy. Nothing moves you. On a move: Fortress Strike, Strike of the Fortress.
+In front: slower, hits much harder and stuns; each use gives you a shield, and while it holds nothing knocks you back or stuns you.
+Behind: leaves a ward circle; enemies stepping into it are staggered.
+On enemies: carries a shield that soaks damage; its blows knock you back. While its shield holds, nothing staggers or stops it.
+Guarding II
+Guarding and Guarding. On a move: Guarding II Strike, Strike of Warding II.
+In front: each use gives you a brief shield, half as big again.
+Behind: leaves a ward circle; inside it you take even less damage.
+On enemies: carries a shield half as big again.
+Lasting
+None in the game yet.
+Momentum
+Lasting and Power. Force that keeps building while you keep hitting. On a move: Momentum Strike, Strike of Momentum.
+In front: more damage and a bigger hit; each hit that lands makes the next a little harder, and the build-up holds until you go three seconds without landing one.
+Behind: Power's damage bonus lasts half again as long and builds two steps higher.
+On enemies: hits harder and has more life; each blow it lands makes its next harder, until it stops landing them.
+Canker
+Lasting and Poison. A poison that won't wear off. On a move: Cankered Strike, Strike of the Canker.
+In front: a weaker hit that poisons; its poison lasts twice as long and doesn't wear off while you keep hitting.
+Behind: leaves a poison cloud that lasts twice as long.
+On enemies: its poison lasts longer on you; poisons you. Its poison doesn't wear off while it keeps hitting you.
+Permafrost
+Lasting and Frost. Cold that never lets go. On a move: Permafrost Strike, Strike of Permafrost.
+In front: frost damage; its chill lasts twice as long, and what it freezes stays frozen half again as long.
+Behind: leaves ice that slows and lasts until the fight is over.
+On enemies: its chill lasts longer on you; deals frost damage and slows you. Its slow keeps deepening while you stay within its reach.
+Smoulder
+Lasting and Flame. The fire outlives its fuel. On a move: Smouldering Strike, Strike of the Smoulder.
+In front: fire damage that explodes; burns last twice as long, and an enemy that dies burning leaves smouldering ground where it fell.
+Behind: leaves burning ground that lasts much longer.
+On enemies: its burning lasts longer on you; deals fire damage and sets you burning. Where it dies, the ground smoulders.
+Tempest
+Lasting and Lightning. The storm stays. On a move: Tempest Strike, Strike of the Tempest.
+In front: lightning damage; enemies it shocks stay shocked longer, and for three seconds arcs keep leaping between them.
+Behind: leaves a storm that lasts twice as long.
+On enemies: its shock lasts longer on you; deals lightning damage and shocks you. While you are shocked, small arcs keep striking you.
+Tailwind
+Lasting and Swift. Speed that stays with you. On a move: Tailwind Strike, Strike of the Tailwind.
+In front: faster to use again; each use also gives a burst of speed that lasts while you keep using it.
+Behind: each use gives you a burst of speed that lasts half again as long.
+On enemies: moves and attacks faster; stays fast long after each blow.
+Bedrock
+Lasting and Heavy. The ground stays broken. On a move: Bedrock Strike, Strike of Bedrock.
+In front: slower, hits much harder, and its stun lasts half again as long.
+Behind: leaves cracked ground that lasts until the fight is over.
+On enemies: its blows knock you back; you stay staggered longer after each.
+Lasting II
+Lasting and Lasting. On a move: Lasting II Strike, Strike of Ages II.
+In front and behind: everything it makes and gives lasts twice as long.
+On enemies: its poison, burning and chill last longer still on you.
+Fleeting
+None in the game yet.
+Haymaker
+Fleeting and Power. A hard blow with no warning. On a move: Haymaker Strike, Strike of the Haymaker.
+In front: more damage and a bigger hit, and it lands sooner: less wind-up before the blow.
+Behind: Power's damage bonus builds twice as fast and fades in half the time.
+On enemies: hits harder and has more life; its blows come with less warning.
+Bloat
+Fleeting and Poison. The poison works fast, then bursts out. On a move: Bloating Strike, Strike of Bloat.
+In front: a weaker hit that poisons; its poison works in a third less time, and when it runs out the enemy bursts in a small cloud of it.
+Behind: leaves a poison cloud that fades fast and bursts on whatever is inside as it goes.
+On enemies: its poison hurts you faster; poisons you. When its poison on you runs out, it bursts round you.
+Cold Snap
+Fleeting and Frost. A sudden, biting cold. On a move: Cold Snap Strike, Strike of the Cold Snap.
+In front: frost damage; its chill is shorter but deeper, and hitting a chilled enemy snaps the chill off for extra damage.
+Behind: leaves ice that melts fast, freezing what stands on it as it goes.
+On enemies: its chill on you is short but deep; deals frost damage and slows you.
+Flashfire
+Fleeting and Flame. Burns that go up all at once. On a move: Flashfire Strike, Strike of the Flashfire.
+In front: fire damage; its burns do all their harm in half the time, and a burn ending sends up a flare that hits those near.
+Behind: leaves burning ground that burns hotter and dies faster.
+On enemies: its burning hurts you faster; deals fire damage and sets you burning. When its burn on you ends, it flares.
+Jolt
+Fleeting and Lightning. All the shock in one instant. On a move: Jolting Strike, Strike of the Jolt.
+In front: lightning damage; a shocked enemy takes all of the shock's harm in a single jolt the next time you hit it.
+Behind: leaves a storm that lets loose all its bolts in one moment.
+On enemies: deals lightning damage and shocks you; its shock hits you all at once.
+Blink
+Fleeting and Swift. Gone before they see you move. On a move: Blink Strike, Strike of the Blink.
+In front: faster to use again, and for a moment after each use you move very fast.
+Behind: each use gives a burst of speed a third as long and much faster.
+On enemies: moves and attacks faster; darts at you in short, very fast bursts.
+Daze
+Fleeting and Heavy. A short stun that leaves them wide open. On a move: Dazing Strike, Strike of the Daze.
+In front: slower, hits much harder; its stun is shorter, but every hit on a stunned enemy lands harder.
+Behind: its cracked ground staggers in quick, short jolts, more often.
+On enemies: its blows knock you back; while you are staggered, it hits you harder.
+Fleeting II
+Fleeting and Fleeting. On a move: Fleeting II Strike, Strike of Moments II.
+In front and behind: everything it makes and gives is half as long, and does as much in that time.
+On enemies: its poison and burning hurt you faster still.
+Vast
+None in the game yet.
+Cataclysm
+Vast and Power. The bigger the crowd, the bigger the blow. On a move: Cataclysm Strike, Strike of the Cataclysm.
+In front: a much bigger area; the hit lands harder for every enemy it catches.
+Behind: each hit splashes harder onto the enemies near what it hits.
+On enemies: hits harder and has more life; its attacks reach much wider.
+Miasma
+Vast and Poison. A haze that thickens as it spreads. On a move: Miasma Strike, Strike of the Miasma.
+In front: a weaker hit over a much bigger area that poisons everything it touches; the more enemies it poisons at once, the stronger each dose.
+Behind: leaves a poison cloud that slowly grows.
+On enemies: poisons you; its attacks reach wider and leave a haze of poison where they land.
+Glacier
+Vast and Frost. The cold spreads from one to the next. On a move: Glacial Strike, Strike of the Glacier.
+In front: frost damage over a much bigger area; when it freezes an enemy, the ice spreads to those touching it and chills them.
+Behind: leaves a wide field of ice that slowly creeps outward.
+On enemies: deals frost damage and slows you; its attacks reach wider and frost the ground where they land.
+Inferno
+Vast and Flame. Fire that runs across the floor. On a move: Inferno Strike, Strike of the Inferno.
+In front: fire damage over a much bigger area; burning enemies set the ground alight where they walk.
+Behind: leaves burning ground that spreads outward for a few seconds.
+On enemies: deals fire damage and sets you burning; its attacks reach wider and set the ground alight.
+Stormfront
+Vast and Lightning. One hit links the whole crowd. On a move: Stormfront Strike, Strike of the Stormfront.
+In front: lightning damage over a much bigger area; every enemy it hits is linked, and lightning flicks between linked enemies for a few seconds.
+Behind: leaves a storm that drifts wide, striking anything in a much bigger area.
+On enemies: deals lightning damage and shocks you; its attacks and its lightning reach wider.
+Gale
+Vast and Swift. A sweep that clears the room. On a move: Gale Strike, Strike of the Gale.
+In front: faster to use again, a much bigger area, and it blows the enemies it hits back to its edge.
+Behind: each use gives a burst of speed to you and every ally near you.
+On enemies: moves and attacks faster; its attacks reach wider and push you away.
+Earthquake
+Vast and Heavy. The stun rolls out like a wave. On a move: Earthquake Strike, Strike of the Earthquake.
+In front: slower, hits much harder, and its stun rolls out in a wide wave from where it lands, reaching the far side a moment late.
+Behind: leaves a wide field of cracked ground.
+On enemies: its blows knock you back from much farther away.
+Vast II
+Vast and Vast. On a move: Vast II Strike, Strike of the Expanse II.
+In front: an even bigger area, a little less damage.
+Behind: each hit splashes harder onto the enemies near what it hits.
+On enemies: its attacks reach even wider.
+Swift II and Heavy II
+The two floor 1–5 runes that don't rank up yet. Power, Poison, Frost, Flame and Lightning already have a level 2.
+Swift II
+Swift and Swift. On a move: Swift II Strike, Strike of Swiftness II.
+In front: faster to use again, half as much again.
+Behind: each use gives you a burst of speed, half as big again.
+On enemies: moves and attacks faster, half as much again.
+Heavy II
+Heavy and Heavy. On a move: Heavy II Strike, Strike of Quakes II.
+In front: slower, hits harder still, and stuns half as long again.
+Behind: leaves wider cracked ground that staggers longer.
+On enemies: its blows knock you back farther.
