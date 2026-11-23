@@ -1444,7 +1444,7 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   its foot. `--only=meldany --shots=<dir>`: 13 checks.
 - **Strongholds on any endless level: the cult's altar room** (`scripts/act1/altar_rooms.gd`, the floors 6 to 10 strongholds'
   own rules, `act1/holds.gd`, its door and hall made a room; AltarRooms.ON, OFF until his yes to the pictures,
-  docs/mockups/altar_room/). His words, 23 Nov 2026: “In endless mode I want multiple chained and stronghold encounters per
+  docs/mockups/altar_room/, https://claude.ai/artifact/382FjE26hEgjMJwdEeENVS). His words, 23 Nov 2026: “In endless mode I want multiple chained and stronghold encounters per
   level”; the altar room, his “Yes and yes”. On an endless level of a floor with no strongholds of its own (floors 6 to 10 keep
   theirs), two of its ordinary rooms (no door of their own, off the way in, no chained rare, away from the Bells) each hold the
   cult's altar of the words with its braziers and banners (the browser game's own painters, `tools/godot_altar_room.ts` ->

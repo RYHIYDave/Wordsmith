@@ -38,7 +38,8 @@ func _go(where: String) -> void:
 ## The monsters in an altar's room or ring gone (none of its waves yet), the rest asleep.
 func _quiet(q: Dictionary) -> void:
 	var r: Dictionary = q["room"]
-	var box := Rect2(float(r["x"]) - 1.0, float(r["y"]) - 1.0, float(r["w"]) + 2.0, float(r["h"]) + 2.0)
+	var grow := 8.0 if q.get("ring", false) else 1.0
+	var box := Rect2(float(r["x"]) - grow, float(r["y"]) - grow, float(r["w"]) + 2.0 * grow, float(r["h"]) + 2.0 * grow)
 	for o in M._monsters.list.duplicate():
 		if not is_instance_valid(o) or o.dead:
 			continue
@@ -65,6 +66,13 @@ func run(main, hero, dir: String) -> void:
 	# (every move open already: no NEW MOVE moment holding the game while the waves come)
 	M.loot.level = 20
 	M.loot.derive()
+	if M._arg("cases") == "ring":
+		M.endless = 6
+		M.in_endless = true
+		await _ring()
+		AltarRooms.ON = was
+		print("ALTARROOMS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+		return
 	# --- THE STORY'S FLOOR 3: none
 	M.in_endless = false
 	await _go("floor3")
@@ -154,7 +162,16 @@ func run(main, hero, dir: String) -> void:
 	M.endless_floor = 7
 	await _go("floor7")
 	_line(M.holds != null and M.holds.get("altar_room") == null and M.holds.data["holds"].size() >= 1, "an endless level of floor 7: its own strongholds (%d), no altar room" % (M.holds.data["holds"].size() if M.holds != null else 0))
-	# --- AN ENDLESS LEVEL OF FLOOR 13: two, away from the Bells
+	await _ring()
+	M.altar_seed = -1
+	M.in_endless = false
+	AltarRooms.ON = was
+	print("ALTARROOMS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## An endless level of floor 13: two, away from the Bells; its streets close no room, so a ring of fire.
+func _ring() -> void:
+	var dir: String = M._arg("shots")
 	M.endless_floor = 13
 	M.altar_seed = 5
 	await _go("floor13")
@@ -164,7 +181,9 @@ func run(main, hero, dir: String) -> void:
 	if not q13.is_empty():
 		h.world = M._spot_near(Vector2(q13[0]["altar"]["x"], q13[0]["altar"]["y"]) + Vector2(0.4, 1.6), 1.2, h.world)
 		_quiet(q13[0])
-		await _wait(3.0)
+		await _wait(6.0)
+		_quiet(q13[0])
+		await _wait(0.5)
 		await M._snap(dir + "/r06_floor13_asleep.png")
 		M.loot.words["frost"] = 1
 		R13.lay(0, "frost")
@@ -172,7 +191,3 @@ func run(main, hero, dir: String) -> void:
 		await _wait(1.2)
 		await M._snap(dir + "/r07_floor13_ring_up.png")
 	_line(q13.is_empty() or q13[0].get("ring", false) == true, "floor 13's streets have no room that closes: a ring of fire there (%s), %d tiles of it" % [str(q13[0].get("ring", false)) if not q13.is_empty() else "-", (q13[0]["ways"] as Array).size() if not q13.is_empty() else 0])
-	M.altar_seed = -1
-	M.in_endless = false
-	AltarRooms.ON = was
-	print("ALTARROOMS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

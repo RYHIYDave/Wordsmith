@@ -1,0 +1,77 @@
+<title>Altar Rooms</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* One column of the game's own pictures, in its night indigo; the enemy's pink only where the cult's fire is. */
+:root {
+  --bg: #f2f3fb; --panel: #ffffff; --line: #d4d8ef; --fg: #161a3a; --muted: #5a618c; --accent: #0c8fa3; --cult: #c0206a; --stage: #0e0c24;
+  --display: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1030; --panel: #161a44; --line: #2c3274; --fg: #e9ecff; --muted: #a3abd8; --accent: #28dcf0; --cult: #ff4f8a; --stage: #0e0c24; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #0d1030; --panel: #161a44; --line: #2c3274; --fg: #e9ecff; --muted: #a3abd8; --accent: #28dcf0; --cult: #ff4f8a; --stage: #0e0c24; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 24px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 26px; }
+.wrap > * { min-width: 0; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 7vw, 38px); line-height: 1.1; margin: 4px 0 8px; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 20px; margin: 0 0 10px; }
+p { margin: 0; max-width: 62ch; }
+.lead { color: var(--muted); }
+img { image-rendering: pixelated; display: block; max-width: 100%; height: auto; }
+figure { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; gap: 8px; }
+figure img { border-radius: 4px; width: 100%; }
+figcaption { font-size: 13px; color: var(--muted); }
+figcaption b { color: var(--fg); font-weight: 600; }
+.shots { display: grid; gap: 12px; }
+.pieces { background: var(--stage); border-radius: 8px; padding: 12px; }
+ul.rules { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 64ch; }
+ul.rules li::marker { color: var(--cult); }
+.ask { background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 16px; }
+.ask b { font-family: var(--display); font-size: 17px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Wordsmith · endless · pictures first</div>
+    <h1>The cult's altar rooms</h1>
+    <p class="lead">Strongholds on every endless level. On floors that don't have strongholds of their own, two of the floor's rooms hold the cult's altar. Give it words and the room seals with the cult's fire, and five waves rise out of the floor. Floors 6 to 10 keep their real strongholds. Switched off until you say yes.</p>
+  </header>
+
+  <section>
+    <h2>The pieces</h2>
+    <p class="lead" style="margin-bottom:12px">All painted by the browser game's own cult painters: the altar of the words with its three hollows, the braziers of pink fire, the banner with the shrieking skull, and the fire that bars the way out.</p>
+    <div class="pieces"><img src="pieces.png" alt="The altar, two braziers, a banner and four frames of the barring fire"></div>
+  </section>
+
+  <section class="shots">
+    <h2>A room, start to finish</h2>
+    <figure><img src="room_asleep.png" alt="An altar room on floor 3, the altar between two braziers"><figcaption><b>Floor 3, endless.</b> The altar waits in an ordinary room. Walk up to it: “Altar: give words to wake it”.</figcaption></figure>
+    <figure><img src="altar_screen.png" alt="The altar's half of the gear screen with Flame laid on it"><figcaption><b>The altar's screen.</b> Lay up to three spare runes, then WAKE THE ALTAR.</figcaption></figure>
+    <figure><img src="fire_up.png" alt="Fire standing in the room's doorways, the first wave rising"><figcaption><b>Woken.</b> The cult's pink fire stands up in every doorway, and the first wave comes up out of rifts in the floor.</figcaption></figure>
+    <figure><img src="wave_rising.png" alt="A later wave rising out of a rift"><figcaption><b>Wave after wave,</b> five in all, each from the floor's own monsters and carrying the runes you gave. More runes make them harder and the reward richer.</figcaption></figure>
+    <figure><img src="room_won.png" alt="The room won, loot on the floor, the fire gone"><figcaption><b>Won.</b> Runedust, gear and gold, a stronghold's reward. The fire in the doorways falls.</figcaption></figure>
+  </section>
+
+  <section class="shots">
+    <h2>Where there's no room to seal: a ring of fire</h2>
+    <p class="lead">The city's streets (floors 11 and 13) have no rooms that close. There the altar stands on open ground, and when it wakes the fire springs up in a ring around it instead.</p>
+    <figure><img src="ring_asleep.png" alt="An altar on open ground on floor 13"><figcaption><b>Floor 13, endless.</b> The altar in the open, its braziers and banners round it.</figcaption></figure>
+    <figure><img src="ring_up.png" alt="A ring of the cult's fire round the altar, the cult rising inside it"><figcaption><b>Woken:</b> a ring of fire, the cult rising inside it.</figcaption></figure>
+  </section>
+
+  <section>
+    <h2>How it plays</h2>
+    <ul class="rules">
+      <li>Two altars on every endless level of floors 1 to 5 and 11 to 20, in rooms off the way in, away from the chained rares and the Bells.</li>
+      <li>It plays like a stronghold: up to three runes, five waves, the same reward. The fire walls off the room until the last wave is dead.</li>
+      <li>Leave without waking it and your runes come back to you.</li>
+    </ul>
+  </section>
+
+  <div class="ask"><b>Your call</b><p>Tell me in the chat to switch them on, or what to change.</p></div>
+</div>
