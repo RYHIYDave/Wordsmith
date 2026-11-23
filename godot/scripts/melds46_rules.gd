@@ -36,6 +36,8 @@ var _crit_now := false
 var _echo_until: Array = [-99.0, -99.0, -99.0]
 ## (Redoubt's second shell given for this shell; Sanctuary, Parry, Aegis: the shield as it was, to see a fresh one)
 var _redoubt_done := false
+## (his shell as it was last step: Melds 52's own is already brought up to now when this runs)
+var _sh_was := 0.0
 var _shield_t_was := 0.0
 var _parry_t := 0.0
 ## (Shieldwall: a use's shield to be thickened as it comes)
@@ -716,7 +718,9 @@ func step(dt: float) -> void:
 	_shield_t_was = h.shield_t
 	_parry_t = maxf(0.0, _parry_t - dt)
 	# REDOUBT: the shell gone (broken or faded), a second, smaller one in its place, once
-	if p.any_has("redoubt") and p._shield_was > 0.0 and sh <= 0.0 and not _redoubt_done:
+	var sh_was := _sh_was
+	_sh_was = sh
+	if p.any_has("redoubt") and sh_was > 0.0 and sh <= 0.0 and not _redoubt_done:
 		_redoubt_done = true
 		h.shield = maxf(1.0, roundf(h.max_life * 0.1 * float(_t("redoubt")["second"]) * 2.0))
 		h.shield_t = float(Words.data()["guard"]["shieldTime"]) * 0.6
@@ -874,6 +878,7 @@ func forget() -> void:
 	_after.clear()
 	_bumped.clear()
 	_redoubt_done = false
+	_sh_was = 0.0
 	_parry_t = 0.0
 	_wall_due = false
 	_echo_until = [-99.0, -99.0, -99.0]

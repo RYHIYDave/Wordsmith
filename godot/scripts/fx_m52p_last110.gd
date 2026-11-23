@@ -620,7 +620,28 @@ func paint_air(b: Dictionary) -> void:
 			_glow(p.x, p.y, 16.0, R[4], fade)
 		"fury:ember", "fury:hold":
 			var hh := _hero_at(b)
-			_glow(_wx(hh.x, hh.y), _wy(hh.x, hh.y) - 16.0, 18.0, R[3], 0.6 * fade)
+			var hx := _wx(hh.x, hh.y)
+			var hy := _wy(hh.x, hh.y)
+			_glow(hx, hy - 16.0, 22.0, R[3], 0.8 * fade)
+			if b["what"] == "ember":
+				# (his frenzy's embers over his head, one fewer: the lost one drops, cooling)
+				var n := clampi(int(b.get("n", 1)), 0, 5)
+				for k in n + 1:
+					var x := hx - float(n) * 3.5 + k * 7.0
+					var y := hy - 36.0
+					var lost := k == n
+					if lost:
+						y += 18.0 * _ease(u)
+						x += 4.0 * u
+					_ga(fade if not lost else 1.0 - u)
+					_fs(FIRE[1])
+					_fill(_ri(x) - 2, _ri(y) - 3, 5, 7)
+					_fs(FIRE[2] if lost else FIRE[4])
+					_fill(_ri(x) - 1, _ri(y) - 2, 3, 5)
+					if not lost:
+						_fs(FIRE[5])
+						_fill(_ri(x), _ri(y) - 1, 1, 2)
+						_glow(x, y, 7.0, FIRE[4], 0.6 * fade)
 		"spree:burst", "spree:two", "rapier:two":
 			var hh := _hero_at(b)
 			_glow(_wx(hh.x, hh.y), _wy(hh.x, hh.y) - 16.0, 16.0, R[4], 0.8 * fade)
@@ -728,18 +749,21 @@ func _hourglass(cx: float, cy: float, u: float, R: PackedColorArray, fade: float
 	var hgt := 12.0 * absf(c) + 3.0
 	_glow(cx, cy, 22.0, R[4], 0.7 * fade)
 	_ga(fade)
-	for k in 9:
-		var v := float(k) / 8.0
+	var rows := maxi(2, _ri(hgt * 2.0))
+	for k in rows + 1:
+		var v := float(k) / float(rows)
 		var w := 8.0 * absf(1.0 - v * 2.0) + 1.5
 		var y := cy - hgt + v * hgt * 2.0
 		_fs(R[0])
-		_fill(_ri(cx - w) - 1, _ri(y) - 1, _ri(w * 2.0) + 2, 4)
-	for k in 9:
-		var v := float(k) / 8.0
+		_fill(_ri(cx - w) - 1, _ri(y) - 1, _ri(w * 2.0) + 2, 3)
+	for k in rows + 1:
+		var v := float(k) / float(rows)
 		var w := 8.0 * absf(1.0 - v * 2.0) + 1.5
 		var y := cy - hgt + v * hgt * 2.0
-		_fs(R[3])
-		_fill(_ri(cx - w), _ri(y), _ri(w * 2.0), 2)
+		# (the sand: the lower bulb filling, the upper emptying)
+		var low := (v > 0.5) == (s > 0.0)
+		_fs(R[4] if low and absf(v - 0.5) * 2.0 < 0.3 + 0.7 * _c01(u * 1.5) else R[2])
+		_fill(_ri(cx - w), _ri(y), _ri(w * 2.0), 1)
 	_fs(R[1])
 	_fill(_ri(cx) - 10, _ri(cy - hgt) - 2, 20, 3)
 	_fill(_ri(cx) - 10, _ri(cy + hgt) - 1, 20, 3)
@@ -957,11 +981,17 @@ func paint_floor_more() -> void:
 						_fs(R[3])
 						_ring(x, y, r, 3, t)
 			"hourglass":
-				if randf() < 0.3:
+				# (slow sand: a ring of it creeping round, grains drifting inside)
+				_ga(0.8 * life)
+				_fs(R[1])
+				_ring(x, y, r + 0.03, 3, t * 0.2)
+				_fs(R[4])
+				_ring(x, y, r, 3, t * 0.2)
+				if randf() < 0.6:
 					var a := randf() * TAU
 					var d := sqrt(randf()) * r
 					bits.append({"x": x + cos(a) * d, "y": y + sin(a) * d, "z": 2.0, "vx": 0.3, "vy": 0.1, "vz": 0.0, "fall": 0.0, "t": 0.0,
-						"life": 0.7, "ramp": PackedColorArray([R[3], R[4], R[5]]), "kind": "dot", "size": 1.0})
+						"life": 0.9, "ramp": PackedColorArray([R[3], R[4], R[5]]), "kind": "dot", "size": 2.0})
 			"aftermath":
 				# (a monster's: the floor smoking where it struck)
 				_smoke(x, y, r, R, life, sd)

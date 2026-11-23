@@ -249,7 +249,8 @@ func film(only := "") -> void:
 		h.m52.told = {}
 		for side in ["front", "behind"]:
 			_fresh()
-			M._w_set(h, 0, side, [id])
+			# (Hourglass behind works on the ground the blow leaves: Guarding beside it, for the film, leaves a ward)
+			M._w_set(h, 0, side, [id, "guarding"] if id == "hourglass" and side == "behind" else [id])
 			for m in M._w_pack:
 				if (KILL.has(id) and side == "front") or (KILL_BEHIND.has(id) and side == "behind"):
 					m.life = 1.0
@@ -273,18 +274,22 @@ func film(only := "") -> void:
 					m.frozen_t = 2.0
 			if TOUGH.has(id):
 				for m in M._w_pack:
-					m.max_life = 100000.0
-					m.life = 10050.0
+					m.max_life = 2500.0
+					m.life = 320.0
 			k = await _frames(k, 0.25)
 			M._w_strike(h)
 			k = await _walk(k, 0.6, id, 1.0)
 			M._w_strike(h)
-			# (so the film sees his shell go and his frenzy fade, which in a fight take their full time)
-			if side == "front" and id == "redoubt":
-				h.shield_t = minf(h.shield_t, 0.5)
-			if side == "front" and id == "fury":
-				h.frenzy_t = minf(h.frenzy_t, 0.5)
-			k = await _walk(k, (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0)), id, -1.0)
+			var rest := (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0))
+			# (so the film sees his shell go and his frenzy fade, which in a fight take their full time: cut short once the blow has landed)
+			if side == "front" and id in ["redoubt", "fury"]:
+				k = await _frames(k, 0.4)
+				rest -= 0.4
+				if id == "redoubt":
+					h.shield_t = minf(h.shield_t, 0.3)
+				else:
+					h.frenzy_t = minf(h.frenzy_t, 0.3)
+			k = await _walk(k, rest, id, -1.0)
 		# (carried by one of the pack, which comes for him: its two runes and the meld, as an altar lays them)
 		_fresh()
 		# (a Guarding meld: his shield up as the monster comes, to show what it does to what strikes it)
