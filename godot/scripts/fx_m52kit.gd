@@ -23,10 +23,21 @@ var _idx := PackedInt32Array()
 var _style := Color.WHITE
 var _alpha := 1.0
 
-const ICE := [Color("#0c1020"), Color("#1c2c48"), Color("#3c64a0"), Color("#8ad0fa"), Color("#d8f4ff"), Color("#ffffff")]
+## (the melds' own ice and fire, darkest to brightest; with OWN on, Frost's and Flame's own, fx_looks.json's frost and fire ramps,
+## his “I want consistency with my damage”: own_colours)
+static var ICE := [Color("#0c1020"), Color("#1c2c48"), Color("#3c64a0"), Color("#8ad0fa"), Color("#d8f4ff"), Color("#ffffff")]
 const STONE := [Color("#1a1410"), Color("#3a2e22"), Color("#6a5236"), Color("#9a7a52"), Color("#c8a878"), Color("#f0dcb4")]
 const DUST := [Color("#2a2420"), Color("#4a4038"), Color("#7a6a58"), Color("#a8967c")]
-const FIRE := [Color("#3a0c04"), Color("#7a1c06"), Color("#c8400c"), Color("#ff8a1c"), Color("#ffd060"), Color("#fff4c8")]
+static var FIRE := [Color("#3a0c04"), Color("#7a1c06"), Color("#c8400c"), Color("#ff8a1c"), Color("#ffd060"), Color("#fff4c8")]
+const ICE_OWN := [Color("#0c1428"), Color("#1c3a86"), Color("#2e6cc8"), Color("#58a8f0"), Color("#b0e0ff"), Color("#ffffff")]
+const FIRE_OWN := [Color("#3a0c04"), Color("#a82810"), Color("#e05018"), Color("#ff8a2a"), Color("#ffc24a"), Color("#fff0a0")]
+
+
+## Sets OWN, and with it the melds' ice and fire to Frost's and Flame's own (or back).
+static func set_own(on: bool) -> void:
+	OWN = on
+	ICE = (ICE_OWN if on else [Color("#0c1020"), Color("#1c2c48"), Color("#3c64a0"), Color("#8ad0fa"), Color("#d8f4ff"), Color("#ffffff")]).duplicate()
+	FIRE = (FIRE_OWN if on else [Color("#3a0c04"), Color("#7a1c06"), Color("#c8400c"), Color("#ff8a1c"), Color("#ffd060"), Color("#fff4c8")]).duplicate()
 
 
 ## Its colours, darkest to brightest (as the game's meld ramps run): its deep, its dark, its mid, itself, its light, its glint.

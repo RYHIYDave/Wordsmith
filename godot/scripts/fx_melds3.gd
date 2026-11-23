@@ -241,7 +241,27 @@ static func owns_event(e: Dictionary) -> bool:
 	var m = e.get("meld")
 	if not (t == "arc" or t == "burst" or t == "zone") or not (m is String):
 		return false
+	if not mine(m):
+		return false
 	return look_of_kind(m, e.get("kind") if t == "zone" else null, t) != ""
+
+
+## THE WORDS' OWN LOOKS (his words, 23 Nov 2026: “I want consistency with my damage.  The damage melds are a little different so
+## they can have a different flair if it seems applicable”): a move with one of the 98 new melds tags its arcs and blasts with it
+## (melds.gd tag, wakes.gd and monsters.gd _melded), and these looks took them all, drawing an arc of a meld they did not know in
+## Thunder's violet (arc_look: RAMP's fallback) and the blast of its rune not at all. With fx_m52kit.gd OWN on, they take only
+## their own melds' (the ten, Volatile's five, the eight: RAMP); the rest are their words' own: Lightning's bolt, Volatile's blast.
+static var _kit = null
+
+
+static func mine(m) -> bool:
+	if not (m is String):
+		return false
+	if _kit == null:
+		_kit = load("res://scripts/fx_m52kit.gd")
+	if RAMP.is_empty():
+		ready_up()
+	return RAMP.has(m) or not bool(_kit.OWN)
 
 
 ## A patch's look, or "" (lookOf).
@@ -2572,7 +2592,7 @@ func event(e: Dictionary) -> void:
 			hit_look(w, e["x"], e["y"], 0.8, false)
 	elif t == "burst":
 		var m = e.get("meld")
-		if m is String:
+		if m is String and mine(m):
 			if m == "scald":
 				scald_crack(e["x"], e["y"], e["r"])
 			elif m == "eruption":
@@ -2594,7 +2614,7 @@ func event(e: Dictionary) -> void:
 				hit_look(w, e["x"] + rx * float(e["r"]), e["y"] + ry * float(e["r"]), 0.6, false)
 			elif style == "slam" or style == "nova" or style == "land":
 				hit_look(w, e["x"], e["y"], e["r"], true)
-	elif t == "arc" and e.get("meld") is String:
+	elif t == "arc" and mine(e.get("meld")):
 		var from_zone := false
 		for z: Dictionary in view.get("zones", []):
 			if absf(float(z["x"]) - float(e["x0"])) < 0.01 and absf(float(z["y"]) - float(e["y0"])) < 0.01:

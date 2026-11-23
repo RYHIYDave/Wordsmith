@@ -1,0 +1,123 @@
+<title>Damage Looks Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* One dark look, the game's night indigo: before on the left, after on the right. */
+:root {
+  --bg: #0d1030; --panel: #161a44; --line: #2c3274; --fg: #e9ecff; --muted: #a3abd8; --accent: #28dcf0; --stage: #05040f;
+  --display: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 900px; margin: 0 auto; padding-block: 24px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+.wrap > * { min-width: 0; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 7vw, 38px); line-height: 1.1; margin: 4px 0 8px; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 19px; margin: 0; }
+p { margin: 0; max-width: 66ch; }
+.lead { color: var(--muted); }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 10px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pair figure { margin: 0; display: grid; gap: 4px; min-width: 0; }
+.pair img, .pair video { width: 100%; height: auto; display: block; border-radius: 4px; background: var(--stage); image-rendering: pixelated; }
+figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+figure.new figcaption { color: var(--accent); }
+.ask { background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 16px; }
+.ask b { font-family: var(--display); font-size: 17px; }
+header p + p { margin-top: 10px; }
+ul.check { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 66ch; }
+ul.check li { color: var(--fg); }
+.tag { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; margin-right: 6px; white-space: nowrap; }
+.ok { background: #143a2e; color: #7af0c0; }
+.fixed { background: #10324a; color: var(--accent); }
+.kept { background: #3a2e12; color: #ffd27a; }
+.call { background: #3a1430; color: #ff9ad0; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Wordsmith · damage looks · pictures first</div>
+    <h1>Your damage, one look each</h1>
+    <p class="lead">You asked: “Okay, I want you to look at all lightning in the game and see if it's the gold bolts or Lightning's bolts.  Same with fire, same with ice, same with poison, same with power.  I want consistency with my damage.  The damage melds are a little different so they can have a different flair if it seems applicable.”</p>
+    <p class="lead">I went through every place your damage shows: your words, Rank II words, all the melds, the five classes' moves and talents, the uniques, and monsters carrying your words. Lightning's own bolt is white at its heart with yellow-gold edges, so gold in itself is right. The wrong ones were bolts the new melds drew in their own colours, and violet bolts they borrowed from Thunder. Everything below sits behind the same switch as the melds' page, off until you say yes.</p>
+  </header>
+
+  <section>
+    <h2>Lightning</h2>
+    <ul class="check">
+      <li><span class="tag fixed">Fixed</span>Nine new Lightning melds struck with Thunder's violet bolts: Static, Jolt, Fulgurite, Quicksilver, Conduit, Overcharge, Seeker, Tempest and Stormfront. That covered their hits, their storms, and monsters carrying them. The damage melds' look took any meld's arc, and for one it didn't know it fell back on Thunder's violet. Now they strike with Lightning's own bolt.</li>
+      <li><span class="tag fixed">Fixed</span>Their own thick bolts in their own colours, like Jolt's gold ones, are Lightning's own bolt now (on the melds' page).</li>
+      <li><span class="tag ok">Already right</span>The Lightning word, its storm, Rank II Lightning, the Mage's lightning talents, the Brawler's arcs, and monsters carrying Lightning.</li>
+      <li><span class="tag kept">Own flair</span>Thunder, Wildfire, Hailstorm and Contagion (the damage melds) and Chain Reaction (Volatile's lightning meld). Forking keeps Lightning's white-gold heart with the twins' sea-green after-image.</li>
+      <li><span class="tag call">Your call</span>The Tinkerer's tesla coil and her energy Contraption deal lightning damage in her cyan.</li>
+    </ul>
+    <div class="pair">
+      <figure><video src="jolt_old.mp4" controls muted playsinline loop preload="none"></video><figcaption>Jolt, before: the film</figcaption></figure>
+      <figure class="new"><video src="jolt_new.mp4" controls muted playsinline loop preload="none"></video><figcaption>Jolt, after: the film</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="jolt_old.jpg" alt="Jolt before: violet bolts and thick gold bolts." loading="lazy"><figcaption>Jolt, before</figcaption></figure>
+      <figure class="new"><img src="jolt_new.jpg" alt="Jolt after: Lightning's own white and yellow bolt." loading="lazy"><figcaption>Jolt, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="static_old.jpg" alt="Static before: a violet bolt." loading="lazy"><figcaption>Static, before</figcaption></figure>
+      <figure class="new"><img src="static_new.jpg" alt="Static after: Lightning's own bolt." loading="lazy"><figcaption>Static, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="conduit_old.jpg" alt="Conduit before: violet bolts." loading="lazy"><figcaption>Conduit, before</figcaption></figure>
+      <figure class="new"><img src="conduit_new.jpg" alt="Conduit after: Lightning's own bolts." loading="lazy"><figcaption>Conduit, after</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Fire</h2>
+    <ul class="check">
+      <li><span class="tag ok">Already right</span>The Flame word's flames, fireballs, burning ground and burning monsters; the Mage's fire talents; the Warlock's fire blasts; the uniques' fire; monsters carrying Flame.</li>
+      <li><span class="tag fixed">Matched</span>The new Fire melds drew their fire in a near copy of Flame's colours. Now they use Flame's exact colours.</li>
+      <li><span class="tag kept">Own flair</span>Eruption, Scald, Wildfire, Fumes and Powderkeg; Cauterize and Fervor keep fire's colours.</li>
+      <li><span class="tag call">Your call</span>The Warlock's own burning, his hellfire, is cyan, though it is fire damage.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Ice</h2>
+    <ul class="check">
+      <li><span class="tag ok">Already right</span>The Frost word's ice bursting up, shards, snow, rime, frozen and chilled monsters; the Mage's frost; monsters carrying Frost.</li>
+      <li><span class="tag fixed">Matched</span>The new Frost melds' ice was a shade more cyan than Frost's. Now it is Frost's own blue. Flash Freeze no longer draws a second ice block over Frost's own, and Icebreaker's shatter is Frost's own breaking ice (on the melds' page).</li>
+      <li><span class="tag kept">Own flair</span>Avalanche, Scald, Hailstorm, Frostbite and Shatter; Shiver and Rime Ward.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Poison</h2>
+    <ul class="check">
+      <li><span class="tag ok">Already right</span>The Poison word's bubbles, splash, clouds and poisoned monsters; the Ranger's Venom; monsters carrying Poison. The poison melds' own twists are in greens close to Poison's.</li>
+      <li><span class="tag fixed">Fixed</span>Mire's bubbles are Poison's own (on the melds' page).</li>
+      <li><span class="tag kept">Own flair</span>Blight, Fumes, Frostbite, Contagion and Rupture; Siphon.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Power</h2>
+    <ul class="check">
+      <li><span class="tag ok">Already right</span>Power's own look is the heavy blow: a heavier ring, the screen's kick, and its hot white to red. It plays for every Power word and every meld with Power in it.</li>
+      <li><span class="tag kept">Own flair</span>Eruption, Avalanche, Thunder, Blight and Demolition; Sunder.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>A bug found on the way</h2>
+    <p class="lead">With a new Volatile meld behind a move (Cluster, Detonator, Mayhem, Minefield, Timebomb, Hair Trigger, Blastwave, Bloodbloom, Quickfuse, Concussion), the rune it leaves was not drawn going off at all. The damage melds' look took its blast and drew nothing. With the switch on, it goes off in Volatile's own violet blast.</p>
+  </section>
+
+  <section>
+    <h2>Left as they are</h2>
+    <p class="lead">Bosses' and monsters' own attacks keep the enemy's pink and gold, by your rule. The Mage's crackling arcs are her own power, not lightning damage.</p>
+  </section>
+
+  <div class="ask"><b>Your call</b><p>Two looks are a class's own colour on a damage type. The Tinkerer's lightning is cyan: I'd make it Lightning's own bolt and keep her cyan on her machine. The Warlock's hellfire is cyan: I'd keep it, since it's his own kind of fire. Tell me in the chat, and whether to switch all of this on.</p></div>
+</div>
