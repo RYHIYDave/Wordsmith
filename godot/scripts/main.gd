@@ -32,6 +32,9 @@ const Minimap := preload("res://scripts/minimap.gd")
 const Temple := preload("res://scripts/temple.gd")
 const Furnace := preload("res://scripts/furnace.gd")
 const ChainedRare := preload("res://scripts/chained_rare.gd")
+const BellsAny := preload("res://scripts/act2/bells_any.gd")
+## (the checks: the Bells made on an endless level whatever its luck, by this seed; less, the level's own luck)
+var bells_seed := -1
 const Fx := preload("res://scripts/fx.gd")
 const Wakes := preload("res://scripts/wakes.gd")
 const Shadows := preload("res://scripts/shadows.gd")
@@ -1404,6 +1407,15 @@ func _build(where: String, arrive: String) -> void:
 			royal_packs(mdata)
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR, mdata)
 		_chained_mdata = mdata
+		# (ENDLESS ANY LEVEL: the Bells on an endless level of a floor that has none of its own, by the level's luck: bells_any.gd)
+		if in_endless and where != "final" and monsters.bells.is_empty() and BellsAny.ON:
+			var br := RandomNumberGenerator.new()
+			if bells_seed >= 0:
+				br.seed = bells_seed
+			else:
+				br.randomize()
+			if bells_seed >= 0 or br.randi_range(1, BellsAny.LEVEL) == 1:
+				monsters.bells = BellsAny.make(self, mdata, br)
 		# (THE BOTTOM OF THE SHAFT: its arena's rules, its round, its way back up: final_arena.gd)
 		arena = null
 		if where == "final":

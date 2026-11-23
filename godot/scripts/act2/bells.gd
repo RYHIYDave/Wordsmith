@@ -63,6 +63,10 @@ var _arrows: Node2D
 ## blinking, a size bigger.
 var _rings: Node2D
 var _tag: Node2D
+## (ENDLESS ANY LEVEL: a plan made for a floor that has no Bells of its own, act2/bells_any.gd: its pieces, by name; {} on the city's
+## floors, where the look shows them)
+var _pieces := {}
+var _lift := 0.0
 const MARK := {"on": true, "ring": true, "hint": true, "light": true}
 const MARK_CYAN := Color("#22d0e0")
 const MARK_HI := Color("#b8fff8")
@@ -145,6 +149,10 @@ func enter(where: String) -> void:
 		_tag.z_index = 46
 		main._place.add_child(_tag)
 	main.hero.bells = self
+	_pieces = {}
+	if bool(D.get("made", false)):
+		_pieces = preload("res://scripts/act2/bells_any.gd").stand(main, D)
+		_lift = preload("res://scripts/act2/bells_any.gd").lift()
 	_show_bells()
 
 
@@ -449,7 +457,7 @@ func _scatter(at: Vector2, n: int) -> Array:
 ## hanging still its second. Each its look's state, its steps as tools/godot_rec/page.js took them.
 func _show_bells() -> void:
 	var look = main.look
-	if look == null:
+	if look == null and _pieces.is_empty():
 		return
 	for i in states.size():
 		var s: int = states[i]
@@ -463,6 +471,10 @@ func _put(name: String, step: int, last: int) -> void:
 	if int(_shown.get(name, -1)) == step:
 		return
 	_shown[name] = step
+	# (a bell standing as a piece of its own, bells_any.gd: its picture for the step; a small bell's fifth, hanging still, its first)
+	if _pieces.has(name):
+		preload("res://scripts/act2/bells_any.gd")._frame(_pieces[name], step if step < 4 else 0)
+		return
 	if step == 0:
 		main.look.clear_variant(name)
 	else:
@@ -694,7 +706,7 @@ class _Tag extends Node2D:
 		if not b.marked():
 			return
 		var m: Dictionary = b.D["plan"]["muffled"]
-		var lift: float = float(b.MARK_LIFT.get(int(b.main.map.depth), 96.0))
+		var lift: float = b._lift if not b._pieces.is_empty() else float(b.MARK_LIFT.get(int(b.main.map.depth), 96.0))
 		var x: float = b.main.fx.gx(m["x"], m["y"])
 		var y: float = b.main.fx.gy(m["x"], m["y"]) - lift - 6.0
 		var h = b.main.hero

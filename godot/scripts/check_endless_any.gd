@@ -51,6 +51,7 @@ func run(main, hero, dir: String) -> void:
 	M.in_endless = true
 	M.chained_seed = 5
 	M.royal_seed = 2
+	M.bells_seed = 4
 	await _go("floor8")
 	var rs: Array = M.chained_rares
 	var held: bool = rs.all(func(cr): return is_instance_valid(cr) and cr.held())
@@ -87,5 +88,31 @@ func run(main, hero, dir: String) -> void:
 		M.loot.on_kill(q)
 	var cards: Array = M.loot._drops.slice(d0).filter(func(dd): return dd["kind"] == "card")
 	_line(cards.size() == 1, "its pack of %d falls: %d card, the %s's" % [pack.size(), cards.size(), cards[0]["royal"] if cards.size() == 1 else "-"])
+	# THE BELLS, made for floor 8 (act2/bells_any.gd): the Muffled Bell asleep, its bells round it, each a piece of its own
+	var B = M.bells
+	var made: bool = bool(B.D.get("made", false))
+	var nb: int = B.D["plan"]["bells"].size() if made else 0
+	_line(made and B.phase == "asleep" and nb >= 4 and nb <= 6 and B._pieces.size() == nb + 1, "the Bells made for floor 8: the Muffled Bell asleep (%s), %d bells round it, %d pieces standing" % [B.phase, nb, B._pieces.size()])
+	if made:
+		var mb: Dictionary = B.D["plan"]["muffled"]
+		var at := Vector2(mb["x"], mb["y"])
+		h.world = M._spot_near(at, 2.2, h.world)
+		for q2 in M._monsters.list:
+			if is_instance_valid(q2) and not q2.dead and q2.world.distance_to(at) < 14.0:
+				q2.state = "sleep"
+		await _wait(0.5)
+		await M._snap(dir + "/endless_f8_bells_asleep.png")
+		B.struck(at, 1.0)
+		await _wait(0.6)
+		_line(B.phase == "on" and B.states.all(func(st): return st == 1), "struck: the Hush pours out, every bell awake (%s, %s), the clock %d s" % [B.phase, B.states, int(B.limit)])
+		var b0: Dictionary = B.D["plan"]["bells"][0]
+		var bat := Vector2(b0["x"], b0["y"])
+		h.world = M._spot_near(bat, 1.8, h.world)
+		await _wait(0.3)
+		B.struck(bat, 1.0)
+		await _wait(0.4)
+		await M._snap(dir + "/endless_f8_bell_rung.png")
+		_line(B.rung[0] and int(B._shown.get("bell0", 0)) >= 2, "a bell struck: rung (%s), its picture swinging (step %d)" % [B.rung[0], int(B._shown.get("bell0", 0))])
+	M.bells_seed = -1
 	M.in_endless = false
 	print("ENDLESSANY: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
