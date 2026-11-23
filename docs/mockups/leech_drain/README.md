@@ -10,3 +10,5 @@ or its new `drain_to` (the same wisps flowing into a monster drinking from him).
 painters' DRAINS tables (fx_m52p_last110.gd, fx_m52p_leech.gd) say how many wisps each draws.
 
 Off until his yes to the pictures: https://claude.ai/artifact/XcqVoEhtRoEdQHDqa6F6SP (leech_drain.html). `--leechsame=1` films it on.
+
+ON at his yes to the pictures, 23 Nov 2026: “All good” (asked whether to switch on the damage looks, the melds' words' own looks, the Leech drain and the storm clouds).

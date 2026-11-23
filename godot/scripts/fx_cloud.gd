@@ -4,10 +4,10 @@
 ## mass: billows heaped on a flat, ragged base, each billow lit from the upper left (Pixels 4) with a silver edge where the light
 ## catches its top, darker where one billow sits in front of another, a dark belly; the lightning glows INSIDE one billow and its
 ## neighbours, and the underside catches it; rain hangs under it. Pixel by pixel on the game's grain, nothing smoothed (Pixels 1).
-## Behind the switch ON, off until his yes to its pictures (pictures first). `--clouds2=1` films it on.
+## ON at his yes to its pictures, 23 Nov 2026: “All good”. `--clouds2=0` films it off.
 extends RefCounted
 
-static var ON := false
+static var ON := true
 
 ## (what was drawn last, a few frames' worth: a cloud is worked out at most fifteen times a second)
 static var _cache := {}

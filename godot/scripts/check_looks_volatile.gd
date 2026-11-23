@@ -38,6 +38,10 @@ var _t0 := 0
 
 
 func run(main, hero, d: String) -> void:
+	# (these hold the older melds' looks to the game's own; the words' own looks and the new clouds, on since his “All good”, 23 Nov
+	# 2026, change their bolts and clouds, and are pictured on their own: main.gd --only=fx --case=same)
+	preload("res://scripts/fx_m52kit.gd").set_own(false)
+	preload("res://scripts/fx_cloud.gd").ON = false
 	M = main
 	h = hero
 	dir = d

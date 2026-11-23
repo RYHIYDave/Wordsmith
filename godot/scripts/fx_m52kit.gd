@@ -25,10 +25,10 @@ var _alpha := 1.0
 
 ## (the melds' own ice and fire, darkest to brightest; with OWN on, Frost's and Flame's own, fx_looks.json's frost and fire ramps,
 ## his “I want consistency with my damage”: own_colours)
-static var ICE := [Color("#0c1020"), Color("#1c2c48"), Color("#3c64a0"), Color("#8ad0fa"), Color("#d8f4ff"), Color("#ffffff")]
+static var ICE := [Color("#0c1428"), Color("#1c3a86"), Color("#2e6cc8"), Color("#58a8f0"), Color("#b0e0ff"), Color("#ffffff")]
 const STONE := [Color("#1a1410"), Color("#3a2e22"), Color("#6a5236"), Color("#9a7a52"), Color("#c8a878"), Color("#f0dcb4")]
 const DUST := [Color("#2a2420"), Color("#4a4038"), Color("#7a6a58"), Color("#a8967c")]
-static var FIRE := [Color("#3a0c04"), Color("#7a1c06"), Color("#c8400c"), Color("#ff8a1c"), Color("#ffd060"), Color("#fff4c8")]
+static var FIRE := [Color("#3a0c04"), Color("#a82810"), Color("#e05018"), Color("#ff8a2a"), Color("#ffc24a"), Color("#fff0a0")]
 const ICE_OWN := [Color("#0c1428"), Color("#1c3a86"), Color("#2e6cc8"), Color("#58a8f0"), Color("#b0e0ff"), Color("#ffffff")]
 const FIRE_OWN := [Color("#3a0c04"), Color("#a82810"), Color("#e05018"), Color("#ff8a2a"), Color("#ffc24a"), Color("#fff0a0")]
 
@@ -716,9 +716,9 @@ func _reticle(x: float, y: float, rt: float, C: Array, a: float) -> void:
 # --- LEECH'S OWN DRAIN (his question, 23 Nov 2026: “Leech already had a nice animation for HP going from the enemy to the
 # player.  Why are the new melds different?”). A Leech meld's life drawn out of something is the game's own Leech drain: red
 # beads of light with red tails curving into him, his pulse as it lands (fx_words610.gd siphon); a monster drinking from him, the
-# same wisps flowing into it (drain_to). Each meld's own twist stays on top (Lamprey's teeth, Bloodtide's wave). Behind the switch,
-# off until his yes to its pictures; `--leechsame=1` films it on. ---
-static var LEECH_SAME := false
+# same wisps flowing into it (drain_to). Each meld's own twist stays on top (Lamprey's teeth, Bloodtide's wave). ON at his yes to
+# its pictures, 23 Nov 2026: “All good”; `--leechsame=0` films it off. ---
+static var LEECH_SAME := true
 
 
 ## THE WORDS' OWN LOOKS (his "Yes go through them", 23 Nov 2026, to "Want me to go through all 98 and make each one use its words'
@@ -727,9 +727,9 @@ static var LEECH_SAME := false
 ## it: Precise's sight closing on what it marks, Frenzied's spark leaping to him from a kill, Lightning's arcs, Heavy's stun,
 ## Volatile's blast where a kill goes up, Frost's ice where one freezes. Here a meld no longer draws its own copy of those on top
 ## (SAME), and what it draws of a word's own thing (a bolt, a sight, a blast, life drawn) is drawn as that word draws it, in its
-## colours; its own twist stays on top. Behind the switch OWN, off until his yes to its pictures (pictures first); `--wordsown=1`
-## films it on, with LEECH_SAME.
-static var OWN := false
+## colours; its own twist stays on top. And the same look whatever the source (fx_looks.gd same). ON at his yes to their pictures,
+## 23 Nov 2026: “All good”; `--wordsown=0` films it off (set_own).
+static var OWN := true
 const W610 := preload("res://scripts/fx_words610.gd")
 ## (the beat being begun, ticked or painted now)
 var _b: Dictionary = {}

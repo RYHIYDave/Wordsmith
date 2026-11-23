@@ -38,3 +38,5 @@ With the same switch on (fx_m52kit.gd OWN; read anywhere through fx_looks.gd `sa
 - Burning: everything that sets a monster alight burns it as Flame does already. The Warlock's cyan hellfire is his by design,
   his word: “Good catch but the warlock cyan fire is by design.”
 - Bosses are left as they are. Pictured by the effects bench: `--only=fx --case=same --wordsown=0` and `=1`.
+
+ON at his yes to the pictures, 23 Nov 2026: “All good” (asked whether to switch on the damage looks, the melds' words' own looks, the Leech drain and the storm clouds).

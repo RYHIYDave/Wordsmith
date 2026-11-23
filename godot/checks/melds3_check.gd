@@ -221,6 +221,10 @@ static func paint(w, s: Dictionary, dump: String, name: String) -> PackedStringA
 
 
 func _init() -> void:
+	# (these hold the older melds' looks to the game's own; the words' own looks and the new clouds, on since his “All good”, 23 Nov
+	# 2026, change their bolts and clouds, and are pictured on their own: main.gd --only=fx --case=same)
+	preload("res://scripts/fx_m52kit.gd").set_own(false)
+	preload("res://scripts/fx_cloud.gd").ON = false
 	var path := "res://assets/words/melds3_check.json"
 	if not FileAccess.file_exists(path):
 		print("MELDS3 CHECK: no melds3_check.json: run `npx tsx tools/godot_melds3.ts check` first")

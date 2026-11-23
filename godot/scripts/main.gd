@@ -654,16 +654,14 @@ func _ready() -> void:
 	if _arg("defuniques") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_UNIQUES = false
 	# (THE FIFTEEN'S OWN PICTURES, on at his yes: `--defart=0` to run without them)
-	# (THE STORM CLOUDS MADE AGAIN, off until his yes to their pictures: `--clouds2=1` shows them, fx_cloud.gd)
-	# (THE NEW MELDS KEEP LEECH'S OWN DRAIN, off until his yes to their pictures: `--leechsame=1` shows it, fx_m52kit.gd)
+	# (THE STORM CLOUDS MADE AGAIN, on at his “All good”: `--clouds2=0` shows them as they were, fx_cloud.gd)
+	# (THE NEW MELDS KEEP LEECH'S OWN DRAIN, on at his “All good”: `--leechsame=0` shows it as it was, fx_m52kit.gd)
 	if _arg("leechsame") != "":
 		preload("res://scripts/fx_m52kit.gd").LEECH_SAME = _arg("leechsame") == "1"
-	# (THE MELDS USE THEIR WORDS' OWN LOOKS, off until his yes to their pictures: `--wordsown=1` shows it, with Leech's drain:
-	# fx_m52kit.gd OWN)
+	# (THE MELDS USE THEIR WORDS' OWN LOOKS, on at his “All good”: `--wordsown=0` shows them as they were: fx_m52kit.gd OWN)
 	if _arg("wordsown") != "":
 		preload("res://scripts/fx_m52kit.gd").set_own(_arg("wordsown") == "1")
-		if _arg("wordsown") == "1":
-			preload("res://scripts/fx_m52kit.gd").LEECH_SAME = true
+		preload("res://scripts/fx_m52kit.gd").LEECH_SAME = _arg("wordsown") == "1" if _arg("leechsame") == "" else _arg("leechsame") == "1"
 	if _arg("clouds2") != "":
 		preload("res://scripts/fx_cloud.gd").ON = _arg("clouds2") == "1"
 	if _arg("defart") == "0":

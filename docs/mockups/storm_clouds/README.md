@@ -8,3 +8,5 @@ crawling through it, and the underside catches it. It serves all five storm clou
 
 Behind the switch fx_cloud.gd `ON`, OFF until his yes to the pictures: https://claude.ai/artifact/HYzWG5nxBe9oDXWCy92DYv
 (storm_clouds.html). `--clouds2=1` films it on, `--clouds2=0` off.
+
+ON at his yes to the pictures, 23 Nov 2026: “All good” (asked whether to switch on the damage looks, the melds' words' own looks, the Leech drain and the storm clouds).
