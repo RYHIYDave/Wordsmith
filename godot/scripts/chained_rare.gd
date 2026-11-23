@@ -42,9 +42,10 @@ const SEE := 9.0
 ## (ENDLESS ANY LEVEL: on every endless level whatever its floor, and this many of them, at least and at most; each at least APART
 ## tiles from the others. Off: one, on endless levels of floors 1 to 5 only, as first built)
 static var ENDLESS_ANY := true
-## (ANY_FLOOR off at his word, 23 Nov 2026: “The chained is a new mechanic for floors 2-5 in the campaign and the relevant floors in
-## endless”: on endless levels of floors 1 to 5 only, but two or three of them there)
-static var ANY_FLOOR := false
+## (ANY_FLOOR: on an endless level of every floor. Off for a moment at his word, 23 Nov 2026, “The chained is a new mechanic for
+## floors 2-5 in the campaign and the relevant floors in endless”, and on again at his next: “No sorry the chained go in every level
+## on endless”)
+static var ANY_FLOOR := true
 const ENDLESS_N := [2, 3]
 const APART := 10.0
 

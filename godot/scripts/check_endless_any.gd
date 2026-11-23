@@ -59,8 +59,8 @@ func run(main, hero, dir: String) -> void:
 	for i in rs.size():
 		for j in range(i + 1, rs.size()):
 			apart = minf(apart, rs[i].m.world.distance_to(rs[j].m.world))
-	# (THE CHAINED RARES: the first five floors' own, his word: none on an endless level of floor 8; two or three on one of floor 3)
-	_line(rs.is_empty(), "an endless level of floor 8: %d chained rares (theirs are floors 1 to 5's)" % rs.size())
+	# (THE CHAINED RARES on every endless level, his word: “No sorry the chained go in every level on endless”)
+	_line(rs.size() >= CR.ENDLESS_N[0] and rs.size() <= CR.ENDLESS_N[1] and held and (rs.size() < 2 or apart >= CR.APART), "an endless level of floor 8: %d chained rares, each held (%s), the nearest two %.1f tiles apart" % [rs.size(), held, apart])
 	var touched: Array = M._monsters.list.filter(func(o): return is_instance_valid(o) and o.royal != "")
 	var packs := {}
 	for o in touched:
