@@ -38,4 +38,11 @@ Redoubt and Fury, Guarding beside Hourglass behind so the blow leaves a ward to 
 
 All 46 filmed together (`--cases=m52film:<the 46>`, 46 films, every moment of the doc told, no script errors; the rules check
 `--cases=m52` 6 checks, 0 wrong, 218 cases) and put on one page for his yes: https://claude.ai/artifact/8xKRFHAjeV9kVnwiBCiSKH
-(`python3 page.py <films> <out> 46`). Melds52.ON stays off until he says yes.
+(`python3 page.py <films> <out> 46`). Switched on at his yes, below.
+
+## On (23 Nov 2026)
+
+His words, after the rules check and the films of all 98: “Get those melds in”. melds52.gd `ON` is true: the wordsmith makes all
+98 and the 11 level 2 runes. Checked with it on: `--only=words --cases=m52` 6 of 6, `--only=meld` (the meld page) 15 of 15 (two of
+its lines now expect the page to take every rune of the sixteen, Leech among them, and Volatile twice into its level 2 rune),
+`--only=doorrunes` 8 of 8.

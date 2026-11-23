@@ -13,13 +13,14 @@
 ##     rune's own, half as strong again.
 ##   THE STONES: the approved pictures, baked into assets/words/melds52.png (24 x 24 each), put under the loot's and the HUD's sheets.
 ## ON: whether the wordsmith makes them (words.gd meld_of, meld_problem). The words themselves, their names and stones are always
-## known, so a save that holds one always reads. OFF until his yes to the films of them at work.
+## known, so a save that holds one always reads. ON at his yes to the films of all 98 at work, checked against his Art Rulebook,
+## 23 Nov 2026: “Get those melds in”.
 extends RefCounted
 
 const FILE := "res://assets/words/melds52.json"
 const SHEET := "res://assets/words/melds52.png"
-## (OFF until his yes to the films: pictures first)
-static var ON := false
+## (ON at his yes to the films: “Get those melds in”, 23 Nov 2026)
+static var ON := true
 ## (what each rune is worth inside one on gear: items.ts MELD_GEAR_STRENGTH; a level 2 rune's: RANK2's half again)
 const GEAR := 0.75
 const GEAR_RANK := 1.5

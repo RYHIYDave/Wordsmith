@@ -16,6 +16,9 @@
 ##            line begins MELDPAGE.
 extends RefCounted
 
+## (THE 98 MELDS, melds52.gd: whether the wordsmith makes them, so the page takes every rune of the sixteen)
+var M52ON := func() -> bool: return preload("res://scripts/melds52.gd").ON
+
 const Words := preload("res://scripts/words.gd")
 
 var M
@@ -833,7 +836,7 @@ func page(dir: String) -> void:
 	said["a third"] = inv._ws_problem("poison")
 	await M._wait(0.2)
 	await M._snap(dir + "/m05_volatile_and_power.png")
-	_line(said["scald"] == "A melded word melds no further" and said["power2"] == "Rank II is the top, for now" and said["leech"] == "Only damage words and Volatile meld" and said["lightning"] == "No spare word" and said["volatile twice"] == "Volatile melds with a damage word" and said["a third"] == "Both hollows are full",
+	_line(said["scald"] == "A melded word melds no further" and said["power2"] == "Rank II is the top, for now" and said["leech"] == ("" if M52ON.call() else "Only damage words and Volatile meld") and said["lightning"] == "No spare word" and said["volatile twice"] == ("" if M52ON.call() else "Volatile melds with a damage word") and said["a third"] == "Both hollows are full",
 		"refused in the game's words: %s" % str(said))
 	inv._press("ws_meld", null)
 	await M._wait(0.3)
@@ -861,8 +864,9 @@ func page(dir: String) -> void:
 	_line(shown == "power2" and loot.melded.get("word", "") == "power2" and int(loot.words.get("power2", 0)) == 2 and int(loot.words["power"]) == 0 and M.quest610.dust == 0,
 		"two of POWER: MAKES %s shown before; melded: %s (POWER II x%d, POWER x%d), runedust %d" % [shown, loot.melded.get("word", "-"), int(loot.words.get("power2", 0)), int(loot.words["power"]), M.quest610.dust])
 	# --- the eight across the groups: the page refuses their words; the rules meld them
-	_line(inv._ws_problem("leech") == "Only damage words and Volatile meld" and Words.meld_problem("leech", "poison") == "" and Words.meld_of("leech", "poison") == "siphon",
-		"LEECH and POISON: the page refuses LEECH ('%s'), as the game's page does; its rules (melds.ts meldProblem) would meld them: '%s', into %s" % [inv._ws_problem("leech"), Words.meld_problem("leech", "poison"), Words.meld_of("leech", "poison")])
+	# (THE 98 MELDS ON, at his yes of 23 Nov 2026: the page takes every rune of the sixteen, Leech among them)
+	_line(inv._ws_problem("leech") == ("" if M52ON.call() else "Only damage words and Volatile meld") and Words.meld_problem("leech", "poison") == "" and Words.meld_of("leech", "poison") == "siphon",
+		"LEECH and POISON: the page %s LEECH ('%s'); its rules (melds.ts meldProblem) meld them: '%s', into %s" % ["takes" if inv._ws_problem("leech") == "" else "refuses", inv._ws_problem("leech"), Words.meld_problem("leech", "poison"), Words.meld_of("leech", "poison")])
 	# --- the melded word set in a socket of his Strike, and its name
 	inv._press("tab", "attacks")
 	for k in 3:
