@@ -88,6 +88,10 @@ static func after_blow(F, k: Callable, by, dmg: float) -> void:
 		tell.call("mire")
 	if s.call("icebreaker") and h.chill_t > 0.0:
 		h.held = maxf(h.held, float(_t("icebreaker")["foeFreeze"]))
+		h.frozen_t = maxf(h.frozen_t, float(_t("icebreaker")["foeFreeze"]))
+		# (with the switch on, Frost's own ice bursts up round him, as for any other freeze: fx_looks.gd same)
+		if preload("res://scripts/fx_looks.gd").same():
+			F._tell({"t": "freeze", "x": h.world.x, "y": h.world.y})
 		F._say(h.world, "Frozen", "#a5d8ff")
 		tell.call("icebreaker")
 	if s.call("anvil") and alive_by:

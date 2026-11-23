@@ -256,7 +256,9 @@ func draw_air(c: CanvasItem) -> void:
 			var y := roundf(_gy(m.world.x, m.world.y))
 			if m.curse_t > 0.0:
 				_piece(c, "smolder:%d" % (floori((_t + m.id * 0.37) / BURN_LOOP * 16.0) % 16), x, y)
-			if m.hell_t > 0.0:
+			# (with the switch on, one his hellfire burns burns as anything burning does, the game's own: fx_looks.gd same,
+			# fx_figures.gd read)
+			if m.hell_t > 0.0 and not L.same():
 				_piece(c, "burn:%d" % (floori((_t + m.id * 0.53) / BURN_LOOP * 16.0) % 16), x, y)
 	# the chains of black smoke, whipping out and slack, snapped taut as he hauls back, burning away to smoke
 	for ch in chains:

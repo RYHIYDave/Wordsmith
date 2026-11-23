@@ -241,7 +241,7 @@ static func owns_event(e: Dictionary) -> bool:
 	var m = e.get("meld")
 	if not (t == "arc" or t == "burst" or t == "zone") or not (m is String):
 		return false
-	if not mine(m):
+	if not mine(m, t):
 		return false
 	return look_of_kind(m, e.get("kind") if t == "zone" else null, t) != ""
 
@@ -251,17 +251,17 @@ static func owns_event(e: Dictionary) -> bool:
 ## (melds.gd tag, wakes.gd and monsters.gd _melded), and these looks took them all, drawing an arc of a meld they did not know in
 ## Thunder's violet (arc_look: RAMP's fallback) and the blast of its rune not at all. With fx_m52kit.gd OWN on, they take only
 ## their own melds' (the ten, Volatile's five, the eight: RAMP); the rest are their words' own: Lightning's bolt, Volatile's blast.
-static var _kit = null
-
-
-static func mine(m) -> bool:
+## And a bolt that bounces from one to the next is Lightning's own whatever its source (his “if a bolt of lightning is going to
+## bounce between things from different sources, I'd like them to be the same”): with OWN on, an arc is these looks' only for the
+## ten damage melds, whose flair rides on Lightning's bolt (arc_look); the eight's and Volatile's five's arcs are Lightning's own.
+static func mine(m, t := "") -> bool:
 	if not (m is String):
 		return false
-	if _kit == null:
-		_kit = load("res://scripts/fx_m52kit.gd")
 	if RAMP.is_empty():
 		ready_up()
-	return RAMP.has(m) or not bool(_kit.OWN)
+	if not L.same():
+		return true
+	return is_ten(m) if t == "arc" else RAMP.has(m)
 
 
 ## A patch's look, or "" (lookOf).
@@ -383,6 +383,14 @@ func _bolt(x0: float, y0: float, x1: float, y1: float, C: PackedColorArray, o :=
 		"kind": o.get("kind", "plain"), "z": float(o.get("z", 10.0))})
 	if bolts.size() > 60:
 		bolts.pop_front()
+
+
+## A bolt bouncing from one to the next: its own, or with the switch on Lightning's own (fx.gd ground_bolt).
+func _bolt_or_own(x0: float, y0: float, x1: float, y1: float, C: PackedColorArray, o := {}) -> void:
+	if L.same():
+		fx.ground_bolt(x0, y0, x1, y1)
+	else:
+		_bolt(x0, y0, x1, y1, C, o)
 
 
 ## A bolt from the sky onto (x, y) (skyBolt). `o`: top, w, dur, forks, wild.
@@ -813,8 +821,11 @@ func arc_look(word: String, e: Dictionary, from_zone: bool) -> void:
 			thunder_bolt(x1, y1, false)
 		return
 	if e.get("sky", false):
-		# (an arcing word's first bolt comes down on the one it hits, in its own colours)
-		_sky_bolt(x1, y1, C, {"top": 130.0, "w": 2, "dur": 0.2, "forks": 2})
+		# (an arcing word's first bolt comes down on the one it hits, in its own colours; with the switch on, Lightning's own)
+		if L.same():
+			fx.sky_bolt(x1, y1, false)
+		else:
+			_sky_bolt(x1, y1, C, {"top": 130.0, "w": 2, "dur": 0.2, "forks": 2})
 		_flash(x1, y1, 6.0, 0.5, 0.1, _cs([C[5], C[4], C[3]]))
 		if word == "hailstorm":
 			hail_down(x1, y1, 0.6, 7)
@@ -828,7 +839,7 @@ func arc_look(word: String, e: Dictionary, from_zone: bool) -> void:
 		return
 	if word == "wildfire":
 		# burning lightning: thick, and fire left along its way
-		_bolt(x0, y0, x1, y1, C, {"w": 2, "dur": 0.26, "kind": "fire", "wob": 0.35})
+		_bolt_or_own(x0, y0, x1, y1, C, {"w": 2, "dur": 0.26, "kind": "fire", "wob": 0.35})
 		var n := maxi(3, int(R(sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0)) * 2.5)))
 		for i in range(1, n + 1):
 			var k := float(i) / (n + 1)
@@ -839,18 +850,18 @@ func arc_look(word: String, e: Dictionary, from_zone: bool) -> void:
 		_glow(x1, y1, 44.0, 0.2)
 	elif word == "hailstorm":
 		# ice-white lightning, crystals along it, hail where it lands
-		_bolt(x0, y0, x1, y1, C, {"w": 2, "dur": 0.24, "kind": "ice", "wob": 0.3})
+		_bolt_or_own(x0, y0, x1, y1, C, {"w": 2, "dur": 0.24, "kind": "ice", "wob": 0.3})
 		_flash(x1, y1, 10.0, 0.45, 0.1, _cs([C[5], C[4], C[3]]))
 		hail_down(x1, y1, 0.45, 5)
 		_fling(x1, y1, 8, _cs(["#ffffff", C[4]]), {"speed": 3.5, "up": 90.0, "grav": 380.0, "life": 0.4, "z": 10.0, "streak": 2.0, "size": 1.0})
 	elif word == "contagion":
 		# sick green lightning; spores burst where it lands, and a ring closes on it: it has caught it
-		_bolt(x0, y0, x1, y1, C, {"w": 2, "dur": 0.24, "wob": 0.35})
+		_bolt_or_own(x0, y0, x1, y1, C, {"w": 2, "dur": 0.24, "wob": 0.35})
 		_flash(x1, y1, 10.0, 0.45, 0.1, _cs([C[5], C[4], C[3]]))
 		_ring(x1, y1, 0.7, 0.3, _cs([C[4], C[3], C[2]]), {"closing": true})
 		spores(x1, y1, 0.3, 8)
 	else:
-		_bolt(x0, y0, x1, y1, C, {"w": 1, "dur": 0.18})
+		_bolt_or_own(x0, y0, x1, y1, C, {"w": 1, "dur": 0.18})
 
 
 ## ERUPTION behind, at full heat: the next hit ERUPTS (eruptionBlast).
@@ -2592,7 +2603,7 @@ func event(e: Dictionary) -> void:
 			hit_look(w, e["x"], e["y"], 0.8, false)
 	elif t == "burst":
 		var m = e.get("meld")
-		if m is String and mine(m):
+		if m is String and mine(m, "burst"):
 			if m == "scald":
 				scald_crack(e["x"], e["y"], e["r"])
 			elif m == "eruption":
@@ -2614,7 +2625,7 @@ func event(e: Dictionary) -> void:
 				hit_look(w, e["x"] + rx * float(e["r"]), e["y"] + ry * float(e["r"]), 0.6, false)
 			elif style == "slam" or style == "nova" or style == "land":
 				hit_look(w, e["x"], e["y"], e["r"], true)
-	elif t == "arc" and mine(e.get("meld")):
+	elif t == "arc" and mine(e.get("meld"), "arc"):
 		var from_zone := false
 		for z: Dictionary in view.get("zones", []):
 			if absf(float(z["x"]) - float(e["x0"])) < 0.01 and absf(float(z["y"]) - float(e["y0"])) < 0.01:

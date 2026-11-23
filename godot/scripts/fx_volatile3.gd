@@ -850,8 +850,13 @@ func _chain_arc(e: Dictionary) -> void:
 	var id = e["id"]
 	var d := _hyp(x1 - x0, y1 - y0)
 	var grow := 0.05 + d * 0.012
-	_arc(x0, y0, x1, y1, C, {"w": 3, "dur": 0.34, "grow": grow, "wob": 0.35, "z": 12.0, "forks": 2})
-	_later(grow * 0.5, func() -> void: _arc(x0, y0, x1, y1, C, {"w": 1, "dur": 0.2, "grow": grow * 0.5, "wob": 0.45, "z": 14.0}))
+	# (with the switch on, the bolt it sends is Lightning's own, as every bolt bouncing from one to the next is: fx_looks.gd same;
+	# its crack where it strikes stays its own)
+	if L.same():
+		fx.ground_bolt(x0, y0, x1, y1)
+	else:
+		_arc(x0, y0, x1, y1, C, {"w": 3, "dur": 0.34, "grow": grow, "wob": 0.35, "z": 12.0, "forks": 2})
+		_later(grow * 0.5, func() -> void: _arc(x0, y0, x1, y1, C, {"w": 1, "dur": 0.2, "grow": grow * 0.5, "wob": 0.45, "z": 14.0}))
 	_later(grow, func() -> void:
 		_flash(x1, y1, 14.0, 0.55, 0.1, PackedColorArray([C[5], C[4], C[3]]))
 		_ring(x1, y1, 0.7, 0.2, PackedColorArray([C[5], C[4], C[3]]), {"jag": true, "heavy": true})
@@ -867,7 +872,10 @@ func _chain_link(e: Dictionary) -> void:
 	var C: PackedColorArray = RAMP["chainreaction"]
 	var x1: float = e["x1"]
 	var y1: float = e["y1"]
-	_arc(e["x0"], e["y0"], x1, y1, C, {"w": 2, "dur": 0.24, "grow": LINK_GAP * 0.8, "wob": 0.25, "z": 3.0, "forks": 2})
+	if L.same():
+		fx.ground_bolt(e["x0"], e["y0"], x1, y1)
+	else:
+		_arc(e["x0"], e["y0"], x1, y1, C, {"w": 2, "dur": 0.24, "grow": LINK_GAP * 0.8, "wob": 0.25, "z": 3.0, "forks": 2})
 	_later(LINK_GAP * 0.8, func() -> void: _flash(x1, y1, 6.0, 0.7, 0.08, PackedColorArray([C[5], C[4], C[3]])))
 
 

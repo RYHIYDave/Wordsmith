@@ -350,7 +350,8 @@ func event(e: Dictionary) -> void:
 ## (fx.ts handle: IMPLODE's burst and FORKING's arc, with their own looks on, are drawn by render/melds8.ts)
 static func _m8_owns(e: Dictionary) -> bool:
 	var t = e.get("t")
-	return (t == "burst" and e.get("meld") == "implode") or (t == "arc" and e.get("meld") == "forking")
+	# (with the switch on, Forking's bolt is Lightning's own, as every bolt bouncing from one to the next is: fx_looks.gd same)
+	return (t == "burst" and e.get("meld") == "implode") or (t == "arc" and e.get("meld") == "forking" and not L.same())
 
 
 ## Several at once (fx.ts handle).

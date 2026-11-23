@@ -88,12 +88,17 @@ func read(m: Object) -> int:
 		for i in STATES.size():
 			if state(m, STATES[i]) > 0.0:
 				bits |= 1 << i
+		if bits & BURNING == 0 and L.same() and state(m, "hell_t") > 0.0:
+			bits |= BURNING
 		return bits
 	if _reads == 0:
 		return 0
 	for i in STATES.size():
 		if _reads & (1 << i) != 0 and float(m.get(STATES[i])) > 0.0:
 			bits |= 1 << i
+	# (THE SAME LOOK WHATEVER THE SOURCE, with the switch on: one the Warlock's hellfire burns burns as anything burning does)
+	if bits & BURNING == 0 and L.same() and state(m, "hell_t") > 0.0:
+		bits |= BURNING
 	return bits
 
 
@@ -325,7 +330,10 @@ func _hero_tint() -> void:
 		return
 	var tint := Color(0, 0, 0, 0)
 	if h.alive and float(h.get("_flash")) <= 0.0:
-		if float(h.get("chill_t")) > 0.0:
+		# (THE SAME LOOK WHATEVER THE SOURCE, with the switch on: frozen, he is a block of pale ice as a frozen monster is)
+		if L.same() and float(h.get("frozen_t")) > 0.0:
+			tint = Color(L.P["bu5"], 0.78)
+		elif float(h.get("chill_t")) > 0.0:
 			tint = Color(L.P["bu4"], 0.3)
 		elif float(h.get("poison_t")) > 0.0:
 			tint = Color(L.P["vn4"], 0.3)

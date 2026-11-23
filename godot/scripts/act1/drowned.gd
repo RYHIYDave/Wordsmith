@@ -161,6 +161,7 @@ func acting(m, a: Dictionary, t0: float, t1: float, _dt: float, hero) -> void:
 			if frozen:
 				# (Hero.iceT: he neither walks nor dodges, as one held)
 				hero.held = maxf(hero.held, FROST["hold"])
+				hero.frozen_t = maxf(hero.frozen_t, FROST["hold"])
 				word(m, hero, "Frozen", FROZEN)
 			peril(m, "drowned:rime", at, {"dur": FROST["seen"], "d": 1 if frozen else 0, "b": hero.world.x, "c": hero.world.y})
 			sound(m, "frost", 0.5)

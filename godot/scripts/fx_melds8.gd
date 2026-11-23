@@ -205,7 +205,8 @@ func _start(b: Dictionary, m) -> void:
 			for i in _ri(6 * k):
 				_bit(bx, by, 10, "puff", PackedColorArray([Color("#3a3438"), Color("#5a5458"), Color("#8a8488")]), 0.4, 0.9, -8, 12, 14)
 		"forking":
-			for p in [[bx, by], [float(b["x1"]), float(b["y1"])]]:
+			# (with the switch on, the bolt and its sparks are Lightning's own, fx.gd's arc; the twins' after-image stays)
+			for p in ([] if L.same() else [[bx, by], [float(b["x1"]), float(b["y1"])]]):
 				for i in _ri(12 * k):
 					_bit(p[0], p[1], 12, "streak", R, 3.6, 0.3, 160, 40, 90)
 		"shiver":
@@ -820,7 +821,9 @@ func _forking_air(b: Dictionary) -> void:
 		var u := i / 4.0
 		var j := 0.0 if i == 4 else ((_hash(sd + 7, frame * 17 + i) % 2001) / 1000.0 - 1.0) * 5.0
 		prong.append(PackedFloat64Array([_lerp(fx0, fx1, u) + j, _lerp(fy0, fy1, u) - j * 0.4]))
-	if live:
+	if live and L.same():
+		pass
+	elif live:
 		# (it reaches across in the first two frames, then holds, flickering)
 		var reach := _c01(bt / 0.06)
 		var shown: Array = path.slice(0, maxi(2, _ri(reach * path.size())))

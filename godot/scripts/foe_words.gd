@@ -215,6 +215,7 @@ func after_blow(k: Callable, by, dmg: float, parts: Array) -> void:
 		_shiver = false
 		# (frozen in place a moment: as the Drowned's frost grab holds him)
 		h.held = maxf(h.held, float(U["shiver"]["freeze"]))
+		h.frozen_t = maxf(h.frozen_t, float(U["shiver"]["freeze"]))
 		_tell({"t": "freeze", "x": h.world.x, "y": h.world.y})
 		_say(h.world, "Frozen", "#a5d8ff")
 	if alive_by and float(k.call("sunder")) > 0.0:

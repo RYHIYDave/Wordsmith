@@ -19,3 +19,22 @@ Found and fixed, behind fx_m52kit.gd OWN (the same switch as docs/mockups/words_
 
 Already right, kept as flair, and his two calls (the Tinkerer's cyan lightning, the Warlock's cyan hellfire): damage_looks.html,
 https://claude.ai/artifact/7TuEgfdHdxS5GRbr9LFq5Q
+
+## The same whatever the source (his next words)
+
+“Like bosses are probably unique cases.  But if a bolt of lightning is going to bounce between things from different sources,
+I'd like them to be the same.  Or anything frozen should be frozen in the same way.  Burning same thing”. And “You said gold
+bolts not me”: “gold bolts” was this chat's own word for Jolt's thick bolts.
+
+With the same switch on (fx_m52kit.gd OWN; read anywhere through fx_looks.gd `same`):
+- A bolt bouncing from one to the next is Lightning's own (fx.gd ground_bolt, sky_bolt) from every source: the damage melds'
+  arcs (fx_melds3.gd arc_look `_bolt_or_own`; Wildfire's fire, Hailstorm's hail, Contagion's spores kept on it; Thunder's one
+  bolt from the sky, not a bounce, its own), Forking (fx.gd `_m8_owns` gives its arc to fx.gd; fx_melds8.gd keeps the twins'
+  after-image), Chain Reaction (fx_volatile3.gd `_chain_arc`, `_chain_link`), the Tinkerer's tesla coil and Contraption
+  (heroes/tinkerer_look.gd); the damage melds' looks take an arc only of the ten (`mine`).
+- Frozen: he has a frozen state (hero.gd `frozen_t`, set with `held` by a monster's Shiver, Flash Freeze, Icebreaker and the
+  Drowned's rime) and shows it as a frozen monster does (fx_figures.gd _hero_tint); Flash Freeze's own shell on him is left
+  out; Icebreaker's freeze on him tells Frost's ice burst.
+- Burning: one the Warlock's hellfire burns (monster.gd hell_t) burns as anything burning does (fx_figures.gd read), his cyan
+  tongues left out (heroes/warlock_look.gd); his bolt and its burst stay his.
+- Bosses are left as they are. Pictured by the effects bench: `--only=fx --case=same --wordsown=0` and `=1`.

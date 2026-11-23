@@ -385,6 +385,10 @@ var surge_k := 1.0
 ## (game.ts held: hooked by the Chained One, for so many seconds more he cannot walk or dodge: he goes where he is dragged.
 ## chained.gd sets it)
 var held := 0.0
+## (frozen in place, so many seconds more: what freezes him sets it with `held`, a monster's Shiver, Flash Freeze or Icebreaker
+## and the Drowned's rime; with the switch on he shows it as a frozen monster does, fx_figures.gd _hero_tint: his "Or anything
+## frozen should be frozen in the same way")
+var frozen_t := 0.0
 var _down_for := 0.0
 ## (NORMAL OR HARDCORE, game/modes.ts: fallen, he stays down, and main.gd says what comes of it; a check of something else has him
 ## up again where he came in)
@@ -1319,6 +1323,8 @@ func _process(dt: float) -> void:
 	if hooked:
 		held = maxf(0.0, held - dt)
 		way = Vector2.ZERO
+	# (frozen no longer than he is held: let go, the ice is gone with it)
+	frozen_t = minf(maxf(0.0, frozen_t - dt), held)
 
 	# ANY OTHER CLASS: his moves made by his kit; true while what he does is all he does (a roll, a warp)
 	if kit != null:

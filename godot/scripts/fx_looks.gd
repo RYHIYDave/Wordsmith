@@ -19,6 +19,18 @@ extends RefCounted
 const FILE := "res://assets/fx/looks.json"
 
 static var raw := {}
+## (THE SAME LOOK WHATEVER THE SOURCE: his words, 23 Nov 2026: “if a bolt of lightning is going to bounce between things from
+## different sources, I'd like them to be the same.  Or anything frozen should be frozen in the same way.  Burning same thing”.
+## On with fx_m52kit.gd OWN, the melds' words' own looks, off until his yes to the pictures: `same`)
+static var _kit = null
+
+
+static func same() -> bool:
+	if _kit == null:
+		_kit = load("res://scripts/fx_m52kit.gd")
+	return bool(_kit.OWN)
+
+
 static var P := {}
 static var EL := {}
 static var HUE := {}

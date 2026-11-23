@@ -40,6 +40,7 @@ const Iso := preload("res://scripts/iso.gd")
 const Glow := preload("res://scripts/figure_glow.gd")
 const MageLook := preload("res://scripts/heroes/mage_look.gd")
 const Paint := preload("res://scripts/heroes/golem_paint.gd")
+const L := preload("res://scripts/fx_looks.gd")
 
 var kit
 var loot
@@ -221,6 +222,12 @@ func on_event(e: Dictionary, _fx) -> void:
 		"contraptionEnd":
 			con_sparks.append({"x": e["x"], "y": e["y"], "t": 0.0})
 		"contraptionBolt":
+			# (with the switch on, her Contraption's bolt is Lightning's own, as every bolt from one to the next is, whatever its
+			# source: fx_looks.gd same; her machine keeps her cyan)
+			var fxo = kit.h.fx if kit != null else null
+			if L.same() and fxo != null and is_instance_valid(fxo):
+				fxo.ground_bolt(float(e["x0"]), float(e["y0"]), float(e["x1"]), float(e["y1"]))
+				return
 			var bdx := float(e["x1"]) - float(e["x0"])
 			var bdy := float(e["y1"]) - float(e["y0"])
 			var bf := _facing(bdx, bdy)
@@ -306,6 +313,14 @@ func on_event(e: Dictionary, _fx) -> void:
 				beams.append(bm)
 		# (her tree's TESLA COIL: its zap, painted as it comes, laid at the Golem's foot)
 		"teslaZap":
+			# (with the switch on, the coil's zap leaping from one to the next is Lightning's own: fx_looks.gd same)
+			var fxz = kit.h.fx if kit != null else null
+			if L.same() and fxz != null and is_instance_valid(fxz):
+				var from := Vector2(float(e["x"]), float(e["y"]))
+				for o in e["to"]:
+					fxz.ground_bolt(from.x, from.y, float(o["x"]), float(o["y"]))
+					from = Vector2(float(o["x"]), float(o["y"]))
+				return
 			var zp := {"x": e["x"], "y": e["y"], "t": 0.0, "kept": {}, "done": {}}
 			var zx: float = e["x"]
 			var zy: float = e["y"]

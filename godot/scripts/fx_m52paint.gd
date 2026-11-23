@@ -256,7 +256,9 @@ func draw_air(c: CanvasItem) -> void:
 				if not OWN:
 					_ice_shell(b)
 			"flashfreeze:foe":
-				_ice_shell(b)
+				# (with the switch on, he is frozen as anything frozen is: fx_figures.gd _hero_tint)
+				if not OWN:
+					_ice_shell(b)
 			"rekindle:relight":
 				_rekindle(b)
 			"flurry:stack":
