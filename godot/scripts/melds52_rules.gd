@@ -180,8 +180,12 @@ func used(i: int, echo: bool, at := Vector2.INF) -> void:
 		if qd_ready[i]:
 			_tell({"id": "quickdraw", "what": "draw", "x": h.world.x, "y": h.world.y})
 		last_use[i] = time
+		# BERSERK: each use another mark of the five lit in red
+		if f == "berserk" and h.frenzy > 0:
+			_tell({"id": "berserk", "what": "stack", "n": h.frenzy, "x": h.world.x, "y": h.world.y})
 		# OVERCHARGE: each use one more arc, as the frenzy grows, up to five
 		if f == "overcharge":
+			_tell({"id": "overcharge", "what": "charge", "n": mini(int(_tune("overcharge")["most"]), h.frenzy + 1), "x": h.world.x, "y": h.world.y})
 			if not r.has("arcs52"):
 				r["arcs52"] = int(r["arcs"])
 			r["arcs"] = int(r["arcs52"]) + mini(int(_tune("overcharge")["most"]), h.frenzy)
@@ -357,6 +361,8 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 		"whiteout":
 			if m.chill_t > 0.0:
 				m.chill = minf(0.9, m.chill + float(_tune("whiteout")["slowEach"]) * h.frenzy)
+			if not quiet:
+				_tell({"id": "whiteout", "what": "snow", "n": h.frenzy, "x": at.x, "y": at.y, "m": m})
 		"permafrost":
 			var P := _tune("permafrost")
 			if m.chill_t > 0.0:
@@ -489,12 +495,14 @@ func killed(m, i: int) -> void:
 		_tell({"id": "smoulder", "what": "coals", "x": m.world.x, "y": m.world.y})
 	match b:
 		"berserk":
+			_tell({"id": "berserk", "what": "kill", "x": m.world.x, "y": m.world.y, "x1": h.world.x, "y1": h.world.y})
 			var more: float = float(r["might"])
 			if more > 0.0:
 				h.might = minf(more * 5.0, h.might + more * float(_tune("berserk")["mightKill"]))
 				h.might_t = maxf(h.might_t, 5.0 * float(r["last"]))
 		"fever":
 			if m.poison_t > 0.0:
+				_tell({"id": "fever", "what": "kill", "x": m.world.x, "y": m.world.y, "x1": h.world.x, "y1": h.world.y})
 				var F: Dictionary = Words.data()["frenzy"]
 				h.frenzy_t = minf(float(F["hold"]) * 3.0 * float(r["last"]) * float(_tune("fever")["hold"]), h.frenzy_t + float(F["hold"]) * float(r["last"]))
 		"whiteout":
@@ -509,7 +517,7 @@ func killed(m, i: int) -> void:
 				if _alive(o) and o != m and o.world.distance_to(m.world) <= float(_tune("overcharge")["reach"]) and (best == null or o.world.distance_to(m.world) < best.world.distance_to(m.world)):
 					best = o
 			if best != null:
-				h._tell({"t": "arc", "x0": m.world.x, "y0": m.world.y, "x1": best.world.x, "y1": best.world.y, "meld": "overcharge"})
+				_tell({"id": "overcharge", "what": "bolt", "x": m.world.x, "y": m.world.y, "x1": best.world.x, "y1": best.world.y})
 				best.damage(maxf(1.0, roundf(h.avg_hit(i, 1.0) * float(_tune("overcharge")["bolt"]))), "lightning", false, false, [], false, false, i)
 		"blur":
 			var B := _tune("blur")
@@ -582,6 +590,8 @@ func arc_pick(near: Array, i: int) -> Array:
 
 
 func arc_struck(o, i: int) -> void:
+	if fid(i) == "seeker":
+		_tell({"id": "seeker", "what": "seek", "x": o.world.x, "y": o.world.y, "m": o})
 	if fid(i) == "conduit":
 		var r: Dictionary = h.loadout.r(i)
 		h.heal_flat(float(r["leech"]) * float(_tune("conduit")["share"]))

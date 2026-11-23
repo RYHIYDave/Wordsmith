@@ -49,6 +49,10 @@ static func harder(F, k: Callable, parts: Array, by) -> float:
 	if crit:
 		mult *= float(F.T()["shiver"]["crit"])
 		F._say(h.world, "Critical", "#ff8a80")
+		for w in ["duelist", "needle", "brand", "seeker", "quickdraw", "pressurepoint"]:
+			if float(k.call(w)) > 0.0 and alive_by:
+				h.m52._tell({"id": w, "what": "foe", "x": h.world.x, "y": h.world.y, "x1": by.world.x, "y1": by.world.y, "foe": true})
+				break
 	if float(k.call("berserk")) > 0.0 and alive_by:
 		mult *= 1.0 + float(_t("berserk")["foeMore"]) * _hurt_k(by)
 	if float(k.call("bulwark")) > 0.0 and alive_by and by.shield > 0.0:
@@ -121,6 +125,7 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 		F._warn(h.world, 1.0 + float(_t("overcharge")["foeReach"]) * _hurt_k(by), 0.5, F._avg(by) * 0.4, "lightning", by)
 	if s.call("juggernaut") > 0.0 and alive_by:
 		h.knock(away, 0.6 * _hurt_k(by))
+		h.m52._tell({"id": "juggernaut", "what": "foe", "x": h.world.x, "y": h.world.y, "r": 0.8 + 1.2 * _hurt_k(by), "foe": true})
 	if s.call("canker") > 0.0 and h.poison_t > 0.0:
 		h.poison_t = maxf(h.poison_t, float(preload("res://scripts/words.gd").data()["poison"]["time"]))
 	if s.call("bedrock") > 0.0:

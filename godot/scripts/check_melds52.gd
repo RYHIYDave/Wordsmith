@@ -25,6 +25,10 @@ const BEHIND := {"flashfreeze": "flashfreeze:sheet", "aftershock": "aftershock:q
 
 ## (whose twist is seen on a kill, or on one stunned already)
 const KILL := ["quickfuse", "concussion"]
+## (whose twist wants one alone, certain criticals, a frenzy built up: the film makes it so)
+const SOLO := ["duelist"]
+const CRITS := ["needle", "brand", "seeker"]
+const FRENZY := ["berserk", "fever", "whiteout", "overcharge", "blur", "juggernaut"]
 ## (whose moment behind is a kill's: its orb, its frenzy's)
 const KILL_BEHIND := ["bloodlust", "coldblood", "secondwind", "berserk", "fever", "whiteout", "overcharge", "blur"]
 ## (whose moment comes later than the others': a burn going out and lighting again)
@@ -211,6 +215,14 @@ func film(only := "") -> void:
 					m.life = 1.0
 				if STUNNED.has(id) and side == "front":
 					m.stun_t = 3.0
+			# (what a twist waits on, made so for the film: one alone, certain criticals, a frenzy built up)
+			if SOLO.has(id) and side == "front":
+				for j in range(1, M._w_pack.size()):
+					M._w_pack[j].world += Vector2(6.0, 6.0)
+			h.stats["crit_chance"] = 100.0 if CRITS.has(id) else 0.0
+			if FRENZY.has(id):
+				h.frenzy = int(preload("res://scripts/words.gd").data()["frenzy"]["max"]) - 1
+				h.frenzy_t = 5.0
 			k = await _frames(k, 0.25)
 			M._w_strike(h)
 			k = await _frames(k, 0.6)

@@ -14,8 +14,8 @@ looked at beside Forking, Siphon, Eruption and Shatter; what falls short is fixe
 | Twin (6) | yes | yes (his "Do the rest") |
 | Leech (5) | yes (fx_m52p_leech.gd) | yes: every moment told in its film; Coldblood, Conduit, Second Wind, Marrow made bolder after the first look; wisps dark-edged |
 | Volatile (2) | yes (fx_m52p_leech.gd) | yes |
-| Precise (6) | | |
-| Frenzied (6) | | |
+| Precise (6) | yes (fx_m52p_precise.gd) | yes: every moment told; Brand's symbol, Quickdraw's glint, Pressure Point's needles enlarged after the first look |
+| Frenzied (6) | yes (fx_m52p_precise.gd) | yes: every moment told; Blur's streaks doubled |
 | Guarding (6) | | |
 | Lasting (7) | | |
 | Fleeting (7) | | |
