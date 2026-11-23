@@ -396,7 +396,8 @@ func paint_air(b: Dictionary) -> void:
 			dir = dir.normalized() if dir.length() > 0.01 else Vector2(1, 0)
 			var u := _c01(bt / 0.45)
 			for k in 4:
-				var side := (float(k) - 1.5) * 0.3
+				# (the gust's lines tearing past on either side of him, not through him: his Art Rulebook's Animations 4)
+				var side := (0.45 + 0.3 * float(k / 2)) * (1.0 if k % 2 == 0 else -1.0)
 				var a: Vector2 = Vector2(b["x"], b["y"]) + Vector2(-dir.y, dir.x) * side - dir * (1.2 - u)
 				var c: Vector2 = a + dir * 0.9
 				_ga(0.8 * (1.0 - u))

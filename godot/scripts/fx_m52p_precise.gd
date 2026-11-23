@@ -237,18 +237,48 @@ func paint_floor(b: Dictionary) -> void:
 					_fill(px, py - hh, 1, 1)
 			_glow(cx, cy, 30.0, SNOW[4], 0.6 * fade)
 		"juggernaut:step", "juggernaut:foe":
+			var sd: int = b["seed"]
+			# (each heavy step kicking the floor's grit out in a wave, cracks running out ahead of it)
 			var u := _ease(bt / 0.3)
-			_ga(0.8 * (1.0 - u))
-			_fs(R[4])
-			_ring(b["x"], b["y"], float(b["r"]) * u, 0)
-			_fs(DUST[3])
-			_ring(b["x"], b["y"], float(b["r"]) * u * 0.8, 2)
+			var rr: float = float(b["r"]) * u
+			_front(b["x"], b["y"], rr, [DUST[0], DUST[1], DUST[3], R[4], R[5]], sd, 0.95 * (1.0 - u), "shock")
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"])
+			for k in 6:
+				var a := float(k) / 6.0 * TAU + _rh(sd, k) * 0.6
+				var px := cx
+				var py := cy
+				for j in 4:
+					var v := float(j + 1) / 4.0
+					var qa := a + (_rh(sd, k * 7 + j) - 0.5) * 0.6
+					var qx := cx + cos(qa) * rr * 22.6 * v
+					var qy := cy + sin(qa) * rr * 11.3 * v
+					_ga(0.9 * (1.0 - u * 0.6))
+					_fs(DUST[0])
+					_line(px, py, qx, qy, 2)
+					_fs(R[3])
+					_line(px, py - 1.0, qx, qy - 1.0, 1)
+					px = qx
+					py = qy
 		"blur:gust":
+			var sd: int = b["seed"]
+			# (his burst of speed: gusts tearing out from him, curling as they go, each a tapering stroke of wind)
 			var hh := _hero_at(b)
 			var u := _ease(bt / 0.4)
-			_ga(0.8 * (1.0 - u))
-			_fs(R[4])
-			_ring(hh.x, hh.y, 0.3 + 1.2 * u, 2, bt * 8.0)
+			var cx := _wx(hh.x, hh.y)
+			var cy := _wy(hh.x, hh.y)
+			for g in 5:
+				var a0 := float(g) / 5.0 * TAU + _rh(sd, g) * 0.8
+				var r0 := 10.0 + 34.0 * u
+				for i in 8:
+					var v := float(i) / 8.0
+					var a := a0 + v * 1.1
+					var r := r0 * (0.7 + 0.3 * v)
+					var a2 := a0 + (v + 0.125) * 1.1
+					var r2 := r0 * (0.7 + 0.3 * (v + 0.125))
+					_ga((1.0 - u) * (1.0 - v * 0.6))
+					_fs(R[4] if i < 4 else R[3])
+					_line(cx + cos(a) * r, cy + sin(a) * r * 0.5, cx + cos(a2) * r2, cy + sin(a2) * r2 * 0.5, 2 if i < 4 else 1)
 	_ga(1.0)
 
 

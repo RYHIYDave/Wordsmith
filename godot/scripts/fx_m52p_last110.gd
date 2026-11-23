@@ -145,7 +145,7 @@ func tick(b: Dictionary, dt: float) -> void:
 				var d: Vector2 = to - from
 				var l: float = maxf(0.3, d.length())
 				bits.append({"x": from.x, "y": from.y, "z": 12.0, "vx": d.x / l * l / 0.6, "vy": d.y / l * l / 0.6, "vz": 4.0, "fall": 0.0,
-					"t": 0.0, "life": 0.6, "ramp": PackedColorArray([R[3], R[4], R[5]]), "kind": "dot", "size": 3.0})
+					"t": 0.0, "life": 0.6, "ramp": PackedColorArray([R[3], R[4], R[5]]), "kind": "dot", "size": 4.0})
 
 
 func paint_floor(b: Dictionary) -> void:
@@ -650,7 +650,11 @@ func paint_air(b: Dictionary) -> void:
 			_line(q.x - 8.0, q.y, q.x + 8.0, q.y, 1)
 			_line(q.x, q.y - 8.0, q.x, q.y + 8.0, 1)
 		"ambush:mark":
-			_sight(p.x, p.y, u, R, 1.0 - _c01((bt - float(b["end"]) + 0.2) / 0.2))
+			# (a sight snapping shut on it, held a moment, bigger than Precise's own so the moment reads)
+			var hold := 1.0 - _c01((bt - float(b["end"]) + 0.2) / 0.2)
+			_sight(p.x, p.y, u, R, hold)
+			_sight(p.x, p.y, minf(1.0, u * 0.6), R, 0.6 * hold)
+			_glow(p.x, p.y, 20.0, R[4], 0.6 * hold)
 		"bullseye:ring":
 			_glow(p.x, p.y, 16.0, R[4], fade)
 		"fury:ember", "fury:hold":
@@ -675,8 +679,9 @@ func paint_air(b: Dictionary) -> void:
 						_flames(x, y + 3.0, 1, 4.0, 9.0, fade, PackedColorArray([FIRE[2], FIRE[3], FIRE[4], FIRE[5]]), sd + k + int(t * 8.0))
 						_glow(x, y, 8.0, FIRE[4], 0.6 * fade)
 		"spree:burst", "spree:two", "rapier:two":
+			# (a flash at his feet, not a haze over him: his Art Rulebook's Animations 4)
 			var hh := _hero_at(b)
-			_glow(_wx(hh.x, hh.y), _wy(hh.x, hh.y) - 16.0, 16.0, R[4], 0.8 * fade)
+			_glow(_wx(hh.x, hh.y), _wy(hh.x, hh.y), 14.0, R[4], 0.6 * fade)
 		"hourglass:turn", "hourglass:foe":
 			var q := p if b["what"] != "foe" else Vector2(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 14.0)
 			_hourglass(q.x, q.y - 22.0, u, R, fade, b["what"] == "foe")

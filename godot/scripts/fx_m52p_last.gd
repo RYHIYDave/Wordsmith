@@ -358,19 +358,21 @@ func paint_floor_more() -> void:
 		match id:
 			"canker", "permafrost", "bedrock":
 				# (dunes of sand drifting in from its edge; for Bedrock, into its cracks)
-				for i in 10:
-					var a := float(i) / 10.0 * TAU + _rh(sd, i) * 0.5
+				var dunes := 16 if id == "bedrock" else 10
+				var big := 1.5 if id == "bedrock" else 1.0
+				for i in dunes:
+					var a := float(i) / dunes * TAU + _rh(sd, i) * 0.5
 					var u := fmod(t * 0.15 + _rh(sd, i + 20), 1.0)
 					var d := r * (1.0 - u * (0.6 if id != "bedrock" else 0.9))
 					var px := _wx(x + cos(a) * d, y + sin(a) * d)
 					var py := _wy(x + cos(a) * d, y + sin(a) * d)
 					_ga(0.9 * (1.0 - u * 0.4))
 					_fs(SAND[1])
-					_fill(_ri(px) - 5, _ri(py) + 1, 11, 1)
+					_fill(_ri(px - 5.0 * big), _ri(py) + 1, _ri(11.0 * big), 1)
 					_fs(SAND[3])
-					_fill(_ri(px) - 4, _ri(py), 9, 1)
+					_fill(_ri(px - 4.0 * big), _ri(py), _ri(9.0 * big), 1)
 					_fs(SAND[4])
-					_fill(_ri(px) - 2, _ri(py) - 1, 5, 1)
+					_fill(_ri(px - 2.0 * big), _ri(py) - 1, _ri(5.0 * big), 1)
 			"smoulder":
 				if str(z["kind"]) == "burn":
 					_coals(x, y, r * 0.8, 1.0, sd)
