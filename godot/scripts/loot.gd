@@ -1126,8 +1126,9 @@ func _pool_unique(quality: int, mf: float, slot := "", weapon := ""):
 ## THE FIFTEEN OF THE THREE DEFENCES (game/uniques.ts DEFENCE_DEFS; uniques.gd): five uniques for armour, five for barrier, five
 ## for dodge, the pool's (his words, 23 Nov 2026: “give me maybe 15 more uniques that each sort of go with, 5 for armor, 5 for
 ## barrier, 5 for dodge. So we can sort of include those new mechanics in the move pool. Sorry, not the move pool, the item
-## pool.”). OFF until his yes to them: none drops or is gambled for; one worn all the same (a check's) works.
-static var DEFENCE_UNIQUES := false
+## pool.”). ON at his yes, 23 Nov 2026, shown their cards (docs/mockups/defence_uniques): “Yes, switch them on”. With it off none
+## drops or is gambled for; one worn all the same (a check's) works.
+static var DEFENCE_UNIQUES := true
 
 
 ## game.ts makePoolUnique: one of the pool's for him (of that slot, of that weapon, where asked), made for this floor; null if none.

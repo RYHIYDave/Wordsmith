@@ -650,9 +650,9 @@ func _ready() -> void:
 	# (THE THREE DEFENCES, on at his yes: `--defence=0` to run without them: loot.gd DEFENCE_LAYERS)
 	if _arg("defence") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_LAYERS = false
-	# (THE FIFTEEN OF THE THREE DEFENCES, off until his yes: `--defuniques=1` to run with them dropping: loot.gd DEFENCE_UNIQUES)
-	if _arg("defuniques") == "1":
-		preload("res://scripts/loot.gd").DEFENCE_UNIQUES = true
+	# (THE FIFTEEN OF THE THREE DEFENCES, on at his yes: `--defuniques=0` to run without them dropping: loot.gd DEFENCE_UNIQUES)
+	if _arg("defuniques") == "0":
+		preload("res://scripts/loot.gd").DEFENCE_UNIQUES = false
 	# (HIS CURSE THROWN, on at his yes to its pictures: `--curse=round` to run without it: heroes/warlock.gd CURSE_RANGED)
 	if _arg("curse") == "round":
 		preload("res://scripts/heroes/warlock.gd").CURSE_RANGED = false

@@ -551,7 +551,7 @@ export const LEVEL_DEFS: readonly UniqueDef[] = [
 //
 // THE FIFTEEN: five for each defence, the pool's, anyone's, made at the floor's level as the 62 are. Each rule works with the
 // defence its piece carries. THE GODOT GAME'S ALONE (godot/scripts/uniques.gd, THE FIFTEEN OF THE THREE DEFENCES): the TypeScript
-// game has armour alone and never makes them (they are not in liveDefs). OFF until his yes (loot.gd DEFENCE_UNIQUES): every name
+// game has armour alone and never makes them (they are not in liveDefs). ON at his yes, 23 Nov 2026 (loot.gd DEFENCE_UNIQUES): every name
 // and number here a proposal, his to change.
 const DT = UNIQUE_TUNE;
 export const DEFENCE_DEFS: readonly UniqueDef[] = [

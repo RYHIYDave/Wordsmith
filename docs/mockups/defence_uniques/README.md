@@ -16,7 +16,7 @@ A piece's defence already followed its base (heavy armour, leather dodge, cloth 
 Collar (Ranger) dodge added; The Tow Line (Tinkerer) dodge in place of armour; The Quilted Coat (a jerkin) its flat armour is
 dodge. And a leveling unique no longer picks up its base's dodge or barrier (“nothing but 20% movement speed”).
 
-## The fifteen (built and checked; OFF until his yes: `loot.gd DEFENCE_UNIQUES`)
+## The fifteen (ON at his yes, 23 Nov 2026: “Yes, switch them on”; `loot.gd DEFENCE_UNIQUES`)
 
 `the_fifteen.png`: their cards as the game draws them. The pool's, anyone's. Names and numbers are proposals, his to change
 (`src/game/uniques.ts` DEFENCE_DEFS, UNIQUE_TUNE; rules in `godot/scripts/uniques.gd`).
@@ -25,7 +25,7 @@ dodge. And a leveling unique no longer picks up its base's dodge or barrier (“
 - BARRIER: Quickglass, The Decanter, Shatterglass, Halo, The Glazier's Ring.
 - DODGE: Feint, Afterimage, Featherweight, Close Call, Tailwind.
 
-To turn them on: `DEFENCE_UNIQUES := true` in `godot/scripts/loot.gd` (or run with `--defuniques=1`).
+To run without them: `--defuniques=0`.
 
 ## Checked
 
