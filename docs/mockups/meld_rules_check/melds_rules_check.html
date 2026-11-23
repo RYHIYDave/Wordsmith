@@ -39,6 +39,7 @@ section { background: var(--panel); border: 1px solid var(--line); border-radius
 ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
 .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
 .sw { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12px; }
+a { color: var(--pass); }
 .sw i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; border: 1px solid #0006; }
 </style>
 
@@ -46,26 +47,26 @@ ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
   <header>
     <div class="eyebrow">Wordsmith · melds · your art rulebook, rev 88</div>
     <h1>The 98 new melds against your rules</h1>
-    <p class="lead">Every meld film was checked at the game's own size against your living Art Rulebook: five moments each (two in front, two behind, one on a monster), plus a read of the code that paints them. Below is each rule they break, which melds, and what I'll do.</p>
+    <p class="lead">Every meld film was checked at the game's own size against your living Art Rulebook: five moments each (two in front, two behind, one on a monster), plus a read of the code that paints them. Below is each rule they broke, which melds, and what was done. All of it is now fixed, and all 98 were filmed again and checked again.</p>
   </header>
 
   <div class="tally">
     <div><b>98</b><span>melds checked</span></div>
     <div><b class="pass">47</b><span>break no rule</span></div>
-    <div><b class="fail">51</b><span>break at least one</span></div>
-    <div><b class="call">1</b><span>needs your call</span></div>
+    <div><b class="fail">51</b><span>broke at least one</span></div>
+    <div><b class="pass">51</b><span>fixed</span></div>
   </div>
 
   <section>
-    <div class="head"><h2>The monster's look never plays in 17 films</h2><span class="chip fail">Fails</span></div>
+    <div class="head"><h2>The monster's look never plays in 17 films</h2><span class="chip pass">Fixed</span></div>
     <p class="rule">Animations 7: "Every word has its look ... in front on the hit and behind on what is left." The third step of each film, a skeleton carrying the meld, is how you see its look on a monster.</p>
     <p>In these 17 of the last 46, the skeleton never got hurt, brought low or killed in the film, so its look never fired. I told you every moment showed. That was true for in front and behind, not for this step.</p>
     <p class="names">Hornet, Quicksilver, Cluster, Double Tap, Redoubt, Bloodbloom, Lifeline, Detonator, Hair Trigger, Blastwave, Rapier, Riposte, Vendetta, Shieldwall, Rampage, Sanctuary, Aegis</p>
-    <p class="fix"><b>Fixing:</b> the film's third step makes each one happen (the hero hits back, the skeleton is brought low or killed), and the check fails any film whose monster look does not play. The first 52 are re-checked the same way.</p>
+    <p class="fix"><b>Fixed:</b> the film's skeleton now has a monster's life, the hero hits it back, and it is brought low or killed when its meld needs that. Every one of the 98 films now shows its monster look. Two were real bugs in the game, now fixed: Double Tap and Vendetta could never land a critical hit as a monster, and Quicksilver's monster look never fired.</p>
   </section>
 
   <section>
-    <div class="head"><h2>Plain boxes, balls and rings</h2><span class="chip fail">Fails</span></div>
+    <div class="head"><h2>Plain boxes, balls and rings</h2><span class="chip pass">Fixed</span></div>
     <p class="rule">How art is made 9: "A prop, a piece of a place or an effect is shaped as the thing it is, never a plain ball, box or ring."</p>
     <div class="pic"><img src="shapes.jpg" alt="Ten close-ups: Time Bomb's square bombs, Overcharge's cloud of round puffs, Onrush's striped block, Fortress's plain slabs, Bulwark's green square, Earthquake's ring of blocks, Charge's stepped block, Lamprey's square wisps, Vendetta's grey post, Static's flat oval clouds."></div>
     <p class="cap">Time Bomb, Overcharge, Onrush, Fortress, Bulwark; Earthquake, Charge, Lamprey, Vendetta, Static.</p>
@@ -74,35 +75,40 @@ ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
       <li><b>Balls:</b> the storm clouds of Overcharge, Conduit, Seeker, Static, Jolt, Tempest, Fulgurite and Quicksilver (on a monster) are round puffs or flat ovals.</li>
       <li><b>Plain rings:</b> Reverb, Ripple, Bullseye, Quickfuse's blast, Momentum's band.</li>
     </ul>
-    <p class="fix"><b>Fixing:</b> each drawn as the thing it is. A bomb gets a round iron body, a fuse and sparks. A cloud gets ragged, billowing edges with a lit top. Rocks are cracked stone, and smoke rolls in curls. A ring becomes a ripple of water, a sound-wave of broken arcs, or runes.</p>
+    <p class="fix"><b>Fixed:</b> each is drawn as the thing it is. Time Bomb is a round iron bomb with a clock face and a burning fuse. Detonator is an iron charge clinging by claws. Bulwark's stud is riveted and sits on the shell's rim. Fortress has weathered standing stones, and Earthquake heaves up jagged slabs. Onrush's speed lines taper. Charge and Aftermath roll out smoke curls. Vendetta's tally is scored gashes, and Fury's embers are flame tongues. Double Tap flashes star glints, and Momentum is a glowing coil up his weapon. The rings became sound-waves (Reverb), water (Ripple), shock fronts (Blastwave, Rampage, Juggernaut) and a closing target sight (Bullseye).</p>
+    <div class="pic"><img src="after_shapes.jpg" alt="After: Time Bomb's round bombs, Detonator's clinging charge, Bulwark's stud on the shell's rim, Fortress's standing stones, Earthquake's heaved slabs, Onrush's speed lines, Fury's flame tongues, Vendetta's gashes, Rapier's thrusts, Whipcrack's lash."></div>
+    <p class="cap">After: Time Bomb, Detonator, Bulwark, Fortress, Earthquake; Onrush, Fury, Vendetta, Rapier, Whipcrack.</p>
+    <p>One correction: the storm clouds made of round puffs aren't the melds' own. They're the game's existing Lightning look, used by every Lightning word. Changing it would change the live game, so it's left for your say.</p>
   </section>
 
   <section>
-    <div class="head"><h2>Too small to read</h2><span class="chip fail">Fails</span></div>
+    <div class="head"><h2>Too small to read</h2><span class="chip pass">Fixed</span></div>
     <p class="rule">Animations 1: "as big, wild, kinetic and weighty as it can be ... a notch too high, never a notch too low."</p>
     <div class="pic"><img src="faint.jpg" alt="Five close-ups where the meld barely shows: Whipcrack, Rapier, Blur behind, Juggernaut behind, Transfusion behind."></div>
     <p class="cap">Whipcrack, Rapier, Blur (behind), Juggernaut (behind), Transfusion (behind).</p>
     <p class="names">Whipcrack, Rapier, Rampage, Reverb (in front), Aftermath (in front), Ambush (behind), Blur (behind), Juggernaut (behind), Daze (behind), Bedrock (behind), Transfusion (behind)</p>
-    <p class="fix"><b>Fixing:</b> Whipcrack's crack becomes a lash across the screen with a white snap and a kick. Rapier and Rampage get their own looks, not just Frenzied's ring under him. The faint ones behind are made as big as the rest.</p>
+    <p class="fix"><b>Fixed:</b> Whipcrack is a lash thrown across the area with a white crack at its tip and a screen kick. Rapier is a flurry of bright thrusts. Juggernaut's steps kick out a shock front with cracks running ahead. Blur throws out curling gusts, and Bedrock's sand drifts are bigger. Transfusion's drips are bigger, and Ambush's sight is bigger and glows.</p>
+    <div class="pic"><img src="after_more.jpg" alt="After: Reverb's sound-waves, Bullseye's target sight, Blur's gusts, Juggernaut's shock front, Transfusion's drips."></div>
+    <p class="cap">After: Reverb, Bullseye, Blur, Juggernaut, Transfusion.</p>
   </section>
 
   <section>
-    <div class="head"><h2>Covering the hero</h2><span class="chip fail">Fails</span></div>
+    <div class="head"><h2>Covering the hero</h2><span class="chip pass">Fixed</span></div>
     <p class="rule">Animations 4: "No effect covers the hero, or a monster's wind-up or danger mark, for more than a blink."</p>
     <div class="pic"><img src="cover.jpg" alt="Three close-ups: Staccato's two big slashes over the hero, Gale's green gust over him on a monster's turn, Spree's haze around him."></div>
     <p class="cap">Staccato (behind), Gale (on a monster), Spree.</p>
-    <p class="fix"><b>Fixing:</b> Staccato's slashes go on the monster it hits, not on him. Gale's gust and Spree's haze pass by him and don't sit on him.</p>
+    <p class="fix"><b>Fixed:</b> Staccato's slashes land where his blow lands, not on him. Gale's gust tears past on either side of him, and Spree's flash is at his feet.</p>
   </section>
 
   <section>
-    <div class="head"><h2>No freeze when a big blow lands</h2><span class="chip fail">Fails</span></div>
+    <div class="head"><h2>No freeze when a big blow lands</h2><span class="chip pass">Fixed</span></div>
     <p class="rule">Movement 7: "The moment a heavy blow lands, everything holds for a tenth of a second."</p>
     <p>None of the 98 holds still on its big moments. The game's own words and melds do (Heavy, Volatile, the first eight melds).</p>
-    <p class="fix"><b>Fixing:</b> the hold on every boom and heavy landing (Time Bomb, Detonator, Blastwave, Cluster, Cataclysm, Earthquake, Anvil, Charge and the rest of the Heavy and Volatile melds).</p>
+    <p class="fix"><b>Fixed:</b> a tenth of a second's hold on every Heavy and Volatile landing and blast (Aftershock, Concussion, Fortress, Daze, Earthquake, Charge, Icebreaker, Anvil, Time Bomb, Detonator, Blastwave, Cluster, Mayhem, Minefield, Hair Trigger and the rest), and on Cataclysm's star.</p>
   </section>
 
   <section>
-    <div class="head"><h2>Enemy pink on your hero's blows</h2><span class="chip call">Your call</span></div>
+    <div class="head"><h2>Enemy pink on your hero's blows</h2><span class="chip pass">Fixed at your yes</span></div>
     <p class="rule">Pillar 4: "What glows on an enemy is hot pink burning to gold. Nothing else glows in those colours."</p>
     <div class="pic"><img src="pink.jpg" alt="Five close-ups of the hero's blows glowing pink: Lamprey, Bloodbloom, Lifeline, Spree, Mayhem."></div>
     <p class="cap">Lamprey, Bloodbloom, Lifeline, Spree, Mayhem.</p>
@@ -115,8 +121,19 @@ ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
       <span class="sw"><i style="background:#c8489c"></i>Mayhem</span>
       <span class="sw"><i style="background:#cc8494"></i>Transfusion</span>
     </div>
-    <p>Six meld colours sit on the enemy's pink. Bloodbloom is exactly its shade. You said yes to their stones, so changing them is your call. My pick: move them to blood red and salmon, as Leech and Power already are, and redo their stones to match.</p>
-    <p>On the other side, a few icy melds (Glide, Flash Freeze, Double Tap, Ripple, Quicksilver) are close to the friend's cyan. When a monster carries one, it would glow nearly cyan. My pick: on a monster, those draw in Frost's deeper blue.</p>
+    <p>Six meld colours sat on the enemy's pink. Bloodbloom was exactly its shade.</p>
+    <p class="fix"><b>Fixed, at your “Yes”:</b> all six moved to blood red and salmon, each kept clear of every other meld's colour, and their stones redrawn to match. The five icy melds (Glide, Flash Freeze, Double Tap, Ripple, Quicksilver) now draw in Frost's deeper blue whenever a monster uses them.</p>
+    <div class="swatches">
+      <span class="sw"><i style="background:#bf1d1d"></i>Bloodbloom</span>
+      <span class="sw"><i style="background:#e61c26"></i>Mayhem</span>
+      <span class="sw"><i style="background:#ec7771"></i>Lamprey</span>
+      <span class="sw"><i style="background:#b25b55"></i>Transfusion</span>
+      <span class="sw"><i style="background:#f59f87"></i>Lifeline</span>
+      <span class="sw"><i style="background:#fa975a"></i>Spree</span>
+      <span class="sw"><i style="background:#2e6cc8"></i>icy ones on a monster</span>
+    </div>
+    <div class="pic"><img src="after_pink.jpg" alt="After: Lamprey, Bloodbloom, Lifeline, Spree and Transfusion in their new blood-red and salmon colours."></div>
+    <p class="cap">After: Lamprey, Bloodbloom, Lifeline, Spree, Transfusion.</p>
   </section>
 
   <section>
@@ -126,6 +143,7 @@ ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
       <li><b>Big and wild:</b> most front moments are as big as the game's own melds, among them Twin's, Inferno, Glacier, Smoulder, Cataclysm, Stormfront and the Lightning and Volatile melds.</li>
       <li><b>One fixed camera, flat on the floor:</b> grounds and rings lie as the floor lies.</li>
     </ul>
-    <p class="lead">Two things in the films that aren't art but could mislead you: the huge numbers (132000) come from how the film sets up its kills, and the HELMET labels are loot dropped by the film's kills. Both come out of the films.</p>
+    <p class="lead">Also gone from the films: the huge numbers (132000), which came from the film's test skeletons having a million life, and the HELMET labels from loot the film's kills dropped.</p>
+    <p class="lead">The new films: <a href="https://claude.ai/artifact/QksZWmUCHKhmpZMbMwETKq">the first 52</a> and <a href="https://claude.ai/artifact/8xKRFHAjeV9kVnwiBCiSKH">the last 46</a>. They stay switched off in the game until you say yes.</p>
   </section>
 </div>

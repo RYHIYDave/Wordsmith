@@ -68,6 +68,7 @@ video { width: 100%; height: auto; aspect-ratio: 10 / 7; border-radius: 4px; bac
 .how + .lead { margin-top: 12px; }
 .ask { background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 16px; }
 .ask b { font-family: var(--display); font-size: 17px; }
+a { color: var(--accent); }
 </style>
 
 <div class="wrap">
@@ -81,6 +82,7 @@ video { width: 100%; height: auto; aspect-ratio: 10 / 7; border-radius: 4px; bac
       <li>A skeleton carrying the meld comes for the hero.</li>
     </ol>
     @@NOTES@@
+    <p class="lead">Checked against your Art Rulebook and fixed (shapes, size, the hero kept clear, the freeze on big blows, the colours you said yes to, and every film now shows the meld on a monster): <a href="https://claude.ai/artifact/QNsqwTYmHsxKbx4E9GHBzY">the rules check</a>.</p>
   </header>
   @@SECS@@
   <div class="ask"><b>Your call</b><p>Tell me in the chat to switch them on, or which ones to change. They stay switched off until you say yes.</p></div>
