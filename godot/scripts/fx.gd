@@ -1795,7 +1795,7 @@ static func pline(c: CanvasItem, x0f: float, y0f: float, x1f: float, y1f: float,
 
 ## Whether anything is alive to be drawn; the layers are drawn again while there is, and once more after.
 func _alive() -> bool:
-	return pn > 0 or not rifts.is_empty() or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or wild_mage.alive() or wild_ranger.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or city3.alive() or w10.alive() or w7.alive() or m3.alive() or v3.alive() or m8.alive()
+	return pn > 0 or not rifts.is_empty() or not (floaters.is_empty() and rings.is_empty() and slashes.is_empty() and whirls.is_empty() and cracks.is_empty() and decals.is_empty() and spikes.is_empty() and flashes.is_empty() and bolts.is_empty() and sky_bolts.is_empty()) or might_stacks > 0 or wild.alive() or wild_mage.alive() or wild_ranger.alive() or words3.alive() or ground.alive() or figures.alive() or w610.alive() or m52fx.paint.alive() or city3.alive() or w10.alive() or w7.alive() or m3.alive() or v3.alive() or m8.alive()
 
 
 func _redraw() -> void:
@@ -1923,6 +1923,7 @@ func _paint_ground(c: CanvasItem) -> void:
 	m8.draw_ground(c)
 	uq.draw_ground(c)
 	w610.draw_floor(c)
+	m52fx.paint.draw_floor(c)
 	w10.draw_floor(c)
 	# (w7: render.ts floorW7)
 	w7.draw_floor(c)
@@ -2115,6 +2116,7 @@ func _paint_air(c: CanvasItem) -> void:
 	# (Volatile's rune's column of light, Leeching's wisps, Precise's pins and sights, Frenzied's sparks, Guarding's shell and the
 	# motes of its ward: fx_words610.gd. Left out: the wand's beams, the Mage's)
 	w610.draw_air(c, wakes.list if wakes != null and is_instance_valid(wakes) else [])
+	m52fx.paint.draw_air(c)
 	city3.draw_air(c, wakes.list if wakes != null and is_instance_valid(wakes) else [])
 	for f: Dictionary in flashes:
 		# a burst of light: a bright core with four rays

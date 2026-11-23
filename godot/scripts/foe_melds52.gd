@@ -69,10 +69,14 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 	var s := func(w: String) -> float: return float(k.call(w))
 	if s.call("onslaught") > 0.0:
 		h.knock(away, float(_t("onslaught")["foeShove"]))
+		h.m52._tell({"id": "onslaught", "what": "foe", "x": h.world.x, "y": h.world.y, "foe": true})
+	if s.call("viper") > 0.0:
+		h.m52._tell({"id": "viper", "what": "foe", "x": h.world.x, "y": h.world.y, "foe": true})
 	if s.call("viper") > 0.0 and h.poison_t > 0.0:
 		h.poison_dps *= 1.0 + float(_t("viper")["foeDoses"]) * 0.5
 	if s.call("flashfreeze") > 0.0 and h.chill_t > 0.0:
 		h.held = maxf(h.held, float(_t("flashfreeze")["foeFreeze"]))
+		h.m52._tell({"id": "flashfreeze", "what": "foe", "x": h.world.x, "y": h.world.y, "foe": true})
 		F._tell({"t": "freeze", "x": h.world.x, "y": h.world.y})
 		F._say(h.world, "Frozen", "#a5d8ff")
 	if s.call("rekindle") > 0.0 and h.burn_t > 0.0:

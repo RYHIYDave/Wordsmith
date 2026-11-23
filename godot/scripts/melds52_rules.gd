@@ -161,7 +161,7 @@ func blow(i: int, k: int) -> float:
 
 # --- a use ---
 
-func used(i: int, echo: bool) -> void:
+func used(i: int, echo: bool, at := Vector2.INF) -> void:
 	var f := fid(i)
 	var b := bid(i)
 	var r: Dictionary = h.loadout.r(i)
@@ -172,7 +172,7 @@ func used(i: int, echo: bool) -> void:
 			flurry_n = mini(int(F["most"]), flurry_n + 1) if time - flurry_at <= float(F["window"]) else 2
 			flurry_at = time
 			r["count"] = flurry_n
-			_tell({"id": "flurry", "what": "stack", "n": flurry_n, "x": h.world.x, "y": h.world.y})
+			_tell({"id": "flurry", "what": "stack", "n": flurry_n, "x": h.world.x, "y": h.world.y, "dx": h.face.x, "dy": h.face.y})
 		# QUICKDRAW: the first use after two seconds without, a certain critical
 		qd_ready[i] = f == "quickdraw" and time - float(last_use[i]) >= float(_tune("quickdraw")["rest"])
 		if qd_ready[i]:
@@ -199,6 +199,9 @@ func used(i: int, echo: bool) -> void:
 		if f == "twin2":
 			r["count"] = int(_tune("twin2")["count"])
 	else:
+		# ONSLAUGHT behind: the ring closing on the phantom left where he stood, as it strikes again
+		if b == "onslaught" and at != Vector2.INF:
+			_tell({"id": "onslaught", "what": "echo", "x": at.x, "y": at.y})
 		# FLURRY behind: each repeat a burst of speed
 		if b == "flurry":
 			var F := _tune("flurry")
@@ -1084,6 +1087,9 @@ func forget() -> void:
 	links.clear()
 	_wards.clear()
 	_tagged.clear()
+	on_him.clear()
+	_him_burn = 0.0
+	_him_poison = 0.0
 	momentum = 0
 	last_use = [-99.0, -99.0, -99.0]
 	flurry_n = 2

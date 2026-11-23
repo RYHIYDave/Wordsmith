@@ -11,8 +11,14 @@ extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
 const L := preload("res://scripts/fx_looks.gd")
+## (those of the 52 painted as the game's own melds are: fx_m52paint.gd)
+const Paint := preload("res://scripts/fx_m52paint.gd")
 
-var fx
+var fx:
+	set(v):
+		fx = v
+		paint.fx = v
+var paint := Paint.new()
 var _ramps := {}
 var _t := 0.0
 var _carriers := {}
@@ -39,6 +45,9 @@ func _pa(a: Array) -> PackedColorArray:
 
 func handle(e: Dictionary) -> void:
 	var id: String = e.get("id", "")
+	if Paint.painted(id):
+		paint.handle(e)
+		return
 	var what: String = e.get("what", "")
 	var x: float = e.get("x", 0.0)
 	var y: float = e.get("y", 0.0)
@@ -224,6 +233,7 @@ func handle(e: Dictionary) -> void:
 
 
 func update(dt: float) -> void:
+	paint.update(dt)
 	_t += dt
 	if fmod(_t, 0.12) >= dt:
 		return
@@ -288,3 +298,4 @@ func _carrier(m) -> String:
 
 func clear() -> void:
 	_carriers = {}
+	paint.clear()

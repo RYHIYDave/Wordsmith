@@ -949,7 +949,7 @@ func _explode(m, r: Dictionary, i: int) -> void:
 ## the way `way`; `kind` the game's name for what sort of move it is.
 func _cast(i: int, kind: String, at: Vector2, way: Vector2, echo := false) -> void:
 	# (THE 52 DESIGNED MELDS: a use of the move, its own or its echo: Flurry, Quickdraw, Overcharge, Tailwind, Blink: melds52_rules.gd)
-	m52.used(i, echo)
+	m52.used(i, echo, at)
 	var front: Array = loadout.wfronts(i)
 	var behind: Array = loadout.wbehinds(i)
 	if front.is_empty() and behind.is_empty() and not echo:

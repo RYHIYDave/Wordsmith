@@ -25,6 +25,8 @@ const BEHIND := {"flashfreeze": "flashfreeze:sheet", "aftershock": "aftershock:q
 
 ## (whose twist is seen on a kill, or on one stunned already)
 const KILL := ["quickfuse", "concussion"]
+## (whose moment comes later than the others': a burn going out and lighting again)
+const LONGER := {"rekindle:front": 2.6, "rekindle:behind": 2.0}
 const STUNNED := ["pressurepoint"]
 
 
@@ -188,12 +190,15 @@ func film(only := "") -> void:
 	for f in ["met", "quick", "slow", "evade", "flask"]:
 		M.guide.set(f, true)
 	var ids: Array = T["melds"]
+	# (any words named: the game's own melds too, filmed the same way to set beside these)
 	if only != "":
-		var some := only.split(",")
-		ids = ids.filter(func(i): return some.has(i))
+		ids = Array(only.split(","))
 	for id in ids:
 		_dir = root + "/" + id
 		DirAccess.make_dir_recursive_absolute(_dir)
+		# (nothing of the film before left over: its warnings, its effects)
+		M._monsters.perils.clear()
+		M.fx.clear()
 		var k := 0
 		for side in ["front", "behind"]:
 			_fresh()
@@ -207,7 +212,7 @@ func film(only := "") -> void:
 			M._w_strike(h)
 			k = await _frames(k, 0.6)
 			M._w_strike(h)
-			k = await _frames(k, 1.4 if side == "front" else 2.2)
+			k = await _frames(k, (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0)))
 		# (carried by one of the pack, which comes for him: its two runes and the meld, as an altar lays them)
 		_fresh()
 		M._w_put(h, 0, "front", [])
