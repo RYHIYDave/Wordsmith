@@ -9,4 +9,7 @@ His word on them, 23 Nov 2026: “Good”.
 - render.py: draws a stone as the game's runeSprite does, on the blank stone of the loot sheet.
 - runes.json, stones/: what they made.
 
-Next: the animations (Twin's Meld Animations, https://claude.ai/artifact/48AjYksJpLugm9uR8czz3d), then the build.
+The animations' plan: Twin's Meld Animations, https://claude.ai/artifact/48AjYksJpLugm9uR8czz3d (his word, 23 Nov 2026:
+“Okay sounds good.  I'm not sure what you're saying about the stones flashing but if all melds do that already then fine”;
+only Cauterize shows its symbol today, so the flash was taken out), and Floor 6–10 Meld Animations,
+https://claude.ai/artifact/8XMbcjQ8d5YLisEyGW8e1U (waiting on his word). Then the build, behind a switch, and films.
