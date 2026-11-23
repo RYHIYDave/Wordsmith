@@ -1418,8 +1418,9 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   tap him to unchain and fight him.  Or you can leave him if you don’t want to interact with it at all.” Read as: one on each of
   floors 2 to 5 once the ring is lit, and one on every endless level that is one of floors 1 to 5. One of the floor's own
   yellow-pack leaders' kinds alone, in one of its ordinary rooms (off the way through first): his yellow name, two of the floor's
-  words (three from depth 10), an elite's life for one alone (4 times his kind's; a pack's leader has 3), and over his head the
-  rune of a bonus word of the floor's that is not his. Three iron stakes and their chains to a band at his waist, painted in code;
+  words (three from depth 10) and the bonus word as well, an elite's life for one alone (4 times his kind's; a pack's leader has
+  3), and over his head the rune of the bonus word (his words: “I want him to have the word above him as well.  It’s got to be
+  tough”). Three iron stakes and their chains to a band at his waist, painted in code;
   he turns to the hero and now and then heaves at them (rattling). Held, he never wakes, is out of every blow's reach
   (`monsters.gd shut_in`), is never locked onto and strikes at no one. A touch on him walks the hero to him and breaks the chains
   (`touch.gd _spot_at`, errand "chained"); E within 2.4 tiles too ("Break the chains"). The links fly, and half a second later he

@@ -8,9 +8,10 @@
 ##     the boss's, a lair, a vault or an elite room; well clear of where the hero comes in, of the floor's things and its traps.
 ##   WHO: one of the floor's own yellow-pack leaders' kinds, alone: a rare, his name in a yellow pack's leader's yellow, an elite by
 ##     the game's rules for one alone (game.ts spawn: TUNE.eliteLife, his kind's life four times over, where a pack's leader has
-##     PACKS.leaderLife, three), with HIS WORDS, two of the floor's own (three from depth 10, on an endless level), never two of
-##     Flame, Frost and Lightning, and what Power, Swift and Guarding give him in his numbers (game.ts spawn). Over his head, as over
-##     any monster that carries a word, the rune of THE BONUS WORD: one of the floor's own that is not one of his.
+##     PACKS.leaderLife, three), with HIS WORDS, two of the floor's own (three from depth 10, on an endless level), AND THE BONUS
+##     WORD as well, never two of Flame, Frost and Lightning among them, and what Power, Swift and Guarding give him in his numbers
+##     (game.ts spawn). Over his head, as over any monster that carries a word, the rune of the bonus word: what he will leave. His
+##     words, 22 Nov 2026, of it: “I want him to have the word above him as well.  It’s got to be tough”.
 ##   HELD: three iron stakes driven into the floor round him, a chain from each to an iron band at his waist. He stands; he turns to
 ##     the hero in his sight within 9 tiles, and now and then heaves at his chains toward him, the chains going taut and rattling.
 ##     He never wakes, nothing of the hero's reaches him (monsters.gd shut_in), the aim help never locks onto him, and he strikes at
@@ -131,11 +132,11 @@ func lay(mdata: Dictionary, seed := -1) -> bool:
 		return false
 	var P: int = loot.power()
 	var pool: Array = loot.words_found_at(P).duplicate()
-	var his := _draw(pool, 3 if P >= 10 else 2)
-	var spare: Array = pool.filter(func(w): return not his.has(w))
-	if spare.is_empty():
-		spare = pool
-	bonus = str(spare[_rng.randi_range(0, spare.size() - 1)])
+	if pool.is_empty():
+		return false
+	# (THE BONUS WORD first, and his own words with it: he fights with it too, and it is the one he leaves)
+	bonus = str(pool[_rng.randi_range(0, pool.size() - 1)])
+	var his := _draw(pool, (3 if P >= 10 else 2) + 1, [bonus])
 	var d := _rare(t, his, at)
 	var fig = monsters.figure_of(str(d["figure"]))
 	if fig == null:
@@ -167,10 +168,10 @@ func lay(mdata: Dictionary, seed := -1) -> bool:
 	return true
 
 
-## `n` different words of `pool`, never two of Flame, Frost and Lightning (game.ts drawWords).
-func _draw(pool: Array, n: int) -> Array:
-	var left := pool.duplicate()
-	var got: Array = []
+## `n` different words of `pool`, `first` among them, never two of Flame, Frost and Lightning (game.ts drawWords).
+func _draw(pool: Array, n: int, first: Array = []) -> Array:
+	var got: Array = first.duplicate()
+	var left := pool.filter(func(w): return not got.has(w))
 	while got.size() < n and not left.is_empty():
 		var w: String = left.pop_at(_rng.randi_range(0, left.size() - 1))
 		if ELEMENTS.has(w) and got.any(func(g): return ELEMENTS.has(g)):

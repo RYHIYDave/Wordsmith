@@ -1,5 +1,5 @@
 ## THE CHAINED RARE (chained_rare.gd): `--only=chained --shots=<dir>`. Floors 1 to 6 of the story, the ring lit: none on 1 or 6, one
-## on each of 2 to 5, a rare alone (his yellow name, his words, a bonus word not one of his over his head, in an ordinary room, three
+## on each of 2 to 5, a rare alone (his yellow name, his two words and the bonus word over his head as well, in an ordinary room, three
 ## stakes). On floor 4: left alone he never wakes, beside the hero or as the floor round him wakes, and nothing of the hero's reaches
 ## him; by him the prompt; a touch on him is no blow but an errand, which walks the hero to him and breaks his chains; then he fights,
 ## is struck, and killed leaves the bonus word; beaten there, never chained on floor 4 again (and his save keeps it), floor 2's still
@@ -102,10 +102,10 @@ func run(main, hero, d: String) -> void:
 		var r = cr.m
 		var els: Array = r.words.filter(func(w): return w in ["fire", "frost", "lightning"])
 		var q := _room_of(r.world)
-		_line(r.chained == 1 and r.state == "sleep" and r.elite and r.rarity == "leader" and r.pack_id == CR.PACK and r.words.size() == 2 and els.size() <= 1,
+		_line(r.chained == 1 and r.state == "sleep" and r.elite and r.rarity == "leader" and r.pack_id == CR.PACK and r.words.size() == 3 and els.size() <= 1,
 			"floor %d: %s; held %s, a rare alone (elite %s, %s, pack %d)" % [f, _about(cr), r.chained == 1, r.elite, r.rarity, r.pack_id])
-		_line(r.carries == [cr.bonus] and not r.words.has(cr.bonus) and M.loot.words_found_at(M.loot.power()).has(cr.bonus),
-			"floor %d: the bonus word %s, one of the floor's own, not one of his" % [f, cr.bonus])
+		_line(r.carries == [cr.bonus] and r.words.has(cr.bonus) and M.loot.words_found_at(M.loot.power()).has(cr.bonus),
+			"floor %d: the bonus word %s, one of the floor's own, and his too" % [f, cr.bonus])
 		_line(str(q.get("kind", "")) == "normal" and cr.stakes.size() == 3 and r.world.distance_to(M.map.start) >= 12.0,
 			"floor %d: in room %s (%s, %s), %.1f tiles from where he comes in; stakes %s" % [f, q.get("id", "-"), q.get("kind", "-"), "off the way" if int(q.get("path", 0)) < 0 else "on the way", r.world.distance_to(M.map.start), cr.stakes])
 		# (his life an elite's alone: his kind's leader's on this floor, times 4 / 3, Power's made his)
@@ -244,7 +244,7 @@ func run(main, hero, d: String) -> void:
 			_line(false, "endless on floor %d: none" % f)
 			continue
 		var e = ce.m
-		_line(e.chained == 1 and e.words.size() >= 3 and e.carries == [ce.bonus], "endless on floor %d (depth %d): %s" % [f, M.loot.power(), _about(ce)])
+		_line(e.chained == 1 and e.words.size() >= 4 and e.words.has(ce.bonus) and e.carries == [ce.bonus], "endless on floor %d (depth %d): %s" % [f, M.loot.power(), _about(ce)])
 		if f == 1:
 			_beside(e.world, 1.8)
 			ce.unchain()
