@@ -1409,6 +1409,12 @@ func _build(where: String, arrive: String) -> void:
 		# (ENDLESS ANY LEVEL: the royals' packs on an endless level of any floor, by the level's luck: royal_packs)
 		if in_endless and where != "final":
 			royal_packs(mdata)
+		# (THE RIM'S DOOR: what each monster carries tilted toward the runes burned in, as every rune that drops there is: loot.gd
+		# tilt_word)
+		if not dungeon_words.is_empty() and where != "final":
+			for d in mdata.get("monsters", []):
+				if d is Dictionary and not (d.get("carries", []) as Array).is_empty():
+					d["carries"] = (d["carries"] as Array).map(func(w): return loot.tilt_word(str(w)))
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR, mdata)
 		_chained_mdata = mdata
 		floor_mdata = mdata
@@ -3092,6 +3098,9 @@ func _shoot(hero: Hero, dir: String) -> void:
 		get_tree().quit()
 	if _arg("only") == "safe":
 		await preload("res://scripts/check_safe.gd").new().run(self, hero, dir)
+		get_tree().quit()
+	if _arg("only") == "doorrunes":
+		await preload("res://scripts/check_door_runes.gd").new().run(self, hero, dir)
 		get_tree().quit()
 	if _arg("only") == "endlessany":
 		await preload("res://scripts/check_endless_any.gd").new().run(self, hero, dir)

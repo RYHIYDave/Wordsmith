@@ -157,6 +157,8 @@ func lay(mdata: Dictionary, seed := -1) -> bool:
 		return false
 	# (THE BONUS WORD first, and his own words with it: he fights with it too, and it is the one he leaves)
 	bonus = str(pool[_rng.randi_range(0, pool.size() - 1)])
+	# (THE RIM'S DOOR: tilted toward the runes burned into the level, as every rune that drops there is: loot.gd tilt_word)
+	bonus = loot.tilt_word(bonus, _rng)
 	var his := _draw(pool, (3 if P >= 10 else 2) + 1, [bonus])
 	var d := _rare(t, his, at)
 	var fig = monsters.figure_of(str(d["figure"]))

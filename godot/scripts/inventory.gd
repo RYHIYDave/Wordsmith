@@ -2318,7 +2318,7 @@ func _altar_side(blink: bool) -> void:
 		if i < laid.size():
 			_tile(r, laid[i], "name", {"stone": true, "lit": row.has_point(_mouse)})
 			_text(Vector2(tx, r.position.y + 16), str(Words.word(laid[i])["name"]).to_upper(), 12, loot.word_color(laid[i]))
-			_text(Vector2(tx, r.position.y + 32), "Every one within: %s" % _lower(str(Words.word(laid[i])["monsterText"])), 9, TEXT)
+			_text(Vector2(tx, r.position.y + 32), "Every one within: %s" % _lower(_monster_text(laid[i])), 9, TEXT)
 			_hits.append([row, "altar_take", i, null])
 		else:
 			var here := i == next
@@ -2965,6 +2965,19 @@ func _svc_side(blink: bool) -> void:
 			_gate_side(blink, x0, w)
 
 
+## What a word does on a monster, for the gate's and the altar's lines: its own text; a Rank II, which has none of its own, its rune's,
+## half as strong again (on a monster it lays its rune half as strong again: foe_words.gd).
+func _monster_text(w: String) -> String:
+	var t := str(Words.word(w).get("monsterText", ""))
+	if t == "" and FoeWords.is_rank(w):
+		var of: String = FoeWords.parts_of(w)[0]
+		t = str(Words.word(of).get("monsterText", "")).trim_suffix(".") + ", half as strong again."
+	return t
+
+
+## (THE RIM'S DOOR: the line naming what each burned rune drops more often, on the gate's page. OFF until his yes to a picture)
+static var DOOR_ODDS_LINE := false
+
 # --- THE SHAFT'S RIM'S GATE (ui/town.ts gateSide; game.ts planWord, unplanWord, planProblem, enterEndless): its three sockets, the
 # words burned into the next endless level, what they add up to, and the way in (ENTER ENDLESS N). A word laid by pressing it and
 # then a socket, or dragging it there; pressed again, taken back (free until he goes in).
@@ -2990,7 +3003,7 @@ func _gate_side(blink: bool, x0: float, w: float) -> void:
 		if i < laid.size():
 			_tile(r, laid[i], "name", {"stone": true, "lit": row.has_point(_mouse)})
 			_text(Vector2(tx, r.position.y + 16), str(Words.word(laid[i])["name"]).to_upper(), 12, loot.word_color(laid[i]))
-			_text(Vector2(tx, r.position.y + 32), "Every monster: %s" % _lower(str(Words.word(laid[i])["monsterText"])), 9, TEXT)
+			_text(Vector2(tx, r.position.y + 32), "Every monster: %s" % _lower(_monster_text(laid[i])), 9, TEXT)
 			_hits.append([row, "gate_take", i, null])
 		else:
 			var here := i == next
@@ -3010,6 +3023,16 @@ func _gate_side(blink: bool, x0: float, w: float) -> void:
 		for l in _wrap("Reward: +%d%% items, +%d rarity, +%d%% experience, likelier words." % [30 * n, 25 * n, 10 * n], w, 10):
 			_text(Vector2(x0, y), l, 10, PICK)
 			y += 13.0
+		# (THE RIM'S DOOR: what is burned in drops more, each rune by how many times: loot.gd tilt_word. OFF until his yes to a
+		# picture of it: pictures first)
+		if DOOR_ODDS_LINE:
+			var B: Dictionary = loot.burned_runes(laid)
+			var bits: Array = []
+			for k in B:
+				bits.append("%s %dx" % [str(Words.word(k)["name"]).to_upper(), 1 + 2 * int(B[k])])
+			for l in _wrap("Drops more often: %s." % ", ".join(PackedStringArray(bits)), w, 10):
+				_text(Vector2(x0, y), l, 10, PICK)
+				y += 13.0
 	_text(Vector2(x0, y), "Its boss waits at the end. %s." % main.ENDLESS_WARN, 10, BAD)
 	_svc_button("ENTER %s" % where, x0, w, "gate_enter", true, blink)
 

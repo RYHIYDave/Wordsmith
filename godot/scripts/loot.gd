@@ -50,6 +50,7 @@ const Iso := preload("res://scripts/iso.gd")
 const Hero := preload("res://scripts/hero.gd")
 const Words := preload("res://scripts/words.gd")
 const Melds52 := preload("res://scripts/melds52.gd")
+const FoeWords := preload("res://scripts/foe_words.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
 const Perils := preload("res://scripts/perils.gd")
 
@@ -716,7 +717,7 @@ func on_kill(m) -> void:
 			_item(at, 4)
 		if words_fall():
 			for i in int(F["words"]):
-				_word(at, words_found_at(p).pick_random())
+				_word(at, tilt_word(words_found_at(p).pick_random()))
 		if not _uniques.is_empty() and randf() < float(_uniques["drops"].get("final", 0.0)):
 			var two: Array = []
 			for id in _uniques["defs"]:
@@ -815,7 +816,53 @@ func _growth() -> float:
 
 func _found() -> String:
 	var here: Array = words_found_at(power()) if map != null else [_words["first"]]
-	return here.pick_random()
+	return tilt_word(here.pick_random())
+
+
+## THE RIM'S DOOR: WHAT IS BURNED IN DROPS MORE (his yes, 23 Nov 2026, “Yes”, to: “each rune you burn into the door makes that rune
+## three times as likely whenever a rune drops on that level. Burn the same rune in more than once and it stacks: two Lightnings
+## make Lightning five times as likely, three make it seven times. A meld counts for both of its runes”; every rune that drops
+## there, an elite's, a chest's, the rare ones from ordinary monsters). Each burning adds BURN_MORE to its rune's share, one the
+## share of every other rune the level gives. The door takes a rune only once (main.gd plan_problem, as the game always had it), so
+## a rune is burned in twice only as its Rank II: Lightning's Rank II makes Lightning five times as likely.
+const BURN_MORE := 2.0
+
+
+## How many times each rune is burned into the level he is on (main.gd dungeon_words), or into `ws`: a meld's two runes once each,
+## a level 2 rune's own rune twice (it is two of it).
+func burned_runes(ws = null) -> Dictionary:
+	var out := {}
+	var laid: Array = ws if ws is Array else (main.dungeon_words if main != null else [])
+	for w in laid:
+		var parts: Array = FoeWords.parts_of(str(w))
+		if FoeWords.is_rank(str(w)):
+			parts = [parts[0], parts[0]]
+		for p in parts:
+			out[p] = int(out.get(p, 0)) + 1
+	return out
+
+
+## A rune about to drop on the level he is on, or to be carried by a monster made there (so the rune over its head is what it
+## leaves): `w`, as it would have been, one of the `n` runes the level gives; with runes burned into the level, one of them in its
+## place now and then, so that each is (1 + BURN_MORE x its burnings) times as likely as any other: with chance
+## BURN_MORE x S / (n + BURN_MORE x S), S all the burnings, one of the burned (each by its burnings), else `w`.
+func tilt_word(w: String, rng: RandomNumberGenerator = null) -> String:
+	var B := burned_runes()
+	if B.is_empty():
+		return w
+	var n := maxi(1, words_found_at(power()).size())
+	var sum := 0
+	for k in B:
+		sum += int(B[k])
+	var roll: float = rng.randf() if rng != null else randf()
+	if roll >= BURN_MORE * sum / (float(n) + BURN_MORE * sum):
+		return w
+	var r: int = (rng.randi() if rng != null else randi()) % sum
+	for k in B:
+		r -= int(B[k])
+		if r < 0:
+			return str(k)
+	return w
 
 
 ## Where a thing lands: about where it fell, on open floor, a little apart from the rest; on a floor with pits (the Ledge
