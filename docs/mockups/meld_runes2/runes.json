@@ -175,7 +175,7 @@
    "twin",
    "leech"
   ],
-  "color": "#ff7096",
+  "color": "#ec7771",
   "glyph": [
    "..XXX..",
    ".X.o.X.",
@@ -311,7 +311,7 @@
    "leech",
    "volatile"
   ],
-  "color": "#d4507c",
+  "color": "#bf1d1d",
   "glyph": [
    "..X.X..",
    ".XXoXX.",
@@ -379,7 +379,7 @@
    "leech",
    "lasting"
   ],
-  "color": "#cc8494",
+  "color": "#b25b55",
   "glyph": [
    ".XXXX..",
    ".XooX..",
@@ -396,7 +396,7 @@
    "leech",
    "fleeting"
   ],
-  "color": "#ff9ec0",
+  "color": "#f59f87",
   "glyph": [
    ".......",
    "..X....",
@@ -447,7 +447,7 @@
    "volatile",
    "frenzied"
   ],
-  "color": "#c8489c",
+  "color": "#e61c26",
   "glyph": [
    "X..X..X",
    ".X.X.X.",
@@ -651,7 +651,7 @@
    "frenzied",
    "fleeting"
   ],
-  "color": "#ff8aa0",
+  "color": "#fa975a",
   "glyph": [
    "X......",
    ".X.X...",

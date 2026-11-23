@@ -31,12 +31,25 @@ const FIRE := [Color("#3a0c04"), Color("#7a1c06"), Color("#c8400c"), Color("#ff8
 
 ## Its colours, darkest to brightest (as the game's meld ramps run): its deep, its dark, its mid, itself, its light, its glint.
 func ramp(id: String) -> PackedColorArray:
-	if _ramps.has(id):
-		return _ramps[id]
-	var c := Color(str(M52.T()["color"].get(id, "#ffffff")))
+	var key := id + "~foe" if _foe_now and ICY.has(id) else id
+	if _ramps.has(key):
+		return _ramps[key]
+	var c := Color(FROST_DEEP) if key != id else Color(str(M52.T()["color"].get(id, "#ffffff")))
 	var out := PackedColorArray([c.darkened(0.82), c.darkened(0.62), c.darkened(0.35), c, c.lerp(Color.WHITE, 0.45), c.lerp(Color.WHITE, 0.82)])
-	_ramps[id] = out
+	_ramps[key] = out
 	return out
+
+
+## (FRIEND CYAN IS THE HERO'S ALONE, his Art Rulebook's Pillar 4 and Monsters 6, and his yes of 23 Nov 2026 to drawing them so: the
+## icy melds, whose own colours sit near the friend's cyan, drawn in Frost's deeper blue when they are a monster's)
+const ICY := ["glide", "flashfreeze", "doubletap", "ripple", "quicksilver"]
+const FROST_DEEP := "#2e6cc8"
+## (is the beat being begun or painted now a monster's?)
+var _foe_now := false
+
+
+func _foe_beat(b: Dictionary) -> bool:
+	return str(b["what"]) == "foe" or bool(b.get("foe", false))
 
 
 func clear() -> void:
@@ -224,7 +237,10 @@ func handle(e: Dictionary) -> void:
 		if q["id"] == id and q["what"] == what and float(q["t"]) < 0.08 and not q.get("minor", false):
 			b["minor"] = true
 			break
-	if begin(b, e):
+	_foe_now = _foe_beat(b)
+	var keep := begin(b, e)
+	_foe_now = false
+	if keep:
 		beats.append(b)
 
 
@@ -240,7 +256,9 @@ func update(dt: float) -> void:
 		if b["foe"] and h != null:
 			b["x"] = h.world.x
 			b["y"] = h.world.y
+		_foe_now = _foe_beat(b)
 		tick(b, dt)
+		_foe_now = false
 		if float(b["t"]) >= float(b["end"]):
 			b["done"] = true
 	beats = beats.filter(func(q): return not q["done"])
@@ -264,7 +282,9 @@ func _bits(dt: float) -> void:
 func draw_floor(c: CanvasItem) -> void:
 	_canvas = c
 	for b: Dictionary in beats:
+		_foe_now = _foe_beat(b)
 		paint_floor(b)
+	_foe_now = false
 	paint_floor_more()
 	_ga(1.0)
 	_flush()
@@ -273,7 +293,9 @@ func draw_floor(c: CanvasItem) -> void:
 func draw_air(c: CanvasItem) -> void:
 	_canvas = c
 	for b: Dictionary in beats:
+		_foe_now = _foe_beat(b)
 		paint_air(b)
+	_foe_now = false
 	paint_air_more()
 	for p: Dictionary in bits:
 		_draw_bit(p)

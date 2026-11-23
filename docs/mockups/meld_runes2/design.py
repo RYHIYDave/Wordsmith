@@ -32,7 +32,7 @@ rune("anvil", "Anvil", "heavy", "fire", "#e07a32", "An anvil throwing sparks",
 rune("fulgurite", "Fulgurite", "heavy", "lightning", "#d4b860", "A bolt driven into the ground",
      ["...XX..", "..XX...", ".XXXX..", "...XX..", "..XX...", "XoXoXoX", "X.X.X.X"])
 # --- TWIN ---
-rune("lamprey", "Lamprey", "twin", "leech", "#ff7096", "A lamprey's ringed mouth",
+rune("lamprey", "Lamprey", "twin", "leech", "#ec7771", "A lamprey's ringed mouth",
      ["..XXX..", ".X.o.X.", "X.o.o.X", "X..o..X", "X.o.o.X", ".X.o.X.", "..XXX.."])
 rune("cluster", "Cluster", "twin", "volatile", "#7a6ad8", "Bomblets scattering",
      ["...o...", "..XX...", "..XX.o.", "o....XX", "XX...XX", "XX.....", "......."])
@@ -49,7 +49,7 @@ rune("staccato", "Staccato", "twin", "fleeting", "#f0b8e0", "Two quick strokes",
 rune("ripple", "Ripple", "twin", "vast", "#4a9a8a", "A ripple spreading",
      ["..XXX..", ".X...X.", "X..o..X", "X.ooo.X", "X..o..X", ".X...X.", "..XXX.."])
 # --- LEECH ---
-rune("bloodbloom", "Bloodbloom", "leech", "volatile", "#d4507c", "A flower of blood",
+rune("bloodbloom", "Bloodbloom", "leech", "volatile", "#bf1d1d", "A flower of blood",
      ["..X.X..", ".XXoXX.", "X.ooo.X", ".XXoXX.", "..X.X..", "...X...", "...X..."])
 rune("lancet", "Lancet", "leech", "precise", "#ffc0c8", "A fine blade, a drop at its edge",
      ["......X", ".....X.", "....X..", "...X...", ".oX....", "ooo....", ".o....."])
@@ -57,16 +57,16 @@ rune("feedingfrenzy", "Feeding Frenzy", "leech", "frenzied", "#f25a5a", "Snappin
      ["X.X.X.X", "XXXXXXX", "...o...", "..ooo..", "...o...", "XXXXXXX", "X.X.X.X"])
 rune("carapace", "Carapace", "leech", "guarding", "#b86a74", "A hard shell",
      ["..XXX..", ".XX.XX.", "XXX.XXX", "XoX.XoX", "XXX.XXX", ".XX.XX.", "..X.X.."])
-rune("transfusion", "Transfusion", "leech", "lasting", "#cc8494", "A drip of life",
+rune("transfusion", "Transfusion", "leech", "lasting", "#b25b55", "A drip of life",
      [".XXXX..", ".XooX..", ".XooX..", "..XX...", "...X...", "...X.o.", "....XX."])
-rune("lifeline", "Lifeline", "leech", "fleeting", "#ff9ec0", "A heartbeat",
+rune("lifeline", "Lifeline", "leech", "fleeting", "#f59f87", "A heartbeat",
      [".......", "..X....", "..XX...", "XXX.X.X", "....XX.", ".....X.", "......."])
 rune("bloodtide", "Bloodtide", "leech", "vast", "#d84454", "A tide of blood",
      [".......", ".XX..XX", "X..XX..", ".......", ".oo..oo", "o..oo..", "......."])
 # --- VOLATILE ---
 rune("detonator", "Detonator", "volatile", "precise", "#c090f0", "A detonator, primed",
      ["...X...", ".XXXXX.", "...X...", ".XXXXX.", ".X.o.X.", ".XoooX.", ".XXXXX."])
-rune("mayhem", "Mayhem", "volatile", "frenzied", "#c8489c", "Blasts going off everywhere",
+rune("mayhem", "Mayhem", "volatile", "frenzied", "#e61c26", "Blasts going off everywhere",
      ["X..X..X", ".X.X.X.", "..ooo..", "XXoooXX", "..ooo..", ".X.X.X.", "X..X..X"])
 rune("minefield", "Minefield", "volatile", "guarding", "#6878c8", "Mines laid in a ring",
      ["..XXX..", ".X...X.", "X.o.o.X", "X.....X", "X..o..X", ".X...X.", "..XXX.."])
@@ -92,7 +92,7 @@ rune("shieldwall", "Shieldwall", "frenzied", "guarding", "#a8b040", "A shield, l
      ["XXXXXXX", "XoooooX", "X.....X", "XoooooX", ".X...X.", "..XoX..", "...X..."])
 rune("fury", "Fury", "frenzied", "lasting", "#d84030", "A scowl that doesn't fade",
      ["X.....X", "XX...XX", ".XX.XX.", "..o.o..", ".XXXXX.", "X.X.X.X", "......."])
-rune("spree", "Spree", "frenzied", "fleeting", "#ff8aa0", "A sudden zigzag rush",
+rune("spree", "Spree", "frenzied", "fleeting", "#fa975a", "A sudden zigzag rush",
      ["X......", ".X.X...", "..X.X..", "...X.X.", "....X.o", ".....oo", "......o"])
 rune("rampage", "Rampage", "frenzied", "vast", "#b85030", "A charging bull's head",
      ["X.....X", "X.....X", ".X...X.", "..XXX..", ".XoXoX.", ".XXXXX.", "..XXX.."])
