@@ -38,6 +38,7 @@ static func run_of(main) -> Dictionary:
 		"depth": main.last_floor, "cleared": loot.cleared, "way": main.way_depth,
 		"body": loot.body_searched, "asked": loot.quest_given, "ring": loot.ring_lit, "quest": loot.quest,
 		"furnace": loot.furnace, "meld": loot.meld, "meldAsk": loot.meld_ask, "toldCarrier": loot.told_carrier,
+		"chainedBeaten": loot.chained_beaten.duplicate(),
 		"dust": q.dust if q != null else 0, "feather": q.feather if q != null else "", "citySeen": q.city_seen if q != null else false,
 		"pieces": q.pieces if q != null else 0, "rollPages": q.roll_pages if q != null else 0,
 		"wordsBought": range(loot.word_stock.size()).filter(func(i): return loot.word_stock[i] == null),
@@ -201,6 +202,7 @@ static func restore_run(main, s: Dictionary) -> void:
 	loot.meld = str(s.get("meld", "")) if s.get("meld", "") in ["stone", "open"] else ""
 	loot.meld_ask = s.get("meldAsk", false) == true
 	loot.told_carrier = s.get("toldCarrier", false) == true
+	loot.chained_beaten = (s.get("chainedBeaten") as Array).filter(func(f): return f is float or f is int).map(func(f): return int(f)) if s.get("chainedBeaten") is Array else []
 	if q != null:
 		q.dust = maxi(0, int(_num(s.get("dust"), 0)))
 		q.feather = str(s.get("feather", "")) if s.get("feather", "") in ["asked", "got", "given"] else ""

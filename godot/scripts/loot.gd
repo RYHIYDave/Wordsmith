@@ -291,6 +291,9 @@ var meld := ""
 var meld_ask := false
 ## (game.ts toldCarrier: what the rune over a monster's head means has been said)
 var told_carrier := false
+## THE CHAINED RARE: the floors of the story whose chained rare he has beaten; there he is never chained again (chained_rare.gd).
+## His pick, 22 Nov 2026, asked whether one should come back each time the floor is laid: “Once per floor”.
+var chained_beaten: Array = []
 ## A NEW PLAYER'S FIRST WORD HAS BEEN SET IN AN ATTACK (game.ts guide.set, endGuide): the lesson of the first word is over.
 ## Until then a word he holds is pressed on him (guide.gd), and goes on an attack and nowhere else.
 var taught := false
@@ -659,8 +662,9 @@ func on_kill(m) -> void:
 		potions += 1
 		say("A flask fills", Color(0.86, 0.3, 0.36))
 	var at: Vector2 = m.world
-	# (whatever else it leaves, a monster that carried a word gives it up: the boss's too. None before the ring is lit)
-	if words_fall():
+	# (whatever else it leaves, a monster that carried a word gives it up: the boss's too. None before the ring is lit. THE CHAINED
+	# RARE's always, freed and killed: on an endless level's floor 1 too, where nothing else gives one up: chained_rare.gd)
+	if words_fall() or m.get("chained") == 2:
 		for w in m.carries:
 			_word(at, w)
 	# (THE ROYAL CARDS, the High City's: one a royal touched drops that royal's card: game.ts kill)
