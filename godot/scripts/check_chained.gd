@@ -239,7 +239,7 @@ func run(main, hero, d: String) -> void:
 		var ce = M.chained_rare
 		if f == 6:
 			# (ENDLESS ANY LEVEL, his word of 23 Nov 2026: on an endless level of any floor, two or three: chained_rare.gd ENDLESS_ANY)
-			if CR.ENDLESS_ANY:
+			if CR.ENDLESS_ANY and CR.ANY_FLOOR:
 				_line(M.chained_rares.size() >= CR.ENDLESS_N[0] and M.chained_rares.size() <= CR.ENDLESS_N[1], "endless on floor 6 (ENDLESS_ANY): %d" % M.chained_rares.size())
 			else:
 				_line(ce == null, "endless on floor 6: %s" % ("none" if ce == null else "one"))

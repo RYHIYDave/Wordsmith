@@ -42,6 +42,9 @@ const SEE := 9.0
 ## (ENDLESS ANY LEVEL: on every endless level whatever its floor, and this many of them, at least and at most; each at least APART
 ## tiles from the others. Off: one, on endless levels of floors 1 to 5 only, as first built)
 static var ENDLESS_ANY := true
+## (ANY_FLOOR off at his word, 23 Nov 2026: “The chained is a new mechanic for floors 2-5 in the campaign and the relevant floors in
+## endless”: on endless levels of floors 1 to 5 only, but two or three of them there)
+static var ANY_FLOOR := false
 const ENDLESS_N := [2, 3]
 const APART := 10.0
 
@@ -117,7 +120,7 @@ static func wanted(game, where: String) -> bool:
 	# (ENDLESS ANY LEVEL, his words, 23 Nov 2026: “In endless mode I want multiple chained and stronghold encounters per level.  And
 	# I want these random encounters, (chained, stronghold, muffled bells, and royal cards) to show up in any level.”: on an endless
 	# level of any floor, ENDLESS_N of them)
-	if game.in_endless and ENDLESS_ANY and d >= 1:
+	if game.in_endless and ENDLESS_ANY and ANY_FLOOR and d >= 1:
 		return true
 	if d < 1 or d > LAST:
 		return false

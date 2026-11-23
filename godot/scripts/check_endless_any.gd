@@ -59,12 +59,8 @@ func run(main, hero, dir: String) -> void:
 	for i in rs.size():
 		for j in range(i + 1, rs.size()):
 			apart = minf(apart, rs[i].m.world.distance_to(rs[j].m.world))
-	_line(rs.size() >= CR.ENDLESS_N[0] and rs.size() <= CR.ENDLESS_N[1] and held, "an endless level of floor 8: %d chained rares, each held (%s): %s" % [rs.size(), held, ", ".join(PackedStringArray(rs.map(func(cr): return "%s carrying %s" % [cr.m.title, cr.bonus])))])
-	_line(rs.size() < 2 or apart >= CR.APART, "each well apart: the nearest two %.1f tiles (at least %.0f)" % [apart, CR.APART])
-	if not rs.is_empty():
-		h.world = rs[0].m.world + Vector2(1.6, 0.6)
-		await _wait(0.6)
-		await M._snap(dir + "/endless_f8_chained.png")
+	# (THE CHAINED RARES: the first five floors' own, his word: none on an endless level of floor 8; two or three on one of floor 3)
+	_line(rs.is_empty(), "an endless level of floor 8: %d chained rares (theirs are floors 1 to 5's)" % rs.size())
 	var touched: Array = M._monsters.list.filter(func(o): return is_instance_valid(o) and o.royal != "")
 	var packs := {}
 	for o in touched:
@@ -114,5 +110,18 @@ func run(main, hero, dir: String) -> void:
 		await M._snap(dir + "/endless_f8_bell_rung.png")
 		_line(B.rung[0] and int(B._shown.get("bell0", 0)) >= 2, "a bell struck: rung (%s), its picture swinging (step %d)" % [B.rung[0], int(B._shown.get("bell0", 0))])
 	M.bells_seed = -1
+	# AN ENDLESS LEVEL OF FLOOR 3: two or three chained rares, well apart
+	M.endless_floor = 3
+	await _go("floor3")
+	var r3: Array = M.chained_rares
+	var ap3 := INF
+	for i in r3.size():
+		for j in range(i + 1, r3.size()):
+			ap3 = minf(ap3, r3[i].m.world.distance_to(r3[j].m.world))
+	_line(r3.size() >= CR.ENDLESS_N[0] and r3.size() <= CR.ENDLESS_N[1] and r3.all(func(cr): return cr.held()) and (r3.size() < 2 or ap3 >= CR.APART), "an endless level of floor 3: %d chained rares, each held, the nearest two %.1f tiles apart: %s" % [r3.size(), ap3, ", ".join(PackedStringArray(r3.map(func(cr): return "%s carrying %s" % [cr.m.title, cr.bonus])))])
+	if not r3.is_empty():
+		h.world = r3[0].m.world + Vector2(1.6, 0.6)
+		await _wait(0.6)
+		await M._snap(dir + "/endless_f3_chained.png")
 	M.in_endless = false
 	print("ENDLESSANY: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
