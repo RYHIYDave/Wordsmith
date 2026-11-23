@@ -3720,6 +3720,9 @@ func _words_shots(h: Hero, dir: String) -> void:
 		frames += get_process_delta_time()
 	_w_frame = frames / 30.0
 	# (THE 52 DESIGNED MELDS AND THE 11 LEVEL 2 RUNES: `--cases=m52`, or `--cases=m52:<id>,<id>`: check_melds52.gd)
+	if _arg("cases").begins_with("m52film"):
+		await preload("res://scripts/check_melds52.gd").new(self, h).film(_arg("cases").trim_prefix("m52film").trim_prefix(":"))
+		return
 	if _arg("cases").begins_with("m52"):
 		await preload("res://scripts/check_melds52.gd").new(self, h).run(_arg("cases").trim_prefix("m52").trim_prefix(":"))
 		return

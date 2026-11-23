@@ -128,3 +128,110 @@ func run(only := "") -> void:
 	_line(fine == cases, "each one in front of the Strike and behind it, %d cases: its name, its line, the blow landing, its twist seen: %d%s" % [cases, fine, "" if not_seen.is_empty() else " (twist not seen: %s)" % ", ".join(PackedStringArray(not_seen))])
 	M52.ON = was
 	print("MELDS52: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+# --- THE FILMS (`--only=words --cases=m52film[:<id>,<id>]`, run with `--fixed-fps 30`): each meld in front of his Strike at the
+# pack, then behind it, then carried by one of the pack that comes for him; each frame to <shots>/film/<id>/NNNN.jpg, made into
+# <shots>/film/<id>.mp4 (ffmpeg) as each is done, its frames then let go.
+
+var _dir := ""
+
+
+func _frames(k: int, secs: float) -> int:
+	var t := 0.0
+	while t < secs - 0.001:
+		# (no lesson's banner over the film)
+		M.guide.use_t = 0.0
+		await M.get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		M.get_viewport().get_texture().get_image().save_jpg("%s/%04d.jpg" % [_dir, k], 0.92)
+		k += 1
+		t += M.get_process_delta_time()
+	return k
+
+
+func _fresh() -> void:
+	h.m52.forget()
+	for m in M._w_pack:
+		m.m52 = {}
+		m.dead = false
+		m._dead_for = 0.0
+		m.modulate.a = 1.0
+		m.visible = true
+		m.shock_t = 0.0
+		m.chill_t = 0.0
+		m.frozen_t = 0.0
+		m.freeze_immune = 0.0
+		m.stun_t = 0.0
+		m.burn_t = 0.0
+		m.poison_t = 0.0
+		m.mark_t = 0.0
+		m.words = []
+		m.shield = 0.0
+	h.poison_t = 0.0
+	h.burn_t = 0.0
+	h.chill_t = 0.0
+	h.held = 0.0
+	h.life = h.max_life
+
+
+func film(only := "") -> void:
+	var was: bool = M52.ON
+	M52.ON = true
+	var T: Dictionary = M52.T()
+	var root: String = M._arg("shots") + "/film"
+	DirAccess.make_dir_recursive_absolute(root)
+	h.unhurt = true
+	# (no guide's prompts over the films)
+	h.walked = 1000.0
+	M.loot.taught = true
+	for f in ["met", "quick", "slow", "evade", "flask"]:
+		M.guide.set(f, true)
+	var ids: Array = T["melds"]
+	if only != "":
+		var some := only.split(",")
+		ids = ids.filter(func(i): return some.has(i))
+	for id in ids:
+		_dir = root + "/" + id
+		DirAccess.make_dir_recursive_absolute(_dir)
+		var k := 0
+		for side in ["front", "behind"]:
+			_fresh()
+			M._w_set(h, 0, side, [id])
+			for m in M._w_pack:
+				if KILL.has(id) and side == "front":
+					m.life = 1.0
+				if STUNNED.has(id) and side == "front":
+					m.stun_t = 3.0
+			k = await _frames(k, 0.25)
+			M._w_strike(h)
+			k = await _frames(k, 0.6)
+			M._w_strike(h)
+			k = await _frames(k, 1.4 if side == "front" else 2.2)
+		# (carried by one of the pack, which comes for him: its two runes and the meld, as an altar lays them)
+		_fresh()
+		M._w_put(h, 0, "front", [])
+		M._w_reset(h)
+		var m = M._w_pack[0]
+		m.words = FoeWordsOf.call(id)
+		m.world = h.world + h.face * 1.2
+		m.state = "chase"
+		m._t = 0.0
+		m._cd = 0.0
+		m.speed = 1.2
+		k = await _frames(k, 2.6)
+		m.state = "recover"
+		m._t = 1e9
+		m._cd = 1e9
+		var out: Array = []
+		var code := OS.execute("ffmpeg", ["-y", "-loglevel", "error", "-framerate", "30", "-i", _dir + "/%04d.jpg", "-vf", "crop=400:280:290:130,scale=800:560:flags=neighbor", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "26", "-movflags", "+faststart", root + "/" + id + ".mp4"], out, true)
+		OS.execute("ffmpeg", ["-y", "-loglevel", "error", "-ss", "0.9", "-i", root + "/" + id + ".mp4", "-frames:v", "1", root + "/" + id + ".jpg"], out, true)
+		for f in DirAccess.get_files_at(_dir):
+			DirAccess.remove_absolute(_dir + "/" + f)
+		DirAccess.remove_absolute(_dir)
+		print("MELDS52 FILM %s: %d frames, ffmpeg %d" % [id, k, code])
+	M52.ON = was
+
+
+## The words one carrying meld `id` has on it, as an altar lays them (foe_words.gd foe_words_of).
+var FoeWordsOf := func(id: String) -> Array: return preload("res://scripts/foe_words.gd").foe_words_of([id])

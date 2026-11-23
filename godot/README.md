@@ -1442,6 +1442,27 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   reward and the fire falls. Where the floor has too few rooms that close (the city's streets, floors 11 and 13), A RING OF FIRE:
   the altar on open floor and the fire springing up in a ring round it (RING tiles out). `--only=altarrooms --shots=<dir>`.
 
+## The 52 designed melds and the 11 level 2 runes (the cloud chat, 23 Nov 2026; switched off until his yes to the films)
+
+His order for them, 23 Nov 2026: “Create the melds, name them, figure out what they do front, back, crafting, and on enemies, then
+design the rune, then the animations”; “Let's start with 6-10 words melding with 1-5 words”; “I also want all level 1 runes to meld
+with themselves to level 2”. Each step had his word: the effects (Twin's Melds, Floor 6–10 Melds: “Good”, “Good”), the stones
+(docs/mockups/meld_runes: “Good”), the animations (Twin's Meld Animations, Floor 6–10 Meld Animations: “Okay sounds good”, “Good”).
+
+- THE TABLE: `assets/words/melds52.json` and the stones' sheet `melds52.png`, made by `tools/melds52/make.py` from the approved
+  texts (`tools/melds52/docs_twin.txt`, `docs610.txt`), the stones (`docs/mockups/meld_runes`) and the twists' numbers
+  (`tools/melds52/tune.json`).
+- `melds52.gd`: the switch (`Melds52.ON`, off), the table merged into the words' own, the bench (two runes make each meld, two of
+  one of Twin, Leech, Volatile, Precise, Frenzied, Guarding, Lasting, Fleeting, Vast, Swift or Heavy its level 2), the stones under
+  the loot's and the HUD's sheets, and what each makes of a move's numbers and its page's lines.
+- `melds52_rules.gd` (the hero's `m52`): each twist at work on his moves, hooked into his blows, kills, boosts, the ground his
+  moves leave, his shield, his speed; `foe_melds52.gd`: each on a monster that carries it (foe_words.gd hands on to it).
+- `fx_melds52.gd`: each one's moment in the fight, from the two animation docs, out of the effects' own pieces in its colour.
+- Gear (loot.gd melds52_options): one property of each of its two runes, each a quarter weaker; a level 2 rune its rune's, half again.
+- `--only=words --cases=m52`: the bench (on and off), the 23 melds as they were, the stones, the gear, and each of the 63 in front of
+  the Strike and behind it (its name, its line, the blow landing, its twist seen): 126 of 126. `--cases=m52film`, with
+  `--fixed-fps 30`: a film of each meld, in front, behind and carried by a monster (ffmpeg makes each into an mp4).
+
 ## Not in it yet
 
 Nothing of the game's own: every talent of every tree is in.
