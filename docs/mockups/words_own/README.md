@@ -26,4 +26,4 @@ fx_m52kit.gd `OWN` on:
   ring of the meld's own.
 
 43 melds change; the eight Leech melds' drain is `LEECH_SAME` (docs/mockups/leech_drain). Each meld's own twist stays on top.
-Off until his yes to the pictures (words_own.html). `--wordsown=1` films it on, with `LEECH_SAME`.
+Off until his yes to the pictures: https://claude.ai/artifact/QyciotUBcRSzgrMunEh5M7 (words_own.html; its films are left out of the repository). `--wordsown=1` films it on, with `LEECH_SAME`.

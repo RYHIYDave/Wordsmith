@@ -1,0 +1,164 @@
+<title>Melds, Their Words' Own Looks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* One dark look, the game's night indigo: before on the left, after on the right. */
+:root {
+  --bg: #0d1030; --panel: #161a44; --line: #2c3274; --fg: #e9ecff; --muted: #a3abd8; --accent: #28dcf0; --stage: #05040f;
+  --display: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 900px; margin: 0 auto; padding-block: 24px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+.wrap > * { min-width: 0; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 7vw, 38px); line-height: 1.1; margin: 4px 0 8px; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 19px; margin: 0; }
+p { margin: 0; max-width: 66ch; }
+.lead { color: var(--muted); }
+header p + p { margin-top: 10px; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 10px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pair figure { margin: 0; display: grid; gap: 4px; min-width: 0; }
+.pair img, .pair video { width: 100%; height: auto; display: block; border-radius: 4px; background: var(--stage); image-rendering: pixelated; }
+figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+figure.new figcaption { color: var(--accent); }
+.ask { background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 16px; }
+.ask b { font-family: var(--display); font-size: 17px; }
+.who { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Wordsmith · melds · pictures first</div>
+    <h1>The melds use their words' own looks</h1>
+    <p class="lead">You asked: “Leech already had a nice animation for HP going from the enemy to the player.  Why are the new melds different?” Asked about the rest, you said: “Yes go through them”. A meld counts as both its words, so each word's own look already plays for it. Many melds also drew their own copy of that look on top, in their own colour. I went through all 98. Where a meld drew a word's thing, it now uses that word's own look. Where the word's look already plays, the meld no longer draws a copy. Each meld's own twist stays on top.</p>
+    <p class="lead">43 melds change, in seven groups. Before on the left, after on the right, at the moment where they differ most.</p>
+  </header>
+
+  <section>
+    <h2>Lightning</h2>
+    <p class="lead">Lightning's own bolt is a thin jagged line, white as it strikes, then yellow. The Lightning melds drew thick glowing bolts of their own, in their own colours, and Jolt and Fulgurite drew theirs on top of the game's own arcs. Now every bolt a meld draws is Lightning's own, and where the game's arc already strikes, the meld adds none.</p>
+    <p class="who">Static, Jolt, Overcharge, Quicksilver, Fulgurite, Conduit.</p>
+    <div class="pair">
+      <figure><img src="jolt_6.3_old.jpg" alt="Jolt before." loading="lazy"><figcaption>Jolt, before</figcaption></figure>
+      <figure class="new"><img src="jolt_6.3_new.jpg" alt="Jolt after." loading="lazy"><figcaption>Jolt, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="static_8.6_old.jpg" alt="Static before." loading="lazy"><figcaption>Static, before</figcaption></figure>
+      <figure class="new"><img src="static_8.6_new.jpg" alt="Static after." loading="lazy"><figcaption>Static, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><video src="jolt_old.mp4" controls muted playsinline loop preload="none"></video><figcaption>Jolt, before: the film</figcaption></figure>
+      <figure class="new"><video src="jolt_new.mp4" controls muted playsinline loop preload="none"></video><figcaption>Jolt, after: the film</figcaption></figure>
+    </div>
+  </section>
+  <section>
+    <h2>Precise</h2>
+    <p class="lead">Precise's own sight is four corners closing on what it marks, then snapping tight. A Precise meld marks with Precise, so that sight already closes, and every Precise meld drew a second sight of its own on top, a cross in its own colour. Now they leave the mark to Precise's sight. Where a meld's twist is a sight of its own, such as Doubletap's two glints or a monster taking aim at him, it is drawn as Precise's sight.</p>
+    <p class="who">Duelist, Needle, Brand, Seeker, Quickdraw, Doubletap, Bullseye, Rapier, Riposte, Lancet, Detonator, Ambush, Pressure Point.</p>
+    <div class="pair">
+      <figure><img src="lancet_3.0_old.jpg" alt="Lancet before." loading="lazy"><figcaption>Lancet, before</figcaption></figure>
+      <figure class="new"><img src="lancet_3.0_new.jpg" alt="Lancet after." loading="lazy"><figcaption>Lancet, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="riposte_8.5_old.jpg" alt="Riposte before." loading="lazy"><figcaption>Riposte, before</figcaption></figure>
+      <figure class="new"><img src="riposte_8.5_new.jpg" alt="Riposte after." loading="lazy"><figcaption>Riposte, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="doubletap_4.5_old.jpg" alt="Doubletap before." loading="lazy"><figcaption>Doubletap, before</figcaption></figure>
+      <figure class="new"><img src="doubletap_4.5_new.jpg" alt="Doubletap after." loading="lazy"><figcaption>Doubletap, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><video src="riposte_old.mp4" controls muted playsinline loop preload="none"></video><figcaption>Riposte, before: the film</figcaption></figure>
+      <figure class="new"><video src="riposte_new.mp4" controls muted playsinline loop preload="none"></video><figcaption>Riposte, after: the film</figcaption></figure>
+    </div>
+  </section>
+  <section>
+    <h2>Frenzied</h2>
+    <p class="lead">When a Frenzied word kills, a spark leaps from the fallen into him. Berserk and Fever drew their own streak to him on top of that spark. Now only Frenzied's spark flies.</p>
+    <p class="who">Berserk, Fever.</p>
+    <div class="pair">
+      <figure><img src="berserk_0.6_old.jpg" alt="Berserk before." loading="lazy"><figcaption>Berserk, before</figcaption></figure>
+      <figure class="new"><img src="berserk_0.6_new.jpg" alt="Berserk after." loading="lazy"><figcaption>Berserk, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><video src="berserk_old.mp4" controls muted playsinline loop preload="none"></video><figcaption>Berserk, before: the film</figcaption></figure>
+      <figure class="new"><video src="berserk_new.mp4" controls muted playsinline loop preload="none"></video><figcaption>Berserk, after: the film</figcaption></figure>
+    </div>
+  </section>
+  <section>
+    <h2>Heavy</h2>
+    <p class="lead">A stunned monster shows Heavy's own stun over it. Charge and Fulgurite drew their own ring of stars over the stunned one as well. Now only Heavy's stun shows.</p>
+    <p class="who">Charge.</p>
+    <div class="pair">
+      <figure><img src="charge_0.6_old.jpg" alt="Charge before." loading="lazy"><figcaption>Charge, before</figcaption></figure>
+      <figure class="new"><img src="charge_0.6_new.jpg" alt="Charge after." loading="lazy"><figcaption>Charge, after</figcaption></figure>
+    </div>
+  </section>
+  <section>
+    <h2>Volatile</h2>
+    <p class="lead">Volatile's own blast is a violet burst with debris and crackle. When Quickfuse or Concussion kills, that blast already goes off, and the melds drew their own burst on top. Cluster, Detonator, Timebomb, Mayhem, Minefield and Hair Trigger set off blasts of their own, drawn as plain glows. Now every one of them goes off as Volatile's own blast.</p>
+    <p class="who">Cluster, Detonator, Timebomb, Mayhem, Minefield, Hair Trigger, Quickfuse, Concussion.</p>
+    <div class="pair">
+      <figure><img src="minefield_4.3_old.jpg" alt="Minefield before." loading="lazy"><figcaption>Minefield, before</figcaption></figure>
+      <figure class="new"><img src="minefield_4.3_new.jpg" alt="Minefield after." loading="lazy"><figcaption>Minefield, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="cluster_6.4_old.jpg" alt="Cluster before." loading="lazy"><figcaption>Cluster, before</figcaption></figure>
+      <figure class="new"><img src="cluster_6.4_new.jpg" alt="Cluster after." loading="lazy"><figcaption>Cluster, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><video src="cluster_old.mp4" controls muted playsinline loop preload="none"></video><figcaption>Cluster, before: the film</figcaption></figure>
+      <figure class="new"><video src="cluster_new.mp4" controls muted playsinline loop preload="none"></video><figcaption>Cluster, after: the film</figcaption></figure>
+    </div>
+  </section>
+  <section>
+    <h2>Guarding</h2>
+    <p class="lead">Guarding's own shell round him is emerald points, lit from the upper left. With a Guarding meld in front, its own ring of dots was drawn round him beside that shell, so he wore two. Now he wears Guarding's shell, and each meld dresses it with its own twist: Hemlock's thorns, Cinderward's fire, Fortress's stone, Bulwark's stud, Windward's wind, Carapace's plates, Riposte's spikes.</p>
+    <p class="who">Hemlock, Cinderward, Fortress, Bulwark, Windward, Carapace, Redoubt, Shieldwall, Sanctuary, Parry, Aegis, Static, Minefield, Riposte.</p>
+    <div class="pair">
+      <figure><img src="hemlock_9.2_old.jpg" alt="Hemlock before." loading="lazy"><figcaption>Hemlock, before</figcaption></figure>
+      <figure class="new"><img src="hemlock_9.2_new.jpg" alt="Hemlock after." loading="lazy"><figcaption>Hemlock, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="fortress_9.5_old.jpg" alt="Fortress before." loading="lazy"><figcaption>Fortress, before</figcaption></figure>
+      <figure class="new"><img src="fortress_9.5_new.jpg" alt="Fortress after." loading="lazy"><figcaption>Fortress, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="carapace_5.9_old.jpg" alt="Carapace before." loading="lazy"><figcaption>Carapace, before</figcaption></figure>
+      <figure class="new"><img src="carapace_5.9_new.jpg" alt="Carapace after." loading="lazy"><figcaption>Carapace, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="cinderward_3.8_old.jpg" alt="Cinderward before." loading="lazy"><figcaption>Cinderward, before</figcaption></figure>
+      <figure class="new"><img src="cinderward_3.8_new.jpg" alt="Cinderward after." loading="lazy"><figcaption>Cinderward, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><video src="hemlock_old.mp4" controls muted playsinline loop preload="none"></video><figcaption>Hemlock, before: the film</figcaption></figure>
+      <figure class="new"><video src="hemlock_new.mp4" controls muted playsinline loop preload="none"></video><figcaption>Hemlock, after: the film</figcaption></figure>
+    </div>
+  </section>
+  <section>
+    <h2>Frost and Poison</h2>
+    <p class="lead">When Flash Freeze freezes something, Frost's own ice already bursts up round it and holds it, and the meld drew its own ice block and shards on top. Icebreaker's shatter is now Frost's own breaking ice, and Mire's bubbles are Poison's own.</p>
+    <p class="who">Flash Freeze, Icebreaker, Mire.</p>
+    <div class="pair">
+      <figure><img src="flashfreeze_3.9_old.jpg" alt="Flash Freeze before." loading="lazy"><figcaption>Flash Freeze, before</figcaption></figure>
+      <figure class="new"><img src="flashfreeze_3.9_new.jpg" alt="Flash Freeze after." loading="lazy"><figcaption>Flash Freeze, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="icebreaker_1.4_old.jpg" alt="Icebreaker before." loading="lazy"><figcaption>Icebreaker, before</figcaption></figure>
+      <figure class="new"><img src="icebreaker_1.4_new.jpg" alt="Icebreaker after." loading="lazy"><figcaption>Icebreaker, after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><video src="flashfreeze_old.mp4" controls muted playsinline loop preload="none"></video><figcaption>Flash Freeze, before: the film</figcaption></figure>
+      <figure class="new"><video src="flashfreeze_new.mp4" controls muted playsinline loop preload="none"></video><figcaption>Flash Freeze, after: the film</figcaption></figure>
+    </div>
+  </section>
+
+  <div class="ask"><b>Your call</b><p>Tell me in the chat to switch it on, or what to change. It stays switched off until you say yes. The Leech melds' drain, on its own page, goes on with it.</p></div>
+</div>
