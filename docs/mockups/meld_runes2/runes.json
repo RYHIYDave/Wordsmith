@@ -1,0 +1,784 @@
+{
+ "onrush": {
+  "name": "Onrush",
+  "of": [
+   "swift",
+   "power"
+  ],
+  "color": "#f07850",
+  "glyph": [
+   "X..X...",
+   ".X..X..",
+   "..X..X.",
+   "...o..o",
+   "..X..X.",
+   ".X..X..",
+   "X..X..."
+  ]
+ },
+ "hornet": {
+  "name": "Hornet",
+  "of": [
+   "swift",
+   "poison"
+  ],
+  "color": "#e0c030",
+  "glyph": [
+   "oo...oo",
+   "ooXXXoo",
+   "..ooo..",
+   "..XXX..",
+   "..ooo..",
+   "...X...",
+   "...X..."
+  ]
+ },
+ "glide": {
+  "name": "Glide",
+  "of": [
+   "swift",
+   "frost"
+  ],
+  "color": "#70e6d0",
+  "glyph": [
+   ".......",
+   "....XX.",
+   "..XX...",
+   "XX.....",
+   ".......",
+   "XXXXXXX",
+   ".o.o.o."
+  ]
+ },
+ "firewalk": {
+  "name": "Firewalk",
+  "of": [
+   "swift",
+   "fire"
+  ],
+  "color": "#f4c050",
+  "glyph": [
+   ".o.....",
+   "XXX....",
+   "XXX..o.",
+   ".X..XXX",
+   "....XXX",
+   ".o...X.",
+   "XXX...."
+  ]
+ },
+ "quicksilver": {
+  "name": "Quicksilver",
+  "of": [
+   "swift",
+   "lightning"
+  ],
+  "color": "#c8f0f0",
+  "glyph": [
+   "...X...",
+   "..XXX..",
+   ".XX.XX.",
+   "XX.o.XX",
+   "X..oo.X",
+   ".X.o.X.",
+   "..XXX.."
+  ]
+ },
+ "charge": {
+  "name": "Charge",
+  "of": [
+   "swift",
+   "heavy"
+  ],
+  "color": "#d8a040",
+  "glyph": [
+   ".......",
+   "X..XXXX",
+   "..XXXXX",
+   "X.XXooX",
+   "..XXXXX",
+   "X..XXXX",
+   "......."
+  ]
+ },
+ "mire": {
+  "name": "Mire",
+  "of": [
+   "heavy",
+   "poison"
+  ],
+  "color": "#7a8a30",
+  "glyph": [
+   "..o....",
+   ".o..o..",
+   ".....o.",
+   "XXX.XXX",
+   ".X.X.X.",
+   "XX.X.XX",
+   "XXXXXXX"
+  ]
+ },
+ "icebreaker": {
+  "name": "Icebreaker",
+  "of": [
+   "heavy",
+   "frost"
+  ],
+  "color": "#b4c8e0",
+  "glyph": [
+   "XXXXXXX",
+   "XXX.XXX",
+   "XXo.XXX",
+   "XX.oXXX",
+   "XXX.oXX",
+   "XXo.XXX",
+   "XXXXXXX"
+  ]
+ },
+ "anvil": {
+  "name": "Anvil",
+  "of": [
+   "heavy",
+   "fire"
+  ],
+  "color": "#e07a32",
+  "glyph": [
+   "o.o.o..",
+   ".......",
+   "XXXXXXX",
+   ".XXXXX.",
+   "..XXX..",
+   ".XXXXX.",
+   "XXXXXXX"
+  ]
+ },
+ "fulgurite": {
+  "name": "Fulgurite",
+  "of": [
+   "heavy",
+   "lightning"
+  ],
+  "color": "#d4b860",
+  "glyph": [
+   "...XX..",
+   "..XX...",
+   ".XXXX..",
+   "...XX..",
+   "..XX...",
+   "XoXoXoX",
+   "X.X.X.X"
+  ]
+ },
+ "lamprey": {
+  "name": "Lamprey",
+  "of": [
+   "twin",
+   "leech"
+  ],
+  "color": "#ff7096",
+  "glyph": [
+   "..XXX..",
+   ".X.o.X.",
+   "X.o.o.X",
+   "X..o..X",
+   "X.o.o.X",
+   ".X.o.X.",
+   "..XXX.."
+  ]
+ },
+ "cluster": {
+  "name": "Cluster",
+  "of": [
+   "twin",
+   "volatile"
+  ],
+  "color": "#7a6ad8",
+  "glyph": [
+   "...o...",
+   "..XX...",
+   "..XX.o.",
+   "o....XX",
+   "XX...XX",
+   "XX.....",
+   "......."
+  ]
+ },
+ "doubletap": {
+  "name": "Doubletap",
+  "of": [
+   "twin",
+   "precise"
+  ],
+  "color": "#a0e8e0",
+  "glyph": [
+   "...X...",
+   "..XXX..",
+   ".X...X.",
+   "XXo.oXX",
+   ".X...X.",
+   "..XXX..",
+   "...X..."
+  ]
+ },
+ "tempo": {
+  "name": "Tempo",
+  "of": [
+   "twin",
+   "frenzied"
+  ],
+  "color": "#ff7a58",
+  "glyph": [
+   "..X..X.",
+   "..XX.XX",
+   "..X..X.",
+   "..X..X.",
+   "oXX.oXX",
+   "XXX.XXX",
+   "......."
+  ]
+ },
+ "redoubt": {
+  "name": "Redoubt",
+  "of": [
+   "twin",
+   "guarding"
+  ],
+  "color": "#3cb890",
+  "glyph": [
+   "XXXXXXX",
+   "X.....X",
+   "X.XXX.X",
+   "X.XoX.X",
+   ".X.X.X.",
+   "..X.X..",
+   "...X..."
+  ]
+ },
+ "reverb": {
+  "name": "Reverb",
+  "of": [
+   "twin",
+   "lasting"
+  ],
+  "color": "#8cb0a8",
+  "glyph": [
+   "..X..X.",
+   ".X..X..",
+   "X..X..o",
+   "X..X.oo",
+   "X..X..o",
+   ".X..X..",
+   "..X..X."
+  ]
+ },
+ "staccato": {
+  "name": "Staccato",
+  "of": [
+   "twin",
+   "fleeting"
+  ],
+  "color": "#f0b8e0",
+  "glyph": [
+   ".......",
+   "X...X..",
+   "XX..XX.",
+   "XoX.XoX",
+   "XX..XX.",
+   "X...X..",
+   "......."
+  ]
+ },
+ "ripple": {
+  "name": "Ripple",
+  "of": [
+   "twin",
+   "vast"
+  ],
+  "color": "#4a9a8a",
+  "glyph": [
+   "..XXX..",
+   ".X...X.",
+   "X..o..X",
+   "X.ooo.X",
+   "X..o..X",
+   ".X...X.",
+   "..XXX.."
+  ]
+ },
+ "bloodbloom": {
+  "name": "Bloodbloom",
+  "of": [
+   "leech",
+   "volatile"
+  ],
+  "color": "#d4507c",
+  "glyph": [
+   "..X.X..",
+   ".XXoXX.",
+   "X.ooo.X",
+   ".XXoXX.",
+   "..X.X..",
+   "...X...",
+   "...X..."
+  ]
+ },
+ "lancet": {
+  "name": "Lancet",
+  "of": [
+   "leech",
+   "precise"
+  ],
+  "color": "#ffc0c8",
+  "glyph": [
+   "......X",
+   ".....X.",
+   "....X..",
+   "...X...",
+   ".oX....",
+   "ooo....",
+   ".o....."
+  ]
+ },
+ "feedingfrenzy": {
+  "name": "Feeding Frenzy",
+  "of": [
+   "leech",
+   "frenzied"
+  ],
+  "color": "#f25a5a",
+  "glyph": [
+   "X.X.X.X",
+   "XXXXXXX",
+   "...o...",
+   "..ooo..",
+   "...o...",
+   "XXXXXXX",
+   "X.X.X.X"
+  ]
+ },
+ "carapace": {
+  "name": "Carapace",
+  "of": [
+   "leech",
+   "guarding"
+  ],
+  "color": "#b86a74",
+  "glyph": [
+   "..XXX..",
+   ".XX.XX.",
+   "XXX.XXX",
+   "XoX.XoX",
+   "XXX.XXX",
+   ".XX.XX.",
+   "..X.X.."
+  ]
+ },
+ "transfusion": {
+  "name": "Transfusion",
+  "of": [
+   "leech",
+   "lasting"
+  ],
+  "color": "#cc8494",
+  "glyph": [
+   ".XXXX..",
+   ".XooX..",
+   ".XooX..",
+   "..XX...",
+   "...X...",
+   "...X.o.",
+   "....XX."
+  ]
+ },
+ "lifeline": {
+  "name": "Lifeline",
+  "of": [
+   "leech",
+   "fleeting"
+  ],
+  "color": "#ff9ec0",
+  "glyph": [
+   ".......",
+   "..X....",
+   "..XX...",
+   "XXX.X.X",
+   "....XX.",
+   ".....X.",
+   "......."
+  ]
+ },
+ "bloodtide": {
+  "name": "Bloodtide",
+  "of": [
+   "leech",
+   "vast"
+  ],
+  "color": "#d84454",
+  "glyph": [
+   ".......",
+   ".XX..XX",
+   "X..XX..",
+   ".......",
+   ".oo..oo",
+   "o..oo..",
+   "......."
+  ]
+ },
+ "detonator": {
+  "name": "Detonator",
+  "of": [
+   "volatile",
+   "precise"
+  ],
+  "color": "#c090f0",
+  "glyph": [
+   "...X...",
+   ".XXXXX.",
+   "...X...",
+   ".XXXXX.",
+   ".X.o.X.",
+   ".XoooX.",
+   ".XXXXX."
+  ]
+ },
+ "mayhem": {
+  "name": "Mayhem",
+  "of": [
+   "volatile",
+   "frenzied"
+  ],
+  "color": "#c8489c",
+  "glyph": [
+   "X..X..X",
+   ".X.X.X.",
+   "..ooo..",
+   "XXoooXX",
+   "..ooo..",
+   ".X.X.X.",
+   "X..X..X"
+  ]
+ },
+ "minefield": {
+  "name": "Minefield",
+  "of": [
+   "volatile",
+   "guarding"
+  ],
+  "color": "#6878c8",
+  "glyph": [
+   "..XXX..",
+   ".X...X.",
+   "X.o.o.X",
+   "X.....X",
+   "X..o..X",
+   ".X...X.",
+   "..XXX.."
+  ]
+ },
+ "timebomb": {
+  "name": "Timebomb",
+  "of": [
+   "volatile",
+   "lasting"
+  ],
+  "color": "#a070c0",
+  "glyph": [
+   "....XX.",
+   "...X...",
+   ".XXXX..",
+   "XX.oXX.",
+   "X..o.X.",
+   "XX...X.",
+   ".XXXX.."
+  ]
+ },
+ "hairtrigger": {
+  "name": "Hair Trigger",
+  "of": [
+   "volatile",
+   "fleeting"
+  ],
+  "color": "#e4a0f4",
+  "glyph": [
+   "..oo...",
+   ".o..o..",
+   "..XX...",
+   ".XXXX..",
+   "XX.XXX.",
+   "XXXX.X.",
+   ".XXXX.."
+  ]
+ },
+ "blastwave": {
+  "name": "Blastwave",
+  "of": [
+   "volatile",
+   "vast"
+  ],
+  "color": "#7c4ca0",
+  "glyph": [
+   "X.....X",
+   "X..o..X",
+   "X.ooo.X",
+   "X..o..X",
+   "X.....X",
+   ".......",
+   "XXXXXXX"
+  ]
+ },
+ "rapier": {
+  "name": "Rapier",
+  "of": [
+   "precise",
+   "frenzied"
+  ],
+  "color": "#ffb8a0",
+  "glyph": [
+   "......X",
+   ".....X.",
+   "....X..",
+   "...X...",
+   "o.X....",
+   ".X.....",
+   "X.o...."
+  ]
+ },
+ "riposte": {
+  "name": "Riposte",
+  "of": [
+   "precise",
+   "guarding"
+  ],
+  "color": "#b0e0c0",
+  "glyph": [
+   "XXXXXXX",
+   "X..X..X",
+   "X.XoX.X",
+   "X..X..X",
+   ".X...X.",
+   "..X.X..",
+   "...X..."
+  ]
+ },
+ "vendetta": {
+  "name": "Vendetta",
+  "of": [
+   "precise",
+   "lasting"
+  ],
+  "color": "#d8b4a8",
+  "glyph": [
+   ".......",
+   "X.X.X.X",
+   "XoX.X.X",
+   "X.XoX.X",
+   "X.X.XoX",
+   "X.X.X.X",
+   "......."
+  ]
+ },
+ "ambush": {
+  "name": "Ambush",
+  "of": [
+   "precise",
+   "fleeting"
+  ],
+  "color": "#f4ecd8",
+  "glyph": [
+   ".......",
+   ".......",
+   ".XX.XX.",
+   ".Xo.Xo.",
+   ".......",
+   "X.X.X.X",
+   "XXXXXXX"
+  ]
+ },
+ "bullseye": {
+  "name": "Bullseye",
+  "of": [
+   "precise",
+   "vast"
+  ],
+  "color": "#c8a088",
+  "glyph": [
+   "..XXX..",
+   ".X...X.",
+   "X.XXX.X",
+   "X.XoX.X",
+   "X.XXX.X",
+   ".X...X.",
+   "..XXX.."
+  ]
+ },
+ "shieldwall": {
+  "name": "Shieldwall",
+  "of": [
+   "frenzied",
+   "guarding"
+  ],
+  "color": "#a8b040",
+  "glyph": [
+   "XXXXXXX",
+   "XoooooX",
+   "X.....X",
+   "XoooooX",
+   ".X...X.",
+   "..XoX..",
+   "...X..."
+  ]
+ },
+ "fury": {
+  "name": "Fury",
+  "of": [
+   "frenzied",
+   "lasting"
+  ],
+  "color": "#d84030",
+  "glyph": [
+   "X.....X",
+   "XX...XX",
+   ".XX.XX.",
+   "..o.o..",
+   ".XXXXX.",
+   "X.X.X.X",
+   "......."
+  ]
+ },
+ "spree": {
+  "name": "Spree",
+  "of": [
+   "frenzied",
+   "fleeting"
+  ],
+  "color": "#ff8aa0",
+  "glyph": [
+   "X......",
+   ".X.X...",
+   "..X.X..",
+   "...X.X.",
+   "....X.o",
+   ".....oo",
+   "......o"
+  ]
+ },
+ "rampage": {
+  "name": "Rampage",
+  "of": [
+   "frenzied",
+   "vast"
+  ],
+  "color": "#b85030",
+  "glyph": [
+   "X.....X",
+   "X.....X",
+   ".X...X.",
+   "..XXX..",
+   ".XoXoX.",
+   ".XXXXX.",
+   "..XXX.."
+  ]
+ },
+ "sanctuary": {
+  "name": "Sanctuary",
+  "of": [
+   "guarding",
+   "lasting"
+  ],
+  "color": "#5aa080",
+  "glyph": [
+   "..XXX..",
+   ".X...X.",
+   "X.....X",
+   "X..o..X",
+   "X.ooo.X",
+   "X.ooo.X",
+   "XXXXXXX"
+  ]
+ },
+ "parry": {
+  "name": "Parry",
+  "of": [
+   "guarding",
+   "fleeting"
+  ],
+  "color": "#98ecc0",
+  "glyph": [
+   "o.....o",
+   ".o...o.",
+   "..XXX..",
+   ".XXXXX.",
+   ".XXXXX.",
+   "..XXX..",
+   "...X..."
+  ]
+ },
+ "aegis": {
+  "name": "Aegis",
+  "of": [
+   "guarding",
+   "vast"
+  ],
+  "color": "#3a8058",
+  "glyph": [
+   "..XXX..",
+   ".X...X.",
+   "X.....X",
+   "X.....X",
+   "Xo.o.oX",
+   "Xo.o.oX",
+   "XXXXXXX"
+  ]
+ },
+ "hourglass": {
+  "name": "Hourglass",
+  "of": [
+   "lasting",
+   "fleeting"
+  ],
+  "color": "#d0a8c0",
+  "glyph": [
+   "XXXXXXX",
+   ".X.o.X.",
+   "..XoX..",
+   "...X...",
+   "..X.X..",
+   ".Xo.oX.",
+   "XXXXXXX"
+  ]
+ },
+ "aftermath": {
+  "name": "Aftermath",
+  "of": [
+   "lasting",
+   "vast"
+  ],
+  "color": "#8c6c58",
+  "glyph": [
+   ".o.o.o.",
+   "o.o.o.o",
+   ".......",
+   "X.XX.XX",
+   ".X..X..",
+   "XX.X.XX",
+   "XXXXXXX"
+  ]
+ },
+ "whipcrack": {
+  "name": "Whipcrack",
+  "of": [
+   "fleeting",
+   "vast"
+  ],
+  "color": "#e4b890",
+  "glyph": [
+   "X......",
+   "X......",
+   ".X.....",
+   "..XXX..",
+   ".....X.",
+   "....o.X",
+   "...ooo."
+  ]
+ }
+}

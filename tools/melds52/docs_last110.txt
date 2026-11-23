@@ -1,0 +1,253 @@
+The Last Floor 1–10 Melds
+·
+46 new melds finish floors 1–10: after them, every floor 1–10 rune melds with every other. They are the 10 Swift and Heavy pairs still missing among the floor 1–5 runes, and the 36 pairs among the floor 6–10 runes (Twin, Leech, Volatile, Precise, Frenzied, Guarding, Lasting, Fleeting, Vast). Every floor 1–10 rune already has its level 2, so there are none to add here.
+On gear nothing changes: a meld gives one property of each of its two runes, each a quarter weaker than alone, from the same table as the last group. Where two runes share a property (Twin and Precise both give Critical Chance), the meld pairs it with the other rune's second one, so the same property never comes twice.
+Each meld below has its idea in a line, its names on a move, and what it does in front, behind and on enemies, as before.
+Swift
+Already in the game: Flurry (Twin), Second Wind (Leech), Quickfuse (Volatile), Quickdraw (Precise), Blur (Frenzied), Windward (Guarding), Tailwind (Lasting), Blink (Fleeting), Gale (Vast).
+Onrush
+Swift and Power. Speed turned into force. On a move: Onrushing Strike, Strike of the Onrush.
+In front: faster to use again; more damage and a bigger hit, and half again as hard while a burst of speed is on you.
+Behind: each use gives you a burst of speed; while it lasts, Power's damage bonus doesn't fade.
+On enemies: moves and attacks faster; hits harder and has more life. Its first blow after running at you hits half again as hard.
+Hornet
+Swift and Poison. Quick stings that pile the venom on. On a move: Hornet Strike, Strike of the Hornet.
+In front: faster to use again; a weaker hit that poisons, and each use within a second of the last puts one more dose on, up to three.
+Behind: each use gives you a burst of speed; while it lasts, every hit you land poisons too.
+On enemies: moves and attacks faster; poisons you. Each blow within a second of its last leaves an extra dose.
+Glide
+Swift and Frost. The ice carries you. On a move: Gliding Strike, Strike of the Glide.
+In front: faster to use again; frost damage that chills, and each chilled enemy it hits gives you a little speed.
+Behind: leaves ice that slows enemies but speeds you up while you stand on it.
+On enemies: moves and attacks faster; deals frost damage and slows you. On ice it is faster still.
+Firewalk
+Swift and Flame. Fire at your heels. On a move: Firewalker's Strike, Strike of the Firewalk.
+In front: faster to use again; fire damage that explodes and burns, and its explosions are bigger while a burst of speed is on you.
+Behind: each use gives you a burst of speed; while it lasts, you leave burning footprints.
+On enemies: moves and attacks faster; deals fire damage and sets you burning. It leaves burning footprints where it runs.
+Quicksilver
+Swift and Lightning. Lightning that carries you with it. On a move: Quicksilver Strike, Strike of Quicksilver.
+In front: faster to use again; lightning damage that arcs, and every arc that strikes gives you a little speed.
+Behind: each use gives you a burst of speed; while it lasts, enemies you run past are struck by an arc.
+On enemies: moves and attacks faster; deals lightning damage and shocks you. While you are shocked, it is faster still.
+Charge
+Swift and Heavy. The weight of a blow without the wait. On a move: Charging Strike, Strike of the Charge.
+In front: hits much harder and stuns, but is no slower to use; every enemy it stuns makes it a little faster to use again.
+Behind: each use gives you a burst of speed; while it lasts, running into enemies staggers them.
+On enemies: moves and attacks faster; its blows knock you back. It charges in, and its first blow knocks you back twice as far.
+Heavy
+Already in the game: Sunder (Power), and Heavy with every floor 6–10 rune. Charge (Swift) is above.
+Mire
+Heavy and Poison. The broken ground turns to poison mud. On a move: Miring Strike, Strike of the Mire.
+In front: slower, hits much harder and stuns, and poisons; poison on a stunned enemy eats twice as fast.
+Behind: leaves cracked ground that staggers, and whatever it staggers is poisoned too.
+On enemies: its blows knock you back and poison you. While you are staggered, its poison eats faster.
+Icebreaker
+Heavy and Frost. Freeze it, then break it. On a move: Icebreaker Strike, Strike of the Icebreaker.
+In front: slower, hits much harder and stuns, with frost damage that chills; a blow on a frozen enemy breaks the ice for heavy extra damage, and the shards stagger everything around it.
+Behind: leaves cracked ground glazed with ice: whatever it staggers is chilled too.
+On enemies: its blows knock you back; deals frost damage and slows you. Knocked back while chilled, you freeze for a moment.
+Anvil
+Heavy and Flame. Every blow throws sparks. On a move: Anvil Strike, Strike of the Anvil.
+In front: slower, hits much harder and stuns, with fire damage that explodes; a stunned enemy burns twice as hot.
+Behind: leaves cracked ground glowing like a forge: whatever walks over it is set burning.
+On enemies: its blows knock you back; deals fire damage and sets you burning. Where it knocks you, the ground is left burning.
+Fulgurite
+Heavy and Lightning. Lightning driven into the ground. On a move: Fulgurite Strike, Strike of Fulgurite.
+In front: slower, hits much harder and stuns, with lightning that arcs; its arcs stun too, for a moment.
+Behind: leaves cracked ground that carries lightning: bolts run along the cracks to whatever stands on them.
+On enemies: its blows knock you back; deals lightning damage and shocks you. Where its blows land, the ground crackles for a few seconds.
+Twin
+Twin with every other floor 6–10 rune. Already in the game: Twin with every floor 1–5 rune.
+Lamprey
+Twin and Leech. The second bite drinks deeper. On a move: Lamprey Strike, Strike of the Lamprey.
+In front: strikes twice; both blows heal you, and the second heals twice as much as the first.
+Behind: repeats itself a moment later, and the repeat heals you for every enemy it hits.
+On enemies: attacks twice; heals when it hits you. Its second blow heals it twice as much.
+Cluster
+Twin and Volatile. One blast scatters into more. On a move: Cluster Strike, Strike of the Cluster.
+In front: strikes twice; enemies it kills explode, and each explosion throws out two small bomblets that burst where they land.
+Behind: leaves two runes; the second goes off a moment after the first.
+On enemies: attacks twice; explodes when it dies, scattering bomblets around it.
+Doubletap
+Twin and Precise. If the first one lands true, so does the second. On a move: Doubletap Strike, Strike of the Doubletap.
+In front: strikes twice, a smaller area; when the first blow is a critical hit, the second is a certain critical too.
+Behind: marks two enemies at once: your next hit on each is a certain critical.
+On enemies: attacks twice; its hits find the gaps in your armour. When its first blow is critical, so is its second.
+Tempo
+Twin and Frenzied. Every beat counts double. On a move: Tempo Strike, Strike of Tempo.
+In front: strikes twice, and both blows add to the frenzy, so it builds twice as fast.
+Behind: repeats itself a moment later, and the repeat's kills keep the frenzy going too.
+On enemies: attacks twice; speeds up as it is hurt. Every blow it lands speeds it up a little more.
+Redoubt
+Twin and Guarding. Behind the wall, another wall. On a move: Redoubt Strike, Strike of the Redoubt.
+In front: strikes twice; each use gives you a brief shield, and when it breaks a second, smaller one forms.
+Behind: leaves two ward circles, one inside the other; deep inside you take even less damage.
+On enemies: attacks twice; carries a shield that soaks damage. When its shield breaks, a smaller one forms.
+Reverb
+Twin and Lasting. Each blow rings on. On a move: Reverberating Strike, Strike of Reverb.
+In front: strikes twice, and every poison, burn, chill or shock it leaves lasts half again as long for each blow that lands.
+Behind: repeats itself a moment later, and what the repeat leaves lasts twice as long.
+On enemies: attacks twice; its poison, burning and chill last longer on you with every blow that lands.
+Staccato
+Twin and Fleeting. Two blows in the time of one. On a move: Staccato Strike, Strike of Staccato.
+In front: strikes twice with no pause between, and what it leaves works in a third less time.
+Behind: repeats itself almost at once instead of a moment later.
+On enemies: attacks twice, the second blow coming with no warning.
+Ripple
+Twin and Vast. The second blow spreads out from the first. On a move: Rippling Strike, Strike of Ripples.
+In front: strikes twice; the second blow lands as a wider ring around the first, catching what the first missed.
+Behind: repeats itself a moment later, over a much bigger area.
+On enemies: attacks twice; its second attack reaches much wider.
+Leech
+Leech with the floor 6–10 runes after Twin. Lamprey (Twin) is above.
+Bloodbloom
+Leech and Volatile. Every blast feeds you. On a move: Bloodbloom Strike, Strike of the Bloodbloom.
+In front: enemies it kills explode, and each blast heals you for every enemy it catches.
+Behind: leaves a rune; enemies its blast kills drop life orbs.
+On enemies: heals when it hits you; explodes when it dies, and its blast heals the monsters near it.
+Lancet
+Leech and Precise. A surgeon's cut that feeds you. On a move: Lancet Strike, Strike of the Lancet.
+In front: more damage, a smaller area; heals you for every enemy hit, and a critical hit heals three times as much.
+Behind: marks an enemy: your certain critical on it also heals you for a share of the hit.
+On enemies: heals when it hits you; its hits find the gaps in your armour. Its critical hits heal it three times as much.
+Feeding Frenzy
+Leech and Frenzied. The faster you go, the more you drink. On a move: Feeding Strike, Strike of the Feeding Frenzy.
+In front: each use makes the next faster, up to five times, and the higher the frenzy, the more each hit heals you.
+Behind: kills keep the frenzy going, and at a full frenzy enemies it kills drop life orbs.
+On enemies: speeds up as it is hurt; heals when it hits you, more the faster it goes.
+Carapace
+Leech and Guarding. Healing you can't use hardens into a shell. On a move: Carapace Strike, Strike of the Carapace.
+In front: heals you for every enemy hit; healing beyond full life becomes a shield.
+Behind: leaves a ward circle; inside it you slowly heal.
+On enemies: heals when it hits you; carries a shield that soaks damage, and its healing tops the shield up.
+Transfusion
+Leech and Lasting. The life keeps flowing. On a move: Transfusing Strike, Strike of Transfusion.
+In front: heals you for every enemy hit, and the healing keeps coming in over the next few seconds, half again as much in all.
+Behind: enemies it kills drop life orbs that last much longer and heal over a few seconds.
+On enemies: heals when it hits you, and keeps healing for a few seconds after.
+Lifeline
+Leech and Fleeting. The heal comes fastest when you need it most. On a move: Lifeline Strike, Strike of the Lifeline.
+In front: heals you for every enemy hit; below half life, it heals twice as much.
+Behind: enemies it kills drop life orbs that fly straight to you.
+On enemies: heals when it hits you; below half life, it heals twice as much.
+Bloodtide
+Leech and Vast. The healing washes over everyone. On a move: Bloodtide Strike, Strike of the Bloodtide.
+In front: a much bigger area, a little less damage; heals you for every enemy hit, and allies near you are healed too.
+Behind: each hit splashes onto the enemies near what it hits, and the splash heals you as well.
+On enemies: heals when it hits you; its attacks reach wider, and its healing reaches the monsters near it.
+Volatile
+Volatile with the floor 6–10 runes after Leech. Cluster (Twin) and Bloodbloom (Leech) are above.
+Detonator
+Volatile and Precise. A charge set exactly where it hurts. On a move: Detonating Strike, Strike of the Detonator.
+In front: more damage, a smaller area; a critical hit plants a charge that bursts a moment later, hurting everything near.
+Behind: marks an enemy; when the marked one dies, it explodes twice as big.
+On enemies: its hits find the gaps in your armour; explodes when it dies. Its critical hits plant a charge on you that bursts a moment later.
+Mayhem
+Volatile and Frenzied. Every blast winds you up. On a move: Mayhem Strike, Strike of Mayhem.
+In front: each use makes the next faster; enemies it kills explode, and each explosion adds to the frenzy.
+Behind: kills keep the frenzy going, and at a full frenzy enemies it kills explode.
+On enemies: speeds up as it is hurt; explodes when it dies, and the faster it was going, the bigger the blast.
+Minefield
+Volatile and Guarding. Holding ground that bites back. On a move: Minefield Strike, Strike of the Minefield.
+In front: each use gives you a brief shield; enemies it kills while your shield holds explode.
+Behind: leaves a ward circle; enemies that die inside it explode.
+On enemies: carries a shield that soaks damage; explodes when it dies, twice as big if its shield was still up.
+Timebomb
+Volatile and Lasting. The longer the wait, the bigger the bang. On a move: Timebomb Strike, Strike of the Timebomb.
+In front: enemies it kills explode a second later, twice as big.
+Behind: leaves a rune that waits twice as long before it goes off, and goes off twice as big.
+On enemies: explodes when it dies, a second later and twice as hard: get clear.
+Hair Trigger
+Volatile and Fleeting. The slightest touch sets it off. On a move: Hair-Trigger Strike, Strike of the Hair Trigger.
+In front: an enemy brought below a tenth of its life explodes at once (never a boss).
+Behind: leaves a rune that goes off the instant an enemy touches it.
+On enemies: explodes when it dies; brought very low, it bursts at once.
+Blastwave
+Volatile and Vast. Blasts that clear the room. On a move: Blastwave Strike, Strike of the Blastwave.
+In front: a much bigger area; enemies it kills explode, and each blast throws the enemies it doesn't kill out to its edge.
+Behind: leaves a rune whose blast covers a much bigger area.
+On enemies: its attacks reach wider; explodes when it dies, and the blast throws you back.
+Precise
+Precise with the floor 6–10 runes after Volatile. Doubletap, Lancet and Detonator are above.
+Rapier
+Precise and Frenzied. Quicker, and quicker to find the gap. On a move: Rapier Strike, Strike of the Rapier.
+In front: more damage, a smaller area; each use makes the next faster, and the higher the frenzy, the more often it lands a critical hit.
+Behind: kills keep the frenzy going, and a critical kill adds two steps to it.
+On enemies: speeds up as it is hurt; its hits find the gaps in your armour, and the more hurt it is, the more often it lands critical hits.
+Riposte
+Precise and Guarding. Block, then strike back true. On a move: Riposte Strike, Strike of the Riposte.
+In front: each use gives you a brief shield; whatever strikes the shield, your next hit on it is a certain critical.
+Behind: leaves a ward circle; your hits on enemies inside it are critical more often.
+On enemies: carries a shield that soaks damage; its hits find the gaps in your armour. When you strike its shield, its next blow on you is critical.
+Vendetta
+Precise and Lasting. It won't forget who it marked. On a move: Vendetta Strike, Strike of the Vendetta.
+In front: more damage, a smaller area; a critical hit marks the enemy, and every hit on it after is more likely to be critical until it dies.
+Behind: marks an enemy until it dies: every third hit on it is a certain critical.
+On enemies: its hits find the gaps in your armour. Once it lands a critical hit on you, more of its hits are critical for a while.
+Ambush
+Precise and Fleeting. The first strike is the deadly one. On a move: Ambushing Strike, Strike of the Ambush.
+In front: more damage, a smaller area; the first hit on an enemy that hasn't been hurt yet is a certain critical.
+Behind: marks an enemy for only a moment; hit it in time and the certain critical does double damage.
+On enemies: its hits find the gaps in your armour. Its first blow on you is always critical.
+Bullseye
+Precise and Vast. A wide blow with a deadly heart. On a move: Bullseye Strike, Strike of the Bullseye.
+In front: a much bigger area, a little less damage; the enemy nearest its middle takes a certain critical.
+Behind: marks every enemy near what it hits, not just one: your next hit on each is a certain critical.
+On enemies: its attacks reach wider. If you stand at the heart of its attack, its hit is critical.
+Frenzied
+Frenzied with the floor 6–10 runes after Precise. Tempo, Feeding Frenzy, Mayhem and Rapier are above.
+Shieldwall
+Frenzied and Guarding. The harder you fight, the thicker the wall. On a move: Shieldwall Strike, Strike of the Shieldwall.
+In front: each use makes the next faster and gives you a brief shield that grows with the frenzy, up to twice as big at five.
+Behind: leaves a ward circle; kills inside it keep the frenzy going twice as long.
+On enemies: speeds up as it is hurt; carries a shield that soaks damage, and its shield grows as it speeds up.
+Fury
+Frenzied and Lasting. Once it's lit, it doesn't go out. On a move: Furious Strike, Strike of Fury.
+In front: each use makes the next faster, up to five times, and the frenzy fades one step at a time instead of all at once.
+Behind: kills keep the frenzy going twice as long.
+On enemies: speeds up as it is hurt, and once fast, it stays fast.
+Spree
+Frenzied and Fleeting. All at once, then gone. On a move: Spree Strike, Strike of the Spree.
+In front: each use makes the next faster, each step twice as big, but the frenzy fades in half the time.
+Behind: each kill adds two steps to the frenzy, but it fades in half the time.
+On enemies: speeds up as it is hurt, in sudden bursts.
+Rampage
+Frenzied and Vast. The wilder it gets, the more it catches. On a move: Rampaging Strike, Strike of the Rampage.
+In front: each use makes the next faster, and its area grows with the frenzy, up to much bigger at five.
+Behind: kills keep the frenzy going, and each hit's splash grows with the frenzy.
+On enemies: speeds up as it is hurt; its attacks reach wider as it gets faster.
+Guarding
+Guarding with Lasting, Fleeting and Vast. Its melds with the runes before them are above.
+Sanctuary
+Guarding and Lasting. A safe place that holds. On a move: Sanctuary Strike, Strike of Sanctuary.
+In front: each use gives you a shield that lasts twice as long.
+Behind: leaves a ward circle that lasts until the fight is over.
+On enemies: carries a shield that soaks damage; broken, it grows back after a few seconds.
+Parry
+Guarding and Fleeting. A guard held for only an instant, but nothing gets through. On a move: Parrying Strike, Strike of the Parry.
+In front: each use gives you a shield for only a moment, but while it is up you take no damage at all.
+Behind: leaves a ward circle that fades fast, but inside it you take no damage.
+On enemies: carries a shield that soaks damage; for a moment after each of its attacks, it takes much less damage.
+Aegis
+Guarding and Vast. One shield over everyone. On a move: Aegis Strike, Strike of the Aegis.
+In front: each use gives a brief shield to you and to every ally near you.
+Behind: leaves a much bigger ward circle.
+On enemies: carries a shield that soaks damage, and its shield covers the monsters near it too.
+Lasting and Fleeting
+The last three pairs: Lasting with Fleeting and with Vast, and Fleeting with Vast.
+Hourglass
+Lasting and Fleeting. Time on your side, and against them. On a move: Hourglass Strike, Strike of the Hourglass.
+In front: everything it puts on enemies lasts half again as long, and every poison, burn or chill on you wears off a third sooner.
+Behind: what it leaves on the ground lasts half again as long and works a third faster.
+On enemies: its poison, burning and chill last longer on you and hurt you faster too.
+Aftermath
+Lasting and Vast. The ground keeps hurting after the blow. On a move: Aftermath Strike, Strike of the Aftermath.
+In front: a much bigger area, a little less damage; for a few seconds after, enemies that walk into where it struck are hit again, weaker.
+Behind: each hit's splash lingers on the ground for a moment, hitting enemies that step into it.
+On enemies: its attacks reach wider, and the ground where they land keeps hurting you for a few seconds.
+Whipcrack
+Fleeting and Vast. Wide, and with no warning. On a move: Whipcrack Strike, Strike of the Whipcrack.
+In front: a much bigger area, and the whole of it lands at once with no wind-up.
+Behind: each hit's splash goes off at once and reaches farther.
+On enemies: its attacks reach wider and come with less warning.
