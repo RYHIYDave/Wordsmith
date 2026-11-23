@@ -62,6 +62,7 @@ img { image-rendering: pixelated; display: block; max-width: 100%; height: auto;
 .card span { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #7af8f0; }
 video { width: 100%; height: auto; aspect-ratio: 10 / 7; border-radius: 4px; background: #05040f; display: block; }
 .none { color: #a3abd8; font-size: 13px; padding: 20px 0; text-align: center; }
+.how + .lead { margin-top: 12px; }
 .ask { background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 16px; }
 .ask b { font-family: var(--display); font-size: 17px; }
 </style>
@@ -76,10 +77,11 @@ video { width: 100%; height: auto; aspect-ratio: 10 / 7; border-radius: 4px; bac
       <li>The meld behind the Strike, swung twice.</li>
       <li>A skeleton carrying the meld comes for the hero.</li>
     </ol>
+    <p class="lead">Blink and Tailwind show only while he moves, so in their films he darts aside after each swing. For the Guarding melds his shield is up as the skeleton comes.</p>
   </header>
-  %s
+  @@SECS@@
   <div class="ask"><b>Your call</b><p>Tell me in the chat to switch them on, or which ones to change. They stay switched off until you say yes.</p></div>
 </div>
-''' % ''.join(secs)
+'''.replace('@@SECS@@', ''.join(secs))
 open(out + '/meld_films.html', 'w').write(page)
 print('films', have, 'of', len(R))
