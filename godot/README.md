@@ -1431,17 +1431,6 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   heaving, snapping, free); `--only=chained_film --shots=<dir>`
   with `--fixed-fps 30`, a film of it frame by frame (both run under `xvfb-run -a ... --rendering-driver opengl3`).
 
-- **Every two level 1 runes meld** (`scripts/meld_any.gd`; MeldAny.ON, OFF until his yes to the pictures,
-  docs/mockups/melds_any/, https://claude.ai/artifact/Tqr2n6WZTJKtpefwajhF3k). His words, 22 Nov 2026, 20:09 Eastern: “For feature
-  complete we need the rest of the music, the rest of the voices, the new chained mechanic, and all level 1 runes able to meld with
-  all other lvl1 runes”; asked to start on it, 21:23: “Yes and yes”. Any two different words of the 28 meld at the wordsmith (355
-  new words, every pair no named meld is made of; the 23 named melds kept, twists and all). One does the work of both words: it
-  takes its side's damage place, as every melded word does; a damage word in it three quarters of its figure (MELD_PART), any other
-  whole; each grows with its own attribute; no twist of its own. Named by joining the two ("Swift-Heavy"; "Flame-Twin Strike of
-  Swiftness and Quakes"). On gear one property of each word at three quarters (`loot.gd` _any_options, from the two words' own
-  options); on an altar its two words, counting as two. Its stone, made as the game starts from the two words' stones (`stones`,
-  on the gear screen's sheet and the HUD's): the first's left half and the second's right half fused down a seam, both colours along
-  its foot. `--only=meldany --shots=<dir>`: 13 checks.
 - **Strongholds on any endless level: the cult's altar room** (`scripts/act1/altar_rooms.gd`, the floors 6 to 10 strongholds'
   own rules, `act1/holds.gd`, its door and hall made a room; AltarRooms.ON, OFF until his yes to the pictures,
   docs/mockups/altar_room/, https://claude.ai/artifact/382FjE26hEgjMJwdEeENVS). His words, 23 Nov 2026: “In endless mode I want multiple chained and stronghold encounters per

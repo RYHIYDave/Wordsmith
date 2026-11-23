@@ -100,16 +100,6 @@ func _ready() -> void:
 	add_child(_over)
 	_data = JSON.parse_string(FileAccess.get_file_as_string(DIR + "hud.json"))
 	_tex = load(DIR + "hud.png")
-	# (EVERY TWO LEVEL 1 RUNES MELD, meld_any.gd: the words any two make, their colours and names, and their stones fused from their
-	# two words' stones under the sheet's own)
-	var MA := preload("res://scripts/meld_any.gd")
-	var WD: Dictionary = preload("res://scripts/words.gd").data()
-	MA.add_hud(_data, WD)
-	var wp: Array = _data["pics"].get("word:power", [0, 0, 24, 24, 12, 20])
-	_tex = MA.stones(_tex, WD, func(w):
-		var q = _data["pics"].get("word:" + w)
-		return Rect2(q[0], q[1], q[2], q[3]) if q != null else null,
-		func(id, r): _data["pics"]["word:" + id] = [r.position.x, r.position.y, r.size.x, r.size.y, wp[4], wp[5]])
 	for k in _data["theme"]:
 		T[k] = Color(_data["theme"][k])
 	for k in _data["palette"]:

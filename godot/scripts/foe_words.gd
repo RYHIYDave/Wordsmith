@@ -96,8 +96,7 @@ static func foe_words_of(ws: Array) -> Array:
 	var out: Array = []
 	for w in ws:
 		var all: Array = parts_of(w)
-		# (EVERY TWO RUNES MELD, meld_any.gd: one of those is carried as its two words, having no twist of its own)
-		if (is_meld(w) and not str(w).contains("+")) or is_rank(w):
+		if is_meld(w) or is_rank(w):
 			all.append(w)
 		for p in all:
 			if not out.has(p):
