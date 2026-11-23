@@ -265,16 +265,25 @@ func paint_air_more() -> void:
 		var k := float(_mom) / float(M52.tune("momentum")["most"])
 		var cx := _wx(h.world.x, h.world.y) + 6.0
 		var cy := _wy(h.world.x, h.world.y) - 16.0
-		for i in 18:
-			var a := float(i) / 18.0 * TAU + t * 4.0
-			var x := cx + cos(a) * 8.0
-			var y := cy + sin(a) * 3.5
-			_ga(0.85)
-			_fs(R[1])
-			_fill(_ri(x) - 1, _ri(y) - 1, 3, 3)
-			_ga(0.7 + 0.3 * k)
-			_fs(_tone(PackedColorArray([R[3], R[4], R[5], Color.WHITE]), clampf(k * 1.4, 0.0, 1.0) * (0.5 + 0.5 * sin(a))))
-			_fill(_ri(x), _ri(y), 2, 2)
+		# (a glowing coil wound up his arm and weapon, turning, more turns and hotter with each hit: its near strands bright, its
+		# far ones dark behind him)
+		var turns := 1.5 + 2.0 * k
+		var px := cx + 6.0
+		var py := cy + 10.0
+		for i in 36:
+			var v := float(i) / 35.0
+			var ang := v * TAU * turns + t * 6.0
+			var x := cx + cos(ang) * (6.0 - 2.0 * v)
+			var y := cy + 10.0 - 22.0 * v + sin(ang) * 2.0
+			var near := sin(ang) > 0.0
+			if i > 0:
+				_ga(0.9 if near else 0.5)
+				_fs(R[0] if not near else R[1])
+				_line(px, py + 1.0, x, y + 1.0, 2)
+				_fs(_tone(PackedColorArray([R[3], R[4], R[5], Color.WHITE]), clampf(k * 1.4, 0.0, 1.0) * (0.6 + 0.4 * v)) if near else R[2])
+				_line(px, py, x, y, 2 if near else 1)
+			px = x
+			py = y
 		_glow(cx, cy, 14.0 + 14.0 * k, R[4], 0.6 + 0.4 * k)
 	if h.monsters == null or not is_instance_valid(h.monsters):
 		return

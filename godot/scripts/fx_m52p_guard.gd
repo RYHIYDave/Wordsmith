@@ -90,14 +90,19 @@ func _shell(id: String, cx: float, cy: float, rx: float, ry: float, sd: int) -> 
 					_glow(x, y, 9.0, R[4], 0.7)
 	match id:
 		"bulwark":
-			# (a boss at its front, glowing)
-			_ga(1.0)
-			_fs(R[1])
-			_fill(_ri(cx) - 4, _ri(cy + ry * 0.2) - 4, 9, 9)
-			_fs(R[3])
-			_fill(_ri(cx) - 3, _ri(cy + ry * 0.2) - 3, 7, 7)
-			_fs(R[4])
-			_fill(_ri(cx) - 2, _ri(cy + ry * 0.2) - 2, 4, 4)
+			# (the boss at its front: a riveted iron stud, a spike at its heart, glowing)
+			var bx := cx
+			var by := cy + ry * 0.2
+			_glow(bx, by, 12.0, R[4], 0.5)
+			_disc(bx, by, 5.0, [R[0], R[2], R[3], R[4], R[5]])
+			for k in 4:
+				var ka := float(k) * PI * 0.5 + PI * 0.25
+				_fs(R[1])
+				_fill(_ri(bx + cos(ka) * 6.5) - 1, _ri(by + sin(ka) * 6.5) - 1, 2, 2)
+				_fs(R[4])
+				_fill(_ri(bx + cos(ka) * 6.5) - 1, _ri(by + sin(ka) * 6.5) - 1, 1, 1)
+			_fs(R[5])
+			_fill(_ri(bx) - 1, _ri(by) - 2, 1, 2)
 			_fs(R[5])
 			_fill(_ri(cx) - 2, _ri(cy + ry * 0.2) - 2, 2, 2)
 			_glow(cx, cy + ry * 0.2, 14.0, R[4], 0.6)
@@ -263,13 +268,11 @@ func paint_floor_more() -> void:
 					var a := float(k) * PI * 0.5 + PI * 0.25
 					var px := _wx(x + cos(a) * r * 0.72, y + sin(a) * r * 0.72)
 					var py := _wy(x + cos(a) * r * 0.72, y + sin(a) * r * 0.72)
+					_stone(px, py, 7.0, 14.0, ROCK, sd + k)
+					# (its ward-rune cut in it, glowing)
 					_ga(1.0)
-					_fs(ROCK[1])
-					_fill(_ri(px) - 3, _ri(py) - 12, 7, 12)
-					_fs(ROCK[3])
-					_fill(_ri(px) - 2, _ri(py) - 13, 5, 12)
-					_fs(ROCK[4])
-					_fill(_ri(px) - 2, _ri(py) - 13, 2, 11)
 					_fs(R[4])
-					_fill(_ri(px), _ri(py) - 9, 1, 3)
+					_fill(_ri(px) - 1, _ri(py) - 9, 1, 4)
+					_fill(_ri(px), _ri(py) - 8, 1, 1)
+					_glow(px, py - 8.0, 5.0, R[4], 0.5)
 	_ga(1.0)

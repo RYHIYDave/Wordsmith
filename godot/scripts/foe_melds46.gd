@@ -44,9 +44,12 @@ static func harder(F, k: Callable, by) -> float:
 		crit = true
 	if s.call("ambush") and not bool(by.m52.get("foe_hit_him", false)):
 		crit = true
-	if s.call("bullseye") and randf() < 0.2:
-		crit = true
-	if (s.call("lancet") or s.call("detonator")) and randf() < 0.15:
+	# (THE PRECISE MELDS' first critical: a chance of its own, so Doubletap's second and Vendetta's run have one to follow)
+	var first := 0.0
+	for w in ["doubletap", "vendetta", "lancet", "detonator", "bullseye"]:
+		if s.call(w):
+			first = maxf(first, float(_t(w).get("foeCrit", 0.2 if w == "bullseye" else 0.15)))
+	if first > 0.0 and randf() < first:
 		crit = true
 	by.m52["foe_crit46"] = crit
 	if crit:
@@ -213,6 +216,10 @@ static func rage(F, m) -> float:
 		k *= 1.0 + float(_t("glide")["foeFaster"])
 	if m.word_share("quicksilver") > 0.0 and h != null and h.shock_t > 0.0:
 		k *= 1.0 + float(_t("quicksilver")["foeFaster"])
+		# (seen: the quicksilver running on it while he is shocked, told now and then)
+		if F.clock - float(m.m52.get("foe_qs_told", -99.0)) > 1.2:
+			m.m52["foe_qs_told"] = F.clock
+			h.m52._tell({"id": "quicksilver", "what": "foe", "x": m.world.x, "y": m.world.y, "m": m})
 	if m.m52.has("foe_tempo"):
 		k *= 1.0 + float(m.m52["foe_tempo"])
 	if m.word_share("fury") > 0.0:

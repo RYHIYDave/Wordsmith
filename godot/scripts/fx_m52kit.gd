@@ -401,20 +401,24 @@ func _wisps(ax: float, ay: float, bx: float, by: float, u: float, n: int, R: Pac
 		var cx := (sx + ex) * 0.5 + bend * 18.0
 		var cy := minf(sy, ey) - 30.0 - _rh(sd, k + 5) * 14.0
 		var head := _c01(u - k * 0.08)
-		for i in 10:
-			var v := head - i * 0.04
+		# (a comet of it: a streak thick at its head, thinning to a thread behind, not a row of squares)
+		var pts: Array = []
+		for i in 13:
+			var v := head - i * 0.035
 			if v < 0.0:
 				break
-			var x := (1 - v) * (1 - v) * sx + 2 * (1 - v) * v * cx + v * v * ex
-			var y := (1 - v) * (1 - v) * sy + 2 * (1 - v) * v * cy + v * v * ey
-			var sz := thick * 2 - 1 if i == 0 else thick
+			pts.append(Vector2((1 - v) * (1 - v) * sx + 2 * (1 - v) * v * cx + v * v * ex, (1 - v) * (1 - v) * sy + 2 * (1 - v) * v * cy + v * v * ey))
+		for i in range(pts.size() - 1):
+			var w := maxi(1, _ri(float(thick) * (1.0 - float(i) / 12.0) + 0.6))
+			var p0: Vector2 = pts[i]
+			var p1: Vector2 = pts[i + 1]
 			# (a dark edge under it, so it reads over anything: bones, ice, fire)
-			_ga((1.0 - i * 0.1) * 0.8)
+			_ga((1.0 - i * 0.07) * 0.7)
 			_fs(R[0])
-			_fill(_ri(x) - (thick - 1) - 1, _ri(y) - (thick - 1) - 1, sz + 2, sz + 2)
-			_ga(1.0 - i * 0.1)
-			_fs(R[5] if i == 0 else (R[4] if i < 3 else R[3]))
-			_fill(_ri(x) - (thick - 1), _ri(y) - (thick - 1), sz, sz)
+			_line(p0.x, p0.y + 1.0, p1.x, p1.y + 1.0, w + 1)
+			_ga(1.0 - i * 0.07)
+			_fs(R[5] if i == 0 else (R[4] if i < 4 else R[3]))
+			_line(p0.x, p0.y, p1.x, p1.y, w)
 		if head > 0.0 and head < 1.0:
 			var x := (1 - head) * (1 - head) * sx + 2 * (1 - head) * head * cx + head * head * ex
 			var y := (1 - head) * (1 - head) * sy + 2 * (1 - head) * head * cy + head * head * ey
@@ -454,4 +458,202 @@ func _glyph(id: String, cx: float, cy: float, s: int, col: Color, glow_col: Colo
 				continue
 			_fs(col if ch == "X" else glow_col)
 			_fill(_ri(cx + (i - n * 0.5) * s), _ri(cy + (j - n * 0.5) * s), s, s)
+	_ga(1.0)
+
+
+# --- shapes, not boxes (his Art Rulebook, How art is made 9: "A prop, a piece of a place or an effect is shaped as the thing it
+# is, never a plain ball, box or ring"): each lit from the upper left, as the game's light falls (Pixels 4) ---
+
+## A slab of floor heaved up at (x, y) (its foot), `w` wide and `h` tall: a jagged, leaning point, its left face lit, its right in
+## shadow, its broken top edge catching the light. C: deep, dark, mid, itself, light, glint.
+func _shard(x: float, y: float, w: float, h: float, C: Array, sd: int, a := 1.0) -> void:
+	var lean := (_rh(sd, 1) - 0.5) * w * 0.8
+	var tip := 0.25 + 0.5 * _rh(sd, 2)
+	var rows := maxi(2, _ri(h))
+	_ga(0.6 * a)
+	_fs(C[0])
+	_fill(_ri(x - w * 0.6), _ri(y), _ri(w * 1.2), 2)
+	_ga(a)
+	for k in rows:
+		var v := float(k) / float(rows)
+		var half := w * 0.5 * (1.0 - v * v * 0.85) * (0.8 + 0.2 * _rh(sd, k + 10))
+		var cx := x + lean * v
+		var y0 := y - k
+		var left := cx - half
+		var mid := cx - half + half * 2.0 * tip
+		_fs(C[4] if k > rows - 3 else C[3])
+		_fill(_ri(left), _ri(y0), maxi(1, _ri(mid - left)), 1)
+		_fs(C[2])
+		_fill(_ri(mid), _ri(y0), maxi(1, _ri(cx + half - mid)), 1)
+	_fs(C[5])
+	_fill(_ri(x + lean - w * 0.15), _ri(y - rows), 1, 1)
+	_fs(C[1])
+	_fill(_ri(x + lean * 0.5 + w * 0.1), _ri(y - rows * 0.55), 1, maxi(1, _ri(rows * 0.3)))
+
+
+## A standing stone, foot at (x, y), `w` wide, `h` tall: weathered, narrowing a little to a rough top, lit on its left, a crack
+## down its face, a chip out of its shoulder.
+func _stone(x: float, y: float, w: float, h: float, C: Array, sd: int, a := 1.0) -> void:
+	var rows := maxi(3, _ri(h))
+	_ga(0.6 * a)
+	_fs(C[0])
+	_fill(_ri(x - w * 0.7), _ri(y) - 1, _ri(w * 1.4), 2)
+	_ga(a)
+	for k in rows:
+		var v := float(k) / float(rows)
+		var top := v > 0.82
+		var half := w * 0.5 * (1.0 - v * 0.22) * (0.75 if top and _rh(sd, k) < 0.5 else 1.0)
+		if v > 0.94:
+			half *= 0.6
+		var y0 := y - k
+		var lx := _ri(x - half)
+		var rx := _ri(x + half)
+		var split := _ri(x - half * 0.15)
+		_fs(C[1])
+		_fill(lx - 1, y0, 1, 1)
+		_fs(C[4] if top else C[3])
+		_fill(lx, y0, maxi(1, split - lx), 1)
+		_fs(C[2])
+		_fill(split, y0, maxi(1, rx - split), 1)
+		_fs(C[1])
+		_fill(rx, y0, 1, 1)
+	var cxk := x + (_rh(sd, 3) - 0.5) * w * 0.4
+	_fs(C[1])
+	for k in _ri(rows * 0.45):
+		_fill(_ri(cxk + (_rh(sd, k + 20) - 0.5) * 1.5), _ri(y - rows * 0.25 - k), 1, 1)
+	_fs(C[5])
+	_fill(_ri(x - w * 0.35), _ri(y - rows + 1), 2, 1)
+
+
+## A round body at (cx, cy), `r` across: iron, a gem, a boss, lit from the upper left, a hard glint at the top left and a dark
+## rim at the bottom right. C: rim, dark, mid, light, glint.
+func _disc(cx: float, cy: float, r: float, C: Array, a := 1.0) -> void:
+	var ir := maxi(1, _ri(r))
+	_ga(a)
+	for dy in range(-ir, ir + 1):
+		var half := sqrt(maxf(0.0, r * r - dy * dy))
+		var hx := _ri(half)
+		if hx <= 0:
+			continue
+		for dx in range(-hx, hx):
+			var lit := -(float(dx) + 0.5 + float(dy)) / (r * 1.4)
+			var edge := sqrt(float(dx * dx + dy * dy)) / r
+			var c: Color = C[1]
+			if edge > 0.86 and dx + dy > 0:
+				c = C[0]
+			elif lit > 0.45:
+				c = C[3]
+			elif lit > -0.1:
+				c = C[2]
+			_fs(c)
+			_fill(_ri(cx) + dx, _ri(cy) + dy, 1, 1)
+	_fs(C[4])
+	_fill(_ri(cx - r * 0.45), _ri(cy - r * 0.5), maxi(1, _ri(r * 0.3)), 1)
+
+
+## A curl of smoke or dust at (x, y), `s` across: a rolling billow of three lumps, its lit top catching the light, its belly
+## darker, wisping as it goes. C: dark, mid, light.
+func _curl(x: float, y: float, s: float, C: Array, sd: int, a := 1.0) -> void:
+	for k in 3:
+		var kx := x + (float(k) - 1.0) * s * 0.42 + (_rh(sd, k) - 0.5) * s * 0.2
+		var ky := y - (s * 0.25 if k == 1 else 0.0) - _rh(sd, k + 5) * s * 0.15
+		var kr := s * (0.38 if k == 1 else 0.3) * (0.85 + 0.3 * _rh(sd, k + 9))
+		var ir := maxi(1, _ri(kr))
+		for dy in range(-ir, ir + 1):
+			var hx := _ri(sqrt(maxf(0.0, kr * kr - dy * dy)))
+			if hx <= 0:
+				continue
+			_ga(a * (0.85 if dy < 0 else 0.7))
+			_fs(C[2] if dy < -kr * 0.35 else (C[1] if dy < kr * 0.3 else C[0]))
+			_fill(_ri(kx) - hx, _ri(ky) + dy, hx * 2, 1)
+	_ga(a)
+
+
+## A wave going out over the floor from (x, y), `rt` tiles: never a plain ring. "sound": broken arcs, each swelling in its middle
+## and thinning to its ends, wavering; "water": a crest and its trough, wobbling, flecked with foam; "shock": the floor's grit
+## kicked out in short spikes along its front. C: dark, mid, itself, light, glint.
+func _front(x: float, y: float, rt: float, C: Array, sd: int, a: float, kind: String) -> void:
+	var cx := _wx(x, y)
+	var cy := _wy(x, y)
+	var rx := rt * 22.6
+	if rx < 1.0:
+		return
+	var n := maxi(18, _ri(rx * 1.4))
+	match kind:
+		"sound":
+			var arcs := 5
+			for k in arcs:
+				var a0 := (float(k) + 0.12 + _rh(sd, k) * 0.1) / arcs * TAU
+				var span := TAU / arcs * 0.7
+				var m := maxi(4, _ri(n / arcs))
+				for i in m:
+					var v := float(i) / m
+					var ang := a0 + span * v
+					var wob := 1.0 + 0.04 * sin(ang * 7.0 + t * 9.0)
+					var w := 1 + int(sin(v * PI) * 1.8)
+					var px := cx + cos(ang) * rx * wob
+					var py := cy + sin(ang) * rx * 0.5 * wob
+					_ga(a * (0.5 + 0.5 * sin(v * PI)))
+					_fs(C[0])
+					_fill(_ri(px) - w / 2, _ri(py) - w / 2 + 1, w, w)
+					_fs(C[3] if w > 1 else C[2])
+					_fill(_ri(px) - w / 2, _ri(py) - w / 2, w, w)
+		"water":
+			for i in n:
+				var ang := float(i) / n * TAU
+				var wob := 1.0 + 0.035 * sin(ang * 6.0 + t * 5.0 + float(sd % 7))
+				var px := cx + cos(ang) * rx * wob
+				var py := cy + sin(ang) * rx * 0.5 * wob
+				_ga(a * 0.8)
+				_fs(C[1])
+				_fill(_ri(cx + cos(ang) * (rx - 2.0) * wob), _ri(cy + sin(ang) * (rx - 2.0) * 0.5 * wob), 2, 1)
+				_ga(a)
+				_fs(C[3] if sin(ang * 3.0 + t * 4.0) > -0.3 else C[2])
+				_fill(_ri(px), _ri(py), 2, 1)
+				if _rh(sd, i) < 0.22:
+					_fs(C[4])
+					_fill(_ri(px + cos(ang) * 2.0), _ri(py + sin(ang) - 1.0), 1, 1)
+		"shock":
+			for i in n:
+				var ang := float(i) / n * TAU + _rh(sd, i) * 0.1
+				var l := 2.0 + 4.0 * _rh(sd, i + 31)
+				var px := cx + cos(ang) * rx
+				var py := cy + sin(ang) * rx * 0.5
+				_ga(a)
+				_fs(C[1])
+				_line(px, py + 1.0, px + cos(ang) * l, py + sin(ang) * l * 0.5 + 1.0, 2)
+				_fs(C[3] if i % 3 else C[4])
+				_line(px, py, px + cos(ang) * l, py + sin(ang) * l * 0.5, 1)
+				if _rh(sd, i + 60) < 0.25:
+					_fs(C[2])
+					_fill(_ri(px + cos(ang) * (l + 3.0)), _ri(py + sin(ang) * (l + 3.0) * 0.5) - 2, 1, 1)
+	_ga(1.0)
+
+
+## A target's sight on the floor round (x, y), `rt` tiles, closing in: two broken rings and four notches pointing at its heart.
+func _reticle(x: float, y: float, rt: float, C: Array, a: float) -> void:
+	var cx := _wx(x, y)
+	var cy := _wy(x, y)
+	var rx := rt * 22.6
+	for k in 2:
+		var rr := rx * (1.0 - k * 0.45)
+		var n := maxi(12, _ri(rr * 1.4))
+		for i in n:
+			var ang := float(i) / n * TAU
+			if fmod(ang + PI * 0.25, PI * 0.5) < 0.35:
+				continue
+			_ga(a)
+			_fs(C[0])
+			_fill(_ri(cx + cos(ang) * rr), _ri(cy + sin(ang) * rr * 0.5) + 1, 2, 1)
+			_fs(C[3] if k == 0 else C[4])
+			_fill(_ri(cx + cos(ang) * rr), _ri(cy + sin(ang) * rr * 0.5), 2, 1)
+	for q in 4:
+		var ang := float(q) * PI * 0.5
+		var ox := cos(ang)
+		var oy := sin(ang) * 0.5
+		_ga(a)
+		_fs(C[0])
+		_line(cx + ox * (rx + 6.0), cy + oy * (rx + 6.0) + 1.0, cx + ox * (rx - 3.0), cy + oy * (rx - 3.0) + 1.0, 3)
+		_fs(C[4])
+		_line(cx + ox * (rx + 6.0), cy + oy * (rx + 6.0), cx + ox * (rx - 3.0), cy + oy * (rx - 3.0), 1)
 	_ga(1.0)

@@ -34,6 +34,14 @@ const BEHIND := {"flashfreeze": "flashfreeze:sheet", "aftershock": "aftershock:q
 	"doubletap": "doubletap:marks", "bullseye": "bullseye:marks"}
 
 
+## (THE FILMS' THIRD STEP, the carrier: a monster's life; how low it starts, for what its twist waits on; those it dies for;
+## the numbers of the twist made certain for the film; how long to wait after his blows, for what comes back after)
+const FOE_LIFE := 600.0
+const FOE_LOW := {"lifeline": 0.4, "rampage": 0.5, "rapier": 0.4, "hairtrigger": 0.3, "shieldwall": 0.7, "fury": 0.5}
+const FOE_DIES := ["cluster", "bloodbloom", "blastwave", "mayhem", "timebomb", "minefield", "quickfuse", "concussion", "smoulder"]
+const FOE_TUNE := {"hornet": {"foeWindow": 99.0}, "rapier": {"foeEach": 10.0}, "doubletap": {"foeCrit": 1.0}, "vendetta": {"foeCrit": 1.0},
+	"detonator": {"foeCrit": 1.0}, "lancet": {"foeCrit": 1.0}, "bullseye": {"foeCrit": 1.0}}
+const FOE_TAIL := {"sanctuary": 3.6, "timebomb": 2.4, "detonator": 1.8}
 ## (whose twist is seen on a kill, or on one stunned already)
 const KILL := ["quickfuse", "concussion", "smoulder", "cluster", "bloodbloom", "mayhem", "timebomb", "blastwave", "minefield"]
 ## (whose twist wants one alone, certain criticals, a frenzy built up: the film makes it so)
@@ -216,6 +224,12 @@ func _fresh() -> void:
 		m.mark_t = 0.0
 		m.words = []
 		m.shield = 0.0
+	# (the loot its kills dropped, cleared: a film shows the melds, not a helmet's label)
+	if M.loot != null:
+		for d in M.loot._drops.duplicate():
+			if str(d["kind"]) == "gear":
+				(d["node"] as Node).queue_free()
+				M.loot._drops.erase(d)
 	h.poison_t = 0.0
 	h.burn_t = 0.0
 	h.chill_t = 0.0
@@ -253,6 +267,8 @@ func film(only := "") -> void:
 			M._w_set(h, 0, side, [id, "guarding"] if id == "hourglass" and side == "behind" else [id])
 			for m in M._w_pack:
 				if (KILL.has(id) and side == "front") or (KILL_BEHIND.has(id) and side == "behind"):
+					# (a monster's life, not the test pack's million: what bursts for a share of it bursts as in a fight)
+					m.max_life = FOE_LIFE
 					m.life = 1.0
 				if STUNNED.has(id) and side == "front":
 					m.stun_t = 3.0
@@ -300,6 +316,21 @@ func film(only := "") -> void:
 		var m = M._w_pack[0]
 		m.words = FoeWordsOf.call(id)
 		m.world = h.world + h.face * 1.2
+		# (a carrier as the game lays one: a monster's life, not the test pack's million, and Guarding's shield, a fifth of it)
+		m.max_life = FOE_LIFE
+		m.life = FOE_LIFE * float(FOE_LOW.get(id, 1.0))
+		m.shield = roundf(FOE_LIFE * 0.2) if m.words.has("guarding") else 0.0
+		# (what its twist waits on, made so for the film: him poisoned or shocked, its criticals certain)
+		var tune: Dictionary = M52.T()["tune"]
+		var kept := {}
+		for w in FOE_TUNE.get(id, {}):
+			kept[w] = tune[id].get(w, null)
+			tune[id][w] = FOE_TUNE[id][w]
+		if id in ["hornet", "mire", "reverb", "hourglass"]:
+			h.poison_t = 6.0
+			h.poison_dps = 2.0
+		if id == "quicksilver":
+			h.shock_t = 6.0
 		m.state = "chase"
 		m._t = 0.0
 		m._cd = 0.0
@@ -308,6 +339,21 @@ func film(only := "") -> void:
 		m.state = "recover"
 		m._t = 1e9
 		m._cd = 1e9
+		# (he strikes back: its shield struck and broken, it hurt and brought low, or killed, for what each waits on)
+		if FOE_DIES.has(id):
+			m.life = 1.0
+		M._w_strike(h)
+		k = await _frames(k, 0.6)
+		if not m.dead:
+			M._w_strike(h)
+		k = await _frames(k, float(FOE_TAIL.get(id, 1.4)))
+		for w in kept:
+			if kept[w] == null:
+				tune[id].erase(w)
+			else:
+				tune[id][w] = kept[w]
+		h.poison_t = 0.0
+		h.shock_t = 0.0
 		var out: Array = []
 		var code := OS.execute("ffmpeg", ["-y", "-loglevel", "error", "-framerate", "30", "-i", _dir + "/%04d.jpg", "-vf", "crop=400:280:290:130,scale=800:560:flags=neighbor", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "26", "-movflags", "+faststart", root + "/" + id + ".mp4"], out, true)
 		OS.execute("ffmpeg", ["-y", "-loglevel", "error", "-ss", "0.9", "-i", root + "/" + id + ".mp4", "-frames:v", "1", root + "/" + id + ".jpg"], out, true)
@@ -316,6 +362,7 @@ func film(only := "") -> void:
 		DirAccess.remove_absolute(_dir)
 		print("MELDS52 FILM %s: %d frames, ffmpeg %d" % [id, k, code])
 		print("MELDS52 TOLD %s: %s" % [id, ", ".join(PackedStringArray(h.m52.told.keys()))])
+		print("MELDS52 FOE %s: %s" % [id, "shown" if h.m52.told.keys().any(func(t): return str(t).ends_with(":foe")) else "NOT SHOWN"])
 	M52.ON = was
 
 

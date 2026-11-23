@@ -67,6 +67,7 @@ func tick(b: Dictionary, dt: float) -> void:
 			if bt >= 0.3 and not b.get("hit", false):
 				b["hit"] = true
 				fx.kick(3.0)
+				fx.hold(0.12)
 				var R := ramp("cataclysm")
 				for i in 12:
 					_bit(b["x"], b["y"], 4, "stone", PackedColorArray(EARTH), 2.6, 0.9, 160, 30, 90)
@@ -269,39 +270,26 @@ func paint_floor(b: Dictionary) -> void:
 					var a := float(i) / n * TAU + _rh(sd, i + 50) * 0.2
 					var x := cx + cos(a) * front * 22.6
 					var y := cy + sin(a) * front * 11.3
-					var lift := 3.0 + 4.0 * _rh(sd, i + 70)
-					_ga(0.6)
-					_fs(EARTH[0])
-					_fill(_ri(x) - 3, _ri(y), 7, 2)
-					_ga(1.0)
-					_fs(EARTH[2])
-					_fill(_ri(x) - 3, _ri(y - lift), 6, _ri(lift) + 1)
-					_fs(EARTH[4])
-					_fill(_ri(x) - 3, _ri(y - lift), 6, 1)
-					_fs(R[3])
-					_fill(_ri(x) - 2, _ri(y - lift) + 1, 1, 1)
+					var lift := 4.0 + 5.0 * _rh(sd, i + 70)
+					_shard(x, y, 6.0, lift, EARTH, sd + i)
 		"earthquake:foe":
 			var u := _ease(bt / 0.35)
 			var fade := 1.0 - _c01((bt - 0.3) / 0.3)
 			var cx := _wx(b["x"], b["y"])
 			var cy := _wy(b["x"], b["y"])
 			var rr: float = b["r"] * u
-			for i in 30:
-				var a := float(i) / 30.0 * TAU
+			# (the floor round him heaving up in jagged slabs, cracks running out between them)
+			for i in 22:
+				var a := float(i) / 22.0 * TAU + _rh(sd, i + 40) * 0.25
 				var x := cx + cos(a) * rr * 22.6
 				var y := cy + sin(a) * rr * 11.3
-				var lift := 2.0 + 4.0 * _rh(sd, i)
-				_ga(0.6 * fade)
+				var lift := 4.0 + 6.0 * _rh(sd, i)
+				_shard(x, y, 5.0 + 3.0 * _rh(sd, i + 60), lift * (0.4 + 0.6 * u), EARTH, sd + i, fade)
+				var px := cx + cos(a) * rr * 22.6 * 0.4
+				var py := cy + sin(a) * rr * 11.3 * 0.4
+				_ga(0.8 * fade)
 				_fs(EARTH[0])
-				_fill(_ri(x) - 4, _ri(y), 8, 2)
-				_ga(fade)
-				_fs(EARTH[2])
-				_fill(_ri(x) - 3, _ri(y - lift), 6, _ri(lift) + 1)
-				_fs(EARTH[4])
-				_fill(_ri(x) - 3, _ri(y - lift), 6, 1)
-			_ga(0.8 * fade)
-			_fs(EARTH[1])
-			_ring(b["x"], b["y"], rr * 0.7, 2)
+				_line(px, py, x, y, 1)
 	_ga(1.0)
 
 

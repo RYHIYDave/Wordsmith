@@ -96,6 +96,8 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 		"anvil:forge":
 			for i in 6:
 				_bit(b["x"], b["y"], 4, "dot", PackedColorArray([FIRE[3], FIRE[4], FIRE[5]]), 0.4, 0.6, -20, 10, 30)
+		"whipcrack:crack", "whipcrack:snap", "whipcrack:foe":
+			fx.kick(2.0)
 		"cluster:pop", "detonator:burst", "detonator:boom", "mayhem:burst", "minefield:mine", "timebomb:boom", "hairtrigger:trigger", "blastwave:wave":
 			fx.kick(3.0 if key in ["detonator:boom", "timebomb:boom", "blastwave:wave"] else 1.5)
 			for spot in _spots(b, e):
@@ -218,39 +220,29 @@ func paint_floor(b: Dictionary) -> void:
 			_fs(R[4])
 			_ring(b["x"], b["y"], rr)
 		"reverb:ring", "reverb:foe":
+			# (the blow ringing out again and again: broken sound-waves going out, each fainter)
 			for k in 3:
 				var v := _c01((bt - k * 0.15) / 0.5)
 				if v <= 0.0 or v >= 1.0:
 					continue
-				_ga(1.0 - v)
-				_fs(R[1])
-				_ring(b["x"], b["y"], 0.3 + 1.0 * v + 0.04)
-				_fs(R[4] if k == 0 else R[3])
-				_ring(b["x"], b["y"], 0.3 + 1.0 * v)
-				_fs(R[5])
-				_ring(b["x"], b["y"], 0.3 + 1.0 * v - 0.04, 2)
+				_front(b["x"], b["y"], 0.3 + 1.2 * v, [R[1], R[2], R[3], R[4] if k == 0 else R[3], R[5]], sd + k, 1.0 - v, "sound")
 		"ripple:ripple", "ripple:wide", "ripple:foe", "rampage:swell", "rampage:foe", "blastwave:wave", "blastwave:wide", "blastwave:foe", "aegis:dome":
+			# (a wave going out: Ripple's water, the others' blast kicking grit out along its front)
 			var rr: float = float(b["r"]) * _ease(u)
-			_ga(0.85 * fade)
-			_fs(R[1])
-			_ring(b["x"], b["y"], rr + 0.05)
-			_fs(R[4])
-			_ring(b["x"], b["y"], rr)
-			_fs(R[5])
-			_ring(b["x"], b["y"], rr * 0.96, 3, t * 2.0)
+			_front(b["x"], b["y"], rr, [R[1], R[2], R[3], R[4], R[5]], sd, 0.9 * fade, "water" if b["id"] == "ripple" else "shock")
 		"bullseye:ring", "bullseye:foe":
 			# (rings closing on the one at its heart)
+			# (a target's sight closing on the one at its heart)
 			var r0: float = float(b.get("r", 2.0))
-			for k in 3:
-				var rr := r0 * (1.0 - _ease(u)) * (1.0 - k * 0.25) + 0.25
-				_ga(0.9 * fade)
-				_fs(R[4] if b["what"] != "foe" else Color("#ff8aa8"))
-				_ring(b["x"], b["y"], rr, 0 if k == 0 else 2)
+			var rr := r0 * (1.0 - _ease(u)) + 0.35
+			var C: Array = [R[0], R[2], R[3], R[4], R[5]] if b["what"] != "foe" else [Color("#3a0c1c"), Color("#c0206a"), Color("#ff4f8a"), Color("#ffb070"), Color("#fff0a0")]
+			_reticle(b["x"], b["y"], rr, C, 0.95 * fade)
 		"aftermath:smoke", "aftermath:linger":
+			# (smoke rolling out over the struck ground, in curls)
 			var rr: float = float(b["r"]) * _ease(u * 1.5)
-			_ga(0.7 * fade)
-			_fs(R[2])
-			_ring(b["x"], b["y"], rr)
+			for i in 7:
+				var a := float(i) / 7.0 * TAU + _rh(sd, i) * 0.5
+				_curl(_wx(b["x"], b["y"]) + cos(a) * rr * 22.6, _wy(b["x"], b["y"]) + sin(a) * rr * 11.3, 8.0 + 4.0 * _rh(sd, i + 3), [R[1], R[2], R[4]], sd + i, 0.75 * fade)
 		"whipcrack:crack", "whipcrack:snap", "whipcrack:foe":
 			# (the whole area snapping at once: a sand-coloured crack across it)
 			var cx := _wx(b["x"], b["y"])
@@ -297,15 +289,26 @@ func paint_air(b: Dictionary) -> void:
 			var l := maxf(1.0, Vector2(sx, sy).length())
 			sx /= l
 			sy /= l
-			for k in 4:
-				var off := (float(k) - 1.5) * 4.0
-				var bx := p.x - sx * 6.0 - sy * off
-				var by := p.y - sy * 6.0 + sx * off
-				_ga(fade)
-				_fs(R[2])
-				_line(bx, by + 1.0, bx - sx * (30.0 - k * 3.0), by - sy * (30.0 - k * 3.0) + 1.0, 4)
-				_fs(R[4] if k % 2 else R[5])
-				_line(bx, by, bx - sx * (30.0 - k * 3.0), by - sy * (30.0 - k * 3.0), 2)
+			# (speed lines torn off the blow: each thick at the blow and thinning to a wisp, fanned and ragged, not a block)
+			for k in 6:
+				var off := (float(k) - 2.5) * (5.0 + 4.0 * u)
+				var len := (26.0 + 16.0 * _rh(sd, k)) * (0.6 + 0.6 * u)
+				var bx := p.x - sx * (4.0 + 3.0 * _rh(sd, k + 7)) - sy * off
+				var by := p.y - sy * (4.0 + 3.0 * _rh(sd, k + 7)) + sx * off
+				var segs := 6
+				for j in segs:
+					var v0 := float(j) / segs
+					var v1 := float(j + 1) / segs
+					if _rh(sd, k * 10 + j) < 0.15:
+						continue
+					var x0 := bx - sx * len * v0 - sy * off * v0 * 0.4
+					var y0 := by - sy * len * v0 + sx * off * v0 * 0.4
+					var x1 := bx - sx * len * v1 - sy * off * v1 * 0.4
+					var y1 := by - sy * len * v1 + sx * off * v1 * 0.4
+					var w := maxi(1, 3 - j / 2)
+					_ga(fade * (1.0 - v0 * 0.7))
+					_fs(R[3] if j > 2 else (R[4] if k % 2 else R[5]))
+					_line(x0, y0, x1, y1, w)
 			_glow(p.x, p.y, 24.0, R[4], fade)
 			_glow(p.x, p.y, 10.0, Color.WHITE, 0.7 * fade)
 		"hornet:barb", "hornet:foe":
@@ -486,14 +489,21 @@ func paint_air(b: Dictionary) -> void:
 			var col: PackedColorArray = R if b["what"] != "foe" else PackedColorArray([Color("#3a1020"), Color("#7a2040"), Color("#c04070"), Color("#ff8aa8"), Color("#ffd27a"), Color.WHITE])
 			_sight(q.x, q.y, _ease(u * 2.0), col, fade)
 			if key == "doubletap:tap":
+				# (two hard glints, one after the other: four-pointed stars of light where both blows found the gap)
 				_glow(q.x, q.y, 26.0, R[4], fade)
 				for k in 2:
-					var x := q.x - 4.0 + k * 8.0
+					var x := q.x - 5.0 + k * 10.0
+					var y := q.y - 2.0 + k * 4.0
+					var rr := (7.0 if k == 0 else 9.0) * (0.6 + 0.4 * fade)
 					_ga(fade)
 					_fs(R[0])
-					_fill(_ri(x) - 2, _ri(q.y) - 2, 5, 5)
+					_line(x - rr, y, x + rr, y, 3)
+					_line(x, y - rr, x, y + rr, 3)
+					_fs(R[5])
+					_line(x - rr, y, x + rr, y, 1)
+					_line(x, y - rr, x, y + rr, 1)
 					_fs(Color.WHITE)
-					_fill(_ri(x) - 1, _ri(q.y) - 1, 3, 3)
+					_fill(_ri(x) - 1, _ri(y) - 1, 3, 3)
 		"doubletap:marks", "bullseye:marks", "doubletap:mark", "bullseye:mark", "rapier:mark", "riposte:mark", "lancet:mark", "detonator:mark":
 			_sight(p.x, p.y, _ease(u * 2.0), R, fade)
 		"tempo:beat":
@@ -538,31 +548,30 @@ func paint_air(b: Dictionary) -> void:
 					var a := float(j) / 16.0 * TAU
 					_fill(_ri(p.x + cos(a) * rr), _ri(p.y + sin(a) * rr * 0.6), 2, 2)
 		"staccato:tick", "staccato:quick", "staccato:foe":
-			# (two sharp ticks side by side)
+			# (two sharp ticks side by side, where the blow lands: never on him, his Art Rulebook's Animations 4)
+			var q := p
+			var hh = fx.hero()
+			if hh != null and b["what"] != "foe":
+				var hp := Vector2(_wx(hh.world.x, hh.world.y), _wy(hh.world.x, hh.world.y) - 16.0)
+				if q.distance_to(hp) < 22.0:
+					var f: Vector2 = hh.face
+					q = hp + Vector2((f.x - f.y) * 16.0, (f.x + f.y) * 8.0).normalized() * 30.0
 			for k in 2:
-				var x := p.x - 7.0 + k * 14.0
+				var x := q.x - 7.0 + k * 14.0
 				_ga(fade)
 				_fs(R[1])
-				_line(x - 5.0, p.y + 10.0, x + 5.0, p.y - 10.0, 5)
+				_line(x - 5.0, q.y + 10.0, x + 5.0, q.y - 10.0, 5)
 				_fs(R[4])
-				_line(x - 5.0, p.y + 10.0, x + 5.0, p.y - 10.0, 3)
+				_line(x - 5.0, q.y + 10.0, x + 5.0, q.y - 10.0, 3)
 				_fs(Color.WHITE)
-				_line(x - 4.0, p.y + 8.0, x + 4.0, p.y - 8.0, 1)
-			_glow(p.x, p.y, 24.0, R[4], fade)
+				_line(x - 4.0, q.y + 8.0, x + 4.0, q.y - 8.0, 1)
+			_glow(q.x, q.y, 24.0, R[4], fade)
 		"detonator:charge", "detonator:foe":
 			# (a small charge stuck on it, blinking faster and faster)
 			var q := p if b["what"] != "foe" else Vector2(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 14.0)
 			var rate: float = 3.0 + 14.0 * u
 			var on: bool = fmod(bt * rate, 1.0) < 0.5
-			_ga(1.0)
-			_fs(R[0])
-			_fill(_ri(q.x) - 5, _ri(q.y) - 5, 10, 10)
-			_fs(R[2])
-			_fill(_ri(q.x) - 4, _ri(q.y) - 4, 8, 8)
-			_fs(R[5] if on else R[3])
-			_fill(_ri(q.x) - 2, _ri(q.y) - 2, 4, 4)
-			if on:
-				_glow(q.x, q.y, 20.0, R[5], 0.9)
+			_charge(q.x, q.y, R, on)
 		"mayhem:spark":
 			var hh := _hero_at(b)
 			var v := _ease(u * 1.5)
@@ -574,30 +583,56 @@ func paint_air(b: Dictionary) -> void:
 			_glow(x, y, 12.0, R[4], fade)
 		"timebomb:tick":
 			# (a plum bomb with a clock face, its hand going round once)
+			# (a round iron bomb, a clock face set in it, its hand going round once; its fuse burning down, spitting sparks)
 			var cx := _wx(b["x"], b["y"])
-			var cy := _wy(b["x"], b["y"]) - 14.0
+			var cy := _wy(b["x"], b["y"]) - 12.0
+			_glow(cx, cy, 14.0 + 12.0 * u, R[4], 0.35 + 0.55 * u)
+			_disc(cx, cy, 8.0, [R[0], R[1], R[2], R[3], R[5]])
+			_fs(R[0])
+			_fill(_ri(cx) - 3, _ri(cy) - 9, 5, 2)
+			_disc(cx + 0.5, cy + 0.5, 4.0, [R[2], R[4], R[5], R[5], Color.WHITE])
+			var a := -PI * 0.5 + u * TAU
 			_ga(1.0)
 			_fs(R[0])
-			_fill(_ri(cx) - 9, _ri(cy) - 8, 18, 17)
-			_fs(R[2])
-			_fill(_ri(cx) - 8, _ri(cy) - 7, 16, 15)
-			_fs(R[5])
-			_fill(_ri(cx) - 5, _ri(cy) - 4, 10, 9)
-			var a := -PI * 0.5 + u * TAU
-			_fs(R[0])
-			_line(cx, cy, cx + cos(a) * 4.0, cy + sin(a) * 4.0, 2)
+			_line(cx, cy, cx + cos(a) * 3.0, cy + sin(a) * 3.0, 1)
+			var fl := 7.0 * (1.0 - u) + 1.0
+			_fs(DUST[2])
+			_line(cx + 1.0, cy - 9.0, cx + 1.0 + fl * 0.5, cy - 9.0 - fl, 1)
+			var fx0 := cx + 1.0 + fl * 0.5
+			var fy0 := cy - 9.0 - fl
+			_glow(fx0, fy0, 7.0, FIRE[4], 0.9)
 			_fs(FIRE[5])
-			_fill(_ri(cx) + 3, _ri(cy) - 12, 2, 4)
-			_glow(cx, cy, 12.0 + 10.0 * u, R[4], 0.4 + 0.5 * u)
+			_fill(_ri(fx0) - 1, _ri(fy0) - 1, 2, 2)
+			for k in 3:
+				var sa := _rh(sd, int(bt * 20.0) + k) * TAU
+				var sr := 2.0 + 4.0 * _rh(sd, int(bt * 20.0) + k + 5)
+				_fs(FIRE[4] if k else FIRE[5])
+				_fill(_ri(fx0 + cos(sa) * sr), _ri(fy0 + sin(sa) * sr), 1, 1)
 		"rapier:flick", "rapier:foe":
 			var d := Vector2(b["dx"], b["dy"])
 			d = d.normalized() if d.length() > 0.01 else Vector2(1, 0)
 			var sx := (d.x - d.y) * 16.0
 			var sy := (d.x + d.y) * 8.0
 			var l := maxf(1.0, Vector2(sx, sy).length())
-			_ga(fade)
-			_fs(R[5])
-			_line(p.x - sx / l * 16.0, p.y - sy / l * 16.0, p.x + sx / l * 6.0, p.y + sy / l * 6.0, 1)
+			# (a fencer's flurry of thrusts: a long bright needle of a line for each, after-images trailing, a gleam at the point)
+			var n := clampi(int(b.get("n", 1)) + 1, 2, 5)
+			for k in n:
+				var spread := (float(k) - (n - 1) * 0.5) * 0.18
+				var dx := sx / l * cos(spread) - sy / l * sin(spread)
+				var dy := sx / l * sin(spread) + sy / l * cos(spread)
+				var reach := 34.0 + 8.0 * _rh(sd, k)
+				var tipx := p.x + dx * 10.0
+				var tipy := p.y + dy * 10.0
+				var kt := _c01(u * 2.0 - k * 0.15)
+				_ga(fade * (1.0 - kt * 0.5))
+				_fs(R[2])
+				_line(tipx - dx * reach, tipy - dy * reach + 1.0, tipx, tipy + 1.0, 2)
+				_fs(R[5] if k % 2 else Color.WHITE)
+				_line(tipx - dx * reach, tipy - dy * reach, tipx, tipy, 1)
+				_fs(Color.WHITE)
+				_line(tipx - 3.0, tipy, tipx + 3.0, tipy, 1)
+				_line(tipx, tipy - 3.0, tipx, tipy + 3.0, 1)
+			_glow(p.x, p.y, 22.0, R[4], 0.8 * fade)
 			if bool(b["e"].get("crit", false)):
 				for k in 4:
 					var a := float(k) * PI * 0.5 + PI * 0.25
@@ -633,15 +668,12 @@ func paint_air(b: Dictionary) -> void:
 					if lost:
 						y += 18.0 * _ease(u)
 						x += 4.0 * u
-					_ga(fade if not lost else 1.0 - u)
-					_fs(FIRE[1])
-					_fill(_ri(x) - 2, _ri(y) - 3, 5, 7)
-					_fs(FIRE[2] if lost else FIRE[4])
-					_fill(_ri(x) - 1, _ri(y) - 2, 3, 5)
-					if not lost:
-						_fs(FIRE[5])
-						_fill(_ri(x), _ri(y) - 1, 1, 2)
-						_glow(x, y, 7.0, FIRE[4], 0.6 * fade)
+					# (each a flame tongue; the lost one guttering down to a dull coal)
+					if lost:
+						_flames(x, y + 3.0, 1, 3.0, 5.0 * (1.0 - u), 1.0 - u, PackedColorArray([FIRE[1], FIRE[2], FIRE[3]]), sd + k)
+					else:
+						_flames(x, y + 3.0, 1, 4.0, 9.0, fade, PackedColorArray([FIRE[2], FIRE[3], FIRE[4], FIRE[5]]), sd + k + int(t * 8.0))
+						_glow(x, y, 8.0, FIRE[4], 0.6 * fade)
 		"spree:burst", "spree:two", "rapier:two":
 			var hh := _hero_at(b)
 			_glow(_wx(hh.x, hh.y), _wy(hh.x, hh.y) - 16.0, 16.0, R[4], 0.8 * fade)
@@ -651,7 +683,44 @@ func paint_air(b: Dictionary) -> void:
 		"aftermath:bite":
 			_glow(p.x, p.y, 14.0, R[4], fade)
 		"whipcrack:crack", "whipcrack:snap", "whipcrack:foe":
-			_glow(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 4.0, 26.0, R[5], 0.8 * fade)
+			# (a lash thrown from him across the whole area, its wave running out and snapping straight, and the crack at its tip:
+			# a white star of a flash, sound-lines thrown off it)
+			var hh := _hero_at(b)
+			var sx := _wx(hh.x, hh.y)
+			var sy := _wy(hh.x, hh.y) - 18.0
+			var ex := _wx(b["x"], b["y"])
+			var ey := _wy(b["x"], b["y"]) - 8.0
+			var dx := ex - sx
+			var dy := ey - sy
+			var l := maxf(1.0, sqrt(dx * dx + dy * dy))
+			var nx := -dy / l
+			var ny := dx / l
+			var snap := _ease(_c01(bt / 0.12))
+			var px := sx
+			var py := sy
+			for i in 24:
+				var v := float(i + 1) / 24.0
+				var amp := (1.0 - snap) * 14.0 * sin(v * PI * 2.5 - bt * 40.0) * v
+				var x := sx + dx * v * (0.6 + 0.4 * snap) + nx * amp
+				var y := sy + dy * v * (0.6 + 0.4 * snap) + ny * amp
+				_ga(fade)
+				_fs(R[1])
+				_line(px, py + 1.0, x, y + 1.0, 3 if v < 0.5 else 2)
+				_fs(R[4] if v < 0.8 else R[5])
+				_line(px, py, x, y, 2 if v < 0.5 else 1)
+				px = x
+				py = y
+			if bt >= 0.1:
+				var c := 1.0 - _c01((bt - 0.1) / 0.2)
+				_glow(px, py, 30.0, R[5], c)
+				_glow(px, py, 12.0, Color.WHITE, c)
+				for k in 8:
+					var a := float(k) / 8.0 * TAU + _rh(sd, k) * 0.3
+					var r0 := 4.0 + 10.0 * (1.0 - c)
+					var r1 := r0 + 6.0 + 8.0 * _rh(sd, k + 9)
+					_ga(c)
+					_fs(Color.WHITE if k % 2 == 0 else R[5])
+					_line(px + cos(a) * r0, py + sin(a) * r0 * 0.7, px + cos(a) * r1, py + sin(a) * r1 * 0.7, 1)
 		"onrush:hold", "hornet:sting", "lifeline:pull", "transfusion:drip", "transfusion:orb", "carapace:motes", "bloodbloom:orb", "feedingfrenzy:orb", "tempo:hold", "tempo:foe", "fulgurite:bolt", "mire:seep", "charge:bump":
 			if key == "fulgurite:bolt":
 				_bolt(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]), _wx(b["x1"], b["y1"]), _wy(b["x1"], b["y1"]) - 8.0, R, sd, fade, 1)
@@ -724,19 +793,26 @@ func _shell(id: String, cx: float, cy: float, rx: float, ry: float, sd: int, fad
 
 ## Vendetta's tally: `n` strokes scratched over (cx, cy), struck through at three, flashing when `hot`.
 func _tally(cx: float, cy: float, n: int, R: PackedColorArray, fade: float, hot: bool) -> void:
+	# (scratched marks, as a blade scores them: each a leaning gash, deep in the middle and tapering to its ends; the third a
+	# slash struck through them)
 	var strokes := clampi(n, 1, 5)
 	for k in strokes:
 		var x := cx - 10.0 + k * 5.0
+		var lean := 2.0 + (float(k % 2) - 0.5)
 		_ga(fade)
 		_fs(R[0])
-		_fill(_ri(x) - 2, _ri(cy) - 8, 5, 17)
+		_line(x - lean, cy + 8.0, x + lean, cy - 8.0, 4)
 		_fs(R[5] if hot else R[4])
-		_fill(_ri(x) - 1, _ri(cy) - 7, 3, 15)
+		_line(x - lean * 0.9, cy + 6.0, x + lean * 0.9, cy - 6.0, 2)
+		_line(x - lean, cy + 8.0, x + lean, cy - 8.0, 1)
+		_fs(Color.WHITE)
+		_fill(_ri(x) - 1, _ri(cy) - 1, 1, 2)
 	if strokes >= 3:
 		_fs(R[0])
-		_line(cx - 13.0, cy + 6.0, cx + 13.0, cy - 6.0, 5)
+		_line(cx - 14.0, cy + 6.0, cx + 14.0, cy - 6.0, 4)
 		_fs(R[5])
-		_line(cx - 13.0, cy + 6.0, cx + 13.0, cy - 6.0, 2)
+		_line(cx - 13.0, cy + 5.0, cx + 13.0, cy - 5.0, 2)
+		_line(cx - 15.0, cy + 7.0, cx + 15.0, cy - 7.0, 1)
 	_glow(cx, cy, 22.0 if hot else 14.0, R[4], fade * (1.0 if hot else 0.5))
 	_ga(1.0)
 
@@ -804,12 +880,7 @@ func paint_air_more() -> void:
 				var on: bool = fmod(t * 4.0, 1.0) < 0.5
 				var cx := _wx(o.world.x, o.world.y)
 				var cy := _wy(o.world.x, o.world.y) - _mid(o) * 2.0 - 6.0
-				var R := ramp("detonator")
-				_ga(1.0)
-				_fs(R[1])
-				_fill(_ri(cx) - 3, _ri(cy) - 3, 6, 6)
-				_fs(R[4] if on else R[2])
-				_fill(_ri(cx) - 2, _ri(cy) - 2, 4, 4)
+				_charge(cx, cy, ramp("detonator"), on)
 	# (Onrush, Quicksilver behind: his burst of speed in their colour)
 	if h.haste_t > 0.0:
 		if h.m52.any_has("quicksilver", false) and _rh(7, int(t * 20.0)) < 0.5:
@@ -829,13 +900,15 @@ func paint_floor_more() -> void:
 		# (Onrush behind: a coral band of wind circling his feet)
 		if h.m52.any_has("onrush", false):
 			var R := ramp("onrush")
-			for i in 14:
-				var a := float(i) / 14.0 * TAU + t * 6.0
-				_ga(0.4 + 0.5 * float(i) / 14.0)
-				_fs(R[1])
-				_fill(_ri(hx + cos(a) * 12.0) - 1, _ri(hy + sin(a) * 5.0), 3, 2)
-				_fs(R[4])
-				_fill(_ri(hx + cos(a) * 12.0), _ri(hy + sin(a) * 5.0), 2, 1)
+			# (two curling gusts chasing round him, each a tapering stroke of wind)
+			for g in 2:
+				for i in 10:
+					var a0 := float(i) / 10.0 * PI * 0.9 + t * 6.0 + g * PI
+					var a1 := a0 + PI * 0.09
+					var rr := 12.0 + 2.0 * sin(t * 4.0 + g)
+					_ga((0.25 + 0.7 * float(i) / 10.0))
+					_fs(R[4] if i > 6 else R[3])
+					_line(hx + cos(a0) * rr, hy + sin(a0) * rr * 0.42, hx + cos(a1) * rr, hy + sin(a1) * rr * 0.42, 2 if i > 5 else 1)
 		# (Charge behind: dust wedging out in front of him)
 		if h.m52.any_has("charge", false):
 			var R := ramp("charge")
@@ -846,12 +919,9 @@ func paint_floor_more() -> void:
 				var fwd := 0.6 + 0.5 * (1.0 - absf(side))
 				var sx := hx + (d.x - d.y) * 16.0 * fwd + (-(d.x + d.y)) * 9.0 * side
 				var sy := hy + (d.x + d.y) * 8.0 * fwd + (d.x - d.y) * 4.5 * side
+				# (a rolling curl of dust, not a block: each billows and settles)
 				var puff := 0.5 + 0.5 * sin(t * 12.0 + i)
-				_ga(0.8)
-				_fs(DUST[1])
-				_fill(_ri(sx) - 2, _ri(sy) - 1, 5, 3)
-				_fs(R[3] if puff > 0.5 else DUST[3])
-				_fill(_ri(sx) - 1, _ri(sy) - 1, 3, 2)
+				_curl(sx, sy - 1.0, 5.0 + 2.0 * puff, [DUST[1], DUST[2], R[3] if puff > 0.6 else DUST[3]], _hash(i, int(t * 3.0)), 0.85)
 	if h.wakes == null or not is_instance_valid(h.wakes):
 		return
 	for z in h.wakes.list:
@@ -1012,11 +1082,26 @@ func _smoke(x: float, y: float, r: float, R: PackedColorArray, life: float, sd: 
 		var d := r * sqrt(_rh(sd, i + 30))
 		var px := cx + cos(a) * d * 22.6
 		var py := cy + sin(a) * d * 11.3 - fmod(t * 6.0 + _rh(sd, i + 60) * 10.0, 10.0)
-		var s := 4.0 + 4.0 * _rh(sd, i + 90)
-		_ga(0.6 * life)
-		_fs(R[2])
-		_fill(_ri(px - s), _ri(py - s * 0.4), _ri(s * 2.0), _ri(s * 0.8))
-		_ga(0.6 * life)
-		_fs(R[4])
-		_fill(_ri(px - s * 0.5), _ri(py - s * 0.5), _ri(s), _ri(s * 0.4) + 1)
+		var s := 6.0 + 5.0 * _rh(sd, i + 90)
+		_curl(px, py, s, [R[1], R[2], R[4]], sd + i, 0.75 * life)
 	_ga(1.0)
+
+
+
+## Detonator's charge: a sticky iron charge clinging by three claws, its light blinking faster as it nears bursting.
+func _charge(x: float, y: float, R: PackedColorArray, on: bool) -> void:
+	_ga(1.0)
+	for k in 3:
+		var a := PI * 0.5 + (float(k) - 1.0) * 0.9
+		_fs(R[0])
+		_line(x + cos(a) * 3.0, y + sin(a) * 3.0, x + cos(a) * 7.0, y + sin(a) * 6.0 + 1.0, 2)
+		_fs(R[2])
+		_line(x + cos(a) * 3.0, y + sin(a) * 3.0, x + cos(a) * 6.0, y + sin(a) * 5.0, 1)
+	_disc(x, y, 5.0, [R[0], R[1], R[2], R[3], R[4]])
+	_fs(R[0])
+	_fill(_ri(x) - 1, _ri(y) - 7, 2, 2)
+	_fs(R[5] if on else R[2])
+	_fill(_ri(x) - 1, _ri(y) - 8, 2, 1)
+	if on:
+		_glow(x, y - 7.0, 16.0, R[5], 0.9)
+		_glow(x, y - 7.0, 6.0, Color.WHITE, 0.7)

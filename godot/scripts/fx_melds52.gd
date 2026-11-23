@@ -72,8 +72,20 @@ func _pa(a: Array) -> PackedColorArray:
 	return PackedColorArray(a)
 
 
+## (HEAVY BLOWS LAND WITH A FREEZE, his Art Rulebook's Movement 7: "The moment a heavy blow lands, everything holds for a tenth
+## of a second." The Heavy and Volatile melds' landings and blasts, and how long each holds, as the game's own words hold: fx_words3.gd)
+const HOLDS := {"aftershock:burst": 0.1, "marrow:drink": 0.08, "concussion:boom": 0.1, "pressurepoint:point": 0.08, "fortress:clang": 0.1,
+	"daze:thud": 0.1, "earthquake:wave": 0.12, "charge:ram": 0.1, "mire:mud": 0.08, "icebreaker:shatter": 0.1, "anvil:sparks": 0.1,
+	"fulgurite:stun": 0.08, "quickfuse:pop": 0.08, "cluster:pop": 0.08, "bloodbloom:bloom": 0.08, "detonator:burst": 0.1,
+	"detonator:boom": 0.12, "mayhem:burst": 0.08, "minefield:mine": 0.1, "timebomb:boom": 0.12, "hairtrigger:trigger": 0.1,
+	"blastwave:wave": 0.12}
+
+
 func handle(e: Dictionary) -> void:
 	var id: String = e.get("id", "")
+	var held := id + ":" + str(e.get("what", ""))
+	if HOLDS.has(held) and fx != null:
+		fx.hold(float(HOLDS[held]))
 	if _by_id.has(id):
 		_by_id[id].handle(e)
 		return
