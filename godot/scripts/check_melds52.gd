@@ -53,7 +53,7 @@ const FRENZY := ["berserk", "fever", "whiteout", "overcharge", "blur", "juggerna
 const KILL_BEHIND := ["bloodlust", "coldblood", "secondwind", "berserk", "fever", "whiteout", "overcharge", "blur", "spree", "fury", "bloodbloom", "feedingfrenzy", "mayhem", "lifeline", "transfusion", "detonator", "rapier", "shieldwall", "minefield", "tempo"]
 ## (whose moment comes later than the others': a burn going out and lighting again)
 const LONGER := {"rekindle:front": 2.6, "rekindle:behind": 2.0, "bloat:front": 1.6, "jolt:behind": 1.2, "smoulder:front": 1.0,
-	"timebomb:front": 1.2, "timebomb:behind": 2.0, "detonator:front": 1.0, "cluster:front": 0.6, "fury:front": 1.5, "transfusion:front": 1.0}
+	"timebomb:front": 1.2, "timebomb:behind": 2.0, "detonator:front": 1.0, "cluster:front": 0.6, "fury:front": 1.5, "redoubt:front": 1.0, "transfusion:front": 1.0}
 const STUNNED := ["pressurepoint", "daze", "charge", "mire", "anvil"]
 
 
@@ -268,14 +268,22 @@ func film(only := "") -> void:
 				h.haste_t = 6.0
 			if LOW.has(id):
 				h.life = h.max_life * 0.4
+			if id == "icebreaker" and side == "front":
+				for m in M._w_pack:
+					m.frozen_t = 2.0
 			if TOUGH.has(id):
 				for m in M._w_pack:
-					m.max_life *= 20.0
-					m.life = m.max_life * 0.11
+					m.max_life = 100000.0
+					m.life = 10050.0
 			k = await _frames(k, 0.25)
 			M._w_strike(h)
 			k = await _walk(k, 0.6, id, 1.0)
 			M._w_strike(h)
+			# (so the film sees his shell go and his frenzy fade, which in a fight take their full time)
+			if side == "front" and id == "redoubt":
+				h.shield_t = minf(h.shield_t, 0.5)
+			if side == "front" and id == "fury":
+				h.frenzy_t = minf(h.frenzy_t, 0.5)
 			k = await _walk(k, (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0)), id, -1.0)
 		# (carried by one of the pack, which comes for him: its two runes and the meld, as an altar lays them)
 		_fresh()

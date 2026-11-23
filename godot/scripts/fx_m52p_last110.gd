@@ -143,7 +143,7 @@ func tick(b: Dictionary, dt: float) -> void:
 				var d: Vector2 = to - from
 				var l: float = maxf(0.3, d.length())
 				bits.append({"x": from.x, "y": from.y, "z": 12.0, "vx": d.x / l * l / 0.6, "vy": d.y / l * l / 0.6, "vz": 4.0, "fall": 0.0,
-					"t": 0.0, "life": 0.6, "ramp": PackedColorArray([R[3], R[4], R[5]]), "kind": "dot", "size": 2.0})
+					"t": 0.0, "life": 0.6, "ramp": PackedColorArray([R[3], R[4], R[5]]), "kind": "dot", "size": 3.0})
 
 
 func paint_floor(b: Dictionary) -> void:
@@ -166,12 +166,14 @@ func paint_floor(b: Dictionary) -> void:
 			# (a bubbling olive mud on the floor where it stands)
 			var cx := _wx(b["x"], b["y"])
 			var cy := _wy(b["x"], b["y"])
-			var s := 12.0 * _ease(bt / 0.25)
-			_ga(0.75 * fade)
-			_fs(R[1])
+			var s := 18.0 * _ease(bt / 0.25)
+			_ga(0.85 * fade)
+			_fs(R[0])
 			_fill(_ri(cx - s), _ri(cy - s * 0.4), _ri(s * 2.0), _ri(s * 0.8))
+			_fs(R[1])
+			_fill(_ri(cx - s * 0.85), _ri(cy - s * 0.32), _ri(s * 1.7), _ri(s * 0.64))
 			_fs(R[2])
-			_fill(_ri(cx - s * 0.7), _ri(cy - s * 0.3), _ri(s * 1.4), _ri(s * 0.5))
+			_fill(_ri(cx - s * 0.6), _ri(cy - s * 0.25), _ri(s * 1.2), _ri(s * 0.4))
 			for i in 4:
 				var a := _rh(sd, i) * TAU
 				var x := cx + cos(a) * s * 0.6
@@ -220,9 +222,13 @@ func paint_floor(b: Dictionary) -> void:
 				var v := _c01((bt - k * 0.15) / 0.5)
 				if v <= 0.0 or v >= 1.0:
 					continue
-				_ga(0.8 * (1.0 - v))
+				_ga(1.0 - v)
+				_fs(R[1])
+				_ring(b["x"], b["y"], 0.3 + 1.0 * v + 0.04)
 				_fs(R[4] if k == 0 else R[3])
 				_ring(b["x"], b["y"], 0.3 + 1.0 * v)
+				_fs(R[5])
+				_ring(b["x"], b["y"], 0.3 + 1.0 * v - 0.04, 2)
 		"ripple:ripple", "ripple:wide", "ripple:foe", "rampage:swell", "rampage:foe", "blastwave:wave", "blastwave:wide", "blastwave:foe", "aegis:dome":
 			var rr: float = float(b["r"]) * _ease(u)
 			_ga(0.85 * fade)
@@ -295,11 +301,11 @@ func paint_air(b: Dictionary) -> void:
 				var off := (float(k) - 1.5) * 4.0
 				var bx := p.x - sx * 6.0 - sy * off
 				var by := p.y - sy * 6.0 + sx * off
-				_ga(0.9 * fade)
-				_fs(R[1])
-				_line(bx, by + 1.0, bx - sx * (22.0 - k * 3.0), by - sy * (22.0 - k * 3.0) + 1.0, 3)
+				_ga(fade)
+				_fs(R[2])
+				_line(bx, by + 1.0, bx - sx * (30.0 - k * 3.0), by - sy * (30.0 - k * 3.0) + 1.0, 4)
 				_fs(R[4] if k % 2 else R[5])
-				_line(bx, by, bx - sx * (22.0 - k * 3.0), by - sy * (22.0 - k * 3.0), 1)
+				_line(bx, by, bx - sx * (30.0 - k * 3.0), by - sy * (30.0 - k * 3.0), 2)
 			_glow(p.x, p.y, 24.0, R[4], fade)
 			_glow(p.x, p.y, 10.0, Color.WHITE, 0.7 * fade)
 		"hornet:barb", "hornet:foe":
@@ -308,17 +314,17 @@ func paint_air(b: Dictionary) -> void:
 			var q := p if b["what"] != "foe" else Vector2(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 14.0)
 			for k in maxi(1, n):
 				var a := -1.2 + float(k) * 0.9 + (_rh(sd, k) - 0.5) * 0.4
-				var bx := q.x + cos(a) * 5.0
-				var by := q.y + sin(a) * 3.0
-				var tx := bx + cos(a - 0.6) * 8.0
-				var ty := by - 7.0
+				var bx := q.x + cos(a) * 6.0
+				var by := q.y + sin(a) * 4.0
+				var tx := bx + cos(a - 0.6) * 12.0
+				var ty := by - 11.0
 				_ga(minf(1.0, fade * 1.5))
-				_fs(R[1])
-				_line(bx, by + 1.0, tx, ty + 1.0, 3)
+				_fs(R[0])
+				_line(bx, by + 1.0, tx, ty + 1.0, 4)
 				_fs(R[4])
-				_line(bx, by, tx, ty, 1)
+				_line(bx, by, tx, ty, 2)
 				_fs(ramp("hornet")[5])
-				_fill(_ri(tx), _ri(ty), 2, 2)
+				_fill(_ri(tx) - 1, _ri(ty) - 1, 3, 3)
 				var drip := fmod(bt * 2.0 + _rh(sd, k + 5), 1.0)
 				_fs(Color("#b4cc24"))
 				_fill(_ri(bx), _ri(by + drip * 6.0), 1, 2)
@@ -330,8 +336,9 @@ func paint_air(b: Dictionary) -> void:
 			_glow(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 8.0, 26.0 * _ease(u * 2.0), R[4], fade)
 		"quicksilver:thread":
 			var hh := _hero_at(b)
-			_bolt(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 12.0, _wx(hh.x, hh.y), _wy(hh.x, hh.y) - 14.0, R, sd, fade, 1)
-			_glow(_wx(hh.x, hh.y), _wy(hh.x, hh.y) - 14.0, 20.0, R[5], 0.6 * fade)
+			_bolt(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 12.0, _wx(hh.x, hh.y), _wy(hh.x, hh.y) - 14.0, R, sd, fade, 2)
+			_glow(_wx(hh.x, hh.y), _wy(hh.x, hh.y) - 14.0, 26.0, R[5], 0.9 * fade)
+			_glow(_wx(hh.x, hh.y), _wy(hh.x, hh.y) - 14.0, 10.0, Color.WHITE, 0.6 * fade)
 		"quicksilver:pass", "quicksilver:foe":
 			var hh := _hero_at(b)
 			_glow(_wx(hh.x, hh.y), _wy(hh.x, hh.y) - 14.0, 18.0, R[4], 0.6 * fade)
@@ -387,18 +394,18 @@ func paint_air(b: Dictionary) -> void:
 			_flames(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]), 3, 12.0, 12.0, fade, PackedColorArray([FIRE[1], FIRE[2], FIRE[3], FIRE[4], FIRE[5]]), sd)
 		"lamprey:drink", "lamprey:echo", "lancet:cut", "lancet:markcut", "feedingfrenzy:jaws", "bloodbloom:bloom", "bloodtide:tide", "bloodtide:splash", "lifeline:beat":
 			# (life drawn back to him: wisps in its colour, thicker for what draws deeper)
-			var thick := 1
-			var n := 2
+			var thick := 2
+			var n := 3
 			if key == "lamprey:drink" and int(b["n"]) >= 1:
-				thick = 2
-				n = 3
+				thick = 3
+				n = 4
 			if key == "feedingfrenzy:jaws":
 				thick = 1 + mini(2, int(b["n"]) / 2)
 				n = 2 + mini(3, int(b["n"]))
 			if key == "lancet:cut" or key == "lancet:markcut":
 				n = 3
 			if key == "bloodtide:tide":
-				n = 5
+				n = 6
 			if key != "lifeline:beat":
 				_wisps(b["x"], b["y"], b["x1"], b["y1"], _ease(u * 1.4), n, R, sd, thick)
 			if key == "lamprey:drink" and int(b["n"]) >= 1:
@@ -479,8 +486,14 @@ func paint_air(b: Dictionary) -> void:
 			var col: PackedColorArray = R if b["what"] != "foe" else PackedColorArray([Color("#3a1020"), Color("#7a2040"), Color("#c04070"), Color("#ff8aa8"), Color("#ffd27a"), Color.WHITE])
 			_sight(q.x, q.y, _ease(u * 2.0), col, fade)
 			if key == "doubletap:tap":
-				_glow(q.x - 3.0, q.y, 10.0, Color.WHITE, fade)
-				_glow(q.x + 3.0, q.y + 2.0, 10.0, R[4], fade)
+				_glow(q.x, q.y, 26.0, R[4], fade)
+				for k in 2:
+					var x := q.x - 4.0 + k * 8.0
+					_ga(fade)
+					_fs(R[0])
+					_fill(_ri(x) - 2, _ri(q.y) - 2, 5, 5)
+					_fs(Color.WHITE)
+					_fill(_ri(x) - 1, _ri(q.y) - 1, 3, 3)
 		"doubletap:marks", "bullseye:marks", "doubletap:mark", "bullseye:mark", "rapier:mark", "riposte:mark", "lancet:mark", "detonator:mark":
 			_sight(p.x, p.y, _ease(u * 2.0), R, fade)
 		"tempo:beat":
@@ -516,29 +529,40 @@ func paint_air(b: Dictionary) -> void:
 				_fill(_ri(cx + cos(a) * rx), _ri(cy + sin(a) * rx * 0.9 - 6.0), 2, 2)
 			_glow(cx, cy - rx * 0.5, rx, R[4], 0.4 * fade)
 		"reverb:ring":
-			_glow(p.x, p.y, 16.0, R[4], 0.6 * fade)
+			_glow(p.x, p.y, 24.0, R[4], 0.9 * fade)
+			for k in 3:
+				var rr := 6.0 + 14.0 * _ease(_c01((bt - k * 0.12) / 0.5))
+				_ga((1.0 - _c01((bt - k * 0.12) / 0.5)) * 0.9)
+				_fs(R[5])
+				for j in 16:
+					var a := float(j) / 16.0 * TAU
+					_fill(_ri(p.x + cos(a) * rr), _ri(p.y + sin(a) * rr * 0.6), 2, 2)
 		"staccato:tick", "staccato:quick", "staccato:foe":
 			# (two sharp ticks side by side)
 			for k in 2:
-				var x := p.x - 4.0 + k * 8.0
+				var x := p.x - 7.0 + k * 14.0
 				_ga(fade)
 				_fs(R[1])
-				_line(x - 3.0, p.y + 6.0, x + 3.0, p.y - 6.0, 3)
-				_fs(R[5])
-				_line(x - 3.0, p.y + 6.0, x + 3.0, p.y - 6.0, 1)
-			_glow(p.x, p.y, 14.0, R[4], 0.7 * fade)
+				_line(x - 5.0, p.y + 10.0, x + 5.0, p.y - 10.0, 5)
+				_fs(R[4])
+				_line(x - 5.0, p.y + 10.0, x + 5.0, p.y - 10.0, 3)
+				_fs(Color.WHITE)
+				_line(x - 4.0, p.y + 8.0, x + 4.0, p.y - 8.0, 1)
+			_glow(p.x, p.y, 24.0, R[4], fade)
 		"detonator:charge", "detonator:foe":
 			# (a small charge stuck on it, blinking faster and faster)
 			var q := p if b["what"] != "foe" else Vector2(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 14.0)
 			var rate: float = 3.0 + 14.0 * u
 			var on: bool = fmod(bt * rate, 1.0) < 0.5
 			_ga(1.0)
-			_fs(R[1])
-			_fill(_ri(q.x) - 3, _ri(q.y) - 3, 6, 6)
-			_fs(R[4] if on else R[2])
+			_fs(R[0])
+			_fill(_ri(q.x) - 5, _ri(q.y) - 5, 10, 10)
+			_fs(R[2])
+			_fill(_ri(q.x) - 4, _ri(q.y) - 4, 8, 8)
+			_fs(R[5] if on else R[3])
 			_fill(_ri(q.x) - 2, _ri(q.y) - 2, 4, 4)
 			if on:
-				_glow(q.x, q.y, 12.0, R[5], 0.8)
+				_glow(q.x, q.y, 20.0, R[5], 0.9)
 		"mayhem:spark":
 			var hh := _hero_at(b)
 			var v := _ease(u * 1.5)
@@ -551,19 +575,19 @@ func paint_air(b: Dictionary) -> void:
 		"timebomb:tick":
 			# (a plum bomb with a clock face, its hand going round once)
 			var cx := _wx(b["x"], b["y"])
-			var cy := _wy(b["x"], b["y"]) - 8.0
+			var cy := _wy(b["x"], b["y"]) - 14.0
 			_ga(1.0)
-			_fs(R[1])
-			_fill(_ri(cx) - 6, _ri(cy) - 5, 12, 11)
-			_fs(R[3])
-			_fill(_ri(cx) - 5, _ri(cy) - 4, 10, 9)
+			_fs(R[0])
+			_fill(_ri(cx) - 9, _ri(cy) - 8, 18, 17)
+			_fs(R[2])
+			_fill(_ri(cx) - 8, _ri(cy) - 7, 16, 15)
 			_fs(R[5])
-			_fill(_ri(cx) - 3, _ri(cy) - 2, 6, 5)
+			_fill(_ri(cx) - 5, _ri(cy) - 4, 10, 9)
 			var a := -PI * 0.5 + u * TAU
 			_fs(R[0])
-			_line(cx, cy, cx + cos(a) * 3.0, cy + sin(a) * 3.0, 1)
+			_line(cx, cy, cx + cos(a) * 4.0, cy + sin(a) * 4.0, 2)
 			_fs(FIRE[5])
-			_fill(_ri(cx) + 2, _ri(cy) - 8, 1, 2)
+			_fill(_ri(cx) + 3, _ri(cy) - 12, 2, 4)
 			_glow(cx, cy, 12.0 + 10.0 * u, R[4], 0.4 + 0.5 * u)
 		"rapier:flick", "rapier:foe":
 			var d := Vector2(b["dx"], b["dy"])
@@ -681,19 +705,18 @@ func _shell(id: String, cx: float, cy: float, rx: float, ry: float, sd: int, fad
 func _tally(cx: float, cy: float, n: int, R: PackedColorArray, fade: float, hot: bool) -> void:
 	var strokes := clampi(n, 1, 5)
 	for k in strokes:
-		var x := cx - 6.0 + k * 3.0
+		var x := cx - 10.0 + k * 5.0
 		_ga(fade)
-		_fs(R[1])
-		_fill(_ri(x) - 1, _ri(cy) - 5, 3, 11)
+		_fs(R[0])
+		_fill(_ri(x) - 2, _ri(cy) - 8, 5, 17)
 		_fs(R[5] if hot else R[4])
-		_fill(_ri(x), _ri(cy) - 4, 1, 9)
+		_fill(_ri(x) - 1, _ri(cy) - 7, 3, 15)
 	if strokes >= 3:
-		_fs(R[1])
-		_line(cx - 8.0, cy + 4.0, cx + 8.0, cy - 4.0, 3)
+		_fs(R[0])
+		_line(cx - 13.0, cy + 6.0, cx + 13.0, cy - 6.0, 5)
 		_fs(R[5])
-		_line(cx - 8.0, cy + 4.0, cx + 8.0, cy - 4.0, 1)
-	if hot:
-		_glow(cx, cy, 18.0, R[4], fade)
+		_line(cx - 13.0, cy + 6.0, cx + 13.0, cy - 6.0, 2)
+	_glow(cx, cy, 22.0 if hot else 14.0, R[4], fade * (1.0 if hot else 0.5))
 	_ga(1.0)
 
 
@@ -702,21 +725,28 @@ func _hourglass(cx: float, cy: float, u: float, R: PackedColorArray, fade: float
 	var a := _ease(_c01(u * 3.0)) * PI
 	var c := cos(a)
 	var s := 1.0 if c >= 0.0 else -1.0
-	var hgt := 8.0 * absf(c) + 2.0
+	var hgt := 12.0 * absf(c) + 3.0
+	_glow(cx, cy, 22.0, R[4], 0.7 * fade)
 	_ga(fade)
-	_fs(R[1])
-	_fill(_ri(cx) - 6, _ri(cy - hgt) - 1, 12, 2)
-	_fill(_ri(cx) - 6, _ri(cy + hgt) - 1, 12, 2)
-	for k in 6:
-		var v := float(k) / 5.0
-		var w := 5.0 * absf(1.0 - v * 2.0) + 1.0
+	for k in 9:
+		var v := float(k) / 8.0
+		var w := 8.0 * absf(1.0 - v * 2.0) + 1.5
+		var y := cy - hgt + v * hgt * 2.0
+		_fs(R[0])
+		_fill(_ri(cx - w) - 1, _ri(y) - 1, _ri(w * 2.0) + 2, 4)
+	for k in 9:
+		var v := float(k) / 8.0
+		var w := 8.0 * absf(1.0 - v * 2.0) + 1.5
 		var y := cy - hgt + v * hgt * 2.0
 		_fs(R[3])
-		_fill(_ri(cx - w), _ri(y), _ri(w * 2.0), 1)
-	var run := fmod(t * (2.0 if fast else 0.6), 1.0)
+		_fill(_ri(cx - w), _ri(y), _ri(w * 2.0), 2)
+	_fs(R[1])
+	_fill(_ri(cx) - 10, _ri(cy - hgt) - 2, 20, 3)
+	_fill(_ri(cx) - 10, _ri(cy + hgt) - 1, 20, 3)
 	_fs(R[5])
-	_fill(_ri(cx), _ri(cy - hgt * 0.4 * s + run * hgt * 0.8 * s), 1, 2)
-	_glow(cx, cy, 14.0, R[4], 0.4 * fade)
+	_fill(_ri(cx) - 4, _ri(cy + hgt * s) - 3 * int(s), 8, 2)
+	var run := fmod(t * (2.0 if fast else 0.6), 1.0)
+	_fill(_ri(cx), _ri(cy - hgt * 0.4 * s + run * hgt * 0.8 * s), 2, 3)
 	_ga(1.0)
 
 
@@ -786,12 +816,17 @@ func paint_floor_more() -> void:
 		if h.m52.any_has("charge", false):
 			var R := ramp("charge")
 			var d: Vector2 = h.face
-			for i in 8:
-				var v := float(i) / 7.0
-				var sx := hx + (d.x - d.y) * 16.0 * (0.4 + v * 0.3) + ((-d.x - d.y) * 6.0) * (v - 0.5) * 2.0
-				var sy := hy + (d.x + d.y) * 8.0 * (0.4 + v * 0.3)
-				_ga(0.6)
-				_fs(DUST[2] if i % 2 else R[3])
+			for i in 12:
+				var v := float(i) / 11.0
+				var side := (v - 0.5) * 2.0
+				var fwd := 0.6 + 0.5 * (1.0 - absf(side))
+				var sx := hx + (d.x - d.y) * 16.0 * fwd + (-(d.x + d.y)) * 9.0 * side
+				var sy := hy + (d.x + d.y) * 8.0 * fwd + (d.x - d.y) * 4.5 * side
+				var puff := 0.5 + 0.5 * sin(t * 12.0 + i)
+				_ga(0.8)
+				_fs(DUST[1])
+				_fill(_ri(sx) - 2, _ri(sy) - 1, 5, 3)
+				_fs(R[3] if puff > 0.5 else DUST[3])
 				_fill(_ri(sx) - 1, _ri(sy) - 1, 3, 2)
 	if h.wakes == null or not is_instance_valid(h.wakes):
 		return
@@ -947,11 +982,11 @@ func _smoke(x: float, y: float, r: float, R: PackedColorArray, life: float, sd: 
 		var d := r * sqrt(_rh(sd, i + 30))
 		var px := cx + cos(a) * d * 22.6
 		var py := cy + sin(a) * d * 11.3 - fmod(t * 6.0 + _rh(sd, i + 60) * 10.0, 10.0)
-		var s := 3.0 + 3.0 * _rh(sd, i + 90)
-		_ga(0.4 * life)
-		_fs(R[1])
+		var s := 4.0 + 4.0 * _rh(sd, i + 90)
+		_ga(0.6 * life)
+		_fs(R[2])
 		_fill(_ri(px - s), _ri(py - s * 0.4), _ri(s * 2.0), _ri(s * 0.8))
-		_ga(0.35 * life)
-		_fs(R[3])
+		_ga(0.6 * life)
+		_fs(R[4])
 		_fill(_ri(px - s * 0.5), _ri(py - s * 0.5), _ri(s), _ri(s * 0.4) + 1)
 	_ga(1.0)
