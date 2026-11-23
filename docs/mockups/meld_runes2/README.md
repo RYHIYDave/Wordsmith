@@ -8,5 +8,6 @@ good). Picture page: https://claude.ai/artifact/FkPQebFGVWaudL6kJiBjYa (meld_run
 - render2.py: draws them with ../meld_runes/render.py's own stone(); writes stones/ and runes.json.
 - page2.py: the picture page.
 
-The animations' plan: Last Floor 1–10 Meld Animations, https://claude.ai/artifact/X7aBiJPvy7UeN1mL1U8YA4 (waiting on his word).
-Then the build, behind a switch, and films.
+The animations' plan: Last Floor 1–10 Meld Animations, https://claude.ai/artifact/X7aBiJPvy7UeN1mL1U8YA4. His word on it, 23 Nov 2026: “Good”.
+Built behind the switch (Melds52.ON, off): the rules godot/scripts/melds46_rules.gd, on monsters foe_melds46.gd, painted by
+fx_m52p_last110.gd; filmed and checked as ../meld_films/PROGRESS.md says.

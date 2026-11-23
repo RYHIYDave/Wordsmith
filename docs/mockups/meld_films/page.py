@@ -1,10 +1,13 @@
-# Makes the films page (meld_films.html) of the 52 melds at work, from the films the check makes
-# (godot: --only=words --cases=m52film, each <id>.mp4 and <id>.jpg) and the approved stones (../meld_runes/stones).
-#   python3 page.py <films dir> <out dir>
+# Makes the films page (meld_films.html) of the melds at work, from the films the check makes
+# (godot: --only=words --cases=m52film, each <id>.mp4 and <id>.jpg) and the approved stones.
+#   python3 page.py <films dir> <out dir>        the first 52 (../meld_runes)
+#   python3 page.py <films dir> <out dir> 46     the last 46 of floors 1-10 (../meld_runes2)
 import json, sys, os, shutil, html
 HERE = os.path.dirname(os.path.abspath(__file__))
-R = json.load(open(HERE + '/../meld_runes/runes.json'))
 films, out = sys.argv[1], sys.argv[2]
+LAST = len(sys.argv) > 3 and sys.argv[3] == '46'
+RUNES = HERE + ('/../meld_runes2' if LAST else '/../meld_runes')
+R = json.load(open(RUNES + '/runes.json'))
 os.makedirs(out + '/film', exist_ok=True)
 os.makedirs(out + '/stones', exist_ok=True)
 NAME = {'fire': 'Flame'}
@@ -17,7 +20,7 @@ have = 0
 for a, ks in groups.items():
     cards = []
     for k in ks:
-        shutil.copy(HERE + '/../meld_runes/stones/%s.png' % k, out + '/stones/%s.png' % k)
+        shutil.copy(RUNES + '/stones/%s.png' % k, out + '/stones/%s.png' % k)
         if os.path.exists(films + '/%s.mp4' % k):
             have += 1
             shutil.copy(films + '/%s.mp4' % k, out + '/film/%s.mp4' % k)
@@ -28,7 +31,7 @@ for a, ks in groups.items():
         cards.append('<article class="card"><header><img src="stones/%s.png" width="48" height="48" alt=""><div><b>%s</b><span>%s + %s</span></div></header>%s</article>'
                      % (k, html.escape(R[k]['name']), nm(a), nm(R[k]['of'][1]), vid))
     secs.append('<section><h2>%s melds</h2><div class="cards">%s</div></section>' % (nm(a), ''.join(cards)))
-page = '''<title>Meld Films</title>
+page = '''<title>@@TITLE@@</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -70,18 +73,27 @@ video { width: 100%; height: auto; aspect-ratio: 10 / 7; border-radius: 4px; bac
 <div class="wrap">
   <header>
     <div class="eyebrow">Wordsmith · melds · films first</div>
-    <h1>The 52 melds at work</h1>
+    <h1>@@H1@@</h1>
     <p class="lead">Each meld filmed in the game. Tap a film to play it. Every film runs the same three steps:</p>
     <ol class="how">
       <li>The meld in front of the Strike, swung twice at a pack of skeletons.</li>
       <li>The meld behind the Strike, swung twice.</li>
       <li>A skeleton carrying the meld comes for the hero.</li>
     </ol>
-    <p class="lead">Blink and Tailwind show only while he moves, so in their films he darts aside after each swing. For the Guarding melds his shield is up as the skeleton comes.</p>
+    @@NOTES@@
   </header>
   @@SECS@@
   <div class="ask"><b>Your call</b><p>Tell me in the chat to switch them on, or which ones to change. They stay switched off until you say yes.</p></div>
 </div>
 '''.replace('@@SECS@@', ''.join(secs))
+if LAST:
+    page = page.replace('@@TITLE@@', 'Last Meld Films').replace('@@H1@@', 'The last 46 melds of floors 1 to 10 at work').replace('@@NOTES@@',
+        '<p class="lead">Some melds only show in certain moments, so their films set those up: Glide, Firewalk, Quicksilver and Charge show while he moves, '
+        'so he darts aside after each swing; Onrush, Hornet and the movers get a burst of speed; Lifeline runs at low life; Hair Trigger\'s skeletons are '
+        'left nearly dead; Double Tap, Lancet, Detonator and Vendetta strike certain criticals; the frenzy melds start with a frenzy built up; for the Guarding melds his shield is up as the skeleton comes. Hourglass behind '
+        'works on what a blow leaves on the ground, so in its film Guarding sits beside it and leaves a ward.</p>')
+else:
+    page = page.replace('@@TITLE@@', 'Meld Films').replace('@@H1@@', 'The 52 melds at work').replace('@@NOTES@@',
+        '<p class="lead">Blink and Tailwind show only while he moves, so in their films he darts aside after each swing. For the Guarding melds his shield is up as the skeleton comes.</p>')
 open(out + '/meld_films.html', 'w').write(page)
 print('films', have, 'of', len(R))
