@@ -1905,7 +1905,7 @@ export const LEVEL_ART = { on: true };
 // ---------------------------------------------------------------------------------------------
 // THE FIFTEEN OF THE THREE DEFENCES (game/uniques.ts DEFENCE_DEFS: five for armour, five for barrier, five for dodge). His words,
 // 23 Nov 2026, told they wore their bases' pictures: “Uniques always have unique sprite art”. Each as the twenty are: its base's
-// own picture, in its own colours, with the one thing that says what it does. Behind DEFENCE_ART, off until his yes to them.
+// own picture, in its own colours, with the one thing that says what it does. Behind DEFENCE_ART, on at his yes.
 
 /** ANVILHEART (plate: his armour works against Flame, Frost and Lightning too). Smith's plate, soot-dark, an anvil on its chest and the forge's ember under it. */
 function anvilheart(): Part[] {
@@ -2071,8 +2071,8 @@ const DEFENCE_PAINTERS: Record<string, () => Part[]> = {
 };
 /** The ids of the fifteen's pictures. */
 export const DEFENCE_ART_IDS: readonly string[] = Object.keys(DEFENCE_PAINTERS);
-/** The fifteen's pictures' switch: off, each shows its base's orange look. OFF until his yes to them. */
-export const DEFENCE_ART = { on: false };
+/** The fifteen's pictures' switch: off, each shows its base's orange look. ON at his yes, 23 Nov 2026, shown their sheet: “Yes, turn them on”. */
+export const DEFENCE_ART = { on: true };
 
 /** Set 1's pictures, by their ids in game/uniques.ts SET1_DEFS: kept apart from the 62's (UNIQUE_ART_IDS), as Set 1 is behind its own switch. */
 const SET1_PAINTERS: Record<string, () => Part[]> = { gyre, redtithe, widowfall, deathknell, deadweight, starbreaker };

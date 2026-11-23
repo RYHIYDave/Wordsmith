@@ -1130,9 +1130,9 @@ func _pool_unique(quality: int, mf: float, slot := "", weapon := ""):
 ## drops or is gambled for; one worn all the same (a check's) works.
 static var DEFENCE_UNIQUES := true
 ## THE FIFTEEN'S OWN PICTURES (art/items_unique.ts DEFENCE_PAINTERS; a piece's `uicon`): his words, 23 Nov 2026, told they wore their
-## bases' pictures: “Uniques always have unique sprite art”. OFF until his yes to them (pictures first): off, each its base's
-## orange look.
-static var DEFENCE_ART := false
+## bases' pictures: “Uniques always have unique sprite art”. ON at his yes to them, 23 Nov 2026, shown their sheet and a bag of
+## them (docs/mockups/defence_uniques): “Yes, turn them on”. Off, each its base's orange look.
+static var DEFENCE_ART := true
 
 
 ## game.ts makePoolUnique: one of the pool's for him (of that slot, of that weapon, where asked), made for this floor; null if none.
