@@ -108,7 +108,7 @@ func run(main, hero, d: String) -> void:
 			"floor %d: the bonus word %s, one of the floor's own, and his too" % [f, cr.bonus])
 		_line(str(q.get("kind", "")) == "normal" and cr.stakes.size() == 3 and r.world.distance_to(M.map.start) >= 12.0,
 			"floor %d: in room %s (%s, %s), %.1f tiles from where he comes in; stakes %s" % [f, q.get("id", "-"), q.get("kind", "-"), "off the way" if int(q.get("path", 0)) < 0 else "on the way", r.world.distance_to(M.map.start), cr.stakes])
-		# (his life an elite's alone: his kind's leader's on this floor, times 4 / 3, Power's made his)
+		# (his life twice an elite's alone: his kind's leader's on this floor, times 8 / 3, Power's made his)
 		var lead = null
 		for o in M._monsters.list:
 			if is_instance_valid(o) and o != r and o.kind == r.kind and o.rarity == "leader":
@@ -116,8 +116,8 @@ func run(main, hero, d: String) -> void:
 				break
 		if lead != null:
 			var k: float = (1.3 if r.words.has("power") else 1.0) / (1.3 if lead.words.has("power") else 1.0)
-			var want: float = lead.max_life * 4.0 / 3.0 * k
-			_line(absf(r.max_life - want) <= 1.0, "floor %d: his life %d, a %s leader's here %d (%s): times 4/3 and his Power, %.0f" % [f, int(r.max_life), lead.kind, int(lead.max_life), lead.words, want])
+			var want: float = lead.max_life * CR.RARE_LIFE / CR.LEADER_LIFE * k
+			_line(absf(r.max_life - want) <= 2.0, "floor %d: his life %d, a %s leader's here %d (%s): times 8/3 and his Power, %.0f" % [f, int(r.max_life), lead.kind, int(lead.max_life), lead.words, want])
 		if f == 2:
 			_clear_floor([r])
 			_beside(r.world, 3.0)

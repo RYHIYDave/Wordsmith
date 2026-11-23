@@ -7,8 +7,8 @@
 ##     floor 1 too: it is what he is for). In one of the floor's ordinary rooms, those off the way through first, never the start's,
 ##     the boss's, a lair, a vault or an elite room; well clear of where the hero comes in, of the floor's things and its traps.
 ##   WHO: one of the floor's own yellow-pack leaders' kinds, alone: a rare, his name in a yellow pack's leader's yellow, an elite by
-##     the game's rules for one alone (game.ts spawn: TUNE.eliteLife, his kind's life four times over, where a pack's leader has
-##     PACKS.leaderLife, three), with HIS WORDS, two of the floor's own (three from depth 10, on an endless level), AND THE BONUS
+##     the game's rules for one alone (game.ts spawn) but with TWICE AN ELITE'S LIFE (TUNE.eliteLife is his kind's life four times
+##     over, so his is eight times; a pack's leader has PACKS.leaderLife, three), with HIS WORDS, two of the floor's own (three from depth 10, on an endless level), AND THE BONUS
 ##     WORD as well, never two of Flame, Frost and Lightning among them, and what Power, Swift and Guarding give him in his numbers
 ##     (game.ts spawn). Over his head, as over any monster that carries a word, the rune of the bonus word: what he will leave. His
 ##     words, 22 Nov 2026, of it: “I want him to have the word above him as well.  It’s got to be tough”.
@@ -46,9 +46,11 @@ const BREAK := 0.5
 ## (a heave at his chains: how long, and how long between them while he sees the hero)
 const HEAVE := 0.7
 const HEAVE_GAP := [3.5, 6.5]
-## (defs.ts PACKS.leaderLife, TUNE.eliteLife: a yellow pack's leader's life, and an elite's alone, times his kind's)
+## (defs.ts PACKS.leaderLife, TUNE.eliteLife: a yellow pack's leader's life, and an elite's alone, times his kind's; HIS, twice an
+## elite's: his words, 22 Nov 2026, “I think he should have at least double the elite bonus health”)
 const LEADER_LIFE := 3.0
 const ELITE_LIFE := 4.0
+const RARE_LIFE := ELITE_LIFE * 2.0
 ## (game.ts spawn: what Power gives a monster's life and its blows, and Swift its pace; defs.ts GUARD.monster, Guarding's shield)
 const POWER_LIFE := 0.3
 const POWER_DMG := 0.4
@@ -191,7 +193,7 @@ func _rare(t: Dictionary, his: Array, at: Vector2) -> Dictionary:
 	var was_s := 1.0 if tw.has("swift") else 0.0
 	var pw := 1.0 if his.has("power") else 0.0
 	var sw := 1.0 if his.has("swift") else 0.0
-	var life := roundf(float(t["maxLife"]) / LEADER_LIFE * ELITE_LIFE / (1.0 + POWER_LIFE * was_p) * (1.0 + POWER_LIFE * pw))
+	var life := roundf(float(t["maxLife"]) / LEADER_LIFE * RARE_LIFE / (1.0 + POWER_LIFE * was_p) * (1.0 + POWER_LIFE * pw))
 	var dm := (1.0 + POWER_DMG * pw) / (1.0 + POWER_DMG * was_p)
 	d["life"] = life
 	d["maxLife"] = life
