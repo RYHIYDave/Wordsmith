@@ -1,0 +1,70 @@
+<title>Leech Melds' Drain</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* One dark look, the game's night indigo: before on the left, after on the right. */
+:root {
+  --bg: #0d1030; --panel: #161a44; --line: #2c3274; --fg: #e9ecff; --muted: #a3abd8; --accent: #28dcf0; --stage: #05040f;
+  --display: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 900px; margin: 0 auto; padding-block: 24px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+.wrap > * { min-width: 0; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 7vw, 38px); line-height: 1.1; margin: 4px 0 8px; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 19px; margin: 0; }
+p { margin: 0; max-width: 66ch; }
+.lead { color: var(--muted); }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 10px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pair figure { margin: 0; display: grid; gap: 4px; min-width: 0; }
+.pair img, .pair video { width: 100%; height: auto; display: block; border-radius: 4px; background: var(--stage); image-rendering: pixelated; }
+figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+figure.new figcaption { color: var(--accent); }
+.ask { background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 16px; }
+.ask b { font-family: var(--display); font-size: 17px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Wordsmith · melds · pictures first</div>
+    <h1>The Leech melds use Leech's own drain</h1>
+    <p class="lead">You asked: “Leech already had a nice animation for HP going from the enemy to the player.  Why are the new melds different?” They shouldn't have been. Each Leech meld had its own drain in its own colour, drawn on top of Leech's. Now every Leech meld uses the game's own Leech drain: red beads with red tails curving from the enemy into him, and his pulse as the life lands. A monster drinking from him with a Leech meld gets the same red wisps, flowing the other way. Each meld's own twist stays on top, such as Lamprey's ring of teeth and Bloodtide's wave.</p>
+    <p class="lead">All eight: Lamprey, Bloodbloom, Lancet, Feeding Frenzy, Transfusion, Bloodtide, Coldblood and Marrow. Before on the left, after on the right.</p>
+  </header>
+
+  <section>
+    <h2>Lamprey</h2>
+    <div class="pair">
+      <figure><video src="lamprey_old.mp4" controls muted playsinline loop preload="none"></video><figcaption>Before, the film</figcaption></figure>
+      <figure class="new"><video src="lamprey_new.mp4" controls muted playsinline loop preload="none"></video><figcaption>After, the film</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="lamprey_old.jpg" alt="Before: salmon comet wisps of its own."><figcaption>Before</figcaption></figure>
+      <figure class="new"><img src="lamprey_new.jpg" alt="After: Leech's red beads curving into him."><figcaption>After</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Coldblood, Marrow and Feeding Frenzy</h2>
+    <div class="pair">
+      <figure><img src="coldblood_old.jpg" alt="Before: Coldblood's pale wisps."><figcaption>Coldblood before</figcaption></figure>
+      <figure class="new"><img src="coldblood_new.jpg" alt="After: Leech's red drain."><figcaption>Coldblood after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="marrow_old.jpg" alt="Before: Marrow's bone-coloured wisps."><figcaption>Marrow before</figcaption></figure>
+      <figure class="new"><img src="marrow_new.jpg" alt="After: Leech's red drain."><figcaption>Marrow after</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="feedingfrenzy_old.jpg" alt="Before: Feeding Frenzy's own wisps."><figcaption>Feeding Frenzy before</figcaption></figure>
+      <figure class="new"><img src="feedingfrenzy_new.jpg" alt="After: Leech's red drain."><figcaption>Feeding Frenzy after</figcaption></figure>
+    </div>
+  </section>
+
+  <div class="ask"><b>Your call</b><p>Tell me in the chat to switch it on, or what to change. It stays switched off until you say yes.</p></div>
+</div>

@@ -26,9 +26,16 @@ func ids() -> Array:
 	return IDS
 
 
+## (the Leech melds' drains, and how many wisps each draws: the game's own Leech drain, LEECH_SAME)
+const DRAINS := {"coldblood:drink": 4, "coldblood:foe": 3, "marrow:drink": 3, "marrow:drain": 1, "marrow:foe": 2}
+
+
 func begin(b: Dictionary, e: Dictionary) -> bool:
 	var R := ramp(b["id"])
 	var mid := _mid(b["m"])
+	var key := "%s:%s" % [b["id"], b["what"]]
+	if LEECH_SAME and DRAINS.has(key):
+		_drain(b, DRAINS[key])
 	match "%s:%s" % [b["id"], b["what"]]:
 		"bloodlust:fury":
 			b["end"] = 0.6
@@ -145,11 +152,13 @@ func paint_air(b: Dictionary) -> void:
 			_flames(p.x, p.y + 8.0, 3, 12.0, 12.0, fade, PackedColorArray([R[5], R[4], R[3]]), sd)
 			_glow(p.x, p.y, 22.0, R[4], 0.7 * fade)
 		"coldblood:drink":
-			_wisps(b["x"], b["y"], hh.x, hh.y, _c01(bt / 0.55), 4, PackedColorArray(PALE), sd, 2, _mid(b["m"]), 14.0)
+			if not LEECH_SAME:
+				_wisps(b["x"], b["y"], hh.x, hh.y, _c01(bt / 0.55), 4, PackedColorArray(PALE), sd, 2, _mid(b["m"]), 14.0)
 			var p := _mid_px(b)
 			_glow(p.x, p.y, 22.0, PALE[4], 0.7 * (1.0 - _c01(bt / 0.3)))
 		"coldblood:foe":
-			_wisps(b["x"], b["y"], b["x1"], b["y1"], _c01(bt / 0.5), 4, PackedColorArray(PALE), sd, 1, 14.0, 14.0)
+			if not LEECH_SAME:
+				_wisps(b["x"], b["y"], b["x1"], b["y1"], _c01(bt / 0.5), 4, PackedColorArray(PALE), sd, 1, 14.0, 14.0)
 		"coldblood:orb":
 			# (a column of frost going up where it fell, its orb torn out in it)
 			var u := _c01(bt / 1.0)
@@ -209,13 +218,16 @@ func paint_air(b: Dictionary) -> void:
 					_fill(_ri(x), _ri(y), 2, 1)
 			_glow(cx, cy, 30.0, R[4], 0.5 * fade)
 		"marrow:drink":
-			_wisps(b["x"], b["y"], hh.x, hh.y, _c01(bt / 0.5), 3, PackedColorArray(BONE), sd, 3, _mid(b["m"]), 14.0)
+			if not LEECH_SAME:
+				_wisps(b["x"], b["y"], hh.x, hh.y, _c01(bt / 0.5), 3, PackedColorArray(BONE), sd, 3, _mid(b["m"]), 14.0)
 			var p := _mid_px(b)
 			_glow(p.x, p.y, 24.0, BONE[4], 0.7 * (1.0 - _c01(bt / 0.3)))
 		"marrow:drain":
-			_wisps(b["x"], b["y"], b["x1"], b["y1"], _c01(bt / 0.45), 1, PackedColorArray(BONE), sd, 2, 4.0, 14.0)
+			if not LEECH_SAME:
+				_wisps(b["x"], b["y"], b["x1"], b["y1"], _c01(bt / 0.45), 1, PackedColorArray(BONE), sd, 2, 4.0, 14.0)
 		"marrow:foe":
-			_wisps(b["x"], b["y"], b["x1"], b["y1"], _c01(bt / 0.5), 1, PackedColorArray(BONE), sd, 2, 14.0, 14.0)
+			if not LEECH_SAME:
+				_wisps(b["x"], b["y"], b["x1"], b["y1"], _c01(bt / 0.5), 1, PackedColorArray(BONE), sd, 2, 14.0, 14.0)
 		"quickfuse:pop":
 			# (a violet star blown apart at once, its spikes thrown out)
 			var u := _c01(bt / 0.3)

@@ -55,10 +55,22 @@ func ids() -> Array:
 	return IDS
 
 
+## (the Leech melds' drains, and how many wisps each draws: the game's own Leech drain, LEECH_SAME)
+const DRAINS := {"lamprey:drink": 3, "lamprey:echo": 2, "lancet:cut": 3, "lancet:markcut": 3, "feedingfrenzy:jaws": 2, "bloodbloom:bloom": 3,
+	"bloodtide:tide": 5, "bloodtide:splash": 3, "lamprey:foe": 2, "lancet:foe": 2, "feedingfrenzy:foe": 2, "transfusion:foe": 2}
+
+
 func begin(b: Dictionary, e: Dictionary) -> bool:
 	var key := "%s:%s" % [b["id"], b["what"]]
 	if not LONG.has(key):
 		return false
+	if LEECH_SAME and DRAINS.has(key):
+		var n: int = DRAINS[key]
+		if key == "lamprey:drink" and int(b["n"]) >= 1:
+			n = 4
+		if key == "feedingfrenzy:jaws":
+			n = 2 + mini(3, int(b["n"]))
+		_drain(b, n)
 	b["end"] = float(e.get("secs", LONG[key])) if key in ["detonator:charge", "timebomb:tick", "fulgurite:foe", "detonator:foe"] else float(LONG[key])
 	var R := ramp(b["id"])
 	var mid := _mid(b["m"])
@@ -142,6 +154,14 @@ func tick(b: Dictionary, dt: float) -> void:
 				var R := ramp("transfusion")
 				var to := _hero_at(b) if b["what"] != "foe" else Vector2(b["x1"], b["y1"])
 				var from := Vector2(b["x"], b["y"]) if b["what"] != "foe" else _hero_at(b)
+				# (Leech's own drain, a wisp at a time: the slow drip of it)
+				if LEECH_SAME:
+					b["drip"] = 0.18
+					if b["what"] == "foe":
+						fx.w610.drain_to(from.x, from.y, to.x, to.y, 1)
+					else:
+						fx.w610.siphon(from.x, from.y, 1)
+					return
 				var d: Vector2 = to - from
 				var l: float = maxf(0.3, d.length())
 				bits.append({"x": from.x, "y": from.y, "z": 12.0, "vx": d.x / l * l / 0.6, "vy": d.y / l * l / 0.6, "vz": 4.0, "fall": 0.0,
@@ -408,7 +428,7 @@ func paint_air(b: Dictionary) -> void:
 				n = 3
 			if key == "bloodtide:tide":
 				n = 6
-			if key != "lifeline:beat":
+			if key != "lifeline:beat" and not LEECH_SAME:
 				_wisps(b["x"], b["y"], b["x1"], b["y1"], _ease(u * 1.4), n, R, sd, thick)
 			if key == "lamprey:drink" and int(b["n"]) >= 1:
 				# (a ring of teeth flashing where it bites)
@@ -459,7 +479,8 @@ func paint_air(b: Dictionary) -> void:
 				_glow(cx, cy, 16.0, R[4], 0.6 * fade)
 		"lamprey:foe", "lancet:foe", "feedingfrenzy:foe", "transfusion:foe":
 			var hh := _hero_at(b)
-			_wisps(hh.x, hh.y, b["x1"], b["y1"], _ease(u * 1.4), 2, R, sd, 2 if b["id"] == "lamprey" else 1)
+			if not LEECH_SAME:
+				_wisps(hh.x, hh.y, b["x1"], b["y1"], _ease(u * 1.4), 2, R, sd, 2 if b["id"] == "lamprey" else 1)
 		"lifeline:foe", "bloodbloom:foe", "bloodtide:foe":
 			_glow(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 14.0, 22.0, R[4], 0.7 * fade)
 		"cluster:bomblets":

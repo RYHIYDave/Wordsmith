@@ -655,6 +655,9 @@ func _ready() -> void:
 		preload("res://scripts/loot.gd").DEFENCE_UNIQUES = false
 	# (THE FIFTEEN'S OWN PICTURES, on at his yes: `--defart=0` to run without them)
 	# (THE STORM CLOUDS MADE AGAIN, off until his yes to their pictures: `--clouds2=1` shows them, fx_cloud.gd)
+	# (THE NEW MELDS KEEP LEECH'S OWN DRAIN, off until his yes to their pictures: `--leechsame=1` shows it, fx_m52kit.gd)
+	if _arg("leechsame") != "":
+		preload("res://scripts/fx_m52kit.gd").LEECH_SAME = _arg("leechsame") == "1"
 	if _arg("clouds2") != "":
 		preload("res://scripts/fx_cloud.gd").ON = _arg("clouds2") == "1"
 	if _arg("defart") == "0":

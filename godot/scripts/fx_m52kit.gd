@@ -679,3 +679,24 @@ func _reticle(x: float, y: float, rt: float, C: Array, a: float) -> void:
 		_fs(C[4])
 		_line(cx + ox * (rx + 6.0), cy + oy * (rx + 6.0), cx + ox * (rx - 3.0), cy + oy * (rx - 3.0), 1)
 	_ga(1.0)
+
+
+
+# --- LEECH'S OWN DRAIN (his question, 23 Nov 2026: “Leech already had a nice animation for HP going from the enemy to the
+# player.  Why are the new melds different?”). A Leech meld's life drawn out of something is the game's own Leech drain: red
+# beads of light with red tails curving into him, his pulse as it lands (fx_words610.gd siphon); a monster drinking from him, the
+# same wisps flowing into it (drain_to). Each meld's own twist stays on top (Lamprey's teeth, Bloodtide's wave). Behind the switch,
+# off until his yes to its pictures; `--leechsame=1` films it on. ---
+static var LEECH_SAME := false
+
+
+## Life drawn from the beat's place (x, y) to (x1, y1), as the game's Leech draws it.
+func _drain(b: Dictionary, n: int) -> void:
+	if fx == null or fx.w610 == null:
+		return
+	var hp: Vector2 = fx.hero_at()
+	var to := Vector2(float(b["x1"]), float(b["y1"]))
+	if to.distance_to(hp) < 0.8:
+		fx.w610.siphon(float(b["x"]), float(b["y"]), n)
+	else:
+		fx.w610.drain_to(float(b["x"]), float(b["y"]), to.x, to.y, n)

@@ -156,6 +156,17 @@ func siphon(x: float, y: float, n: int) -> void:
 	fx.streaks(x, y, 4, L.BLOOD, 2.2, 2.0, {"up": 50.0, "grav": 260.0, "life": 0.3, "z": 12.0})
 
 
+## The same wisps of life, drawn out of (x, y) into (tx, ty) rather than into him: a monster drinking from him with a Leech
+## meld (THE NEW MELDS keep Leech's own look: his question of 23 Nov 2026, “Leech already had a nice animation for HP going from
+## the enemy to the player.  Why are the new melds different?”).
+func drain_to(x: float, y: float, tx: float, ty: float, n: int) -> void:
+	if wisps.size() > 40:
+		return
+	for i in n:
+		wisps.append({"sx": x + L.rnd(-0.2, 0.2), "sy": y + L.rnd(-0.2, 0.2), "t": -i * 0.04, "dur": L.rnd(0.34, 0.5), "bend": L.rnd(0.5, 1.3) * (1.0 if i % 2 == 0 else -1.0), "lift": L.rnd(8, 20), "tx": tx, "ty": ty})
+	fx.flash(x, y, 12.0, 0.3, 0.1, PackedColorArray([L.P["bl5"], L.P["bl4"], L.P["bl3"]]))
+
+
 # --- the tellings (fx.ts handle; words3.ts events3) ---
 
 ## A telling of these words' own: true if it was one.
@@ -278,8 +289,10 @@ func update(dt: float) -> void:
 		w["t"] += dt
 		if w["t"] >= w["dur"]:
 			wisps.remove_at(i)
-			# the life arrives: he pulses (not for every single wisp)
-			if pulse_wait <= 0.0:
+			# the life arrives: he pulses (not for every single wisp); into a monster, it flashes red as it drinks
+			if w.has("tx"):
+				fx.flash(float(w["tx"]), float(w["ty"]), 10.0, 0.25, 0.1, PackedColorArray([L.P["bl5"], L.P["bl4"], L.P["bl3"]]))
+			elif pulse_wait <= 0.0:
 				pulse_wait = 0.22
 				fx.ring(h.x, h.y, 0.6, 0.2, PackedColorArray([L.P["white"], L.P["bl5"], L.P["bl4"]]), true)
 	for i in range(beams.size() - 1, -1, -1):
@@ -477,11 +490,12 @@ func draw_air(c: CanvasItem, patches: Array) -> void:
 	for w: Dictionary in wisps:
 		if w["t"] < 0.0:
 			continue
-		# a bead of light with a red tail, along a curve to the hero
+		# a bead of light with a red tail, along a curve to the hero (or to the monster drinking from him)
+		var to: Vector2 = Vector2(float(w["tx"]), float(w["ty"])) if w.has("tx") else h
 		var at := func(k: float) -> Vector2:
 			var e := k * k * (3.0 - 2.0 * k)
-			var dx: float = h.x - float(w["sx"])
-			var dy: float = h.y - float(w["sy"])
+			var dx: float = to.x - float(w["sx"])
+			var dy: float = to.y - float(w["sy"])
 			var side: float = sin(PI * k) * float(w["bend"]) * 0.5
 			var x: float = float(w["sx"]) + dx * e - dy * side
 			var y: float = float(w["sy"]) + dy * e + dx * side
