@@ -1,0 +1,94 @@
+<title>Melded Runes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* One column of pictures, the game's own night indigo and its friendly cyan; pixel art shown crisp, never smoothed. */
+:root {
+  --bg: #f2f3fb; --panel: #ffffff; --line: #d4d8ef; --fg: #161a3a; --muted: #5a618c; --accent: #0c8fa3; --stage: #0e0c24;
+  --display: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1030; --panel: #161a44; --line: #2c3274; --fg: #e9ecff; --muted: #a3abd8; --accent: #28dcf0; --stage: #0e0c24; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #0d1030; --panel: #161a44; --line: #2c3274; --fg: #e9ecff; --muted: #a3abd8; --accent: #28dcf0; --stage: #0e0c24; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 24px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 26px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 7vw, 38px); line-height: 1.1; margin: 4px 0 8px; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 20px; margin: 0 0 10px; }
+p { margin: 0; max-width: 62ch; }
+.lead { color: var(--muted); }
+img { image-rendering: pixelated; display: block; max-width: 100%; height: auto; }
+.examples { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; }
+.ex { background: var(--stage); border-radius: 8px; padding: 14px 14px 10px; display: grid; gap: 8px; justify-items: center; min-width: 0; }
+.ex img { width: 100%; max-width: 352px; }
+.ex span { font-family: var(--mono); font-size: 12px; color: #c9cff5; text-align: center; }
+.ex b { color: #7af8f0; font-weight: 500; }
+figure { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; gap: 8px; }
+figure img { border-radius: 4px; width: 100%; }
+figcaption { font-size: 13px; color: var(--muted); }
+.shots { display: grid; gap: 12px; }
+ul.rules { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 64ch; }
+ul.rules li::marker { color: var(--accent); }
+.ask { background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 16px; }
+.ask b { font-family: var(--display); font-size: 17px; }
+.wrap > * { min-width: 0; }
+.all { background: var(--stage); border-radius: 8px; padding: 8px; overflow-x: auto; }
+.all img { min-width: 520px; width: 100%; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Wordsmith · pictures first</div>
+    <h1>Any two runes meld</h1>
+    <p class="lead">At the wordsmith, any two different level 1 runes can now meld into one rune that does both runes' jobs. Here's how the new runes look in the game. They stay switched off until you say yes.</p>
+  </header>
+
+  <section>
+    <h2>The new stones</h2>
+    <p class="lead" style="margin-bottom:12px">Each one is the two runes' stones broken down the middle and fused: half of each rune, a seam between them, and both colours along the foot, like the melds you already have.</p>
+    <div class="examples">
+      <div class="ex"><img src="ex_swift_heavy.png" alt="Swift plus Heavy makes Swift-Heavy"><span>Swift + Heavy = <b>Swift-Heavy</b></span></div>
+      <div class="ex"><img src="ex_fire_twin.png" alt="Flame plus Twin makes Flame-Twin"><span>Flame + Twin = <b>Flame-Twin</b></span></div>
+      <div class="ex"><img src="ex_leech_vast.png" alt="Leech plus Vast makes Leech-Vast"><span>Leech + Vast = <b>Leech-Vast</b></span></div>
+      <div class="ex"><img src="ex_poison_precise.png" alt="Poison plus Precise makes Poison-Precise"><span>Poison + Precise = <b>Poison-Precise</b></span></div>
+      <div class="ex"><img src="ex_frost_heavy.png" alt="Frost plus Heavy makes Frost-Heavy"><span>Frost + Heavy = <b>Frost-Heavy</b></span></div>
+      <div class="ex"><img src="ex_hexing_reaping.png" alt="Hexing plus Reaping makes Hexing-Reaping"><span>Hexing + Reaping = <b>Hexing-Reaping</b></span></div>
+      <div class="ex"><img src="ex_bleeding_surging.png" alt="Bleeding plus Surging makes Bleeding-Surging"><span>Bleeding + Surging = <b>Bleeding-Surging</b></span></div>
+      <div class="ex"><img src="ex_lightning_fleeting.png" alt="Lightning plus Fleeting makes Lightning-Fleeting"><span>Lightning + Fleeting = <b>Lightning-Fleeting</b></span></div>
+      <div class="ex"><img src="ex_twin_mirroring.png" alt="Twin plus Mirroring makes Twin-Mirroring"><span>Twin + Mirroring = <b>Twin-Mirroring</b></span></div>
+      <div class="ex"><img src="ex_power_swift.png" alt="Power plus Swift makes Power-Swift"><span>Power + Swift = <b>Power-Swift</b></span></div>
+      <div class="ex"><img src="ex_pulling_binding.png" alt="Pulling plus Binding makes Pulling-Binding"><span>Pulling + Binding = <b>Pulling-Binding</b></span></div>
+      <div class="ex"><img src="ex_piercing_culling.png" alt="Piercing plus Culling makes Piercing-Culling"><span>Piercing + Culling = <b>Piercing-Culling</b></span></div>
+    </div>
+  </section>
+
+  <section class="shots">
+    <h2>In the game</h2>
+    <figure><img src="bench_swift_heavy_laid.png" alt="The wordsmith's melding page with Swift and Heavy laid in"><figcaption>At the wordsmith: Swift and Heavy laid in. The page now says any two runes go in.</figcaption></figure>
+    <figure><img src="bench_swift_heavy_made.png" alt="Swift-Heavy made at the wordsmith, its page shown"><figcaption>Melded for one runedust: Swift-Heavy, a new word found, with what it does in front and behind.</figcaption></figure>
+    <figure><img src="move_flame_twin_strike.png" alt="Flame-Twin Strike of Swiftness and Quakes on the attacks page"><figcaption>Set on the Strike: Flame-Twin in front and Swift-Heavy behind. The move is named “Flame-Twin Strike of Swiftness and Quakes”.</figcaption></figure>
+    <figure><img src="pouch_new_stones.png" alt="Your words with several of the new stones"><figcaption>Your words, with a few of the new stones.</figcaption></figure>
+  </section>
+
+  <section>
+    <h2>How they play</h2>
+    <ul class="rules">
+      <li>355 new melds: every pair of the 28 runes the game didn't have a meld for. The 23 melds you already have (Eruption, Forking and the rest) keep their special twists, and the same two runes still make them.</li>
+      <li>One rune does both runes' jobs. A damage rune inside it works at three quarters, as in your other melds; any other rune works in full.</li>
+      <li>It takes the damage rune's place on its side of a move, as melds do now. A rune that's already inside it can't go beside it.</li>
+      <li>Two of the same damage rune still rank up (Power + Power = Power II). Two of the same other rune don't meld.</li>
+      <li>On gear: one property from each rune, each at three quarters. On a dungeon's altar it counts as two runes, and the monsters carry both.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>All 355</h2>
+    <div class="all"><img src="all_stones.png" alt="Every one of the 355 new melded stones"></div>
+  </section>
+
+  <div class="ask"><b>Your call</b><p>Tell me in the chat to switch them on, or what to change.</p></div>
+</div>
