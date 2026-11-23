@@ -73,6 +73,10 @@ directs and playtests, and Claude writes and tests everything.
 
 ## More than one chat
 
+- HE IS NOT USING THE OTHER CHATS ANYMORE: the chat he works in brings in everything, its own work and what the other chats
+  handed over (the queue page's ship list), without waiting on another chat. His words, 23 Nov 2026, to the Godot cloud chat:
+  “You can bring anything in we do here.  I'm not really using the chats anymore”. The rules below are kept for when he does.
+
 - ONE chat is in charge of what goes live: the main chat. It alone publishes the game and
   commits to `main`. `main` is the game as last released.
 - Any other chat (one for art, say) works ON A BRANCH OF ITS OWN, never on `main`, and hands its

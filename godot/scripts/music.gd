@@ -1,7 +1,10 @@
 ## THE LEVEL MUSIC (engine/audio.ts levelMusic, game/level_music.ts; the sound chat's tenth batch, his six songs): each
 ## place's walk, and on the floors its fight. From assets/music (tools/godot_music.mjs: the game's .mp4s made into .ogg, each
 ## cut at its loop's end, and music.json, the game's table and fades).
-##   A PLACE COME INTO: its walk from its start, faded up over 0.6 s (the last place's let go of over 0.6 s).
+##   A PLACE COME INTO: its walk from its start, faded up over 0.6 s (the last place's let go of over 0.6 s). Every walk (each
+##   floor's, the prison town's and the Vellum camp's) opens with its song's intro (his words, 22 Nov 2026: "I want the intros
+##   in there when you load into a level"; "I'd like the other level soundtracks changed to have the intros as well"): each file
+##   is the song from its start and then one loop, and goes round from its `loopStart`, not from 0.
 ##   A FIGHT STARTS (something awake within 10 tiles of him, game.ts inFight): the fight's loop from its first big hit (its
 ##   "fight in at"), at full at once; the walk faded to nothing over 0.6 s, still going on underneath.
 ##   THE FIGHT IS OVER (4 s after the last of them has died or lost him, FIGHT_MUSIC.calm): the fight faded out over 1.5 s and

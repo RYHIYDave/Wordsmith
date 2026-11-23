@@ -1787,13 +1787,13 @@ func _process(dt: float) -> void:
 	music.level_music(_music_place(), _in_fight(), dt)
 
 
-## Which place's music (game/level_music.ts musicPlace): the town's, or floor 1's.
+## Which place's music (game/level_music.ts musicPlace): the town's, the camp's, or a floor's.
 func _music_place() -> String:
-	# (the camp has none: game/level_music.ts musicPlace, `!isCamp(L)`; the bottom of the shaft, the final boss's arena, the title
-	# theme: music.gd `final`)
+	# (the camp inside Vellum's gate: his Vellum town song, 22 Nov 2026, music.json `vellum`; the bottom of the shaft, the final
+	# boss's arena, the title theme: music.gd `final`)
 	if place == "final":
 		return "final"
-	return "town" if place == "town" else "" if place == "camp" else "f%d" % depth_of(place)
+	return "town" if place == "town" else "vellum" if place == "camp" else "f%d" % depth_of(place)
 
 
 ## Is there a fight on: something awake within reach of him (game.ts inFight; no doors here yet to shut one in)?
