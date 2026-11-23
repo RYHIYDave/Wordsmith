@@ -65,6 +65,7 @@
 extends RefCounted
 
 const FILE := "res://assets/words/words.json"
+const MeldAny := preload("res://scripts/meld_any.gd")
 
 ## HOW HARD ATTRIBUTES AND WORDS ADD UP (his words, 22 Nov 2026, after the damage check showed a min/max hero's quick attack at
 ## millions a second, a word in front and one behind three times the damage early on: “I like the additive bonus to words, but
@@ -210,6 +211,8 @@ static var _data := {}
 static func data() -> Dictionary:
 	if _data.is_empty():
 		_data = JSON.parse_string(FileAccess.get_file_as_string(FILE))
+		# (EVERY TWO LEVEL 1 RUNES MELD: the words any two make, meld_any.gd; always known, made only while it is ON)
+		MeldAny.add_to(_data)
 		# (EVADE_AT: the evasive move open at this level, not the game's 5)
 		if EVADE_AT > 0:
 			_data["moveOpens"][2] = EVADE_AT
@@ -256,7 +259,9 @@ static func with_parts(side: Array) -> Array:
 		if w == null:
 			continue
 		if is_meld(w):
-			out.append(w)
+			# (EVERY TWO RUNES MELD: one of those, with no twist and no looks of its own, is its two words: meld_any.gd)
+			if not MeldAny.is_any(w):
+				out.append(w)
 			out.append_array(parts_of(w))
 		elif is_rank(w):
 			out.append_array(parts_of(w))
@@ -289,7 +294,15 @@ static func meld_of(a: String, b: String) -> String:
 		var of: Array = M["of"][m]
 		if (of[0] == a and of[1] == b) or (of[0] == b and of[1] == a):
 			return m
+	# (EVERY TWO LEVEL 1 RUNES MELD, meld_any.gd: any two different words of the 28 that no named meld is made of)
+	if MeldAny.ON and is_base(a) and is_base(b):
+		return MeldAny.id_of(data(), a, b)
 	return ""
+
+
+## One of the 28 words found (a damage word or any other), not one made (melded or ranked).
+static func is_base(w: String) -> bool:
+	return data()["words"].has(w) and str(word(w)["kind"]) in ["damage", "shape"]
 
 
 ## Why two words cannot be melded, or "" if they can (melds.ts meldProblem, its switches as the game starts: RANK2, VOLT_MELDS,
@@ -301,6 +314,11 @@ static func meld_problem(a: String, b: String) -> String:
 		return "Rank II is the top, for now" if a == b else "A ranked word melds no further"
 	if is_meld(a) or is_meld(b):
 		return "A melded word melds no further"
+	# (EVERY TWO LEVEL 1 RUNES MELD, meld_any.gd: any two different words; two of one word, only a damage word, to its next rank)
+	if MeldAny.ON:
+		if a == b and str(word(a)["kind"]) != "damage":
+			return "Only a damage word ranks up"
+		return "" if meld_of(a, b) != "" else "These do not meld"
 	# (THE EIGHT ACROSS THE GROUPS: their two words meld, whatever their groups)
 	var m := meld_of(a, b)
 	if m != "" and data()["melds"]["eight"].has(m):
@@ -378,6 +396,10 @@ static func socket_problem(group: Array, w: String, most := 1) -> String:
 		return "No free socket"
 	if group.has(w):
 		return "Already there"
+	# (EVERY TWO RUNES MELD: a word already there in one of those, or one of those whose word is already there)
+	for x in group:
+		if x != null and (MeldAny.is_any(x) or MeldAny.is_any(w)) and parts_of(x).any(func(p): return parts_of(w).has(p)):
+			return "Already there"
 	if is_damage(w):
 		var n := 0
 		for x in group:
@@ -439,6 +461,11 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		return false
 	var meld = bent["meld"] if bent.get("meld") != null else meld_in(front)
 	var meld_behind = meld_in(behind)
+	# (EVERY TWO RUNES MELD: one of those has no twist of its own, meld_any.gd: it is its two words, and nothing more)
+	if MeldAny.is_any(meld):
+		meld = null
+	if MeldAny.is_any(meld_behind):
+		meld_behind = null
 	# (one enemy at a time: a blade. A word that makes "the hit" bigger gives these a splash.)
 	var single: bool = def["kind"] in ["melee", "projectile", "summon"]
 	var lines: Array = [def["desc"]]
@@ -462,7 +489,8 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	# and lightning set alone, by the move's own attribute; any other word by its own)
 	var grows_by := func(side: Array, w: String) -> float:
 		var m = meld_in(side)
-		var a: String = word_attr(m) if m != null and parts_of(m).has(w) else word_attr(w)
+		# (EVERY TWO RUNES MELD: in one of those each word grows with its own, meld_any.gd)
+		var a: String = word_attr(m) if m != null and parts_of(m).has(w) and not MeldAny.is_any(m) else word_attr(w)
 		# (POISON_DEX: poison grows with Dexterity, in a meld too)
 		if POISON_DEX and w == "poison":
 			a = word_attr("poison")

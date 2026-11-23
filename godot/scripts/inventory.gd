@@ -36,6 +36,7 @@ extends Control
 
 const Words := preload("res://scripts/words.gd")
 const FoeWords := preload("res://scripts/foe_words.gd")
+const MeldAny := preload("res://scripts/meld_any.gd")
 ## THE GAME'S LETTERS (engine/font.ts: pixel_font.gd), its normal and its small
 const PF := preload("res://scripts/pixel_font.gd")
 
@@ -183,6 +184,8 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_font = ThemeDB.fallback_font
 	_hud = JSON.parse_string(FileAccess.get_file_as_string("res://assets/hud/hud.json"))
+	# (EVERY TWO LEVEL 1 RUNES MELD: the words any two make, their names and colours: meld_any.gd)
+	MeldAny.add_hud(_hud, Words.data())
 	_hud_tex = load("res://assets/hud/hud.png")
 	_tal = TalentsPage.new(self, _hud["theme"], _hud["palette"])
 	visible = false
@@ -2385,6 +2388,8 @@ var wsmith := ""
 var meld_in: Array = [null, null]
 ## (ui/meld.ts: what melding is, RANK2 on)
 const WS_INTRO := "Two damage words and runedust go in; one word comes out. Two different words make a melded word, found by trying. Two of the same make that word a rank higher."
+## (EVERY TWO LEVEL 1 RUNES MELD, meld_any.gd: any two words go in)
+const WS_INTRO_ANY := "Two words and runedust go in; one word comes out. Any two different words make a melded word that does the work of both. Two of the same damage word make that word a rank higher."
 
 
 ## Opened at the wordsmith (town.gd): his half on its first page, nothing laid (main.ts: meldPage false, meldIn emptied).
@@ -2403,7 +2408,7 @@ func open_wordsmith() -> void:
 func _ws_layout() -> Dictionary:
 	var x0 := _hw() + 12.0
 	var w := _hw() - 24.0
-	var intro: Array = _wrap(WS_INTRO, w, 10)
+	var intro: Array = _wrap(WS_INTRO_ANY if MeldAny.ON else WS_INTRO, w, 10)
 	var dust_y := 42.0 + intro.size() * 13.0 + 6.0
 	var row_y := dust_y + 22.0
 	var gap := 16.0 * K
@@ -2436,6 +2441,13 @@ func _ws_problem(w: String) -> String:
 		return "Rank II is the top, for now"
 	if Words.is_meld(w):
 		return "A melded word melds no further"
+	# (EVERY TWO LEVEL 1 RUNES MELD: any word goes in; a second of one word, only a damage word's)
+	if MeldAny.ON:
+		if meld_in.has(w) and str(Words.word(w)["kind"]) != "damage":
+			return "Only a damage word ranks up"
+		if meld_in.find(null) < 0:
+			return "Both hollows are full"
+		return ""
 	# (VOLATILE'S MELDS: Volatile goes in too)
 	var volt := w == "volatile"
 	if str(Words.word(w)["kind"]) != "damage" and not volt:
@@ -2459,6 +2471,8 @@ func _ws_lay(w: String) -> String:
 
 ## The hint on a word's card while his half is melding (ui/meld.ts wordHint).
 func _ws_hint(w: String) -> String:
+	if MeldAny.ON and not Words.is_meld(w) and not Words.is_rank(w):
+		return "The wordsmith melds any two different words into one, or two of one damage word into its next rank." if str(Words.word(w)["kind"]) == "damage" else "The wordsmith melds any two different words into one."
 	if w == "volatile":
 		return "The wordsmith melds Volatile with a damage word into one."
 	if str(Words.word(w)["kind"]) == "damage":
@@ -2507,7 +2521,7 @@ func _ws_press(action: String, arg) -> void:
 				else:
 					_word = ""
 			else:
-				_say("Pick one of your damage words first, or drag it here")
+				_say("Pick one of your words first, or drag it here" if MeldAny.ON else "Pick one of your damage words first, or drag it here")
 		"ws_to_meld":
 			var no := _ws_lay(_word)
 			if no != "":
@@ -2630,7 +2644,7 @@ func _ws_side(blink: bool) -> void:
 			_text(Vector2(x0, yy), l, 10, DIM)
 			yy += 13.0
 	elif not reading and a == null and b == null:
-		_text(Vector2(x0, ty + 4), "Click a damage word of yours, then a hollow. Or drag it here.", 9, FAINT)
+		_text(Vector2(x0, ty + 4), "Click a word of yours, then a hollow. Or drag it here." if MeldAny.ON else "Click a damage word of yours, then a hollow. Or drag it here.", 9, FAINT)
 	# the button, and why it cannot be pressed yet
 	if why != "" and a != null and b != null:
 		_text(Vector2(br.position.x - 8.0 - _width(why, 10), br.position.y + 19), why, 10, BAD)

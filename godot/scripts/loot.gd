@@ -49,6 +49,7 @@ extends Node
 const Iso := preload("res://scripts/iso.gd")
 const Hero := preload("res://scripts/hero.gd")
 const Words := preload("res://scripts/words.gd")
+const MeldAny := preload("res://scripts/meld_any.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
 const Perils := preload("res://scripts/perils.gd")
 
@@ -419,6 +420,13 @@ func _ready() -> void:
 	sheet = load(DIR + "/icons.png")
 	for p in JSON.parse_string(FileAccess.get_file_as_string(DIR + "/icons.json")):
 		pics[p["key"]] = {"rect": Rect2(p["x"], p["y"], p["w"], p["h"]), "anchor": Vector2(p["ax"], p["ay"])}
+	# (EVERY TWO LEVEL 1 RUNES MELD, meld_any.gd: the stones of the words any two make, fused from their two words' stones, in rows
+	# under the sheet's own; and each one's colour, its first word's)
+	var anchor: Vector2 = pics["word:power"]["anchor"]
+	sheet = MeldAny.stones(sheet, Words.data(), func(w): return pics["word:" + w]["rect"] if pics.has("word:" + w) else null,
+		func(id, r): pics["word:" + id] = {"rect": r, "anchor": anchor})
+	for id in Words.data()["melds"].get("any", []):
+		_words["color"][id] = _words["color"].get(Words.data()["melds"]["of"][id][0], "#ffffff")
 	for s in EQUIP:
 		gear[s] = null
 	gear["mainhand"] = data["starter"].duplicate(true)
@@ -548,7 +556,8 @@ func spare() -> int:
 ## The words he holds, in the order the game lists them (types.ts WORD_IDS: his pouch on the gear screen).
 func held() -> Array:
 	var out: Array = []
-	for w in _words["order"]:
+	# (and after them the words any two make, in the game's order of words: meld_any.gd)
+	for w in _words["order"] + Words.data()["melds"].get("any", []):
 		if int(words.get(w, 0)) > 0:
 			out.append(w)
 	return out
@@ -1477,6 +1486,9 @@ func burn_options(w: String, it: Dictionary) -> Array:
 ## text and 687 MB once read whole, is read an option at a time as it is asked for (tools/godot_loot_split.mjs): which options a word
 ## has on each kind of piece (imbue.json `of`), and each option once, as its own line of text (`opts`), made a thing when first wanted.
 func imbue_options(w: String, it: Dictionary) -> Array:
+	# (EVERY TWO RUNES MELD: one of those's, made from its two words' own: _any_options)
+	if MeldAny.is_any(w):
+		return _any_options(w, it)
 	if _imbue.is_empty():
 		_imbue = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/imbue.json"))
 	var nums: Array = _imbue["of"].get(w, {}).get("%s:%d" % [it["slot"], int(it["ilvl"])], [])
@@ -1506,6 +1518,118 @@ func imbue_options(w: String, it: Dictionary) -> Array:
 
 func _group(stat: String) -> String:
 	return _words["groups"].get(stat, stat)
+
+
+## EVERY TWO LEVEL 1 RUNES MELD (meld_any.gd): what one of those becomes on a piece of that kind and level, as the game makes a
+## melded word's (items.ts imbueOptions): each option of its first word with each of its second's, so long as the two are not of a
+## kind; each three quarters of what its word gives alone (MELD_GEAR_STRENGTH), rolled on its own. Made when first asked for.
+var _any_opts := {}
+
+
+func _any_options(w: String, it: Dictionary) -> Array:
+	var key := "%s|%s:%d" % [w, it["slot"], int(it["ilvl"])]
+	if _any_opts.has(key):
+		return _any_opts[key]
+	var of: Array = Words.parts_of(w)
+	var a: Array = imbue_options(of[0], it).map(func(o): return _scaled(o, MeldAny.GEAR))
+	var b: Array = imbue_options(of[1], it).map(func(o): return _scaled(o, MeldAny.GEAR))
+	var out: Array = []
+	for x in a:
+		for y in b:
+			if _group(str(x["stat"])) == _group(str(y["stat"])):
+				continue
+			var o: Dictionary = x.duplicate()
+			o["also"] = y["stat"]
+			o["alsoRolls"] = y["rolls"]
+			o["range"] = "%s and %s" % [x.get("range", ""), y.get("range", "")]
+			out.append(o)
+	if out.is_empty():
+		out = a
+	_any_opts[key] = out
+	return out
+
+
+## A number of a property as `k` of itself (items.ts roundStat, the table's own steps): a property counted in whole numbers stays
+## whole, never under one; one counted in tenths (`tenths`: Life on Hit) to a tenth, never under one.
+static func _scale_value(v: float, k: float, tenths := false) -> float:
+	if not tenths:
+		return maxf(1.0 if v > 0.0 else 0.0, roundf(v * k))
+	return maxf(0.1, roundf(v * k * 10.0 + 0.0001) / 10.0)
+
+
+static var _num_re: RegEx
+
+
+## Text with its numbers shown anew: each number, in order, matched to the next of `olds` it shows (as itself, or a tenth or a
+## hundredth of it: "+3.0% Cooldown Recovery" is 30), written as the same share of the next of `news`, as many places as it had.
+static func _retext(s: String, olds: Array, news: Array) -> String:
+	if _num_re == null:
+		_num_re = RegEx.create_from_string("\\d+(\\.\\d+)?")
+	var out := ""
+	var at := 0
+	var k := 0
+	for m in _num_re.search_all(s):
+		if k >= olds.size():
+			break
+		var t := float(m.get_string())
+		var dec := maxi(0, m.get_string(1).length() - 1)
+		var j := -1
+		for jj in 4:
+			if absf(t - float(olds[k]) / pow(10.0, jj)) < 0.0001:
+				j = jj
+				break
+		if j < 0:
+			continue
+		var v: float = float(news[k]) / pow(10.0, j)
+		out += s.substr(at, m.get_start() - at) + (("%." + str(dec) + "f") % v if dec > 0 else str(int(roundf(v))))
+		at = m.get_end()
+		k += 1
+	return out + s.substr(at)
+
+
+## An option of the table (imbue.json) as `k` of itself: each of its sizes, its lines and its range; sizes that come to the same
+## made one, their chances added.
+static func _scaled(o: Dictionary, k: float) -> Dictionary:
+	var out: Dictionary = o.duplicate()
+	var rolls: Array = []
+	var at := {}
+	var lo := INF
+	var hi := -INF
+	var lo2 := INF
+	var hi2 := -INF
+	# (a property counted in tenths: any of its sizes not a whole number)
+	var tenths := {}
+	for r in o["rolls"]:
+		for m in r[1]:
+			if not is_equal_approx(float(m[1]), roundf(float(m[1]))):
+				tenths[m[0]] = true
+	for r in o["rolls"]:
+		var olds: Array = []
+		var news: Array = []
+		var mods: Array = []
+		for m in r[1]:
+			var v := _scale_value(float(m[1]), k, tenths.has(m[0]))
+			olds.append(float(m[1]))
+			news.append(v)
+			mods.append([m[0], v])
+		lo = minf(lo, float(r[1][0][1]))
+		hi = maxf(hi, float(r[1][r[1].size() - 1][1]))
+		lo2 = minf(lo2, news[0])
+		hi2 = maxf(hi2, news[news.size() - 1])
+		var key := str(mods)
+		if at.has(key):
+			rolls[at[key]][0] = float(rolls[at[key]][0]) + float(r[0])
+			continue
+		var nr: Array = [r[0], mods]
+		for q in range(2, r.size()):
+			nr.append((r[q] as Array).map(func(l): return _retext(str(l), olds, news)))
+		at[key] = rolls.size()
+		rolls.append(nr)
+	out["rolls"] = rolls
+	for f in ["range", "rangeMana"]:
+		if o.has(f):
+			out[f] = _retext(str(o[f]), [lo, hi], [lo2, hi2])
+	return out
 
 
 ## Why a word cannot be burned into that piece, or "" if it can (game.ts imbueProblem; items.ts imbueProblem).
@@ -1578,7 +1702,7 @@ func burn(w: String, where) -> String:
 	sfx.play("imbue")
 	burned = {"word": w, "item": it["name"], "text": ", ".join(lines_of(im))}
 	# (WORDMELDING: what a made word becomes on gear is known from now on: game.ts learn(word, 'gear'))
-	if Words.made().has(w):
+	if Words.made().has(w) or MeldAny.is_any(w):
 		_know(w)["gear"] = true
 	return ""
 

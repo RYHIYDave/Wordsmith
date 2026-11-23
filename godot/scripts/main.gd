@@ -2947,6 +2947,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await _foewords_shots(hero, dir)
 		get_tree().quit()
 		return
+	# (EVERY TWO LEVEL 1 RUNES MELD: check_meld_any.gd)
+	if _arg("only") == "meldany":
+		await CheckMeldAny.new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (WORDMELDING: the wordsmith's meld page: check_melds.gd)
 	if _arg("only") == "meld":
 		await CheckMelds.new(self, hero).page(dir)
@@ -3653,6 +3658,7 @@ const W_LIFE := 1000000.0
 const CheckWords610 := preload("res://scripts/check_words610.gd")
 ## (WORDMELDING: the words melding makes, in the fight, and the wordsmith's meld page: check_melds.gd)
 const CheckMelds := preload("res://scripts/check_melds.gd")
+const CheckMeldAny := preload("res://scripts/check_meld_any.gd")
 ## (where the six stand from him: tiles before him, tiles to his side)
 const W_FORM := [[1.2, 0.0], [1.2, 0.9], [2.1, -0.5], [3.8, 0.4], [5.2, -0.6], [9.5, 0.5]]
 var _w_pack: Array = []
