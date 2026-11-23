@@ -665,7 +665,7 @@ func on_kill(m) -> void:
 			_word(at, w)
 	# (THE ROYAL CARDS, the High City's: one a royal touched drops that royal's card: game.ts kill)
 	var r: String = str(m.get("royal")) if m.get("royal") != null else ""
-	if r != "" and royal_floor():
+	if r != "" and royal_floor() and (not ROYAL_ONE_A_PACK or _last_of_pack(m)):
 		_card(at, r)
 	# (ENDLESS_KEY: the boss of an endless level on floor 5, 10, 15 or 20, his shard of the tablet: shards.gd)
 	if main != null and main.get("shards") != null:
@@ -2652,6 +2652,21 @@ func withdraw_word(w: String) -> String:
 # THE ROYAL CARDS (game/royal_cards.ts; act3/royal_cards.gd): a royal's card dropped, taken, and hands handed in to the stranger.
 
 const RoyalCards := preload("res://scripts/act3/royal_cards.gd")
+
+
+## ONE CARD A PACK (his words, 23 Nov 2026: “we want the royal card to only drop one card per pack of monsters”): a pack a royal
+## touched drops its one card as the last of it falls, not one from each. Off: one from each, as the browser game.
+static var ROYAL_ONE_A_PACK := true
+
+
+## Whether `m` is the last of its pack a royal touched still standing (one alone is its own pack).
+func _last_of_pack(m) -> bool:
+	if int(m.pack_id) < 0 or main == null or main._monsters == null:
+		return true
+	for o in main._monsters.list:
+		if is_instance_valid(o) and o != m and not o.dead and int(o.pack_id) == int(m.pack_id) and str(o.royal) == str(m.royal):
+			return false
+	return true
 
 
 ## Whether this floor's packs may be touched by the royals: a floor of the High City (royalFloor).

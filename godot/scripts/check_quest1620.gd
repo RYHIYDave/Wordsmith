@@ -161,11 +161,17 @@ func _touched() -> void:
 	_line(touched.size() > 0 and royals.size() >= 2, "floor 16: %d of its %d touched by a royal, as the game spawns them: %s" % [touched.size(), whole, royals])
 	if touched.is_empty():
 		return
-	var o = touched[0]
+	# (the nearest touched one that has pack-mates touched too, its pack kept: ONE CARD A PACK)
+	var mates_of := func(x) -> Array: return touched.filter(func(q): return q != x and q.pack_id >= 0 and q.pack_id == x.pack_id and q.royal == x.royal)
+	var o = null
 	for p in touched:
-		if p.world.distance_to(h.world) < o.world.distance_to(h.world):
+		if mates_of.call(p).is_empty():
+			continue
+		if o == null or p.world.distance_to(h.world) < o.world.distance_to(h.world):
 			o = p
-	await _alone([o])
+	if o == null:
+		o = touched[0]
+	await _alone([o] + mates_of.call(o))
 	o.seen = true
 	o.state = "sleep"
 	h.world = M._spot_near(o.world, 2.6, h.world)
@@ -174,6 +180,14 @@ func _touched() -> void:
 	await _snap("a_touched_one_wearing_its_crest")
 	_line(crest, "one touched by the %s wears its crest over its head (%s)" % [o.royal, crest])
 	var r: String = o.royal
+	# (ONE CARD A PACK, his word: loot.gd ROYAL_ONE_A_PACK: its pack-mates fall first and drop none; the last of them, the card)
+	var mates: Array = M._monsters.list.filter(func(q): return is_instance_valid(q) and q != o and not q.dead and q.pack_id == o.pack_id and q.royal == r)
+	var drops_m: int = M.loot._drops.size()
+	for q in mates:
+		q.dead = true
+		M.loot.on_kill(q)
+	var mate_cards: int = M.loot._drops.slice(drops_m).filter(func(d): return d["kind"] == "card").size()
+	_line(mate_cards == 0, "one card a pack: %d of its pack (the %s's) fall first, and drop %d cards" % [mates.size(), r, mate_cards])
 	var drops0: int = M.loot._drops.size()
 	o.dead = true
 	M.loot.on_kill(o)
