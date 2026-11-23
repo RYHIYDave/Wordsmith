@@ -32,6 +32,8 @@
 extends RefCounted
 
 const L := preload("res://scripts/fx_looks.gd")
+## (THE STORM CLOUDS MADE AGAIN, behind its switch: fx_cloud.gd)
+const Cloud := preload("res://scripts/fx_cloud.gd")
 const FILE := "res://assets/words/melds3.json"
 
 ## Each melded word's colours, darkest to brightest (MELD_RAMP: the ten's own, Volatile's five's and the eight's stand-ins);
@@ -1590,6 +1592,17 @@ func _cloud(c, z: Dictionary, t: float, cols: PackedColorArray, lit, high: float
 	var wide := minf(1.6, z["r"]) * 17.0
 	var beat := floori(t * flick)
 	var struck := floori(_h(seed, beat, 5) * puffs) if lit != null and _h(seed, beat, 4) < 0.45 else -1
+	if Cloud.ON:
+		# (one cloud, its billows lit from the upper left, the lightning inside it: fx_cloud.gd)
+		var rect := func(x: float, y: float, w: float, h: float, col: Color, a: float) -> void:
+			_alpha(a)
+			_style(col)
+			_fr(c, x, y, w, h)
+		var C := [cols[0].darkened(0.35), cols[0], cols[1], cols[2], cols[2].lerp(Color.WHITE, 0.35)]
+		var LL: Array = [lit[0], lit[1], lit[2]] if lit != null else []
+		Cloud.draw(rect, cx, cy, wide, t, seed, born, going, alpha * fade, C, LL, (float(struck) + 0.5) / float(puffs) if struck >= 0 else -1.0, 0.0)
+		_alpha(1.0)
+		return
 	_alpha(alpha * fade)
 	for i in puffs:
 		var churn := t * (0.7 + _h(i, seed, 6) * 0.6) + i * 2.1

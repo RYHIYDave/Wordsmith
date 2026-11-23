@@ -21,6 +21,8 @@
 extends RefCounted
 
 const L := preload("res://scripts/fx_looks.gd")
+## (THE STORM CLOUDS MADE AGAIN, behind its switch: fx_cloud.gd)
+const Cloud := preload("res://scripts/fx_cloud.gd")
 const Words3 := preload("res://scripts/fx_words3.gd")
 ## (m3: the patches a melded word lays are drawn as its own look: fx_melds3.gd; render.ts ownsZone)
 const Melds3 := preload("res://scripts/fx_melds3.gd")
@@ -375,6 +377,13 @@ func draw_air(c: CanvasItem) -> void:
 		var beat := floori(t * 12.0)
 		var struck := int(L.hash2(seed, beat, 5) * puffs) if L.hash2(seed, beat, 4) < 0.4 else -1
 		var al := (0.75 if small else 0.92) * fade
+		if Cloud.ON:
+			# (one cloud, its billows lit from the upper left, the lightning inside it: fx_cloud.gd)
+			var rect := func(x: float, y: float, w: float, h: float, col: Color, a: float) -> void: fx.rect(c, x, y, w, h, Color(col, a))
+			var lt3 := Color(P["lt3"])
+			Cloud.draw(rect, cx, cy, wide, t, seed, born, going, al, [Color(P["st1"]), Color(P["st2"]), Color(P["st3"]), Color(P["st5"]), Color(P["st7"])],
+				[lt3.lerp(Color(P["st5"]), 0.2), lt3, Color(P["lt4"])], (float(struck) + 0.5) / float(puffs) if struck >= 0 else -1.0, 0.0 if small else 30.0)
+			continue
 		for i in puffs:
 			var churn := t * (0.7 + L.hash2(i, v, 6) * 0.6) + i * 2.1
 			var ox := ((L.hash2(i, v, 1) - 0.5) * wide * 2.0 + sin(churn) * 2.5) * (0.35 + 0.65 * born)

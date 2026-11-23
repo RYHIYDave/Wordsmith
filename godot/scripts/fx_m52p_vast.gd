@@ -428,6 +428,8 @@ func _puff(x: float, y: float, s: float, R: PackedColorArray, a: float) -> void:
 
 ## A storm cloud `z` px over (x, y), `rt` tiles across: heaped puffs, dark under and lit on top, lightning flickering in it and
 ## lighting it, rain slanting down from it.
+## (THE STORM CLOUDS MADE AGAIN, behind its switch: fx_cloud.gd)
+const Cloud := preload("res://scripts/fx_cloud.gd")
 const STORM := [Color("#181a28"), Color("#262a40"), Color("#3a3e5a"), Color("#565c7e"), Color("#7c82a6")]
 
 
@@ -443,6 +445,14 @@ func _cloud(x: float, y: float, z: float, rt: float, R: PackedColorArray, sd: in
 		_ga(0.55 * fade * (1.0 - v * 0.5))
 		_fs(R[3] if i % 3 else ICE[4])
 		_fill(_ri(rx - v * 5.0), _ri(cy + 5.0 + v * (z - 6.0)), 1, 4)
+	if Cloud.ON:
+		# (one cloud, its billows lit from the upper left, the lightning inside it: fx_cloud.gd)
+		var rect := func(x: float, y: float, w: float, h: float, col: Color, al: float) -> void:
+			_ga(al)
+			_fs(col)
+			_fill(x, y, w, h)
+		Cloud.draw(rect, cx, cy - 4.0, w, t, sd, 1.0, 1.0, 0.92 * fade, [STORM[0], STORM[1], STORM[2], STORM[3], STORM[4]],
+			[R[3].lerp(STORM[3], 0.15), R[4], Color.WHITE], _rh(sd + 1, int(t * 12.0)) if lit else -1.0, 0.0)
 	# (the cloud: each puff a rounded heap, its underside dark, its top lit)
 	var puffs: Array = []
 	for i in 8:
@@ -450,7 +460,7 @@ func _cloud(x: float, y: float, z: float, rt: float, R: PackedColorArray, sd: in
 		var py := cy - sin(float(i) / 7.0 * PI) * 6.0 + (_rh(sd, i + 70) - 0.5) * 3.0 + sin(t * 1.5 + i) * 0.8
 		var s := 5.0 + 4.0 * _rh(sd, i + 80) + sin(float(i) / 7.0 * PI) * 3.0
 		puffs.append(Vector3(px, py, s))
-	for layer in 3:
+	for layer in (0 if Cloud.ON else 3):
 		for p: Vector3 in puffs:
 			var s := p.z
 			var col: Color = [STORM[0], STORM[2], STORM[3]][layer]

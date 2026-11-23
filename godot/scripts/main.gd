@@ -654,6 +654,9 @@ func _ready() -> void:
 	if _arg("defuniques") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_UNIQUES = false
 	# (THE FIFTEEN'S OWN PICTURES, on at his yes: `--defart=0` to run without them)
+	# (THE STORM CLOUDS MADE AGAIN, off until his yes to their pictures: `--clouds2=1` shows them, fx_cloud.gd)
+	if _arg("clouds2") != "":
+		preload("res://scripts/fx_cloud.gd").ON = _arg("clouds2") == "1"
 	if _arg("defart") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_ART = false
 	# (HIS CURSE THROWN, on at his yes to its pictures: `--curse=round` to run without it: heroes/warlock.gd CURSE_RANGED)
