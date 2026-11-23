@@ -1467,7 +1467,7 @@ func _deliver_strike(from: Vector2, way: Vector2, frac: float, primary: bool) ->
 		if k == 0:
 			_strike(0, from, way, each * m52.blow(0, 0), 0, echo)
 		else:
-			_after(0.13 * k, func() -> void: _strike(0, from if echo else world, way, each * m52.blow(0, k), k, echo))
+			_after(0.13 * k * m52.gap_k(0), func() -> void: _strike(0, from if echo else world, way, each * m52.blow(0, k), k, echo))
 	if primary:
 		_boons(0)
 		if r["echo"] > 0.0:
@@ -1530,7 +1530,7 @@ func _whirl1_cut(at: Vector2, frac: float, echo: bool) -> void:
 		if k == 0:
 			_blast(1, at, rad, each, "slam", true, -6.0, 0, echo)
 		else:
-			_after(float(WHIRL1["twin"]) * k, func() -> void: _blast(1, at if echo else world, rad * 1.15, each * m52.blow(1, k), "slam", false, -8.0, k, echo))
+			_after(float(WHIRL1["twin"]) * k * m52.gap_k(1), func() -> void: _blast(1, at if echo else world, rad * 1.15, each * m52.blow(1, k), "slam", false, -8.0, k, echo))
 
 
 func _begin_whirl() -> void:
@@ -1629,7 +1629,7 @@ func _bite(at: Vector2, way: Vector2, frac: float, echo: bool, leaves: bool) -> 
 		if k == 0:
 			_blast(1, at, rad, each, "whirl", leaves, -8.0, 0, echo)
 		else:
-			_after(0.12 * k, func() -> void: _blast(1, at if echo else world, rad, each * m52.blow(1, k), "whirl", false, -8.0, k, echo))
+			_after(0.12 * k * m52.gap_k(1), func() -> void: _blast(1, at if echo else world, rad, each * m52.blow(1, k), "whirl", false, -8.0, k, echo))
 
 
 # --- Lunge ---
@@ -1867,6 +1867,10 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 			fx.float_text(world.x, world.y, "DODGE", Color("#7af8f0"), false, 34.0)
 		sfx.play("swing", linear_to_db(0.35))
 		last_blow = {"raw": raw, "el": el, "words": words, "dodged": true, "dmg": 0.0}
+		return
+	# (THE LAST FLOOR 1–10 MELDS: Parry, his brief shell or its ward, and nothing gets through: melds46_rules.gd)
+	if m52.parried(by):
+		last_blow = {"raw": raw, "el": el, "words": words, "blocked": true, "dmg": 0.0}
 		return
 	# (THE 52 DESIGNED MELDS: Hemlock and Static, a blow on his shield answered: melds52_rules.gd)
 	m52.struck_him(src)

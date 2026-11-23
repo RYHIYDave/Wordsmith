@@ -69,8 +69,13 @@ var _him_burn := 0.0
 var _him_poison := 0.0
 
 
+## (THE LAST FLOOR 1–10 MELDS, the 46 after these: their twists, handed on to from each moment here: melds46_rules.gd)
+var x
+
+
 func _init(hero) -> void:
 	h = hero
+	x = preload("res://scripts/melds46_rules.gd").new(hero, self)
 
 
 static func on() -> bool:
@@ -214,11 +219,16 @@ func used(i: int, echo: bool, at := Vector2.INF) -> void:
 			h.haste = maxf(h.haste, float(F["haste"]))
 			h.haste_t = maxf(h.haste_t, float(F["hasteSecs"]))
 			_tell({"id": "flurry", "what": "gust", "x": h.world.x, "y": h.world.y})
+	x.used(i, echo, at)
 
 
 # --- a hit ---
 
 func crit(m, i: int, c: bool, quiet: bool) -> bool:
+	return x.crit(m, i, _crit52(m, i, c, quiet), quiet)
+
+
+func _crit52(m, i: int, c: bool, quiet: bool) -> bool:
 	var f := fid(i)
 	match f:
 		"duelist":
@@ -288,7 +298,7 @@ func more(m, i: int, quiet: bool) -> float:
 	# DUELIST behind: the one it marked takes more from everything until the mark is spent
 	if m.mark_t > 0.0 and str(m.m52.get("mark", "")) == "duelist":
 		k *= 1.0 + float(_tune("duelist")["more"])
-	return k
+	return k * x.more(m, i, quiet)
 
 
 func heal_k(m, i: int) -> float:
@@ -309,13 +319,14 @@ func heal_k(m, i: int) -> float:
 			_tell({"id": "secondwind", "what": "wind", "x": h.world.x, "y": h.world.y, "i": i})
 		"leech2":
 			k *= float(_tune("leech2")["k"])
-	return k
+	return k * x.heal_k(m, i)
 
 
 ## After hit `dmg` of move `i` has landed on `m` (`was_*`: what it was before this hit).
 func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burning: bool, was_chilled: bool, was_frozen: bool, was_shocked: bool) -> void:
 	var f := fid(i)
 	var r: Dictionary = h.loadout.r(i)
+	x.struck(m, i, dmg, c, at, quiet, was_frozen)
 	if f == "":
 		return
 	if f == "haymaker" and not quiet and time - float(_throttle.get("haymaker", -9.0)) > 0.2:
@@ -503,6 +514,7 @@ func _quake(at: Vector2, i: int) -> void:
 func killed(m, i: int) -> void:
 	if i < 0 or i > 2:
 		return
+	x.killed(m, i)
 	var f := fid(i)
 	var b := bid(i)
 	var r: Dictionary = h.loadout.r(i)
@@ -574,9 +586,11 @@ func marked(m, i: int) -> void:
 	if b == "precise2":
 		_tag(m)
 		m.m52["mark2"] = 1
+	x.marked(m, i)
 
 
 func mark_spent(m) -> void:
+	x.mark_spent(m)
 	var b: String = str(m.m52.get("mark", ""))
 	if b == "needle" and m.poison_t > 0.0:
 		m.poison_dps *= float(_tune("needle")["double"])
@@ -617,6 +631,7 @@ func arc_pick(near: Array, i: int) -> Array:
 
 
 func arc_struck(o, i: int) -> void:
+	x.arc_struck(o, i)
 	if fid(i) == "seeker":
 		_tell({"id": "seeker", "what": "seek", "x": o.world.x, "y": o.world.y, "m": o})
 	if fid(i) == "conduit":
@@ -735,8 +750,9 @@ func wake(i: int, at: Vector2, rad: float, from: int) -> void:
 				if str(z["kind"]) == "cracks":
 					z["r"] = float(z["r"]) * float(_tune("heavy2")["wide"])
 	for z in laid:
-		if str(z["kind"]) in ["ward", "cracks", "burn", "ice", "storm", "venom"]:
+		if str(z["kind"]) in ["ward", "cracks", "burn", "ice", "storm", "venom", "rune"]:
 			_wards.append(z)
+	x.wake(i, laid, b)
 
 
 # --- what goes on ---
@@ -817,6 +833,7 @@ func step(dt: float) -> void:
 			o.set_alight(maxf(1.0, h.avg_hit(0, 1.0) * float(_tune("brand")["burn"]) / 3.0), maxf(o.burn_t, 0.5))
 	_grounds(dt)
 	_on_him()
+	x.step(dt)
 
 
 ## (ON HIM, a monster's melds: Rekindle's burn lights again once as it goes out; Flashfire's flares round him; Bloat's poison
@@ -940,6 +957,8 @@ func _grounds(dt: float) -> void:
 						var to: Vector2 = at.move_toward(best.world, 0.8 * dt)
 						z["x"] = to.x
 						z["y"] = to.y
+			_:
+				x.ground(z, id, at, rad, tick, dt)
 	for z in gone:
 		_wards.erase(z)
 
@@ -1012,6 +1031,7 @@ func status_end(m, what: String) -> void:
 
 ## A blow on him while his shield holds (hero.gd hurt_by): HEMLOCK poisons its maker; STATIC strikes it with an arc.
 func struck_him(src) -> void:
+	x.struck_him(src)
 	if src == null or not is_instance_valid(src) or src.dead or not _shielded():
 		return
 	if any_has("hemlock"):
@@ -1044,7 +1064,7 @@ func pace() -> float:
 		k *= 1.0 + tail_k / 100.0
 	if blink_t > 0.0:
 		k *= 1.0 + blink_k / 100.0
-	return k
+	return k * x.pace()
 
 
 func dodge() -> float:
@@ -1096,6 +1116,7 @@ func haste_k(i: int) -> Array:
 
 ## A life orb taken: BLOODLUST behind, Power's might; SECOND WIND behind, a burst of speed.
 func orb_taken() -> void:
+	x.orb_taken()
 	for i in 3:
 		match bid(i):
 			"bloodlust":
@@ -1113,6 +1134,8 @@ func orb_taken() -> void:
 
 ## JUGGERNAUT: at a full frenzy, Heavy no slower.
 func rate_k() -> float:
+	if x.rate_k() != 1.0:
+		return x.rate_k()
 	if any_has("juggernaut") and h.frenzy > 0:
 		var slower: float = float(Words.data()["heavy"]["slower"])
 		return 1.0 + (slower - 1.0) * float(h.frenzy) / float(_frenzy_most())
@@ -1121,15 +1144,26 @@ func rate_k() -> float:
 
 ## HAYMAKER: less wind-up before the blow.
 func windup_k(i: int) -> float:
-	return float(_tune("haymaker")["windup"]) if fid(i) == "haymaker" else 1.0
+	return (float(_tune("haymaker")["windup"]) if fid(i) == "haymaker" else 1.0) * x.windup_k(i)
 
 
 ## FLURRY behind: its repeat sooner.
 func echo_k(i: int) -> float:
-	return float(_tune("flurry")["sooner"]) if bid(i) == "flurry" else 1.0
+	return (float(_tune("flurry")["sooner"]) if bid(i) == "flurry" else 1.0) * x.echo_k(i)
+
+
+## STACCATO: Twin's blows with no pause between (hero.gd: the gap between a use's blows).
+func gap_k(i: int) -> float:
+	return x.gap_k(i)
+
+
+## PARRY: nothing gets through his brief shell or its ward (hero.gd hurt_by).
+func parried(at: Vector2) -> bool:
+	return x.parried(at)
 
 
 func forget() -> void:
+	x.forget()
 	_later.clear()
 	webs.clear()
 	links.clear()

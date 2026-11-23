@@ -1183,6 +1183,17 @@ func _drop(kind: String, at: Vector2, pic: String, extra: Dictionary) -> void:
 	_drops.append(d)
 
 
+## (THE LAST FLOOR 1–10 MELDS: Lifeline behind, its life orbs fly straight to him, `speed` tiles a second.) True if any flew.
+func pull_orbs(dt: float, speed: float) -> bool:
+	var any := false
+	for d in _drops:
+		if d["kind"] == "orb" and float(d["age"]) >= WAIT and hero != null:
+			d["at"] = (d["at"] as Vector2).move_toward(hero.world, speed * dt)
+			d["node"].position = Iso.to_screen(d["at"].x, d["at"].y)
+			any = true
+	return any
+
+
 func _pic_tex(key: String) -> AtlasTexture:
 	var t := AtlasTexture.new()
 	t.atlas = sheet

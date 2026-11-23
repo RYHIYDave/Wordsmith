@@ -168,7 +168,7 @@ static func _front(id: String, r: Dictionary, loc: Dictionary) -> void:
 			r["stun"] = float(r["stun"]) * float(t["stun"])
 		"daze":
 			r["stun"] = float(r["stun"]) * float(t["stun"])
-		"cataclysm", "miasma", "glacier", "inferno", "stormfront", "gale", "earthquake":
+		"cataclysm", "miasma", "glacier", "inferno", "stormfront", "gale", "earthquake", "bloodtide", "blastwave", "bullseye", "aftermath", "whipcrack":
 			_wider(loc, r, float(t["wider"]))
 
 

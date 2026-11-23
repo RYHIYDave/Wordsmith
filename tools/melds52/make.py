@@ -7,6 +7,9 @@ from PIL import Image
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 G = ROOT + '/godot/assets/'
 RUNES = json.load(open(ROOT + '/docs/mockups/meld_runes/runes.json'))
+# (the last floor 1-10 group: his doc The Last Floor 1-10 Melds and its runes, "Good" to both, 23 Nov 2026)
+RUNES2 = json.load(open(ROOT + '/docs/mockups/meld_runes2/runes.json'))
+RUNES.update(RUNES2)
 W = json.load(open(G + 'words/words.json'))['words']
 COLOR = json.load(open(G + 'loot/items.json'))['words']['color']
 NAME_ID = {'Power': 'power', 'Poison': 'poison', 'Frost': 'frost', 'Flame': 'fire', 'Lightning': 'lightning', 'Swift': 'swift',
@@ -43,6 +46,7 @@ def parse(path):
 D = {}
 D.update(parse(ROOT + '/tools/melds52/docs_twin.txt'))
 D.update(parse(ROOT + '/tools/melds52/docs610.txt'))
+D.update(parse(ROOT + '/tools/melds52/docs_last110.txt'))
 missing = [k for k in list(RUNES) + [w + '2' for w in RANKS] if k not in D or 'front' not in D[k] and 'both' not in D[k]]
 assert not missing, missing
 
@@ -92,6 +96,9 @@ for k in order:
         page[k] = {'gear': ['Weapon, gloves, ring, amulet: %s.' % g[0], 'Off hand, helm, chest, belt, boots: %s.' % g[1]], 'note': 'Half as strong again as %s.' % W[a]['name']}
     else:
         ga, gb = GEAR[a], GEAR[b]
+        # (two runes that give the same (Twin and Precise): each paired with the other's second, so the same never comes twice)
+        if ga[0] == gb[0]:
+            gb = (gb[1], gb[0])
         page[k] = {'gear': ['Weapon, gloves, ring, amulet: %s, with %s.' % (ga[0], gb[0]), 'Off hand, helm, chest, belt, boots: %s, with %s.' % (ga[1], gb[1])],
                    'note': 'One property of each, each a quarter weaker than alone. Two of a kind never pair.'}
 
@@ -106,6 +113,7 @@ os.chdir(ROOT + '/docs/mockups/meld_runes')
 src = open('render.py').read().split("if __name__=='__main__':")[0]
 env = {}
 exec(src, env)
+env['R'].update(RUNES2)
 def rank_stone(w):
     im = env['base'](w).copy()
     c = env['hexc'](COLOR[w]); gl = tuple(int(c[i] + (255 - c[i]) * 0.55) for i in range(3)) + (255,)

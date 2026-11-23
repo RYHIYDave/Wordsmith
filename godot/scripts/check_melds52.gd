@@ -18,25 +18,43 @@ var bad: Array = []
 const FRONT := {"onslaught": "onslaught:second", "viper": "viper:bite", "flashfreeze": "flashfreeze:freeze", "aftershock": "aftershock:burst",
 	"flurry": "flurry:stack", "quickdraw": "quickdraw:draw", "momentum": "momentum:build", "tailwind": "tailwind:gust", "blink": "blink:blink",
 	"earthquake": "earthquake:wave", "gale": "gale:blow", "marrow": "marrow:drink", "secondwind": "secondwind:wind", "pressurepoint": "pressurepoint:point",
-	"concussion": "concussion:boom", "quickfuse": "quickfuse:pop"}
+	"concussion": "concussion:boom", "quickfuse": "quickfuse:pop",
+	# (the last floor 1-10 group)
+	"hornet": "hornet:barb", "tempo": "tempo:beat", "staccato": "staccato:tick", "ripple": "ripple:ripple", "reverb": "reverb:ring",
+	"rapier": "rapier:flick", "ambush": "ambush:glint", "bullseye": "bullseye:ring", "aftermath": "aftermath:smoke", "whipcrack": "whipcrack:crack",
+	"lamprey": "lamprey:drink", "cluster": "cluster:bomblets", "bloodbloom": "bloodbloom:bloom", "mayhem": "mayhem:spark", "timebomb": "timebomb:tick",
+	"blastwave": "blastwave:wave", "transfusion": "transfusion:drip", "charge": "charge:ram", "mire": "mire:mud", "anvil": "anvil:sparks",
+	"minefield": "minefield:mine"}
 const BEHIND := {"flashfreeze": "flashfreeze:sheet", "aftershock": "aftershock:quake", "gale": "gale:gust", "flurry": "flurry:gust",
-	"duelist": "duelist:mark", "needle": "needle:mark", "brand": "brand:mark", "seeker": "seeker:mark", "quickdraw": "quickdraw:mark"}
+	"duelist": "duelist:mark", "needle": "needle:mark", "brand": "brand:mark", "seeker": "seeker:mark", "quickdraw": "quickdraw:mark",
+	# (the last floor 1-10 group)
+	"staccato": "staccato:quick", "ripple": "ripple:wide", "timebomb": "timebomb:wait", "blastwave": "blastwave:wide", "sanctuary": "sanctuary:ward",
+	"parry": "parry:ward", "aegis": "aegis:wide", "aftermath": "aftermath:linger", "whipcrack": "whipcrack:snap", "spree": "spree:two",
+	"fury": "fury:hold", "lancet": "lancet:mark", "vendetta": "vendetta:mark", "ambush": "ambush:mark",
+	"doubletap": "doubletap:marks", "bullseye": "bullseye:marks"}
 
 
 ## (whose twist is seen on a kill, or on one stunned already)
-const KILL := ["quickfuse", "concussion", "smoulder"]
+const KILL := ["quickfuse", "concussion", "smoulder", "cluster", "bloodbloom", "mayhem", "timebomb", "blastwave", "minefield"]
 ## (whose twist wants one alone, certain criticals, a frenzy built up: the film makes it so)
 const SOLO := ["duelist"]
 ## (seen only as he moves: him darting aside after each blow in the film)
-const MOVES := ["blink", "tailwind"]
-const SHIELD := ["bulwark", "hemlock", "cinderward", "static", "windward", "fortress"]
-const CRITS := ["needle", "brand", "seeker"]
-const FRENZY := ["berserk", "fever", "whiteout", "overcharge", "blur", "juggernaut"]
+const MOVES := ["blink", "tailwind", "glide", "firewalk", "quicksilver", "charge"]
+## (seen only in a burst of speed: him given one for the film)
+const HASTE := ["onrush", "hornet", "firewalk", "quicksilver", "charge", "glide"]
+## (seen only below half life)
+const LOW := ["lifeline"]
+## (seen only on one brought low but not killed: the pack made tough and low)
+const TOUGH := ["hairtrigger"]
+const SHIELD := ["bulwark", "hemlock", "cinderward", "static", "windward", "fortress", "redoubt", "carapace", "minefield", "riposte", "shieldwall", "sanctuary", "parry", "aegis"]
+const CRITS := ["needle", "brand", "seeker", "doubletap", "lancet", "detonator", "vendetta"]
+const FRENZY := ["berserk", "fever", "whiteout", "overcharge", "blur", "juggernaut", "feedingfrenzy", "mayhem", "rapier", "shieldwall", "fury", "spree", "rampage", "tempo"]
 ## (whose moment behind is a kill's: its orb, its frenzy's)
-const KILL_BEHIND := ["bloodlust", "coldblood", "secondwind", "berserk", "fever", "whiteout", "overcharge", "blur"]
+const KILL_BEHIND := ["bloodlust", "coldblood", "secondwind", "berserk", "fever", "whiteout", "overcharge", "blur", "spree", "fury", "bloodbloom", "feedingfrenzy", "mayhem", "lifeline", "transfusion", "detonator", "rapier", "shieldwall", "minefield", "tempo"]
 ## (whose moment comes later than the others': a burn going out and lighting again)
-const LONGER := {"rekindle:front": 2.6, "rekindle:behind": 2.0, "bloat:front": 1.6, "jolt:behind": 1.2, "smoulder:front": 1.0}
-const STUNNED := ["pressurepoint", "daze"]
+const LONGER := {"rekindle:front": 2.6, "rekindle:behind": 2.0, "bloat:front": 1.6, "jolt:behind": 1.2, "smoulder:front": 1.0,
+	"timebomb:front": 1.2, "timebomb:behind": 2.0, "detonator:front": 1.0, "cluster:front": 0.6, "fury:front": 1.5, "transfusion:front": 1.0}
+const STUNNED := ["pressurepoint", "daze", "charge", "mire", "anvil"]
 
 
 func _init(main, hero) -> void:
@@ -113,11 +131,17 @@ func run(only := "") -> void:
 				m.mark_t = 0.0
 			var r: Dictionary = M._w_set(h, 0, side, [id])
 			# (what its twist waits on, made so for the one Strike: a kill, a stunned one)
+			h.haste_t = 0.0
 			for m in M._w_pack:
-				if KILL.has(id):
+				if KILL.has(id) or (side == "behind" and KILL_BEHIND.has(id) and BEHIND.has(id)):
 					m.life = 1.0
 				if STUNNED.has(id):
 					m.stun_t = 3.0
+			if HASTE.has(id):
+				h.haste = 30.0
+				h.haste_t = 6.0
+			if CRITS.has(id):
+				h.stats["crit_chance"] = 100.0
 			var wd: Dictionary = T["words"][id]
 			var named: bool = str(r["name"]).contains(str(wd["front"]) if side == "front" else str(wd["behind"]).trim_prefix("of "))
 			var lined: bool = (r["lines"] as Array).any(func(l): return str(l).contains(str(wd["frontText"] if side == "front" else wd["behindText"]).substr(0, 20)))
@@ -126,6 +150,7 @@ func run(only := "") -> void:
 			var lost := 0
 			for k in M._w_pack.size():
 				lost += maxi(0, int(roundf(M._w_was[k] - M._w_pack[k].life)))
+			h.stats["crit_chance"] = 0.0
 			var want: String = (FRONT if side == "front" else BEHIND).get(id, "")
 			var seen: bool = want == "" or int(h.m52.told.get(want, 0)) > 0
 			if not seen:
@@ -237,7 +262,16 @@ func film(only := "") -> void:
 			h.stats["crit_chance"] = 100.0 if CRITS.has(id) else 0.0
 			if FRENZY.has(id):
 				h.frenzy = int(preload("res://scripts/words.gd").data()["frenzy"]["max"]) - 1
-				h.frenzy_t = 5.0
+				h.frenzy_t = 1.2 if id == "fury" else 5.0
+			if HASTE.has(id):
+				h.haste = 30.0
+				h.haste_t = 6.0
+			if LOW.has(id):
+				h.life = h.max_life * 0.4
+			if TOUGH.has(id):
+				for m in M._w_pack:
+					m.max_life *= 20.0
+					m.life = m.max_life * 0.11
 			k = await _frames(k, 0.25)
 			M._w_strike(h)
 			k = await _walk(k, 0.6, id, 1.0)
