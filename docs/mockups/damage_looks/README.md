@@ -35,6 +35,6 @@ With the same switch on (fx_m52kit.gd OWN; read anywhere through fx_looks.gd `sa
 - Frozen: he has a frozen state (hero.gd `frozen_t`, set with `held` by a monster's Shiver, Flash Freeze, Icebreaker and the
   Drowned's rime) and shows it as a frozen monster does (fx_figures.gd _hero_tint); Flash Freeze's own shell on him is left
   out; Icebreaker's freeze on him tells Frost's ice burst.
-- Burning: one the Warlock's hellfire burns (monster.gd hell_t) burns as anything burning does (fx_figures.gd read), his cyan
-  tongues left out (heroes/warlock_look.gd); his bolt and its burst stay his.
+- Burning: everything that sets a monster alight burns it as Flame does already. The Warlock's cyan hellfire is his by design,
+  his word: “Good catch but the warlock cyan fire is by design.”
 - Bosses are left as they are. Pictured by the effects bench: `--only=fx --case=same --wordsown=0` and `=1`.

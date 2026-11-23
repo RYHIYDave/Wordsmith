@@ -6497,8 +6497,8 @@ func _fx_shots(h: Hero, dir: String) -> void:
 		costs.append("with %d particles and %d rings alive: update %.3f ms, drawing %.3f ms a frame (%d frames)" % [seen_p / 120, seen_r / 120, fx.cost_update / 1000.0 / maxi(1, fx.cost_frames), fx.cost_draw / 1000.0 / maxi(1, fx.cost_frames), fx.cost_frames])
 	# THE SAME LOOK WHATEVER THE SOURCE (his “if a bolt of lightning is going to bounce between things from different sources, I'd
 	# like them to be the same.  Or anything frozen should be frozen in the same way.  Burning same thing”): a bolt bouncing from
-	# one to the next, from Lightning, from the damage melds, Forking and Chain Reaction; one the Warlock's hellfire burns; him
-	# frozen and a frozen monster. `--case=same`; `--wordsown=0` and `=1` picture them with the switch off and on (fx_looks.gd same)
+	# one to the next, from Lightning, from the damage melds, Forking and Chain Reaction; one Flame burns; him frozen and a frozen
+	# monster (the Warlock's cyan hellfire is his by design: his word). `--case=same`; `--wordsown=0` and `=1` picture them with the switch off and on (fx_looks.gd same)
 	var S2 := S + Vector2(-0.3, 1.7)
 	var arc := {"x0": S.x, "y0": S.y, "x1": S2.x, "y1": S2.y}
 	await _fx_case(dir, "same_arc_lightning", [[0.0, arc.merged({"t": "arc"})]], [0.04, 0.1])
@@ -6506,11 +6506,6 @@ func _fx_shots(h: Hero, dir: String) -> void:
 		await _fx_case(dir, "same_arc_" + w, [[0.0, arc.merged({"t": "arc", "meld": w})]], [0.04, 0.1])
 	await _fx_case(dir, "same_arc_forking", [[0.0, arc.merged({"t": "arc", "meld": "forking"})], [0.0, {"t": "meld8", "id": "forking", "x": S.x, "y": S.y, "x1": S2.x, "y1": S2.y, "k": 1.0}]], [0.05, 0.12, 0.3])
 	await _fx_case(dir, "same_chain", [[0.0, arc.merged({"t": "volFx", "meld": "chainreaction", "what": "arc", "id": foe.id})]], [0.1, 0.2])
-	var keep_burn := func(_dt: float) -> void:
-		foe.hell_t = 2.0
-		fx.figures.follow()
-	await _fx_case(dir, "same_burning_hellfire", [], [0.4, 0.8], keep_burn)
-	foe.hell_t = 0.0
 	var keep_flame := func(_dt: float) -> void:
 		foe.set_meta("burn_t", 2.0)
 		foe.burn_t = 2.0

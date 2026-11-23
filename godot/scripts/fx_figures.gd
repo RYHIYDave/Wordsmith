@@ -88,17 +88,12 @@ func read(m: Object) -> int:
 		for i in STATES.size():
 			if state(m, STATES[i]) > 0.0:
 				bits |= 1 << i
-		if bits & BURNING == 0 and L.same() and state(m, "hell_t") > 0.0:
-			bits |= BURNING
 		return bits
 	if _reads == 0:
 		return 0
 	for i in STATES.size():
 		if _reads & (1 << i) != 0 and float(m.get(STATES[i])) > 0.0:
 			bits |= 1 << i
-	# (THE SAME LOOK WHATEVER THE SOURCE, with the switch on: one the Warlock's hellfire burns burns as anything burning does)
-	if bits & BURNING == 0 and L.same() and state(m, "hell_t") > 0.0:
-		bits |= BURNING
 	return bits
 
 
