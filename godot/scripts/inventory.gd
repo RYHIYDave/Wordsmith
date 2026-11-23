@@ -2296,11 +2296,16 @@ func _altar_side(blink: bool) -> void:
 	draw_rect(Rect2(x0 - 12, 0, w + 24, _vh()), PANEL)
 	_text(Vector2(x0, 22), "ALTAR OF THE WORDS", 16, PICK)
 	var y := 42.0
-	for l in _wrap("The door opens only to words given to it. Lay up to three spare words in the altar: they are burned. Each past the first makes the cult within harder, and its runedust richer.", w, 10):
+	# (STRONGHOLDS ON ANY ENDLESS LEVEL: an altar in a room, act1/altar_rooms.gd)
+	var room: bool = altar_holds.get("altar_room") == true
+	var intro := "The door opens only to words given to it. Lay up to three spare words in the altar: they are burned. Each past the first makes the cult within harder, and its runedust richer."
+	if room:
+		intro = "The cult's altar wakes only to words given to it. Lay up to three spare words in it: they are burned, fire bars the room's ways out, and the cult rises out of its floor. Each word past the first makes them harder, and the runedust richer."
+	for l in _wrap(intro, w, 10):
 		_text(Vector2(x0, y), l, 10, TEXT)
 		y += 13.0
 	y += 8.0
-	_text(Vector2(x0, y), "GIVEN TO THE DOOR", 9, DIM)
+	_text(Vector2(x0, y), "GIVEN TO THE ALTAR" if room else "GIVEN TO THE DOOR", 9, DIM)
 	y += 8.0
 	var laid: Array = altar_holds.st[altar]["words"]
 	var next := laid.size()
@@ -2336,10 +2341,12 @@ func _altar_side(blink: bool) -> void:
 		var waves: Dictionary = altar_holds.Q.get("hold", {}).get("waves", {}) if altar_holds != null else {}
 		if bool(waves.get("on", false)):
 			within = "Within: %d waves of the floor's creatures and the cult, every one bearing these words. Reward: %d runedust, gear and gold." % [int(waves["n"]), dust]
+			if room:
+				within = "Then: %d waves of the floor's creatures and the cult rise here, every one bearing these words, and the fire falls when the last is dead. Reward: %d runedust, gear and gold." % [int(waves["n"]), dust]
 		for l in _wrap(within, w, 10):
 			_text(Vector2(x0, y), l, 10, PICK)
 			y += 13.0
-	var label := "OPEN THE DOOR"
+	var label := "WAKE THE ALTAR" if room else "OPEN THE DOOR"
 	var bw := _width(label, NORMAL) + 48.0
 	var br := Rect2(x0 + w - bw, _vh() - 52.0, bw, 30.0)
 	var can := not laid.is_empty()

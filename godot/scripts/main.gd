@@ -592,6 +592,10 @@ var chained_rare = null
 var chained_rares: Array = []
 var chained_seed := -1
 var _chained_mdata := {}
+## (STRONGHOLDS ON ANY ENDLESS LEVEL: the floor's monsters, the altar rooms' waves made of their packs, kept until they are laid;
+## the level's luck for them, or -1: act1/altar_rooms.gd)
+var floor_mdata := {}
+var altar_seed := -1
 ## (FLOORS 16 TO 20 BESIDES THEIR FIGHTS: the clockwork songbird, the whole court, the captain's voice: act3/quest1620.gd)
 var quest1620
 ## (ACT 2, THE BELLS, the city floors' event: act2/bells.gd)
@@ -1407,6 +1411,7 @@ func _build(where: String, arrive: String) -> void:
 			royal_packs(mdata)
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR, mdata)
 		_chained_mdata = mdata
+		floor_mdata = mdata
 		# (ENDLESS ANY LEVEL: the Bells on an endless level of a floor that has none of its own, by the level's luck: bells_any.gd)
 		if in_endless and where != "final" and monsters.bells.is_empty() and BellsAny.ON:
 			var br := RandomNumberGenerator.new()
@@ -1672,6 +1677,7 @@ func _build(where: String, arrive: String) -> void:
 	# (FLOORS 6 TO 10 BESIDES THEIR FIGHTS: the floor's strongholds, its part of the quest line, the quest marks: act1/quest610.gd)
 	if quest610 != null:
 		quest610.enter(where)
+	floor_mdata = {}
 	# (ENDLESS MODE, NO STORY: the city's and the High City's quest pieces and people not on an endless level: story_here)
 	if quest1115 != null:
 		quest1115.enter(where if story_here() else "town")
@@ -2945,6 +2951,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "foewords":
 		await _foewords_shots(hero, dir)
+		get_tree().quit()
+		return
+	# (STRONGHOLDS ON ANY ENDLESS LEVEL, THE ALTAR ROOM: check_altar_rooms.gd)
+	if _arg("only") == "altarrooms":
+		await preload("res://scripts/check_altar_rooms.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (EVERY TWO LEVEL 1 RUNES MELD: check_meld_any.gd)

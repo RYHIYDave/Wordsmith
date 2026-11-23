@@ -33,6 +33,7 @@ const Iso := preload("res://scripts/iso.gd")
 const Loot := preload("res://scripts/loot.gd")
 const Pillars := preload("res://scripts/act1/pillars.gd")
 const Holds := preload("res://scripts/act1/holds.gd")
+const AltarRooms := preload("res://scripts/act1/altar_rooms.gd")
 const PF := preload("res://scripts/pixel_font.gd")
 
 const MSG_QUEST := Color("#7af8f0")
@@ -131,6 +132,26 @@ func enter(where: String) -> void:
 		h.flats = main._place.get_child(3)
 		place.add_child(h)
 		holds = h
+	# (STRONGHOLDS ON ANY ENDLESS LEVEL: on a floor with none of its own, the cult's altar in its rooms: altar_rooms.gd)
+	elif AltarRooms.wanted(main, where):
+		var ar = AltarRooms.new()
+		ar.main = main
+		ar.map = main.map
+		ar.hero = main.hero
+		ar.monsters = main._monsters
+		ar.loot = main.loot
+		ar.sfx = main.sfx
+		ar.look = main.look
+		ar.fx = main.fx
+		ar.stands = stands
+		ar.flats = main._place.get_child(3)
+		ar.mdata = main.floor_mdata
+		ar.seed = main.altar_seed
+		place.add_child(ar)
+		if ar.data["holds"].is_empty():
+			ar.queue_free()
+		else:
+			holds = ar
 	# (ENDLESS MODE, NO STORY: the Pinewood's pieces and the Fen's pillars not on an endless level; the strongholds stay: storyHere)
 	var story: bool = main.story_here()
 	if depth == 9 and story:
