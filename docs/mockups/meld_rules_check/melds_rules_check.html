@@ -1,0 +1,131 @@
+<title>Melds Rules Check</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* One dark look, the game's night indigo; friend cyan for what passes, enemy pink for what fails, gold for his call. */
+:root {
+  --bg: #0d1030; --panel: #161a44; --line: #2c3274; --fg: #e9ecff; --muted: #a3abd8;
+  --pass: #28dcf0; --fail: #ff4f8a; --call: #ffd060;
+  --display: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 920px; margin: 0 auto; padding-block: 24px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+.wrap > * { min-width: 0; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--pass); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 7vw, 38px); line-height: 1.1; margin: 4px 0 8px; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 20px; line-height: 1.25; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+.lead { color: var(--muted); }
+.tally { display: flex; flex-wrap: wrap; gap: 10px; }
+.tally div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; display: grid; }
+.tally b { font-family: var(--display); font-size: 26px; font-variant-numeric: tabular-nums; }
+.tally span { font-size: 12px; color: var(--muted); }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; gap: 10px; }
+.head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+.chip { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; padding: 2px 9px; border: 1px solid currentColor; }
+.fail { color: var(--fail); } .pass { color: var(--pass); } .call { color: var(--call); }
+.rule { font-size: 13px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; }
+.names { font-family: var(--mono); font-size: 13px; color: var(--fg); }
+.fix { font-size: 14px; }
+.fix b { color: var(--pass); font-weight: 600; }
+.pic { overflow-x: auto; border-radius: 6px; background: #05040f; }
+.pic img { display: block; width: 100%; min-width: 640px; height: auto; image-rendering: pixelated; }
+.cap { font-size: 12px; color: var(--muted); }
+ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.sw { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12px; }
+.sw i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; border: 1px solid #0006; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Wordsmith · melds · your art rulebook, rev 88</div>
+    <h1>The 98 new melds against your rules</h1>
+    <p class="lead">Every meld film was checked at the game's own size against your living Art Rulebook: five moments each (two in front, two behind, one on a monster), plus a read of the code that paints them. Below is each rule they break, which melds, and what I'll do.</p>
+  </header>
+
+  <div class="tally">
+    <div><b>98</b><span>melds checked</span></div>
+    <div><b class="pass">47</b><span>break no rule</span></div>
+    <div><b class="fail">51</b><span>break at least one</span></div>
+    <div><b class="call">1</b><span>needs your call</span></div>
+  </div>
+
+  <section>
+    <div class="head"><h2>The monster's look never plays in 17 films</h2><span class="chip fail">Fails</span></div>
+    <p class="rule">Animations 7: "Every word has its look ... in front on the hit and behind on what is left." The third step of each film, a skeleton carrying the meld, is how you see its look on a monster.</p>
+    <p>In these 17 of the last 46, the skeleton never got hurt, brought low or killed in the film, so its look never fired. I told you every moment showed. That was true for in front and behind, not for this step.</p>
+    <p class="names">Hornet, Quicksilver, Cluster, Double Tap, Redoubt, Bloodbloom, Lifeline, Detonator, Hair Trigger, Blastwave, Rapier, Riposte, Vendetta, Shieldwall, Rampage, Sanctuary, Aegis</p>
+    <p class="fix"><b>Fixing:</b> the film's third step makes each one happen (the hero hits back, the skeleton is brought low or killed), and the check fails any film whose monster look does not play. The first 52 are re-checked the same way.</p>
+  </section>
+
+  <section>
+    <div class="head"><h2>Plain boxes, balls and rings</h2><span class="chip fail">Fails</span></div>
+    <p class="rule">How art is made 9: "A prop, a piece of a place or an effect is shaped as the thing it is, never a plain ball, box or ring."</p>
+    <div class="pic"><img src="shapes.jpg" alt="Ten close-ups: Time Bomb's square bombs, Overcharge's cloud of round puffs, Onrush's striped block, Fortress's plain slabs, Bulwark's green square, Earthquake's ring of blocks, Charge's stepped block, Lamprey's square wisps, Vendetta's grey post, Static's flat oval clouds."></div>
+    <p class="cap">Time Bomb, Overcharge, Onrush, Fortress, Bulwark; Earthquake, Charge, Lamprey, Vendetta, Static.</p>
+    <ul>
+      <li><b>Boxes:</b> Time Bomb's bombs, Detonator's charge, Bulwark's square, Fortress's slabs, Onrush's striped block, Charge's dust, Earthquake's rocks, Vendetta's tally post, Lamprey's wisps, Fury's embers, Aftermath's smoke, Double Tap's flashes.</li>
+      <li><b>Balls:</b> the storm clouds of Overcharge, Conduit, Seeker, Static, Jolt, Tempest, Fulgurite and Quicksilver (on a monster) are round puffs or flat ovals.</li>
+      <li><b>Plain rings:</b> Reverb, Ripple, Bullseye, Quickfuse's blast, Momentum's band.</li>
+    </ul>
+    <p class="fix"><b>Fixing:</b> each drawn as the thing it is. A bomb gets a round iron body, a fuse and sparks. A cloud gets ragged, billowing edges with a lit top. Rocks are cracked stone, and smoke rolls in curls. A ring becomes a ripple of water, a sound-wave of broken arcs, or runes.</p>
+  </section>
+
+  <section>
+    <div class="head"><h2>Too small to read</h2><span class="chip fail">Fails</span></div>
+    <p class="rule">Animations 1: "as big, wild, kinetic and weighty as it can be ... a notch too high, never a notch too low."</p>
+    <div class="pic"><img src="faint.jpg" alt="Five close-ups where the meld barely shows: Whipcrack, Rapier, Blur behind, Juggernaut behind, Transfusion behind."></div>
+    <p class="cap">Whipcrack, Rapier, Blur (behind), Juggernaut (behind), Transfusion (behind).</p>
+    <p class="names">Whipcrack, Rapier, Rampage, Reverb (in front), Aftermath (in front), Ambush (behind), Blur (behind), Juggernaut (behind), Daze (behind), Bedrock (behind), Transfusion (behind)</p>
+    <p class="fix"><b>Fixing:</b> Whipcrack's crack becomes a lash across the screen with a white snap and a kick. Rapier and Rampage get their own looks, not just Frenzied's ring under him. The faint ones behind are made as big as the rest.</p>
+  </section>
+
+  <section>
+    <div class="head"><h2>Covering the hero</h2><span class="chip fail">Fails</span></div>
+    <p class="rule">Animations 4: "No effect covers the hero, or a monster's wind-up or danger mark, for more than a blink."</p>
+    <div class="pic"><img src="cover.jpg" alt="Three close-ups: Staccato's two big slashes over the hero, Gale's green gust over him on a monster's turn, Spree's haze around him."></div>
+    <p class="cap">Staccato (behind), Gale (on a monster), Spree.</p>
+    <p class="fix"><b>Fixing:</b> Staccato's slashes go on the monster it hits, not on him. Gale's gust and Spree's haze pass by him and don't sit on him.</p>
+  </section>
+
+  <section>
+    <div class="head"><h2>No freeze when a big blow lands</h2><span class="chip fail">Fails</span></div>
+    <p class="rule">Movement 7: "The moment a heavy blow lands, everything holds for a tenth of a second."</p>
+    <p>None of the 98 holds still on its big moments. The game's own words and melds do (Heavy, Volatile, the first eight melds).</p>
+    <p class="fix"><b>Fixing:</b> the hold on every boom and heavy landing (Time Bomb, Detonator, Blastwave, Cluster, Cataclysm, Earthquake, Anvil, Charge and the rest of the Heavy and Volatile melds).</p>
+  </section>
+
+  <section>
+    <div class="head"><h2>Enemy pink on your hero's blows</h2><span class="chip call">Your call</span></div>
+    <p class="rule">Pillar 4: "What glows on an enemy is hot pink burning to gold. Nothing else glows in those colours."</p>
+    <div class="pic"><img src="pink.jpg" alt="Five close-ups of the hero's blows glowing pink: Lamprey, Bloodbloom, Lifeline, Spree, Mayhem."></div>
+    <p class="cap">Lamprey, Bloodbloom, Lifeline, Spree, Mayhem.</p>
+    <div class="swatches">
+      <span class="sw"><i style="background:#ff4f8a"></i>enemy pink</span>
+      <span class="sw"><i style="background:#d4507c"></i>Bloodbloom</span>
+      <span class="sw"><i style="background:#ff7096"></i>Lamprey</span>
+      <span class="sw"><i style="background:#ff9ec0"></i>Lifeline</span>
+      <span class="sw"><i style="background:#ff8aa0"></i>Spree</span>
+      <span class="sw"><i style="background:#c8489c"></i>Mayhem</span>
+      <span class="sw"><i style="background:#cc8494"></i>Transfusion</span>
+    </div>
+    <p>Six meld colours sit on the enemy's pink. Bloodbloom is exactly its shade. You said yes to their stones, so changing them is your call. My pick: move them to blood red and salmon, as Leech and Power already are, and redo their stones to match.</p>
+    <p>On the other side, a few icy melds (Glide, Flash Freeze, Double Tap, Ripple, Quicksilver) are close to the friend's cyan. When a monster carries one, it would glow nearly cyan. My pick: on a monster, those draw in Frost's deeper blue.</p>
+  </section>
+
+  <section>
+    <div class="head"><h2>What passes</h2><span class="chip pass">Passes</span></div>
+    <ul>
+      <li><b>Crisp pixels and the game's grain:</b> every meld is drawn on the game's pixel grid. Their glows are the same soft glow the game's own melds use.</li>
+      <li><b>Big and wild:</b> most front moments are as big as the game's own melds, among them Twin's, Inferno, Glacier, Smoulder, Cataclysm, Stormfront and the Lightning and Volatile melds.</li>
+      <li><b>One fixed camera, flat on the floor:</b> grounds and rings lie as the floor lies.</li>
+    </ul>
+    <p class="lead">Two things in the films that aren't art but could mislead you: the huge numbers (132000) come from how the film sets up its kills, and the HELMET labels are loot dropped by the film's kills. Both come out of the films.</p>
+  </section>
+</div>
