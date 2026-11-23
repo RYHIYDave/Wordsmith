@@ -1902,6 +1902,178 @@ export const LEVEL_ART_IDS: readonly string[] = Object.keys(LEVEL_PAINTERS);
  */
 export const LEVEL_ART = { on: true };
 
+// ---------------------------------------------------------------------------------------------
+// THE FIFTEEN OF THE THREE DEFENCES (game/uniques.ts DEFENCE_DEFS: five for armour, five for barrier, five for dodge). His words,
+// 23 Nov 2026, told they wore their bases' pictures: “Uniques always have unique sprite art”. Each as the twenty are: its base's
+// own picture, in its own colours, with the one thing that says what it does. Behind DEFENCE_ART, off until his yes to them.
+
+/** ANVILHEART (plate: his armour works against Flame, Frost and Lightning too). Smith's plate, soot-dark, an anvil on its chest and the forge's ember under it. */
+function anvilheart(): Part[] {
+  const parts = dye(PAINTERS.armor(0), { steel: 'dsteel', leather: 'dleather' });
+  // the anvil: its face and horn, its waist, its foot
+  parts.push({ s: poly([10.4, 8.0], [23.6, 8.0], [23.6, 11.2], [19.6, 12.2], [19.0, 15.2], [21.8, 16.8], [21.8, 19.2], [10.6, 19.2], [10.6, 16.8], [13.4, 15.2], [12.8, 12.2], [10.4, 11.2]), m: 'steel', sh: { k: 'flat', bev: 1.0 }, shine: true, bias: 0.3, marks: [{ a: [11.4, 8.9], b: [22.6, 8.9], t: 4 }] });
+  parts.push({ s: poly([10.4, 8.0], [6.0, 8.8], [10.4, 11.2]), m: 'steel', sh: { k: 'flat' }, shine: true, bias: 0.3 });
+  parts.push(gem([16.2, 13.6], 1.7, 'fire'));
+  return parts;
+}
+
+/** THE BURR (gauntlets: what strikes him takes a share of his armour). A dark iron gauntlet grown over with hooked spines, as a burr is. */
+function theburr(): Part[] {
+  const parts = hand({ cuff: 'dsteel', palm: 'dsteel', finger: 'dsteel', back: 'dsteel', shine: true, joints: 0 });
+  const spine = (x: number, y: number, dx: number, dy: number): void => {
+    parts.push({ s: poly([x - dy * 1.4, y + dx * 1.4], [x + dy * 1.4, y - dx * 1.4], [x + dx * 4.6, y + dy * 4.6]), m: 'brass', sh: { k: 'ridge', a: [x, y], b: [x + dx * 4.6, y + dy * 4.6] }, shine: true });
+  };
+  for (const [x, y, dx, dy] of [[11.0, 17.0, -0.9, -0.44], [13.6, 14.2, -0.5, -0.86], [17.0, 13.4, 0.1, -1], [20.4, 14.2, 0.6, -0.8], [22.2, 17.4, 0.95, -0.3], [9.6, 25.0, -1, -0.2], [23.4, 25.0, 1, -0.2], [16.4, 19.4, 0, -1]] as [number, number, number, number][]) spine(x, y, dx, dy);
+  return parts;
+}
+
+/** BALLAST (a heavy belt: harder the more armour, slower). A broad black belt, a lead weight hung at either hip. */
+function ballast(): Part[] {
+  const parts = [...loop('dleather'), ...buckle('dsteel', 'dleather')];
+  for (const x of [6.4, 25.6]) {
+    parts.push({ s: cap([x, 19.6], [x, 22.4], 0.7), m: 'dsteel', sh: { k: 'flat' }, shine: true });
+    parts.push({ s: poly([x - 2.2, 22.4], [x + 2.2, 22.4], [x + 3.6, 29.4], [x - 3.6, 29.4]), m: R.stone, sh: { k: 'soft', r: 1.6 }, shine: true, marks: [{ a: [x - 1.6, 26.2], b: [x + 1.6, 26.2], t: 1 }] });
+  }
+  return parts;
+}
+
+/** THE UNBOWED (a helm: no blow more than a share of his life; he cannot dodge). A battered helm that never bent: its dents and cuts, and a gold band unbroken round its brow. */
+function unbowed(): Part[] {
+  const parts = dye(PAINTERS.helm(0), { leather: 'red', brass: 'gold' });
+  parts.push({ s: path([[8.6, 11.6], [14.6, 10.4], [20.6, 10.6], [25.0, 12.4]], [1.2, 1.2, 1.2, 1.2]), m: 'gold', sh: { k: 'flat', bev: 0.6 }, shine: true });
+  parts.push(gem([14.8, 10.4], 1.3, 'ruby'));
+  parts[1] = { ...parts[1], marks: [...(parts[1].marks ?? [])] };
+  parts.push({ s: path([[10.2, 5.8], [12.2, 7.6], [11.4, 9.0]], [0.4, 0.4, 0.4]), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  parts.push({ s: path([[20.4, 5.4], [22.8, 8.4]], [0.4, 0.4]), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  parts.push({ s: path([[22.6, 17.0], [24.6, 19.6], [23.6, 21.6]], [0.4, 0.4, 0.4]), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  return parts;
+}
+
+/** WORKHARDENED (greaves: more armour for each blow lately taken). A steel greave beaten plate over plate, the hammer's marks still on each. */
+function workhardened(): Part[] {
+  const parts = tallBoot({ hide: 'steel', cuff: 'dsteel', sole: 'dsteel' });
+  parts[0] = { ...parts[0], shine: true };
+  for (const [y, w] of [[10.0, 0], [14.4, 0.4], [18.8, 0.8]] as [number, number][]) {
+    parts.push({ s: poly([12.2 - w, y], [24.6 + w * 0.4, y - 0.6], [24.8 + w * 0.4, y + 3.4], [18.4, y + 4.6], [12.0 - w, y + 3.6]), m: 'steel', sh: { k: 'flat', bev: 1.0 }, shine: true, bias: 0.08, marks: [{ a: [14.4, y + 1.6], t: 1 }, { a: [18.6, y + 2.2], t: 1 }, { a: [22.4, y + 1.4], t: 1 }] });
+  }
+  parts.push(stud([8.6, 25.4], 0.9, 'brass'));
+  parts.push(stud([13.6, 24.6], 0.9, 'brass'));
+  return parts;
+}
+
+/** QUICKGLASS (a robe: his barrier fills sooner). A robe of sea-glass blue, a sandglass sewn on its breast, nearly run through. */
+function quickglass(): Part[] {
+  const parts = dye(PAINTERS.robe(0), { vcloth: R.sea, string: 'steel' });
+  parts.push({ s: poly([11.4, 5.6], [20.6, 5.6], [16, 10.6]), m: R.glass, sh: { k: 'face', n: [-0.3, -0.3] }, shine: true });
+  parts.push({ s: poly([16, 10.6], [20.6, 15.4], [11.4, 15.4]), m: 'topaz', sh: { k: 'face', n: [0.2, 0.3] }, shine: true });
+  parts.push({ s: poly([14.6, 6.4], [17.4, 6.4], [16, 8.6]), m: 'topaz', sh: { k: 'flat' }, flush: true });
+  for (const y of [5.2, 15.8]) parts.push({ s: cap([10.6, y], [21.4, y], 0.8), m: 'brass', sh: { k: 'flat' }, shine: true });
+  return parts;
+}
+
+/** THE DECANTER (a sash: a flask fills his barrier). A violet silk sash, and hung from it a stoppered glass decanter, full. */
+function decanter(): Part[] {
+  const parts = loop('vcloth');
+  parts.push({ s: cap([16, 18.4], [16, 20.6], 0.6), m: 'string', sh: { k: 'flat' } });
+  parts.push({ s: ell([16, 19.4], 1.5, 1.2), m: 'brass', sh: { k: 'dome', c: [16, 19.4], r: 1.5 }, shine: true });
+  parts.push({ s: cap([16, 20.6], [16, 23.0], 1.3), m: R.glass, sh: { k: 'cyl', a: [16, 20.6], b: [16, 23.0], w: 1.3 }, shine: true });
+  parts.push({ s: poly([13.8, 23.0], [18.2, 23.0], [21.4, 27.4], [20.6, 30.2], [11.4, 30.2], [10.6, 27.4]), m: R.glass, sh: { k: 'soft', r: 2.2 }, shine: true });
+  parts.push({ s: poly([12.6, 26.0], [19.4, 26.0], [20.6, 27.8], [19.8, 29.4], [12.2, 29.4], [11.4, 27.8]), m: 'teal', sh: { k: 'soft', r: 1.4 }, shine: true, flush: true, marks: [{ a: [13.0, 26.4], b: [19.0, 26.4], t: 4 }] });
+  return parts;
+}
+
+/** SHATTERGLASS (gloves: his barrier breaking bursts). A glove of glass, cracked across the back from one blow, its splinters flying. */
+function shatterglass(): Part[] {
+  const parts = hand({ cuff: 'vcloth', palm: R.glass, finger: R.glass, back: R.glass, shine: true });
+  const c: V = [17.6, 15.6];
+  for (const e of [[11.0, 12.6], [14.6, 11.4], [21.8, 12.0], [22.2, 18.0], [16.6, 21.6], [10.8, 18.4]] as V[]) parts.push({ s: cap(c, e, 0.35), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  parts.push({ s: ell(c, 1.2), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  for (const [x, y, k] of [[26.6, 9.4, 1.0], [28.4, 14.6, 0.8], [26.2, 19.6, 0.9], [3.6, 6.4, 0.7]] as [number, number, number][]) {
+    parts.push({ s: poly([x - 1.6 * k, y + 0.6 * k], [x + 0.4 * k, y - 1.8 * k], [x + 1.6 * k, y + 1.2 * k]), m: R.glass, sh: { k: 'face', n: [-0.3, -0.3] }, shine: true });
+  }
+  return parts;
+}
+
+/** HALO (an amulet: harder while his barrier is full). A gold chain, a pearl of clear glass, and a ring of gold standing over it. */
+function halo(): Part[] {
+  const parts = hung('gold', [16, 12.0]);
+  parts.push({ s: ell([16, 17.0], 7.4, 3.0), cut: [ell([16, 17.0], 5.6, 1.5)], m: 'gold', sh: { k: 'flat', bev: 0.7 }, shine: true });
+  parts.push({ s: ell([16, 24.4], 4.2), m: R.glass, sh: { k: 'dome', c: [15.4, 23.8], r: 4.2 }, shine: true });
+  parts.push({ s: ell([14.6, 22.8], 1.1, 0.8), m: 'feather', sh: { k: 'flat' }, flush: true, bias: 0.5 });
+  return parts;
+}
+
+/** THE GLAZIER'S RING (a ring: his gear's armour is barrier instead). A ring of grey lead, and for its head a little window of stained glass, four panes. */
+function glaziersring(): Part[] {
+  const parts = band(LV.tin);
+  parts.push({ s: poly([10.0, 3.6], [22.0, 3.6], [22.0, 15.0], [10.0, 15.0]), m: 'dsteel', sh: { k: 'flat', bev: 0.6 } });
+  for (const [x, y, m] of [[10.9, 4.5, 'ruby'], [16.5, 4.5, 'sapphire'], [10.9, 9.8, 'topaz'], [16.5, 9.8, 'green']] as [number, number, Part['m']][]) {
+    parts.push({ s: poly([x, y], [x + 4.6, y], [x + 4.6, y + 4.3], [x, y + 4.3]), m, sh: { k: 'face', n: [-0.25, -0.3] }, shine: true, flush: true });
+  }
+  return parts;
+}
+
+/** FEINT (gloves: a blow dodged, he hits harder). A fencer's black glove, and up its sleeve the blade the other hand never saw. */
+function feint(): Part[] {
+  const parts: Part[] = [];
+  parts.push({ s: poly([24.2, 28.6], [26.0, 11.0], [27.4, 7.6], [28.6, 11.4], [27.4, 28.6]), m: 'steel', sh: { k: 'ridge', a: [25.8, 28.6], b: [27.4, 7.6] }, shine: true });
+  parts.push(...hand({ cuff: 'red', palm: 'dleather', finger: 'dleather', back: 'dleather', joints: 3 }));
+  parts.push({ s: cap([10.0, 22.4], [22.6, 22.4], 0.8), m: 'gold', sh: { k: 'flat', bev: 0.6 }, shine: true });
+  return parts;
+}
+
+/** AFTERIMAGE (a hood: a blow dodged, he is faster). A sea-blue hood, and behind it where it was a moment ago, twice, each fainter. */
+function afterimage(): Part[] {
+  const base = squeeze(PAINTERS.hood(0), 0.72, 0.9);
+  const ghost = (m: Ramp, dx: number): Part[] => move(dye(base, { green: m, leather: m, steel: m, shadow: m }), dx, 0.6).map((q) => ({ ...q, shine: false, marks: [] }));
+  return [...ghost(R.echo2, 5.6), ...ghost(R.echo1, 1.0), ...move(dye(base, { green: R.echo }), -3.8, 0.6)];
+}
+
+/** FEATHERWEIGHT (a jerkin: more dodge, no armour). A jerkin of thin pale hide that weighs nothing, white feathers at its shoulders. */
+function featherweight(): Part[] {
+  const parts = dye(PAINTERS.armor(0), { steel: R.drift, dsteel: R.drift, leather: 'green' });
+  // one white feather across its breast: the vane, the quill down it, its barbs
+  const a: V = [11.0, 18.6], b: V = [21.6, 6.6];
+  const u = unit(sub(b, a));
+  parts.push({ s: poly(at(a, u, 0, 0), at(a, u, 3.6, -2.6), at(a, u, 10.4, -2.9), at(a, u, 16.0, 0), at(a, u, 10.4, 2.9), at(a, u, 3.6, 2.6)), m: 'feather', sh: { k: 'soft', r: 1.6 }, bias: 0.25, marks: [{ a: at(a, u, -1.6, 0), b: at(a, u, 15.0, 0), t: 1 }, { a: at(a, u, 5.0, -2.2), b: at(a, u, 6.6, -0.4), t: 2 }, { a: at(a, u, 9.6, 2.4), b: at(a, u, 11.0, 0.4), t: 2 }] });
+  parts.push({ s: cap(at(a, u, -2.4, 0), a, 0.5), m: 'ivory', sh: { k: 'flat' }, flush: true });
+  return parts;
+}
+
+/** CLOSE CALL (a leather belt: a blow dodged heals him). A plain belt, and the arrow that went through it and missed him. */
+function closecall(): Part[] {
+  const parts = [...loop('leather'), ...buckle('brass', 'leather')];
+  const a: V = [1.8, 29.6], b: V = [13.6, 13.0];
+  const u = unit(sub(b, a));
+  parts.push({ s: cap(a, b, 0.9), m: 'ivory', sh: { k: 'cyl', a, b, w: 0.9 }, bias: 0.1 });
+  parts.push({ s: poly(at(b, u, -0.4, -2.6), at(b, u, 5.4, 0), at(b, u, -0.4, 2.6)), m: 'steel', sh: { k: 'ridge', a: b, b: at(b, u, 5.4, 0) }, shine: true });
+  parts.push({ s: poly(at(a, u, 0, 0), at(a, u, -0.4, -2.8), at(a, u, 4.6, -2.6), at(a, u, 6.0, 0), at(a, u, 4.6, 2.6), at(a, u, -0.4, 2.8)), m: 'red', sh: { k: 'flat', bev: 0.6 }, marks: [{ a: at(a, u, 0.4, 0), b: at(a, u, 5.4, 0), t: 0 }] });
+  return parts;
+}
+
+/** TAILWIND (an amulet: his movement speed is dodge too). A silver chain, and caught on it three curls of wind and a leaf they carry. */
+function tailwind(): Part[] {
+  const parts = hung('steel', [16, 12.4]);
+  const gust = (y: number, x0: number, x1: number, m: Ramp): void => {
+    parts.push({ s: path([[x0, y], [(x0 + x1) / 2, y - 0.6], [x1, y], [x1 + 2.6, y - 1.6], [x1 + 1.8, y - 4.2], [x1 - 0.8, y - 4.0], [x1 - 1.0, y - 2.4]], [0.7, 1.2, 1.3, 1.2, 1.0, 0.8, 0.5]), m, sh: { k: 'flat', bev: 0.5 }, shine: true });
+  };
+  gust(19.6, 4.6, 19.6, R.glass);
+  gust(24.6, 8.6, 24.0, R.storm);
+  gust(29.4, 5.6, 16.6, R.glass);
+  parts.push({ s: ell([25.6, 28.6], 2.8, 1.5, -25), m: 'green', sh: { k: 'soft', r: 0.8 }, bias: 0.35, marks: [{ a: [23.6, 29.4], b: [27.6, 27.8], t: 1 }] });
+  return parts;
+}
+
+/** The fifteen's pictures, by their ids in game/uniques.ts DEFENCE_DEFS: kept apart, as the twenty's and Set 1's are. */
+const DEFENCE_PAINTERS: Record<string, () => Part[]> = {
+  anvilheart, theburr, ballast, unbowed, workhardened, quickglass, decanter, shatterglass, halo, glaziersring,
+  feint, afterimage, featherweight, closecall, tailwind,
+};
+/** The ids of the fifteen's pictures. */
+export const DEFENCE_ART_IDS: readonly string[] = Object.keys(DEFENCE_PAINTERS);
+/** The fifteen's pictures' switch: off, each shows its base's orange look. OFF until his yes to them. */
+export const DEFENCE_ART = { on: false };
+
 /** Set 1's pictures, by their ids in game/uniques.ts SET1_DEFS: kept apart from the 62's (UNIQUE_ART_IDS), as Set 1 is behind its own switch. */
 const SET1_PAINTERS: Record<string, () => Part[]> = { gyre, redtithe, widowfall, deathknell, deadweight, starbreaker };
 /** The ids of Set 1's pictures. */
@@ -1928,7 +2100,7 @@ export const UNIQUE_ART_IDS: readonly string[] = Object.keys(UNIQUE_PAINTERS);
 /** One unique's own picture: 32 by 32 picture pixels, as art/items_a.ts paintItemA's, with the orange rim. Null for one not drawn. */
 export function paintUnique(id: string): Px | null {
   const own = (m: Record<string, () => Part[]>): (() => Part[]) | undefined => (Object.prototype.hasOwnProperty.call(m, id) ? m[id] : undefined);
-  const f = own(UNIQUE_PAINTERS) ?? own(SET1_PAINTERS) ?? (LEVEL_ART.on ? own(LEVEL_PAINTERS) : undefined);
+  const f = own(UNIQUE_PAINTERS) ?? own(SET1_PAINTERS) ?? (LEVEL_ART.on ? own(LEVEL_PAINTERS) : undefined) ?? (DEFENCE_ART.on ? own(DEFENCE_PAINTERS) : undefined);
   return f ? paint(f(), 3) : null;
 }
 

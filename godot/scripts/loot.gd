@@ -1129,6 +1129,10 @@ func _pool_unique(quality: int, mf: float, slot := "", weapon := ""):
 ## pool.”). ON at his yes, 23 Nov 2026, shown their cards (docs/mockups/defence_uniques): “Yes, switch them on”. With it off none
 ## drops or is gambled for; one worn all the same (a check's) works.
 static var DEFENCE_UNIQUES := true
+## THE FIFTEEN'S OWN PICTURES (art/items_unique.ts DEFENCE_PAINTERS; a piece's `uicon`): his words, 23 Nov 2026, told they wore their
+## bases' pictures: “Uniques always have unique sprite art”. OFF until his yes to them (pictures first): off, each its base's
+## orange look.
+static var DEFENCE_ART := false
 
 
 ## game.ts makePoolUnique: one of the pool's for him (of that slot, of that weapon, where asked), made for this floor; null if none.
@@ -1155,6 +1159,14 @@ func make_pool_unique(slot := "", weapon := ""):
 
 ## A piece of unique `id` as the game made it for this floor (a leveling unique at its own level; a boss's at his floor).
 func unique_piece(id: String):
+	var it = _unique_piece(id)
+	# (THE FIFTEEN'S OWN PICTURES, with their switch on)
+	if it != null and DEFENCE_ART and it.has("uicon") and pics.has(str(it["uicon"])):
+		it["icon"] = it["uicon"]
+	return it
+
+
+func _unique_piece(id: String):
 	var all: Array = _uniques.get("pieces", {}).get(id, [])
 	if all.is_empty():
 		return null

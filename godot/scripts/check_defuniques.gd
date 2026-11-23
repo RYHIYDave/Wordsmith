@@ -361,6 +361,38 @@ func run(main, hero, d: String) -> void:
 	_line(absf(h.stats["dodge"] - want_t) <= 1.0 and h.stats["dodge"] > d1 and _built(tw).contains("Dodge"), "Tailwind (%s): movement speed %d%%, dodge %d (without it %d)" % [_built(tw), h.stats["move_speed"], h.stats["dodge"], d1])
 	await _card(tw, "du15_tailwind")
 
+	# ================= THEIR OWN PICTURES =================
+	# (every unique's piece shows a picture that is in the sheet; the 88 each their own; the fifteen their own with DEFENCE_ART on)
+	var own := 0
+	var missing := []
+	for id in defs:
+		var it = L.unique_piece(id)
+		if it == null or not L.pics.has(str(it["icon"])):
+			missing.append(id)
+		elif str(it["icon"]) == "u:" + str(id):
+			own += 1
+	var art_was: bool = L.DEFENCE_ART
+	L.DEFENCE_ART = true
+	var own15 := 0
+	for id in fifteen:
+		var it = L.unique_piece(id)
+		if it != null and str(it["icon"]) == "u:" + str(id) and L.pics.has(str(it["icon"])):
+			own15 += 1
+	_line(missing.is_empty() and own == (88 if not art_was else 103) and own15 == 15, "their pictures: %d uniques each with a picture of its own in the sheet (none missing: %s); the fifteen with their switch on, %d of 15 their own" % [own, str(missing), own15])
+	# (a bag of them, pictured: the fifteen in their own pictures, then nine of the ones we had)
+	_hero("warrior")
+	L.bag.clear()
+	for id in fifteen + ["prism", "shortway", "packcollar", "towline", "quiltedcoat", "nettleshirt", "mothswing", "longodds", "vaultdoor"]:
+		L.bag.append(L.unique_piece(id))
+	L.DEFENCE_ART = art_was
+	if dir != "":
+		M._inv.toggle()
+		await M._wait(0.4)
+		await M._snap(dir + "/du21_bag_of_uniques.png")
+		M._inv.toggle()
+		await M._wait(0.2)
+	L.bag.clear()
+
 	# ================= THE CHANGED ONES' CARDS =================
 	await _card(sc, "du16_shortcut")
 	await _card(pr, "du17_prismheart")

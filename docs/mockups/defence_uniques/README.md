@@ -32,3 +32,16 @@ To run without them: `--defuniques=0`.
 `godot --path godot -- --shots=<dir> --only=defuniques`: 26 of 26. The older checks after it: `defence` 11 of 11, `uniques` 11
 of 11, `uniquesdo` 19 of 19. `tsc` clean; tests/uniques, uniques_rolls, uniques_level, items_unique pass. The tables were made
 again with `npx tsx tools/godot_loot.ts` (103 uniques).
+
+## Their own pictures (23 Nov 2026)
+
+His words, told the fifteen wore their bases' pictures: “Uniques always have unique sprite art”.
+
+- THE GODOT GAME NOW SHOWS EVERY UNIQUE'S OWN PICTURE. The port had all of them in their bases' orange look: the export never
+  asked for a unique's picture. Now `tools/godot_loot.ts` puts each one's picture (`src/art/items_unique.ts uniqueArt`) in
+  `icons.png` under `u:<id>` and the piece's `icon` is that key. The 88 pictures are the ones he passed on 12 and 13 Nov.
+- THE FIFTEEN'S PICTURES are painted (`items_unique.ts` DEFENCE_PAINTERS; `the_fifteen_pictures.png`, `in_the_bag.png`) and in
+  the sheet, but OFF until his yes: `loot.gd DEFENCE_ART` (`--defart=1` to see them). Off, each shows its base's look.
+- Checked: `--only=defuniques` 27 of 27 (its line 27: every unique's picture is in the sheet, 88 their own, the fifteen their
+  own with the switch on); `uniques` 11 of 11, `uniquesdo` 19 of 19, `defence` 11 of 11.
+- After pulling this, Godot must import `icons.png` again (the editor does it on opening the project).
