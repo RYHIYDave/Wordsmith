@@ -1,0 +1,861 @@
+{
+ "onslaught": {
+  "name": "Onslaught",
+  "of": [
+   "twin",
+   "power"
+  ],
+  "color": "#e0604c",
+  "glyph": [
+   "...o...",
+   "..X.X..",
+   ".X...X.",
+   "...o...",
+   "..XXX..",
+   ".XX.XX.",
+   "XX...XX"
+  ]
+ },
+ "viper": {
+  "name": "Viper",
+  "of": [
+   "twin",
+   "poison"
+  ],
+  "color": "#86c838",
+  "glyph": [
+   "XXXXXX",
+   "XX..XX",
+   ".X..X.",
+   ".X..X.",
+   "......",
+   ".o..o."
+  ]
+ },
+ "flashfreeze": {
+  "name": "Flash Freeze",
+  "of": [
+   "twin",
+   "frost"
+  ],
+  "color": "#8ad0fa",
+  "glyph": [
+   ".X...X.",
+   ".X...X.",
+   "XoX.XoX",
+   "XoX.XoX",
+   "XoX.XoX",
+   ".X...X.",
+   ".X...X."
+  ]
+ },
+ "rekindle": {
+  "name": "Rekindle",
+  "of": [
+   "twin",
+   "fire"
+  ],
+  "color": "#ff9e3c",
+  "glyph": [
+   ".X....",
+   ".XX...",
+   "XXX..X",
+   "XoX.XX",
+   "XoXXoX",
+   ".XX.X."
+  ]
+ },
+ "flurry": {
+  "name": "Flurry",
+  "of": [
+   "twin",
+   "swift"
+  ],
+  "color": "#8ed868",
+  "glyph": [
+   "X...X..",
+   ".X...X.",
+   "..o...o",
+   ".......",
+   "X...X..",
+   ".X...X.",
+   "..o...o"
+  ]
+ },
+ "aftershock": {
+  "name": "Aftershock",
+  "of": [
+   "twin",
+   "heavy"
+  ],
+  "color": "#b89a62",
+  "glyph": [
+   "..XX..",
+   ".XooX.",
+   ".XXXX.",
+   "......",
+   "X.XX.X",
+   ".X..X."
+  ]
+ },
+ "bloodlust": {
+  "name": "Bloodlust",
+  "of": [
+   "leech",
+   "power"
+  ],
+  "color": "#e8464c",
+  "glyph": [
+   "..XX..",
+   ".XXXX.",
+   "XXooXX",
+   ".XXXX.",
+   ".X..X.",
+   "X....X"
+  ]
+ },
+ "coldblood": {
+  "name": "Coldblood",
+  "of": [
+   "leech",
+   "frost"
+  ],
+  "color": "#a8b8f8",
+  "glyph": [
+   "...X...",
+   "..X.X..",
+   ".X.o.X.",
+   "X.ooo.X",
+   "X..o..X",
+   ".X...X.",
+   "..XXX.."
+  ]
+ },
+ "conduit": {
+  "name": "Conduit",
+  "of": [
+   "leech",
+   "lightning"
+  ],
+  "color": "#ffcc78",
+  "glyph": [
+   "...X..",
+   "..XXX.",
+   ".XXoXX",
+   ".XoXXX",
+   ".XXoXX",
+   "..XXX."
+  ]
+ },
+ "secondwind": {
+  "name": "Second Wind",
+  "of": [
+   "leech",
+   "swift"
+  ],
+  "color": "#b0e08c",
+  "glyph": [
+   "....X.",
+   "...XXX",
+   "XX.XoX",
+   "...XoX",
+   "XX.XXX",
+   "....X."
+  ]
+ },
+ "marrow": {
+  "name": "Marrow",
+  "of": [
+   "leech",
+   "heavy"
+  ],
+  "color": "#ead6bc",
+  "glyph": [
+   "X.X...",
+   ".X....",
+   ".X..X.",
+   ".X.XoX",
+   ".X..X.",
+   "X.X..."
+  ]
+ },
+ "quickfuse": {
+  "name": "Quickfuse",
+  "of": [
+   "volatile",
+   "swift"
+  ],
+  "color": "#b476ea",
+  "glyph": [
+   "....oX",
+   "...X..",
+   ".XXX..",
+   "XXooX.",
+   "XXooX.",
+   ".XXX.."
+  ]
+ },
+ "concussion": {
+  "name": "Concussion",
+  "of": [
+   "volatile",
+   "heavy"
+  ],
+  "color": "#a888b8",
+  "glyph": [
+   "X..X..X",
+   ".X.X.X.",
+   "..XoX..",
+   "XXoooXX",
+   "..XoX..",
+   ".......",
+   "XXX.XXX"
+  ]
+ },
+ "duelist": {
+  "name": "Duelist",
+  "of": [
+   "precise",
+   "power"
+  ],
+  "color": "#f2c8c0",
+  "glyph": [
+   "X.....X",
+   ".X...X.",
+   "..X.X..",
+   "...o...",
+   "..X.X..",
+   ".X...X.",
+   "X.....X"
+  ]
+ },
+ "needle": {
+  "name": "Needle",
+  "of": [
+   "precise",
+   "poison"
+  ],
+  "color": "#d2ee72",
+  "glyph": [
+   ".....X",
+   "....XX",
+   "...XX.",
+   "..XX..",
+   ".o....",
+   "oo...."
+  ]
+ },
+ "brand": {
+  "name": "Brand",
+  "of": [
+   "precise",
+   "fire"
+  ],
+  "color": "#ffae6a",
+  "glyph": [
+   ".XXXXX.",
+   "X.....X",
+   "X..X..X",
+   "X.XoX.X",
+   "X.XoX.X",
+   "X.....X",
+   ".XXXXX."
+  ]
+ },
+ "seeker": {
+  "name": "Seeker",
+  "of": [
+   "precise",
+   "lightning"
+  ],
+  "color": "#fff6a8",
+  "glyph": [
+   ".......",
+   "..XXX..",
+   ".X..oX.",
+   "X..oo.X",
+   ".Xo..X.",
+   "..XXX..",
+   "......."
+  ]
+ },
+ "quickdraw": {
+  "name": "Quickdraw",
+  "of": [
+   "precise",
+   "swift"
+  ],
+  "color": "#eaf8d0",
+  "glyph": [
+   ".......",
+   "....X..",
+   ".....X.",
+   "XX.XXoX",
+   ".....X.",
+   "....X..",
+   "......."
+  ]
+ },
+ "pressurepoint": {
+  "name": "Pressure Point",
+  "of": [
+   "precise",
+   "heavy"
+  ],
+  "color": "#e2d0ae",
+  "glyph": [
+   "...X...",
+   ".......",
+   "..XXX..",
+   "X.XoX.X",
+   "..XXX..",
+   ".......",
+   "...X..."
+  ]
+ },
+ "berserk": {
+  "name": "Berserk",
+  "of": [
+   "frenzied",
+   "power"
+  ],
+  "color": "#ff4238",
+  "glyph": [
+   "X.X.X.",
+   "X.X.X.",
+   ".X.X.X",
+   "......",
+   "..oo..",
+   "XX..XX"
+  ]
+ },
+ "fever": {
+  "name": "Fever",
+  "of": [
+   "frenzied",
+   "poison"
+  ],
+  "color": "#d4e044",
+  "glyph": [
+   "..X...",
+   ".X.X..",
+   ".XoX..",
+   ".XoX..",
+   "XoooX.",
+   ".XXX.."
+  ]
+ },
+ "whiteout": {
+  "name": "Whiteout",
+  "of": [
+   "frenzied",
+   "frost"
+  ],
+  "color": "#dceeff",
+  "glyph": [
+   ".......",
+   "XXXX.o.",
+   ".......",
+   ".o.XXXX",
+   ".......",
+   "XXXX.o.",
+   "......."
+  ]
+ },
+ "overcharge": {
+  "name": "Overcharge",
+  "of": [
+   "frenzied",
+   "lightning"
+  ],
+  "color": "#ffb63c",
+  "glyph": [
+   "..XX..",
+   ".XXXX.",
+   ".X.oX.",
+   ".XooX.",
+   ".Xo.X.",
+   ".XXXX."
+  ]
+ },
+ "blur": {
+  "name": "Blur",
+  "of": [
+   "frenzied",
+   "swift"
+  ],
+  "color": "#c2ee7c",
+  "glyph": [
+   ".......",
+   "o..X...",
+   ".o..X..",
+   "..o..X.",
+   ".o..X..",
+   "o..X...",
+   "......."
+  ]
+ },
+ "juggernaut": {
+  "name": "Juggernaut",
+  "of": [
+   "frenzied",
+   "heavy"
+  ],
+  "color": "#cc7a4c",
+  "glyph": [
+   "..XX..",
+   ".X..X.",
+   ".XXXX.",
+   "XoXoXX",
+   "XXoXoX",
+   "XXXXXX"
+  ]
+ },
+ "bulwark": {
+  "name": "Bulwark",
+  "of": [
+   "guarding",
+   "power"
+  ],
+  "color": "#7aa84a",
+  "glyph": [
+   "XXXXXX",
+   "X.oo.X",
+   "X.XX.X",
+   "XX..XX",
+   ".X..X.",
+   "..XX.."
+  ]
+ },
+ "hemlock": {
+  "name": "Hemlock",
+  "of": [
+   "guarding",
+   "poison"
+  ],
+  "color": "#8cc432",
+  "glyph": [
+   "o.o.o.",
+   ".XXX..",
+   "..X...",
+   "..X...",
+   "..X.X.",
+   "..XX.."
+  ]
+ },
+ "cinderward": {
+  "name": "Cinderward",
+  "of": [
+   "guarding",
+   "fire"
+  ],
+  "color": "#ec8c3e",
+  "glyph": [
+   "XXXXXX",
+   "X.X..X",
+   "X.XX.X",
+   "XXooXX",
+   ".XooX.",
+   "..XX.."
+  ]
+ },
+ "static": {
+  "name": "Static",
+  "of": [
+   "guarding",
+   "lightning"
+  ],
+  "color": "#e2ee44",
+  "glyph": [
+   "XXXXXXX",
+   "X...o.X",
+   "X..o..X",
+   "X.ooo.X",
+   ".X.o.X.",
+   "..X.X..",
+   "...X..."
+  ]
+ },
+ "windward": {
+  "name": "Windward",
+  "of": [
+   "guarding",
+   "swift"
+  ],
+  "color": "#6ed88e",
+  "glyph": [
+   "XXXXXXX",
+   "X.....X",
+   "Xoooo.X",
+   "X....oX",
+   ".Xoo.X.",
+   "..X.X..",
+   "...X..."
+  ]
+ },
+ "fortress": {
+  "name": "Fortress",
+  "of": [
+   "guarding",
+   "heavy"
+  ],
+  "color": "#8e9868",
+  "glyph": [
+   "X.XX.X",
+   "XXXXXX",
+   "XXooXX",
+   "XXooXX",
+   "XX..XX",
+   "XX..XX"
+  ]
+ },
+ "momentum": {
+  "name": "Momentum",
+  "of": [
+   "lasting",
+   "power"
+  ],
+  "color": "#d66a62",
+  "glyph": [
+   ".....o",
+   "....XX",
+   "...XXX",
+   "..XXXX",
+   ".XXXXX",
+   "......"
+  ]
+ },
+ "canker": {
+  "name": "Canker",
+  "of": [
+   "lasting",
+   "poison"
+  ],
+  "color": "#9cb24e",
+  "glyph": [
+   "XXXXXX",
+   ".XooX.",
+   "..XX..",
+   "..XX..",
+   ".X..X.",
+   "XXXXXX"
+  ]
+ },
+ "permafrost": {
+  "name": "Permafrost",
+  "of": [
+   "lasting",
+   "frost"
+  ],
+  "color": "#a6d6fe",
+  "glyph": [
+   "XXXXXXX",
+   "X..X..X",
+   "X.XoX.X",
+   "XXoooXX",
+   "X.XoX.X",
+   "X..X..X",
+   "XXXXXXX"
+  ]
+ },
+ "smoulder": {
+  "name": "Smoulder",
+  "of": [
+   "lasting",
+   "fire"
+  ],
+  "color": "#c27a46",
+  "glyph": [
+   "..o....",
+   "...o...",
+   "..o....",
+   "...XX..",
+   ".XXooX.",
+   "XooXXoX",
+   "XXXXXXX"
+  ]
+ },
+ "tempest": {
+  "name": "Tempest",
+  "of": [
+   "lasting",
+   "lightning"
+  ],
+  "color": "#e6dea0",
+  "glyph": [
+   ".XXXX.",
+   "XXXXXX",
+   "XXooXX",
+   ".XXXX.",
+   ".X..X.",
+   "X..X.."
+  ]
+ },
+ "tailwind": {
+  "name": "Tailwind",
+  "of": [
+   "lasting",
+   "swift"
+  ],
+  "color": "#a2d878",
+  "glyph": [
+   "XXXX..",
+   "....X.",
+   "XXXX.o",
+   "......",
+   "XXX...",
+   "...Xo."
+  ]
+ },
+ "bedrock": {
+  "name": "Bedrock",
+  "of": [
+   "lasting",
+   "heavy"
+  ],
+  "color": "#9a8060",
+  "glyph": [
+   "XXXXXX",
+   "......",
+   "XXoXXX",
+   "......",
+   "XXXXoX",
+   "XXXXXX"
+  ]
+ },
+ "haymaker": {
+  "name": "Haymaker",
+  "of": [
+   "fleeting",
+   "power"
+  ],
+  "color": "#f2a0a0",
+  "glyph": [
+   ".......",
+   ".X.X.X.",
+   "XXXXXXX",
+   "XoXoXoX",
+   "XXXXXXX",
+   ".XXXXX.",
+   "..XXX.."
+  ]
+ },
+ "bloat": {
+  "name": "Bloat",
+  "of": [
+   "fleeting",
+   "poison"
+  ],
+  "color": "#c2e27e",
+  "glyph": [
+   "...o..",
+   ".XXXX.",
+   "XXooXX",
+   "XooooX",
+   "XXooXX",
+   ".XXXX."
+  ]
+ },
+ "coldsnap": {
+  "name": "Cold Snap",
+  "of": [
+   "fleeting",
+   "frost"
+  ],
+  "color": "#c6e6ff",
+  "glyph": [
+   "XXXXXX",
+   ".X.XX.",
+   ".X..X.",
+   ".o..X.",
+   "....o.",
+   "......"
+  ]
+ },
+ "flashfire": {
+  "name": "Flashfire",
+  "of": [
+   "fleeting",
+   "fire"
+  ],
+  "color": "#ffcc8a",
+  "glyph": [
+   "X..X..X",
+   ".......",
+   "...X...",
+   "..XoX..",
+   "X.XoX.X",
+   "..XXX..",
+   "......."
+  ]
+ },
+ "jolt": {
+  "name": "Jolt",
+  "of": [
+   "fleeting",
+   "lightning"
+  ],
+  "color": "#fff07a",
+  "glyph": [
+   "....XX",
+   "...XX.",
+   ".XXoXX",
+   "XXoXX.",
+   ".XX...",
+   "XX...."
+  ]
+ },
+ "blink": {
+  "name": "Blink",
+  "of": [
+   "fleeting",
+   "swift"
+  ],
+  "color": "#e2f6e2",
+  "glyph": [
+   ".o.....",
+   "o.o....",
+   ".o.....",
+   "...o...",
+   ".....X.",
+   "....XXX",
+   ".....X."
+  ]
+ },
+ "daze": {
+  "name": "Daze",
+  "of": [
+   "fleeting",
+   "heavy"
+  ],
+  "color": "#e0c6e8",
+  "glyph": [
+   ".X...X.",
+   "XoX.XoX",
+   ".X...X.",
+   ".......",
+   "...X...",
+   "..XoX..",
+   "...X..."
+  ]
+ },
+ "cataclysm": {
+  "name": "Cataclysm",
+  "of": [
+   "vast",
+   "power"
+  ],
+  "color": "#c4583a",
+  "glyph": [
+   "......o",
+   ".....o.",
+   "...XX..",
+   "..XXX..",
+   "..XX...",
+   "X.....X",
+   "XXoooXX"
+  ]
+ },
+ "miasma": {
+  "name": "Miasma",
+  "of": [
+   "vast",
+   "poison"
+  ],
+  "color": "#8e9c42",
+  "glyph": [
+   ".......",
+   ".oo..oo",
+   "o..oo..",
+   ".......",
+   ".XX..XX",
+   "X..XX..",
+   "......."
+  ]
+ },
+ "glacier": {
+  "name": "Glacier",
+  "of": [
+   "vast",
+   "frost"
+  ],
+  "color": "#9ccaea",
+  "glyph": [
+   ".......",
+   "...X...",
+   "..XoX..",
+   ".XoooX.",
+   "XXoooXX",
+   "XXXXXXX",
+   "......."
+  ]
+ },
+ "inferno": {
+  "name": "Inferno",
+  "of": [
+   "vast",
+   "fire"
+  ],
+  "color": "#ea6c30",
+  "glyph": [
+   "...X...",
+   ".X.X.X.",
+   ".XXXXX.",
+   "XXoXoXX",
+   "XooooXX",
+   ".XXXXX.",
+   "......."
+  ]
+ },
+ "stormfront": {
+  "name": "Stormfront",
+  "of": [
+   "vast",
+   "lightning"
+  ],
+  "color": "#cccc84",
+  "glyph": [
+   ".XXXXX.",
+   "XXXXXXX",
+   ".......",
+   ".XX.XX.",
+   "..X..X.",
+   ".XX.XX.",
+   "..o..o."
+  ]
+ },
+ "gale": {
+  "name": "Gale",
+  "of": [
+   "vast",
+   "swift"
+  ],
+  "color": "#b2d8a0",
+  "glyph": [
+   "XXXXX..",
+   ".....X.",
+   "XXXXXXo",
+   ".....X.",
+   "XXXX...",
+   ".......",
+   "......."
+  ]
+ },
+ "earthquake": {
+  "name": "Earthquake",
+  "of": [
+   "vast",
+   "heavy"
+  ],
+  "color": "#a27a50",
+  "glyph": [
+   "...X...",
+   "...XX..",
+   "..XX...",
+   "..X.X..",
+   ".XX..X.",
+   ".X...XX",
+   "XX....."
+  ]
+ }
+}
