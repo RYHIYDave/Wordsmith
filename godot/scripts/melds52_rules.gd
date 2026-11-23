@@ -430,17 +430,24 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 				_tag(m)
 				m.m52["inferno"] = {"i": i, "dps": m.burn_dps * float(_tune("inferno")["trail"]), "tick": 0.0}
 		"stormfront":
+			# (“One hit links the whole crowd”: the one struck and every enemy within the blow's reach of it, and any other the use
+			# struck, linked by it)
+			var S := _tune("stormfront")
+			var L: Dictionary = {}
+			for l in links:
+				if int(l["use"]) == int(h.uses[i]) and int(l["i"]) == i:
+					L = l
+			if L.is_empty():
+				L = {"ids": [], "t": float(S["link"]), "tick": 0.0, "dmg": dmg * float(S["zap"]), "i": i, "use": h.uses[i]}
+				links.append(L)
+			var ids: Array = L["ids"]
+			if not ids.has(m):
+				ids.append(m)
 			if not quiet:
-				var S := _tune("stormfront")
-				var L: Dictionary = {}
-				for l in links:
-					if int(l["use"]) == int(h.uses[i]) and int(l["i"]) == i:
-						L = l
-				if L.is_empty():
-					L = {"ids": [], "t": float(S["link"]), "tick": 0.0, "dmg": dmg * float(S["zap"]), "i": i, "use": h.uses[i]}
-					links.append(L)
-				if not (L["ids"] as Array).has(m):
-					(L["ids"] as Array).append(m)
+				var reach: float = 1.2 * float(r["size"]) + 1.0
+				for o in _mons():
+					if _alive(o) and not ids.has(o) and o.world.distance_to(m.world) <= reach:
+						ids.append(o)
 		"gale":
 			var edge: float = 1.2 * float(r["size"]) + 1.0
 			var far: float = maxf(0.4, edge - m.world.distance_to(h.world))

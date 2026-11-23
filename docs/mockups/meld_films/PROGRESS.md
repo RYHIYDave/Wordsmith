@@ -19,4 +19,4 @@ looked at beside Forking, Siphon, Eruption and Shatter; what falls short is fixe
 | Guarding (6) | yes (fx_m52p_guard.gd) | yes: every moment told (the films raise his shield as the monster comes); the shield's dressing sized to the game's own shell and made bolder after two looks |
 | Lasting (7) | yes (fx_m52p_last.gd) | yes: every moment told; Momentum's band, Canker's and Permafrost's marks, Bedrock's ring and the dunes made bolder after the first look |
 | Fleeting (7) | yes (fx_m52p_last.gd) | yes: every moment told (the films walk him aside for Blink and Tailwind, seen only as he moves); Blink's after-images drawn as his own picture, pixel for pixel, in its pale light; Tailwind a ribbon along where he went; Haymaker's arc and Flashfire's flare made bigger |
-| Vast (7) | | |
+| Vast (7) | yes (fx_m52p_vast.gd) | yes: every moment told; the storm cloud remade after the first look (it drew as a black band); Stormfront's threads showed nothing until its rule linked the whole crowd within the blow's reach, as its doc says (“One hit links the whole crowd”); Miasma's haze, Gale's gusts, Cataclysm's star and the Earthquake round him made bolder |

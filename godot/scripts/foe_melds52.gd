@@ -149,10 +149,13 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 		F._ground(h.world, 1.0, float(_t("inferno")["foeFire"]), "burn", "fire", F._avg(by) * 0.15, [], by, "inferno")
 	if s.call("stormfront") > 0.0 and alive_by and parts.any(func(p): return p[0] == "lightning"):
 		F._warn(h.world, 1.4 + float(_t("stormfront")["foeWider"]), 0.6, F._avg(by) * 0.3, "lightning", by)
+		h.m52._tell({"id": "stormfront", "what": "foe", "x": h.world.x, "y": h.world.y, "r": 1.4 + float(_t("stormfront")["foeWider"]), "foe": true})
 	if s.call("gale") > 0.0:
 		h.knock(away, float(_t("gale")["foeShove"]))
+		h.m52._tell({"id": "gale", "what": "foe", "x": h.world.x, "y": h.world.y, "dx": away.x, "dy": away.y, "foe": true})
 	if s.call("earthquake") > 0.0:
 		h.knock(away, 1.0 + float(_t("earthquake")["foeReach"]))
+		h.m52._tell({"id": "earthquake", "what": "foe", "x": h.world.x, "y": h.world.y, "r": 1.0 + float(_t("earthquake")["foeReach"]), "foe": true})
 
 
 ## Its turn: Permafrost deepening his chill near it; Tempest's arcs at him while he is shocked; Cinderward's shield bursting;
