@@ -358,7 +358,7 @@ func run(main, hero, d: String) -> void:
 				if m[0] == "dodge":
 					gear_dodge += float(m[1])
 	var want_t: float = roundf((gear_dodge + h.stats["move_speed"] * float(U.ut["tail"]["per"])) * (1.0 + M.loot.Words.eff_attr(h.stats["dex"]) * L.DEX_DODGE / 100.0))
-	_line(absf(h.stats["dodge"] - want_t) <= 1.0 and h.stats["dodge"] > d1 and _built(tw).contains("Dodge"), "Tailwind (%s): movement speed %d%%, dodge %d (without it %d)" % [_built(tw), h.stats["move_speed"], h.stats["dodge"], d1])
+	_line(absf(h.stats["dodge"] - want_t) <= 1.0 and h.stats["dodge"] > d1 and _built(tw).contains("Dodge"), "Slipstream (%s): movement speed %d%%, dodge %d (without it %d)" % [_built(tw), h.stats["move_speed"], h.stats["dodge"], d1])
 	await _card(tw, "du15_tailwind")
 
 	# ================= THEIR OWN PICTURES =================

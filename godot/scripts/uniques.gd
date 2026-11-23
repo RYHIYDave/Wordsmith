@@ -26,7 +26,7 @@
 ##     more than a share of his life; he cannot dodge), Workhardened (more armour for each blow lately taken). BARRIER: Quickglass
 ##     (it fills sooner), the Decanter (a flask fills it), Shatterglass (breaking, it bursts), Halo (harder while it is full), the
 ##     Glazier's Ring (his gear's armour is barrier). DODGE: Feint (a blow dodged, harder a while), Afterimage (faster a while),
-##     Featherweight (more dodge, no armour), Close Call (a blow dodged heals), Tailwind (his movement speed is dodge too).
+##     Featherweight (more dodge, no armour), Close Call (a blow dodged heals), Slipstream (his movement speed is dodge too; named so, not Tailwind, at his yes: the Tailwind meld came first).
 extends Node
 
 const Words := preload("res://scripts/words.gd")

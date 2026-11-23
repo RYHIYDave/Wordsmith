@@ -23,7 +23,7 @@ dodge. And a leveling unique no longer picks up its base's dodge or barrier (“
 
 - ARMOUR: Anvilheart, The Burr, Ballast, The Unbowed, Workhardened.
 - BARRIER: Quickglass, The Decanter, Shatterglass, Halo, The Glazier's Ring.
-- DODGE: Feint, Afterimage, Featherweight, Close Call, Tailwind.
+- DODGE: Feint, Afterimage, Featherweight, Close Call, Slipstream (named Tailwind until his yes of 23 Nov 2026 to “Slipstream”, so it would not share the Tailwind meld’s name).
 
 To run without them: `--defuniques=0`.
 

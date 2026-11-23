@@ -572,7 +572,7 @@ export const DEFENCE_DEFS: readonly UniqueDef[] = [
   { id: 'afterimage', name: 'Afterimage', stem: 'hood', from: 'pool', bends: 'hero', stats: ['cdr'], rolled: ['after.secs'], does: (it) => [`After you dodge a blow you are ${DT.after.haste}% faster for ${secs(tuned(it, 'after.secs'))} seconds.`] },
   { id: 'featherweight', name: 'Featherweight', stem: 'jerkin', from: 'pool', bends: 'hero', stats: ['dex', 'moveSpeed'], rolled: ['feather.more'], does: (it) => [`Your dodge is ${pc(tuned(it, 'feather.more'))} more.`], price: () => 'You have no armour.' },
   { id: 'closecall', name: 'Close Call', stem: 'leatherbelt', from: 'pool', bends: 'hero', stats: ['maxLife', 'dex'], rolled: ['close.heal'], does: (it) => [`Each blow you dodge heals you for ${(tuned(it, 'close.heal') * 100).toFixed(1)}% of your life.`] },
-  { id: 'tailwind', name: 'Tailwind', stem: 'dexamulet', from: 'pool', bends: 'hero', defence: 'dodge', stats: ['moveSpeed'], rolled: ['tail.per'], does: (it) => [`Your movement speed is dodge too: ${tuned(it, 'tail.per').toFixed(1)} for each 1%.`] },
+  { id: 'tailwind', name: 'Slipstream', stem: 'dexamulet', from: 'pool', bends: 'hero', defence: 'dodge', stats: ['moveSpeed'], rolled: ['tail.per'], does: (it) => [`Your movement speed is dodge too: ${tuned(it, 'tail.per').toFixed(1)} for each 1%.`] },
 ];
 
 const BY_ID = new Map<string, UniqueDef>([...ALL_DEFS, ...LEVEL_DEFS, ...DEFENCE_DEFS].map((d) => [d.id, d]));
