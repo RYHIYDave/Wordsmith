@@ -639,10 +639,10 @@ func _spot_at(p: Vector2) -> Dictionary:
 		var b: Vector2 = main.loot._body["at"]
 		test.call("body", "body", b, b)
 	# (THE CHAINED RARE, while his chains hold him: touched, he is walked to and his chains broken there: chained_rare.gd)
-	var cr = main.get("chained_rare")
-	if town == null and cr != null and is_instance_valid(cr) and cr.held():
-		var c: Vector2 = cr.m.world
-		test.call("chained", "chained", c, c)
+	for cr in main.get("chained_rares"):
+		if town == null and cr != null and is_instance_valid(cr) and cr.held():
+			var c: Vector2 = cr.m.world
+			test.call("chained", "chained", c, c)
 	return found["best"]
 
 

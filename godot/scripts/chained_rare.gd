@@ -39,6 +39,16 @@ const LAST := 5
 const NEAR := 2.4
 ## (how far he looks for the hero, and the line said the first time he is seen)
 const SEE := 9.0
+## (ENDLESS ANY LEVEL: on every endless level whatever its floor, and this many of them, at least and at most; each at least APART
+## tiles from the others. Off: one, on endless levels of floors 1 to 5 only, as first built)
+static var ENDLESS_ANY := true
+const ENDLESS_N := [2, 3]
+const APART := 10.0
+
+
+## How many to lay on this endless level (ENDLESS_N), by the floor's own luck or `rng`.
+static func endless_n(rng: RandomNumberGenerator) -> int:
+	return rng.randi_range(int(ENDLESS_N[0]), int(ENDLESS_N[1])) if ENDLESS_ANY else 1
 ## (how far from him his three stakes are driven, tiles)
 const STAKE_R := 1.35
 ## (from the chains snapping to his first step, seconds)
@@ -104,6 +114,11 @@ static func wanted(game, where: String) -> bool:
 	if not where.begins_with("floor") or game.map == null or game.loot == null:
 		return false
 	var d := int(game.map.depth)
+	# (ENDLESS ANY LEVEL, his words, 23 Nov 2026: “In endless mode I want multiple chained and stronghold encounters per level.  And
+	# I want these random encounters, (chained, stronghold, muffled bells, and royal cards) to show up in any level.”: on an endless
+	# level of any floor, ENDLESS_N of them)
+	if game.in_endless and ENDLESS_ANY and d >= 1:
+		return true
 	if d < 1 or d > LAST:
 		return false
 	if game.in_endless:
@@ -297,6 +312,9 @@ func _clear_at(p: Vector2, r: float, keep: float) -> bool:
 		return false
 	for o in monsters.list:
 		if is_instance_valid(o) and not o.dead and o.world.distance_to(p) < 1.2:
+			return false
+		# (another chained rare on the level: well apart from him)
+		if is_instance_valid(o) and int(o.get("chained")) != 0 and o.world.distance_to(p) < APART:
 			return false
 	return true
 

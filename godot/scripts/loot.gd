@@ -2675,7 +2675,10 @@ func _last_of_pack(m) -> bool:
 
 ## Whether this floor's packs may be touched by the royals: a floor of the High City (royalFloor).
 func royal_floor() -> bool:
-	return map != null and int(map.depth) >= 16 and int(map.depth) <= 20 and main != null and not main.is_home(main.place)
+	if map == null or main == null or main.is_home(main.place):
+		return false
+	# (ENDLESS ANY LEVEL: an endless level of any floor may have royals' packs: main.gd royal_packs)
+	return (int(map.depth) >= 16 and int(map.depth) <= 20) or bool(main.get("in_endless"))
 
 
 ## A royal's card lying face up where a touched one died (render.ts: the card, popping up as it lands; named in its royal's colour,

@@ -191,6 +191,52 @@ static func pack_growth(level: int) -> float:
 	return minf(float(PACK_GROWTH["most"]), 1.0 + float(PACK_GROWTH["each"]) * (maxi(1, level) - 1))
 
 
+## ENDLESS ANY LEVEL (his words, 23 Nov 2026: “I want these random encounters, (chained, stronghold, muffled bells, and royal cards)
+## to show up in any level.  So it's more random.”): on an endless level of a floor outside the High City, one time in
+## ROYAL_ENDLESS.level a share of its packs (`share`, as floor 16's, 12 of its 51) is touched by a royal, the Princess likeliest and the
+## King least (`weights`); each of the pack wears its crest, and the last of it to fall drops its card (loot.gd). Returns how many packs.
+const ROYAL_ENDLESS := {"on": true, "level": 2, "share": 0.25, "weights": {"princess": 4, "prince": 3, "queen": 2, "king": 1}}
+var royal_seed := -1
+func royal_packs(data: Dictionary) -> int:
+	var d := int(map.depth)
+	if not bool(ROYAL_ENDLESS["on"]) or (d >= 16 and d <= 20):
+		return 0
+	var rng := RandomNumberGenerator.new()
+	if royal_seed >= 0:
+		rng.seed = royal_seed
+	else:
+		rng.randomize()
+	if royal_seed < 0 and rng.randi_range(1, int(ROYAL_ENDLESS["level"])) != 1:
+		return 0
+	var packs := {}
+	for m in data.get("monsters", []):
+		if bool(m.get("boss", false)) or int(m.get("packId", -1)) < 0:
+			continue
+		var k := int(m["packId"])
+		if not packs.has(k):
+			packs[k] = []
+		packs[k].append(m)
+	var W: Dictionary = ROYAL_ENDLESS["weights"]
+	var total := 0
+	for r in W:
+		total += int(W[r])
+	var n := 0
+	for k in packs:
+		if rng.randf() >= float(ROYAL_ENDLESS["share"]):
+			continue
+		var roll := rng.randi_range(1, total)
+		var r := ""
+		for q in W:
+			roll -= int(W[q])
+			if roll <= 0:
+				r = q
+				break
+		for m in packs[k]:
+			m["royal"] = r
+		n += 1
+	return n
+
+
 func grow_packs(data: Dictionary, level: int) -> int:
 	var twin: bool = FoeWords.foe_words_of(dungeon_words).has("twin")
 	var g0 := pack_growth(int(map.depth))
@@ -539,6 +585,8 @@ var quest1115
 ## THE CHAINED RARE, floors 2 to 5 and an endless level of floors 1 to 5 (chained_rare.gd): the floor's own, null where none.
 ## `chained_seed`: 0 or more, the same one in the same place each time (the checks); less, the floor's own luck.
 var chained_rare = null
+## (ENDLESS ANY LEVEL: every one laid on this level, chained_rare the first of them)
+var chained_rares: Array = []
 var chained_seed := -1
 var _chained_mdata := {}
 ## (FLOORS 16 TO 20 BESIDES THEIR FIGHTS: the clockwork songbird, the whole court, the captain's voice: act3/quest1620.gd)
@@ -1351,6 +1399,9 @@ func _build(where: String, arrive: String) -> void:
 		var mdata: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dir + "/monsters.json"))
 		if where != "final":
 			grow_packs(mdata, endless_power() if in_endless else int(map.depth))
+		# (ENDLESS ANY LEVEL: the royals' packs on an endless level of any floor, by the level's luck: royal_packs)
+		if in_endless and where != "final":
+			royal_packs(mdata)
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR, mdata)
 		_chained_mdata = mdata
 		# (THE BOTTOM OF THE SHAFT: its arena's rules, its round, its way back up: final_arena.gd)
@@ -1498,19 +1549,28 @@ func _build(where: String, arrive: String) -> void:
 	loot.enter_place(map, stands, monsters, where == "floor1")
 	# (THE CHAINED RARE: floors 2 to 5 once words fall, and an endless level that is one of floors 1 to 5: chained_rare.gd)
 	chained_rare = null
+	chained_rares = []
 	if not is_home(where) and ChainedRare.wanted(self, where):
-		var cr := ChainedRare.new()
-		cr.main = self
-		cr.monsters = monsters
-		cr.map = map
-		cr.hero = hero
-		cr.loot = loot
-		cr.sfx = sfx
-		_place.add_child(cr)
-		if cr.lay(_chained_mdata, chained_seed):
-			chained_rare = cr
+		var nr := RandomNumberGenerator.new()
+		if chained_seed >= 0:
+			nr.seed = chained_seed + 7
 		else:
-			cr.queue_free()
+			nr.randomize()
+		var count: int = ChainedRare.endless_n(nr) if in_endless else 1
+		for i in count:
+			var cr := ChainedRare.new()
+			cr.main = self
+			cr.monsters = monsters
+			cr.map = map
+			cr.hero = hero
+			cr.loot = loot
+			cr.sfx = sfx
+			_place.add_child(cr)
+			if cr.lay(_chained_mdata, chained_seed + i if chained_seed >= 0 else -1):
+				chained_rares.append(cr)
+			else:
+				cr.queue_free()
+		chained_rare = chained_rares[0] if not chained_rares.is_empty() else null
 	_chained_mdata = {}
 	# (the ways on from a floor that has no stairwell: floor 3's door, floor 4's cave, floor 5's cage: ways.gd)
 	ways = null
@@ -1756,8 +1816,9 @@ func prompt() -> Array:
 	if quest1620 != null and str(quest1620.prompt()[0]) != "":
 		return quest1620.prompt()
 	# (THE CHAINED RARE, by him while his chains hold: chained_rare.gd)
-	if chained_rare != null and is_instance_valid(chained_rare) and str(chained_rare.prompt[0]) != "":
-		return chained_rare.prompt
+	for cr in chained_rares:
+		if is_instance_valid(cr) and str(cr.prompt[0]) != "":
+			return cr.prompt
 	return town.prompt if town != null else ["", ""]
 
 
@@ -3008,6 +3069,9 @@ func _shoot(hero: Hero, dir: String) -> void:
 		get_tree().quit()
 	if _arg("only") == "safe":
 		await preload("res://scripts/check_safe.gd").new().run(self, hero, dir)
+		get_tree().quit()
+	if _arg("only") == "endlessany":
+		await preload("res://scripts/check_endless_any.gd").new().run(self, hero, dir)
 		get_tree().quit()
 	if _arg("only") == "noupright":
 		await preload("res://scripts/check_safe.gd").new().noupright(self, hero, dir)
