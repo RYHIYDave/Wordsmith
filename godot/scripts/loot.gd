@@ -85,12 +85,30 @@ const INT_BARRIER := 0.5
 ## (what the dodge chance and the barrier's filling are: hero.gd DODGE_K, BARRIER_WAIT, BARRIER_FILL)
 
 
-## The kind a piece of gear is of, by its base's name: "heavy", "leather", "cloth", or "" (a weapon, an off-hand, a ring...).
-static func family(it) -> String:
+## THE UNIQUES' DEFENCES (his words, 23 Nov 2026: “I'd like you to go back and look at our uniques that we made and change them to
+## reflect what the class that would be using them would be most likely using as a defense. So if it's a mage unique and it has
+## some flat armor on it, change that to barrier. Or if it's a ranger unique, add dodge.”; game/uniques.ts THE UNIQUES' DEFENCES).
+## A unique's piece may say its own (`udef`: "armor", "dodge", "barrier"): on a piece of armour its base's defence is that one
+## instead, as big as a piece of that kind is at its level, what else is built into it kept; on anything else (an amulet, a ring)
+## it is one more thing built in, as big as a pair of gloves'. A leveling unique (`bare`) carries nothing of its base (“nothing
+## but 20% movement speed”), so no defence of its base's kind either: only what is written on it.
+const UDEF_FAMILY := {"armor": "heavy", "dodge": "leather", "barrier": "cloth"}
+
+
+static func _slot_of(it: Dictionary) -> String:
+	return str(it.get("slot", "")).trim_suffix("1").trim_suffix("2")
+
+
+static func _udef(it: Dictionary) -> String:
+	var u = it.get("udef")
+	return str(u) if u != null and UDEF_FAMILY.has(str(u)) else ""
+
+
+## The kind a piece of gear is of by its base's name alone: "heavy", "leather", "cloth", or "" (a weapon, an off-hand, a ring...).
+static func base_family(it) -> String:
 	if it == null or not (it is Dictionary):
 		return ""
-	var slot: String = str(it.get("slot", "")).trim_suffix("1").trim_suffix("2")
-	if not HEAVY_ARMOUR.has(slot):
+	if not HEAVY_ARMOUR.has(_slot_of(it)):
 		return ""
 	var base: String = str(it.get("base", it.get("name", "")))
 	if base.ends_with("Hood"):
@@ -107,18 +125,51 @@ static func family(it) -> String:
 	return ""
 
 
+## The kind a piece of gear is of: its base's, or the one a unique says is its own (`udef`); a leveling unique, none.
+static func family(it) -> String:
+	if it == null or not (it is Dictionary):
+		return ""
+	if it.get("bare", false) == true:
+		return ""
+	var u := _udef(it)
+	if u != "" and HEAVY_ARMOUR.has(_slot_of(it)):
+		return UDEF_FAMILY[u]
+	return base_family(it)
+
+
+## THE UNIQUES' DEFENCES: the defence a unique's amulet, ring or other piece that is not armour has built in: [stat, value], or [].
+static func jewel_defence(it: Dictionary) -> Array:
+	var u := _udef(it)
+	if not DEFENCE_LAYERS or u == "" or it.get("bare", false) == true or HEAVY_ARMOUR.has(_slot_of(it)):
+		return []
+	var heavy: float = defence_size(str(it.get("slot", "")), float(it.get("ilvl", 1))) / (LEATHER_K * 1.2)
+	return [u, roundf(heavy * (1.0 if u == "armor" else LEATHER_K * (BARRIER_K if u == "barrier" else 1.0)))]
+
+
 ## What is built into a piece (its implicit), as the three defences make it: [[stat, value], ...].
 static func implicit_of(it: Dictionary) -> Array:
 	var im: Array = it.get("imods", [])
 	if not DEFENCE_LAYERS:
 		return im
+	var jewel := jewel_defence(it)
+	if not jewel.is_empty():
+		return im + [jewel]
 	var fam := family(it)
-	if fam == "" or fam == "heavy":
+	var was := base_family(it)
+	if fam == "" or (fam == "heavy" and was == "heavy"):
 		return im
-	var slot: String = str(it.get("slot", "")).trim_suffix("1").trim_suffix("2")
+	var slot := _slot_of(it)
 	var H: Array = HEAVY_ARMOUR[slot]
-	var size: float = (float(H[0]) + float(H[1]) * (float(it.get("ilvl", 1)) - 1.0)) * LEATHER_K
+	var heavy: float = float(H[0]) + float(H[1]) * (float(it.get("ilvl", 1)) - 1.0)
+	var size: float = heavy * LEATHER_K
 	var out: Array = []
+	# (THE UNIQUES' DEFENCES: a piece whose defence is not its base's kind's: that one, what else is built in kept)
+	if fam != was:
+		out.append(["armor", roundf(heavy)] if fam == "heavy" else (["dodge", roundf(size)] if fam == "leather" else ["barrier", roundf(size * BARRIER_K)]))
+		for m in im:
+			if m[0] != "armor" and m[0] != "maxMana":
+				out.append(m)
+		return out
 	if fam == "leather":
 		out.append(["dodge", roundf(size)])
 		for m in im:
@@ -200,7 +251,7 @@ func _defence_option(w: String, slot: String, ilvl: float, o: Dictionary) -> Dic
 ## Everything a piece gives (its `mods`, its implicit as the three defences make it).
 static func mods_of(it: Dictionary) -> Array:
 	var mods: Array = it.get("mods", [])
-	if not DEFENCE_LAYERS or family(it) in ["", "heavy"]:
+	if not DEFENCE_LAYERS or not _built_changed(it):
 		return mods
 	var rest: Array = mods.duplicate()
 	for m in it.get("imods", []):
@@ -209,6 +260,11 @@ static func mods_of(it: Dictionary) -> Array:
 				rest.remove_at(k)
 				break
 	return implicit_of(it) + rest
+
+
+## Is what is built into this piece other than its base's own, by the three defences (a leather or cloth piece; a unique's own)?
+static func _built_changed(it: Dictionary) -> bool:
+	return family(it) != ("heavy" if base_family(it) == "heavy" else "") or not jewel_defence(it).is_empty()
 
 
 ## The lines of what is built into a piece, as the three defences make it (lines_of with "implicit").
@@ -308,7 +364,13 @@ var limit := "cooldown"
 ## Regen as themselves and its cooldown recovery as less Mana Cost (items.ts statView, modLines; tools/godot_loot.ts `...Mana`).
 func lines_of(it: Dictionary, key := "lines") -> Array:
 	# (THE THREE DEFENCES: a leather or cloth piece's built-in lines as they make it)
-	if key == "implicit" and DEFENCE_LAYERS and family(it) in ["leather", "cloth"]:
+	if key == "implicit" and DEFENCE_LAYERS and _built_changed(it):
+		# (THE UNIQUES' DEFENCES: an amulet's or a ring's own: its base's lines, and the defence's after them)
+		var jewel := jewel_defence(it)
+		if not jewel.is_empty():
+			var base_lines: Array = (it[key + "Mana"] if limit == "mana" and it.get(key + "Mana") is Array else it.get(key, [])).duplicate()
+			base_lines.append("+%d %s" % [int(jewel[1]), {"armor": "Armour", "dodge": "Dodge", "barrier": "Barrier"}[jewel[0]]])
+			return base_lines
 		return implicit_lines(it)
 	if limit == "mana" and it.get(key + "Mana") is Array:
 		return it[key + "Mana"]
@@ -511,13 +573,22 @@ func derive() -> void:
 	hero.set_max_life(maxf(1.0, life))
 	# (THE THREE DEFENCES: his dodge and his barrier, his gear's and what Dexterity and Intelligence add)
 	if DEFENCE_LAYERS:
-		hero.stats["dodge"] = roundf(g.call("dodge") * (1.0 + Words.eff_attr(dex) * DEX_DODGE / 100.0))
+		# (THE FIFTEEN OF THE THREE DEFENCES: the Glazier's Ring, his gear's armour barrier instead; Featherweight, more dodge and no
+		# armour; Tailwind, his movement speed dodge too: uniques.gd)
+		var from_armour := 0.0
+		var more_dodge := 0.0
+		if U != null:
+			from_armour = float(hero.stats["armor"]) * U.armour_as_barrier()
+			if from_armour > 0.0 or U.no_armour():
+				hero.stats["armor"] = 0.0
+			more_dodge = U.speed_as_dodge(float(hero.stats["move_speed"]))
+		hero.stats["dodge"] = roundf((g.call("dodge") + more_dodge) * (1.0 + Words.eff_attr(dex) * DEX_DODGE / 100.0) * (U.dodge_more() if U != null else 1.0))
 		# (THE THREE DEFENCES' WORDS: a chance to block gone; a piece that had one burned into it before, its barrier: ten a point)
 		var from_block := 0.0
 		if Words.DEFENCE_WORDS:
 			from_block = g.call("blockChance") * 10.0
 			hero.stats["block_chance"] = 0.0
-		hero.set_max_barrier(roundf((g.call("barrier") + from_block) * (1.0 + Words.eff_attr(int_) * INT_BARRIER / 100.0)))
+		hero.set_max_barrier(roundf((g.call("barrier") + from_block + from_armour) * (1.0 + Words.eff_attr(int_) * INT_BARRIER / 100.0)))
 	else:
 		hero.stats["dodge"] = 0.0
 		hero.set_max_barrier(0.0)
@@ -1052,6 +1123,13 @@ func _pool_unique(quality: int, mf: float, slot := "", weapon := ""):
 	return null
 
 
+## THE FIFTEEN OF THE THREE DEFENCES (game/uniques.ts DEFENCE_DEFS; uniques.gd): five uniques for armour, five for barrier, five
+## for dodge, the pool's (his words, 23 Nov 2026: “give me maybe 15 more uniques that each sort of go with, 5 for armor, 5 for
+## barrier, 5 for dodge. So we can sort of include those new mechanics in the move pool. Sorry, not the move pool, the item
+## pool.”). OFF until his yes to them: none drops or is gambled for; one worn all the same (a check's) works.
+static var DEFENCE_UNIQUES := false
+
+
 ## game.ts makePoolUnique: one of the pool's for him (of that slot, of that weapon, where asked), made for this floor; null if none.
 func make_pool_unique(slot := "", weapon := ""):
 	var pool: Array = []
@@ -1059,6 +1137,8 @@ func make_pool_unique(slot := "", weapon := ""):
 	for id in _uniques["defs"]:
 		var d: Dictionary = _uniques["defs"][id]
 		if d["from"] != "pool" or (d["cls"] != null and d["cls"] != cls and _uniques["rules"]["ownOnly"]):
+			continue
+		if d.get("set") == "defence" and not DEFENCE_UNIQUES:
 			continue
 		if slot != "" and d["slot"] != slot:
 			continue
@@ -1383,6 +1463,9 @@ func drink() -> void:
 	# (UNIQUE ITEMS: Bloodprice, a flask heals nothing: it makes him hit harder for a while)
 	if hero.uniques == null or not hero.uniques.blood_flask():
 		hero.heal(POTION_HEAL)
+	# (THE FIFTEEN OF THE THREE DEFENCES: the Decanter, a flask fills his barrier)
+	if hero.uniques != null:
+		hero.uniques.flask_drunk()
 	sfx.play("potion", -4.0)
 	# (THE SKILL TREES REMADE: Second Wind, a flask throws back what is near, and nothing hurts him for a second)
 	hero.second_wind()

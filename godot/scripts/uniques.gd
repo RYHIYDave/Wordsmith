@@ -20,6 +20,13 @@
 ##     Crier's Hush (a monster close to him has its words darkened), the Free Hand, the Sure Thing (every hit a critical one, no
 ##     harder), the Kindling Rod (every hit fire), the Rot Axe (poison in place of a physical hit), the Packstrap (Guarding's
 ##     shield always on him).
+##   THE FIFTEEN OF THE THREE DEFENCES (game/uniques.ts DEFENCE_DEFS; loot.gd DEFENCE_UNIQUES, off until his yes), the Godot game's
+##     alone, each working with the defence its piece carries. ARMOUR: Anvilheart (his armour against Flame, Frost and Lightning
+##     too), the Burr (what strikes him takes a share of his armour), Ballast (harder the more armour; slower), the Unbowed (no blow
+##     more than a share of his life; he cannot dodge), Workhardened (more armour for each blow lately taken). BARRIER: Quickglass
+##     (it fills sooner), the Decanter (a flask fills it), Shatterglass (breaking, it bursts), Halo (harder while it is full), the
+##     Glazier's Ring (his gear's armour is barrier). DODGE: Feint (a blow dodged, harder a while), Afterimage (faster a while),
+##     Featherweight (more dodge, no armour), Close Call (a blow dodged heals), Tailwind (his movement speed is dodge too).
 extends Node
 
 const Words := preload("res://scripts/words.gd")
@@ -43,6 +50,8 @@ var uq := {
 	"arm_t": 0.0, "arm_m": null, "arm_at": -1e9, "talon_at": -1e9, "strikes": 0,
 	"weight": 0, "weight_hit": 0, "weight_quake": false, "weight_at": -1e9,
 	"tome_a": 0.0, "tome_at": {}, "streak": 0, "receipt_at": -1e9,
+	# (THE FIFTEEN OF THE THREE DEFENCES: Workhardened's blows lately taken and how long they last; Feint's seconds left)
+	"temper": 0, "temper_t": 0.0, "feint_t": 0.0,
 }
 ## SET 1, GYRE: his axes spinning where their flight ended: {at, skill, dmg, t, tick, age}
 var gyres: Array = []
@@ -118,6 +127,9 @@ func mods() -> Array:
 		if (w == "wand" or w == "tome") and loot.gear["offhand"] == null:
 			out.append(["atkSpeed", float(ut["freeHand"]["atkSpeed"])])
 			out.append(["critMult", float(ut["freeHand"]["critMult"])])
+	# (THE FIFTEEN OF THE THREE DEFENCES: Ballast's price, slower feet)
+	if wears("ballast"):
+		out.append(["moveSpeed", -float(ut["ballast"]["slow"])])
 	return out
 
 
@@ -254,6 +266,13 @@ func hit_mult(m, i: int) -> float:
 	# BLOODPRICE: a flask's fury
 	if float(uq["blood_t"]) > 0.0 and wears("bloodprice"):
 		k *= 1.0 + float(ut["bloodprice"]["more"])
+	# (THE FIFTEEN OF THE THREE DEFENCES) BALLAST: harder for his armour; HALO: while his barrier is full; FEINT: a blow dodged lately
+	if wears("ballast"):
+		k *= 1.0 + minf(float(ut["ballast"]["most"]), float(hero.stats.get("armor", 0.0)) / float(ut["ballast"]["per"]) * float(ut["ballast"]["more"]))
+	if wears("halo") and hero.max_barrier > 0.0 and hero.barrier >= hero.max_barrier - 0.01:
+		k *= 1.0 + float(ut["halo"]["more"])
+	if float(uq["feint_t"]) > 0.0 and wears("feint"):
+		k *= 1.0 + float(ut["feint"]["more"])
 	# THE LONG ODDS: elites and bosses harder, everything else softer
 	if wears("longodds"):
 		k *= 1.0 + float(ut["odds"]["more"]) if m.elite or m.boss or m.champion else 1.0 - float(ut["odds"]["less"])
@@ -319,6 +338,105 @@ func hurt_k() -> float:
 	if rooted():
 		k *= 1.0 - float(ut["stone"]["less"])
 	return k
+
+
+# --- THE FIFTEEN OF THE THREE DEFENCES ---
+
+## ANVILHEART: the share of his armour's strength that works against Flame, Frost and Lightning (0: none).
+func armour_on_elements() -> float:
+	return float(ut["anvil"]["share"]) if wears("anvilheart") else 0.0
+
+
+## WORKHARDENED: how much more his armour is now, for the blows he has lately taken (1: no more).
+func armour_k() -> float:
+	return 1.0 + float(ut["temper"]["each"]) * int(uq["temper"]) if wears("workhardened") else 1.0
+
+
+## THE UNBOWED: he cannot dodge (its price).
+func no_dodge() -> bool:
+	return wears("unbowed")
+
+
+## THE UNBOWED: a blow of `dmg`, no more than its share of his life.
+func cap_blow(dmg: float) -> float:
+	return minf(dmg, maxf(1.0, roundf(hero.max_life * float(ut["unbowed"]["most"])))) if wears("unbowed") else dmg
+
+
+## A blow struck him (not dodged, not blocked), whatever took it: THE BURR, the monster whose blow it is takes a share of his
+## armour; WORKHARDENED, his armour more for a while.
+func struck(src) -> void:
+	if wears("workhardened"):
+		uq["temper"] = mini(int(ut["temper"]["most"]), int(uq["temper"]) + 1)
+		uq["temper_t"] = float(ut["temper"]["secs"])
+		_say({"id": "workhardened", "what": "harder", "n": uq["temper"]})
+	if wears("theburr") and _fine(src) and src.has_method("damage"):
+		var d: float = roundf(float(hero.stats.get("armor", 0.0)) * armour_k() * float(ut["burr"]["share"]))
+		if d >= 1.0:
+			src.damage(d, "phys", false, false, [], false, false, -1)
+			_say({"id": "theburr", "what": "pricked", "dmg": d})
+
+
+## A blow missed him altogether: FEINT, harder for a while; AFTERIMAGE, faster for a while (Swift's haste); CLOSE CALL, healed.
+func dodged() -> void:
+	if wears("feint"):
+		uq["feint_t"] = float(ut["feint"]["secs"])
+		_say({"id": "feint", "what": "edge"})
+	if wears("afterimage"):
+		hero.haste = maxf(hero.haste if hero.haste_t > 0.0 else 0.0, float(ut["after"]["haste"]))
+		hero.haste_t = maxf(hero.haste_t, float(ut["after"]["secs"]))
+		hero._tell({"t": "buff", "kind": "haste", "x": hero.world.x, "y": hero.world.y, "stacks": 1, "secs": hero.haste_t})
+		_say({"id": "afterimage", "what": "haste"})
+	if wears("closecall") and hero.life < hero.max_life:
+		hero.heal(float(ut["close"]["heal"]))
+		_say({"id": "closecall", "what": "healed", "share": ut["close"]["heal"]})
+
+
+## QUICKGLASS: how long after a hit his barrier begins to fill (`usual` without it).
+func barrier_wait(usual: float) -> float:
+	return minf(usual, float(ut["quick"]["wait"])) if wears("quickglass") else usual
+
+
+## SHATTERGLASS: his barrier has broken: it bursts, striking all near him for a share of his full barrier.
+func barrier_broke() -> void:
+	if not wears("shatterglass") or hero.max_barrier <= 0.0 or hero.monsters == null:
+		return
+	var S: Dictionary = ut["shatter"]
+	var d: float = maxf(1.0, roundf(hero.max_barrier * float(S["share"])))
+	hero._tell({"t": "burst", "x": hero.world.x, "y": hero.world.y, "r": S["r"], "el": "phys", "style": "shock"})
+	hero.sfx.play("slam", linear_to_db(0.7))
+	var n := 0
+	for m in hero.monsters.list:
+		if not _fine(m) or m.world.distance_to(hero.world) > float(S["r"]) + m.r:
+			continue
+		m.damage(d, "phys", false, false, [], false, false, -1)
+		n += 1
+	_say({"id": "shatterglass", "what": "burst", "dmg": d, "hit": n})
+
+
+## THE DECANTER: a flask drunk fills his barrier.
+func flask_drunk() -> void:
+	if wears("decanter") and hero.max_barrier > 0.0:
+		hero.barrier = hero.max_barrier
+		_say({"id": "decanter", "what": "filled"})
+
+
+## THE GLAZIER'S RING: how much barrier each point of his gear's armour is in place of armour (0: it stays armour).
+func armour_as_barrier() -> float:
+	return float(ut["glazier"]["per"]) if wears("glaziersring") else 0.0
+
+
+## FEATHERWEIGHT: he has no armour (its price); how much more his dodge is (1: no more).
+func no_armour() -> bool:
+	return wears("featherweight")
+
+
+func dodge_more() -> float:
+	return 1.0 + float(ut["feather"]["more"]) if wears("featherweight") else 1.0
+
+
+## TAILWIND: the dodge his movement speed (`speed`, %) is too.
+func speed_as_dodge(speed: float) -> float:
+	return maxf(0.0, speed) * float(ut["tail"]["per"]) if wears("tailwind") else 0.0
 
 
 ## (game.ts hurtHero, the Packstrap) A blow reached him, shield or none.
@@ -477,6 +595,13 @@ func _process(dt: float) -> void:
 	_clock += dt
 	if hero == null or not hero.alive:
 		return
+	# (THE FIFTEEN OF THE THREE DEFENCES: Workhardened's hardening and Feint's edge run out)
+	if float(uq["temper_t"]) > 0.0:
+		uq["temper_t"] = float(uq["temper_t"]) - dt
+		if float(uq["temper_t"]) <= 0.0:
+			uq["temper"] = 0
+	if float(uq["feint_t"]) > 0.0:
+		uq["feint_t"] = float(uq["feint_t"]) - dt
 	if risen != null:
 		_step_risen(dt)
 	if not blades.is_empty():

@@ -1043,7 +1043,7 @@ func uniques(main, hero, dir: String) -> void:
 	h.unhurt = true
 	var L = M.loot
 	var U: Dictionary = L._uniques
-	_line(U.has("defs") and U["defs"].size() == 88 and U.has("pieces"), "the uniques' table: %d of them, pieces for each" % U.get("defs", {}).size())
+	_line(U.has("defs") and U["defs"].size() == 103 and U.has("pieces"), "the uniques' table: %d of them (88, and the fifteen of the three defences), pieces for each" % U.get("defs", {}).size())
 	M.way_depth = maxi(M.way_depth, 6)
 	await M.go_to("floor6", "down")
 	await M._wait(1.0)

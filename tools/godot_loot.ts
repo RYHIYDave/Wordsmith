@@ -32,7 +32,7 @@ import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { DARK_RING, Game } from '../src/game/game';
-import { LEVEL_DEFS, UNIQUE_DROPS, UNIQUE_RULES, UNIQUE_TUNE, liveDefs, makeUnique, uniqueDef, uniqueSlot, uniqueWeapon, wordIsIn } from '../src/game/uniques';
+import { DEFENCE_DEFS, LEVEL_DEFS, UNIQUE_DROPS, UNIQUE_RULES, UNIQUE_TUNE, liveDefs, makeUnique, uniqueDef, uniqueSlot, uniqueWeapon, wordIsIn } from '../src/game/uniques';
 import { rarityChances } from '../src/game/items';
 import { RNG as UniqueRng } from '../src/engine/rng';
 import { CLASS_BASES, ITEM_BASES, rollFullRare, rollItem } from '../src/game/items';
@@ -128,7 +128,12 @@ const kinds = new Map<string, Item>();
 // (ABILITIES: MANA, the start screen's switch: a piece's lines as they read when mana is the limit (items.ts statView: its Max Mana
 // and Mana Regen as themselves, not as cooldown recovery; its cooldown recovery as less Mana Cost), kept only where they differ)
 const ifMana = (cd: string[], mana: string[]): string[] | undefined => (JSON.stringify(cd) === JSON.stringify(mana) ? undefined : mana);
+// (a unique's piece: THE UNIQUES' DEFENCES, defenceOf, wherever it is made: the pieces of each, a floor's pool)
 const plain = (it: Item): Record<string, unknown> => {
+  const d = it.rarity === 3 ? uniqueDef(it.unique) : undefined;
+  return d ? defenceOf(plain0(it), d) : plain0(it);
+};
+const plain0 = (it: Item): Record<string, unknown> => {
   const mods = itemMods(it);
   if (!kinds.has(`${it.slot}:${it.ilvl}`)) kinds.set(`${it.slot}:${it.ilvl}`, it);
   return {
@@ -162,7 +167,21 @@ function uniqueOut(it: Item): Record<string, unknown> {
   return {
     unique: d.id, uroll: it.uroll ?? {}, does: d.does(it), price: d.price ? d.price(it) : null,
     ucls: d.cls ?? null, only: !!d.only, wordIn: wordIsIn(d), powers: d.powers ?? 1,
+    // (THE UNIQUES' DEFENCES, uniques.ts `defence`: the defence it carries where that is not its base's kind's, loot.gd `udef`; a
+    // leveling unique carries nothing of its base, `bare`)
+    udef: d.defence ?? null, bare: d.from === 'level',
   };
+}
+
+/** THE UNIQUES' DEFENCES: a leveling unique whose armour is another defence (the Quilted Coat's, dodge): its mods and lines so. */
+function defenceOf(out: Record<string, unknown>, d: { from: string; defence?: string }): Record<string, unknown> {
+  if (d.from !== 'level' || !d.defence || d.defence === 'armor') return out;
+  const word = d.defence === 'dodge' ? 'Dodge' : 'Barrier';
+  const mods = (l: unknown): unknown => (l as [string, number][]).map((m) => (m[0] === 'armor' ? [d.defence, m[1]] : m));
+  const lines = (l: unknown): unknown => (Array.isArray(l) ? (l as string[]).map((t) => t.replace(/ Armou?r$/, ` ${word}`)) : l);
+  const o = { ...out, mods: mods(out.mods), lines: lines(out.lines), linesMana: lines(out.linesMana), has: (out.has as string[]).map((h) => (h === 'armor' ? d.defence! : h)) };
+  o.props = (out.props as { mods: unknown; lines: unknown; linesMana: unknown }[]).map((p) => ({ mods: mods(p.mods), lines: lines(p.lines), linesMana: lines(p.linesMana) }));
+  return o;
 }
 
 /**
@@ -518,8 +537,9 @@ writeFileSync(`${OUT}/trials.json`, JSON.stringify({ trials, practice }));
 const uRng = new UniqueRng((seed ^ 0x5a17c3) >>> 0);
 const uDefs: Record<string, unknown> = {};
 const uPieces: Record<string, unknown[]> = {};
-for (const d of [...liveDefs(), ...LEVEL_DEFS]) {
-  uDefs[d.id] = { name: d.name, from: d.from, boss: d.boss ?? null, floor: d.floor ?? null, cls: d.cls ?? null, only: !!d.only, bends: d.bends, powers: d.powers ?? 1, rolled: d.rolled ?? [], slot: uniqueSlot(d), weapon: uniqueWeapon(d) ?? null, level: d.level ?? null };
+// (THE FIFTEEN OF THE THREE DEFENCES, uniques.ts DEFENCE_DEFS: `set` "defence"; loot.gd DEFENCE_UNIQUES says whether they drop)
+for (const d of [...liveDefs(), ...LEVEL_DEFS, ...DEFENCE_DEFS]) {
+  uDefs[d.id] = { set: DEFENCE_DEFS.includes(d) ? 'defence' : null, udef: d.defence ?? null, name: d.name, from: d.from, boss: d.boss ?? null, floor: d.floor ?? null, cls: d.cls ?? null, only: !!d.only, bends: d.bends, powers: d.powers ?? 1, rolled: d.rolled ?? [], slot: uniqueSlot(d), weapon: uniqueWeapon(d) ?? null, level: d.level ?? null };
   const out: unknown[] = [];
   if (d.from === 'level') {
     for (let k = 0; k < 4; k++) {
