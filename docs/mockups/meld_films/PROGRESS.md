@@ -24,3 +24,18 @@ looked at beside Forking, Siphon, Eruption and Shatter; what falls short is fixe
 All 52 filmed together once every group was done (`--cases=m52film`, every moment told, no script errors; the rules check
 `--cases=m52` 6 checks, 0 wrong) and put on one page for his yes: https://claude.ai/artifact/QksZWmUCHKhmpZMbMwETKq
 (made by page.py from the films). Melds52.ON stays off until he says yes.
+
+## The last 46 of floors 1 to 10 (The Last Floor 1–10 Melds)
+
+Painted by godot/scripts/fx_m52p_last110.gd from the animations doc he passed (“Good”, 23 Nov 2026); rules melds46_rules.gd,
+on monsters foe_melds46.gd. Checked as the 52 were: each group filmed, every moment its rules told looked at in close-up, what
+fell short made bolder and filmed again (Onrush, Hornet, Quicksilver, Mire, Charge; Lamprey's wisps, Reverb's rings,
+Staccato's ticks, Double Tap's flash, Time Bomb, Detonator's charge, Vendetta's tally, the Hourglass, Aftermath's smoke).
+Fury's frenzy now fades a step at a time as embers over his head. REDOUBT'S SECOND SHELL NEVER FORMED in play (it looked at a
+memory of his shield that Melds 52 had already brought up to now): it keeps its own, and forms. The films set up what some
+twists need (check_melds52.gd: a pack left nearly dead for Hair Trigger, his shell and frenzy cut short once the blow lands for
+Redoubt and Fury, Guarding beside Hourglass behind so the blow leaves a ward to slow).
+
+All 46 filmed together (`--cases=m52film:<the 46>`, 46 films, every moment of the doc told, no script errors; the rules check
+`--cases=m52` 6 checks, 0 wrong, 218 cases) and put on one page for his yes: https://claude.ai/artifact/8xKRFHAjeV9kVnwiBCiSKH
+(`python3 page.py <films> <out> 46`). Melds52.ON stays off until he says yes.
