@@ -36,6 +36,9 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 	var key := "%s:%s" % [b["id"], b["what"]]
 	if LEECH_SAME and DRAINS.has(key):
 		_drain(b, DRAINS[key])
+	# (CONDUIT, under OWN: the life its arc wins comes to him as Leech's own drain, along Lightning's own bolt)
+	if OWN and key in ["conduit:bead", "conduit:foe"]:
+		_drain(b, 2)
 	match "%s:%s" % [b["id"], b["what"]]:
 		"bloodlust:fury":
 			b["end"] = 0.6
@@ -73,6 +76,9 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 			b["end"] = 0.5
 		"quickfuse:pop":
 			b["end"] = 0.5
+			# (under OWN: what it killed goes up in Volatile's own blast, a moment after; the meld draws none of its own)
+			if _same("blast"):
+				return false
 			for i in 16:
 				_bit(b["x"], b["y"], 10, "streak", PackedColorArray([R[3], R[4], R[5]]), 4.4, 0.35, 120, 20, 110)
 			for i in 8:
@@ -82,7 +88,8 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 			b["end"] = 0.7
 			for i in 12:
 				_bit(b["x"], b["y"], 3, "puff", PackedColorArray(DUST), 1.6, 0.8, -6, 4, 12)
-			for i in 14:
+			# (under OWN: Volatile's own blast takes the kill; its heavy shock ring and dust stay, Heavy's twist)
+			for i in (0 if _same("blast") else 14):
 				_bit(b["x"], b["y"], 10, "streak", PackedColorArray([R[3], R[4], R[5]]), 3.6, 0.35, 120, 20, 100)
 			fx.kick(2.5)
 		_:
@@ -184,6 +191,9 @@ func paint_air(b: Dictionary) -> void:
 			var ey := _wy(b["x1"], b["y1"]) - 14.0
 			var fade := 1.0 - _c01((u - 0.7) / 0.3)
 			_bolt(ax, ay, ex, ey, PackedColorArray([R[0], R[1], R[2], R[3], R[4], R[5]]), sd, 0.6 * fade, 2)
+			# (under OWN: the life comes as Leech's own drain, begun with the beat)
+			if OWN:
+				return
 			var bx := lerpf(ax, ex, u)
 			var by := lerpf(ay, ey, u) - sin(u * PI) * 6.0
 			_ga(1.0)
@@ -245,7 +255,7 @@ func paint_air(b: Dictionary) -> void:
 			_glow(cx, cy, 34.0, R[4], 0.9 * fade)
 			_glow(cx, cy, 18.0, Color.WHITE, 0.7 * fade)
 		"concussion:boom", "concussion:foe":
-			var u := _c01(bt / 0.25)
+			var u := _c01(bt / 0.25) if not _same("blast") else 1.0
 			var cx := _wx(b["x"], b["y"])
 			var cy := _wy(b["x"], b["y"]) - 8.0
 			_glow(cx, cy, 40.0, R[4], 0.8 * (1.0 - u))

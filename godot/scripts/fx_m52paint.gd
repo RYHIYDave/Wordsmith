@@ -88,7 +88,9 @@ func handle(e: Dictionary) -> void:
 			b["end"] = 0.7
 		"flashfreeze:freeze":
 			b["end"] = 1.4 + 4.0
-			for i in 16:
+			# (under OWN: Frost's own ice bursts up round it as it freezes, fx.gd's freeze, and holds it, fx_figures.gd's; the meld
+			# keeps its own rest ring)
+			for i in (0 if OWN else 16):
 				_bit(b["x"], b["y"], mid, "streak", PackedColorArray([ICE[3], ICE[4], ICE[5]]), 3.6, 0.5, 200, 40, 120)
 		"flashfreeze:sheet":
 			b["end"] = 0.9
@@ -251,7 +253,8 @@ func draw_air(c: CanvasItem) -> void:
 			"flashfreeze:frost":
 				_frost_creep(b)
 			"flashfreeze:freeze":
-				_ice_shell(b)
+				if not OWN:
+					_ice_shell(b)
 			"flashfreeze:foe":
 				_ice_shell(b)
 			"rekindle:relight":

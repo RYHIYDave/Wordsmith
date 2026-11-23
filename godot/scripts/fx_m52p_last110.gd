@@ -91,12 +91,20 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 			if key == "charge:ram":
 				fx.kick(2.0)
 		"mire:mud", "mire:seep", "mire:foe":
-			for i in 8:
-				_bit(b["x"], b["y"], 2, "bubble", PackedColorArray([R[4], R[5], R[3]]), 0.5, 0.8, -10, 6, 18)
+			# (under OWN: Poison's own bubbles)
+			if OWN:
+				fx.bubbles(b["x"], b["y"], 0.4, 8)
+			else:
+				for i in 8:
+					_bit(b["x"], b["y"], 2, "bubble", PackedColorArray([R[4], R[5], R[3]]), 0.5, 0.8, -10, 6, 18)
 		"icebreaker:shatter":
 			fx.kick(2.0)
-			for i in 18:
-				_bit(b["x"], b["y"], mid, "streak", PackedColorArray([ICE[3], ICE[4], ICE[5], Color.WHITE]), 3.4, 0.5, 160, 20, 90)
+			# (under OWN: Frost's own ice breaking)
+			if OWN:
+				fx.shatter(b["x"], b["y"])
+			else:
+				for i in 18:
+					_bit(b["x"], b["y"], mid, "streak", PackedColorArray([ICE[3], ICE[4], ICE[5], Color.WHITE]), 3.4, 0.5, 160, 20, 90)
 		"anvil:sparks", "anvil:foe":
 			var dx: float = b["dx"]
 			var dy: float = b["dy"]
@@ -111,6 +119,12 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 		"whipcrack:crack", "whipcrack:snap", "whipcrack:foe":
 			fx.kick(2.0)
 		"cluster:pop", "detonator:burst", "detonator:boom", "mayhem:burst", "minefield:mine", "timebomb:boom", "hairtrigger:trigger", "blastwave:wave":
+			# (under OWN: each goes up in Volatile's own blast)
+			if OWN and BLASTS.has(key):
+				for spot in _spots(b, e):
+					_own_blast(spot.x, spot.y, 0.9 if key == "cluster:pop" else float(b["r"]))
+				b["own"] = true
+				return true
 			fx.kick(3.0 if key in ["detonator:boom", "timebomb:boom", "blastwave:wave"] else 1.5)
 			for spot in _spots(b, e):
 				for i in 10:
@@ -370,7 +384,8 @@ func paint_air(b: Dictionary) -> void:
 			var top := _mid(b["m"]) * 2.0 + 4.0
 			var cx := _wx(b["x"], b["y"])
 			var cy := _wy(b["x"], b["y"]) - top
-			for k in 4:
+			# (under OWN: Heavy's own stun is on it already)
+			for k in (0 if _same("stars") else 4):
 				var a := bt * 14.0 + float(k) * TAU / 4.0
 				var x := cx + cos(a) * 8.0
 				var y := cy + sin(a) * 3.0
@@ -497,7 +512,7 @@ func paint_air(b: Dictionary) -> void:
 				_fs(FIRE[5])
 				_fill(_ri(x) + 1, _ri(y) - 4, 1, 2)
 		"cluster:pop", "cluster:foe", "detonator:burst", "detonator:boom", "mayhem:burst", "minefield:mine", "timebomb:boom", "hairtrigger:trigger", "hairtrigger:touch", "hairtrigger:foe":
-			for s in _spots(b, b["e"]):
+			for s in ([] if b.get("own", false) else _spots(b, b["e"])):
 				var big := 1.6 if key in ["detonator:boom", "timebomb:boom"] else 1.0
 				_glow(_wx(s.x, s.y), _wy(s.x, s.y) - 6.0, 30.0 * big * _ease(u * 2.0), R[4], fade)
 				_glow(_wx(s.x, s.y), _wy(s.x, s.y) - 6.0, 12.0 * big, Color.WHITE, 0.8 * fade)
@@ -784,13 +799,16 @@ func _shell(id: String, cx: float, cy: float, rx: float, ry: float, sd: int, fad
 					_fs(R[3] if lit < 0.7 else R[4])
 					_fill(_ri(x) - 1, _ri(y) - 1, 3, 2)
 			"parry":
-				_ga((0.6 + 0.4 * lit) * fade)
-				_fs(R[5] if lit > 0.6 else R[4])
-				_fill(_ri(x), _ri(y), 2, 2)
+				if not _on_his:
+					_ga((0.6 + 0.4 * lit) * fade)
+					_fs(R[5] if lit > 0.6 else R[4])
+					_fill(_ri(x), _ri(y), 2, 2)
 			_:
-				_ga((0.55 + 0.35 * lit) * fade)
-				_fs(R[4] if lit > 0.7 else R[3])
-				_fill(_ri(x), _ri(y), 1, 1)
+				# (under OWN, on him: Guarding's own shell is the ring)
+				if not _on_his:
+					_ga((0.55 + 0.35 * lit) * fade)
+					_fs(R[4] if lit > 0.7 else R[3])
+					_fill(_ri(x), _ri(y), 1, 1)
 		match id:
 			"minefield":
 				if i % 7 == 0:
@@ -896,7 +914,10 @@ func paint_air_more() -> void:
 		for i in 3:
 			var f: String = h.m52.fid(i)
 			if SHELLS.has(f):
-				_shell(f, hx, hy - 17.0, 17.0, 23.0, 7, 1.0, h.frenzy)
+				if OWN:
+					_own_shell(func(cx: float, cy: float, rx: float, ry: float) -> void: _shell(f, cx, cy, rx, ry, 7, 1.0, h.frenzy))
+				else:
+					_shell(f, hx, hy - 17.0, 17.0, 23.0, 7, 1.0, h.frenzy)
 				break
 	# (a monster's, carrying one, while its shield holds)
 	if h.monsters != null and is_instance_valid(h.monsters):

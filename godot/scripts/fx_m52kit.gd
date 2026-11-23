@@ -238,7 +238,9 @@ func handle(e: Dictionary) -> void:
 			b["minor"] = true
 			break
 	_foe_now = _foe_beat(b)
+	_b = b
 	var keep := begin(b, e)
+	_b = {}
 	_foe_now = false
 	if keep:
 		beats.append(b)
@@ -257,7 +259,9 @@ func update(dt: float) -> void:
 			b["x"] = h.world.x
 			b["y"] = h.world.y
 		_foe_now = _foe_beat(b)
+		_b = b
 		tick(b, dt)
+		_b = {}
 		_foe_now = false
 		if float(b["t"]) >= float(b["end"]):
 			b["done"] = true
@@ -283,7 +287,9 @@ func draw_floor(c: CanvasItem) -> void:
 	_canvas = c
 	for b: Dictionary in beats:
 		_foe_now = _foe_beat(b)
+		_b = b
 		paint_floor(b)
+	_b = {}
 	_foe_now = false
 	paint_floor_more()
 	_ga(1.0)
@@ -294,7 +300,9 @@ func draw_air(c: CanvasItem) -> void:
 	_canvas = c
 	for b: Dictionary in beats:
 		_foe_now = _foe_beat(b)
+		_b = b
 		paint_air(b)
+	_b = {}
 	_foe_now = false
 	paint_air_more()
 	for p: Dictionary in bits:
@@ -384,6 +392,11 @@ func _flames(cx: float, cy: float, n: int, w: float, hgt: float, fade: float, R:
 
 ## A jagged bolt from a to b on the screen, made anew every other frame, with its glow (as Forking's: fx_melds8.gd).
 func _bolt(ax: float, ay: float, bx: float, by: float, R: PackedColorArray, sd: int, fade: float, wide := 3) -> void:
+	if _same("bolt"):
+		return
+	if OWN:
+		_volt(ax, ay, bx, by, sd, fade)
+		return
 	var frame := int(floorf(t * 15.0))
 	var seg := 7
 	var len := sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay))
@@ -414,6 +427,8 @@ func _bolt(ax: float, ay: float, bx: float, by: float, R: PackedColorArray, sd: 
 
 ## Wisps of life curving from (a) to (b) on the floor, `n` of them, `u` of the way there (0 to 1), in `R`, `thick` px.
 func _wisps(ax: float, ay: float, bx: float, by: float, u: float, n: int, R: PackedColorArray, sd: int, thick := 1, za := 12.0, zb := 14.0) -> void:
+	if _same("wisps"):
+		return
 	for k in n:
 		var bend := (_rh(sd, k) - 0.5) * 2.0
 		var sx := _wx(ax, ay)
@@ -451,6 +466,11 @@ func _wisps(ax: float, ay: float, bx: float, by: float, u: float, n: int, R: Pac
 
 ## A sight closing on a point of the screen and snapping shut (Precise's): `u` 0 to 1 the closing, in `R`.
 func _sight(cx: float, cy: float, u: float, R: PackedColorArray, fade: float) -> void:
+	if _same("sight"):
+		return
+	if OWN:
+		_sight_own(cx, cy, u, R, fade)
+		return
 	var r := _ri(lerpf(26.0, 6.0, _ease(u)))
 	_ga(fade)
 	_fs(Color.WHITE if u < 1.0 else R[4])
@@ -688,6 +708,154 @@ func _reticle(x: float, y: float, rt: float, C: Array, a: float) -> void:
 # same wisps flowing into it (drain_to). Each meld's own twist stays on top (Lamprey's teeth, Bloodtide's wave). Behind the switch,
 # off until his yes to its pictures; `--leechsame=1` films it on. ---
 static var LEECH_SAME := false
+
+
+## THE WORDS' OWN LOOKS (his "Yes go through them", 23 Nov 2026, to "Want me to go through all 98 and make each one use its words'
+## own looks where they exist?", after his "Leech already had a nice animation for HP going from the enemy to the player.  Why
+## are the new melds different?"). A meld counts as both its words (words.gd `has`), so each word's own look already plays for
+## it: Precise's sight closing on what it marks, Frenzied's spark leaping to him from a kill, Lightning's arcs, Heavy's stun,
+## Volatile's blast where a kill goes up, Frost's ice where one freezes. Here a meld no longer draws its own copy of those on top
+## (SAME), and what it draws of a word's own thing (a bolt, a sight, a blast, life drawn) is drawn as that word draws it, in its
+## colours; its own twist stays on top. Behind the switch OWN, off until his yes to its pictures (pictures first); `--wordsown=1`
+## films it on, with LEECH_SAME.
+static var OWN := false
+const W610 := preload("res://scripts/fx_words610.gd")
+## (the beat being begun, ticked or painted now)
+var _b: Dictionary = {}
+## The moments whose word's own look already plays as they happen, so the meld draws no copy of it with these brushes:
+const SAME := {
+	# PRECISE behind marks what it hits and its sight closes on it (hero.gd markOn); Doubletap and Bullseye mark more, Riposte the
+	# one who struck him, Seeker's arc finds the marked one: each with that sight
+	"sight": ["duelist:mark", "needle:mark", "brand:mark", "seeker:mark", "quickdraw:mark", "doubletap:mark", "bullseye:mark",
+		"rapier:mark", "riposte:mark", "lancet:mark", "detonator:mark", "ambush:mark", "doubletap:marks", "bullseye:marks",
+		"seeker:seek", "riposte:riposte"],
+	# FRENZIED behind: a kill's spark leaps from it to him (hero.gd frenzyFed)
+	"wisps": ["berserk:kill", "fever:kill"],
+	# LIGHTNING's own arcs and bolts from the sky strike each one (arc told with them)
+	"bolt": ["jolt:all", "fulgurite:bolt", "fulgurite:stun"],
+	# HEAVY's own stun turning over what is stunned (monster.gd stun_for tells it)
+	"stars": ["charge:ram", "fulgurite:stun"],
+	# VOLATILE in front: what it kills goes up in Volatile's own blast (hero.gd _explode)
+	"blast": ["quickfuse:pop", "concussion:boom"],
+}
+## And the blasts that are a Volatile meld's own (more of them, later, bigger), drawn as Volatile's own blast goes off.
+const BLASTS := ["cluster:pop", "detonator:burst", "detonator:boom", "mayhem:burst", "minefield:mine", "timebomb:boom", "hairtrigger:trigger"]
+
+
+## Is the beat now one whose `kind` of look is its word's own, already played?
+func _same(kind: String) -> bool:
+	return OWN and not _b.is_empty() and SAME[kind].has("%s:%s" % [_b["id"], _b["what"]])
+
+
+## A Volatile meld's own blast, under OWN, as Volatile's own goes off (fx.gd _burst, its "blast": what hero.gd _explode tells).
+func _own_blast(x: float, y: float, r: float) -> void:
+	if fx != null:
+		fx._burst({"t": "burst", "x": x, "y": y, "r": r, "el": "phys", "style": "blast", "words": ["volatile"]})
+
+
+## (is the shell being drawn now his, under OWN? Then Guarding's own shell is its ring, and the meld only dresses it)
+var _on_his := false
+
+
+## His shell's middle and size on the screen, as Guarding's own is drawn round him (fx_words610.gd _shell): [cx, cy, rx, ry].
+func _his_shell() -> Array:
+	var hp: Vector2 = fx.hero_at()
+	var top: float = fx.figures.headroom() if fx.figures != null else 0.0
+	if top <= 0.0:
+		top = 32.0
+	return [fx.gx(hp.x, hp.y), fx.gy(hp.x, hp.y) - top * 0.52, 13.0, floorf(top * 0.62 + 0.5)]
+
+
+## GUARDING's own shell round him, as fx_words610.gd draws it: emerald points, lit at the upper left, a light running round it,
+## faintly filled; for while a meld's shell holds and the game's is not drawn already (a barrier holds, not a shield).
+func _guard_shell(cx: float, cy: float, rx: float, ry: float) -> void:
+	var C: PackedColorArray = W610.RAMP.get("guarding", PackedColorArray())
+	if C.size() < 6:
+		return
+	_ga(0.14)
+	_fs(C[3])
+	for j in range(-int(ry), int(ry) + 1):
+		var hw := rx * sqrt(maxf(0.0, 1.0 - float(j * j) / (ry * ry)))
+		if hw >= 1.0:
+			_fill(_ri(cx - hw), _ri(cy) + j, _ri(hw * 2.0), 1)
+	var n := 52
+	var run := int(floorf(t * 30.0)) % n
+	for i in n:
+		var a := float(i) / n * TAU
+		var ex := cos(a)
+		var ey := sin(a)
+		var lit := ex < -0.15 and ey < -0.15
+		_ga(1.0 if lit or i == run or i == (run + n / 2) % n else 0.8)
+		_fs(C[5] if i == run or i == (run + n / 2) % n else (C[4] if lit else C[3]))
+		_fill(floorf(cx + ex * rx + 0.5), floorf(cy + ey * ry + 0.5), 2 if lit else 1, 1)
+	_ga(1.0)
+
+
+## Under OWN, his shell from a Guarding meld in front: Guarding's own, dressed as meld `id` dresses it (`dress`, its painter's).
+func _own_shell(dress: Callable) -> void:
+	var S := _his_shell()
+	if fx.w610 == null or float(fx.w610.guard["t"]) <= 0.0:
+		_guard_shell(S[0], S[1], S[2], S[3])
+	_on_his = true
+	dress.call(S[0], S[1], S[2], S[3])
+	_on_his = false
+
+
+## LIGHTNING's own bolt, as fx.gd draws its ground bolts: a thin jagged line, white as it strikes, then its yellow, with its glow
+## a pixel under it while fresh; struck anew every 0.16 s for as long as it lasts (fx.gd ground_bolt, its draw).
+func _volt(ax: float, ay: float, bx: float, by: float, sd: int, fade: float) -> void:
+	var cs: PackedColorArray = L.VOLT
+	if cs.size() < 4:
+		return
+	var at := t + float(sd % 97) * 0.037
+	var k := fmod(at, 0.16)
+	var shot := int(floorf(at / 0.16))
+	var len := Vector2(bx - ax, by - ay).length()
+	var segs := clampi(_ri(len / 18.0 * 1.6), 3, 7)
+	var col: Color = cs[0] if k < 0.06 else (cs[2] if k < 0.11 else cs[3])
+	var px := ax
+	var py := ay
+	for i in range(1, segs + 1):
+		var u := float(i) / segs
+		var qx := bx if i == segs else ax + (bx - ax) * u + (_rh(sd, shot * 31 + i) - 0.5) * 2.0 * 5.0
+		var qy := by if i == segs else ay + (by - ay) * u + (_rh(sd + 7, shot * 31 + i) - 0.5) * 2.0 * 2.6
+		if k < 0.08:
+			_ga(fade)
+			_fs(cs[3])
+			_line(px, py + 1.0, qx, qy + 1.0, 1)
+		_ga(fade)
+		_fs(col)
+		_line(px, py, qx, qy, 1)
+		px = qx
+		py = qy
+	_ga(1.0)
+
+
+## PRECISE's own sight, as fx_words610.gd draws "of the Mark"'s: four corners round the one it is on, each with a dark edge
+## outside it, closing in as `u` runs to 1 and snapping tight; in Precise's colours (a monster's, in its own).
+func _sight_own(cx: float, cy: float, u: float, R: PackedColorArray, fade: float) -> void:
+	var CP: PackedColorArray = W610.RAMP.get("precise", R)
+	var shut := u >= 1.0
+	var close := -2.0 if shut else float(_ri(9.0 * (1.0 - _ease(u))))
+	var col: Color = (R[4] if shut else R[3]) if _foe_now else (CP[5] if shut else CP[3])
+	var x0 := float(_ri(cx)) - 12.0 - close
+	var x1 := float(_ri(cx)) + 12.0 + close
+	var y0 := float(_ri(cy)) - 17.0 - close
+	var y1 := float(_ri(cy)) + 15.0 + close
+	var n := 4.0
+	for q in [[x0, y0, 1.0, 1.0], [x1, y0, -1.0, 1.0], [x0, y1, 1.0, -1.0], [x1, y1, -1.0, -1.0]]:
+		var qx: float = q[0]
+		var qy: float = q[1]
+		var sx: float = q[2]
+		var sy: float = q[3]
+		_ga(fade)
+		_fs(W610.SIGHT_DARK)
+		_fill(minf(qx - sx, qx - sx + sx * n), qy - sy, n + 1.0, 1)
+		_fill(qx - sx, minf(qy - sy, qy - sy + sy * n), 1, n + 1.0)
+		_fs(col)
+		_fill(minf(qx, qx + sx * (n - 1.0)), qy, n, 1)
+		_fill(qx, minf(qy, qy + sy * (n - 1.0)), 1, n)
+	_ga(1.0)
 
 
 ## Life drawn from the beat's place (x, y) to (x1, y1), as the game's Leech draws it.

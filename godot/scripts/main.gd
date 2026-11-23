@@ -658,6 +658,12 @@ func _ready() -> void:
 	# (THE NEW MELDS KEEP LEECH'S OWN DRAIN, off until his yes to their pictures: `--leechsame=1` shows it, fx_m52kit.gd)
 	if _arg("leechsame") != "":
 		preload("res://scripts/fx_m52kit.gd").LEECH_SAME = _arg("leechsame") == "1"
+	# (THE MELDS USE THEIR WORDS' OWN LOOKS, off until his yes to their pictures: `--wordsown=1` shows it, with Leech's drain:
+	# fx_m52kit.gd OWN)
+	if _arg("wordsown") != "":
+		preload("res://scripts/fx_m52kit.gd").OWN = _arg("wordsown") == "1"
+		if _arg("wordsown") == "1":
+			preload("res://scripts/fx_m52kit.gd").LEECH_SAME = true
 	if _arg("clouds2") != "":
 		preload("res://scripts/fx_cloud.gd").ON = _arg("clouds2") == "1"
 	if _arg("defart") == "0":

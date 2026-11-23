@@ -62,9 +62,11 @@ func _shell(id: String, cx: float, cy: float, rx: float, ry: float, sd: int) -> 
 				_fs(ROCK[4] if lit > 0.7 else ROCK[3])
 				_fill(_ri(x) - 1, _ri(y) - 1, 2, 2)
 			_:
-				_ga(0.55 + 0.35 * lit)
-				_fs(R[4] if lit > 0.7 else R[3])
-				_fill(_ri(x), _ri(y), 1, 1)
+				# (under OWN, on him: Guarding's own shell is the ring)
+				if not _on_his:
+					_ga(0.55 + 0.35 * lit)
+					_fs(R[4] if lit > 0.7 else R[3])
+					_fill(_ri(x), _ri(y), 1, 1)
 		match id:
 			"hemlock":
 				if i % 2 == 0:
@@ -186,7 +188,10 @@ func paint_air_more() -> void:
 		for i in 3:
 			var f: String = h.m52.fid(i)
 			if IDS.has(f):
-				_shell(f, _wx(h.world.x, h.world.y), _wy(h.world.x, h.world.y) - 17.0, 17.0, 23.0, 7)
+				if OWN:
+					_own_shell(func(cx: float, cy: float, rx: float, ry: float) -> void: _shell(f, cx, cy, rx, ry, 7))
+				else:
+					_shell(f, _wx(h.world.x, h.world.y), _wy(h.world.x, h.world.y) - 17.0, 17.0, 23.0, 7)
 				break
 	# (a monster's, carrying one, while its shield holds)
 	if h.monsters != null and is_instance_valid(h.monsters):
