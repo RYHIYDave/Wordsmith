@@ -161,6 +161,7 @@ func _shielded() -> bool:
 ## Flurry's, each a little weaker).
 func blow(i: int, k: int) -> float:
 	blow_n = k
+	y2.blow(i, k)
 	var f := fid(i)
 	var r: Dictionary = h.loadout.r(i)
 	var each: float = maxf(0.01, float(r["count_dmg"]))

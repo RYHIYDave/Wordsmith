@@ -9985,7 +9985,8 @@
    "stagger": 0.5,
    "again": 0.7,
    "snap": 1.2,
-   "foeHit": 0.8
+   "foeHit": 0.8,
+   "near": 1.8
   },
   "gullet": {
    "heal": 0.012,

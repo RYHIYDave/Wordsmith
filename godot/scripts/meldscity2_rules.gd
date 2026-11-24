@@ -149,6 +149,12 @@ func used(i: int, echo: bool, _at: Vector2) -> void:
 			_tell({"id": "quickening", "what": "step", "x": h.world.x, "y": h.world.y, "n": h.frenzy, "x1": h.world.x, "y1": h.world.y})
 
 
+## Blow `k` of a use of move `i` is landing (melds52_rules.gd blow): Hydra's second strike splits again.
+func blow(i: int, k: int) -> void:
+	if k >= 1 and f(i) == "hydra" and h.city != null:
+		h.city._split_use[i] = -1
+
+
 # --- how a hit lands ---
 
 ## A critical or not: Pin's first on the held, Stillpoint's more often on the slowed (and what Evil Eye reads after).
@@ -216,6 +222,16 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool) -> void:
 	var second: bool = int(p.blow_n) >= 1
 	p._tag(m)
 	match id:
+		"backwash":
+			# (dragged by the first strike, struck by the second: staggered, once a use)
+			# (the second strike lands among those the first dragged in: each of them near it is staggered, once a use)
+			var d: Dictionary = _dragged.get(i, {})
+			if second and int(d.get("use", -1)) == int(h.uses[i]) and not bool(d.get("done", false)):
+				d["done"] = true
+				for o in p._mons():
+					if p._alive(o) and d["ids"].has(o.id) and o.world.distance_to(at) <= float(_t("backwash")["near"]) and not o.boss:
+						o.stun_for(float(_t("backwash")["stagger"]), "backwash")
+						_tell({"id": id, "what": "stagger", "x": o.world.x, "y": o.world.y, "m": o})
 		"refrain":
 			if second and m.hex_t > 0.0:
 				m.hex_more = minf(float(_C()["hex"]["most"]) * 1.5, m.hex_more * (1.0 + float(_t("refrain")["deeper"])))
@@ -383,13 +399,9 @@ func pulled(i: int, at: Vector2, moved: Array) -> void:
 			if int(d.get("use", -1)) != use:
 				d = {"use": use, "ids": {}}
 				_dragged[i] = d
-			var blow: int = int(p.blow_n)
 			for o in moved:
-				var was = d["ids"].get(o.id)
-				if was != null and int(was) != blow and not o.dead:
-					o.stun_for(float(_t("backwash")["stagger"]), "backwash")
-					_tell({"id": id, "what": "stagger", "x": o.world.x, "y": o.world.y, "m": o})
-				d["ids"][o.id] = blow
+				if not d["ids"].has(o.id):
+					d["ids"][o.id] = int(p.blow_n)
 		"gullet":
 			_heal(float(_t("gullet")["heal"]) * moved.size(), moved[0], id)
 		"harpoon":
