@@ -656,6 +656,9 @@ func _ready() -> void:
 	# (FIFTEEN MORE LEVELING UNIQUES, on at his yes: `--level2=0` to run without them dropping: loot.gd LEVEL2_UNIQUES)
 	if _arg("level2") == "0":
 		preload("res://scripts/loot.gd").LEVEL2_UNIQUES = false
+	# (TWELVE LEVELING WEAPONS, off until his yes: `--level3=1` to run with them dropping: loot.gd LEVEL3_UNIQUES)
+	if _arg("level3") == "1":
+		preload("res://scripts/loot.gd").LEVEL3_UNIQUES = true
 	# (THE FIFTEEN'S OWN PICTURES, on at his yes: `--defart=0` to run without them)
 	if _arg("defart") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_ART = false

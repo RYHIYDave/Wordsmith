@@ -58,7 +58,7 @@ export const TAKE_IDS: readonly TakeId[] = ['axeA', 'axeB', 'axeC', 'hammerA', '
 export type P2 = readonly [number, number];
 
 /** (THE WARRIOR'S UNIQUE AXES AND HAMMERS, art/heavy_skins.ts) The takes made for them. */
-export type SkinTakeId = 'gyre' | 'redtithe' | 'widowfall' | 'rotaxe' | 'deathknell' | 'deadweight' | 'starbreaker';
+export type SkinTakeId = 'gyre' | 'redtithe' | 'widowfall' | 'rotaxe' | 'deathknell' | 'deadweight' | 'starbreaker' | 'tenderizer';
 /** (THE WARRIOR'S UNIQUE AXES AND HAMMERS) A take's own stuffs, in place of the war axe's and the maul's (absent: theirs). */
 export interface TakeLook {
   iron?: Ramp;

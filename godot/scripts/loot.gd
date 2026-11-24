@@ -1117,6 +1117,8 @@ func _pool_unique(quality: int, mf: float, slot := "", weapon := ""):
 			var d: Dictionary = _uniques["defs"][id]
 			if d.get("set") == "level2" and not LEVEL2_UNIQUES:
 				continue
+			if d.get("set") == "level3" and not LEVEL3_UNIQUES:
+				continue
 			if d["from"] == "level" and int(d["level"] if d["level"] != null else 1) <= p and (d["cls"] == null or d["cls"] == cls) \
 					and (slot == "" or d["slot"] == slot) and (weapon == "" or d["weapon"] == weapon):
 				pool.append(id)
@@ -1142,6 +1144,12 @@ static var DEFENCE_ART := true
 ## A unique weapon needs a skin to go on the Warrior if he equips it.  So you’ll have to get that going” (the Barn Door's:
 ## skins.gd). With it off none drops.
 static var LEVEL2_UNIQUES := true
+
+
+## TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”; told them
+## before any art, “Yes good to go”): two more for each hero, each with a skin on him (skins.gd). OFF until his yes to their
+## pictures: none drops.
+static var LEVEL3_UNIQUES := false
 
 
 ## game.ts makePoolUnique: one of the pool's for him (of that slot, of that weapon, where asked), made for this floor; null if none.

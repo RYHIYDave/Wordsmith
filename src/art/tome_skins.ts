@@ -141,12 +141,63 @@ export const HORNBOOK_TOME: TomeSkin = {
   },
 };
 
+// ---------------------------------------------------------------------------------------------
+// TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”, and of a unique
+// weapon, “needs a skin to go on the Warrior if he equips it”): each drawn in its hero's hands as its picture in the bag is.
+
+const PULP: Ramp = ['#26222e', '#46404c', '#6e6670', '#9a9296', '#c8c2c0'];
+const LURID: Ramp = ['#34081a', '#661024', '#a81e2e', '#dc4234', '#ff8a66'];
+const BLACK_INK: Ramp = ['#06050e', '#0a0816', '#120e22', '#1a1630', '#24203e'];
+
+/** THE PENNY DREADFUL (level 4: life on kill, fire). A cheap grey paper book, a lurid red block on its cover and a black title over it. */
+export const PENNY_TOME: TomeSkin = {
+  id: 'pennydreadful',
+  name: 'The Penny Dreadful',
+  cover: PULP,
+  out: OUT,
+  big: BIG,
+  paint: (h) => {
+    const b = onBook(h);
+    if (pages(b)) return sh(IVORY, h.tone - 1);
+    if (face(b)) {
+      if (Math.abs(b[2] - 0.5) < 0.1 && Math.abs(b[0]) < 0.5) return sh(BLACK_INK, h.tone);
+      if (b[2] < 0.3 && b[2] > -0.6 && Math.abs(b[0]) < 0.55) return sh(LURID, h.tone);
+    }
+    return null;
+  },
+};
+
+const PRIMER: Ramp = ['#463a38', '#7a6a62', '#ae9c8e', '#dccebe', '#f8f0e2'];
+const BLOOD: Ramp = ['#2a060a', '#4e0c12', '#7a141c', '#a82228', '#cc4038'];
+
+/** THE BLOODSTAINED PRIMER (level 16: much more damage, less life). A child's pale schoolbook, a dark spine, and a great stain of blood down its face. */
+export const PRIMER_TOME: TomeSkin = {
+  id: 'bloodstainedprimer',
+  name: 'The Bloodstained Primer',
+  cover: PRIMER,
+  out: OUT,
+  big: BIG,
+  paint: (h) => {
+    const b = onBook(h);
+    if (pages(b)) return sh(IVORY, h.tone - 1);
+    if (spine(b)) return sh(BLACK_INK, h.tone + 1);
+    if (face(b)) {
+      const d = Math.hypot((b[0] - 0.1) * 1.2, b[2] + 0.1 - Math.max(0, -b[2]) * 0.35);
+      if (d < 0.5 || (Math.abs(b[0] - 0.1) < 0.14 && b[2] < 0 && b[2] > -0.85)) return sh(BLOOD, h.tone);
+      if (Math.abs(b[2] - 0.62) < 0.07 && Math.abs(b[0]) < 0.4) return sh(BLACK_INK, h.tone + 1);
+    }
+    return null;
+  },
+};
+
 /** THE FOUR, by their ids. */
 export const TOME_SKIN_OF: Record<TomeId, TomeSkin> = {
   ledgerofdebts: LEDGER_TOME,
   restlesstome: RESTLESS_TOME,
   burningverse: BURNING_TOME,
   hornbook: HORNBOOK_TOME,
+  pennydreadful: PENNY_TOME,
+  bloodstainedprimer: PRIMER_TOME,
 };
 /** His own first, then the four, in the order they are shown. */
-export const TOME_SKIN_LIST: TomeSkin[] = [PLAIN_TOME, LEDGER_TOME, RESTLESS_TOME, BURNING_TOME, HORNBOOK_TOME];
+export const TOME_SKIN_LIST: TomeSkin[] = [PLAIN_TOME, LEDGER_TOME, RESTLESS_TOME, BURNING_TOME, HORNBOOK_TOME, PENNY_TOME, PRIMER_TOME];

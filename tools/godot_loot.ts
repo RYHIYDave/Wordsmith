@@ -32,7 +32,7 @@ import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { gameSwitches } from './godot_switches';
 import { DARK_RING, Game } from '../src/game/game';
-import { DEFENCE_DEFS, LEVEL2_DEFS, LEVEL_DEFS, UNIQUE_DROPS, UNIQUE_RULES, UNIQUE_TUNE, liveDefs, makeUnique, uniqueDef, uniqueSlot, uniqueWeapon, wordIsIn } from '../src/game/uniques';
+import { DEFENCE_DEFS, LEVEL2_DEFS, LEVEL3_DEFS, LEVEL_DEFS, UNIQUE_DROPS, UNIQUE_RULES, UNIQUE_TUNE, liveDefs, makeUnique, uniqueDef, uniqueSlot, uniqueWeapon, wordIsIn } from '../src/game/uniques';
 import { rarityChances } from '../src/game/items';
 import { RNG as UniqueRng } from '../src/engine/rng';
 import { CLASS_BASES, ITEM_BASES, rollFullRare, rollItem } from '../src/game/items';
@@ -557,8 +557,9 @@ const uDefs: Record<string, unknown> = {};
 const uPieces: Record<string, unknown[]> = {};
 // (THE FIFTEEN OF THE THREE DEFENCES, uniques.ts DEFENCE_DEFS: `set` "defence"; loot.gd DEFENCE_UNIQUES says whether they drop)
 // (FIFTEEN MORE LEVELING UNIQUES, uniques.ts LEVEL2_DEFS: `set` "level2"; loot.gd LEVEL2_UNIQUES says whether they drop)
-for (const d of [...liveDefs(), ...LEVEL_DEFS, ...DEFENCE_DEFS, ...LEVEL2_DEFS]) {
-  uDefs[d.id] = { set: DEFENCE_DEFS.includes(d) ? 'defence' : LEVEL2_DEFS.includes(d) ? 'level2' : null, udef: d.defence ?? null, name: d.name, from: d.from, boss: d.boss ?? null, floor: d.floor ?? null, cls: d.cls ?? null, only: !!d.only, bends: d.bends, powers: d.powers ?? 1, rolled: d.rolled ?? [], slot: uniqueSlot(d), weapon: uniqueWeapon(d) ?? null, level: d.level ?? null };
+// (TWELVE LEVELING WEAPONS, uniques.ts LEVEL3_DEFS: `set` "level3"; loot.gd LEVEL3_UNIQUES)
+for (const d of [...liveDefs(), ...LEVEL_DEFS, ...DEFENCE_DEFS, ...LEVEL2_DEFS, ...LEVEL3_DEFS]) {
+  uDefs[d.id] = { set: DEFENCE_DEFS.includes(d) ? 'defence' : LEVEL2_DEFS.includes(d) ? 'level2' : LEVEL3_DEFS.includes(d) ? 'level3' : null, udef: d.defence ?? null, name: d.name, from: d.from, boss: d.boss ?? null, floor: d.floor ?? null, cls: d.cls ?? null, only: !!d.only, bends: d.bends, powers: d.powers ?? 1, rolled: d.rolled ?? [], slot: uniqueSlot(d), weapon: uniqueWeapon(d) ?? null, level: d.level ?? null };
   const out: unknown[] = [];
   if (d.from === 'level') {
     for (let k = 0; k < 4; k++) {

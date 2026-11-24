@@ -8,11 +8,11 @@ extends RefCounted
 
 ## (art/heroes.ts STAFF_OF_UNIQUE, BOW_OF_UNIQUE, WRENCH_OF_UNIQUE, WRAP_OF_UNIQUE, TOME_OF_UNIQUE: the unique's id, the skin it is)
 const OF_UNIQUE := {
-	"mage": {"shepherdscrook": "crook", "tide": "ebb", "tuningstaff": "resonance", "kindlingrod": "rod"},
-	"ranger": {"rainwalker": "rainwalker", "fan": "threefold", "poachersbow": "poachers", "fledgling": "fledgling"},
-	"tinkerer": {"secondwhistle": "secondwhistle", "stickywrench": "stickywrench", "foremanswrench": "foremanswrench", "borrowedspanner": "borrowedspanner"},
-	"brawler": {"lastround": "lastround", "fourthglobe": "fourthglobe", "winningstreak": "winningstreak", "tapedknuckles": "tapedknuckles"},
-	"warlock": {"ledgerofdebts": "ledgerofdebts", "restlesstome": "restlesstome", "burningverse": "burningverse", "hornbook": "hornbook"},
+	"mage": {"shepherdscrook": "crook", "tide": "ebb", "tuningstaff": "resonance", "kindlingrod": "rod", "icicle": "icicle", "walkingstick": "walkingstick"},
+	"ranger": {"rainwalker": "rainwalker", "fan": "threefold", "poachersbow": "poachers", "fledgling": "fledgling", "runnersbow": "runnersbow", "longshot": "longshot"},
+	"tinkerer": {"secondwhistle": "secondwhistle", "stickywrench": "stickywrench", "foremanswrench": "foremanswrench", "borrowedspanner": "borrowedspanner", "rustywrench": "rustywrench", "goldplatedwrench": "goldplatedwrench"},
+	"brawler": {"lastround": "lastround", "fourthglobe": "fourthglobe", "winningstreak": "winningstreak", "tapedknuckles": "tapedknuckles", "butcherswraps": "butcherswraps", "brassknuckles": "brassknuckles"},
+	"warlock": {"ledgerofdebts": "ledgerofdebts", "restlesstome": "restlesstome", "burningverse": "burningverse", "hornbook": "hornbook", "pennydreadful": "pennydreadful", "bloodstainedprimer": "bloodstainedprimer"},
 }
 ## (art/heroes.ts WARRIOR_SKIN_KIND: each of his is a skin of his great sword (""), the war axe or the maul)
 const WARRIOR_KIND := {
@@ -20,6 +20,8 @@ const WARRIOR_KIND := {
 	# (FIFTEEN MORE LEVELING UNIQUES: the Barn Door, level 5; his word, 24 Nov 2026: “A unique weapon needs a skin to go on the
 	# Warrior if he equips it.”; art/sword_skins.ts BARNDOOR_SWORD, baked alone: tools/bake_one_group.mjs warrior-barndoor)
 	"barndoor": "",
+	# (TWELVE LEVELING WEAPONS: the Whetted Edge a great sword, the Tenderizer a hammer)
+	"whettededge": "", "tenderizer": "hammer",
 	"gyre": "axe", "redtithe": "axe", "widowfall": "axe", "rotaxe": "axe",
 	"deathknell": "hammer", "deadweight": "hammer", "starbreaker": "hammer",
 }

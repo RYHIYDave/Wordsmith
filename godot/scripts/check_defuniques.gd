@@ -378,7 +378,7 @@ func run(main, hero, d: String) -> void:
 		var it = L.unique_piece(id)
 		if it != null and str(it["icon"]) == "u:" + str(id) and L.pics.has(str(it["icon"])):
 			own15 += 1
-	_line(missing.is_empty() and own == (103 if not art_was else 118) and own15 == 15, "their pictures: %d uniques each with a picture of its own in the sheet (none missing: %s); the fifteen with their switch on, %d of 15 their own" % [own, str(missing), own15])
+	_line(missing.is_empty() and own == (115 if not art_was else 130) and own15 == 15, "their pictures: %d uniques each with a picture of its own in the sheet (none missing: %s); the fifteen with their switch on, %d of 15 their own" % [own, str(missing), own15])
 	# (a bag of them, pictured: the fifteen in their own pictures, then nine of the ones we had)
 	_hero("warrior")
 	L.bag.clear()
@@ -479,6 +479,87 @@ func run(main, hero, d: String) -> void:
 		M._inv.toggle()
 		await M._wait(0.2)
 		L.bag.clear()
+
+	# ================= TWELVE LEVELING WEAPONS (loot.gd LEVEL3_UNIQUES; uniques.ts LEVEL3_DEFS; skins.gd) =================
+	var arms12: Array = defs.keys().filter(func(id): return defs[id].get("set") == "level3")
+	var w_ok := true
+	var w_rows := []
+	for id in arms12:
+		var it: Dictionary = L.unique_piece(id)
+		w_ok = w_ok and defs[id]["from"] == "level" and defs[id]["cls"] != null and it["weapon"] == true and it.get("bare", false) == true and int(it["req"]) == int(defs[id]["level"]) and str(it["icon"]) == "u:" + str(id)
+		w_rows.append("%s (%s, level %d): %s" % [it["name"], defs[id]["cls"], int(defs[id]["level"]), ", ".join(L.lines_of(it, "lines"))])
+	_line(arms12.size() == 12 and w_ok, "twelve leveling weapons, each its hero's, its level's own, its own picture: %s" % "; ".join(w_rows))
+	# (how many leveling weapons each hero has now: three, the Warrior four)
+	var per := {}
+	for id in defs:
+		if defs[id]["from"] == "level" and defs[id]["weapon"] != null and defs[id]["cls"] != null:
+			per[defs[id]["cls"]] = int(per.get(defs[id]["cls"], 0)) + 1
+	_line(per.size() == 6 and per.values().all(func(v): return v >= 3) and per.get("warrior") == 4, "leveling weapons for each hero: %s" % str(per))
+	# (their switch: none drops with it off; on, a hero of level 20's floor finds both of his)
+	var l3_was: bool = L.LEVEL3_UNIQUES
+	for kk in ["plain", "elite", "hoard"]:
+		drops["pool"][kk] = 0.0
+		drops["level"][kk] = 1.0
+	var off3 := 0
+	var on3 := {}
+	var depth_was = L.map.depth
+	L.map.depth = 20
+	for c in ["warrior", "ranger", "mage", "warlock", "tinkerer", "brawler"]:
+		M.set_class(c, true)
+		for on in [false, true]:
+			L.LEVEL3_UNIQUES = on
+			for i in 1500:
+				var it = L._pool_unique(0, 0.0)
+				if it != null and arms12.has(it["unique"]):
+					if on:
+						on3[it["unique"]] = defs[it["unique"]]["cls"] == c
+					else:
+						off3 += 1
+	L.LEVEL3_UNIQUES = l3_was
+	L.map.depth = depth_was
+	drops["pool"] = pool_was
+	drops["level"] = level_was
+	_line(off3 == 0 and on3.size() == 12 and on3.values().all(func(v): return v), "their switch off, 9,000 leveling drops across the six heroes: %d of them; on: %d of the 12 come, each to its own hero only" % [off3, on3.size()])
+	# (THE ICICLE: every hit frost; the Runner's Bow's dodge; the Walking Stick's barrier)
+	_hero("mage")
+	L.gear["mainhand"] = L.unique_piece("icicle")
+	L.derive()
+	var el: String = str(h.loadout.r(0)["element"])
+	L.gear["mainhand"] = L.unique_piece("walkingstick")
+	L.derive()
+	var ws_b: float = h.max_barrier
+	_hero("ranger")
+	L.gear["mainhand"] = L.unique_piece("runnersbow")
+	L.derive()
+	_line(el == "frost" and ws_b >= 60.0 and h.stats["dodge"] >= 8.0, "the Icicle in her hand: her tap attack's element %s; the Walking Stick: barrier %d; the Runner's Bow: dodge %d, movement speed %d%%" % [el, ws_b, h.stats["dodge"], h.stats["move_speed"]])
+	# (EACH IN ITS HERO'S HANDS: skins.gd; the Tenderizer with his tree's warhammer)
+	var skins_ok := true
+	var skin_rows := []
+	for id in arms12:
+		var c: String = defs[id]["cls"]
+		_hero(c)
+		if c == "warrior":
+			h.talents = ["warhammer"] if id == "tenderizer" else []
+			h.arm()
+		L.gear["mainhand"] = L.unique_piece(id)
+		L.derive()
+		await M._wait(0.5)
+		var file: String = path_of.call(h.arts["dungeon"])
+		var good: bool = h.skin == "%s-%s" % [c, id] and file.begins_with("%s-%s-" % [c, id])
+		skins_ok = skins_ok and good
+		skin_rows.append("%s: %s" % [id, file if good else "NOT (%s, %s)" % [h.skin, file]])
+		if dir != "":
+			h._turn(Vector2(1, 0))
+			await M._wait(0.25)
+			await M._snap(dir + "/hold_%s.png" % id)
+	h.talents = []
+	_line(skins_ok, "each of the twelve in its hero's hands: %s" % "; ".join(skin_rows))
+	if dir != "":
+		var k3 := 0
+		for id in arms12:
+			k3 += 1
+			_hero(defs[id]["cls"])
+			await _card(L.unique_piece(id), "lw%02d_%s" % [k3, id])
 
 	# ================= THE CHANGED ONES' CARDS =================
 	await _card(sc, "du16_shortcut")

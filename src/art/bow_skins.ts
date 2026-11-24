@@ -237,8 +237,56 @@ export const FLEDGLING_BOW: BowSkin = {
   },
 };
 
+// ---------------------------------------------------------------------------------------------
+// TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”, and of a unique
+// weapon, “needs a skin to go on the Warrior if he equips it”): each drawn in its hero's hands as its picture in the bag is.
+
+const DRIFT: Ramp = ['#3e362e', '#6a5e50', '#9a8c78', '#c8bca6', '#eee6d4'];
+const BLUE_WRAP: Ramp = ['#0c1440', '#16286e', '#2446a8', '#4a74e0', '#9ab8ff'];
+const WHITE_FEATHER: Ramp = ['#6a6278', '#a49cb0', '#dcd6e4', '#f2f0f8', '#ffffff'];
+
+/** THE RUNNER'S BOW (level 2: movement speed, dodge). A light bow of pale wood, thinner than his own, a blue grip, a white feather tied at it. */
+export const RUNNERS_BOW: BowSkin = {
+  id: 'runnersbow',
+  name: "The Runner's Bow",
+  sculpt(sc, at) {
+    const wood = sc.mat({ ramp: DRIFT, crease: 0.3 });
+    const wrap = sc.mat({ ramp: BLUE_WRAP, crease: 0.2 });
+    const feather = sc.mat({ ramp: WHITE_FEATHER, crease: 0.2, paint: (h) => WHITE_FEATHER[Math.max(2, Math.min(4, h.tone + 1))] });
+    const { nocks } = limbs(sc, at, wood, [1.1, 0.55]);
+    gripOf(sc, at, wrap, 1.35);
+    const flat = norm(cross(at.ac, at.p3), [0, 0, 1]);
+    // (the feather: from just under the grip, back and down, flat to the bow)
+    const base = add(at.grip, mul(at.ac, -2.4));
+    const mid = add(base, add(mul(at.ac, -2.2), mul(at.p3, -1.6)));
+    sc.ell(feather, 'leaf', mid, [mul(norm(add(mul(at.ac, -1), mul(at.p3, -0.7)), at.ac), 2.6), mul(flat, 0.9), mul(norm(cross(at.ac, flat), at.p3), 0.3)], 0.3, { tag: 'feather' });
+    return { nocks, mats: [wood, wrap, feather] };
+  },
+};
+
+const EBONY_BOW: Ramp = ['#0c0810', '#1c141e', '#30242e', '#4a3842', '#6e5660'];
+const BRASS_BOW: Ramp = ['#3a2410', '#6a4620', '#a07436', '#d0a656', '#f2d892'];
+
+/** THE LONG SHOT (level 11: much more damage, slower). A heavy bow of black wood, thick-limbed and straight at its tips, a brass band on each limb. */
+export const LONGSHOT_BOW: BowSkin = {
+  id: 'longshot',
+  name: 'The Long Shot',
+  sculpt(sc, at, { glove }) {
+    const wood = sc.mat({ ramp: EBONY_BOW, crease: 0.3 });
+    const brass = sc.mat({ ramp: BRASS_BOW, crease: 0.2, paint: (h) => BRASS_BOW[Math.max(1, Math.min(4, h.tone + 1))] });
+    const { nocks, limb } = limbs(sc, at, wood, [1.6, 0.9], false);
+    gripOf(sc, at, glove, 1.7);
+    for (const l of limb) for (const k of [0.34, 0.8]) {
+      const c = l.at(k);
+      const a = l.along(k);
+      sc.cone(brass, 'bow', add(c, mul(a, -0.45)), add(c, mul(a, 0.45)), 1.75 - k * 0.6, 1.75 - k * 0.6, 0.15, { tag: 'band' });
+    }
+    return { nocks, mats: [wood, brass] };
+  },
+};
+
 /** Each unique bow's skin, by the id of its place (art/heroes.ts BowId). */
-export const BOW_SKIN_OF: Readonly<Record<BowId, BowSkin>> = { rainwalker: RAINWALKER_BOW, threefold: THREEFOLD_BOW, poachers: POACHERS_BOW, fledgling: FLEDGLING_BOW };
+export const BOW_SKIN_OF: Readonly<Record<BowId, BowSkin>> = { rainwalker: RAINWALKER_BOW, threefold: THREEFOLD_BOW, poachers: POACHERS_BOW, fledgling: FLEDGLING_BOW, runnersbow: RUNNERS_BOW, longshot: LONGSHOT_BOW };
 
 /** The skins of his bow, his own first. */
-export const BOW_SKIN_LIST: readonly BowSkin[] = [PLAIN_BOW, RAINWALKER_BOW, THREEFOLD_BOW, POACHERS_BOW, FLEDGLING_BOW];
+export const BOW_SKIN_LIST: readonly BowSkin[] = [PLAIN_BOW, RAINWALKER_BOW, THREEFOLD_BOW, POACHERS_BOW, FLEDGLING_BOW, RUNNERS_BOW, LONGSHOT_BOW];

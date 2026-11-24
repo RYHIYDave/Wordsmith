@@ -605,7 +605,38 @@ export const LEVEL2_DEFS: readonly UniqueDef[] = [
   { id: 'jackofall', name: 'The Jack of All', stem: 'manaring', from: 'level', level: 28, bends: 'hero', powers: 0, stats: ['str', 'dmgPct'], rolls: [R(['str', 'dex', 'int'], 24, 36), R('dmgPct', -16, -10)], does: () => [] },
 ];
 
-const BY_ID = new Map<string, UniqueDef>([...ALL_DEFS, ...LEVEL_DEFS, ...DEFENCE_DEFS, ...LEVEL2_DEFS].map((d) => [d.id, d]));
+// =============================================================================================
+// TWELVE LEVELING WEAPONS (the Godot game's)
+//
+// HIS WORDS, 24 Nov 2026, of the leveling uniques: “So things that will make the next run easier.  Low level gear with a twist
+// or a stronger roll than you could get early on”; “Can you tell me what they are before they get art and are pushed into the
+// game?”; “How many unique weapons do we have for leveling?  Cause we should have 3-4 for each class”. There were seven (the
+// Warrior two, the others one each). Told these twelve by name, level and numbers before anything was painted or built (two for
+// each hero: three each, the Warrior four with a warhammer among them): “Yes good to go”. Made as the twenty are: each its
+// level's own, its base's damage and nothing else of it, every number rolled about a fifth either way; its hero's alone. Each
+// has a skin on its hero (art/*_skins.ts). OFF until his yes to their pictures (loot.gd LEVEL3_UNIQUES).
+export const LEVEL3_DEFS: readonly UniqueDef[] = [
+  // ---- THE WARRIOR ----
+  { id: 'tenderizer', name: 'The Tenderizer', stem: 'warhammer', from: 'level', level: 3, cls: 'warrior', bends: 'hero', powers: 0, stats: ['stunChance', 'dmgMin'], rolls: [R('stunChance', 10, 15), PAIR('dmgMin', 'dmgMax', 3, 5, 7, 9)], does: () => [] },
+  { id: 'whettededge', name: 'The Whetted Edge', stem: 'greatsword', from: 'level', level: 14, cls: 'warrior', bends: 'hero', powers: 0, stats: ['critChance', 'lifeOnHit'], rolls: [R('critChance', 8, 12), R('lifeOnHit', 3, 5)], does: () => [] },
+  // ---- THE RANGER ----
+  { id: 'runnersbow', name: "The Runner's Bow", stem: 'bow', from: 'level', level: 2, cls: 'ranger', bends: 'hero', defence: 'dodge', powers: 0, stats: ['moveSpeed', 'armor'], rolls: [R('moveSpeed', 12, 18), R('armor', 8, 12)], does: () => [] },
+  { id: 'longshot', name: 'The Long Shot', stem: 'bow', from: 'level', level: 11, cls: 'ranger', bends: 'hero', powers: 0, stats: ['dmgPct', 'atkSpeed'], rolls: [R('dmgPct', 30, 45), R('atkSpeed', -15, -10)], does: () => [] },
+  // ---- THE MAGE ----
+  { id: 'icicle', name: 'The Icicle', stem: 'staff', from: 'level', level: 3, cls: 'mage', bends: 'hero', stats: ['frostMin', 'frostPct'], rolls: [PAIR('frostMin', 'frostMax', 3, 5, 7, 11), R('frostPct', 25, 35)], does: () => ['Every hit is frost. Can deal no other type of damage.'] },
+  { id: 'walkingstick', name: 'The Walking Stick', stem: 'staff', from: 'level', level: 14, cls: 'mage', bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor', 'cdr'], rolls: [R('armor', 60, 90), R('cdr', 10, 15)], does: () => [] },
+  // ---- THE WARLOCK ----
+  { id: 'pennydreadful', name: 'The Penny Dreadful', stem: 'tome', from: 'level', level: 4, cls: 'warlock', bends: 'hero', powers: 0, stats: ['lifeOnKill', 'firePct'], rolls: [R('lifeOnKill', 6, 10), R('firePct', 20, 30)], does: () => [] },
+  { id: 'bloodstainedprimer', name: 'The Bloodstained Primer', stem: 'tome', from: 'level', level: 16, cls: 'warlock', bends: 'hero', powers: 0, stats: ['dmgPct', 'maxLifePct'], rolls: [R('dmgPct', 35, 50), R('maxLifePct', -10, -6)], does: () => [] },
+  // ---- THE TINKERER ----
+  { id: 'rustywrench', name: 'The Rusty Wrench', stem: 'wrench', from: 'level', level: 3, cls: 'tinkerer', bends: 'hero', powers: 0, stats: ['poisonMin', 'areaPct'], rolls: [PAIR('poisonMin', 'poisonMax', 2, 4, 6, 8), R('areaPct', 20, 30)], does: () => [] },
+  { id: 'goldplatedwrench', name: 'The Gold-Plated Wrench', stem: 'wrench', from: 'level', level: 9, cls: 'tinkerer', bends: 'hero', powers: 0, stats: ['goldFind', 'magicFind'], rolls: [R('goldFind', 40, 60), R('magicFind', 20, 30)], does: () => [] },
+  // ---- THE BRAWLER ----
+  { id: 'butcherswraps', name: "The Butcher's Wraps", stem: 'wraps', from: 'level', level: 2, cls: 'brawler', bends: 'hero', powers: 0, stats: ['lifeOnHit', 'maxLife'], rolls: [R('lifeOnHit', 2, 3), R('maxLife', 20, 30)], does: () => [] },
+  { id: 'brassknuckles', name: 'Brass Knuckles', stem: 'wraps', from: 'level', level: 15, cls: 'brawler', bends: 'hero', powers: 0, stats: ['physPct', 'stunChance'], rolls: [R('physPct', 40, 60), R('stunChance', 8, 12)], does: () => [] },
+];
+
+const BY_ID = new Map<string, UniqueDef>([...ALL_DEFS, ...LEVEL_DEFS, ...DEFENCE_DEFS, ...LEVEL2_DEFS, ...LEVEL3_DEFS].map((d) => [d.id, d]));
 
 /** The unique of that id, if there is one. */
 export function uniqueDef(id: string | undefined): UniqueDef | undefined {

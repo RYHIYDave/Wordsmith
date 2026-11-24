@@ -171,8 +171,41 @@ export const BORROWED_WRENCH: WrenchSkin = {
   },
 };
 
+// ---------------------------------------------------------------------------------------------
+// TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”, and of a unique
+// weapon, “needs a skin to go on the Warrior if he equips it”): each drawn in its hero's hands as its picture in the bag is.
+
+const RUST: Ramp = ['#1c1018', '#3e2422', '#6e3e2c', '#a0623a', '#d09a66'];
+const OLD_IRON: Ramp = ['#16142a', '#2a2848', '#46446e', '#6e6c9a', '#b0aed8'];
+
+/** THE RUSTY WRENCH (level 3: poison, a wider burst). Her wrench left out in the rain: rust all over it, the iron showing through in patches. */
+export const RUSTY_WRENCH: WrenchSkin = {
+  id: 'rustywrench',
+  name: 'The Rusty Wrench',
+  sculpt(sc, at) {
+    const rust = sc.mat({ ramp: RUST, crease: 0.3, paint: (h) => (hash(Math.floor(h.x / 2), Math.floor(h.y / 2), 41) < 0.2 ? OLD_IRON[Math.max(1, Math.min(4, h.tone))] : hash(h.x, h.y, 43) < 0.12 ? RUST[Math.max(0, h.tone - 1)] : null) });
+    wrenchOf(sc, at, rust, rust);
+  },
+};
+
+const GOLD_W: Ramp = ['#4a2408', '#8a4e14', '#d0902c', '#f6cc5c', '#fff4c0'];
+const VELVET_W: Ramp = ['#1a0c36', '#2e1660', '#4a2490', '#6e3cc0', '#a27ae8'];
+
+/** THE GOLD-PLATED WRENCH (level 9: gold find, magic find). Her wrench plated in gold, bright, its grip wrapped in violet velvet. */
+export const GOLD_WRENCH: WrenchSkin = {
+  id: 'goldplatedwrench',
+  name: 'The Gold-Plated Wrench',
+  sculpt(sc, at) {
+    const gold = sc.mat({ ramp: GOLD_W, crease: 0.3, paint: (h) => GOLD_W[Math.max(1, Math.min(4, h.tone + 1))] });
+    const velvet = sc.mat({ ramp: VELVET_W, crease: 0.2 });
+    wrenchOf(sc, at, gold, gold);
+    const { c, way, k } = at;
+    sc.cone(velvet, 'wrench', add(c, mul(way, -1.6 * k)), add(c, mul(way, 1.8 * k)), 0.95 * k, 0.95 * k, 0.15, { tag: 'grip' });
+  },
+};
+
 /** Each unique wrench's skin, by the id of its place (art/heroes.ts WrenchId). */
-export const WRENCH_SKIN_OF: Readonly<Record<WrenchId, WrenchSkin>> = { secondwhistle: WHISTLE_WRENCH, stickywrench: TAR_WRENCH, foremanswrench: FOREMAN_WRENCH, borrowedspanner: BORROWED_WRENCH };
+export const WRENCH_SKIN_OF: Readonly<Record<WrenchId, WrenchSkin>> = { secondwhistle: WHISTLE_WRENCH, stickywrench: TAR_WRENCH, foremanswrench: FOREMAN_WRENCH, borrowedspanner: BORROWED_WRENCH, rustywrench: RUSTY_WRENCH, goldplatedwrench: GOLD_WRENCH };
 
 /** The skins of her wrench, her own first. */
-export const WRENCH_SKIN_LIST: readonly WrenchSkin[] = [PLAIN_WRENCH, WHISTLE_WRENCH, TAR_WRENCH, FOREMAN_WRENCH, BORROWED_WRENCH];
+export const WRENCH_SKIN_LIST: readonly WrenchSkin[] = [PLAIN_WRENCH, WHISTLE_WRENCH, TAR_WRENCH, FOREMAN_WRENCH, BORROWED_WRENCH, RUSTY_WRENCH, GOLD_WRENCH];

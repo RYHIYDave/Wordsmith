@@ -158,12 +158,42 @@ export const TAPED_WRAPS: WrapSkin = {
   },
 };
 
+// ---------------------------------------------------------------------------------------------
+// TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”, and of a unique
+// weapon, “needs a skin to go on the Warrior if he equips it”): each drawn in its hero's hands as its picture in the bag is.
+
+/** Butcher's linen, and what is on it. */
+const APRON: Ramp = ['#463a38', '#7a6a62', '#ae9c8e', '#dccebe', '#f8f0e2'];
+const STAIN: Ramp = ['#2a060a', '#4e0c12', '#7a141c', '#a82228', '#cc4038'];
+const blot = (x: number, y: number): boolean => Math.sin(x * 0.9) + Math.sin(y * 1.1 + 1.7) + Math.sin((x + y) * 0.5) > 1.15;
+
+/** THE BUTCHER'S WRAPS (level 2: life on hit, life). Strips of a butcher's apron: pale linen, stained dark red in blots. */
+export const BUTCHER_WRAPS: WrapSkin = {
+  id: 'butcherswraps',
+  name: "The Butcher's Wraps",
+  strap: APRON,
+  strapPaint: (h, w) => (blot(h.x, h.y) ? sh(STAIN, h.tone - (w.far ? 1 : 0)) : null),
+};
+
+const BRASS_K: Ramp = ['#3a2410', '#6a4620', '#a07436', '#d0a656', '#f2d892'];
+const BLACK_STRAP: Ramp = ['#0a0816', '#16122a', '#262040', '#3a3258', '#5a5078'];
+
+/** BRASS KNUCKLES (level 15: physical damage, a chance to stun). Black straps, and across the knuckles of each fist a bar of brass. */
+export const BRASS_WRAPS: WrapSkin = {
+  id: 'brassknuckles',
+  name: 'Brass Knuckles',
+  strap: BLACK_STRAP,
+  strapPaint: (h, w) => (Math.abs(downHand(h.p, w) - 2.05) < 0.34 ? sh(BRASS_K, h.tone + 1 - (w.far ? 1 : 0)) : null),
+};
+
 /** THE FOUR, by their ids. */
 export const WRAP_SKIN_OF: Record<WrapId, WrapSkin> = {
   lastround: LAST_ROUND_WRAPS,
   fourthglobe: FOURTH_GLOBE_WRAPS,
   winningstreak: HOT_STREAK_WRAPS,
   tapedknuckles: TAPED_WRAPS,
+  butcherswraps: BUTCHER_WRAPS,
+  brassknuckles: BRASS_WRAPS,
 };
 /** His own first, then the four, in the order they are shown. */
-export const WRAP_SKIN_LIST: WrapSkin[] = [PLAIN_WRAPS, LAST_ROUND_WRAPS, FOURTH_GLOBE_WRAPS, HOT_STREAK_WRAPS, TAPED_WRAPS];
+export const WRAP_SKIN_LIST: WrapSkin[] = [PLAIN_WRAPS, LAST_ROUND_WRAPS, FOURTH_GLOBE_WRAPS, HOT_STREAK_WRAPS, TAPED_WRAPS, BUTCHER_WRAPS, BRASS_WRAPS];

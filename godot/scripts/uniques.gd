@@ -250,6 +250,10 @@ func after_resolve(i: int, r: Dictionary) -> void:
 	if wears("kindlingrod"):
 		r["element"] = "fire"
 		r["poison"] = 0.0
+	# (TWELVE LEVELING WEAPONS: the Icicle, every hit frost and no other kind of damage, as the Kindling Rod's are fire)
+	if wears("icicle"):
+		r["element"] = "frost"
+		r["poison"] = 0.0
 	if wears("lastword"):
 		r["cooldown"] = float(r["cooldown"]) * (1.0 + worn_roll("lastword", "cool") / 100.0)
 	if i == 2 and (wears("brokenshackles") or (wears("clovenboots") and hero.kit != null and hero.kit.get("form") == "demon")):

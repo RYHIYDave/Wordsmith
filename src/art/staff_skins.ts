@@ -408,10 +408,54 @@ export const ROD_STAFF: StaffSkin = {
 };
 
 /** Each unique staff's skin, by the id of its place (art/heroes.ts StaffId). */
-export const STAFF_SKIN_OF: Readonly<Record<StaffId, StaffSkin>> = { crook: CROOK_STAFF, ebb: EBB_STAFF, resonance: RESONANCE_STAFF, rod: ROD_STAFF };
+// ---------------------------------------------------------------------------------------------
+// TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”, and of a unique
+// weapon, “needs a skin to go on the Warrior if he equips it”): each drawn in its hero's hands as its picture in the bag is.
+
+const ICE_WOOD: Ramp = ['#0a2032', '#12405a', '#1c6a84', '#3aa2aa', '#aae8de'];
+const ICE: Ramp = ['#16304e', '#28588a', '#58a0d0', '#a6dcf4', '#effcff'];
+
+/**
+ * THE ICICLE (level 3: frost, every hit frost). A pole the blue of deep water, rimed; at its head one long icicle, point up, two
+ * small ones beside its foot.
+ */
+export const ICICLE_STAFF: StaffSkin = {
+  id: 'icicle',
+  name: 'The Icicle',
+  sculpt(sc, at) {
+    const { s, p3, side3, foot, bar, tip3 } = at;
+    const wood = sc.mat({ ramp: ICE_WOOD, crease: 0.3, paint: (h) => (h.prim.tag === 'wrap' ? SK_BROWN[Math.max(0, Math.min(3, h.tone))] : hash(h.x, h.y, 31) < 0.08 ? ICE[4] : null) });
+    const ice = sc.mat({ ramp: ICE, crease: 0.25, paint: (h) => ICE[Math.max(1, Math.min(4, h.tone + 1))] });
+    sc.cone(wood, 'staff', foot, bar, 0.95, 1.1, 0.4, { tag: 'pole' });
+    sc.cone(wood, 'staff', add(s.handR, mul(p3, -3.2)), add(s.handR, mul(p3, 3.2)), 1.25, 1.25, 0.2, { tag: 'wrap' });
+    sc.cone(ice, 'staffhead', add(bar, mul(p3, -0.6)), add(tip3, mul(p3, 3.4)), 2.0, 0.2, 0.3, { tag: 'icicle' });
+    for (const sg of [1, -1]) sc.cone(ice, 'staffhead', add(bar, mul(side3, sg * 1.5)), add(bar, add(mul(side3, sg * 2.3), mul(p3, 3.6))), 0.95, 0.15, 0.2, { tag: 'icicle' });
+    sc.cone(ice, 'staffhead', add(bar, mul(p3, -1.2)), add(bar, mul(p3, 0.2)), 2.3, 2.3, 0.3, { tag: 'rime' });
+    return [wood, ice];
+  },
+};
+
+/** THE WALKING STICK (level 14: barrier, cooldown recovery). A plain stout stick of brown wood, knotted, a round knob for its head worn smooth by a hand. */
+export const WALKING_STAFF: StaffSkin = {
+  id: 'walkingstick',
+  name: 'The Walking Stick',
+  sculpt(sc, at) {
+    const { s, p3, side3, foot, tip3 } = at;
+    const wood = sc.mat({ ramp: SK_BROWN, crease: 0.3, paint: (h) => (h.prim.tag === 'knob' ? SK_BROWN[Math.max(2, Math.min(4, h.tone + 1))] : null) });
+    const top = add(tip3, mul(p3, -1.6));
+    sc.cone(wood, 'staff', foot, top, 0.85, 1.2, 0.4, { tag: 'pole' });
+    const out3 = norm(cross(p3, side3));
+    for (const k of [0.2, 0.47, 0.74]) sc.ell(wood, 'staff', lerp3(foot, top, k), [mul(p3, 0.9), mul(side3, 1.45), mul(out3, 1.45)], 0.4, { tag: 'knot' });
+    sc.cone(wood, 'staff', add(s.handR, mul(p3, -2.6)), add(s.handR, mul(p3, 2.6)), 1.3, 1.3, 0.2, { tag: 'pole' });
+    sc.ell(wood, 'staffhead', add(top, mul(p3, 0.8)), [mul(p3, 2.1), mul(side3, 2.3), mul(out3, 2.3)], 0.5, { tag: 'knob' });
+    return [wood];
+  },
+};
+
+export const STAFF_SKIN_OF: Readonly<Record<StaffId, StaffSkin>> = { crook: CROOK_STAFF, ebb: EBB_STAFF, resonance: RESONANCE_STAFF, rod: ROD_STAFF, icicle: ICICLE_STAFF, walkingstick: WALKING_STAFF };
 
 /** The skins of her staff, her own first. */
-export const STAFF_SKIN_LIST: readonly StaffSkin[] = [PLAIN_STAFF, CROOK_STAFF, EBB_STAFF, RESONANCE_STAFF, ROD_STAFF];
+export const STAFF_SKIN_LIST: readonly StaffSkin[] = [PLAIN_STAFF, CROOK_STAFF, EBB_STAFF, RESONANCE_STAFF, ROD_STAFF, ICICLE_STAFF, WALKING_STAFF];
 
 /**
  * THE SKIN'S LAYER: the frame painted whole with a staff (`whole`), kept only where it differs from her painted with none

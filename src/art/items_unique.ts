@@ -2227,6 +2227,125 @@ const LEVEL2_PAINTERS: Record<string, () => Part[]> = {
 /** The ids of the fifteen more leveling uniques' pictures. */
 export const LEVEL2_ART_IDS: readonly string[] = Object.keys(LEVEL2_PAINTERS);
 
+// ---------------------------------------------------------------------------------------------
+// TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”): each as
+// the twenty are, its hero's own weapon in its own colours with the one thing that says what it is. Each is drawn in its hero's
+// hands the same (art/*_skins.ts).
+
+/** THE TENDERIZER (level 3, a warhammer, the Warrior's: a chance to stun, added damage). A cook's meat mallet grown to a maul: a square steel head, its faces rows of blunt teeth. */
+function tenderizer(): Part[] {
+  const parts = haft({ wood: 'wood', grip: 'leather', knob: 'steel', long: 22 });
+  parts.push({ s: axPoly([[17.6, -5.6], [25.6, -5.6], [25.6, 5.6], [17.6, 5.6]]), m: 'steel', sh: { k: 'flat', bev: 1.4 }, shine: true, bias: 0.04 });
+  // (its teeth: a grid of blunt points on the face toward you, and their tips standing proud of its two striking edges)
+  for (const d of [18.9, 21.6, 24.3]) for (const a of [-3.6, 0, 3.6]) parts.push({ s: axPoly([[d - 0.9, a - 0.9], [d + 0.9, a - 0.9], [d + 0.9, a + 0.9], [d - 0.9, a + 0.9]]), m: 'dsteel', sh: { k: 'flat', bev: 0.4 }, flush: true, bias: 0.2 });
+  for (const a of [-1, 1]) for (const d of [18.9, 21.6, 24.3]) parts.push({ s: axPoly([[d - 1.0, a * 5.2], [d + 1.0, a * 5.2], [d, a * 7.4]]), m: 'steel', sh: { k: 'flat' }, shine: true });
+  return parts;
+}
+
+/** THE WHETTED EDGE (level 14, a greatsword, the Warrior's: critical chance, life on hit). A lean bright blade ground to a white edge, a red grip, a whetstone tied at its pommel. */
+function whettededge(): Part[] {
+  const parts = dye(PAINTERS.greatsword(0), { leather: 'red' });
+  const G: V = [11.4, 20.6], T: V = [29.4, 2.6];
+  const u = unit(sub(T, G));
+  const L = len(sub(T, G));
+  parts.push({ s: poly(at(G, u, 2.6, -3.0), at(G, u, L - 3.0, -3.0), at(G, u, L - 0.2, 0), at(G, u, L - 3.0, -1.9), at(G, u, 2.6, -1.9)), m: 'feather', sh: { k: 'flat' }, flush: true, bias: 0.6 });
+  parts.push({ s: poly([2.0, 22.6], [6.4, 21.6], [7.2, 24.0], [2.8, 25.0]), m: R.stone, sh: { k: 'flat', bev: 0.7 }, shine: true });
+  return parts;
+}
+
+/** THE RUNNER'S BOW (level 2, a bow, the Ranger's: movement speed, dodge). A light bow of pale wood, a blue grip, a white feather tied at it. */
+function runnersbow(): Part[] {
+  const parts = dye(PAINTERS.bow(0), { wood: R.drift, leather: 'blue' });
+  parts.push({ s: poly([6.4, 21.6], [3.0, 26.6], [3.6, 29.6], [6.0, 29.0], [8.6, 25.0], [8.8, 22.4]), m: 'feather', sh: { k: 'soft', r: 1.2 }, bias: 0.15, marks: [{ a: [7.6, 22.8], b: [4.2, 28.6], t: 2 }] });
+  return parts;
+}
+
+/** THE LONG SHOT (level 11, a bow, the Ranger's: much more damage, slower). A heavy bow of black wood banded in brass, a long arrow on its string. */
+function longshot(): Part[] {
+  const parts = dye(PAINTERS.bow(0), { wood: 'ebony', ivory: 'brass' });
+  for (const c of [[13.6, 9.6], [9.4, 18.4]] as V[]) parts.push({ s: ell(c, 1.7, 1.3, -40), m: 'brass', sh: { k: 'dome', c, r: 1.7 }, shine: true });
+  const a: V = [6.0, 27.0], b: V = [28.6, 4.4];
+  parts.push({ s: cap(a, b, 0.6), m: 'ivory', sh: { k: 'cyl', a, b, w: 0.6 } });
+  const u = unit(sub(b, a));
+  parts.push({ s: poly(at(b, u, -1.0, -2.2), at(b, u, 3.0, 0), at(b, u, -1.0, 2.2)), m: 'steel', sh: { k: 'ridge', a: b, b: at(b, u, 3.0, 0) }, shine: true });
+  parts.push({ s: poly(at(a, u, 0, 0), at(a, u, -0.4, -2.0), at(a, u, 3.4, -1.8), at(a, u, 4.4, 0), at(a, u, 3.4, 1.8), at(a, u, -0.4, 2.0)), m: 'red', sh: { k: 'flat', bev: 0.5 } });
+  return parts;
+}
+
+/** THE ICICLE (level 3, a staff, the Mage's: frost, every hit frost). A pole the blue of deep water, and for its head one long icicle, two small beside it. */
+function icicle(): Part[] {
+  const parts = dye(PAINTERS.staff(0), { wood: R.sea, violet: LV.ice, steel: LV.ice });
+  parts.push({ s: poly([19.4, 12.6], [23.4, 16.2], [30.6, 1.4]), m: LV.ice, sh: { k: 'ridge', a: [21.4, 14.4], b: [30.6, 1.4] }, shine: true, bias: 0.15 });
+  parts.push({ s: poly([17.6, 9.6], [19.6, 11.6], [21.6, 3.4]), m: LV.ice, sh: { k: 'ridge', a: [18.6, 10.6], b: [21.6, 3.4] }, shine: true });
+  parts.push({ s: poly([23.4, 15.4], [25.2, 17.6], [30.4, 11.6]), m: LV.ice, sh: { k: 'ridge', a: [24.2, 16.4], b: [30.4, 11.6] }, shine: true });
+  return parts;
+}
+
+/** THE WALKING STICK (level 14, a staff, the Mage's: barrier, cooldown recovery). A plain stout stick of brown wood, knotted, a round knob for its head worn smooth. */
+function walkingstick(): Part[] {
+  const parts: Part[] = [];
+  const a: V = [5.0, 28.6], b: V = [23.6, 8.4];
+  parts.push({ s: cap(a, b, 1.5), m: 'wood', sh: { k: 'cyl', a, b, w: 1.5 }, marks: [{ a: [10.6, 21.0], b: [12.2, 22.6], t: 1 }, { a: [16.6, 14.6], b: [18.2, 16.2], t: 1 }] });
+  for (const k of [0.3, 0.62]) { const c = lerp(a, b, k); parts.push({ s: ell(c, 2.1, 1.8, -45), m: 'wood', sh: { k: 'dome', c, r: 2.1 }, bias: 0.05 }); }
+  parts.push({ s: ell([25.4, 6.6], 4.0, 3.6, -45), m: 'wood', sh: { k: 'dome', c: [24.6, 5.8], r: 4.0 }, shine: true, bias: 0.15 });
+  parts.push({ s: ell(a, 1.8, 1.5), m: 'dsteel', sh: { k: 'dome', c: a, r: 1.8 }, shine: true });
+  return parts;
+}
+
+/** THE PENNY DREADFUL (level 4, a tome, the Warlock's: life on kill, fire). A cheap grey paper book, a lurid red block on its cover. */
+function pennydreadful(): Part[] {
+  const parts = dye(PAINTERS.tome(0), { bookred: R.rag, red: R.rag, steel: R.rag, dsteel: R.rag });
+  parts.push({ s: poly([11.6, 12.0], [21.6, 11.2], [22.4, 21.4], [12.4, 22.2]), m: 'red', sh: { k: 'flat', bev: 0.6 }, bias: 0.1 });
+  for (const y of [7.6, 9.2]) parts.push({ s: cap([12.2, y + 0.4], [20.6, y - 0.3], 0.45), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  return parts;
+}
+
+/** THE BLOODSTAINED PRIMER (level 16, a tome, the Warlock's: much more damage, less life). A child's pale schoolbook, and a great stain of blood down its cover. */
+function bloodstainedprimer(): Part[] {
+  const parts = dye(PAINTERS.tome(0), { bookred: 'linen', red: 'black', steel: 'dsteel' });
+  parts.push({ s: ell([17.4, 13.6], 4.6, 4.0), m: 'red', sh: { k: 'soft', r: 1.6 }, bias: -0.05, flush: true });
+  for (const [x, y1] of [[15.4, 23.6], [18.2, 26.0], [20.2, 21.4]] as [number, number][]) parts.push({ s: cap([x, 14.6], [x, y1], 0.75), m: 'red', sh: { k: 'flat' }, flush: true, bias: -0.05 });
+  return parts;
+}
+
+/** THE RUSTY WRENCH (level 3, a wrench, the Tinkerer's: poison, a wider burst). Her wrench left out in the rain: rust all over it, the iron showing in patches. */
+function rustywrench(): Part[] {
+  const parts: Part[] = dye(PAINTERS.wrench(0), { steel: R.rust, leather: 'dleather' }).map((q) => ({ ...q, shine: false }));
+  for (const [x, y, r] of [[16.8, 15.4, 1.0], [13.4, 18.8, 0.8], [19.6, 12.6, 0.7]] as [number, number, number][]) parts.push({ s: ell([x, y], r, r * 0.8), m: 'dsteel', sh: { k: 'flat' }, flush: true, bias: 0.1 });
+  parts.push({ s: ell([18.6, 19.4], 0.9, 1.3), m: 'green', sh: { k: 'dome', c: [18.4, 19.0], r: 0.9, ry: 1.3 }, shine: true });
+  return parts;
+}
+
+/** THE GOLD-PLATED WRENCH (level 9, a wrench, the Tinkerer's: gold find, magic find). Her wrench plated in gold, its grip in violet velvet. */
+function goldplatedwrench(): Part[] {
+  const parts = dye(PAINTERS.wrench(0), { steel: 'gold', leather: 'vcloth' });
+  parts.push({ s: poly([28.4, 2.4], [29.2, 4.2], [31.0, 5.0], [29.2, 5.8], [28.4, 7.6], [27.6, 5.8], [25.8, 5.0], [27.6, 4.2]), m: 'feather', sh: { k: 'flat' }, flush: true, bias: 0.6 });
+  return parts;
+}
+
+/** THE BUTCHER'S WRAPS (level 2, wraps, the Brawler's: life on hit, life). Strips of a butcher's apron: pale linen, stained dark red. */
+function butcherswraps(): Part[] {
+  const parts = PAINTERS.wraps(0);
+  for (const [x, y, rx, ry] of [[10.6, 14.6, 3.0, 2.2], [17.6, 20.4, 2.6, 2.0], [22.4, 11.6, 2.0, 1.6], [12.6, 23.6, 1.8, 1.4]] as [number, number, number, number][]) parts.push({ s: ell([x, y], rx, ry), m: 'red', sh: { k: 'flat' }, flush: true, bias: -0.15 });
+  return parts;
+}
+
+/** BRASS KNUCKLES (level 15, wraps, the Brawler's: physical damage, a chance to stun). Black straps, and across the knuckles a bar of brass, a ring for each finger. */
+function brassknuckles(): Part[] {
+  const parts = dye(PAINTERS.wraps(0), { linen: 'dleather', dleather: 'black' });
+  parts.push({ s: poly([4.6, 11.0], [18.6, 9.6], [19.0, 12.4], [5.0, 13.8]), m: 'brass', sh: { k: 'flat', bev: 0.8 }, shine: true, bias: 0.1 });
+  for (const x of [6.6, 10.0, 13.4, 16.8]) parts.push({ s: ell([x, 12.4 - (x - 6.6) * 0.1], 1.9, 2.3), cut: [ell([x, 12.4 - (x - 6.6) * 0.1], 0.8, 1.1)], m: 'brass', sh: { k: 'flat', bev: 0.6 }, shine: true });
+  return parts;
+}
+
+/** The twelve leveling weapons' pictures, by their ids in game/uniques.ts LEVEL3_DEFS. */
+const LEVEL3_PAINTERS: Record<string, () => Part[]> = {
+  tenderizer, whettededge, runnersbow, longshot, icicle, walkingstick, pennydreadful, bloodstainedprimer, rustywrench, goldplatedwrench,
+  butcherswraps, brassknuckles,
+};
+/** The ids of the twelve leveling weapons' pictures. */
+export const LEVEL3_ART_IDS: readonly string[] = Object.keys(LEVEL3_PAINTERS);
+
 /** Set 1's pictures, by their ids in game/uniques.ts SET1_DEFS: kept apart from the 62's (UNIQUE_ART_IDS), as Set 1 is behind its own switch. */
 const SET1_PAINTERS: Record<string, () => Part[]> = { gyre, redtithe, widowfall, deathknell, deadweight, starbreaker };
 /** The ids of Set 1's pictures. */
@@ -2253,7 +2372,7 @@ export const UNIQUE_ART_IDS: readonly string[] = Object.keys(UNIQUE_PAINTERS);
 /** One unique's own picture: 32 by 32 picture pixels, as art/items_a.ts paintItemA's, with the orange rim. Null for one not drawn. */
 export function paintUnique(id: string): Px | null {
   const own = (m: Record<string, () => Part[]>): (() => Part[]) | undefined => (Object.prototype.hasOwnProperty.call(m, id) ? m[id] : undefined);
-  const f = own(UNIQUE_PAINTERS) ?? own(SET1_PAINTERS) ?? (LEVEL_ART.on ? own(LEVEL_PAINTERS) : undefined) ?? (DEFENCE_ART.on ? own(DEFENCE_PAINTERS) : undefined) ?? own(LEVEL2_PAINTERS);
+  const f = own(UNIQUE_PAINTERS) ?? own(SET1_PAINTERS) ?? (LEVEL_ART.on ? own(LEVEL_PAINTERS) : undefined) ?? (DEFENCE_ART.on ? own(DEFENCE_PAINTERS) : undefined) ?? own(LEVEL2_PAINTERS) ?? own(LEVEL3_PAINTERS);
   return f ? paint(f(), 3) : null;
 }
 
