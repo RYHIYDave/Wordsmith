@@ -1514,6 +1514,20 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   endless.  Mirroring should be very, extremely rare.”): Plundering and Greed only on endless levels (loot.gd ENDLESS_DROPS), where
   a carrier is now and then made one of them (RARE_CARRY 0.05); Mirroring only from the Queen on an endless level, 1 in 100
   (QUEEN_ONLY, MIRROR_CHANCE). `--only=rarerunes` 12 of 12.
+- THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
+  shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
+  Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/
+  docs_reap.txt; their stones docs/mockups/meld_runes5; melds52.json `reap`). Behind, a kill rises as its rune's creature in place
+  of the grey spirit: the IMP keeps its distance and hurls fireballs that burn, the RIMELING flings icicles that chill then freeze,
+  the STORMWISP zaps and the zap jumps to a second enemy, the BLIGHT TOAD spits venom and bursts in a cloud of poison as it goes,
+  the BONEBRUTE slams the ground and throws them back. In front, each has a twist on a kill (fire passed on, a shatter, a soul's
+  bolt, a poison burst, his might). On an enemy, it rises as its creature against him, every blow marked on the floor first.
+  The creatures are pixel art from a small 3D sculptor (tools/reap5: `python3 tools/reap5/paint.py` writes assets/words/
+  reap5_<kind>.png and .json, idle, walk and attack from in front and behind, cyan-edged and pink-edged). Rules
+  meldsreap_rules.gd (from last_words.gd and monster.gd), looks fx_m52p_reap.gd and fx_words7.gd _reap_frame. Behind
+  melds52.gd REAP_ON (OFF until his yes to the page, https://claude.ai/artifact/KjN5NDpT3Ck2y8Ezp9cDuS). Checks:
+  `--only=words --cases=reap5` 20 of 20; films `--fixed-fps 30 -- --only=words --cases=m52film:reap`; the page
+  `python3 docs/mockups/reap5/page.py <films> <lineup png> <out>`.
 - THE LEXICON IN THE STASH (his words, 24 Nov 2026: “I'd also like to get rid of the lexicon in the middle of town and add it to the
   stash chest.”): no Lexicon of its own in the town, the camp or the Rim (its station, prop, book, light and glow left out: town.gd,
   look.gd `_lexicon_out`); its shelf opened by the LEXICON button on the stash's half, and back by STASH (inventory.gd "svc_swap").
