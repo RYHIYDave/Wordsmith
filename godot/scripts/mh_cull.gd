@@ -298,6 +298,8 @@ func struck(m, i: int, _dmg: float, _c: bool, at: Vector2) -> void:
 			H.later(0.3, func() -> void: me._gallows(i, at))
 		"noose":
 			if m.bind_t > 0.0 and not _held.any(func(x): return x["m"] == m):
+				# (the noose holds long enough to tighten: a hold as short as Binding's own ends before its first pull)
+				m.bind_t = maxf(m.bind_t, H.n("noose", "hold", 2.0))
 				_held.append({"m": m, "i": i, "tick": 0.5})
 
 

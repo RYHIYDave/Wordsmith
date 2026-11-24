@@ -288,6 +288,12 @@ func setup(id: String, side: String) -> void:
 		pack[2].world = home + face * 1.1 - across * 0.55
 		for k in 3:
 			pack[k].life = pack[k].max_life * 0.08
+	# (Bloodboil and Mangle in front: enough life that the two Strikes and their burning and bleeding leave them standing, to
+	# walk boiling, or to tear as the stun ends)
+	if id in ["bloodboil", "mangle"] and side == "front":
+		for m in pack:
+			m.max_life = 4000.0
+			m.life = 4000.0
 	# (Mercy behind: two left standing, for the mark to pass to)
 	if id == "mercy" and side == "behind":
 		pack[3].life = pack[3].max_life * 0.5
