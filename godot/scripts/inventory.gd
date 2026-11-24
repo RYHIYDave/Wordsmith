@@ -3088,8 +3088,8 @@ func _monster_text(w: String) -> String:
 ## 23 Nov 2026: “K”)
 static var DOOR_ODDS_LINE := true
 ## (THE RIM'S DOOR AND PLUNDERING: the line saying what Plundering burned in does, more gold on the level and carried by none: loot.gd
-## DOOR_GOLD. Off until his yes to its picture.)
-static var DOOR_GOLD_LINE := false
+## DOOR_GOLD; and Greed's, more magic find: loot.gd DOOR_MF. ON at his “Yes” to their pictures, 24 Nov 2026.)
+static var DOOR_GOLD_LINE := true
 
 # --- THE SHAFT'S RIM'S GATE (ui/town.ts gateSide; game.ts planWord, unplanWord, planProblem, enterEndless): its three sockets, the
 # words burned into the next endless level, what they add up to, and the way in (ENTER ENDLESS N). A word laid by pressing it and
