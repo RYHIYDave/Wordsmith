@@ -1475,7 +1475,10 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   fx_m52p_city.gd (its holds in fx_melds52.gd HOLDS; Frostlock and Constellation in Frost's blue on a monster, fx_m52kit.gd ICY).
   `--only=words --cases=m52:<ids>`: the bench (off none of them, on all 143 and 16), stones, gear, and each of the 50 in front and
   behind, 100 of 100; `--cases=m52film:city` (with `--fixed-fps 30`) films the 45 (their set-ups: cursed, slowed, held, chilled;
-  behind, a vortex's end waited for, a skeleton walked onto each snare).
+  behind, a vortex's end waited for, a skeleton walked onto each snare). Stagnation's twist was made one that shows: while the
+  slow holds, the poison does not wear off (meldscity_rules.gd step). All 45 filmed (every monster moment shown, no script
+  errors) and put on one page for his yes: City Meld Films, https://claude.ai/artifact/C6a3KHBrT98YMvi4YpKAD9
+  (`python3 docs/mockups/meld_films/page.py <films> <out> city`; the films are not kept in the repository, 40 MB).
 
 ## The other chats' hand-overs brought in (the cloud chat, 23 and 24 Nov 2026)
 
