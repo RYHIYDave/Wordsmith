@@ -226,7 +226,7 @@ func setup(id: String, side: String) -> void:
 	if id in ["barrage", "bloodrage", "macabre", "massacre", "crescendo"]:
 		h.frenzy = int(Words.data()["frenzy"]["max"])
 		h.frenzy_t = 9.0
-	if id in ["bodkin", "deadeye", "lens", "artery", "mercy"] and side == "behind":
+	if id in ["bodkin", "lens", "artery", "mercy"] and side == "behind":
 		pack[1].mark_t = 6.0
 		pack[2].mark_t = 6.0
 	if id in ["deadeye", "artery", "mercy"] and side == "front":
@@ -260,6 +260,10 @@ func setup(id: String, side: String) -> void:
 			m.m52["bleed_from"] = 0.0
 	if id == "coup" and side == "behind":
 		pack[1].world = home + across * 0.6
+	# (Mercy behind: two left standing, for the mark to pass to)
+	if id == "mercy" and side == "behind":
+		pack[3].life = pack[3].max_life * 0.5
+		pack[4].life = pack[4].max_life * 0.5
 
 
 ## One meld on one side of the Strike: its setup, the Strike (twice), what it waits on after, and its own moment watched for.
@@ -318,6 +322,9 @@ func _after(id: String, side: String) -> void:
 			h.world = W[0]["at"]
 			h.hurt_by(5.0, "phys", [], {}, src, h.world)
 			h.world = M._w_home
+	if id == "gravewarden" and side == "front":
+		# (a blow on him, which a shade takes)
+		h.hurt_by(5.0, "phys", [], {}, src, h.world)
 	if id == "lastrites" and side == "front":
 		h.shield = maxf(h.shield, 20.0)
 		h.hurt_by(5.0, "phys", [], {}, src, h.world)

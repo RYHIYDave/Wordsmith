@@ -3902,6 +3902,12 @@ func _w_spot(k: int) -> Vector2:
 ## fixed, nothing given him, his moves ready; the tellings counted from nothing.
 func _w_reset(h: Hero) -> void:
 	_monsters.forget()
+	# (any that rose again or were called up in the last case, not of the pack: gone, so they do not fight on into the next)
+	for o in _monsters.list:
+		if is_instance_valid(o) and not _w_pack.has(o) and not o.dead:
+			o.dead = true
+			o.visible = false
+			o.world = Vector2(-999.0, -999.0)
 	wakes.list.clear()
 	wakes.queue_redraw()
 	for k in _w_pack.size():

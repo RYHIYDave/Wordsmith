@@ -699,6 +699,9 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 		m52.mark_spent(m)
 	# (THE 52 DESIGNED MELDS: Duelist, Quickdraw and Pressure Point's certain criticals; what makes a hit land harder: melds52_rules.gd)
 	crit = m52.crit(m, i, crit, quiet)
+	# (THE HIGH CITY'S RUNES MELDED: a critical marked on what it struck, a killing one too, for Deadeye's bright soul)
+	if crit and last != null:
+		m.m52["crit_at"] = last.high.clock()
 	dmg *= m52.more(m, i, quiet)
 	# (THE LEVELING UNIQUES: The Sure Thing, every hit a critical one, and a critical hit no harder)
 	var sure_thing: bool = uniques != null and uniques.sure_thing()
