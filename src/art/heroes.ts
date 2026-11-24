@@ -77,31 +77,31 @@ export interface HeroLook {
 }
 
 /** (THE MAGE'S STAFF, art/staff_skins.ts) The unique staves drawn in her hands, each a skin of her staff. */
-export type StaffId = 'crook' | 'ebb' | 'resonance' | 'rod';
-export const STAFF_IDS: readonly StaffId[] = ['crook', 'ebb', 'resonance', 'rod'];
+export type StaffId = 'crook' | 'ebb' | 'resonance' | 'rod' | 'icicle' | 'walkingstick';
+export const STAFF_IDS: readonly StaffId[] = ['crook', 'ebb', 'resonance', 'rod', 'icicle', 'walkingstick'];
 
 /** (THE RANGER'S BOW, art/bow_skins.ts) The unique bows drawn in his hand, each a skin of his bow. */
-export type BowId = 'rainwalker' | 'threefold' | 'poachers' | 'fledgling';
-export const BOW_IDS: readonly BowId[] = ['rainwalker', 'threefold', 'poachers', 'fledgling'];
+export type BowId = 'rainwalker' | 'threefold' | 'poachers' | 'fledgling' | 'runnersbow' | 'longshot';
+export const BOW_IDS: readonly BowId[] = ['rainwalker', 'threefold', 'poachers', 'fledgling', 'runnersbow', 'longshot'];
 
 /** (THE TINKERER'S WRENCH, art/wrench_skins.ts) The unique wrenches drawn in her hand, each a skin of her wrench. */
-export type WrenchId = 'secondwhistle' | 'stickywrench' | 'foremanswrench' | 'borrowedspanner';
-export const WRENCH_IDS: readonly WrenchId[] = ['secondwhistle', 'stickywrench', 'foremanswrench', 'borrowedspanner'];
+export type WrenchId = 'secondwhistle' | 'stickywrench' | 'foremanswrench' | 'borrowedspanner' | 'rustywrench' | 'goldplatedwrench';
+export const WRENCH_IDS: readonly WrenchId[] = ['secondwhistle', 'stickywrench', 'foremanswrench', 'borrowedspanner', 'rustywrench', 'goldplatedwrench'];
 
 /** (THE BRAWLER'S WRAPS, art/wrap_skins.ts) The unique wraps drawn on his fists, each a skin of his own. */
-export type WrapId = 'lastround' | 'fourthglobe' | 'winningstreak' | 'tapedknuckles';
-export const WRAP_IDS: readonly WrapId[] = ['lastround', 'fourthglobe', 'winningstreak', 'tapedknuckles'];
+export type WrapId = 'lastround' | 'fourthglobe' | 'winningstreak' | 'tapedknuckles' | 'butcherswraps' | 'brassknuckles';
+export const WRAP_IDS: readonly WrapId[] = ['lastround', 'fourthglobe', 'winningstreak', 'tapedknuckles', 'butcherswraps', 'brassknuckles'];
 
 /** (THE WARLOCK'S BOOK, art/tome_skins.ts) The unique tomes drawn at his hip, each a skin of his own book. */
-export type TomeId = 'ledgerofdebts' | 'restlesstome' | 'burningverse' | 'hornbook';
-export const TOME_IDS: readonly TomeId[] = ['ledgerofdebts', 'restlesstome', 'burningverse', 'hornbook'];
+export type TomeId = 'ledgerofdebts' | 'restlesstome' | 'burningverse' | 'hornbook' | 'pennydreadful' | 'bloodstainedprimer';
+export const TOME_IDS: readonly TomeId[] = ['ledgerofdebts', 'restlesstome', 'burningverse', 'hornbook', 'pennydreadful', 'bloodstainedprimer'];
 
 /** (THE WARRIOR'S UNIQUE WEAPONS) His unique great swords, battle axes and warhammers, each a skin of the one he is drawn with. */
-export type WarriorSkinId = 'millstone' | 'windcutter' | 'undertow' | 'gyre' | 'redtithe' | 'widowfall' | 'rotaxe' | 'deathknell' | 'deadweight' | 'starbreaker';
-export const WARRIOR_SKIN_IDS: readonly WarriorSkinId[] = ['millstone', 'windcutter', 'undertow', 'gyre', 'redtithe', 'widowfall', 'rotaxe', 'deathknell', 'deadweight', 'starbreaker'];
+export type WarriorSkinId = 'millstone' | 'windcutter' | 'undertow' | 'gyre' | 'redtithe' | 'widowfall' | 'rotaxe' | 'deathknell' | 'deadweight' | 'starbreaker' | 'barndoor' | 'whettededge' | 'tenderizer';
+export const WARRIOR_SKIN_IDS: readonly WarriorSkinId[] = ['millstone', 'windcutter', 'undertow', 'gyre', 'redtithe', 'widowfall', 'rotaxe', 'deathknell', 'deadweight', 'starbreaker', 'barndoor', 'whettededge', 'tenderizer'];
 /** Which of his weapons each is a skin of: his great sword (null), or the war axe or the maul. */
 export const WARRIOR_SKIN_KIND: Readonly<Record<WarriorSkinId, HeavyWeapon | null>> = {
-  millstone: null, windcutter: null, undertow: null,
+  millstone: null, windcutter: null, undertow: null, barndoor: null, whettededge: null, tenderizer: 'hammer',
   gyre: 'axe', redtithe: 'axe', widowfall: 'axe', rotaxe: 'axe',
   deathknell: 'hammer', deadweight: 'hammer', starbreaker: 'hammer',
 };
@@ -111,7 +111,7 @@ export const WARRIOR_SKIN_KIND: Readonly<Record<WarriorSkinId, HeavyWeapon | nul
  * others (art/warlock_art.ts): the demon's, and his with his arm blazing; and (28 Oct 2026) the new classes on their class
  * cards, too heavy for the start screen to paint as it draws them (`card`).
  */
-export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card' | 'axe' | 'axeTown' | 'hammer' | 'hammerTown' | 'crook' | 'crookTown' | 'ebb' | 'ebbTown' | 'resonance' | 'resonanceTown' | 'rod' | 'rodTown' | 'rainwalker' | 'rainwalkerTown' | 'threefold' | 'threefoldTown' | 'poachers' | 'poachersTown' | 'fledgling' | 'fledglingTown' | 'secondwhistle' | 'secondwhistleTown' | 'stickywrench' | 'stickywrenchTown' | 'foremanswrench' | 'foremanswrenchTown' | 'borrowedspanner' | 'borrowedspannerTown' | 'millstone' | 'millstoneTown' | 'windcutter' | 'windcutterTown' | 'undertow' | 'undertowTown' | 'gyre' | 'gyreTown' | 'redtithe' | 'redtitheTown' | 'widowfall' | 'widowfallTown' | 'rotaxe' | 'rotaxeTown' | 'deathknell' | 'deathknellTown' | 'deadweight' | 'deadweightTown' | 'starbreaker' | 'starbreakerTown' | 'lastround' | 'lastroundTown' | 'fourthglobe' | 'fourthglobeTown' | 'winningstreak' | 'winningstreakTown' | 'tapedknuckles' | 'tapedknucklesTown' | 'ledgerofdebts' | 'ledgerofdebtsTown' | 'ledgerofdebtsBlaze' | 'restlesstome' | 'restlesstomeTown' | 'restlesstomeBlaze' | 'burningverse' | 'burningverseTown' | 'burningverseBlaze' | 'hornbook' | 'hornbookTown' | 'hornbookBlaze';
+export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card' | 'axe' | 'axeTown' | 'hammer' | 'hammerTown' | 'crook' | 'crookTown' | 'ebb' | 'ebbTown' | 'resonance' | 'resonanceTown' | 'rod' | 'rodTown' | 'rainwalker' | 'rainwalkerTown' | 'threefold' | 'threefoldTown' | 'poachers' | 'poachersTown' | 'fledgling' | 'fledglingTown' | 'secondwhistle' | 'secondwhistleTown' | 'stickywrench' | 'stickywrenchTown' | 'foremanswrench' | 'foremanswrenchTown' | 'borrowedspanner' | 'borrowedspannerTown' | 'millstone' | 'millstoneTown' | 'windcutter' | 'windcutterTown' | 'undertow' | 'undertowTown' | 'gyre' | 'gyreTown' | 'redtithe' | 'redtitheTown' | 'widowfall' | 'widowfallTown' | 'rotaxe' | 'rotaxeTown' | 'deathknell' | 'deathknellTown' | 'deadweight' | 'deadweightTown' | 'starbreaker' | 'starbreakerTown' | 'lastround' | 'lastroundTown' | 'fourthglobe' | 'fourthglobeTown' | 'winningstreak' | 'winningstreakTown' | 'tapedknuckles' | 'tapedknucklesTown' | 'ledgerofdebts' | 'ledgerofdebtsTown' | 'ledgerofdebtsBlaze' | 'restlesstome' | 'restlesstomeTown' | 'restlesstomeBlaze' | 'burningverse' | 'burningverseTown' | 'burningverseBlaze' | 'hornbook' | 'hornbookTown' | 'hornbookBlaze' | 'icicle' | 'icicleTown' | 'walkingstick' | 'walkingstickTown' | 'runnersbow' | 'runnersbowTown' | 'longshot' | 'longshotTown' | 'rustywrench' | 'rustywrenchTown' | 'goldplatedwrench' | 'goldplatedwrenchTown';
 /** (THE WARRIOR'S WEAPON, WARRIOR_TREE2) His places with the war axe and the maul: in a dungeon, and in town. */
 export const HEAVY_PLACES: Readonly<Record<HeavyWeapon, { dungeon: HeroPlace; town: HeroPlace }>> = { axe: { dungeon: 'axe', town: 'axeTown' }, hammer: { dungeon: 'hammer', town: 'hammerTown' } };
 /** (THE MAGE'S STAFF, art/staff_skins.ts) Her places with each unique staff: in a dungeon, and in town. */
@@ -120,6 +120,8 @@ export const STAFF_PLACES: Readonly<Record<StaffId, { dungeon: HeroPlace; town: 
   ebb: { dungeon: 'ebb', town: 'ebbTown' },
   resonance: { dungeon: 'resonance', town: 'resonanceTown' },
   rod: { dungeon: 'rod', town: 'rodTown' },
+  icicle: { dungeon: 'icicle', town: 'icicleTown' },
+  walkingstick: { dungeon: 'walkingstick', town: 'walkingstickTown' },
 };
 /**
  * THE SWITCH: ON, at his yes, 14 Nov 2026 (by 16:11 Eastern), shown her in the game with each staff
@@ -131,7 +133,7 @@ export const STAFF_PLACES: Readonly<Record<StaffId, { dungeon: HeroPlace; town: 
  */
 export const STAFF_SKINS = { on: true };
 /** The unique staves of the game (game/uniques.ts) that are drawn in her hands, and the skin each is. */
-export const STAFF_OF_UNIQUE: Readonly<Record<string, StaffId>> = { shepherdscrook: 'crook', tide: 'ebb', tuningstaff: 'resonance', kindlingrod: 'rod' };
+export const STAFF_OF_UNIQUE: Readonly<Record<string, StaffId>> = { shepherdscrook: 'crook', tide: 'ebb', tuningstaff: 'resonance', kindlingrod: 'rod', icicle: 'icicle', walkingstick: 'walkingstick' };
 /** The skin of the staff an item is, if it is one of those (and the switch is on); null: her own staff. */
 export function staffWorn(item: { unique?: string; rarity?: number } | null | undefined): StaffId | null {
   if (!STAFF_SKINS.on || !item || item.rarity !== 3 || !item.unique) return null;
@@ -146,7 +148,7 @@ export function staffWorn(item: { unique?: string; rarity?: number } | null | un
  */
 export const BOW_SKINS = { on: true };
 /** The unique bows of the game (game/uniques.ts) that are drawn in his hand, and the skin each is. */
-export const BOW_OF_UNIQUE: Readonly<Record<string, BowId>> = { rainwalker: 'rainwalker', fan: 'threefold', poachersbow: 'poachers', fledgling: 'fledgling' };
+export const BOW_OF_UNIQUE: Readonly<Record<string, BowId>> = { rainwalker: 'rainwalker', fan: 'threefold', poachersbow: 'poachers', fledgling: 'fledgling', runnersbow: 'runnersbow', longshot: 'longshot' };
 /** The skin of the bow an item is, if it is one of those (and the switch is on); null: his own bow. */
 export function bowWorn(item: { unique?: string; rarity?: number } | null | undefined): BowId | null {
   if (!BOW_SKINS.on || !item || item.rarity !== 3 || !item.unique) return null;
@@ -158,6 +160,8 @@ export const BOW_PLACES: Readonly<Record<BowId, { dungeon: HeroPlace; town: Hero
   threefold: { dungeon: 'threefold', town: 'threefoldTown' },
   poachers: { dungeon: 'poachers', town: 'poachersTown' },
   fledgling: { dungeon: 'fledgling', town: 'fledglingTown' },
+  runnersbow: { dungeon: 'runnersbow', town: 'runnersbowTown' },
+  longshot: { dungeon: 'longshot', town: 'longshotTown' },
 };
 /** Is a place one of a bow's (and which). */
 export function bowOfPlace(place: HeroPlace): BowId | null {
@@ -173,7 +177,7 @@ export function bowOfPlace(place: HeroPlace): BowId | null {
  */
 export const WRENCH_SKINS = { on: true };
 /** The unique wrenches of the game (game/uniques.ts) that are drawn in her hand: each is its own skin's id. */
-export const WRENCH_OF_UNIQUE: Readonly<Record<string, WrenchId>> = { secondwhistle: 'secondwhistle', stickywrench: 'stickywrench', foremanswrench: 'foremanswrench', borrowedspanner: 'borrowedspanner' };
+export const WRENCH_OF_UNIQUE: Readonly<Record<string, WrenchId>> = { secondwhistle: 'secondwhistle', stickywrench: 'stickywrench', foremanswrench: 'foremanswrench', borrowedspanner: 'borrowedspanner', rustywrench: 'rustywrench', goldplatedwrench: 'goldplatedwrench' };
 /** The skin of the wrench an item is, if it is one of those (and the switch is on); null: her own wrench. */
 export function wrenchWorn(item: { unique?: string; rarity?: number } | null | undefined): WrenchId | null {
   if (!WRENCH_SKINS.on || !item || item.rarity !== 3 || !item.unique) return null;
@@ -185,6 +189,8 @@ export const WRENCH_PLACES: Readonly<Record<WrenchId, { dungeon: HeroPlace; town
   stickywrench: { dungeon: 'stickywrench', town: 'stickywrenchTown' },
   foremanswrench: { dungeon: 'foremanswrench', town: 'foremanswrenchTown' },
   borrowedspanner: { dungeon: 'borrowedspanner', town: 'borrowedspannerTown' },
+  rustywrench: { dungeon: 'rustywrench', town: 'rustywrenchTown' },
+  goldplatedwrench: { dungeon: 'goldplatedwrench', town: 'goldplatedwrenchTown' },
 };
 /** Is a place one of a wrench's (and which). */
 export function wrenchOfPlace(place: HeroPlace): WrenchId | null {
@@ -221,7 +227,7 @@ export const WARRIOR_SKIN_PLACES: Readonly<Record<WarriorSkinId, { dungeon: Hero
  */
 export const WRAP_SKINS = { on: true };
 /** The unique wraps of the game (game/uniques.ts) that are drawn on his fists: each is its own skin's id. */
-export const WRAP_OF_UNIQUE: Readonly<Record<string, WrapId>> = { lastround: 'lastround', fourthglobe: 'fourthglobe', winningstreak: 'winningstreak', tapedknuckles: 'tapedknuckles' };
+export const WRAP_OF_UNIQUE: Readonly<Record<string, WrapId>> = { lastround: 'lastround', fourthglobe: 'fourthglobe', winningstreak: 'winningstreak', tapedknuckles: 'tapedknuckles', butcherswraps: 'butcherswraps', brassknuckles: 'brassknuckles' };
 /** The skin of the wraps an item is, if it is one of those (and the switch is on); null: his own. */
 export function wrapWorn(item: { unique?: string; rarity?: number } | null | undefined): WrapId | null {
   if (!WRAP_SKINS.on || !item || item.rarity !== 3 || !item.unique) return null;
@@ -246,7 +252,7 @@ export function wrapOfPlace(place: HeroPlace): WrapId | null {
  */
 export const TOME_SKINS = { on: true };
 /** The unique tomes of the game (game/uniques.ts) that are drawn at his hip: each is its own skin's id. */
-export const TOME_OF_UNIQUE: Readonly<Record<string, TomeId>> = { ledgerofdebts: 'ledgerofdebts', restlesstome: 'restlesstome', burningverse: 'burningverse', hornbook: 'hornbook' };
+export const TOME_OF_UNIQUE: Readonly<Record<string, TomeId>> = { ledgerofdebts: 'ledgerofdebts', restlesstome: 'restlesstome', burningverse: 'burningverse', hornbook: 'hornbook', pennydreadful: 'pennydreadful', bloodstainedprimer: 'bloodstainedprimer' };
 /** The skin of the tome an item is, if it is one of those (and the switch is on); null: his own book. */
 export function tomeWorn(item: { unique?: string; rarity?: number } | null | undefined): TomeId | null {
   if (!TOME_SKINS.on || !item || item.rarity !== 3 || !item.unique) return null;

@@ -653,6 +653,12 @@ func _ready() -> void:
 	# (THE FIFTEEN OF THE THREE DEFENCES, on at his yes: `--defuniques=0` to run without them dropping: loot.gd DEFENCE_UNIQUES)
 	if _arg("defuniques") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_UNIQUES = false
+	# (FIFTEEN MORE LEVELING UNIQUES, on at his yes: `--level2=0` to run without them dropping: loot.gd LEVEL2_UNIQUES)
+	if _arg("level2") == "0":
+		preload("res://scripts/loot.gd").LEVEL2_UNIQUES = false
+	# (TWELVE LEVELING WEAPONS, on at his yes: `--level3=0` to run without them dropping: loot.gd LEVEL3_UNIQUES)
+	if _arg("level3") == "0":
+		preload("res://scripts/loot.gd").LEVEL3_UNIQUES = false
 	# (THE FIFTEEN'S OWN PICTURES, on at his yes: `--defart=0` to run without them)
 	# (THE STORM CLOUDS MADE AGAIN, on at his “All good”: `--clouds2=0` shows them as they were, fx_cloud.gd)
 	# (THE NEW MELDS KEEP LEECH'S OWN DRAIN, on at his “All good”: `--leechsame=0` shows it as it was, fx_m52kit.gd)
@@ -3101,6 +3107,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "defence":
 		await preload("res://scripts/check_defence.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (EVERY UNIQUE WEAPON ON ITS HERO, PICTURED: --only=skinsheet: check_skinsheet.gd)
+	if _arg("only") == "skinsheet":
+		await preload("res://scripts/check_skinsheet.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (THE UNIQUES' DEFENCES AND THE FIFTEEN OF THE THREE DEFENCES: --only=defuniques: check_defuniques.gd)

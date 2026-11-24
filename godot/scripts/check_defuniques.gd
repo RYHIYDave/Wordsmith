@@ -378,7 +378,7 @@ func run(main, hero, d: String) -> void:
 		var it = L.unique_piece(id)
 		if it != null and str(it["icon"]) == "u:" + str(id) and L.pics.has(str(it["icon"])):
 			own15 += 1
-	_line(missing.is_empty() and own == (88 if not art_was else 103) and own15 == 15, "their pictures: %d uniques each with a picture of its own in the sheet (none missing: %s); the fifteen with their switch on, %d of 15 their own" % [own, str(missing), own15])
+	_line(missing.is_empty() and own == (115 if not art_was else 130) and own15 == 15, "their pictures: %d uniques each with a picture of its own in the sheet (none missing: %s); the fifteen with their switch on, %d of 15 their own" % [own, str(missing), own15])
 	# (a bag of them, pictured: the fifteen in their own pictures, then nine of the ones we had)
 	_hero("warrior")
 	L.bag.clear()
@@ -392,6 +392,266 @@ func run(main, hero, d: String) -> void:
 		M._inv.toggle()
 		await M._wait(0.2)
 	L.bag.clear()
+
+	# ================= FIFTEEN MORE LEVELING UNIQUES (loot.gd LEVEL2_UNIQUES; uniques.ts LEVEL2_DEFS) =================
+	var more: Array = defs.keys().filter(func(id): return defs[id].get("set") == "level2")
+	var bare_ok := true
+	var rows := []
+	for id in more:
+		var it: Dictionary = L.unique_piece(id)
+		bare_ok = bare_ok and defs[id]["from"] == "level" and it.get("bare", false) == true and (L.lines_of(it, "implicit").is_empty() or it["weapon"] == true) and int(it["req"]) == int(defs[id]["level"]) \
+			and not L.lines_of(it, "lines").is_empty() and (defs[id].get("udef") == null or not ", ".join(L.lines_of(it, "lines")).contains("Armour"))
+		rows.append("%s (level %d): %s" % [it["name"], int(defs[id]["level"]), ", ".join(L.lines_of(it, "lines"))])
+	_line(more.size() == 15 and bare_ok, "fifteen more leveling uniques, each its level's own, nothing of its base (a weapon, its base's damage alone): %s" % "; ".join(rows))
+	# (the switch: none drops with it off; on, on a floor of level 30, all of them a hero may find come)
+	_hero("warrior")
+	var l2_was: bool = L.LEVEL2_UNIQUES
+	var drops: Dictionary = L._uniques["drops"]
+	var pool_was = drops["pool"].duplicate(true)
+	var level_was = drops["level"].duplicate(true)
+	for kk in ["plain", "elite", "hoard"]:
+		drops["pool"][kk] = 0.0
+		drops["level"][kk] = 1.0
+	var lvl_was: int = L.level
+	var seen_off := 0
+	var seen_on := {}
+	for on in [false, true]:
+		L.LEVEL2_UNIQUES = on
+		for i in 4000:
+			var it = L._pool_unique(0, 0.0)
+			if it != null and more.has(it["unique"]):
+				if on:
+					seen_on[it["unique"]] = true
+				else:
+					seen_off += 1
+	L.LEVEL2_UNIQUES = l2_was
+	drops["pool"] = pool_was
+	drops["level"] = level_was
+	var here: int = L.power()
+	var due: Array = more.filter(func(id): return int(defs[id]["level"]) <= here and (defs[id]["cls"] == null or defs[id]["cls"] == "warrior"))
+	_line(seen_off == 0 and seen_on.size() == due.size() and due.size() >= 1, "their switch off, 4,000 leveling drops here (level %d): %d of them; on: %d of the %d of this level or below" % [here, seen_off, seen_on.size(), due.size()])
+	# (three of them worn: barrier on an amulet; dodge and every resistance less; armour and less Intelligence)
+	_hero("mage")
+	var pch: Dictionary = _wear("papercharm")
+	var b_p: float = h.max_barrier
+	_hero("ranger")
+	var gco: Dictionary = _wear("greasedcoat")
+	var d_g: float = h.stats["dodge"]
+	var r_g: float = h.stats["res_fire"]
+	_hero("warrior")
+	var int0: float = h.stats["int"]
+	var tsk: Dictionary = _wear("thickskull")
+	_line(b_p >= 20.0 and d_g >= 300.0 and r_g <= -20.0 and h.stats["armor"] >= 120.0 and h.stats["int"] <= int0 - 14.0,
+		"worn: the Paper Charm, barrier %d; the Greased Coat, dodge %d, fire resistance %d%%; the Thick Skull, armour %d, Intelligence %d (from %d)" % [b_p, d_g, r_g, h.stats["armor"], h.stats["int"], int0])
+	# (THE BARN DOOR IN HIS HANDS: skins.gd; the Warrior holding it is drawn holding it, in a dungeon and in town; another hero, not)
+	_hero("warrior")
+	h.talents = []
+	h.arm()
+	L.gear["mainhand"] = L.unique_piece("barndoor")
+	L.derive()
+	await M._wait(0.4)
+	var path_of := func(a) -> String:
+		if a == null or a.count(0, 0) == 0:
+			return ""
+		var f: Dictionary = a.frame(0, 0, 0)
+		return f["tex"].atlas.resource_path.get_file() if f["tex"] is AtlasTexture else f["tex"].resource_path.get_file()
+	var in_dungeon: String = path_of.call(h.arts["dungeon"])
+	var in_town: String = path_of.call(h.arts["town"])
+	_line(h.skin == "warrior-barndoor" and in_dungeon.begins_with("warrior-barndoor-") and in_town.begins_with("warrior-barndoor-") and h.art == h.arts["dungeon"],
+		"the Warrior holding The Barn Door: drawn as %s (in a dungeon %s, in town %s)" % [h.skin, in_dungeon, in_town])
+	if dir != "":
+		for f in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]:
+			h._turn(f)
+			await M._wait(0.25)
+			await M._snap(dir + "/bd_%d_%d.png" % [int(f.x), int(f.y)])
+	# (their cards, and a bag of them)
+	if dir != "":
+		var k := 0
+		for id in more:
+			k += 1
+			await _card(L.unique_piece(id), "lv%02d_%s" % [k, id])
+		L.bag.clear()
+		for id in more:
+			L.bag.append(L.unique_piece(id))
+		M._inv.toggle()
+		await M._wait(0.4)
+		await M._snap(dir + "/lv16_bag.png")
+		M._inv.toggle()
+		await M._wait(0.2)
+		L.bag.clear()
+
+	# ================= TWELVE LEVELING WEAPONS (loot.gd LEVEL3_UNIQUES; uniques.ts LEVEL3_DEFS; skins.gd) =================
+	var arms12: Array = defs.keys().filter(func(id): return defs[id].get("set") == "level3")
+	var w_ok := true
+	var w_rows := []
+	for id in arms12:
+		var it: Dictionary = L.unique_piece(id)
+		w_ok = w_ok and defs[id]["from"] == "level" and defs[id]["cls"] != null and it["weapon"] == true and it.get("bare", false) == true and int(it["req"]) == int(defs[id]["level"]) and str(it["icon"]) == "u:" + str(id)
+		w_rows.append("%s (%s, level %d): %s" % [it["name"], defs[id]["cls"], int(defs[id]["level"]), ", ".join(L.lines_of(it, "lines"))])
+	_line(arms12.size() == 12 and w_ok, "twelve leveling weapons, each its hero's, its level's own, its own picture: %s" % "; ".join(w_rows))
+	# (how many leveling weapons each hero has now: three, the Warrior four)
+	var per := {}
+	for id in defs:
+		if defs[id]["from"] == "level" and defs[id]["weapon"] != null and defs[id]["cls"] != null:
+			per[defs[id]["cls"]] = int(per.get(defs[id]["cls"], 0)) + 1
+	_line(per.size() == 6 and per.values().all(func(v): return v >= 3) and per.get("warrior") == 4, "leveling weapons for each hero: %s" % str(per))
+	# (their switch: none drops with it off; on, a hero of level 20's floor finds both of his)
+	var l3_was: bool = L.LEVEL3_UNIQUES
+	for kk in ["plain", "elite", "hoard"]:
+		drops["pool"][kk] = 0.0
+		drops["level"][kk] = 1.0
+	var off3 := 0
+	var on3 := {}
+	var depth_was = L.map.depth
+	L.map.depth = 20
+	for c in ["warrior", "ranger", "mage", "warlock", "tinkerer", "brawler"]:
+		M.set_class(c, true)
+		for on in [false, true]:
+			L.LEVEL3_UNIQUES = on
+			for i in 1500:
+				var it = L._pool_unique(0, 0.0)
+				if it != null and arms12.has(it["unique"]):
+					if on:
+						on3[it["unique"]] = defs[it["unique"]]["cls"] == c
+					else:
+						off3 += 1
+	L.LEVEL3_UNIQUES = l3_was
+	L.map.depth = depth_was
+	drops["pool"] = pool_was
+	drops["level"] = level_was
+	_line(off3 == 0 and on3.size() == 12 and on3.values().all(func(v): return v), "their switch off, 9,000 leveling drops across the six heroes: %d of them; on: %d of the 12 come, each to its own hero only" % [off3, on3.size()])
+	# (THE ICICLE: every hit frost; the Runner's Bow's dodge; the Walking Stick's barrier)
+	_hero("mage")
+	L.gear["mainhand"] = L.unique_piece("icicle")
+	L.derive()
+	var el: String = str(h.loadout.r(0)["element"])
+	L.gear["mainhand"] = L.unique_piece("walkingstick")
+	L.derive()
+	var ws_b: float = h.max_barrier
+	_hero("ranger")
+	L.gear["mainhand"] = L.unique_piece("runnersbow")
+	L.derive()
+	_line(el == "frost" and ws_b >= 60.0 and h.stats["dodge"] >= 8.0, "the Icicle in her hand: her tap attack's element %s; the Walking Stick: barrier %d; the Runner's Bow: dodge %d, movement speed %d%%" % [el, ws_b, h.stats["dodge"], h.stats["move_speed"]])
+	# (EACH IN ITS HERO'S HANDS: skins.gd; the Tenderizer with his tree's warhammer)
+	var skins_ok := true
+	var skin_rows := []
+	for id in arms12:
+		var c: String = defs[id]["cls"]
+		_hero(c)
+		if c == "warrior":
+			h.talents = ["warhammer"] if id == "tenderizer" else []
+			h.arm()
+		L.gear["mainhand"] = L.unique_piece(id)
+		L.derive()
+		await M._wait(0.5)
+		var file: String = path_of.call(h.arts["dungeon"])
+		var good: bool = h.skin == "%s-%s" % [c, id] and file.begins_with("%s-%s-" % [c, id])
+		skins_ok = skins_ok and good
+		skin_rows.append("%s: %s" % [id, file if good else "NOT (%s, %s)" % [h.skin, file]])
+		if dir != "":
+			h._turn(Vector2(1, 0))
+			await M._wait(0.25)
+			await M._snap(dir + "/hold_%s.png" % id)
+	h.talents = []
+	_line(skins_ok, "each of the twelve in its hero's hands: %s" % "; ".join(skin_rows))
+	if dir != "":
+		var k3 := 0
+		for id in arms12:
+			k3 += 1
+			_hero(defs[id]["cls"])
+			await _card(L.unique_piece(id), "lw%02d_%s" % [k3, id])
+
+	# ================= FLAT DAMAGE OF AN ELEMENT ON EVERY HIT (hero.gd hit_monster, _flat_extras) =================
+	# (a Warrior with no words, a ring of flat fire, frost and lightning: his plain Strike carries each beside itself)
+	_hero("warrior")
+	h.talents = []
+	h.arm()
+	foe.tracing = true
+	foe.trace = {}
+	h.hit_monster(foe, 0, 1.0, false)
+	var bare_keys: Array = foe.trace.keys().filter(func(k): return str(k).begins_with("move 0"))
+	_piece("ring1", "Ruby Ring", [["fireMin", 10], ["fireMax", 10], ["frostMin", 6], ["frostMax", 6], ["lightMin", 4], ["lightMax", 4]])
+	L.derive()
+	foe.life = foe.max_life
+	foe.trace = {}
+	h.hit_monster(foe, 0, 1.0, false)
+	var tr: Dictionary = foe.trace.duplicate()
+	var fl_fire: float = float(tr.get("move 0 fire", 0.0))
+	var fl_frost: float = float(tr.get("move 0 frost", 0.0))
+	var fl_light: float = float(tr.get("move 0 lightning", 0.0))
+	_line(bare_keys == ["move 0 phys"] and str(h.loadout.r(0)["element"]) == "phys" and fl_fire > 0.0 and fl_frost > 0.0 and fl_light > 0.0 and fl_fire > fl_frost and fl_frost > fl_light and float(tr.get("move 0 phys", 0.0)) > 0.0,
+		"a Warrior with no words: his Strike alone is %s; with a ring of 10 fire, 6 frost and 4 lightning it is %d plain and beside it %d fire, %d frost, %d lightning" % [str(bare_keys), tr.get("move 0 phys", 0.0), fl_fire, fl_frost, fl_light])
+	# (flat poison: poison on a hit that does not poison of itself)
+	_hero("warrior")
+	_piece("ring1", "Ruby Ring", [["poisonMin", 8], ["poisonMax", 8]])
+	L.derive()
+	foe.poison_t = 0.0
+	foe.poison_dps = 0.0
+	foe.poison_n = 0
+	h.hit_monster(foe, 0, 1.0, false)
+	_line(float(h.loadout.r(0)["poison"]) == 0.0 and foe.poison_dps > 0.0 and foe.poison_t > 0.0, "the same Strike with a ring of 8 flat poison and no Poison word: it is poisoned, %.1f a second for %.0f s" % [foe.poison_dps, foe.poison_t])
+	foe.poison_t = 0.0
+	foe.poison_dps = 0.0
+	foe.poison_n = 0
+	# (a weapon that can deal no other type: the Kindling Rod's hits carry none of the others)
+	_hero("mage")
+	L.gear["mainhand"] = L.unique_piece("kindlingrod")
+	_piece("ring1", "Ruby Ring", [["frostMin", 6], ["frostMax", 6], ["poisonMin", 8], ["poisonMax", 8]])
+	L.derive()
+	foe.life = foe.max_life
+	foe.trace = {}
+	h.hit_monster(foe, 0, 1.0, false)
+	var rod_keys: Array = foe.trace.keys().filter(func(k): return str(k).begins_with("move 0"))
+	_line(rod_keys == ["move 0 fire"] and foe.poison_dps == 0.0, "the Kindling Rod (can deal no other type of damage) with a ring of flat frost and poison: its hit is %s, no poison" % str(rod_keys))
+	foe.tracing = false
+	foe.trace = {}
+	# (the lines say what they add)
+	var kr: Dictionary = L.unique_piece("kindlingrod")
+	var pl: Dictionary = L.unique_piece("poisonerslocket")
+	var said: String = ", ".join(L.lines_of(kr, "lines") + L.lines_of(pl, "lines"))
+	_line(not said.contains("Hits") and said.contains("Fire Damage") and said.contains("Poison Damage"), "the lines: %s" % said)
+
+	# ================= A MELD OF TWO KINDS OF DAMAGE DEALS BOTH (words.gd meld_second; hero.gd hit_monster) =================
+	_hero("warrior")
+	h.talents = []
+	h.arm()
+	foe.tracing = true
+	var kinds_of := func(word) -> Dictionary:
+		h.loadout.front[0] = [word, null]
+		h.loadout._r = [null, null, null]
+		var out := {}
+		for k in 30:
+			foe.life = foe.max_life
+			foe.chill_t = 0.0
+			foe.frozen_t = 0.0
+			foe.burn_t = 0.0
+			foe.shock_t = 0.0
+			foe.trace = {}
+			h.hit_monster(foe, 0, 1.0, true)
+			for key in foe.trace:
+				if str(key).begins_with("move 0 ") and not str(key).contains("over time"):
+					out[str(key).trim_prefix("move 0 ")] = float(out.get(str(key).trim_prefix("move 0 "), 0.0)) + float(foe.trace[key])
+		return out
+	var k_hail: Dictionary = kinds_of.call("hailstorm")
+	var k_erup: Dictionary = kinds_of.call("eruption")
+	var k_scald: Dictionary = kinds_of.call("scald")
+	var k_flame: Dictionary = kinds_of.call("fire")
+	var k_caut: Dictionary = kinds_of.call("cauterize")
+	var near := func(a: float, b: float) -> bool: return a > 0.0 and b > 0.0 and absf(a - b) / maxf(a, b) < 0.25
+	_line(k_hail.keys().size() == 2 and near.call(k_hail.get("frost", 0.0), k_hail.get("lightning", 0.0)) and k_erup.keys().size() == 2 and near.call(k_erup.get("phys", 0.0), k_erup.get("fire", 0.0)) and k_scald.keys().size() == 2 and near.call(k_scald.get("fire", 0.0), k_scald.get("frost", 0.0)),
+		"thirty Strikes each: Hailstorm %s; Eruption %s; Scald %s" % [str(k_hail), str(k_erup), str(k_scald)])
+	_line(k_flame.keys() == ["fire"] and k_caut.keys() == ["fire"], "Flame set alone: %s (all fire, as ever); Cauterize, Leech and Flame: %s" % [str(k_flame), str(k_caut)])
+	# (each half made more by its own bonus: lightning damage on his gear, and Hailstorm's lightning half)
+	_piece("ring1", "Ruby Ring", [["lightPct", 100]])
+	L.derive()
+	var k_hail2: Dictionary = kinds_of.call("hailstorm")
+	var line_h: String = str(h.loadout.r(0)["lines"].filter(func(l): return str(l).begins_with("Half its damage"))[0]) if h.loadout.r(0)["lines"].any(func(l): return str(l).begins_with("Half its damage")) else ""
+	_line(float(k_hail2.get("lightning", 0.0)) > 1.6 * float(k_hail2.get("frost", 0.0)) and line_h != "", "with +100%% Lightning Damage on his gear, Hailstorm: %s; its line: \"%s\"" % [str(k_hail2), line_h])
+	h.loadout.front[0] = [null, null]
+	h.loadout._r = [null, null, null]
+	foe.tracing = false
+	foe.trace = {}
+	foe.life = foe.max_life
 
 	# ================= THE CHANGED ONES' CARDS =================
 	await _card(sc, "du16_shortcut")

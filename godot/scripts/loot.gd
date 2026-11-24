@@ -1115,6 +1115,10 @@ func _pool_unique(quality: int, mf: float, slot := "", weapon := ""):
 		var pool: Array = []
 		for id in _uniques["defs"]:
 			var d: Dictionary = _uniques["defs"][id]
+			if d.get("set") == "level2" and not LEVEL2_UNIQUES:
+				continue
+			if d.get("set") == "level3" and not LEVEL3_UNIQUES:
+				continue
 			if d["from"] == "level" and int(d["level"] if d["level"] != null else 1) <= p and (d["cls"] == null or d["cls"] == cls) \
 					and (slot == "" or d["slot"] == slot) and (weapon == "" or d["weapon"] == weapon):
 				pool.append(id)
@@ -1133,6 +1137,19 @@ static var DEFENCE_UNIQUES := true
 ## bases' pictures: “Uniques always have unique sprite art”. ON at his yes to them, 23 Nov 2026, shown their sheet and a bag of
 ## them (docs/mockups/defence_uniques): “Yes, turn them on”. Off, each its base's orange look.
 static var DEFENCE_ART := true
+
+
+## FIFTEEN MORE LEVELING UNIQUES (game/uniques.ts LEVEL2_DEFS; his words, 24 Nov 2026: “Give me 15 more leveling uniques”): as the
+## twenty are, each its level's own, stats alone. ON at his yes, 24 Nov 2026, shown their cards and pictures: “They’re all good.
+## A unique weapon needs a skin to go on the Warrior if he equips it.  So you’ll have to get that going” (the Barn Door's:
+## skins.gd). With it off none drops.
+static var LEVEL2_UNIQUES := true
+
+
+## TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”; told them
+## before any art, “Yes good to go”): two more for each hero, each with a skin on him (skins.gd). ON at his yes, 24 Nov 2026,
+## shown their cards, their pictures and each hero holding his two: “Yes, switch them on (Recommended)”. With it off none drops.
+static var LEVEL3_UNIQUES := true
 
 
 ## game.ts makePoolUnique: one of the pool's for him (of that slot, of that weapon, where asked), made for this floor; null if none.

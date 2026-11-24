@@ -259,6 +259,28 @@ export const STARBREAKER_HAMMER: WeaponTake = {
   },
 };
 
+// ---------------------------------------------------------------------------------------------
+// TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”, and of a unique
+// weapon, “needs a skin to go on the Warrior if he equips it”): each drawn in its hero's hands as its picture in the bag is.
+
+const KITCHEN: Ramp = ['#26224e', '#45418a', '#7a76be', '#b6b2ea', '#f2f0ff'];
+const BEECH: Ramp = ['#3e2a16', '#684a26', '#96703c', '#c09a5c', '#e2c48c'];
+
+/** THE TENDERIZER (level 3: a chance to stun, added damage). A cook's meat mallet grown to a maul: a square steel head, both its faces rows of blunt teeth; a pale beech haft. */
+export const TENDERIZER_HAMMER: WeaponTake = {
+  id: 'tenderizer', kind: 'hammer', letter: 'A', name: 'The Tenderizer: a square steel mallet head, its faces rows of blunt teeth',
+  ...MAUL_FIT,
+  edges: [],
+  look: { iron: KITCHEN, wood: BEECH },
+  head: (sm: Smith) => {
+    sm.sc.box(sm.iron, 'head', [27.0, 0, 0], [[3.6, 0, 0], [0, 5.4, 0], [0, 0, 3.6]], 0.7, 0.3, { tag: 'block' });
+    // (the teeth: three rows of three on each striking face)
+    for (const face of [1, -1]) for (const x of [24.8, 27.0, 29.2]) for (const z of [-2.2, 0, 2.2]) sm.sc.cone(sm.iron, 'head', [x, face * 5.2, z], [x, face * 6.9, z], 0.85, 0.3, 0.15, { tag: 'tooth' });
+    for (const y of [-3.4, 3.4]) sm.sc.box(sm.dark, 'band', [27.0, y, 0], [[3.8, 0, 0], [0, 0.4, 0], [0, 0, 3.8]], 0.1, 0.1, { tag: 'band' });
+    collar(sm, 21.6, 1.2, 1.6);
+  },
+};
+
 /** The unique axes and hammers, by their takes' ids. */
 export const HEAVY_SKIN_OF: Readonly<Record<SkinTakeId, WeaponTake>> = {
   gyre: GYRE_AXE,
@@ -268,7 +290,8 @@ export const HEAVY_SKIN_OF: Readonly<Record<SkinTakeId, WeaponTake>> = {
   deathknell: DEATHKNELL_HAMMER,
   deadweight: DEADWEIGHT_HAMMER,
   starbreaker: STARBREAKER_HAMMER,
+  tenderizer: TENDERIZER_HAMMER,
 };
 /** The axes, the war axe first; the hammers, the maul first. */
 export const AXE_SKIN_LIST: readonly WeaponTake[] = [AXE, GYRE_AXE, REDTITHE_AXE, WIDOWFALL_AXE, ROT_AXE];
-export const HAMMER_SKIN_LIST: readonly WeaponTake[] = [MAUL, DEATHKNELL_HAMMER, DEADWEIGHT_HAMMER, STARBREAKER_HAMMER];
+export const HAMMER_SKIN_LIST: readonly WeaponTake[] = [MAUL, DEATHKNELL_HAMMER, DEADWEIGHT_HAMMER, STARBREAKER_HAMMER, TENDERIZER_HAMMER];

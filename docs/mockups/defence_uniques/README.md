@@ -45,3 +45,92 @@ His words, told the fifteen wore their bases' pictures: “Uniques always have u
 - Checked: `--only=defuniques` 27 of 27 (its line 27: every unique's picture is in the sheet, 88 their own, the fifteen their
   own with the switch on); `uniques` 11 of 11, `uniquesdo` 19 of 19, `defence` 11 of 11.
 - After pulling this, Godot must import `icons.png` again (the editor does it on opening the project).
+
+## Fifteen more leveling uniques (24 Nov 2026)
+
+His words: “Give me 15 more leveling uniques”. Made as the twenty are: each its level's own, nothing of its base (a weapon, its
+base's damage alone), every number rolled about a fifth either way, anyone's unless a hero's weapon, dropping on any floor of its
+level or past it. Stats alone, no rule of its own. Eleven on the way (levels 2 to 20), four endgame (22 to 28, each with a
+price). `src/game/uniques.ts` LEVEL2_DEFS; pictures `src/art/items_unique.ts` LEVEL2_PAINTERS.
+
+ON AT HIS YES, 24 Nov 2026, shown their cards and pictures: “They’re all good.  A unique weapon needs a skin to go on the
+Warrior if he equips it.  So you’ll have to get that going” (`godot/scripts/loot.gd LEVEL2_UNIQUES`; `--level2=0` to run
+without them). THE BARN DOOR'S SKIN ON THE WARRIOR: `src/art/sword_skins.ts` BARNDOOR_SWORD, baked alone with
+`node tools/bake_one_group.mjs warrior-barndoor` (2504 frames) into `godot/assets/heroes/warrior-barndoor*`, `skins.gd`
+WARRIOR_KIND; `barn_door_on_the_warrior.png`. The other fourteen are armour and jewellery: no skin on a hero. `fifteen_more_leveling_cards.png`, `fifteen_more_leveling_pictures.png`, `fifteen_more_leveling_bag.png`.
+
+Checked: `--only=defuniques` 31 of 31 (lines 28 to 31 are theirs); `skins` 38 of 38 (its line 29 the Barn Door); `uniques` 11 of 11; tsc clean;
+tests/items_unique, uniques, uniques_level pass. Tables made again (`npx tsx tools/godot_loot.ts`: 118 uniques); Godot must
+import `icons.png` again.
+
+## Twelve leveling weapons (24 Nov 2026)
+
+His words: “So things that will make the next run easier.  Low level gear with a twist or a stronger roll than you could get
+early on”; “Can you tell me what they are before they get art and are pushed into the game?”; “How many unique weapons do we
+have for leveling?  Cause we should have 3-4 for each class”. There were seven (the Warrior two, the others one each). Told
+these twelve by name, level and numbers before any art: “Yes good to go”. FROM NOW ON: a unique is told him first, and painted
+and built only after his yes.
+
+`src/game/uniques.ts` LEVEL3_DEFS (two for each hero; three each now, the Warrior four); bag pictures `src/art/items_unique.ts`
+LEVEL3_PAINTERS; a skin on its hero for each (`src/art/sword_skins.ts`, `heavy_skins.ts`, `bow_skins.ts`, `staff_skins.ts`,
+`tome_skins.ts`, `wrench_skins.ts`, `wrap_skins.ts`; `src/art/heroes.ts`), baked with `node tools/bake_one_group.mjs <groups>`
+into `godot/assets/heroes` (twelve groups, about an hour and a half), `godot/scripts/skins.gd`. The Icicle's every hit is frost
+(`uniques.gd after_resolve`, as the Kindling Rod's are fire). The Rusty Wrench's poison is added to poison hits, as the game's
+flat poison is.
+
+ON AT HIS YES, 24 Nov 2026, shown the three sheets: “Yes, switch them on (Recommended)” (`godot/scripts/loot.gd LEVEL3_UNIQUES`;
+`--level3=0` to run without them).
+`twelve_weapons_cards.png`, `twelve_weapons_pictures.png`, `twelve_weapons_on_the_heroes.png`.
+
+Checked: `--only=defuniques` 36 of 36 (lines 32 to 36 theirs); `skins` 50 of 50; `uniques` 11 of 11; tsc clean. Tables made
+again (130 uniques); Godot must import again.
+
+## Names, and the Rusty Wrench mended (24 Nov 2026)
+
+- NAMES. His words: “Also all these uniques have "The" in the title which we specifically pushed back against.  Some can but
+  certainly not all.  Not even half.” 26 of the 42 added on 23 and 24 Nov began with “The”; told which four keep it (The Unbowed,
+  The Tenderizer, The Penny Dreadful, The Jack of All): “Yes, rename as listed (Recommended)”. The other 22 have lost it. A NEW
+  UNIQUE'S NAME DOES NOT BEGIN WITH “The” unless it has to.
+- THE RUSTY WRENCH. His words, of “Adds X-Y Poison Damage to Poison Hits” (the game's line for flat damage of an element, which
+  only a hit of that element carries): “If it doesn't work to add x damage then why is it on a weapon?”; asked how to mend it:
+  “Just plain damage, and make it look actually like a rusty metal wrench.  It looks like bronze or wood”. Now “Adds 2-4 to 6-8
+  Damage” and its area; repainted grey iron eaten with orange rust, in the bag and in her hand (`rusty_wrench_redone.png`;
+  `tinkerer-rustywrench` baked again). The Poisoner's Locket (level 16, of the twenty) has the same line and is as it was.
+- STILL OPEN, HIS: six of the twelve weapons look too like another on their hero (`on_hero/README.md`); how each would be
+  repainted was told him; no yes yet.
+
+Checked after: `--only=defuniques` 36 of 36, `skins` 50 of 50; tsc clean.
+
+## Flat damage of an element adds to every hit (24 Nov 2026)
+
+His words, told that “Adds X-Y Fire (Frost, Lightning, Poison) Damage” added only to a hit already of that element and nothing
+otherwise: “Yes, of course make flat elemental damage add to every hit”.
+
+- THE GODOT GAME (`godot/scripts/hero.gd` hit_monster, `_flat_extras`, avg_hit): a hit of another element, or a plain one,
+  carries his gear's flat fire, frost and lightning beside it, each a blow of its own element (withstood as that element, made
+  more by his bonus to that element), sized as the hit was (the move's share, a critical, his talents' and uniques'). The hit's
+  own element's is in the hit, as before. Flat poison poisons on every hit. It leaves no burning, chill or shock of itself (those
+  are the words'). Not with a weapon that can deal no other type of damage (the Kindling Rod, the Icicle: `uniques.gd
+  one_element`).
+- THE LINES (`src/game/items.ts` FLAT_PAIRS, the tables made again): “Adds X-Y Fire Damage”, no “to Fire Hits”.
+- The TypeScript game, finished, adds them as it did.
+- Checked: `--only=defuniques` 40 of 40 (lines 37 to 40); `uniquesdo`, `defence` as before; tests/uniques_level passes.
+
+## A meld of two kinds of damage deals both (24 Nov 2026)
+
+His words, told an attack with Hailstorm (Frost and Lightning melded) dealt frost alone, and one with Eruption (Power and Flame)
+fire alone: “It should've never been one element that's that whole point of the meld”. Asked whether one element word set alone
+should change too: “No base elemental words convert damage fully” (read: no; a single element word still turns the whole hit).
+
+- THE RULE (`godot/scripts/words.gd` meld_second, a move's `element2`; `hero.gd` hit_monster, avg_hit): a melded word made of
+  two words that each have a kind of damage (an element's; Power's, plain) makes its attack two blows, half of each: SCALD,
+  WILDFIRE, HAILSTORM (two elements); ERUPTION, AVALANCHE, THUNDER (plain and an element). Each half is half his weapon's damage
+  and all his gear's flat damage of its own kind, made more by his bonus to its own kind, withstood as its own kind; the two
+  together are the hit, for all that is sized by it. The move's page says “Half its damage is frost, half lightning.”
+- AS BEFORE: a meld with one kind (Cauterize, Forking, Shiver, Fervor, Rimeward, Powderkeg, Shatter, Chain Reaction; Fumes,
+  Frostbite, Contagion with their poison) all its element; one with none, plain. A monster's blow with Scald, Wildfire or
+  Hailstorm was half and half already (foe_words.gd).
+- Checked: `--only=defuniques` 43 of 43 (lines 41 to 43: thirty Strikes each; Hailstorm frost 373 and lightning 373; with +100%
+  Lightning Damage 368 and 743; Flame alone all fire). `--only=words --cases=meld`: 3 wrong (09 Scald, 14 Fumes behind, 49 Flame
+  II), THE SAME THREE AS BEFORE ANY OF THIS (run with claude/sharp-lamport-ey7q0l's hero.gd): not of this change, not mended here.
+- The TypeScript game, finished, is as it was.

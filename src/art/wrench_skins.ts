@@ -171,8 +171,48 @@ export const BORROWED_WRENCH: WrenchSkin = {
   },
 };
 
+// ---------------------------------------------------------------------------------------------
+// TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”, and of a unique
+// weapon, “needs a skin to go on the Warrior if he equips it”): each drawn in its hero's hands as its picture in the bag is.
+
+/** Old iron, grey, and the orange-red of rust on it. */
+const OLD_IRON: Ramp = ['#14161c', '#262a34', '#424854', '#6a7180', '#9aa2b0'];
+const RUST: Ramp = ['#3a1608', '#74280c', '#b04a16', '#d87430', '#eca468'];
+/** Where the rust lies: broad blotches, the same from every side of her. */
+const rusted = (x: number, y: number): boolean => Math.sin(x * 0.55 + 0.4) + Math.sin(y * 0.7 + 2.1) + Math.sin((x - y) * 0.33) > 0.15;
+
+/**
+ * THE RUSTY WRENCH (level 3: added damage, a wider burst). Her wrench left out in the rain: grey iron, eaten with orange rust in
+ * great blotches, pitted. His word, 24 Nov 2026, of it first painted brown all over: “make it look actually like a rusty metal
+ * wrench.  It looks like bronze or wood”.
+ */
+export const RUSTY_WRENCH: WrenchSkin = {
+  id: 'rustywrench',
+  name: 'Rusty Wrench',
+  sculpt(sc, at) {
+    const iron = sc.mat({ ramp: OLD_IRON, crease: 0.3, paint: (h) => (rusted(h.x, h.y) ? RUST[Math.max(0, Math.min(4, h.tone + (hash(h.x, h.y, 43) < 0.25 ? -1 : 0)))] : hash(h.x, h.y, 47) < 0.1 ? OLD_IRON[Math.max(0, h.tone - 1)] : null) });
+    wrenchOf(sc, at, iron, iron);
+  },
+};
+
+const GOLD_W: Ramp = ['#4a2408', '#8a4e14', '#d0902c', '#f6cc5c', '#fff4c0'];
+const VELVET_W: Ramp = ['#1a0c36', '#2e1660', '#4a2490', '#6e3cc0', '#a27ae8'];
+
+/** THE GOLD-PLATED WRENCH (level 9: gold find, magic find). Her wrench plated in gold, bright, its grip wrapped in violet velvet. */
+export const GOLD_WRENCH: WrenchSkin = {
+  id: 'goldplatedwrench',
+  name: 'The Gold-Plated Wrench',
+  sculpt(sc, at) {
+    const gold = sc.mat({ ramp: GOLD_W, crease: 0.3, paint: (h) => GOLD_W[Math.max(1, Math.min(4, h.tone + 1))] });
+    const velvet = sc.mat({ ramp: VELVET_W, crease: 0.2 });
+    wrenchOf(sc, at, gold, gold);
+    const { c, way, k } = at;
+    sc.cone(velvet, 'wrench', add(c, mul(way, -1.6 * k)), add(c, mul(way, 1.8 * k)), 0.95 * k, 0.95 * k, 0.15, { tag: 'grip' });
+  },
+};
+
 /** Each unique wrench's skin, by the id of its place (art/heroes.ts WrenchId). */
-export const WRENCH_SKIN_OF: Readonly<Record<WrenchId, WrenchSkin>> = { secondwhistle: WHISTLE_WRENCH, stickywrench: TAR_WRENCH, foremanswrench: FOREMAN_WRENCH, borrowedspanner: BORROWED_WRENCH };
+export const WRENCH_SKIN_OF: Readonly<Record<WrenchId, WrenchSkin>> = { secondwhistle: WHISTLE_WRENCH, stickywrench: TAR_WRENCH, foremanswrench: FOREMAN_WRENCH, borrowedspanner: BORROWED_WRENCH, rustywrench: RUSTY_WRENCH, goldplatedwrench: GOLD_WRENCH };
 
 /** The skins of her wrench, her own first. */
-export const WRENCH_SKIN_LIST: readonly WrenchSkin[] = [PLAIN_WRENCH, WHISTLE_WRENCH, TAR_WRENCH, FOREMAN_WRENCH, BORROWED_WRENCH];
+export const WRENCH_SKIN_LIST: readonly WrenchSkin[] = [PLAIN_WRENCH, WHISTLE_WRENCH, TAR_WRENCH, FOREMAN_WRENCH, BORROWED_WRENCH, RUSTY_WRENCH, GOLD_WRENCH];

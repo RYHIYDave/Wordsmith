@@ -249,6 +249,12 @@ func bend(i: int, front: Array, behind: Array) -> Dictionary:
 func after_resolve(i: int, r: Dictionary) -> void:
 	if wears("kindlingrod"):
 		r["element"] = "fire"
+		r["element2"] = ""
+		r["poison"] = 0.0
+	# (TWELVE LEVELING WEAPONS: the Icicle, every hit frost and no other kind of damage, as the Kindling Rod's are fire)
+	if wears("icicle"):
+		r["element"] = "frost"
+		r["element2"] = ""
 		r["poison"] = 0.0
 	if wears("lastword"):
 		r["cooldown"] = float(r["cooldown"]) * (1.0 + worn_roll("lastword", "cool") / 100.0)
@@ -580,6 +586,12 @@ func chest_more() -> int:
 ## (game.ts hitMonster) THE SURE THING: every hit a critical one, and a critical hit no harder.
 func sure_thing() -> bool:
 	return wears("surething")
+
+
+## A weapon that can deal no other type of damage (the Kindling Rod's fire, the Icicle's frost): no flat damage of another element
+## rides its hits (hero.gd _flat_extras).
+func one_element() -> bool:
+	return wears("kindlingrod") or wears("icicle")
 
 
 ## (game.ts hitMonster) THE ROT AXE: a physical hit does no harm of its own: it poisons instead, this share of it.

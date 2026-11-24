@@ -613,12 +613,40 @@ func base_for(el: String) -> Array:
 	return [lo, hi]
 
 
+## FLAT DAMAGE OF AN ELEMENT ON EVERY HIT: his gear's flat fire, frost and lightning that a hit of element `el` carries beside
+## itself: [[element, least, most], ...], each of the three but the hit's own (which is in the hit: base_for). None with a weapon
+## that can deal no other type of damage.
+func _flat_extras(el: String, el2 := "") -> Array:
+	var out: Array = []
+	if uniques != null and uniques.one_element():
+		return out
+	for e in [["fire", "fire"], ["frost", "frost"], ["lightning", "light"]]:
+		if e[0] == el or e[0] == el2:
+			continue
+		var lo: float = stats.get(e[1] + "_min", 0.0)
+		var hi: float = maxf(lo, stats.get(e[1] + "_max", 0.0))
+		if hi > 0.0:
+			out.append([e[0], lo, hi])
+	return out
+
+
 ## The average of one hit of move `i`, `frac` of it, as his numbers and his might stand, before a critical (game.ts avgHit):
 ## what the ground a move leaves is sized by.
 func avg_hit(i: int, frac: float) -> float:
 	var r: Dictionary = loadout.r(i)
 	var base := base_for(r["element"])
-	return (base[0] + base[1]) / 2.0 * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(r["element"]) + might) / 100.0)
+	var avg: float = (base[0] + base[1]) / 2.0 * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(r["element"]) + might) / 100.0)
+	# (A MELD OF TWO KINDS OF DAMAGE: its two halves, each with its own flat damage and its own bonus)
+	var e2: String = str(r.get("element2", ""))
+	if e2 != "":
+		var plain: float = (stats["dmg_min"] + stats["dmg_max"]) / 4.0
+		var b2 := base_for(e2)
+		avg = ((plain + (base[0] + base[1]) / 2.0 - plain * 2.0) * (1.0 + (stats["dmg_pct"] + _el_pct(r["element"]) + might) / 100.0) \
+			+ (plain + (b2[0] + b2[1]) / 2.0 - plain * 2.0) * (1.0 + (stats["dmg_pct"] + _el_pct(e2) + might) / 100.0)) * float(r["dmg_mult"]) * frac
+	# (and the flat damage of the other elements it carries)
+	for e in _flat_extras(r["element"], e2):
+		avg += (float(e[1]) + float(e[2])) / 2.0 * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(e[0]) + might) / 100.0)
+	return avg
 
 
 ## ONE HIT OF MOVE `i` ON A MONSTER, `frac` of it, with everything a word in front adds (game.ts hitMonster, in its order).
@@ -642,7 +670,9 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	var was_frozen_t: float = m.frozen_t
 	var was_shocked: bool = m.shock_t > 0.0
 	# (FERVOR, melds.gd: its kills burning hotter a while)
-	var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(el) + melds.fervor_pct(el) + might) / 100.0)
+	var roll: float = randf_range(base[0], base[1])
+	var pct_f: float = 1.0 + (stats["dmg_pct"] + _el_pct(el) + melds.fervor_pct(el) + might) / 100.0
+	var dmg: float = roll * float(r["dmg_mult"]) * frac * pct_f
 	# (THE SKILL TREES: what the talents make of a hit: game.ts talentHitMult)
 	dmg *= _talent_hit_mult(m)
 	# (UNIQUE ITEMS: what the uniques worn make of it: uniques.gd hit_mult)
@@ -679,6 +709,26 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 		uniques.landed(m, crit, quiet)
 	# (WORDMELDING: Avalanche behind, a hit on a chilled enemy hits harder: melds.gd)
 	dmg = melds.avalanche(m, r, dmg, quiet)
+	# (FLAT DAMAGE OF AN ELEMENT ON EVERY HIT, below: what this hit was made of beside its roll and its element's bonus: the move's
+	# share, the talents', the uniques', a critical)
+	var shared: float = dmg / maxf(0.0001, roll * pct_f)
+	# A MELD OF TWO KINDS OF DAMAGE DEALS BOTH (words.gd meld_second: Scald, Wildfire, Hailstorm; Eruption, Avalanche, Thunder):
+	# the hit is two blows, each half his weapon's damage and all his gear's flat damage of its own kind, made more by his bonus
+	# to its own kind, withstood as its own kind. `dmg` is the two together, for all that is sized by the hit.
+	var el2: String = str(r.get("element2", ""))
+	var half_a := 0.0
+	var half_b := 0.0
+	if el2 != "":
+		var t01: float = (roll - base[0]) / (base[1] - base[0]) if base[1] > base[0] else 0.5
+		var plain: float = lerpf(stats["dmg_min"], stats["dmg_max"], t01) * 0.5
+		var fa := base_for(el)
+		var fb := base_for(el2)
+		half_a = (plain + lerpf(fa[0] - stats["dmg_min"], fa[1] - stats["dmg_max"], t01)) * pct_f * shared
+		half_b = (plain + lerpf(fb[0] - stats["dmg_min"], fb[1] - stats["dmg_max"], t01)) * (1.0 + (stats["dmg_pct"] + _el_pct(el2) + melds.fervor_pct(el2) + might) / 100.0) * shared
+		# (the two together a whole number, as any hit is; then each its share of it)
+		dmg = maxf(2.0, roundf(half_a + half_b))
+		half_a = clampf(roundf(half_a), 1.0, dmg - 1.0)
+		half_b = dmg - half_a
 	dmg = maxf(1.0, roundf(dmg))
 	var at: Vector2 = m.world
 	# (WORDMELDING: what it was before this hit, for Scald's crack and Cauterize)
@@ -724,13 +774,29 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 		m.last_skill = i
 		if m.state == "sleep":
 			monsters.wake(m)
+	elif el2 != "":
+		# (A MELD OF TWO KINDS OF DAMAGE: its two blows)
+		m.damage(half_a, el, crit, not quiet and front.has("power"), front, false, false, i)
+		if not m.dead:
+			m.damage(half_b, el2, crit, false, [], false, false, i)
 	else:
 		m.damage(dmg, el, crit, not quiet and front.has("power"), front, false, false, i)
+	# FLAT DAMAGE OF AN ELEMENT ADDS TO EVERY HIT (his words, 24 Nov 2026: “Yes, of course make flat elemental damage add to every
+	# hit”; until then “Adds X-Y Fire Damage” did nothing but on a hit already of fire). A hit of another element, or a plain one,
+	# carries his gear's flat fire, frost and lightning beside it, each a blow of its own element (the monster withstands each as
+	# that element; his bonus to that element's damage makes it more), sized as the hit was: the move's share, a critical, what his
+	# talents and uniques made of it. The hit's own element's is in the hit already (base_for). It leaves nothing of its element
+	# (no burning, chill or shock: those are the words'). Not with a weapon that can deal no other type (the Kindling Rod, the
+	# Icicle).
+	for e in _flat_extras(el, el2):
+		var x: float = roundf(randf_range(float(e[1]), float(e[2])) * shared * (1.0 + (stats["dmg_pct"] + _el_pct(e[0]) + melds.fervor_pct(e[0]) + might) / 100.0))
+		if x >= 1.0 and not m.dead:
+			m.damage(x, e[0], false, false, [], false, false, i)
 	# (THE SKILL TREES: a lightning hit leaves it shocked, which Overload works on; Kindling, his fire leaves the ground burning
 	# where it hits; Deep Freeze, a frozen one struck slides away, freezing what it meets; Charged, the charge goes off)
-	if el == "lightning" or int(r["arcs"]) > 0:
+	if el == "lightning" or el2 == "lightning" or int(r["arcs"]) > 0:
 		m.shock_t = float(Talents.D["tune"]["shockSecs"])
-	if el == "fire" and has("kindling"):
+	if (el == "fire" or el2 == "fire") and has("kindling"):
 		_kindle(at, i)
 	if was_frozen_t > 0.0 and not m.dead and not m.boss and has("deepfreeze"):
 		var DF: Dictionary = Talents.D["tune"]["deepFreeze2"]
@@ -770,7 +836,9 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 		dose += dmg * rot / float(Words.data()["poison"]["time"])
 	var p_min: float = stats.get("poison_min", 0.0)
 	var p_max: float = stats.get("poison_max", 0.0)
-	if dose > 0.0 and (p_min != 0.0 or p_max != 0.0):
+	# (FLAT DAMAGE OF AN ELEMENT ADDS TO EVERY HIT: his gear's flat poison is poison on every hit, whether the hit poisons of itself
+	# or not; until 24 Nov 2026 only on one that did)
+	if (p_min != 0.0 or p_max != 0.0) and not (uniques != null and uniques.one_element()):
 		dose += randf_range(p_min, maxf(p_min, p_max)) / float(Words.data()["poison"]["time"])
 	if dose > 0.0:
 		m.dose(dose * float(r.get("poison_k", 1.0)), float(Words.data()["poison"]["time"]) * float(r["last"]) * float(r.get("poison_t", 1.0)), el)
