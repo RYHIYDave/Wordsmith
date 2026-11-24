@@ -1138,8 +1138,10 @@ static var DEFENCE_ART := true
 
 
 ## FIFTEEN MORE LEVELING UNIQUES (game/uniques.ts LEVEL2_DEFS; his words, 24 Nov 2026: “Give me 15 more leveling uniques”): as the
-## twenty are, each its level's own, stats alone. OFF until his yes to them and their pictures: none drops.
-static var LEVEL2_UNIQUES := false
+## twenty are, each its level's own, stats alone. ON at his yes, 24 Nov 2026, shown their cards and pictures: “They’re all good.
+## A unique weapon needs a skin to go on the Warrior if he equips it.  So you’ll have to get that going” (the Barn Door's:
+## skins.gd). With it off none drops.
+static var LEVEL2_UNIQUES := true
 
 
 ## game.ts makePoolUnique: one of the pool's for him (of that slot, of that weapon, where asked), made for this floor; null if none.

@@ -97,11 +97,11 @@ export type TomeId = 'ledgerofdebts' | 'restlesstome' | 'burningverse' | 'hornbo
 export const TOME_IDS: readonly TomeId[] = ['ledgerofdebts', 'restlesstome', 'burningverse', 'hornbook'];
 
 /** (THE WARRIOR'S UNIQUE WEAPONS) His unique great swords, battle axes and warhammers, each a skin of the one he is drawn with. */
-export type WarriorSkinId = 'millstone' | 'windcutter' | 'undertow' | 'gyre' | 'redtithe' | 'widowfall' | 'rotaxe' | 'deathknell' | 'deadweight' | 'starbreaker';
-export const WARRIOR_SKIN_IDS: readonly WarriorSkinId[] = ['millstone', 'windcutter', 'undertow', 'gyre', 'redtithe', 'widowfall', 'rotaxe', 'deathknell', 'deadweight', 'starbreaker'];
+export type WarriorSkinId = 'millstone' | 'windcutter' | 'undertow' | 'gyre' | 'redtithe' | 'widowfall' | 'rotaxe' | 'deathknell' | 'deadweight' | 'starbreaker' | 'barndoor';
+export const WARRIOR_SKIN_IDS: readonly WarriorSkinId[] = ['millstone', 'windcutter', 'undertow', 'gyre', 'redtithe', 'widowfall', 'rotaxe', 'deathknell', 'deadweight', 'starbreaker', 'barndoor'];
 /** Which of his weapons each is a skin of: his great sword (null), or the war axe or the maul. */
 export const WARRIOR_SKIN_KIND: Readonly<Record<WarriorSkinId, HeavyWeapon | null>> = {
-  millstone: null, windcutter: null, undertow: null,
+  millstone: null, windcutter: null, undertow: null, barndoor: null,
   gyre: 'axe', redtithe: 'axe', widowfall: 'axe', rotaxe: 'axe',
   deathknell: 'hammer', deadweight: 'hammer', starbreaker: 'hammer',
 };

@@ -53,9 +53,12 @@ base's damage alone), every number rolled about a fifth either way, anyone's unl
 level or past it. Stats alone, no rule of its own. Eleven on the way (levels 2 to 20), four endgame (22 to 28, each with a
 price). `src/game/uniques.ts` LEVEL2_DEFS; pictures `src/art/items_unique.ts` LEVEL2_PAINTERS.
 
-BUILT AND CHECKED; OFF UNTIL HIS YES: `godot/scripts/loot.gd LEVEL2_UNIQUES` (`--level2=1` to run with them dropping). Names and
-numbers are proposals. `fifteen_more_leveling_cards.png`, `fifteen_more_leveling_pictures.png`, `fifteen_more_leveling_bag.png`.
+ON AT HIS YES, 24 Nov 2026, shown their cards and pictures: “They’re all good.  A unique weapon needs a skin to go on the
+Warrior if he equips it.  So you’ll have to get that going” (`godot/scripts/loot.gd LEVEL2_UNIQUES`; `--level2=0` to run
+without them). THE BARN DOOR'S SKIN ON THE WARRIOR: `src/art/sword_skins.ts` BARNDOOR_SWORD, baked alone with
+`node tools/bake_one_group.mjs warrior-barndoor` (2504 frames) into `godot/assets/heroes/warrior-barndoor*`, `skins.gd`
+WARRIOR_KIND; `barn_door_on_the_warrior.png`. The other fourteen are armour and jewellery: no skin on a hero. `fifteen_more_leveling_cards.png`, `fifteen_more_leveling_pictures.png`, `fifteen_more_leveling_bag.png`.
 
-Checked: `--only=defuniques` 30 of 30 (lines 28 to 30 are theirs); `uniques` 11 of 11, `defence` 11 of 11; tsc clean;
+Checked: `--only=defuniques` 31 of 31 (lines 28 to 31 are theirs); `skins` 38 of 38 (its line 29 the Barn Door); `uniques` 11 of 11; tsc clean;
 tests/items_unique, uniques, uniques_level pass. Tables made again (`npx tsx tools/godot_loot.ts`: 118 uniques); Godot must
 import `icons.png` again.

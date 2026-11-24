@@ -443,6 +443,27 @@ func run(main, hero, d: String) -> void:
 	var tsk: Dictionary = _wear("thickskull")
 	_line(b_p >= 20.0 and d_g >= 300.0 and r_g <= -20.0 and h.stats["armor"] >= 120.0 and h.stats["int"] <= int0 - 14.0,
 		"worn: the Paper Charm, barrier %d; the Greased Coat, dodge %d, fire resistance %d%%; the Thick Skull, armour %d, Intelligence %d (from %d)" % [b_p, d_g, r_g, h.stats["armor"], h.stats["int"], int0])
+	# (THE BARN DOOR IN HIS HANDS: skins.gd; the Warrior holding it is drawn holding it, in a dungeon and in town; another hero, not)
+	_hero("warrior")
+	h.talents = []
+	h.arm()
+	L.gear["mainhand"] = L.unique_piece("barndoor")
+	L.derive()
+	await M._wait(0.4)
+	var path_of := func(a) -> String:
+		if a == null or a.count(0, 0) == 0:
+			return ""
+		var f: Dictionary = a.frame(0, 0, 0)
+		return f["tex"].atlas.resource_path.get_file() if f["tex"] is AtlasTexture else f["tex"].resource_path.get_file()
+	var in_dungeon: String = path_of.call(h.arts["dungeon"])
+	var in_town: String = path_of.call(h.arts["town"])
+	_line(h.skin == "warrior-barndoor" and in_dungeon.begins_with("warrior-barndoor-") and in_town.begins_with("warrior-barndoor-") and h.art == h.arts["dungeon"],
+		"the Warrior holding The Barn Door: drawn as %s (in a dungeon %s, in town %s)" % [h.skin, in_dungeon, in_town])
+	if dir != "":
+		for f in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]:
+			h._turn(f)
+			await M._wait(0.25)
+			await M._snap(dir + "/bd_%d_%d.png" % [int(f.x), int(f.y)])
 	# (their cards, and a bag of them)
 	if dir != "":
 		var k := 0

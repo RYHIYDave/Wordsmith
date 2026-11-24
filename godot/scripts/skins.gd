@@ -17,6 +17,9 @@ const OF_UNIQUE := {
 ## (art/heroes.ts WARRIOR_SKIN_KIND: each of his is a skin of his great sword (""), the war axe or the maul)
 const WARRIOR_KIND := {
 	"millstone": "", "windcutter": "", "undertow": "",
+	# (FIFTEEN MORE LEVELING UNIQUES: the Barn Door, level 5; his word, 24 Nov 2026: “A unique weapon needs a skin to go on the
+	# Warrior if he equips it.”; art/sword_skins.ts BARNDOOR_SWORD, baked alone: tools/bake_one_group.mjs warrior-barndoor)
+	"barndoor": "",
 	"gyre": "axe", "redtithe": "axe", "widowfall": "axe", "rotaxe": "axe",
 	"deathknell": "hammer", "deadweight": "hammer", "starbreaker": "hammer",
 }

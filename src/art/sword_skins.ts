@@ -180,9 +180,53 @@ export const UNDERTOW_SWORD: SwordSkin = {
   lights: lightsAlong('#36c0c8', 0.28),
 };
 
+// ---------------------------------------------------------------------------------------------
+// THE BARN DOOR (game/uniques.ts LEVEL2_DEFS `barndoor`, level 5: a far wider swing, slower). His word, 24 Nov 2026, of the
+// fifteen more leveling uniques: “A unique weapon needs a skin to go on the Warrior if he equips it.”
+
+const PLANK = ['#2e180e', '#52301a', '#80522c', '#b07c48', '#d6a874'] as const;
+const STRAP = ['#16142a', '#2a2848', '#46446e', '#6e6c9a', '#b0aed8'] as const;
+
+/**
+ * A plank off a barn door on a grip, as its picture in the bag: rough wood far broader than his blade, sawn square at its end,
+ * its grain down it and a knot in it, two iron straps across it, nailed; a short iron bar for a guard. No light of its own.
+ */
+export const BARNDOOR_SWORD: SwordSkin = {
+  id: 'barndoor',
+  name: 'The Barn Door',
+  blade(p, hx, hy, deg, len, bw, grip, guard) {
+    const w = bw * 2.1;
+    const foot = 4.6;
+    const end = 3 + len;
+    laySword(p, hx, hy, deg, len + grip + 14, ({ u, v }) => {
+      if (u >= foot && u <= end && Math.abs(v) <= w) {
+        // (the two straps: iron, lit along the lit side, a nail at each end)
+        for (const at of [0.3, 0.78]) {
+          const su = foot + (end - foot) * at;
+          if (Math.abs(u - su) <= 1.3) return Math.abs(Math.abs(v) - w * 0.62) < 0.55 && Math.abs(u - su) < 0.6 ? STRAP[4] : v > w * 0.5 ? STRAP[3] : v < -w * 0.5 ? STRAP[1] : STRAP[2];
+        }
+        // (the knot, the grain, the board's edges)
+        const knot = Math.hypot(u - (foot + (end - foot) * 0.55), (v - w * 0.2) * 1.4);
+        if (knot < 1.1) return PLANK[0];
+        if (knot < 1.8) return PLANK[1];
+        if (v > w - 0.9) return PLANK[4];
+        if (v < 0.9 - w) return PLANK[0];
+        if (Math.abs(v - w * 0.33) < 0.4 || Math.abs(v + w * 0.3) < 0.4) return PLANK[1];
+        return hash(Math.round(u * 0.6), Math.round(v * 2), 23) < 0.2 ? PLANK[2] : PLANK[3];
+      }
+      // (the guard: a short iron bar; the grip, leather; a plain iron pommel)
+      if (u >= foot - 2.0 && u < foot && Math.abs(v) <= w + guard * 0.5) return v > 0.5 ? STRAP[3] : v < -0.8 ? STRAP[1] : STRAP[2];
+      if (u >= 2 - grip && u < foot - 2.0 && Math.abs(v) <= 1.4) return Math.floor(u + 40) % 2 === 0 ? GRIP_LEATHER[1] : GRIP_LEATHER[2];
+      if (u >= -grip - 0.8 && u < 2 - grip && Math.abs(v) <= 2.0) return v > 0.4 ? STRAP[3] : v < -0.9 ? STRAP[1] : STRAP[2];
+      return null;
+    });
+  },
+  lights: () => [],
+};
+
 /** His unique great swords, by their ids (art/heroes.ts WarriorSkinId). */
-export type SwordSkinId = 'millstone' | 'windcutter' | 'undertow';
-export const SWORD_SKIN_OF: Readonly<Record<SwordSkinId, SwordSkin>> = { millstone: MILLSTONE_SWORD, windcutter: WINDCUTTER_SWORD, undertow: UNDERTOW_SWORD };
+export type SwordSkinId = 'millstone' | 'windcutter' | 'undertow' | 'barndoor';
+export const SWORD_SKIN_OF: Readonly<Record<SwordSkinId, SwordSkin>> = { millstone: MILLSTONE_SWORD, windcutter: WINDCUTTER_SWORD, undertow: UNDERTOW_SWORD, barndoor: BARNDOOR_SWORD };
 
 /** The skins of his great sword, his own first. */
-export const SWORD_SKIN_LIST: readonly SwordSkin[] = [PLAIN_SWORD, MILLSTONE_SWORD, WINDCUTTER_SWORD, UNDERTOW_SWORD];
+export const SWORD_SKIN_LIST: readonly SwordSkin[] = [PLAIN_SWORD, MILLSTONE_SWORD, WINDCUTTER_SWORD, UNDERTOW_SWORD, BARNDOOR_SWORD];

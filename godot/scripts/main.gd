@@ -653,9 +653,9 @@ func _ready() -> void:
 	# (THE FIFTEEN OF THE THREE DEFENCES, on at his yes: `--defuniques=0` to run without them dropping: loot.gd DEFENCE_UNIQUES)
 	if _arg("defuniques") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_UNIQUES = false
-	# (FIFTEEN MORE LEVELING UNIQUES, off until his yes: `--level2=1` to run with them dropping: loot.gd LEVEL2_UNIQUES)
-	if _arg("level2") == "1":
-		preload("res://scripts/loot.gd").LEVEL2_UNIQUES = true
+	# (FIFTEEN MORE LEVELING UNIQUES, on at his yes: `--level2=0` to run without them dropping: loot.gd LEVEL2_UNIQUES)
+	if _arg("level2") == "0":
+		preload("res://scripts/loot.gd").LEVEL2_UNIQUES = false
 	# (THE FIFTEEN'S OWN PICTURES, on at his yes: `--defart=0` to run without them)
 	if _arg("defart") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_ART = false
