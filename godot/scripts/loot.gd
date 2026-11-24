@@ -745,7 +745,11 @@ func on_kill(m) -> void:
 	# RARE's always, freed and killed: on an endless level's floor 1 too, where nothing else gives one up: chained_rare.gd)
 	if words_fall() or m.get("chained") == 2:
 		for w in m.carries:
-			_word(at, w)
+			_word(at, drop_ok(str(w)))
+		# (THE RARE RUNES: the Glass Queen on an endless level, now and then, Mirroring)
+		if queen_mirror(m):
+			_word(at, "mirroring")
+			say("The Queen leaves MIRRORING", Color("#e8f4ff"))
 	# (THE ROYAL CARDS, the High City's: one a royal touched drops that royal's card: game.ts kill)
 	var r: String = str(m.get("royal")) if m.get("royal") != null else ""
 	if r != "" and royal_floor() and (not ROYAL_ONE_A_PACK or _last_of_pack(m)):
@@ -788,7 +792,7 @@ func on_kill(m) -> void:
 			_item(at, 4)
 		if words_fall():
 			for i in int(F["words"]):
-				_word(at, tilt_word(words_found_at(p).pick_random()))
+				_word(at, tilt_word(drops_at(p).pick_random()))
 		if not _uniques.is_empty() and randf() < float(_uniques["drops"].get("final", 0.0)):
 			var two: Array = []
 			for id in _uniques["defs"]:
@@ -886,7 +890,7 @@ func _growth() -> float:
 
 
 func _found() -> String:
-	var here: Array = words_found_at(power()) if map != null else [_words["first"]]
+	var here: Array = drops_at(power()) if map != null else [_words["first"]]
 	return tilt_word(here.pick_random())
 
 
@@ -936,12 +940,15 @@ func burned_runes(ws = null) -> Dictionary:
 ## BURN_MORE x S / (n + BURN_MORE x S), S all the burnings, one of the burned (each by its burnings), else `w`.
 func tilt_word(w: String, rng: RandomNumberGenerator = null) -> String:
 	var B := burned_runes()
-	# (Plundering burned in drops no more often for it: DOOR_GOLD_WORDS)
+	# (Plundering burned in drops no more often for it: DOOR_GOLD_WORDS; nor what may not drop here: THE RARE RUNES)
 	for k in DOOR_GOLD_WORDS:
 		B.erase(k)
+	for k in B.keys():
+		if not may_drop(str(k)):
+			B.erase(k)
 	if B.is_empty():
 		return w
-	var n := maxi(1, words_found_at(power()).size())
+	var n := maxi(1, drops_at(power()).size())
 	var sum := 0
 	for k in B:
 		sum += int(B[k])
@@ -1044,6 +1051,43 @@ func _tp() -> int:
 ## (types.ts wordsAt) The words that may be found at depth `d` (the game's table, its last floor's past it).
 func words_found_at(d: int) -> Array:
 	return _words["at"].get(str(clampi(d, 1, 20)), [_words["first"]])
+
+
+## THE RARE RUNES (his words, 24 Nov 2026: “plundering and the quality word and mirroring should only drop in endless. Mirroring should
+## be very, extremely rare. Like most players will never see it. ... Drops only from the queen in endless. But again, extremely
+## rare.”): Plundering drops only on an endless level; Mirroring only from the Glass Queen on one, MIRROR_CHANCE of her kills. What
+## the monsters fight with is as it was (words_found_at); what they leave, and what lies about, is of these (drops_at, drop_ok).
+const ENDLESS_DROPS := ["plundering"]
+const QUEEN_ONLY := ["mirroring"]
+const MIRROR_CHANCE := 0.01
+
+
+func _endless_here() -> bool:
+	return main != null and bool(main.get("in_endless"))
+
+
+## May rune `w` drop here?
+func may_drop(w: String) -> bool:
+	return not QUEEN_ONLY.has(w) and (_endless_here() or not ENDLESS_DROPS.has(w))
+
+
+## The runes that may drop at depth `d`, here.
+func drops_at(d: int) -> Array:
+	var out: Array = words_found_at(d).filter(func(w): return may_drop(str(w)))
+	return out if not out.is_empty() else [_words["first"]]
+
+
+## `w` if it may drop here, else another the level gives.
+func drop_ok(w: String, rng: RandomNumberGenerator = null) -> String:
+	if may_drop(w):
+		return w
+	var pool := drops_at(power())
+	return str(pool[(rng.randi() if rng != null else randi()) % pool.size()])
+
+
+## The Glass Queen on an endless level, falling: whether she leaves Mirroring (MIRROR_CHANCE).
+func queen_mirror(m, roll := -1.0) -> bool:
+	return str(m.kind) == "gqueen" and bool(m.boss) and _endless_here() and (randf() if roll < 0.0 else roll) < MIRROR_CHANCE
 
 
 ## His magic find, % (game.ts rollGear: his gear's; the gate's words are not laid in the Godot version).

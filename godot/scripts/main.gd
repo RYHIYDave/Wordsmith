@@ -1434,10 +1434,11 @@ func _build(where: String, arrive: String) -> void:
 			royal_packs(mdata)
 		# (THE RIM'S DOOR: what each monster carries tilted toward the runes burned in, as every rune that drops there is: loot.gd
 		# tilt_word)
-		if not dungeon_words.is_empty() and where != "final":
+		# (THE RARE RUNES: what may not drop here carried by none, another in its place: loot.gd drop_ok)
+		if where != "final":
 			for d in mdata.get("monsters", []):
 				if d is Dictionary and not (d.get("carries", []) as Array).is_empty():
-					d["carries"] = (d["carries"] as Array).map(func(w): return loot.tilt_word(str(w)))
+					d["carries"] = (d["carries"] as Array).map(func(w): return loot.drop_ok(loot.tilt_word(str(w))))
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR, mdata)
 		_chained_mdata = mdata
 		floor_mdata = mdata
@@ -3291,6 +3292,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE QUEST LINE OF FLOORS 11 TO 15: check_quest1115.gd)
 	if _arg("only") == "quests1115":
 		await preload("res://scripts/check_quest1115.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE RARE RUNES: check_rare_runes.gd)
+	if _arg("only") == "rarerunes":
+		await preload("res://scripts/check_rare_runes.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (THE CITY'S FIVE WORDS: check_citywords.gd)
