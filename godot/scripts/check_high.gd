@@ -261,6 +261,10 @@ func setup(id: String, side: String) -> void:
 	if id == "coup" and side == "behind":
 		pack[1].world = home + across * 0.6
 		pack[1].life = pack[1].max_life * 0.6
+	# (Noose in front: held, not culled by the first blow, so the hold can tighten)
+	if id == "noose" and side == "front":
+		for m in pack:
+			m.life = m.max_life * 0.4
 	# (Purge in front: three in reach of one blow)
 	if id == "purge" and side == "front":
 		pack[1].world = home + face * 1.1 + across * 0.55
