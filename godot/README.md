@@ -1482,7 +1482,10 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   “Yes” to “Want me to switch them on?” (24 Nov 2026): `Melds52.CITY_ON` true.
 - TWO KINDS IN ONE HIT (his find, 24 Nov 2026): built here, then taken out at his word, “It's already fixed, or another chat
   pushed the fix”: the fix is the other chat's, on its branch claude/adoring-davinci-q6wn9n (9ed64ffb: Scald, Wildfire, Hailstorm,
-  Eruption, Avalanche and Thunder deal both kinds, half of each; 7db84722: flat damage of an element adds to every hit).
+  Eruption, Avalanche and Thunder deal both kinds, half of each; 7db84722: flat damage of an element adds to every hit). That
+  branch brought in here at his “Yes” (24 Nov 2026) with its fifteen more leveling uniques and twelve leveling weapons; its
+  items.json taken with the dodge amulet's name Slipstream kept. Checked after: defuniques 43 of 43, uniques 11 of 11, uniquesdo
+  19 of 19, the rune bag 18 of 18, the melds bench 7 of 7.
 
 ## The other chats' hand-overs brought in (the cloud chat, 23 and 24 Nov 2026)
 
