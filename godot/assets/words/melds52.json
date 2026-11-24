@@ -143,6 +143,50 @@
   "torpor",
   "witchknot",
   "amber",
+  "backwash",
+  "gullet",
+  "harpoon",
+  "whirlpool",
+  "haven",
+  "eddy",
+  "whiplash",
+  "maelstrom",
+  "hydra",
+  "swarm",
+  "shellburst",
+  "pinpoint",
+  "riot",
+  "phalanx",
+  "rebound",
+  "flechette",
+  "starburst",
+  "refrain",
+  "bloodcurse",
+  "hexblast",
+  "evileye",
+  "delirium",
+  "talisman",
+  "grudge",
+  "omen",
+  "pall",
+  "rewind",
+  "sap",
+  "slowfuse",
+  "stillpoint",
+  "quickening",
+  "respite",
+  "eternity",
+  "stutter",
+  "doldrums",
+  "fetters",
+  "thrall",
+  "tripwire",
+  "pin",
+  "mauler",
+  "stockade",
+  "manacle",
+  "snag",
+  "dragnet",
   "twin2",
   "leech2",
   "volatile2",
@@ -303,7 +347,51 @@
   "web",
   "torpor",
   "witchknot",
-  "amber"
+  "amber",
+  "backwash",
+  "gullet",
+  "harpoon",
+  "whirlpool",
+  "haven",
+  "eddy",
+  "whiplash",
+  "maelstrom",
+  "hydra",
+  "swarm",
+  "shellburst",
+  "pinpoint",
+  "riot",
+  "phalanx",
+  "rebound",
+  "flechette",
+  "starburst",
+  "refrain",
+  "bloodcurse",
+  "hexblast",
+  "evileye",
+  "delirium",
+  "talisman",
+  "grudge",
+  "omen",
+  "pall",
+  "rewind",
+  "sap",
+  "slowfuse",
+  "stillpoint",
+  "quickening",
+  "respite",
+  "eternity",
+  "stutter",
+  "doldrums",
+  "fetters",
+  "thrall",
+  "tripwire",
+  "pin",
+  "mauler",
+  "stockade",
+  "manacle",
+  "snag",
+  "dragnet"
  ],
  "ranks": [
   "twin2",
@@ -2898,6 +2986,798 @@
     "binding"
    ]
   },
+  "backwash": {
+   "id": "backwash",
+   "kind": "meld",
+   "name": "Backwash",
+   "front": "Backwash",
+   "behind": "of the Backwash",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Twin, melded. A pull, and a second before they find their feet.",
+   "frontText": "Strikes twice, each time weaker; each strike drags what it hits toward where it struck, and an enemy dragged by both is staggered.",
+   "behindText": "Leaves a vortex that gives a second, sharp pull a moment after it forms.",
+   "monsterText": "Attacks twice; each blow drags you toward it.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "twin"
+   ]
+  },
+  "gullet": {
+   "id": "gullet",
+   "kind": "meld",
+   "name": "Gullet",
+   "front": "Gullet",
+   "behind": "of the Gullet",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Leech, melded. Drag them close, and drink.",
+   "frontText": "Heals you for every enemy hit, and again for every enemy it drags in.",
+   "behindText": "Leaves a vortex; enemies that die in it drop life orbs.",
+   "monsterText": "Heals when it hits you; its blows drag you toward it.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "leech"
+   ]
+  },
+  "harpoon": {
+   "id": "harpoon",
+   "kind": "meld",
+   "name": "Harpoon",
+   "front": "Harpoon",
+   "behind": "of the Harpoon",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Precise, melded. One line, one catch, one sure blow.",
+   "frontText": "More damage, a smaller area; drags what it hits toward where it struck, and an enemy dragged into the middle is marked: your next hit on it is a certain critical.",
+   "behindText": "Marks an enemy, and leaves a vortex that drags the marked one twice as hard.",
+   "monsterText": "Its hits find the gaps in your armour; its blows drag you toward it.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "precise"
+   ]
+  },
+  "whirlpool": {
+   "id": "whirlpool",
+   "kind": "meld",
+   "name": "Whirlpool",
+   "front": "Whirlpool",
+   "behind": "of the Whirlpool",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Frenzied, melded. The faster you go, the harder it pulls.",
+   "frontText": "Each use makes the next faster, up to five times; each step of the frenzy drags from farther.",
+   "behindText": "Kills keep the frenzy going; its vortex pulls harder for each step of the frenzy.",
+   "monsterText": "Speeds up as it is hurt; its blows drag you toward it, farther the faster it is.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "frenzied"
+   ]
+  },
+  "haven": {
+   "id": "haven",
+   "kind": "meld",
+   "name": "Haven",
+   "front": "Haven",
+   "behind": "of the Haven",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Guarding, melded. Draw them in where you are safe.",
+   "frontText": "Each use gives you a brief shield, stronger for each enemy it drags in.",
+   "behindText": "Leaves a ward circle with a vortex at its heart: you take less damage inside, and enemies are drawn in.",
+   "monsterText": "Carries a shield that soaks damage; its blows drag you toward it.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "guarding"
+   ]
+  },
+  "eddy": {
+   "id": "eddy",
+   "kind": "meld",
+   "name": "Eddy",
+   "front": "Eddying",
+   "behind": "of the Eddy",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Lasting, melded. A pull that will not let go.",
+   "frontText": "Drags what it hits toward where it struck, and keeps drawing it there for two seconds after.",
+   "behindText": "Leaves a vortex that lasts twice as long and pulls harder the longer it holds.",
+   "monsterText": "Its poison, burning and chill last longer on you; its blows drag you toward it, and keep pulling a moment after.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "lasting"
+   ]
+  },
+  "whiplash": {
+   "id": "whiplash",
+   "kind": "meld",
+   "name": "Whiplash",
+   "front": "Whiplash",
+   "behind": "of the Whiplash",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Fleeting, melded. A sudden, sharp yank.",
+   "frontText": "Drags what it hits toward where it struck in an instant, and those yanked in are staggered.",
+   "behindText": "Leaves a vortex that lasts a third as long and, as it goes, snaps everything inside to its middle.",
+   "monsterText": "Its poison and burning hurt you faster; its blows yank you toward it.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "fleeting"
+   ]
+  },
+  "maelstrom": {
+   "id": "maelstrom",
+   "kind": "meld",
+   "name": "Maelstrom",
+   "front": "Maelstrom",
+   "behind": "of the Maelstrom",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Vast, melded. A pull that takes in everything.",
+   "frontText": "A much bigger area, a little less damage; drags what it hits from twice as far.",
+   "behindText": "Leaves a vortex twice as wide.",
+   "monsterText": "Its attacks reach wider; its blows drag you toward it from farther.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "vast"
+   ]
+  },
+  "hydra": {
+   "id": "hydra",
+   "kind": "meld",
+   "name": "Hydra",
+   "front": "Hydra",
+   "behind": "of the Hydra",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Twin, melded. Cut one, two more grow.",
+   "frontText": "Strikes twice, each time weaker; both strikes break into copies that fly on, and the second breaks into four.",
+   "behindText": "Where it ends, shards fly out, and a moment later fly out again.",
+   "monsterText": "Attacks twice; splits in two when it dies, and its halves attack twice.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "twin"
+   ]
+  },
+  "swarm": {
+   "id": "swarm",
+   "kind": "meld",
+   "name": "Swarm",
+   "front": "Swarming",
+   "behind": "of the Swarm",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Leech, melded. Every piece bites.",
+   "frontText": "Breaks into three copies that fly on; each copy that hits heals you.",
+   "behindText": "Where it ends, shards fly out; an enemy a shard kills drops a life orb.",
+   "monsterText": "Heals when it hits you; splits in two when it dies, and its halves heal as they hit.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "leech"
+   ]
+  },
+  "shellburst": {
+   "id": "shellburst",
+   "kind": "meld",
+   "name": "Shellburst",
+   "front": "Shellburst",
+   "behind": "of the Shellburst",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Volatile, melded. A bomb that breaks into bombs.",
+   "frontText": "Enemies it kills explode; breaks into three copies that burst where they hit.",
+   "behindText": "Where it ends, shards fly out; each leaves a rune that detonates a moment later.",
+   "monsterText": "Splits in two when it dies, and each half explodes when it dies.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "volatile"
+   ]
+  },
+  "pinpoint": {
+   "id": "pinpoint",
+   "kind": "meld",
+   "name": "Pinpoint",
+   "front": "Pinpoint",
+   "behind": "of the Pinpoint",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Precise, melded. Every piece finds the same weak point.",
+   "frontText": "More damage, a smaller area; its three copies all fly at the toughest enemy near.",
+   "behindText": "Where it ends, shards fly out; the first enemy a shard hits is marked.",
+   "monsterText": "Its hits find the gaps in your armour; splits in two when it dies.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "precise"
+   ]
+  },
+  "riot": {
+   "id": "riot",
+   "kind": "meld",
+   "name": "Riot",
+   "front": "Rioting",
+   "behind": "of the Riot",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Frenzied, melded. The faster you go, the more it breaks.",
+   "frontText": "Each use makes the next faster, up to five times; at full frenzy it breaks into five copies, not three.",
+   "behindText": "Kills keep the frenzy going; each shard that kills adds a step.",
+   "monsterText": "Speeds up as it is hurt; splits in two when it dies, and its halves are as fast as it was.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "frenzied"
+   ]
+  },
+  "phalanx": {
+   "id": "phalanx",
+   "kind": "meld",
+   "name": "Phalanx",
+   "front": "Phalanx",
+   "behind": "of the Phalanx",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Guarding, melded. Broken pieces of a shield, each still a shield.",
+   "frontText": "Each use gives you a brief shield; each copy that hits makes it stronger.",
+   "behindText": "Where it ends, shards fly out; each leaves a small ward circle where it lands.",
+   "monsterText": "Carries a shield that soaks damage; splits in two when it dies, each half with a shield.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "guarding"
+   ]
+  },
+  "rebound": {
+   "id": "rebound",
+   "kind": "meld",
+   "name": "Rebound",
+   "front": "Rebounding",
+   "behind": "of the Rebound",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Lasting, melded. The pieces keep flying.",
+   "frontText": "Breaks into three copies that fly on, and each flies on once more after it hits.",
+   "behindText": "Where it ends, shards fly out, and each bounces on once more to the nearest enemy.",
+   "monsterText": "Its poison, burning and chill last longer on you; splits in two when it dies, and its halves last longer.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "lasting"
+   ]
+  },
+  "flechette": {
+   "id": "flechette",
+   "kind": "meld",
+   "name": "Flechette",
+   "front": "Flechette",
+   "behind": "of Flechettes",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Fleeting, melded. The pieces strike before you see them.",
+   "frontText": "Breaks into three copies that fly twice as fast and strike a third harder.",
+   "behindText": "Where it ends, shards fly out twice as fast and twice as far.",
+   "monsterText": "Its poison and burning hurt you faster; splits in two when it dies, its halves quicker.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "fleeting"
+   ]
+  },
+  "starburst": {
+   "id": "starburst",
+   "kind": "meld",
+   "name": "Starburst",
+   "front": "Starburst",
+   "behind": "of the Starburst",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Vast, melded. Pieces everywhere.",
+   "frontText": "A much bigger area, a little less damage; breaks into five copies, not three.",
+   "behindText": "Where it ends, twice as many shards fly out, twice as far.",
+   "monsterText": "Its attacks reach wider; splits in three when it dies.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "vast"
+   ]
+  },
+  "refrain": {
+   "id": "refrain",
+   "kind": "meld",
+   "name": "Refrain",
+   "front": "Refrain",
+   "behind": "of the Refrain",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Twin, melded. A curse spoken twice.",
+   "frontText": "Strikes twice, each time weaker; the second strike on a cursed enemy deepens the curse.",
+   "behindText": "Leaves a hex circle, and a moment later a second one beside it.",
+   "monsterText": "Attacks twice; its blows curse you, the second deeper.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "twin"
+   ]
+  },
+  "bloodcurse": {
+   "id": "bloodcurse",
+   "kind": "meld",
+   "name": "Bloodcurse",
+   "front": "Bloodcursed",
+   "behind": "of the Bloodcurse",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Leech, melded. Their weakness feeds you.",
+   "frontText": "Curses what it hits; hitting a cursed enemy heals you twice as much.",
+   "behindText": "Leaves a hex circle; enemies that die in it drop life orbs.",
+   "monsterText": "Heals when it hits you, twice as much while you are cursed; its blows curse you.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "leech"
+   ]
+  },
+  "hexblast": {
+   "id": "hexblast",
+   "kind": "meld",
+   "name": "Hexblast",
+   "front": "Hexblast",
+   "behind": "of the Hexblast",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Volatile, melded. A curse that bursts when they die.",
+   "frontText": "Curses what it hits; a cursed enemy it kills explodes, and the blast curses what it hits.",
+   "behindText": "Leaves a rune inside a hex circle; it detonates a moment later and curses what it hits.",
+   "monsterText": "Its blows curse you; explodes when it dies, and the blast curses you.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "volatile"
+   ]
+  },
+  "evileye": {
+   "id": "evileye",
+   "kind": "meld",
+   "name": "Evil Eye",
+   "front": "Evil Eye",
+   "behind": "of the Evil Eye",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Precise, melded. A curse on one weak point.",
+   "frontText": "More damage, a smaller area; curses what it hits, and your critical hits on a cursed enemy hit harder.",
+   "behindText": "Marks an enemy; your next hit on it is a certain critical, and curses it.",
+   "monsterText": "Its hits find the gaps in your armour; its blows curse you.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "precise"
+   ]
+  },
+  "delirium": {
+   "id": "delirium",
+   "kind": "meld",
+   "name": "Delirium",
+   "front": "Delirious",
+   "behind": "of Delirium",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Frenzied, melded. The weaker they are, the wilder you get.",
+   "frontText": "Each use makes the next faster, up to five times; hitting a cursed enemy adds a step.",
+   "behindText": "Leaves a hex circle; while you fight inside it, your frenzy does not fade.",
+   "monsterText": "Speeds up as it is hurt, faster while you are cursed; its blows curse you.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "frenzied"
+   ]
+  },
+  "talisman": {
+   "id": "talisman",
+   "kind": "meld",
+   "name": "Talisman",
+   "front": "Talisman",
+   "behind": "of the Talisman",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Guarding, melded. A charm for you, a curse for them.",
+   "frontText": "Each use gives you a brief shield; enemies that strike it are cursed.",
+   "behindText": "Leaves a ward circle inside a hex circle: you take less damage inside, and enemies in it deal less.",
+   "monsterText": "Carries a shield that soaks damage; striking its shield curses you.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "guarding"
+   ]
+  },
+  "grudge": {
+   "id": "grudge",
+   "kind": "meld",
+   "name": "Grudge",
+   "front": "Grudging",
+   "behind": "of the Grudge",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Lasting, melded. A curse that is never forgotten.",
+   "frontText": "Curses what it hits for twice as long, and the curse deepens each second it holds.",
+   "behindText": "Leaves a hex circle that lasts twice as long; enemies that leave it stay cursed.",
+   "monsterText": "Its poison, burning and chill last longer on you; its curse on you lasts twice as long.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "lasting"
+   ]
+  },
+  "omen": {
+   "id": "omen",
+   "kind": "meld",
+   "name": "Omen",
+   "front": "Ominous",
+   "behind": "of the Omen",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Fleeting, melded. A curse that falls all at once.",
+   "frontText": "Curses what it hits; the curse is a third shorter but deeper.",
+   "behindText": "Leaves a hex circle that fades fast and, as it goes, curses everything inside, deeper.",
+   "monsterText": "Its poison and burning hurt you faster; its curse on you is short but deep.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "fleeting"
+   ]
+  },
+  "pall": {
+   "id": "pall",
+   "kind": "meld",
+   "name": "Pall",
+   "front": "Pall",
+   "behind": "of the Pall",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Vast, melded. A curse over everything.",
+   "frontText": "A much bigger area, a little less damage; curses what it hits, deeper for each other cursed enemy near, up to three.",
+   "behindText": "Leaves a hex circle twice as wide.",
+   "monsterText": "Its attacks reach wider; its blows curse you.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "vast"
+   ]
+  },
+  "rewind": {
+   "id": "rewind",
+   "kind": "meld",
+   "name": "Rewind",
+   "front": "Rewinding",
+   "behind": "of the Rewind",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Twin, melded. Time catches, and repeats.",
+   "frontText": "Strikes twice, each time weaker; the second strike on a slowed enemy slows it twice as long.",
+   "behindText": "Leaves a bubble, and a moment later a second one beside it.",
+   "monsterText": "Attacks twice; its blows slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "twin"
+   ]
+  },
+  "sap": {
+   "id": "sap",
+   "kind": "meld",
+   "name": "Sap",
+   "front": "Sapping",
+   "behind": "of the Sap",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Leech, melded. Time drained away, life drawn out.",
+   "frontText": "Heals you for every enemy hit, twice as much for slowed enemies.",
+   "behindText": "Leaves a bubble; enemies that die in it drop life orbs.",
+   "monsterText": "Heals when it hits you; its blows slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "leech"
+   ]
+  },
+  "slowfuse": {
+   "id": "slowfuse",
+   "kind": "meld",
+   "name": "Slow Fuse",
+   "front": "Slow Fuse",
+   "behind": "of the Slow Fuse",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Volatile, melded. A blast held in time.",
+   "frontText": "Enemies it kills explode; a slowed enemy's blast waits a moment, then goes off twice as hard.",
+   "behindText": "Leaves a rune inside a bubble; it detonates a moment later and slows in time what it hits.",
+   "monsterText": "Its blows slow your cooldowns; explodes when it dies, a moment late, and the blast slows you.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "volatile"
+   ]
+  },
+  "stillpoint": {
+   "id": "stillpoint",
+   "kind": "meld",
+   "name": "Stillpoint",
+   "front": "Stillpoint",
+   "behind": "of the Stillpoint",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Precise, melded. Time slows, and the aim is true.",
+   "frontText": "More damage, a smaller area; slows in time what it hits, and your hits on a slowed enemy are more often critical.",
+   "behindText": "Marks an enemy and slows it in time.",
+   "monsterText": "Its hits find the gaps in your armour; its blows slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "precise"
+   ]
+  },
+  "quickening": {
+   "id": "quickening",
+   "kind": "meld",
+   "name": "Quickening",
+   "front": "Quickening",
+   "behind": "of the Quickening",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Frenzied, melded. Everything slows but you.",
+   "frontText": "Each use makes the next faster, up to five times; at full frenzy, its slow is twice as deep.",
+   "behindText": "Kills keep the frenzy going; inside its bubble your frenzy builds twice as fast.",
+   "monsterText": "Speeds up as it is hurt; its blows slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "frenzied"
+   ]
+  },
+  "respite": {
+   "id": "respite",
+   "kind": "meld",
+   "name": "Respite",
+   "front": "Respite",
+   "behind": "of Respite",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Guarding, melded. Their blows arrive late.",
+   "frontText": "Each use gives you a brief shield; enemies that strike it are slowed in time.",
+   "behindText": "Leaves a ward circle inside a bubble: you take less damage inside, and their shots crawl.",
+   "monsterText": "Carries a shield that soaks damage; its blows slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "guarding"
+   ]
+  },
+  "eternity": {
+   "id": "eternity",
+   "kind": "meld",
+   "name": "Eternity",
+   "front": "Eternal",
+   "behind": "of Eternity",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Lasting, melded. Time almost stops.",
+   "frontText": "Slows in time what it hits for twice as long, and the slow deepens each second it holds.",
+   "behindText": "Leaves a bubble that lasts twice as long.",
+   "monsterText": "Its poison, burning and chill last longer on you; its slow on your cooldowns lasts twice as long.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "lasting"
+   ]
+  },
+  "stutter": {
+   "id": "stutter",
+   "kind": "meld",
+   "name": "Stutter",
+   "front": "Stuttering",
+   "behind": "of the Stutter",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Fleeting, melded. Time skips.",
+   "frontText": "Slows in time what it hits, a third shorter but deeper; as the slow ends, the enemy is stunned for a moment.",
+   "behindText": "Leaves a bubble that fades fast and, as it goes, stuns everything inside for a moment.",
+   "monsterText": "Its poison and burning hurt you faster; its slow on your cooldowns is short but deep.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "fleeting"
+   ]
+  },
+  "doldrums": {
+   "id": "doldrums",
+   "kind": "meld",
+   "name": "Doldrums",
+   "front": "Doldrums",
+   "behind": "of the Doldrums",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Vast, melded. Everything near grinds slow.",
+   "frontText": "A much bigger area, a little less damage; slows in time what it hits and the enemies near it.",
+   "behindText": "Leaves a bubble twice as wide.",
+   "monsterText": "Its attacks reach wider; its blows slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "vast"
+   ]
+  },
+  "fetters": {
+   "id": "fetters",
+   "kind": "meld",
+   "name": "Fetters",
+   "front": "Fettered",
+   "behind": "of the Fetters",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Twin, melded. Two cuffs on one chain.",
+   "frontText": "Strikes twice, each time weaker; an enemy held by the first strike is held again by the second, half as long again.",
+   "behindText": "Leaves a snare, and a moment later a second one beside it.",
+   "monsterText": "Attacks twice; its blows root you.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "twin"
+   ]
+  },
+  "thrall": {
+   "id": "thrall",
+   "kind": "meld",
+   "name": "Thrall",
+   "front": "Thrall",
+   "behind": "of the Thrall",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Leech, melded. Held fast, drained dry.",
+   "frontText": "Heals you for every enemy hit, twice as much for held enemies.",
+   "behindText": "Leaves a snare; what it catches is drained, healing you while it is held.",
+   "monsterText": "Heals when it hits you; its blows root you.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "leech"
+   ]
+  },
+  "tripwire": {
+   "id": "tripwire",
+   "kind": "meld",
+   "name": "Tripwire",
+   "front": "Tripwire",
+   "behind": "of the Tripwire",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Volatile, melded. Caught, then blown apart.",
+   "frontText": "Holds what it hits; a held enemy it kills explodes twice as hard.",
+   "behindText": "Leaves a snare that explodes when it catches something.",
+   "monsterText": "Explodes when it dies; its blows root you.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "volatile"
+   ]
+  },
+  "pin": {
+   "id": "pin",
+   "kind": "meld",
+   "name": "Pin",
+   "front": "Pinning",
+   "behind": "of the Pin",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Precise, melded. Held still, struck true.",
+   "frontText": "More damage, a smaller area; holds what it hits, and your first hit on a held enemy is a certain critical.",
+   "behindText": "Marks the enemy its snare catches.",
+   "monsterText": "Its hits find the gaps in your armour; its blows root you.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "precise"
+   ]
+  },
+  "mauler": {
+   "id": "mauler",
+   "kind": "meld",
+   "name": "Mauler",
+   "front": "Mauling",
+   "behind": "of the Mauler",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Frenzied, melded. Hold them and keep hitting.",
+   "frontText": "Each use makes the next faster, up to five times; hitting a held enemy adds a step.",
+   "behindText": "Kills keep the frenzy going; an enemy its snare catches adds a step.",
+   "monsterText": "Speeds up as it is hurt; its blows root you.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "frenzied"
+   ]
+  },
+  "stockade": {
+   "id": "stockade",
+   "kind": "meld",
+   "name": "Stockade",
+   "front": "Stockade",
+   "behind": "of the Stockade",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Guarding, melded. Hold the line.",
+   "frontText": "Each use gives you a brief shield, stronger for each enemy it holds.",
+   "behindText": "Leaves a snare inside a ward circle.",
+   "monsterText": "Carries a shield that soaks damage; its blows root you.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "guarding"
+   ]
+  },
+  "manacle": {
+   "id": "manacle",
+   "kind": "meld",
+   "name": "Manacle",
+   "front": "Manacled",
+   "behind": "of the Manacle",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Lasting, melded. Bound for good.",
+   "frontText": "Holds what it hits for twice as long.",
+   "behindText": "Leaves a snare that lasts twice as long, and holds what it catches twice as long.",
+   "monsterText": "Its poison, burning and chill last longer on you; its blows root you twice as long.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "lasting"
+   ]
+  },
+  "snag": {
+   "id": "snag",
+   "kind": "meld",
+   "name": "Snag",
+   "front": "Snagging",
+   "behind": "of the Snag",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Fleeting, melded. A quick catch.",
+   "frontText": "Holds what it hits for a third less time; a held enemy takes more damage.",
+   "behindText": "Leaves a snare that fades fast but catches everything that crosses it while it lasts.",
+   "monsterText": "Its poison and burning hurt you faster; its blows root you briefly.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "fleeting"
+   ]
+  },
+  "dragnet": {
+   "id": "dragnet",
+   "kind": "meld",
+   "name": "Dragnet",
+   "front": "Dragnet",
+   "behind": "of the Dragnet",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Vast, melded. Everything caught at once.",
+   "frontText": "A much bigger area, a little less damage; holds what it hits and the enemies near it.",
+   "behindText": "Leaves a snare twice as wide that catches the next three enemies to cross it.",
+   "monsterText": "Its attacks reach wider; its blows root you.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "vast"
+   ]
+  },
   "twin2": {
    "id": "twin2",
    "kind": "rank",
@@ -3695,6 +4575,182 @@
   "amber": [
    "stilling",
    "binding"
+  ],
+  "backwash": [
+   "pulling",
+   "twin"
+  ],
+  "gullet": [
+   "pulling",
+   "leech"
+  ],
+  "harpoon": [
+   "pulling",
+   "precise"
+  ],
+  "whirlpool": [
+   "pulling",
+   "frenzied"
+  ],
+  "haven": [
+   "pulling",
+   "guarding"
+  ],
+  "eddy": [
+   "pulling",
+   "lasting"
+  ],
+  "whiplash": [
+   "pulling",
+   "fleeting"
+  ],
+  "maelstrom": [
+   "pulling",
+   "vast"
+  ],
+  "hydra": [
+   "splitting",
+   "twin"
+  ],
+  "swarm": [
+   "splitting",
+   "leech"
+  ],
+  "shellburst": [
+   "splitting",
+   "volatile"
+  ],
+  "pinpoint": [
+   "splitting",
+   "precise"
+  ],
+  "riot": [
+   "splitting",
+   "frenzied"
+  ],
+  "phalanx": [
+   "splitting",
+   "guarding"
+  ],
+  "rebound": [
+   "splitting",
+   "lasting"
+  ],
+  "flechette": [
+   "splitting",
+   "fleeting"
+  ],
+  "starburst": [
+   "splitting",
+   "vast"
+  ],
+  "refrain": [
+   "hexing",
+   "twin"
+  ],
+  "bloodcurse": [
+   "hexing",
+   "leech"
+  ],
+  "hexblast": [
+   "hexing",
+   "volatile"
+  ],
+  "evileye": [
+   "hexing",
+   "precise"
+  ],
+  "delirium": [
+   "hexing",
+   "frenzied"
+  ],
+  "talisman": [
+   "hexing",
+   "guarding"
+  ],
+  "grudge": [
+   "hexing",
+   "lasting"
+  ],
+  "omen": [
+   "hexing",
+   "fleeting"
+  ],
+  "pall": [
+   "hexing",
+   "vast"
+  ],
+  "rewind": [
+   "stilling",
+   "twin"
+  ],
+  "sap": [
+   "stilling",
+   "leech"
+  ],
+  "slowfuse": [
+   "stilling",
+   "volatile"
+  ],
+  "stillpoint": [
+   "stilling",
+   "precise"
+  ],
+  "quickening": [
+   "stilling",
+   "frenzied"
+  ],
+  "respite": [
+   "stilling",
+   "guarding"
+  ],
+  "eternity": [
+   "stilling",
+   "lasting"
+  ],
+  "stutter": [
+   "stilling",
+   "fleeting"
+  ],
+  "doldrums": [
+   "stilling",
+   "vast"
+  ],
+  "fetters": [
+   "binding",
+   "twin"
+  ],
+  "thrall": [
+   "binding",
+   "leech"
+  ],
+  "tripwire": [
+   "binding",
+   "volatile"
+  ],
+  "pin": [
+   "binding",
+   "precise"
+  ],
+  "mauler": [
+   "binding",
+   "frenzied"
+  ],
+  "stockade": [
+   "binding",
+   "guarding"
+  ],
+  "manacle": [
+   "binding",
+   "lasting"
+  ],
+  "snag": [
+   "binding",
+   "fleeting"
+  ],
+  "dragnet": [
+   "binding",
+   "vast"
   ]
  },
  "rankOf": {
@@ -3907,6 +4963,50 @@
   "torpor": "int",
   "witchknot": "int",
   "amber": "int",
+  "backwash": "int",
+  "gullet": "int",
+  "harpoon": "int",
+  "whirlpool": "int",
+  "haven": "int",
+  "eddy": "int",
+  "whiplash": "int",
+  "maelstrom": "int",
+  "hydra": "dex",
+  "swarm": "dex",
+  "shellburst": "dex",
+  "pinpoint": "dex",
+  "riot": "dex",
+  "phalanx": "dex",
+  "rebound": "dex",
+  "flechette": "dex",
+  "starburst": "dex",
+  "refrain": "int",
+  "bloodcurse": "int",
+  "hexblast": "int",
+  "evileye": "int",
+  "delirium": "int",
+  "talisman": "int",
+  "grudge": "int",
+  "omen": "int",
+  "pall": "int",
+  "rewind": "int",
+  "sap": "int",
+  "slowfuse": "int",
+  "stillpoint": "int",
+  "quickening": "int",
+  "respite": "int",
+  "eternity": "int",
+  "stutter": "int",
+  "doldrums": "int",
+  "fetters": "str",
+  "thrall": "str",
+  "tripwire": "str",
+  "pin": "str",
+  "mauler": "str",
+  "stockade": "str",
+  "manacle": "str",
+  "snag": "str",
+  "dragnet": "str",
   "twin2": "dex",
   "leech2": "str",
   "volatile2": "int",
@@ -4926,6 +6026,314 @@
    ],
    "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
   },
+  "backwash": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "gullet": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Max Life or Life Regen."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "harpoon": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "whirlpool": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Movement Speed or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "haven": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Barrier or Strength.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Barrier or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "eddy": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Life Regen or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "whiplash": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Cooldown Recovery or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "maelstrom": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "hydra": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "swarm": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Max Life or Life Regen."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "shellburst": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "pinpoint": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "riot": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Movement Speed or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "phalanx": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Barrier or Strength.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Barrier or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "rebound": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Life Regen or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "flechette": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Cooldown Recovery or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "starburst": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "refrain": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bloodcurse": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Max Life or Life Regen."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "hexblast": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "evileye": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "delirium": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Movement Speed or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "talisman": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Barrier or Strength.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Barrier or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "grudge": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Life Regen or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Damage or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "omen": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Cooldown Recovery or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "pall": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "rewind": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "sap": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Max Life or Life Regen."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "slowfuse": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "stillpoint": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "quickening": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Movement Speed or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "respite": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Barrier or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Barrier or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "eternity": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Life Regen or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "stutter": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Cooldown Recovery or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "doldrums": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "fetters": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "thrall": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Max Life or Life Regen."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "tripwire": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "pin": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "mauler": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Movement Speed or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "stockade": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Barrier or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Barrier or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "manacle": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Life Regen or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "snag": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Cooldown Recovery or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "dragnet": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
   "twin2": {
    "gear": [
     "Weapon, gloves, ring, amulet: Critical Chance or Dexterity.",
@@ -5183,6 +6591,50 @@
   "torpor": "#98c8b0",
   "witchknot": "#b0a0a8",
   "amber": "#e0a040",
+  "backwash": "#6a98d0",
+  "gullet": "#b83a48",
+  "harpoon": "#b0b4f0",
+  "whirlpool": "#c87048",
+  "haven": "#58a0a0",
+  "eddy": "#8a84c0",
+  "whiplash": "#c8b8f0",
+  "maelstrom": "#6a5cb0",
+  "hydra": "#88c0c8",
+  "swarm": "#c8604c",
+  "shellburst": "#a070d8",
+  "pinpoint": "#e0d8f8",
+  "riot": "#f08060",
+  "phalanx": "#60b088",
+  "rebound": "#b8a0c0",
+  "flechette": "#e8d0f0",
+  "starburst": "#c0a0d8",
+  "refrain": "#88b0b8",
+  "bloodcurse": "#a83440",
+  "hexblast": "#8858b8",
+  "evileye": "#d8d0e8",
+  "delirium": "#d87060",
+  "talisman": "#68a890",
+  "grudge": "#9c90a8",
+  "omen": "#d8c8e8",
+  "pall": "#7c6c90",
+  "rewind": "#78d0b8",
+  "sap": "#b85a58",
+  "slowfuse": "#90a0d8",
+  "stillpoint": "#c8f0e0",
+  "quickening": "#d8a070",
+  "respite": "#60c890",
+  "eternity": "#90c8a8",
+  "stutter": "#d0f0e8",
+  "doldrums": "#6a9c80",
+  "fetters": "#a8b898",
+  "thrall": "#a84a44",
+  "tripwire": "#9878c8",
+  "pin": "#e0dcc8",
+  "mauler": "#e07850",
+  "stockade": "#70a070",
+  "manacle": "#a89c88",
+  "snag": "#e0d0e0",
+  "dragnet": "#8a7a58",
   "twin2": "#58c0b0",
   "leech2": "#ff8a80",
   "volatile2": "#9858d0",
@@ -5773,69 +7225,245 @@
    350,
    200
   ],
-  "twin2": [
+  "backwash": [
    375,
    200
   ],
-  "leech2": [
+  "gullet": [
    0,
    225
   ],
-  "volatile2": [
+  "harpoon": [
    25,
    225
   ],
-  "precise2": [
+  "whirlpool": [
    50,
    225
   ],
-  "frenzied2": [
+  "haven": [
    75,
    225
   ],
-  "guarding2": [
+  "eddy": [
    100,
    225
   ],
-  "lasting2": [
+  "whiplash": [
    125,
    225
   ],
-  "fleeting2": [
+  "maelstrom": [
    150,
    225
   ],
-  "vast2": [
+  "hydra": [
    175,
    225
   ],
-  "swift2": [
+  "swarm": [
    200,
    225
   ],
-  "heavy2": [
+  "shellburst": [
    225,
    225
   ],
-  "pulling2": [
+  "pinpoint": [
    250,
    225
   ],
-  "splitting2": [
+  "riot": [
    275,
    225
   ],
-  "hexing2": [
+  "phalanx": [
    300,
    225
   ],
-  "stilling2": [
+  "rebound": [
    325,
    225
   ],
-  "binding2": [
+  "flechette": [
    350,
    225
+  ],
+  "starburst": [
+   375,
+   225
+  ],
+  "refrain": [
+   0,
+   250
+  ],
+  "bloodcurse": [
+   25,
+   250
+  ],
+  "hexblast": [
+   50,
+   250
+  ],
+  "evileye": [
+   75,
+   250
+  ],
+  "delirium": [
+   100,
+   250
+  ],
+  "talisman": [
+   125,
+   250
+  ],
+  "grudge": [
+   150,
+   250
+  ],
+  "omen": [
+   175,
+   250
+  ],
+  "pall": [
+   200,
+   250
+  ],
+  "rewind": [
+   225,
+   250
+  ],
+  "sap": [
+   250,
+   250
+  ],
+  "slowfuse": [
+   275,
+   250
+  ],
+  "stillpoint": [
+   300,
+   250
+  ],
+  "quickening": [
+   325,
+   250
+  ],
+  "respite": [
+   350,
+   250
+  ],
+  "eternity": [
+   375,
+   250
+  ],
+  "stutter": [
+   0,
+   275
+  ],
+  "doldrums": [
+   25,
+   275
+  ],
+  "fetters": [
+   50,
+   275
+  ],
+  "thrall": [
+   75,
+   275
+  ],
+  "tripwire": [
+   100,
+   275
+  ],
+  "pin": [
+   125,
+   275
+  ],
+  "mauler": [
+   150,
+   275
+  ],
+  "stockade": [
+   175,
+   275
+  ],
+  "manacle": [
+   200,
+   275
+  ],
+  "snag": [
+   225,
+   275
+  ],
+  "dragnet": [
+   250,
+   275
+  ],
+  "twin2": [
+   275,
+   275
+  ],
+  "leech2": [
+   300,
+   275
+  ],
+  "volatile2": [
+   325,
+   275
+  ],
+  "precise2": [
+   350,
+   275
+  ],
+  "frenzied2": [
+   375,
+   275
+  ],
+  "guarding2": [
+   0,
+   300
+  ],
+  "lasting2": [
+   25,
+   300
+  ],
+  "fleeting2": [
+   50,
+   300
+  ],
+  "vast2": [
+   75,
+   300
+  ],
+  "swift2": [
+   100,
+   300
+  ],
+  "heavy2": [
+   125,
+   300
+  ],
+  "pulling2": [
+   150,
+   300
+  ],
+  "splitting2": [
+   175,
+   300
+  ],
+  "hexing2": [
+   200,
+   300
+  ],
+  "stilling2": [
+   225,
+   300
+  ],
+  "binding2": [
+   250,
+   300
   ]
  },
  "glyph": {
@@ -7100,6 +8728,402 @@
    "XXoXoXX",
    ".XXXXX.",
    "..XXX.."
+  ],
+  "backwash": [
+   "XXX....",
+   "...X...",
+   "XX..X..",
+   "..X.Xo.",
+   "XX..X..",
+   "...X...",
+   "XXX...."
+  ],
+  "gullet": [
+   "X.....X",
+   ".X...X.",
+   "..X.X..",
+   "...o...",
+   "..XoX..",
+   ".XXXXX.",
+   "......."
+  ],
+  "harpoon": [
+   "...X...",
+   "..XXX..",
+   ".X.X.X.",
+   "...X...",
+   "...X...",
+   "...o...",
+   "..o.o.."
+  ],
+  "whirlpool": [
+   "XXXXXX.",
+   "X......",
+   "X.XXXX.",
+   "X.X.oX.",
+   "X.X..X.",
+   "X.XXXX.",
+   "X......"
+  ],
+  "haven": [
+   "XXXXXXX",
+   "X.....X",
+   "X.XXX.X",
+   "X.Xo..X",
+   ".X.XX.X",
+   "..X..X.",
+   "...XX.."
+  ],
+  "eddy": [
+   "..XXX..",
+   ".X...X.",
+   "X..X..X",
+   "X.X.o.X",
+   "X..XX.X",
+   ".X...X.",
+   "..XXX.."
+  ],
+  "whiplash": [
+   "X......",
+   ".X.....",
+   "..X....",
+   "...XXXo",
+   "..X....",
+   ".X.....",
+   "X......"
+  ],
+  "maelstrom": [
+   "XXXXXXX",
+   "X.....X",
+   "X.XXX.X",
+   "X.XoX.X",
+   "X.X.X.X",
+   "X...X.X",
+   "XXXXX.X"
+  ],
+  "hydra": [
+   "X.X.X.X",
+   ".X...X.",
+   "..X.X..",
+   "..X.X..",
+   "...X...",
+   "...o...",
+   "...o..."
+  ],
+  "swarm": [
+   "o..X..o",
+   ".X...X.",
+   "X..X..X",
+   ".X.o.X.",
+   "X..X..X",
+   ".X...X.",
+   "o..X..o"
+  ],
+  "shellburst": [
+   "X..X..X",
+   ".X.X.X.",
+   "..ooo..",
+   "..XXX..",
+   ".XXXXX.",
+   ".XXXXX.",
+   "..XXX.."
+  ],
+  "pinpoint": [
+   "X.....X",
+   ".X...X.",
+   "..X.X..",
+   "...o...",
+   "...X...",
+   "...X...",
+   "...X..."
+  ],
+  "riot": [
+   "X.X.X.X",
+   ".XXXXX.",
+   "XX.o.XX",
+   ".XXXXX.",
+   "X.X.X.X",
+   "...X...",
+   "..X.X.."
+  ],
+  "phalanx": [
+   "XX.X.XX",
+   "XX.X.XX",
+   "XX.X.XX",
+   "oX.X.Xo",
+   ".X.o.X.",
+   ".......",
+   "......."
+  ],
+  "rebound": [
+   "X.....X",
+   ".X...X.",
+   "..X.X..",
+   "...o...",
+   "..X.X..",
+   ".X...X.",
+   "X.....X"
+  ],
+  "flechette": [
+   "XX..XX.",
+   ".XX..XX",
+   "..XXo..",
+   ".XX..XX",
+   "XX..XX.",
+   ".......",
+   "......."
+  ],
+  "starburst": [
+   "X..X..X",
+   ".X.X.X.",
+   "..XXX..",
+   "XXXoXXX",
+   "..XXX..",
+   ".X.X.X.",
+   "X..X..X"
+  ],
+  "refrain": [
+   "XXXX...",
+   "X..X...",
+   "X.oXXX.",
+   "XXXX..X",
+   "...X.oX",
+   "...XXXX",
+   "......."
+  ],
+  "bloodcurse": [
+   "..XXX..",
+   ".X...X.",
+   "X..o..X",
+   ".X...X.",
+   "..XXX..",
+   "...X...",
+   "..XXX.."
+  ],
+  "hexblast": [
+   "X..X..X",
+   ".X...X.",
+   "..XXX..",
+   "XX.o.XX",
+   "..XXX..",
+   ".X...X.",
+   "X..X..X"
+  ],
+  "evileye": [
+   ".......",
+   "XXXXXXX",
+   "X..o..X",
+   "XXXXXXX",
+   "...X...",
+   "...X...",
+   "...o..."
+  ],
+  "delirium": [
+   "X.XXX.X",
+   ".X...X.",
+   "X.o...X",
+   "X...X.X",
+   ".X...X.",
+   "X.XXX.X",
+   "......."
+  ],
+  "talisman": [
+   "...X...",
+   "..X.X..",
+   ".XXXXX.",
+   ".X.o.X.",
+   ".XXXXX.",
+   "..X.X..",
+   "...X..."
+  ],
+  "grudge": [
+   ".X.X.X.",
+   "..XXX..",
+   ".X...X.",
+   "X..o..X",
+   ".X...X.",
+   "..XXX..",
+   "......."
+  ],
+  "omen": [
+   "X......",
+   ".X.....",
+   "..X....",
+   "...XXX.",
+   "..X.o.X",
+   "...XXX.",
+   "......."
+  ],
+  "pall": [
+   "XXXXXXX",
+   "X.X.X.X",
+   ".......",
+   "o.o.o.o",
+   ".......",
+   "X.X.X.X",
+   "......."
+  ],
+  "rewind": [
+   "XXX.XXX",
+   ".X...X.",
+   "..o.o..",
+   ".X...X.",
+   "XXX.XXX",
+   ".......",
+   "......."
+  ],
+  "sap": [
+   "...X...",
+   "..XXX..",
+   "..XoX..",
+   ".XXXXX.",
+   "..XXX..",
+   ".......",
+   "...o..."
+  ],
+  "slowfuse": [
+   "....o.o",
+   ".....X.",
+   "....X..",
+   "..XXX..",
+   ".XXXXX.",
+   ".XXXXX.",
+   "..XXX.."
+  ],
+  "stillpoint": [
+   "...X...",
+   ".XX.XX.",
+   ".X...X.",
+   "XX.o.XX",
+   ".X...X.",
+   ".XX.XX.",
+   "...X..."
+  ],
+  "quickening": [
+   "..XXX..",
+   ".X...X.",
+   "X..X..X",
+   "X..oXXX",
+   "X.....X",
+   ".X...X.",
+   "..XXX.."
+  ],
+  "respite": [
+   "XXXXXXX",
+   "X.XXX.X",
+   "X..o..X",
+   "X.XXX.X",
+   ".X...X.",
+   "..X.X..",
+   "...X..."
+  ],
+  "eternity": [
+   ".......",
+   ".XX.XX.",
+   "X..X..X",
+   "X.oXo.X",
+   "X..X..X",
+   ".XX.XX.",
+   "......."
+  ],
+  "stutter": [
+   "..XXX..",
+   ".X...X.",
+   "X..X..X",
+   "X..o..X",
+   "X.X.X.X",
+   ".X...X.",
+   "..XXX.."
+  ],
+  "doldrums": [
+   ".......",
+   "XXXXXXX",
+   ".......",
+   ".XoXoX.",
+   ".......",
+   "XXXXXXX",
+   "......."
+  ],
+  "fetters": [
+   "XXX.XXX",
+   "X.X.X.X",
+   "XXX.XXX",
+   ".X...X.",
+   "..XoX..",
+   ".......",
+   "......."
+  ],
+  "thrall": [
+   ".XX.XX.",
+   "XXXXXXX",
+   "X.XoX.X",
+   "XXXXXXX",
+   ".XXXXX.",
+   "..XXX..",
+   "...X..."
+  ],
+  "tripwire": [
+   "X.....X",
+   "XXXXXXX",
+   "X.....X",
+   "...X...",
+   "..XXX..",
+   "..XoX..",
+   "..XXX.."
+  ],
+  "pin": [
+   "...X...",
+   "...X...",
+   "XXXXXXX",
+   "X..X..X",
+   "XXXoXXX",
+   "...X...",
+   "...o..."
+  ],
+  "mauler": [
+   "X.X.X.X",
+   "X.X.X.X",
+   ".X.X.X.",
+   "..XXX..",
+   "..XoX..",
+   "..XXX..",
+   "......."
+  ],
+  "stockade": [
+   "X.X.X.X",
+   "XXXXXXX",
+   "X.X.X.X",
+   "X.XoX.X",
+   "XXXXXXX",
+   "X.X.X.X",
+   "......."
+  ],
+  "manacle": [
+   "..XXX..",
+   ".X...X.",
+   "X.....X",
+   "X..o..X",
+   "XXXXXXX",
+   "XX.X.XX",
+   "XXXXXXX"
+  ],
+  "snag": [
+   "..XX...",
+   ".X..X..",
+   ".X..X..",
+   "....X..",
+   "...X...",
+   "..X..o.",
+   "..XXX.."
+  ],
+  "dragnet": [
+   "X.X.X.X",
+   ".X.X.X.",
+   "X.XoX.X",
+   ".X.X.X.",
+   "X.X.X.X",
+   ".X.X.X.",
+   "X.X.X.X"
   ]
  },
  "tune": {
@@ -8009,5 +10033,51 @@
   "hexing2",
   "stilling2",
   "binding2"
+ ],
+ "city2": [
+  "backwash",
+  "gullet",
+  "harpoon",
+  "whirlpool",
+  "haven",
+  "eddy",
+  "whiplash",
+  "maelstrom",
+  "hydra",
+  "swarm",
+  "shellburst",
+  "pinpoint",
+  "riot",
+  "phalanx",
+  "rebound",
+  "flechette",
+  "starburst",
+  "refrain",
+  "bloodcurse",
+  "hexblast",
+  "evileye",
+  "delirium",
+  "talisman",
+  "grudge",
+  "omen",
+  "pall",
+  "rewind",
+  "sap",
+  "slowfuse",
+  "stillpoint",
+  "quickening",
+  "respite",
+  "eternity",
+  "stutter",
+  "doldrums",
+  "fetters",
+  "thrall",
+  "tripwire",
+  "pin",
+  "mauler",
+  "stockade",
+  "manacle",
+  "snag",
+  "dragnet"
  ]
 }

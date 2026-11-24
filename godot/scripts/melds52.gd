@@ -27,6 +27,11 @@ static var ON := true
 ## fx_m52p_city.gd. ON at his yes to their films (City Meld Films, https://claude.ai/artifact/C6a3KHBrT98YMvi4YpKAD9), asked
 ## “Want me to switch them on?”: “Yes”, 24 Nov 2026. Off, the wordsmith does not make them (`makes`); known, as all words are.
 static var CITY_ON := true
+## THE CITY'S RUNES WITH THE FLOOR 6–10 RUNES (his “Then finish the melds”, 24 Nov 2026, the next group his Floor 11–15 doc named):
+## 44, in the same table (`city2`); their text tools/meldscity/docs_city2.txt, their stones docs/mockups/meld_runes4, their twists
+## meldscity2_rules.gd, on monsters foe_meldscity2.gd, their looks fx_m52p_city2.gd. OFF until his yes to their page: the
+## wordsmith does not make them (`makes`); known, as all words are.
+static var CITY2_ON := false
 ## (what each rune is worth inside one on gear: items.ts MELD_GEAR_STRENGTH; a level 2 rune's: RANK2's half again)
 const GEAR := 0.75
 const GEAR_RANK := 1.5
@@ -63,6 +68,8 @@ static func makes(a: String, b: String) -> String:
 	for m in T()["melds"]:
 		var of: Array = T()["of"][m]
 		if (of[0] == a and of[1] == b) or (of[0] == b and of[1] == a):
+			if is_city2(m):
+				return m if CITY2_ON else ""
 			return m if CITY_ON or not is_city(m) else ""
 	return ""
 
@@ -70,6 +77,11 @@ static func makes(a: String, b: String) -> String:
 ## Is it one of the city's melds or level 2 runes?
 static func is_city(w) -> bool:
 	return w is String and T().get("city", []).has(w)
+
+
+## Is it one of the city's runes with the floor 6–10 runes?
+static func is_city2(w) -> bool:
+	return w is String and T().get("city2", []).has(w)
 
 
 ## Into the words' tables (words.json): each one as a melded or ranked word, its parts, its attribute, its Lexicon page; and the

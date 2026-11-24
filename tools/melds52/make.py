@@ -15,6 +15,10 @@ RUNES.update(RUNES2)
 RUNES3 = json.load(open(ROOT + '/docs/mockups/meld_runes3/runes.json'))
 RUNES.update(RUNES3)
 CITY = ['pulling', 'splitting', 'hexing', 'stilling', 'binding']
+# (THE CITY'S RUNES WITH THE FLOOR 6-10 RUNES: his "Then finish the melds", 24 Nov 2026, the next group his Floor 11-15 doc named;
+# their text tools/meldscity/docs_city2.txt, their stones docs/mockups/meld_runes4; behind melds52.gd CITY2_ON until his yes)
+RUNES4 = json.load(open(ROOT + '/docs/mockups/meld_runes4/runes.json'))
+RUNES.update(RUNES4)
 W = json.load(open(G + 'words/words.json'))['words']
 COLOR = json.load(open(G + 'loot/items.json'))['words']['color']
 NAME_ID = {'Power': 'power', 'Poison': 'poison', 'Frost': 'frost', 'Flame': 'fire', 'Lightning': 'lightning', 'Swift': 'swift',
@@ -55,6 +59,7 @@ D.update(parse(ROOT + '/tools/melds52/docs_twin.txt'))
 D.update(parse(ROOT + '/tools/melds52/docs610.txt'))
 D.update(parse(ROOT + '/tools/melds52/docs_last110.txt'))
 D.update(parse(ROOT + '/tools/meldscity/docs_city.txt'))
+D.update(parse(ROOT + '/tools/meldscity/docs_city2.txt'))
 missing = [k for k in list(RUNES) + [w + '2' for w in RANKS] if k not in D or 'front' not in D[k] and 'both' not in D[k]]
 assert not missing, missing
 
@@ -126,6 +131,7 @@ env = {}
 exec(src, env)
 env['R'].update(RUNES2)
 env['R'].update(RUNES3)
+env['R'].update(RUNES4)
 def rank_stone(w):
     im = env['base'](w).copy()
     c = env['hexc'](COLOR[w]); gl = tuple(int(c[i] + (255 - c[i]) * 0.55) for i in range(3)) + (255,)
@@ -146,6 +152,6 @@ sheet.save(G + 'words/melds52.png')
 TUNE = json.load(open(ROOT + '/tools/melds52/tune.json'))
 out = {'order': order, 'melds': list(RUNES), 'ranks': [w + '2' for w in RANKS], 'words': words, 'of': of, 'rankOf': rank_of,
        'attr': attr, 'page': page, 'color': color, 'stones': stones_at, 'glyph': {k: RUNES[k]['glyph'] for k in RUNES}, 'tune': TUNE,
-       'city': list(RUNES3) + [w + '2' for w in CITY]}
+       'city': list(RUNES3) + [w + '2' for w in CITY], 'city2': list(RUNES4)}
 json.dump(out, open(G + 'words/melds52.json', 'w'), indent=1)
 print(len(RUNES), 'melds,', len(RANKS), 'level 2;', 'sheet', sheet.size)

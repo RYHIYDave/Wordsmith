@@ -1,0 +1,230 @@
+The City's Runes with the Floor 6–10 Runes
+·
+44 new melds bring the city's five runes together with the floor 6–10 runes (Twin, Leech, Volatile, Precise, Frenzied, Guarding, Lasting, Fleeting and Vast). Implode, Pulling and Volatile, is in the game already.
+Burned into gear, a meld gives one property of each of its two runes, each a quarter weaker than alone, as now. Two properties of the same kind never pair.
+Each meld below has its idea in a line, its names on a move, and what it does in front, behind and on enemies, as before.
+Pulling
+Backwash
+Pulling and Twin. A pull, and a second before they find their feet. On a move: Backwash Strike, Strike of the Backwash.
+In front: strikes twice, each time weaker; each strike drags what it hits toward where it struck, and an enemy dragged by both is staggered.
+Behind: leaves a vortex that gives a second, sharp pull a moment after it forms.
+On enemies: attacks twice; each blow drags you toward it.
+Gullet
+Pulling and Leech. Drag them close, and drink. On a move: Gullet Strike, Strike of the Gullet.
+In front: heals you for every enemy hit, and again for every enemy it drags in.
+Behind: leaves a vortex; enemies that die in it drop life orbs.
+On enemies: heals when it hits you; its blows drag you toward it.
+Harpoon
+Pulling and Precise. One line, one catch, one sure blow. On a move: Harpoon Strike, Strike of the Harpoon.
+In front: more damage, a smaller area; drags what it hits toward where it struck, and an enemy dragged into the middle is marked: your next hit on it is a certain critical.
+Behind: marks an enemy, and leaves a vortex that drags the marked one twice as hard.
+On enemies: its hits find the gaps in your armour; its blows drag you toward it.
+Whirlpool
+Pulling and Frenzied. The faster you go, the harder it pulls. On a move: Whirlpool Strike, Strike of the Whirlpool.
+In front: each use makes the next faster, up to five times; each step of the frenzy drags from farther.
+Behind: kills keep the frenzy going; its vortex pulls harder for each step of the frenzy.
+On enemies: speeds up as it is hurt; its blows drag you toward it, farther the faster it is.
+Haven
+Pulling and Guarding. Draw them in where you are safe. On a move: Haven Strike, Strike of the Haven.
+In front: each use gives you a brief shield, stronger for each enemy it drags in.
+Behind: leaves a ward circle with a vortex at its heart: you take less damage inside, and enemies are drawn in.
+On enemies: carries a shield that soaks damage; its blows drag you toward it.
+Eddy
+Pulling and Lasting. A pull that will not let go. On a move: Eddying Strike, Strike of the Eddy.
+In front: drags what it hits toward where it struck, and keeps drawing it there for two seconds after.
+Behind: leaves a vortex that lasts twice as long and pulls harder the longer it holds.
+On enemies: its poison, burning and chill last longer on you; its blows drag you toward it, and keep pulling a moment after.
+Whiplash
+Pulling and Fleeting. A sudden, sharp yank. On a move: Whiplash Strike, Strike of the Whiplash.
+In front: drags what it hits toward where it struck in an instant, and those yanked in are staggered.
+Behind: leaves a vortex that lasts a third as long and, as it goes, snaps everything inside to its middle.
+On enemies: its poison and burning hurt you faster; its blows yank you toward it.
+Maelstrom
+Pulling and Vast. A pull that takes in everything. On a move: Maelstrom Strike, Strike of the Maelstrom.
+In front: a much bigger area, a little less damage; drags what it hits from twice as far.
+Behind: leaves a vortex twice as wide.
+On enemies: its attacks reach wider; its blows drag you toward it from farther.
+Splitting
+Hydra
+Splitting and Twin. Cut one, two more grow. On a move: Hydra Strike, Strike of the Hydra.
+In front: strikes twice, each time weaker; both strikes break into copies that fly on, and the second breaks into four.
+Behind: where it ends, shards fly out, and a moment later fly out again.
+On enemies: attacks twice; splits in two when it dies, and its halves attack twice.
+Swarm
+Splitting and Leech. Every piece bites. On a move: Swarming Strike, Strike of the Swarm.
+In front: breaks into three copies that fly on; each copy that hits heals you.
+Behind: where it ends, shards fly out; an enemy a shard kills drops a life orb.
+On enemies: heals when it hits you; splits in two when it dies, and its halves heal as they hit.
+Shellburst
+Splitting and Volatile. A bomb that breaks into bombs. On a move: Shellburst Strike, Strike of the Shellburst.
+In front: enemies it kills explode; breaks into three copies that burst where they hit.
+Behind: where it ends, shards fly out; each leaves a rune that detonates a moment later.
+On enemies: splits in two when it dies, and each half explodes when it dies.
+Pinpoint
+Splitting and Precise. Every piece finds the same weak point. On a move: Pinpoint Strike, Strike of the Pinpoint.
+In front: more damage, a smaller area; its three copies all fly at the toughest enemy near.
+Behind: where it ends, shards fly out; the first enemy a shard hits is marked.
+On enemies: its hits find the gaps in your armour; splits in two when it dies.
+Riot
+Splitting and Frenzied. The faster you go, the more it breaks. On a move: Rioting Strike, Strike of the Riot.
+In front: each use makes the next faster, up to five times; at full frenzy it breaks into five copies, not three.
+Behind: kills keep the frenzy going; each shard that kills adds a step.
+On enemies: speeds up as it is hurt; splits in two when it dies, and its halves are as fast as it was.
+Phalanx
+Splitting and Guarding. Broken pieces of a shield, each still a shield. On a move: Phalanx Strike, Strike of the Phalanx.
+In front: each use gives you a brief shield; each copy that hits makes it stronger.
+Behind: where it ends, shards fly out; each leaves a small ward circle where it lands.
+On enemies: carries a shield that soaks damage; splits in two when it dies, each half with a shield.
+Rebound
+Splitting and Lasting. The pieces keep flying. On a move: Rebounding Strike, Strike of the Rebound.
+In front: breaks into three copies that fly on, and each flies on once more after it hits.
+Behind: where it ends, shards fly out, and each bounces on once more to the nearest enemy.
+On enemies: its poison, burning and chill last longer on you; splits in two when it dies, and its halves last longer.
+Flechette
+Splitting and Fleeting. The pieces strike before you see them. On a move: Flechette Strike, Strike of Flechettes.
+In front: breaks into three copies that fly twice as fast and strike a third harder.
+Behind: where it ends, shards fly out twice as fast and twice as far.
+On enemies: its poison and burning hurt you faster; splits in two when it dies, its halves quicker.
+Starburst
+Splitting and Vast. Pieces everywhere. On a move: Starburst Strike, Strike of the Starburst.
+In front: a much bigger area, a little less damage; breaks into five copies, not three.
+Behind: where it ends, twice as many shards fly out, twice as far.
+On enemies: its attacks reach wider; splits in three when it dies.
+Hexing
+Refrain
+Hexing and Twin. A curse spoken twice. On a move: Refrain Strike, Strike of the Refrain.
+In front: strikes twice, each time weaker; the second strike on a cursed enemy deepens the curse.
+Behind: leaves a hex circle, and a moment later a second one beside it.
+On enemies: attacks twice; its blows curse you, the second deeper.
+Bloodcurse
+Hexing and Leech. Their weakness feeds you. On a move: Bloodcursed Strike, Strike of the Bloodcurse.
+In front: curses what it hits; hitting a cursed enemy heals you twice as much.
+Behind: leaves a hex circle; enemies that die in it drop life orbs.
+On enemies: heals when it hits you, twice as much while you are cursed; its blows curse you.
+Hexblast
+Hexing and Volatile. A curse that bursts when they die. On a move: Hexblast Strike, Strike of the Hexblast.
+In front: curses what it hits; a cursed enemy it kills explodes, and the blast curses what it hits.
+Behind: leaves a rune inside a hex circle; it detonates a moment later and curses what it hits.
+On enemies: its blows curse you; explodes when it dies, and the blast curses you.
+Evil Eye
+Hexing and Precise. A curse on one weak point. On a move: Evil Eye Strike, Strike of the Evil Eye.
+In front: more damage, a smaller area; curses what it hits, and your critical hits on a cursed enemy hit harder.
+Behind: marks an enemy; your next hit on it is a certain critical, and curses it.
+On enemies: its hits find the gaps in your armour; its blows curse you.
+Delirium
+Hexing and Frenzied. The weaker they are, the wilder you get. On a move: Delirious Strike, Strike of Delirium.
+In front: each use makes the next faster, up to five times; hitting a cursed enemy adds a step.
+Behind: leaves a hex circle; while you fight inside it, your frenzy does not fade.
+On enemies: speeds up as it is hurt, faster while you are cursed; its blows curse you.
+Talisman
+Hexing and Guarding. A charm for you, a curse for them. On a move: Talisman Strike, Strike of the Talisman.
+In front: each use gives you a brief shield; enemies that strike it are cursed.
+Behind: leaves a ward circle inside a hex circle: you take less damage inside, and enemies in it deal less.
+On enemies: carries a shield that soaks damage; striking its shield curses you.
+Grudge
+Hexing and Lasting. A curse that is never forgotten. On a move: Grudging Strike, Strike of the Grudge.
+In front: curses what it hits for twice as long, and the curse deepens each second it holds.
+Behind: leaves a hex circle that lasts twice as long; enemies that leave it stay cursed.
+On enemies: its poison, burning and chill last longer on you; its curse on you lasts twice as long.
+Omen
+Hexing and Fleeting. A curse that falls all at once. On a move: Ominous Strike, Strike of the Omen.
+In front: curses what it hits; the curse is a third shorter but deeper.
+Behind: leaves a hex circle that fades fast and, as it goes, curses everything inside, deeper.
+On enemies: its poison and burning hurt you faster; its curse on you is short but deep.
+Pall
+Hexing and Vast. A curse over everything. On a move: Pall Strike, Strike of the Pall.
+In front: a much bigger area, a little less damage; curses what it hits, deeper for each other cursed enemy near, up to three.
+Behind: leaves a hex circle twice as wide.
+On enemies: its attacks reach wider; its blows curse you.
+Stilling
+Rewind
+Stilling and Twin. Time catches, and repeats. On a move: Rewinding Strike, Strike of the Rewind.
+In front: strikes twice, each time weaker; the second strike on a slowed enemy slows it twice as long.
+Behind: leaves a bubble, and a moment later a second one beside it.
+On enemies: attacks twice; its blows slow your cooldowns.
+Sap
+Stilling and Leech. Time drained away, life drawn out. On a move: Sapping Strike, Strike of the Sap.
+In front: heals you for every enemy hit, twice as much for slowed enemies.
+Behind: leaves a bubble; enemies that die in it drop life orbs.
+On enemies: heals when it hits you; its blows slow your cooldowns.
+Slow Fuse
+Stilling and Volatile. A blast held in time. On a move: Slow Fuse Strike, Strike of the Slow Fuse.
+In front: enemies it kills explode; a slowed enemy's blast waits a moment, then goes off twice as hard.
+Behind: leaves a rune inside a bubble; it detonates a moment later and slows in time what it hits.
+On enemies: its blows slow your cooldowns; explodes when it dies, a moment late, and the blast slows you.
+Stillpoint
+Stilling and Precise. Time slows, and the aim is true. On a move: Stillpoint Strike, Strike of the Stillpoint.
+In front: more damage, a smaller area; slows in time what it hits, and your hits on a slowed enemy are more often critical.
+Behind: marks an enemy and slows it in time.
+On enemies: its hits find the gaps in your armour; its blows slow your cooldowns.
+Quickening
+Stilling and Frenzied. Everything slows but you. On a move: Quickening Strike, Strike of the Quickening.
+In front: each use makes the next faster, up to five times; at full frenzy, its slow is twice as deep.
+Behind: kills keep the frenzy going; inside its bubble your frenzy builds twice as fast.
+On enemies: speeds up as it is hurt; its blows slow your cooldowns.
+Respite
+Stilling and Guarding. Their blows arrive late. On a move: Respite Strike, Strike of Respite.
+In front: each use gives you a brief shield; enemies that strike it are slowed in time.
+Behind: leaves a ward circle inside a bubble: you take less damage inside, and their shots crawl.
+On enemies: carries a shield that soaks damage; its blows slow your cooldowns.
+Eternity
+Stilling and Lasting. Time almost stops. On a move: Eternal Strike, Strike of Eternity.
+In front: slows in time what it hits for twice as long, and the slow deepens each second it holds.
+Behind: leaves a bubble that lasts twice as long.
+On enemies: its poison, burning and chill last longer on you; its slow on your cooldowns lasts twice as long.
+Stutter
+Stilling and Fleeting. Time skips. On a move: Stuttering Strike, Strike of the Stutter.
+In front: slows in time what it hits, a third shorter but deeper; as the slow ends, the enemy is stunned for a moment.
+Behind: leaves a bubble that fades fast and, as it goes, stuns everything inside for a moment.
+On enemies: its poison and burning hurt you faster; its slow on your cooldowns is short but deep.
+Doldrums
+Stilling and Vast. Everything near grinds slow. On a move: Doldrums Strike, Strike of the Doldrums.
+In front: a much bigger area, a little less damage; slows in time what it hits and the enemies near it.
+Behind: leaves a bubble twice as wide.
+On enemies: its attacks reach wider; its blows slow your cooldowns.
+Binding
+Fetters
+Binding and Twin. Two cuffs on one chain. On a move: Fettered Strike, Strike of the Fetters.
+In front: strikes twice, each time weaker; an enemy held by the first strike is held again by the second, half as long again.
+Behind: leaves a snare, and a moment later a second one beside it.
+On enemies: attacks twice; its blows root you.
+Thrall
+Binding and Leech. Held fast, drained dry. On a move: Thrall Strike, Strike of the Thrall.
+In front: heals you for every enemy hit, twice as much for held enemies.
+Behind: leaves a snare; what it catches is drained, healing you while it is held.
+On enemies: heals when it hits you; its blows root you.
+Tripwire
+Binding and Volatile. Caught, then blown apart. On a move: Tripwire Strike, Strike of the Tripwire.
+In front: holds what it hits; a held enemy it kills explodes twice as hard.
+Behind: leaves a snare that explodes when it catches something.
+On enemies: explodes when it dies; its blows root you.
+Pin
+Binding and Precise. Held still, struck true. On a move: Pinning Strike, Strike of the Pin.
+In front: more damage, a smaller area; holds what it hits, and your first hit on a held enemy is a certain critical.
+Behind: marks the enemy its snare catches.
+On enemies: its hits find the gaps in your armour; its blows root you.
+Mauler
+Binding and Frenzied. Hold them and keep hitting. On a move: Mauling Strike, Strike of the Mauler.
+In front: each use makes the next faster, up to five times; hitting a held enemy adds a step.
+Behind: kills keep the frenzy going; an enemy its snare catches adds a step.
+On enemies: speeds up as it is hurt; its blows root you.
+Stockade
+Binding and Guarding. Hold the line. On a move: Stockade Strike, Strike of the Stockade.
+In front: each use gives you a brief shield, stronger for each enemy it holds.
+Behind: leaves a snare inside a ward circle.
+On enemies: carries a shield that soaks damage; its blows root you.
+Manacle
+Binding and Lasting. Bound for good. On a move: Manacled Strike, Strike of the Manacle.
+In front: holds what it hits for twice as long.
+Behind: leaves a snare that lasts twice as long, and holds what it catches twice as long.
+On enemies: its poison, burning and chill last longer on you; its blows root you twice as long.
+Snag
+Binding and Fleeting. A quick catch. On a move: Snagging Strike, Strike of the Snag.
+In front: holds what it hits for a third less time; a held enemy takes more damage.
+Behind: leaves a snare that fades fast but catches everything that crosses it while it lasts.
+On enemies: its poison and burning hurt you faster; its blows root you briefly.
+Dragnet
+Binding and Vast. Everything caught at once. On a move: Dragnet Strike, Strike of the Dragnet.
+In front: a much bigger area, a little less damage; holds what it hits and the enemies near it.
+Behind: leaves a snare twice as wide that catches the next three enemies to cross it.
+On enemies: its attacks reach wider; its blows root you.
