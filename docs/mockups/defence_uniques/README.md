@@ -45,3 +45,17 @@ His words, told the fifteen wore their bases' pictures: “Uniques always have u
 - Checked: `--only=defuniques` 27 of 27 (its line 27: every unique's picture is in the sheet, 88 their own, the fifteen their
   own with the switch on); `uniques` 11 of 11, `uniquesdo` 19 of 19, `defence` 11 of 11.
 - After pulling this, Godot must import `icons.png` again (the editor does it on opening the project).
+
+## Fifteen more leveling uniques (24 Nov 2026)
+
+His words: “Give me 15 more leveling uniques”. Made as the twenty are: each its level's own, nothing of its base (a weapon, its
+base's damage alone), every number rolled about a fifth either way, anyone's unless a hero's weapon, dropping on any floor of its
+level or past it. Stats alone, no rule of its own. Eleven on the way (levels 2 to 20), four endgame (22 to 28, each with a
+price). `src/game/uniques.ts` LEVEL2_DEFS; pictures `src/art/items_unique.ts` LEVEL2_PAINTERS.
+
+BUILT AND CHECKED; OFF UNTIL HIS YES: `godot/scripts/loot.gd LEVEL2_UNIQUES` (`--level2=1` to run with them dropping). Names and
+numbers are proposals. `fifteen_more_leveling_cards.png`, `fifteen_more_leveling_pictures.png`, `fifteen_more_leveling_bag.png`.
+
+Checked: `--only=defuniques` 30 of 30 (lines 28 to 30 are theirs); `uniques` 11 of 11, `defence` 11 of 11; tsc clean;
+tests/items_unique, uniques, uniques_level pass. Tables made again (`npx tsx tools/godot_loot.ts`: 118 uniques); Godot must
+import `icons.png` again.

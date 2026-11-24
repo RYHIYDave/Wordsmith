@@ -2074,6 +2074,159 @@ export const DEFENCE_ART_IDS: readonly string[] = Object.keys(DEFENCE_PAINTERS);
 /** The fifteen's pictures' switch: off, each shows its base's orange look. ON at his yes, 23 Nov 2026, shown their sheet: “Yes, turn them on”. */
 export const DEFENCE_ART = { on: true };
 
+// ---------------------------------------------------------------------------------------------
+// FIFTEEN MORE LEVELING UNIQUES (game/uniques.ts LEVEL2_DEFS; his words, 24 Nov 2026: “Give me 15 more leveling uniques”; and of
+// pictures, 23 Nov: “Uniques always have unique sprite art”). Each as the twenty are: its base's own picture, in its own colours,
+// with the one thing that says what it is. The pieces themselves wait on his yes (loot.gd LEVEL2_UNIQUES).
+
+/** THE PAPER CHARM (level 2, an amulet: nothing but barrier). A loop of string, and on it a square of folded paper with a ward inked on it. */
+function papercharm(): Part[] {
+  const parts = hung('string', [16, 12.4], false);
+  parts.push({ s: poly([16, 14.0], [23.6, 21.4], [16, 28.8], [8.4, 21.4]), m: 'linen', sh: { k: 'flat', bev: 0.9 }, bias: 0.15, marks: [{ a: [16, 14.8], b: [16, 28.0], t: 3 }, { a: [9.2, 21.4], b: [22.8, 21.4], t: 3 }] });
+  parts.push({ s: ell([16, 21.4], 2.6), cut: [ell([16, 21.4], 1.5)], m: 'teal', sh: { k: 'flat' }, flush: true });
+  return parts;
+}
+
+/** THE TIN POT (level 3, a helm: armour and life). A cook's tin pot worn upside down, its handle still on. */
+function tinpot(): Part[] {
+  const parts: Part[] = [];
+  parts.push({ s: path([[24.6, 12.6], [29.0, 12.0], [30.4, 14.4]], [1.1, 1.1, 0.9]), m: 'dleather', sh: { k: 'soft', r: 1 } });
+  parts.push({ s: poly([7.4, 8.6], [9.0, 6.4], [23.0, 6.4], [24.6, 8.6], [25.2, 24.6], [6.8, 24.6]), m: LV.tin, sh: { k: 'cyl', a: [7.0, 15.0], b: [25.0, 15.0], w: 9.2 }, shine: true, marks: [{ a: [10.4, 9.0], b: [10.0, 22.6], t: 4 }, { a: [20.6, 13.4], t: 1 }, { a: [14.0, 18.6], t: 1 }] });
+  parts.push({ s: poly([5.6, 24.0], [26.4, 24.0], [27.0, 27.2], [5.0, 27.2]), m: LV.tin, sh: { k: 'flat', bev: 1.0 }, shine: true, bias: 0.1 });
+  parts.push({ s: ell([16, 6.2], 2.0, 1.4), m: 'brass', sh: { k: 'dome', c: [16, 6.0], r: 2.0, ry: 1.4 }, shine: true });
+  return parts;
+}
+
+/** CUTPURSE'S GLOVES (level 4, gloves: dodge and gold find). A thief's dark glove, the finger ends cut off, and a coin just lifted in its palm. */
+function cutpursegloves(): Part[] {
+  const parts = hand({ cuff: 'dleather', palm: 'dleather', finger: R.skin, back: 'dleather' });
+  for (const [a, b] of FINGERS) parts.push({ s: cap(a, lerp(a, b, 0.5), 1.75), m: 'dleather', sh: { k: 'cyl', a, b, w: 1.75 }, bias: 0.06, flush: true });
+  parts.push({ s: path([THUMB[0], THUMB[1]], [2.1, 1.8]), m: 'dleather', sh: { k: 'cyl', a: THUMB[0], b: THUMB[1], w: 1.9 }, bias: 0.06 });
+  parts.push({ s: ell([16.4, 16.4], 3.0), m: 'gold', sh: { k: 'dome', c: [15.8, 15.8], r: 3.0 }, shine: true, marks: [{ a: [16.4, 15.0], b: [16.4, 17.8], t: 1 }] });
+  return parts;
+}
+
+/** THE BARN DOOR (level 5, a greatsword, the Warrior's: a far wider swing, slower). A plank off a barn door on a grip: rough wood, two iron straps, a knot in it. */
+function barndoor(): Part[] {
+  const parts = dye(PAINTERS.greatsword(0), { steel: 'wood', dsteel: 'wood' });
+  const G: V = [11.4, 20.6], T: V = [29.4, 2.6];
+  const u = unit(sub(T, G));
+  const len0 = len(sub(T, G));
+  parts.push({ s: poly(at(G, u, 2.0, -3.6), at(G, u, len0 - 1.0, -3.6), at(G, u, len0 - 1.0, 3.6), at(G, u, 2.0, 3.6)), m: 'wood', sh: { k: 'flat', bev: 0.8 }, bias: 0.05, marks: [{ a: at(G, u, 3.0, -1.2), b: at(G, u, len0 - 2.0, -1.2), t: 1 }, { a: at(G, u, 3.0, 1.4), b: at(G, u, len0 - 2.0, 1.4), t: 1 }, { a: at(G, u, len0 * 0.55, 0.2), t: 0 }] });
+  for (const d of [len0 * 0.3, len0 * 0.78]) parts.push({ s: poly(at(G, u, d - 1.0, -3.9), at(G, u, d + 1.0, -3.9), at(G, u, d + 1.0, 3.9), at(G, u, d - 1.0, 3.9)), m: 'dsteel', sh: { k: 'flat', bev: 0.5 }, shine: true, marks: [{ a: at(G, u, d, -2.4), t: 4 }, { a: at(G, u, d, 2.4), t: 4 }] });
+  return parts;
+}
+
+/** THE WISHBONE (level 6, a ring: critical chance and magic find). A plain brass ring, and for its head a wishbone, not yet pulled. */
+function wishbone(): Part[] {
+  const parts = band('brass');
+  parts.push({ s: path([[10.4, 13.6], [12.6, 8.6], [16, 4.6]], [0.9, 1.0, 1.2]), m: 'ivory', sh: { k: 'soft', r: 0.9 }, shine: true });
+  parts.push({ s: path([[21.6, 13.6], [19.4, 8.6], [16, 4.6]], [0.9, 1.0, 1.2]), m: 'ivory', sh: { k: 'soft', r: 0.9 }, shine: true });
+  parts.push({ s: cap([16, 4.8], [16, 1.8], 1.3), m: 'ivory', sh: { k: 'cyl', a: [16, 4.8], b: [16, 1.8], w: 1.3 }, shine: true });
+  return parts;
+}
+
+/** THE STARCHED ROBE (level 9, a robe: barrier and cooldown recovery). A novice's robe, white and stiff with starch, a blue cord at its waist. */
+function starchedrobe(): Part[] {
+  const parts = dye(PAINTERS.robe(0), { vcloth: 'linen', string: 'blue' });
+  parts.push({ s: poly([11.6, 4.4], [16, 8.6], [20.4, 4.4], [21.6, 5.8], [16, 11.0], [10.4, 5.8]), m: 'feather', sh: { k: 'flat', bev: 0.7 }, bias: 0.2 });
+  return parts;
+}
+
+/** LEADFOOT (level 9, greaves: armour and life, slower). A grey lead boot, thick-soled, a block of lead for its toe. */
+function leadfoot(): Part[] {
+  const parts = tallBoot({ hide: R.stone, cuff: 'dsteel', sole: 'dsteel' });
+  parts.push({ s: poly([2.6, 22.4], [11.6, 20.6], [12.6, 27.8], [2.6, 27.8]), m: R.stone, sh: { k: 'flat', bev: 1.2 }, shine: true, bias: 0.12, marks: [{ a: [4.6, 24.6], t: 1 }, { a: [9.4, 23.8], t: 1 }] });
+  parts.push({ s: poly([2.4, 27.6], [27.2, 27.6], [27.2, 31.2], [2.4, 31.2]), m: 'dsteel', sh: { k: 'flat', bev: 0.8 }, shine: true });
+  return parts;
+}
+
+/** THE KNUCKLEBONE (level 12, an amulet: physical damage and a chance to stun). A leather cord, and on it one great knucklebone. */
+function knucklebone(): Part[] {
+  const parts = hung('dleather', [16, 12.6], false);
+  parts.push({ s: cap([11.4, 21.6], [20.6, 21.6], 2.6), m: 'ivory', sh: { k: 'cyl', a: [11.4, 21.6], b: [20.6, 21.6], w: 2.6 }, shine: true });
+  for (const [x, y] of [[9.4, 18.8], [9.4, 24.4], [22.6, 18.8], [22.6, 24.4]] as [number, number][]) parts.push({ s: ell([x, y], 2.9, 2.7), m: 'ivory', sh: { k: 'dome', c: [x - 0.4, y - 0.4], r: 2.9 }, shine: true });
+  parts.push({ s: cap([16, 14.2], [16, 19.4], 0.6), m: 'dleather', sh: { k: 'flat' } });
+  return parts;
+}
+
+/** THE WINDSOCK (level 15, a sash: barrier and faster feet). A sash of red and white rings, its long tail blowing out to the side. */
+function windsock(): Part[] {
+  const stripes: Mark[] = [];
+  for (let x = 5.0; x < 28; x += 4.4) { const y = 15.6 + Math.sqrt(Math.max(0, 1 - ((x - 16) / 13.8) ** 2)) * 7.2; stripes.push({ a: [x, y - 2.0], b: [x, y + 0.6], t: '#f8f0e2' }, { a: [x + 1, y - 2.0], b: [x + 1, y + 0.6], t: '#f8f0e2' }); }
+  const parts = loop('red', stripes);
+  const tail: V[] = [[17.0, 23.4], [21.6, 25.0], [26.4, 24.0], [30.4, 26.4]];
+  parts.push({ s: path(tail, [2.3, 2.0, 1.6, 0.8]), m: 'red', sh: { k: 'soft', r: 1.2 }, bias: 0.1, marks: [{ a: [19.6, 22.6], b: [19.2, 26.2], t: '#f8f0e2' }, { a: [20.6, 22.8], b: [20.2, 26.4], t: '#f8f0e2' }, { a: [24.6, 22.8], b: [24.4, 25.8], t: '#f8f0e2' }, { a: [25.6, 22.6], b: [25.4, 25.6], t: '#f8f0e2' }] });
+  return parts;
+}
+
+/** SMOKED GLASS (level 19, a hood: dodge and critical chance). A soot-black hood, and in its dark two round lenses of smoked glass. */
+function smokedglass(): Part[] {
+  const parts = dye(PAINTERS.hood(0), { green: R.char, leather: 'dsteel' });
+  for (const x of [12.2, 18.6]) {
+    parts.push({ s: ell([x, 15.4], 2.9), m: 'brass', sh: { k: 'flat', bev: 0.6 }, shine: true });
+    parts.push({ s: ell([x, 15.4], 2.0), m: R.wax, sh: { k: 'dome', c: [x - 0.5, 14.9], r: 2.0 }, shine: true, flush: true });
+  }
+  parts.push({ s: cap([14.6, 15.2], [16.2, 15.2], 0.5), m: 'brass', sh: { k: 'flat' }, shine: true, flush: true });
+  return parts;
+}
+
+/** THE THICK SKULL (level 20, a helm: much armour, less Intelligence). A giant's skull for a helmet: bone, its sockets dark, a crack that did not go through. */
+function thickskull(): Part[] {
+  const parts: Part[] = [];
+  parts.push({ s: poly([6.6, 14.0], [8.4, 7.4], [12.6, 3.6], [17.4, 2.8], [22.2, 4.4], [25.4, 8.6], [26.6, 15.0], [25.6, 21.0], [22.6, 23.4], [22.0, 28.0], [10.6, 28.0], [10.0, 23.4], [7.2, 20.6]), m: 'ivory', sh: { k: 'soft', r: 4.2 }, shine: true, marks: [{ a: [12.4, 5.0], b: [10.2, 11.0], t: 4 }] });
+  for (const x of [12.0, 20.4]) parts.push({ s: ell([x, 15.6], 3.0, 3.4), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  parts.push({ s: poly([16.2, 18.6], [17.6, 22.0], [14.8, 22.0]), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  for (const x of [12.6, 15.0, 17.4, 19.8]) parts.push({ s: cap([x, 24.4], [x, 27.6], 0.35), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  parts.push({ s: path([[18.6, 3.2], [20.0, 6.4], [18.8, 8.4], [20.6, 10.6]], [0.4, 0.4, 0.4, 0.4]), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  return parts;
+}
+
+/** THE GLASS JAW (level 22, an amulet: much more damage, less life). A silver chain, and for its charm a jaw of clear glass, teeth and all. */
+function glassjaw(): Part[] {
+  const parts = hung('steel', [16, 12.4]);
+  const jaw: V[] = [[7.6, 16.4], [8.0, 22.6], [11.4, 27.4], [16, 28.8], [20.6, 27.4], [24.0, 22.6], [24.4, 16.4]];
+  parts.push({ s: path(jaw, jaw.map(() => 2.3)), m: R.glass, sh: { k: 'soft', r: 1.6 }, shine: true });
+  for (const x of [11.4, 13.7, 16.0, 18.3, 20.6]) parts.push({ s: poly([x - 1.0, 23.6], [x + 1.0, 23.6], [x + 0.7, 20.8], [x - 0.7, 20.8]), m: 'feather', sh: { k: 'flat' }, bias: 0.3 });
+  parts.push({ s: path([[9.4, 19.6], [11.0, 21.4]], [0.35, 0.35]), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  return parts;
+}
+
+/** HOUSE OF CARDS (level 24, a robe: a great barrier, much less life). A robe pieced of playing cards: white, red pips and black. */
+function houseofcards(): Part[] {
+  const parts = dye(PAINTERS.robe(0), { vcloth: 'ivory', string: 'red' });
+  const pip = (x: number, y: number, m: Part['m']): void => { parts.push({ s: poly([x, y - 2.5], [x + 2.1, y], [x, y + 2.5], [x - 2.1, y]), m, sh: { k: 'flat' }, flush: true, bias: m === 'black' ? -0.5 : 0.2 }); };
+  pip(11.6, 11.0, 'red'); pip(20.4, 11.0, 'black'); pip(10.4, 23.6, 'black'); pip(21.6, 23.6, 'red'); pip(5.8, 16.4, 'black'); pip(26.2, 16.4, 'red');
+  for (const x of [13.4, 18.6]) parts.push({ s: cap([x, 19.0], [x + (x < 16 ? -0.8 : 0.8), 29.0], 0.3), m: 'shadow', sh: { k: 'flat' }, flush: true, bias: 0.3 });
+  return parts;
+}
+
+/** THE GREASED COAT (level 26, a jerkin: a great dodge, every resistance less). A black coat slick with grease, shining, a drip at its hem. */
+function greasedcoat(): Part[] {
+  const parts: Part[] = dye(PAINTERS.armor(0), { steel: R.wax, dsteel: R.wax, leather: 'brass' }).map((q) => ({ ...q, shine: true }));
+  for (const [x0, y0, x1, y1] of [[10.4, 8.4, 9.4, 15.0], [14.4, 7.6, 13.8, 12.0], [21.6, 9.0, 22.4, 16.4], [11.6, 23.4, 11.0, 27.6]] as [number, number, number, number][]) parts.push({ s: cap([x0, y0], [x1, y1], 0.55), m: R.glass, sh: { k: 'flat' }, flush: true, bias: -0.1 });
+  parts.push({ s: ell([19.6, 30.2], 1.0, 1.4), m: R.wax, sh: { k: 'dome', c: [19.4, 29.8], r: 1.0, ry: 1.4 }, shine: true });
+  return parts;
+}
+
+/** THE JACK OF ALL (level 28, a ring: Strength, Dexterity and Intelligence, less damage). A gold ring set with three stones abreast: red, green, blue. */
+function jackofall(): Part[] {
+  const parts = band('gold');
+  parts.push({ s: poly([7.6, 7.0], [24.4, 7.0], [23.0, 13.8], [9.0, 13.8]), m: 'gold', sh: { k: 'flat', bev: 0.9 }, shine: true });
+  parts.push(gem([10.8, 9.6], 2.4, 'ruby'));
+  parts.push({ s: ell([16, 9.2], 2.6), m: 'green', sh: { k: 'dome', c: [16, 9.2], r: 2.6 }, shine: true });
+  parts.push(gem([21.2, 9.6], 2.4, 'sapphire'));
+  return parts;
+}
+
+/** The fifteen more's pictures, by their ids in game/uniques.ts LEVEL2_DEFS. */
+const LEVEL2_PAINTERS: Record<string, () => Part[]> = {
+  papercharm, tinpot, cutpursegloves, barndoor, wishbone, starchedrobe, leadfoot, knucklebone, windsock, smokedglass, thickskull,
+  glassjaw, houseofcards, greasedcoat, jackofall,
+};
+/** The ids of the fifteen more leveling uniques' pictures. */
+export const LEVEL2_ART_IDS: readonly string[] = Object.keys(LEVEL2_PAINTERS);
+
 /** Set 1's pictures, by their ids in game/uniques.ts SET1_DEFS: kept apart from the 62's (UNIQUE_ART_IDS), as Set 1 is behind its own switch. */
 const SET1_PAINTERS: Record<string, () => Part[]> = { gyre, redtithe, widowfall, deathknell, deadweight, starbreaker };
 /** The ids of Set 1's pictures. */
@@ -2100,7 +2253,7 @@ export const UNIQUE_ART_IDS: readonly string[] = Object.keys(UNIQUE_PAINTERS);
 /** One unique's own picture: 32 by 32 picture pixels, as art/items_a.ts paintItemA's, with the orange rim. Null for one not drawn. */
 export function paintUnique(id: string): Px | null {
   const own = (m: Record<string, () => Part[]>): (() => Part[]) | undefined => (Object.prototype.hasOwnProperty.call(m, id) ? m[id] : undefined);
-  const f = own(UNIQUE_PAINTERS) ?? own(SET1_PAINTERS) ?? (LEVEL_ART.on ? own(LEVEL_PAINTERS) : undefined) ?? (DEFENCE_ART.on ? own(DEFENCE_PAINTERS) : undefined);
+  const f = own(UNIQUE_PAINTERS) ?? own(SET1_PAINTERS) ?? (LEVEL_ART.on ? own(LEVEL_PAINTERS) : undefined) ?? (DEFENCE_ART.on ? own(DEFENCE_PAINTERS) : undefined) ?? own(LEVEL2_PAINTERS);
   return f ? paint(f(), 3) : null;
 }
 

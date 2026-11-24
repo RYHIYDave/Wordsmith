@@ -378,7 +378,7 @@ func run(main, hero, d: String) -> void:
 		var it = L.unique_piece(id)
 		if it != null and str(it["icon"]) == "u:" + str(id) and L.pics.has(str(it["icon"])):
 			own15 += 1
-	_line(missing.is_empty() and own == (88 if not art_was else 103) and own15 == 15, "their pictures: %d uniques each with a picture of its own in the sheet (none missing: %s); the fifteen with their switch on, %d of 15 their own" % [own, str(missing), own15])
+	_line(missing.is_empty() and own == (103 if not art_was else 118) and own15 == 15, "their pictures: %d uniques each with a picture of its own in the sheet (none missing: %s); the fifteen with their switch on, %d of 15 their own" % [own, str(missing), own15])
 	# (a bag of them, pictured: the fifteen in their own pictures, then nine of the ones we had)
 	_hero("warrior")
 	L.bag.clear()
@@ -392,6 +392,72 @@ func run(main, hero, d: String) -> void:
 		M._inv.toggle()
 		await M._wait(0.2)
 	L.bag.clear()
+
+	# ================= FIFTEEN MORE LEVELING UNIQUES (loot.gd LEVEL2_UNIQUES; uniques.ts LEVEL2_DEFS) =================
+	var more: Array = defs.keys().filter(func(id): return defs[id].get("set") == "level2")
+	var bare_ok := true
+	var rows := []
+	for id in more:
+		var it: Dictionary = L.unique_piece(id)
+		bare_ok = bare_ok and defs[id]["from"] == "level" and it.get("bare", false) == true and (L.lines_of(it, "implicit").is_empty() or it["weapon"] == true) and int(it["req"]) == int(defs[id]["level"]) \
+			and not L.lines_of(it, "lines").is_empty() and (defs[id].get("udef") == null or not ", ".join(L.lines_of(it, "lines")).contains("Armour"))
+		rows.append("%s (level %d): %s" % [it["name"], int(defs[id]["level"]), ", ".join(L.lines_of(it, "lines"))])
+	_line(more.size() == 15 and bare_ok, "fifteen more leveling uniques, each its level's own, nothing of its base (a weapon, its base's damage alone): %s" % "; ".join(rows))
+	# (the switch: none drops with it off; on, on a floor of level 30, all of them a hero may find come)
+	_hero("warrior")
+	var l2_was: bool = L.LEVEL2_UNIQUES
+	var drops: Dictionary = L._uniques["drops"]
+	var pool_was = drops["pool"].duplicate(true)
+	var level_was = drops["level"].duplicate(true)
+	for kk in ["plain", "elite", "hoard"]:
+		drops["pool"][kk] = 0.0
+		drops["level"][kk] = 1.0
+	var lvl_was: int = L.level
+	var seen_off := 0
+	var seen_on := {}
+	for on in [false, true]:
+		L.LEVEL2_UNIQUES = on
+		for i in 4000:
+			var it = L._pool_unique(0, 0.0)
+			if it != null and more.has(it["unique"]):
+				if on:
+					seen_on[it["unique"]] = true
+				else:
+					seen_off += 1
+	L.LEVEL2_UNIQUES = l2_was
+	drops["pool"] = pool_was
+	drops["level"] = level_was
+	var here: int = L.power()
+	var due: Array = more.filter(func(id): return int(defs[id]["level"]) <= here and (defs[id]["cls"] == null or defs[id]["cls"] == "warrior"))
+	_line(seen_off == 0 and seen_on.size() == due.size() and due.size() >= 1, "their switch off, 4,000 leveling drops here (level %d): %d of them; on: %d of the %d of this level or below" % [here, seen_off, seen_on.size(), due.size()])
+	# (three of them worn: barrier on an amulet; dodge and every resistance less; armour and less Intelligence)
+	_hero("mage")
+	var pch: Dictionary = _wear("papercharm")
+	var b_p: float = h.max_barrier
+	_hero("ranger")
+	var gco: Dictionary = _wear("greasedcoat")
+	var d_g: float = h.stats["dodge"]
+	var r_g: float = h.stats["res_fire"]
+	_hero("warrior")
+	var int0: float = h.stats["int"]
+	var tsk: Dictionary = _wear("thickskull")
+	_line(b_p >= 20.0 and d_g >= 300.0 and r_g <= -20.0 and h.stats["armor"] >= 120.0 and h.stats["int"] <= int0 - 14.0,
+		"worn: the Paper Charm, barrier %d; the Greased Coat, dodge %d, fire resistance %d%%; the Thick Skull, armour %d, Intelligence %d (from %d)" % [b_p, d_g, r_g, h.stats["armor"], h.stats["int"], int0])
+	# (their cards, and a bag of them)
+	if dir != "":
+		var k := 0
+		for id in more:
+			k += 1
+			await _card(L.unique_piece(id), "lv%02d_%s" % [k, id])
+		L.bag.clear()
+		for id in more:
+			L.bag.append(L.unique_piece(id))
+		M._inv.toggle()
+		await M._wait(0.4)
+		await M._snap(dir + "/lv16_bag.png")
+		M._inv.toggle()
+		await M._wait(0.2)
+		L.bag.clear()
 
 	# ================= THE CHANGED ONES' CARDS =================
 	await _card(sc, "du16_shortcut")

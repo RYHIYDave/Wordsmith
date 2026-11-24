@@ -575,7 +575,37 @@ export const DEFENCE_DEFS: readonly UniqueDef[] = [
   { id: 'tailwind', name: 'Tailwind', stem: 'dexamulet', from: 'pool', bends: 'hero', defence: 'dodge', stats: ['moveSpeed'], rolled: ['tail.per'], does: (it) => [`Your movement speed is dodge too: ${tuned(it, 'tail.per').toFixed(1)} for each 1%.`] },
 ];
 
-const BY_ID = new Map<string, UniqueDef>([...ALL_DEFS, ...LEVEL_DEFS, ...DEFENCE_DEFS].map((d) => [d.id, d]));
+// =============================================================================================
+// FIFTEEN MORE LEVELING UNIQUES (the Godot game's)
+//
+// HIS WORDS, 24 Nov 2026: “Give me 15 more leveling uniques”. Made as the twenty are (above): each its level's own, asking for
+// it, carrying nothing of its base, every number rolled from about a fifth under to a fifth over; anyone's unless a hero's
+// weapon; dropping on any floor of its level or past it. Eleven on the way (levels 2 to 20), four endgame (22 to 28), and those
+// four past a rare's best only with a price (his rule of the twenty). Dodge and barrier among them, as the three defences now
+// are (`defence`: what its `armor` is). None has a rule of its own: stats alone, things to twink out a character. THE GODOT
+// GAME'S ALONE (the TypeScript game never makes them: they are not in LEVEL_DEFS). OFF until his yes (loot.gd LEVEL2_UNIQUES):
+// every name and number a proposal, his to change.
+export const LEVEL2_DEFS: readonly UniqueDef[] = [
+  // ---- ON THE WAY: LEVELS 2 TO 20 ----
+  { id: 'papercharm', name: 'The Paper Charm', stem: 'intamulet', from: 'level', level: 2, bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor'], rolls: [R('armor', 20, 30)], does: () => [] },
+  { id: 'tinpot', name: 'The Tin Pot', stem: 'helm', from: 'level', level: 3, bends: 'hero', powers: 0, stats: ['armor', 'maxLife'], rolls: [R('armor', 20, 30), R('maxLife', 16, 24)], does: () => [] },
+  { id: 'cutpursegloves', name: "Cutpurse's Gloves", stem: 'leathergloves', from: 'level', level: 4, bends: 'hero', defence: 'dodge', powers: 0, stats: ['armor', 'goldFind'], rolls: [R('armor', 10, 15), R('goldFind', 24, 36)], does: () => [] },
+  { id: 'barndoor', name: 'The Barn Door', stem: 'greatsword', from: 'level', level: 5, cls: 'warrior', bends: 'hero', powers: 0, stats: ['areaPct', 'atkSpeed'], rolls: [R('areaPct', 30, 45), R('atkSpeed', -12, -8)], does: () => [] },
+  { id: 'wishbone', name: 'The Wishbone', stem: 'lifering', from: 'level', level: 6, bends: 'hero', powers: 0, stats: ['critChance', 'magicFind'], rolls: [R('critChance', 6, 10), R('magicFind', 16, 24)], does: () => [] },
+  { id: 'starchedrobe', name: 'The Starched Robe', stem: 'robe', from: 'level', level: 9, bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor', 'cdr'], rolls: [R('armor', 60, 90), R('cdr', 8, 12)], does: () => [] },
+  { id: 'leadfoot', name: 'Leadfoot', stem: 'greaves', from: 'level', level: 9, bends: 'hero', powers: 0, stats: ['armor', 'maxLife', 'moveSpeed'], rolls: [R('armor', 40, 60), R('maxLife', 48, 72), R('moveSpeed', -12, -8)], does: () => [] },
+  { id: 'knucklebone', name: 'The Knucklebone', stem: 'stramulet', from: 'level', level: 12, bends: 'hero', powers: 0, stats: ['physPct', 'stunChance'], rolls: [R('physPct', 24, 36), R('stunChance', 6, 9)], does: () => [] },
+  { id: 'windsock', name: 'The Windsock', stem: 'sash', from: 'level', level: 15, bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor', 'moveSpeed'], rolls: [R('armor', 50, 75), R('moveSpeed', 8, 12)], does: () => [] },
+  { id: 'smokedglass', name: 'Smoked Glass', stem: 'hood', from: 'level', level: 19, bends: 'hero', defence: 'dodge', powers: 0, stats: ['armor', 'critChance'], rolls: [R('armor', 90, 135), R('critChance', 4, 6)], does: () => [] },
+  { id: 'thickskull', name: 'The Thick Skull', stem: 'helm', from: 'level', level: 20, bends: 'hero', powers: 0, stats: ['armor', 'int'], rolls: [R('armor', 120, 180), R('int', -20, -14)], does: () => [] },
+  // ---- ENDGAME: LEVELS 22 TO 28, each past a rare's best with its price ----
+  { id: 'glassjaw', name: 'The Glass Jaw', stem: 'intamulet', from: 'level', level: 22, bends: 'hero', powers: 0, stats: ['dmgPct', 'maxLifePct'], rolls: [R('dmgPct', 40, 60), R('maxLifePct', -24, -16)], does: () => [] },
+  { id: 'houseofcards', name: 'House of Cards', stem: 'robe', from: 'level', level: 24, bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor', 'maxLifePct'], rolls: [R('armor', 400, 600), R('maxLifePct', -30, -20)], does: () => [] },
+  { id: 'greasedcoat', name: 'The Greased Coat', stem: 'jerkin', from: 'level', level: 26, bends: 'hero', defence: 'dodge', powers: 0, stats: ['armor', 'fireRes'], rolls: [R('armor', 300, 450), R(ALL_RES, -30, -20)], does: () => [] },
+  { id: 'jackofall', name: 'The Jack of All', stem: 'manaring', from: 'level', level: 28, bends: 'hero', powers: 0, stats: ['str', 'dmgPct'], rolls: [R(['str', 'dex', 'int'], 24, 36), R('dmgPct', -16, -10)], does: () => [] },
+];
+
+const BY_ID = new Map<string, UniqueDef>([...ALL_DEFS, ...LEVEL_DEFS, ...DEFENCE_DEFS, ...LEVEL2_DEFS].map((d) => [d.id, d]));
 
 /** The unique of that id, if there is one. */
 export function uniqueDef(id: string | undefined): UniqueDef | undefined {
