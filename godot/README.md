@@ -1480,6 +1480,15 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   errors) and put on one page for his yes: City Meld Films, https://claude.ai/artifact/C6a3KHBrT98YMvi4YpKAD9
   (`python3 docs/mockups/meld_films/page.py <films> <out> city`; the films are not kept in the repository, 40 MB). ON at his
   “Yes” to “Want me to switch them on?” (24 Nov 2026): `Melds52.CITY_ON` true.
+- THE CITY'S RUNES WITH THE FLOOR 6–10 RUNES (his “Then finish the melds”, 24 Nov 2026, the next group his Floor 11–15 doc
+  named): 44 melds (Implode, Pulling and Volatile, the game had already), designed (tools/meldscity/docs_city2.txt), their stones
+  (docs/mockups/meld_runes4), in the same table (melds52.json `city2`, tools/melds52/make.py), behind `Melds52.CITY2_ON` (off). Their
+  twists meldscity2_rules.gd (the 52's `m52.y2`, and handed on to from each moment of the city's words through meldscity_rules.gd
+  `z2`: the drag, the copies and their speed and targets, the shards, the hold, the snare, the grounds; Twin's second strike through
+  melds52_rules.gd blow); on monsters foe_meldscity2.gd (from foe_melds52.gd: after a blow, its turn, its pace, its shield, its death,
+  its blast; and monster.gd's split, Starburst's in three); their looks fx_m52p_city2.gd (the city's shapes, and a shield's face, a
+  stagger's stars, drops of blood). `--only=words --cases=m52:<ids>`: the bench (off none, on all 187 and 16), stones, gear, and
+  each of the 44 in front and behind, 88 of 88; `--cases=m52film:city2` (with `--fixed-fps 30`) films them.
 - TWO KINDS IN ONE HIT (his find, 24 Nov 2026): built here, then taken out at his word, “It's already fixed, or another chat
   pushed the fix”: the fix is the other chat's, on its branch claude/adoring-davinci-q6wn9n (9ed64ffb: Scald, Wildfire, Hailstorm,
   Eruption, Avalanche and Thunder deal both kinds, half of each; 7db84722: flat damage of an element adds to every hit). That

@@ -3,12 +3,16 @@
 #   python3 page.py <films dir> <out dir>        the first 52 (../meld_runes)
 #   python3 page.py <films dir> <out dir> 46     the last 46 of floors 1-10 (../meld_runes2)
 #   python3 page.py <films dir> <out dir> city   the city's 45 (../meld_runes3)
+#   python3 page.py <films dir> <out dir> city2  the city's runes with the floor 6-10 runes, 44 (../meld_runes4), each with what it does
 import json, sys, os, shutil, html
 HERE = os.path.dirname(os.path.abspath(__file__))
 films, out = sys.argv[1], sys.argv[2]
 LAST = len(sys.argv) > 3 and sys.argv[3] == '46'
 CITY = len(sys.argv) > 3 and sys.argv[3] == 'city'
-RUNES = HERE + ('/../meld_runes3' if CITY else '/../meld_runes2' if LAST else '/../meld_runes')
+CITY2 = len(sys.argv) > 3 and sys.argv[3] == 'city2'
+RUNES = HERE + ('/../meld_runes4' if CITY2 else '/../meld_runes3' if CITY else '/../meld_runes2' if LAST else '/../meld_runes')
+# (what each does, as the game has it: melds52.json, made from their designs, tools/meldscity/docs_city2.txt)
+WORDS = json.load(open(HERE + '/../../../godot/assets/words/melds52.json'))['words'] if CITY2 else {}
 R = json.load(open(RUNES + '/runes.json'))
 os.makedirs(out + '/film', exist_ok=True)
 os.makedirs(out + '/stones', exist_ok=True)
@@ -32,8 +36,14 @@ for a, ks in groups.items():
             vid = '<video src="film/%s.mp4" poster="film/%s.jpg" controls muted playsinline loop preload="none"></video>' % (k, k)
         else:
             vid = '<div class="none">No film</div>'
-        cards.append('<article class="card"><header><img src="stones/%s.png" width="48" height="48" alt=""><div><b>%s</b><span>%s + %s</span></div></header>%s</article>'
-                     % (k, html.escape(R[k]['name']), nm(a0), nm(R[k]['of'][1]), vid))
+        does = ''
+        if CITY2:
+            w = WORDS[k]
+            idea = w['about'].split('melded. ', 1)[-1]
+            does = ('<p class="idea">%s</p><dl class="does"><dt>In front</dt><dd>%s</dd><dt>Behind</dt><dd>%s</dd><dt>On enemies</dt><dd>%s</dd></dl>'
+                    % (html.escape(idea), html.escape(w['frontText']), html.escape(w['behindText']), html.escape(w['monsterText'])))
+        cards.append('<article class="card"><header><img src="stones/%s.png" width="48" height="48" alt=""><div><b>%s</b><span>%s + %s</span></div></header>%s%s</article>'
+                     % (k, html.escape(R[k]['name']), nm(a0), nm(R[k]['of'][1]), vid, does))
     secs.append('<section><h2>%s</h2><div class="cards">%s</div></section>' % ("The city's runes with each other" if a == 'each' else nm(a) + ' melds', ''.join(cards)))
 page = '''<title>@@TITLE@@</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -69,6 +79,10 @@ img { image-rendering: pixelated; display: block; max-width: 100%; height: auto;
 .card span { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #7af8f0; }
 video { width: 100%; height: auto; aspect-ratio: 10 / 7; border-radius: 4px; background: #05040f; display: block; }
 .none { color: #a3abd8; font-size: 13px; padding: 20px 0; text-align: center; }
+.idea { color: #c9cdf2; font-style: italic; font-size: 14px; }
+.does { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 13.5px; line-height: 1.45; }
+.does dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #7af8f0; padding-top: 2px; }
+.does dd { margin: 0; color: #e4e7ff; }
 .how + .lead { margin-top: 12px; }
 .ask { background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 16px; }
 .ask b { font-family: var(--display); font-size: 17px; }
@@ -93,7 +107,16 @@ a { color: var(--accent); }
 </div>
 '''.replace('@@SECS@@', ''.join(secs))
 RULES_98 = '<p class="lead">Checked against your Art Rulebook and fixed (shapes, size, the hero kept clear, the freeze on big blows, the colours you said yes to, and every film now shows the meld on a monster): <a href="https://claude.ai/artifact/QNsqwTYmHsxKbx4E9GHBzY">the rules check</a>.</p>'
-if CITY:
+if CITY2:
+    page = page.replace('@@TITLE@@', 'City and Wilds Melds').replace('@@H1@@', "The city's runes with the floor 6–10 runes: 44 melds").replace('@@RULES@@',
+        '<p class="lead">Each card is the whole meld for your yes in one place: its stone, its idea, what it does in front, behind and on enemies, and its film. '
+        'Made by your Art Rulebook: big moments flash and throw their sparks wide, the blasts kick the screen and hold a tenth of a second, every shape the thing it is '
+        '(a stagger\'s stars, drops of blood running to you, a sight on the marked, the frenzy\'s flames, a shield\'s face, the curse\'s thorns, a clock\'s hand, a cuff and chain, a net), '
+        'and a curse or slow a monster lays on you in the enemy\'s pink and gold. Implode, Pulling and Volatile, is already in the game.</p>').replace('@@NOTES@@',
+        '<p class="lead">Some melds wait on something, so their films set it up: the skeletons start cursed for the Hexing melds that need it, slowed for the Stilling ones, '
+        'held for the Binding ones; his frenzy starts full for Riot, Quickening and Whirlpool; Evil Eye strikes certain criticals; Hexblast, Slow Fuse and Tripwire '
+        'strike skeletons nearly dead so they burst. Behind, the film waits for each vortex to end and walks a skeleton onto each snare. For Talisman and Respite, his shield is up as the skeleton comes.</p>')
+elif CITY:
     page = page.replace('@@TITLE@@', 'City Meld Films').replace('@@H1@@', "The city's 45 melds at work").replace('@@RULES@@',
         '<p class="lead">Made by your Art Rulebook: as big and wild as they go, the heavy ones kick the screen and hold a tenth of a second, '
         'every shape the thing it is (thorns, chains, spikes, tongues of flame, swirling arms, a lump of amber), nothing on a monster in a friend\'s cyan '
