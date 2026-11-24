@@ -633,7 +633,7 @@ func _press(action: String, arg) -> void:
 			_gate_press(action, arg)
 		"ws_tab", "ws_hollow", "ws_meld", "ws_to_meld", "ws_cell", "ws_buy", "ws_sell":
 			_ws_press(action, arg)
-		"gm_kind", "gm_throw", "st_take", "lx_tab", "lx_word", "lx_kept", "lx_take", "lx_keep":
+		"gm_kind", "gm_throw", "st_take", "lx_tab", "lx_word", "lx_kept", "lx_take", "lx_keep", "svc_swap":
 			_svc_press(action, arg)
 	_hover = {}
 
@@ -3343,7 +3343,9 @@ func _st_side(x0: float, w: float) -> void:
 	_text(Vector2(x0, 22), "STASH", 16, PICK)
 	# (THE LEXICON IN THE STASH, town.gd LEXICON_IN_STASH: its shelf of kept words a press away)
 	if preload("res://scripts/town.gd").LEXICON_IN_STASH:
-		_button(Rect2(x0 + w - 96.0, 8.0, 96.0, 22.0), "LEXICON", "svc_swap", "lexicon", PICK)
+		var lb := Rect2(x0 + w - 104.0, 6.0, 104.0, 24.0)
+		_gbutton(lb, "LEXICON", false, false, true)
+		_hits.append([lb, "svc_swap", "lexicon", null])
 	_text(Vector2(x0, 42), "KEPT FOR LATER CHARACTERS", 10, DIM)
 	var cols := maxi(1, mini(9, int(floorf((w + 2.0) / PITCH))))
 	for i in loot.stash.size():
@@ -3370,7 +3372,9 @@ func _lx_side(blink: bool, x0: float, w: float) -> void:
 	_text(Vector2(x0 + _width("LEXICON", 16) + 10, 22), "%d OF %d FOUND" % [found, int(D["allWords"])], 10, DIM)
 	# (THE LEXICON IN THE STASH: back to the stash's pieces)
 	if preload("res://scripts/town.gd").LEXICON_IN_STASH:
-		_button(Rect2(x0 + w - 80.0, 8.0, 80.0, 22.0), "STASH", "svc_swap", "stash", PICK)
+		var sb := Rect2(x0 + w - 88.0, 6.0, 88.0, 24.0)
+		_gbutton(sb, "STASH", false, false, true)
+		_hits.append([sb, "svc_swap", "stash", null])
 	# its five tabs
 	var pages: Array = D["lexPages"]
 	var tx := x0

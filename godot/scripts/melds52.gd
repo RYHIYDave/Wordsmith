@@ -107,6 +107,12 @@ static func add_to(D: Dictionary) -> void:
 			D["page"][id] = t["extraPage"][id]
 		if D.has("ids") and not (D["ids"] as Array).has(id):
 			D["ids"].append(id)
+			# (one more word to find, on the Lexicon's SPOILS page beside Plundering)
+			if D.has("allWords"):
+				D["allWords"] = int(D["allWords"]) + 1
+			for pg in D.get("lexPages", []):
+				if (pg["words"] as Array).has("plundering") and not (pg["words"] as Array).has(id):
+					pg["words"].append(id)
 	# (and Plundering's extra item, now Greed's: his yes to Greed, 24 Nov 2026)
 	if D["words"].has("plundering") and t.get("extra", {}).has("greed"):
 		D["words"]["plundering"]["frontText"] = "Kills drop more gold."

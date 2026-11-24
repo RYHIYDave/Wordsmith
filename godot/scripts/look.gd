@@ -135,9 +135,32 @@ static func has_look(where: String) -> bool:
 	return FileAccess.file_exists(DIR + where + ".json")
 
 
+## (THE LEXICON IN THE STASH) The Lexicon's pieces taken out of this place's picture: where its station stands (its layout), the
+## piece drawn there (`what` "lexicon", or the four-frame book at its place), the glow over it and its light.
+func _lexicon_out() -> void:
+	var lay = JSON.parse_string(FileAccess.get_file_as_string("res://assets/%s/layout.json" % place))
+	var at = null
+	for s in (lay.get("stations", []) if lay is Dictionary else []):
+		if str(s["kind"]) == "lexicon":
+			at = Vector2((float(s["x"]) - float(s["y"])) * 32.0, (float(s["x"]) + float(s["y"])) * 16.0) / 2.0
+	if at == null:
+		return
+	var near := func(x: float, y: float, r: float) -> bool: return absf(x - at.x) <= r and absf(y - at.y) <= r
+	data["items"] = (data["items"] as Array).filter(func(it): return not (str(it.get("what", "")) == "lexicon" or (near.call(float(it["x"]), float(it["y"]), 8.0) and (it.get("frames", it.get("f", [])) as Array).size() >= 4) or (near.call(float(it["x"]), float(it["y"]), 8.0) and it.has("add"))))
+	if data.has("lights"):
+		data["lights"] = (data["lights"] as Array).filter(func(l): return str(l.get("of", "")) != "lexicon")
+	# (its own glow, over the book: 26 across, a third bright, about 20 over where it stands)
+	if data.has("glows") and data["glows"] is Array:
+		data["glows"] = (data["glows"] as Array).filter(func(g): return not (g is Array and g.size() > 4 and absf(float(g[1]) - at.x) <= 4.0 and absf(float(g[2]) - (at.y - 20.5)) <= 4.0 and float(g[3]) <= 30.0))
+
+
 func _ready() -> void:
 	data = JSON.parse_string(FileAccess.get_file_as_string(DIR + place + ".json"))
 	_format = int(data.get("format", 1))
+	# (THE LEXICON IN THE STASH, town.gd LEXICON_IN_STASH: the town's, the camp's and the Rim's Lexicon, its book on its stand, its
+	# glow and its light, not drawn)
+	if place in ["town", "camp", "rim"] and preload("res://scripts/town.gd").LEXICON_IN_STASH:
+		_lexicon_out()
 	_add = CanvasItemMaterial.new()
 	_add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	var pics: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + place + "_pics.json"))
