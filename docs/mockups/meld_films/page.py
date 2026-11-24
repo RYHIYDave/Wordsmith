@@ -115,7 +115,7 @@ if CITY2:
         'and a curse or slow a monster lays on you in the enemy\'s pink and gold. Implode, Pulling and Volatile, is already in the game.</p>').replace('@@NOTES@@',
         '<p class="lead">Some melds wait on something, so their films set it up: the skeletons start cursed for the Hexing melds that need it, slowed for the Stilling ones, '
         'held for the Binding ones; his frenzy starts full for Riot, Quickening and Whirlpool; Evil Eye strikes certain criticals; Hexblast, Slow Fuse and Tripwire '
-        'strike skeletons nearly dead so they burst. Behind, the film waits for each vortex to end and walks a skeleton onto each snare. For Talisman and Respite, his shield is up as the skeleton comes.</p>')
+        'strike skeletons nearly dead so they burst. Behind, the film waits for each vortex to end and walks a skeleton onto each snare. For Talisman, his shield is up as the skeleton comes, so its curse on what strikes the shield shows.</p>')
 elif CITY:
     page = page.replace('@@TITLE@@', 'City Meld Films').replace('@@H1@@', "The city's 45 melds at work").replace('@@RULES@@',
         '<p class="lead">Made by your Art Rulebook: as big and wild as they go, the heavy ones kick the screen and hold a tenth of a second, '

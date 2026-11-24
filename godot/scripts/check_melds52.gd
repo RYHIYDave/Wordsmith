@@ -54,7 +54,7 @@ const HASTE := ["onrush", "hornet", "firewalk", "quicksilver", "charge", "glide"
 const LOW := ["lifeline"]
 ## (seen only on one brought low but not killed: the pack made tough and low)
 const TOUGH := ["hairtrigger"]
-const SHIELD := ["talisman", "respite", "bulwark", "hemlock", "cinderward", "static", "windward", "fortress", "redoubt", "carapace", "minefield", "riposte", "shieldwall", "sanctuary", "parry", "aegis"]
+const SHIELD := ["talisman", "bulwark", "hemlock", "cinderward", "static", "windward", "fortress", "redoubt", "carapace", "minefield", "riposte", "shieldwall", "sanctuary", "parry", "aegis"]
 const CRITS := ["needle", "brand", "seeker", "doubletap", "lancet", "detonator", "vendetta"]
 const FRENZY := ["berserk", "fever", "whiteout", "overcharge", "blur", "juggernaut", "feedingfrenzy", "mayhem", "rapier", "shieldwall", "fury", "spree", "rampage", "tempo"]
 ## (whose moment behind is a kill's: its orb, its frenzy's)

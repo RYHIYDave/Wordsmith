@@ -1488,7 +1488,10 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   melds52_rules.gd blow); on monsters foe_meldscity2.gd (from foe_melds52.gd: after a blow, its turn, its pace, its shield, its death,
   its blast; and monster.gd's split, Starburst's in three); their looks fx_m52p_city2.gd (the city's shapes, and a shield's face, a
   stagger's stars, drops of blood). `--only=words --cases=m52:<ids>`: the bench (off none, on all 187 and 16), stones, gear, and
-  each of the 44 in front and behind, 88 of 88; `--cases=m52film:city2` (with `--fixed-fps 30`) films them.
+  each of the 44 in front and behind, 88 of 88; `--cases=m52film:city2` (with `--fixed-fps 30`) films them: all 44, every one's
+  moment on a monster shown, no script errors (Respite's filmed without his shield up, so its blow on him shows). On one page for
+  his yes, each card its stone, idea, what it does and its film: City and Wilds Melds, https://claude.ai/artifact/9u1bUEVM4YdrjRZq5SHHeG
+  (`python3 docs/mockups/meld_films/page.py <films> <out> city2`; the films are not kept in the repository).
 - TWO KINDS IN ONE HIT (his find, 24 Nov 2026): built here, then taken out at his word, “It's already fixed, or another chat
   pushed the fix”: the fix is the other chat's, on its branch claude/adoring-davinci-q6wn9n (9ed64ffb: Scald, Wildfire, Hailstorm,
   Eruption, Avalanche and Thunder deal both kinds, half of each; 7db84722: flat damage of an element adds to every hit). That

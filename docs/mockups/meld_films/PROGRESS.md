@@ -56,3 +56,13 @@ collapse and walks a skeleton onto each snare; carriers of Splitting die so thei
 faint (flashes, sprays, thicker swirls, bigger thorns); Tether now links any held enemy near a marked one; Stagnation now keeps the
 poison from wearing off while the slow holds. Rules check `--cases=m52:<the 50>` 100 of 100. On one page for his yes:
 https://claude.ai/artifact/C6a3KHBrT98YMvi4YpKAD9 (`python3 page.py <films> <out> city`). Off (`Melds52.CITY_ON`) until he says yes.
+
+## The city's runes with the floor 6–10 runes, 44 (24 Nov 2026)
+
+His “Then finish the melds”, while he slept: the next group his Floor 11–15 doc named. Designed (tools/meldscity/docs_city2.txt),
+their stones (docs/mockups/meld_runes4), rules meldscity2_rules.gd, on monsters foe_meldscity2.gd, painted by fx_m52p_city2.gd.
+Checked in front and behind (`--cases=m52:<the 44>`, 88 of 88; Backwash's stagger made to land on those the first strike dragged,
+and Hydra's second strike made to split again). Filmed with `--cases=m52film:city2`: all 44, each one's moment on a monster shown.
+On one page for his yes, each card its stone, its idea, what it does and its film: https://claude.ai/artifact/9u1bUEVM4YdrjRZq5SHHeG
+(`python3 page.py <films> <out> city2`). Off (`Melds52.CITY2_ON`) until he says yes. Still to come: the High City's seven runes with
+every other rune (168 melds and their 7 level 2 runes).
