@@ -239,7 +239,15 @@ func _case(w: String, side: String) -> void:
 			await M._w_strike(h)
 			var crack := int(maxf(1.0, roundf(_hit() * float(T["scald"]["crack"]))))
 			var want := _plain(r)
-			want[0] += crack
+			# (brought up to two rules, 24 Nov 2026: a meld of two kinds of damage deals both, Scald half fire and half frost (words.gd
+			# meld_second); and BURNING'S OWN, a burning enemy takes more from a fire hit (burn_more): each it strikes is set
+			# burning as it is struck, so its fire half lands harder, and the crack, fire, on A)
+			var bm: float = M.Words.burn_more(h)
+			for k in want.size():
+				if int(want[k]) > 0:
+					var fire_half: float = clampf(roundf(float(want[k]) / 2.0), 1.0, float(want[k]) - 1.0)
+					want[k] = int(float(want[k]) - fire_half + maxf(1.0, roundf(fire_half * (1.0 + bm))))
+			want[0] += int(maxf(1.0, roundf(crack * (1.0 + bm))))
 			var lost: Array = M._w_lost()
 			said += "; A burning, chilled by it: it cracks for %d (formula %d x %.1f): they lost %s (formula %s), A not again for %.1f s" % [crack, _hit(), T["scald"]["crack"], str(lost), str(want), A.scald_cd]
 			M._w_is(wrong, lost == want and A.scald_cd > float(T["scald"]["again"]) - 0.1 and M.fx.seen.get("burst", 0) == 2, "lost %s" % str(lost))
@@ -308,7 +316,8 @@ func _case(w: String, side: String) -> void:
 			var want: Array = [0, 0, 0, 0, 0, 0]
 			for k in 6:
 				if P[k].world.distance_to(Vector2(g.get("x", 0.0), g.get("y", 0.0))) <= float(g.get("r", 0.0)) + 0.5 + P[k].r:
-					want[k] = boom
+					# (BURNING'S OWN, burn_more: its burst is fire, and A, set burning, takes more of it; brought up to it, 24 Nov 2026)
+					want[k] = int(maxf(1.0, roundf(boom * (1.0 + M.Words.burn_more(h))))) if k == 0 else boom
 			var gone: bool = _patches("venom").filter(func(z): return z.get("meld") == "fumes").is_empty()
 			said += "; Fumes' cloud (%.3f a second): A set burning, it goes up for %d (formula %.3f x %.0f): they lost %s (formula %s), the cloud gone %s" % [g.get("dmg", 0.0), boom, g.get("dmg", 0.0), T["fumes"]["blast"], str(lost), str(want), gone]
 			M._w_is(wrong, clouds.size() == 1 and lost == want and gone and M.fx.last.get("burst", {}).get("meld") == "fumes", "lost %s" % str(lost))
@@ -701,6 +710,10 @@ func _rank(w: String, side: String, r: Dictionary, wrong: Array, said: String) -
 			var lost: Array = M._w_lost()
 			said += "; A's hit %d (formula %d x %.3f)" % [lost[0], M.W_ROLL, r["dmg_mult"]]
 			var want_a: int = _hit()
+			# (BURNING'S OWN, words.gd burn_more, 22 Nov 2026: Flame in front sets it burning as it hits, and a burning enemy takes
+			# more from a fire hit; this check brought up to it, 24 Nov)
+			if base == "fire":
+				want_a = int(maxf(1.0, roundf(_hit() * (1.0 + M.Words.burn_more(h)))))
 			match base:
 				"fire":
 					var want: float = _hit() * float(r["ignite"]) / 3.0 * float(r["pace"])

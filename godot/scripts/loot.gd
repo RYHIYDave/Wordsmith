@@ -292,6 +292,9 @@ static func implicit_lines(it: Dictionary) -> Array:
 const BAG := 24
 const RARITY_COLOR := [Color("#cfc6bc"), Color("#6f8cff"), Color("#ffe070"), Color("#ff8a3a")]
 const PULL := 3.2
+## The most of an element's harm his gear can take off, % (his pick, 24 Nov 2026, of the odd rules a check of every line on gear
+## turned up: “Cap resistance (Recommended)”, with “Pulling on gear”, “Size flat poison to the hit” and “Stale meld checks”).
+const RES_CAP := 75.0
 const TAKE := 0.75
 const GEAR_TAKE := 1.1
 const FLY := 9.0
@@ -568,7 +571,10 @@ func derive() -> void:
 		"stun_chance": g.call("stunChance"),
 		# (Guarding burned into a piece: a chance to block a blow outright, 50% at most: game.ts hurtHero)
 		"block_chance": g.call("blockChance"),
-		"res_fire": g.call("fireRes"), "res_frost": g.call("frostRes"), "res_light": g.call("lightRes"), "res_poison": g.call("poisonRes"),
+		# (WHAT HE WITHSTANDS OF AN ELEMENT STOPS AT RES_CAP, as the old game's did (types.ts: “capped at 75”); until 24 Nov 2026 the
+		# Godot game took it whole, and enough of one word burned into armour left him all but untouched by that element)
+		"res_fire": minf(RES_CAP, g.call("fireRes")), "res_frost": minf(RES_CAP, g.call("frostRes")), "res_light": minf(RES_CAP, g.call("lightRes")), "res_poison": minf(RES_CAP, g.call("poisonRes")),
+		"pickup_pct": g.call("pickupPct"),
 	}
 	hero.set_max_life(maxf(1.0, life))
 	# (THE THREE DEFENCES: his dodge and his barrier, his gear's and what Dexterity and Intelligence add)
@@ -1342,7 +1348,9 @@ func _process(dt: float) -> void:
 				if take and d.has("choice"):
 					picked = str(d["choice"])
 			else:
-				if dist <= PULL:
+				# (PULLING BURNED INTO GEAR, “+% pickup range”: from that much further, as the old game had it (game.ts updateDrops,
+				# pickupPct); until 24 Nov 2026 the Godot game drew them from PULL whatever his gear said, and the line did nothing)
+				if dist <= PULL * (1.0 + float(hero.stats.get("pickup_pct", 0.0)) / 100.0):
 					d["at"] = d["at"].move_toward(hero.world, FLY * dt)
 					d["node"].position = Iso.to_screen(d["at"].x, d["at"].y)
 				if d["at"].distance_to(hero.world) <= TAKE:

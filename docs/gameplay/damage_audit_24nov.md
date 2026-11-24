@@ -93,3 +93,19 @@ Weapon, gloves, amulet, ring first; then off-hand, helm, chest, belt, boots.
 `--only=words --cases=meld` cases 09 (Scald in front), 14 (Fumes behind) and 49 (Flame II): each expects a fire hit on a burning
 enemy to be no harder. Since 22 Nov a burning enemy takes more from every fire hit (`words.gd burn_more`, his words then). The
 rule is his; the three checks were not brought up to it. They fail the same with or without tonight's changes.
+
+## Mended since (24 Nov 2026, late)
+
+Asked which of the ODD items to mend, his picks: “Pulling on gear (Recommended), Cap resistance (Recommended), Size flat poison
+to the hit, Stale meld checks”.
+
+- ODD 1, PULLING ON GEAR: “+% pickup range” now widens how far gold and orbs fly to him (`loot.gd`, `pickup_pct`), as the old
+  game had it. +50%: 4.8 tiles for 3.2.
+- ODD 2, RESISTANCE: each stops at 75% (`loot.gd RES_CAP`).
+- ODD 7, FLAT POISON: sized as the hit is (the move's share, a critical, his talents' and uniques'), as flat fire, frost and
+  lightning are (`hero.gd hit_monster`). Half a Strike lays half the poison.
+- THE THREE CHECKS OUT OF DATE (`check_melds.gd`, Scald in front, Fumes behind, Flame II): brought up to the rule that a burning
+  enemy takes more from a fire hit, and Scald's to its two kinds of damage. `--only=words --cases=meld`: 0 wrong.
+- NOT MENDED, not picked: ODD 3 (monsters withstand nothing), 4 (+% Physical Damage for plain hits only), 5 (mana on gear is
+  cooldown recovery), 6 (a chance to stun beside Heavy), 8 (uniques' and companions' own damage is plain).
+- Checked: `--only=defuniques` 45 of 45 (lines 41 and 42).

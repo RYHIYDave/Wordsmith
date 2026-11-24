@@ -611,6 +611,28 @@ func run(main, hero, d: String) -> void:
 	var said: String = ", ".join(L.lines_of(kr, "lines") + L.lines_of(pl, "lines"))
 	_line(not said.contains("Hits") and said.contains("Fire Damage") and said.contains("Poison Damage"), "the lines: %s" % said)
 
+	# ================= THE ODD RULES MENDED (his picks, 24 Nov 2026: loot.gd RES_CAP, pickup_pct; hero.gd flat poison) =================
+	_hero("warrior")
+	_piece("ring1", "Ruby Ring", [["fireRes", 200], ["frostRes", 40], ["pickupPct", 50]])
+	L.derive()
+	_line(h.stats["res_fire"] == L.RES_CAP and h.stats["res_frost"] == 40.0 and h.stats["pickup_pct"] == 50.0, "a ring of 200%% fire and 40%% frost resistance and +50%% pickup range: he withstands %d%% of fire (the most, %d%%), %d%% of frost; gold and orbs fly to him from %.1f tiles (%.1f without)" % [h.stats["res_fire"], L.RES_CAP, h.stats["res_frost"], L.PULL * (1.0 + h.stats["pickup_pct"] / 100.0), L.PULL])
+	# (flat poison sized as the hit is: a hit of half the share lays about half the poison; never a critical here, by its chance)
+	_hero("warrior")
+	_piece("ring1", "Ruby Ring", [["poisonMin", 20], ["poisonMax", 20], ["critChance", -100]])
+	L.derive()
+	var doses := []
+	for fr in [1.0, 0.5]:
+		foe.poison_t = 0.0
+		foe.poison_dps = 0.0
+		foe.poison_n = 0
+		foe.life = foe.max_life
+		h.hit_monster(foe, 0, fr, true)
+		doses.append(foe.poison_dps)
+	foe.poison_t = 0.0
+	foe.poison_dps = 0.0
+	foe.poison_n = 0
+	_line(doses[0] > 0.0 and absf(doses[1] / doses[0] - 0.5) < 0.05, "20 flat poison: a whole Strike lays %.2f a second, half a Strike %.2f" % [doses[0], doses[1]])
+
 	# ================= A MELD OF TWO KINDS OF DAMAGE DEALS BOTH (words.gd meld_second; hero.gd hit_monster) =================
 	_hero("warrior")
 	h.talents = []

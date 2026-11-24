@@ -834,8 +834,11 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	var p_max: float = stats.get("poison_max", 0.0)
 	# (FLAT DAMAGE OF AN ELEMENT ADDS TO EVERY HIT: his gear's flat poison is poison on every hit, whether the hit poisons of itself
 	# or not; until 24 Nov 2026 only on one that did)
+	# (SIZED AS THE HIT IS, his pick, 24 Nov 2026, “Size flat poison to the hit”: the move's share, a critical, his talents' and
+	# uniques', as his gear's flat fire, frost and lightning are; and the hit's own bonus, which monster.gd dose takes off again
+	# where it puts his poison's own in its place. Until then its whole amount on every hit, however small the hit.)
 	if (p_min != 0.0 or p_max != 0.0) and not (uniques != null and uniques.one_element()):
-		dose += randf_range(p_min, maxf(p_min, p_max)) / float(Words.data()["poison"]["time"])
+		dose += randf_range(p_min, maxf(p_min, p_max)) * shared * pct_f / float(Words.data()["poison"]["time"])
 	if dose > 0.0:
 		m.dose(dose * float(r.get("poison_k", 1.0)), float(Words.data()["poison"]["time"]) * float(r["last"]) * float(r.get("poison_t", 1.0)), el)
 	# (WORDMELDING: the melded word's twist on this hit, in front and behind: melds.gd)
