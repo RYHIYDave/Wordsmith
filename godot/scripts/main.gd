@@ -2130,7 +2130,7 @@ func _wordsui_shots(h: Hero, dir: String) -> void:
 	_wu(L.front[0] == ["power"] and int(loot.words["power"]) == 0 and loot.taught and names.call()[0] == "Power Strike" and not _inv._flash.is_empty() and guide.use_t > 0.0, "POWER set in front of STRIKE: it reads '%s'; his words left %d; the lesson over %s; its name shown large %s; its lines: %s" % [names.call()[0], loot.spare(), loot.taught, not _inv._flash.is_empty(), L.r(0)["lines"]])
 	await _wait(1.2)
 	await _snap(dir + "/w05_strikes_card.png")
-	_wu(_inv._reading() == "" and _inv._coach() == "" and _inv.hit_range(0) == [11, 17], "under the three lines, Strike read out: a hit %s (8 to 13 without the word), %s; the coach's line in town, the word set: '%s'" % [_inv.hit_range(0), _inv._pace(0)[1], _inv._coach()])
+	_wu(_inv._reading() == "" and _inv._coach() == "" and _inv.hit_range(0) == [16, 25], "under the three lines, Strike read out: a hit %s (his Strike half as hard again since 22 Nov, words.gd WARRIOR_MORE), %s; the coach's line in town, the word set: '%s'" % [_inv.hit_range(0), _inv._pace(0)[1], _inv._coach()])
 
 	# --- levels gained: the Whirlwind's and the Lunge's slots, a slot behind; more words (handed him here), set in all three
 	var xp := 1.0

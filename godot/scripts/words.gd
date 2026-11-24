@@ -193,7 +193,10 @@ const MAGE_MORE := 1.35
 const WARRIOR_MORE := 1.5
 const BRAWLER_MORE := 2.0
 const EVEN := {"shot": 1.303, "wave": 1.6 * MAGE_MORE, "vialtoss": 1.72, "hellbolt": 1.635, "orb": MAGE_MORE,
-	"strike": WARRIOR_MORE, "cleave": WARRIOR_MORE, "chop": WARRIOR_MORE, "smash": WARRIOR_MORE, "vpunch": BRAWLER_MORE}
+	"strike": WARRIOR_MORE, "cleave": WARRIOR_MORE, "chop": WARRIOR_MORE, "smash": WARRIOR_MORE, "vpunch": BRAWLER_MORE,
+	# (and his Whirl and Whirlwind with them, so each keeps its share of a Strike as he set it, 1.4 and 0.55: THE BUG HUNT found them
+	# left out; his pick, 24 Nov 2026, “Raise them back (Recommended)”)
+	"whirl": WARRIOR_MORE, "whirlwind": WARRIOR_MORE}
 const FROST_HIT := 1.0
 const ATTR_KNEE := 50.0
 const ATTR_SPAN := 100.0
