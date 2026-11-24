@@ -6,7 +6,8 @@
 ##   Coldcut     one culled chilled or frozen shatters, chilling those near; ice where a weak one slipping is culled and shatters
 ##   Cremate     one culled goes up in a column of flame, setting those near burning; burning ground that burns the weak to ash
 ##   Smite       each arc culls, and an arc that culls jumps on; a storm whose strikes cull the weak
-##   Coup        a cull takes the move's whole wait away; each cull a burst of speed
+##   Coup        a cull takes the move's whole wait away, and he dashes to the nearest; each cull a burst of speed, and what he
+##               runs past in it is cut
 ##   Crusher     a cull lands with a quake that stuns those near; cracked ground where the staggered weak are culled
 ##   Scissors    each cull a second cut at the weakest near; two marks side by side
 ##   Bloodprice  a cull splits the life it had left: half heals him, half bursts from the body as a red blast on those near; the
@@ -14,18 +15,22 @@
 ##   Deathburst  its kills' blasts cull the weak they strike; a rune whose blast culls the weak it leaves alive
 ##   Mercy       a critical culls from twice as high, and each cull sets a sight on the weakest near; once the marked one is
 ##               nearly dead, the mark culls it wherever it stands and passes to the weakest near
-##   Massacre    each cull two steps of frenzy; at a full frenzy every kill leaves a mark where it fell
+##   Massacre    each cull two steps of frenzy, and a cull at a full frenzy a whirl of blades round him; at a full frenzy
+##               every kill leaves a mark where it fell
 ##   Last Rites  each cull adds to his shield, and rites said over it: the next to strike him while it holds is struck down if
 ##               weak, else thrown back; a ward where the weak who step in are culled, growing with each it takes
-##   Deathwatch  one it hits is watched a while: brought nearly dead by anything, it dies; a mark half as long again, taking two
+##   Deathwatch  a reaper's shadow over each it hits a while: brought nearly dead by anything, its scythe falls; a mark half as
+##               long again, creeping to the weakest, taking two
 ##   Quietus     a cull leaves a brief mark where it fell; a short mark that is not spent, taking every weak one that crosses
-##   Purge       it culls from higher up the more it hits at once; a mark three times as wide
+##   Purge       it culls from higher up the more it hits at once, and one blow culling three floods light out from him,
+##               culling every weak one in sight; a mark three times as wide
 ##   Gallows     the weak dragged together are culled where they meet; a vortex whose heart culls the weak drawn to it
 ##   Decimate    a copy that culls splits into three again; shards that cull the weak they strike
 ##   Condemn     a cursed one culled passes its curse to the nearest; a hex circle whose weak still in it at its end are culled
 ##   Final Hour  the slow the deeper the nearer death; a bubble where the weak stop still, till the mark at its heart takes them
 ##   Noose       held, the hold tightens, taking life, and one nearly dead dies; a snare where the weak caught are culled
-##   with the High City's others: Harvest (a culled one's soul twice; the mark's raised as his spirit), Butcher (mh_bleed.gd),
+##   with the High City's others: Harvest (a culled one's soul twice, and a scythe sweeping round it, culling the weak there;
+##   the mark's raised as his spirit), Butcher (mh_bleed.gd),
 ##   Deathblow (mh_pierce.gd), Deathknell (mh_surge.gd)
 extends RefCounted
 
@@ -39,6 +44,9 @@ var _held: Array = []
 var _mercy: Array = []
 ## (Last Rites in front: the rites said over his shield {i, until})
 var _rites := {}
+## (Purge: how many each move's use has culled; Harvest: a sweep under way)
+var _culls: Array = [0, 0, 0]
+var _sweeping := false
 
 
 func _init(h) -> void:
@@ -51,6 +59,8 @@ func fresh() -> void:
 	_held = []
 	_mercy = []
 	_rites = {}
+	_culls = [0, 0, 0]
+	_sweeping = false
 
 
 func _cull(i: int) -> float:
@@ -112,6 +122,23 @@ func culled(m, i: int, mark: bool, at: Vector2, life: float) -> void:
 		"coup":
 			H.cool_move(i, 99.0)
 			H.tell(id, "coup", at)
+			# (he dashes to the nearest, ready to strike again)
+			var nx: Array = H.near(at, H.n("coup", "reach", 3.5), 1, [m])
+			if not nx.is_empty():
+				var a: Vector2 = H.hero.world
+				var d: Vector2 = nx[0].world - a
+				var w: Vector2 = d.normalized() if d.length() > 0.1 else H.hero.face
+				var most: float = maxf(0.0, d.length() - 0.9)
+				var far := 0.0
+				while far + 0.25 <= most:
+					var p := a + w * (far + 0.25)
+					if not H.hero._clear(p.x, p.y):
+						break
+					far += 0.25
+				if far >= 0.5:
+					var to := a + w * far
+					H.tell(id, "dash", a, {"x1": to.x, "y1": to.y})
+					H.hero.world = to
 		"crusher":
 			H.tell(id, "quake", at)
 			for q in H.near(at, H.n("crusher", "r", 1.6), 8, [m]):
@@ -127,7 +154,13 @@ func culled(m, i: int, mark: bool, at: Vector2, life: float) -> void:
 			for q in H.near(at, H.n("bloodprice", "r", 1.6), 8, [m]):
 				q.damage(maxf(1.0, roundf(life * H.n("bloodprice", "blast", 0.5))), "phys", false, false, [], false, true, i)
 		"massacre":
+			var full: bool = H.frenzy_full()
 			H.frenzy_up(i, int(H.n("massacre", "steps", 2.0)), id)
+			if full:
+				# (a cull at a full frenzy: a whirl of blades round him)
+				H.tell(id, "whirl", H.hero.world, {"r": H.n("massacre", "r", 1.8)})
+				for q in H.near(H.hero.world, H.n("massacre", "r", 1.8)):
+					H.hit(q, i, H.n("massacre", "whirl", 0.35))
 		"lastrites":
 			H.shield(H.n("lastrites", "shield", 0.03), id)
 			# (rites said over his shield: the next to strike him while it holds is struck down if weak, else thrown back)
@@ -165,6 +198,22 @@ func culled(m, i: int, mark: bool, at: Vector2, life: float) -> void:
 		"harvest":
 			H.hero.cool_by(float(H.hero.loadout.r(i)["reap"]) * 2.0 if float(H.hero.loadout.r(i)["reap"]) > 0.0 else H.n("harvest", "soul", 0.5))
 			H.tell(id, "soul", at)
+			if not _sweeping:
+				# (reaped: a scythe sweeps round where it fell, culling every one there nearly dead)
+				_sweeping = true
+				H.tell(id, "sweep", at, {"r": H.n("harvest", "r", 1.8)})
+				for q in H.near(at, H.n("harvest", "r", 1.8), 8, [m]):
+					H.lw.cull_monster(q, _cull(i), i)
+				_sweeping = false
+		"purge":
+			_culls[i] += 1
+			if _culls[i] == int(H.n("purge", "flood", 3)):
+				# (three culled by one blow: a white light floods out from him, culling every weak one in sight)
+				H.tell(id, "flood", H.hero.world, {"r": H.n("purge", "sight", 7.0)})
+				var me = self
+				H.later(0.05, func() -> void:
+					for q in H.near(H.hero.world, H.n("purge", "sight", 7.0)):
+						H.lw.cull_monster(q, me._cull(i), i))
 		"butcher":
 			H.tell(id, "fling", at)
 			for q in H.near(at, H.n("butcher", "r", 1.6), 8, [m]):
@@ -225,6 +274,8 @@ func struck(m, i: int, _dmg: float, _c: bool, at: Vector2) -> void:
 					H.tell(id, "counted", m.world)
 		"deathwatch":
 			_watched.append({"m": m, "until": H.clock() + H.n("deathwatch", "secs", 3.0), "under": _cull(i), "i": i})
+			if H.once("dwatch%d" % m.get_instance_id(), 0.8):
+				H.tell(id, "watch", m.world)
 		"finalhour":
 			H.tell(id, "hour", m.world)
 			var near_death: float = 1.0 - m.life / maxf(1.0, m.max_life)
@@ -304,6 +355,7 @@ func killed(m, i: int) -> void:
 
 func used(i: int) -> void:
 	_hits[i] = 0
+	_culls[i] = 0
 
 
 # --- behind: the reaper's mark ---
@@ -398,6 +450,23 @@ func reaper_step(z: Dictionary, dt: float) -> bool:
 	var i: int = int(z["skill"])
 	var u: float = z["dmg"]
 	if z.has("takes"):
+		# (Deathwatch: the mark creeps toward the weakest near it)
+		var best = null
+		var low := 2.0
+		for q in H.near(at, H.n("deathwatch", "creep", 4.0)):
+			var f: float = q.life / maxf(1.0, q.max_life)
+			if f < low:
+				low = f
+				best = q
+		if best != null:
+			var d: Vector2 = best.world - at
+			if d.length() > 0.2:
+				var step: Vector2 = d.normalized() * minf(d.length(), H.n("deathwatch", "pace", 1.2) * dt)
+				z["x"] = at.x + step.x
+				z["y"] = at.y + step.y
+				at = Vector2(z["x"], z["y"])
+		if H.once("creep%d" % int(z["skill"]), 0.3):
+			H.tell(str(z["meld"]), "creep", at, {"minor": true})
 		for o in H.near(at, float(z["r"])):
 			if H.lw.cull_monster(o, u, i, true):
 				z["takes"] = int(z["takes"]) - 1
@@ -449,16 +518,27 @@ func reaper_step(z: Dictionary, dt: float) -> bool:
 
 func step(dt: float) -> void:
 	var now: float = H.clock()
+	# (Coup behind: in his burst of speed, what he runs past is cut)
+	var ci: int = H.any("coup", false)
+	if ci >= 0 and H.hero.haste_t > 0.0:
+		for o in H.near(H.hero.world, H.n("coup", "past", 0.9)):
+			if H.once("coup%d" % o.get_instance_id(), 0.6):
+				H.hit(o, ci, H.n("coup", "cut", 0.2))
+				H.tell("coup", "slash", o.world)
 	for k in range(_watched.size() - 1, -1, -1):
 		var w: Dictionary = _watched[k]
 		var m = w["m"]
 		if not H.ok(m) or now > float(w["until"]):
 			_watched.remove_at(k)
 			continue
+		if H.once("dwatch%d" % m.get_instance_id(), 0.8):
+			H.tell("deathwatch", "watch", m.world, {"minor": true})
 		if m.life <= m.max_life * float(w["under"]):
 			_watched.remove_at(k)
+			var at: Vector2 = m.world
 			if H.lw.cull_monster(m, float(w["under"]), int(w["i"])):
-				H.tell("deathwatch", "take", m.world)
+				H.tell("deathwatch", "take", at)
+				H.tell("deathwatch", "scythe", at)
 	for k in range(_held.size() - 1, -1, -1):
 		var hd: Dictionary = _held[k]
 		var m = hd["m"]

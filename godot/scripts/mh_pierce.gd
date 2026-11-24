@@ -3,20 +3,26 @@
 ## (throw_lance, _lance_lands). Each meld's line does something of its own:
 ##   Impaler     carries all it runs through on its point to its line's end, slamming them into a heap; its lance spends
 ##               Power's might, wider for each step of it, and drives a stake that bursts where it ends
-##   Stinger     a dose more on each down the line; its lance leaves a trail of poison
+##   Stinger     a dose more on each down the line, the last left a barb that bursts in venom; its lance leaves a trail of poison
 ##   Icelance    a chill harder down the line, the last frozen; its lance leaves a strip of ice that freezes as it cracks
 ##   Sunspear    sets the line burning, and one dying burning runs its fire down the line; its lance leaves burning ground
 ##   Stormlance  forks at its end; its lance arcs out to all near its line
-##   Dart        each gone through takes time off its wait; its lance strikes down the path he ran in his burst of speed
+##   Dart        each gone through takes time off its wait, and the dart comes back, striking on its way; its lance strikes down
+##               the path he ran in his burst of speed
 ##   Battering   knocks each aside, stunned; its lance cracks the ground down its line
 ##   Pitchfork   Twin's second blow a line beside the first; a second lance across the first
-##   Bloodlance  heals twice for each beyond the first; its lance draws the life orbs on its line to him
+##   Bloodlance  heals twice for each beyond the first, the last burst open into a life orb; its lance draws the life orbs on
+##               its line to him
 ##   Fuse        a charge in each, going off down the line; its lance a string of runes going off in turn
-##   Bodkin      the last in the line a certain critical; its lance strikes to the marked one, a certain critical
-##   Barrage     a tile farther for each step of the frenzy; at a full frenzy each lance twice
-##   Spearwall   a shield for each gone through; its lance leaves a wall of light that stops shots
+##   Bodkin      a sight on each it passes, the last a certain critical bursting out of its back in shards; its lance strikes
+##               to the marked one, a certain critical
+##   Barrage     a tile farther for each step of the frenzy, and at a full frenzy a rattling volley down its line; at a full
+##               frenzy each lance twice
+##   Spearwall   a shield for each gone through, and a row of spears across its line that strikes and throws back what runs
+##               on it; its lance leaves a wall of light that stops shots
 ##   Longspear   half as far again, its line lingering; its lance stands a while, striking what crosses it
-##   Flicker     the line flashing twice, a blink apart; its lance at once and sooner again
+##   Flicker     the line flashing twice, a blink apart, and he blinks to its end; its lance at once, flicking back down its
+##               line, and sooner again
 ##   Broadspear  a line three times as wide; its lance as wide as a road
 ##   Gaff        the line dragged back to the first; its lance drags all into a vortex at its far end
 ##   Trident     three lines after the first; shards that go through, from the lance's end
@@ -24,7 +30,7 @@
 ##               where each that crosses is pinned a moment by a needle
 ##   Sundial     the slow deeper down the line, the last stood still; its lance a band of slow time
 ##   Skewer      the line pinned together; its lance a snare along its line
-##   Harrow (with Bleeding) a wound that bleeds standing still; its lance a row of thorns
+##   Harrow (with Bleeding) spikes erupting under each run through, a wound that bleeds standing still; its lance a row of thorns
 ##   Wraithspear (with Reaping) a kill's soul flies on down the line; Deathblow (with Culling) a cull carries it a tile farther,
 ##   its lance culls; Breakthrough (with Surging): mh_surge.gd.
 extends RefCounted
@@ -125,6 +131,7 @@ func each(i: int, o, n: int, count: int, at: Vector2, w: Vector2) -> void:
 		"impaler":
 			H.tell(id, "drive", o.world, {"n": n})
 		"bodkin":
+			H.tell(id, "sight", o.world)
 			if n == count:
 				H.tell(id, "gap", o.world)
 		"stinger":
@@ -169,6 +176,11 @@ func each(i: int, o, n: int, count: int, at: Vector2, w: Vector2) -> void:
 		"harrow":
 			o.m52["harrow_t"] = H.clock() + H.n("harrow", "secs", 4.0)
 			H.tell(id, "wound", o.world)
+			# (spikes erupt from the ground under it, cutting it and those beside it)
+			H.tell(id, "spikes", o.world)
+			for q in H.near(o.world, H.n("harrow", "r", 0.9), 4):
+				H.hit(q, i, H.n("harrow", "spike", 0.15))
+				H.lw.bleed_monster(q, maxf(1.0, H.hero.avg_hit(i, 0.2)), 3.0)
 
 
 ## The line is done: `first` struck, then `hits` gone through, along `w` from `at`, `line` tiles.
@@ -182,6 +194,50 @@ func end(i: int, first, hits: Array, at: Vector2, w: Vector2, line: float, frac:
 	var lat: Vector2 = last.world if last != null and is_instance_valid(last) else at + w * line
 	H.tell(id, "line", at, {"x1": at.x + w.x * line, "y1": at.y + w.y * line, "n": hits.size()})
 	match id:
+		"bodkin":
+			# (the last one's certain critical bursts out of its back in shards)
+			if last != null and is_instance_valid(last):
+				var lw: Vector2 = last.world
+				for t in [-0.35, 0.0, 0.35]:
+					var d: Vector2 = w.rotated(t)
+					H.tell(id, "shard", lw, {"x1": lw.x + d.x * 2.2, "y1": lw.y + d.y * 2.2})
+					for o in H.on_line(lw, d, H.n("bodkin", "shard", 2.2), 0.35, all):
+						H.hit(o, i, H.n("bodkin", "shards", 0.3))
+		"dart":
+			# (the dart comes back to his hand, striking on its way)
+			var from: Vector2 = at + w * line
+			H.later(H.n("dart", "back", 0.25), func() -> void:
+				var to: Vector2 = H.hero.world
+				var d: Vector2 = to - from
+				if d.length() < 0.5:
+					return
+				H.tell("dart", "return", from, {"x1": to.x, "y1": to.y})
+				for o in H.on_line(from, d.normalized(), d.length(), 0.45):
+					H.hit(o, i, H.n("dart", "return", 0.3)))
+		"bloodlance":
+			# (the last burst open, its life left as an orb)
+			if not hits.is_empty() and last != null and is_instance_valid(last):
+				H.orb(last.world)
+				H.tell(id, "burst", last.world)
+		"spearwall":
+			# (a row of spears springs up across its line: what runs onto them is struck and thrown back)
+			var c: Vector2 = H.hero.world + w * H.n("spearwall", "ahead", 1.6)
+			var across := Vector2(-w.y, w.x)
+			var half: float = H.n("spearwall", "half", 1.5)
+			var a0: Vector2 = c - across * half
+			_lines.append({"a": a0, "way": across, "len": half * 2.0, "w": 0.5, "t": 0.0, "dur": H.n("spearwall", "row", 3.0), "i": i, "hit": [], "id": "spearwall", "push": w})
+			H.tell(id, "spears", a0, {"x1": a0.x + across.x * half * 2.0, "y1": a0.y + across.y * half * 2.0, "secs": H.n("spearwall", "row", 3.0)})
+		"stinger":
+			# (the sting stays in the last as a barb that swells, and bursts in venom)
+			if last != null and is_instance_valid(last):
+				var lst = last
+				H.tell(id, "barb", lst.world)
+				H.later(H.n("stinger", "burst", 0.8), func() -> void:
+					var p: Vector2 = lst.world if is_instance_valid(lst) else lat
+					H.tell("stinger", "burst", p)
+					H.ground("venom", i, p, H.n("stinger", "r", 1.2), 3.0, H.hero.avg_hit(i, H.n("stinger", "dps", 0.15)))
+					for q in H.near(p, H.n("stinger", "r", 1.2) + 0.2):
+						q.dose(maxf(1.0, H.hero.avg_hit(i, H.n("stinger", "dose", 0.12))), -1.0, "poison"))
 		"impaler":
 			# (all it ran through carried on its point to the line's end, and slammed there in a heap)
 			var to: Vector2 = at + w * line
@@ -210,6 +266,13 @@ func end(i: int, first, hits: Array, at: Vector2, w: Vector2, line: float, frac:
 		"barrage":
 			if H.hero.frenzy > 0:
 				H.tell(id, "reach", at + w * line, {"n": H.hero.frenzy})
+			if H.frenzy_full():
+				# (a rattling volley down its line, once for each step of the frenzy)
+				for k in H.hero.frenzy:
+					H.later(H.n("barrage", "gap", 0.1) * (k + 1), func() -> void:
+						H.tell("barrage", "volley", at, {"x1": at.x + w.x * line, "y1": at.y + w.y * line})
+						for o in H.on_line(at, w, line, 0.45):
+							H.hit(o, i, H.n("barrage", "volley", 0.2)))
 		"broadspear":
 			H.tell(id, "wide", at, {"x1": at.x + w.x * line, "y1": at.y + w.y * line})
 		"trident":
@@ -266,6 +329,18 @@ func _flash(i: int, all: Array, at: Vector2, w: Vector2, line: float) -> void:
 	H.tell("flicker", "flash", at, {"x1": at.x + w.x * line, "y1": at.y + w.y * line})
 	for o in all:
 		H.hit(o, i, H.n("flicker", "again", 0.33))
+	# (and he blinks to the end of the line, as far as it is clear)
+	var a: Vector2 = H.hero.world
+	var far := 0.0
+	while far + 0.25 <= line:
+		var p := a + w * (far + 0.25)
+		if not H.hero._clear(p.x, p.y):
+			break
+		far += 0.25
+	if far >= 1.0:
+		var to := a + w * far
+		H.tell("flicker", "blink", a, {"x1": to.x, "y1": to.y})
+		H.hero.world = to
 
 
 ## A hit of move `i` on `m`: Witchpin's thread stings all the others it stitched to `m`.
@@ -391,7 +466,7 @@ func lance_hit(i: int, o, q: Dictionary) -> void:
 ## The lance of move `i` has landed, striking `hits`: what its meld leaves down its line.
 func lance_end(i: int, q: Dictionary, hits: Array) -> void:
 	var id: String = H.b(i)
-	if id == "" or q.get("cross", false) and id != "pitchfork":
+	if id == "" or q.get("cross", false) and id != "pitchfork" or q.get("back", false):
 		return
 	var a: Vector2 = q["from"]
 	var w: Vector2 = q["way"]
@@ -405,6 +480,10 @@ func lance_end(i: int, q: Dictionary, hits: Array) -> void:
 			k += gap
 		return out
 	match id:
+		"flicker":
+			# (it flicks back down its line toward him, striking again)
+			H.tell(id, "flick", e, {"x1": a.x, "y1": a.y})
+			lance_from(i, e, a, float(q["share"]) * H.n("flicker", "back", 0.6), {"back": true})
 		"impaler":
 			if q.has("stake"):
 				var r: float = minf(2.6, H.n("impaler", "stakeR", 1.0) + float(q["stake"]) * H.n("impaler", "stakeGrow", 3.0))
@@ -535,6 +614,12 @@ func step(dt: float) -> void:
 				if L["hit"].has(o.get_instance_id()):
 					continue
 				L["hit"].append(o.get_instance_id())
+				if L.get("id", "") == "spearwall":
+					# (run onto the spears: struck, and thrown back)
+					H.hit(o, int(L["i"]), H.n("spearwall", "spear", 0.4))
+					H.throw(o, o.world - L["push"], H.n("spearwall", "throw", 1.1))
+					H.tell("spearwall", "impale", o.world)
+					continue
 				if arr == _lines:
 					H.hero.hit_monster(o, int(L["i"]), 1.0, true)
 				else:

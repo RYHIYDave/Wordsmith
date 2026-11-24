@@ -2,7 +2,8 @@
 ## meldsreap_rules.gd's). In front, a kill leaves a soul that takes time off his waits (last_words.gd killed, which hands each soul
 ## to `soul`); behind, a kill rises as a spirit fighting for him (_raise_spirit, _step_spirits, which ask `spirit_new`, `spirit_tick`,
 ## `spirit_pick`, `spirit_hit`, `spirit_end`). Each meld's soul or spirit does something of its own:
-##   Wraithstep  each soul a burst of speed; while his speed lasts, his spirits move and strike as fast
+##   Wraithstep  each soul a burst of speed, and a grey afterimage of him where he stood that strikes the nearest; while his
+##               speed lasts, his spirits move and strike as fast
 ##   Tombstone   a soul falls with a thud, staggering those near; a slow, heavy spirit whose blows stun
 ##   Revenants   two souls; two spirits, each weaker
 ##   Ghoul       where a kill falls a ghoul's maw opens, biting those near, each bite healing him; his spirits' blows send
@@ -14,13 +15,15 @@
 ##               them; his spirits strike faster for each step, and at a full frenzy catch its flames, twice as fast
 ##   Gravewarden each soul a shade circling him, up to three, each taking the next blow; a spirit that stands guard by him: near
 ##               it he takes less harm, and it hauls back to it any enemy that comes at him
-##   Undying     a soul half as much again; a spirit half as long again, rising once more as it ends
+##   Undying     a soul half as much again, and a dead hand bursting up where it fell, dragging the nearest half under; a spirit
+##               half as long again, rising once more as it ends
 ##   Fetch       a soul the instant it falls, leaping on through those near it first, a leap more for each other kill just
 ##               before; a spirit for less time, striking oftener, darting from one to the next after each blow
 ##   Legion      a soul flying to him through those near, striking them; a spirit whose blows strike all round what it hits
 ##   Gravewell   a soul drags those near to where it fell; a vortex where any enemy that dies rises as his spirit
 ##   Poltergeist each soul hurls a shard at the nearest; a spirit that hurls shards at what it fights
-##   Haunting    a cursed one's soul curses those near; a hex circle, and spirits that curse what they strike
+##   Haunting    a cursed one's ghost flies to the nearest, cursing it, its wail throwing back those round it; a hex circle,
+##               and spirits trailing a shroud that curses what they pass
 ##   Limbo       time slows round where a soul rises; a spirit in a bubble of slow time that goes with it
 ##   Gravebind   a soul binds the nearest; a spirit whose blows hold what they strike
 ##   with the High City's others: Wraithspear (a spirit hurling lances), Bloodharvest (one bled to death rises at once; spirits
@@ -80,6 +83,14 @@ func soul(m, i: int) -> void:
 	match id:
 		"wraithstep":
 			H.haste(H.n("wraithstep", "haste", 0.35), H.n("wraithstep", "secs", 1.5), id)
+			# (a grey afterimage of him where he stood, striking the nearest before it fades)
+			var here: Vector2 = H.hero.world
+			H.tell(id, "image", here)
+			H.later(H.n("wraithstep", "after", 0.3), func() -> void:
+				var nx: Array = H.near(here, H.n("wraithstep", "reach", 3.0), 1)
+				if not nx.is_empty():
+					H.hit(nx[0], i, H.n("wraithstep", "image", 0.35))
+					H.tell("wraithstep", "lunge", here, {"x1": nx[0].world.x, "y1": nx[0].world.y}))
 		"tombstone":
 			H.tell(id, "thud", at)
 			for q in H.near(at, H.n("tombstone", "r", 1.6), 8, [m]):
@@ -118,6 +129,13 @@ func soul(m, i: int) -> void:
 		"undying":
 			H.hero.cool_by(reap_k * H.n("undying", "more", 0.5))
 			H.tell(id, "longer", at)
+			# (a dead hand bursts from the ground where it fell, seizing the nearest and dragging it half under)
+			H.later(H.n("undying", "after", 0.4), func() -> void:
+				var nx: Array = H.near(at, H.n("undying", "reach", 2.5), 1)
+				if not nx.is_empty():
+					H.stun(nx[0], H.n("undying", "hold", 1.0))
+					H.hit(nx[0], i, H.n("undying", "hand", 0.2))
+					H.tell("undying", "hand", nx[0].world))
 		"fetch":
 			var more: int = _kills.size() - 1
 			if more > 0:
@@ -159,8 +177,16 @@ func soul(m, i: int) -> void:
 		"haunting":
 			if m.hex_t > 0.0:
 				H.tell(id, "haunt", at)
-				for q in H.near(at, H.n("haunting", "r", 1.8), 8, [m]):
-					H.curse(q, 4.0, maxf(0.15, m.hex_more))
+				# (its ghost flies to the nearest and haunts it; the wail throws back those round it)
+				var nx: Array = H.near(at, H.n("haunting", "reach", 4.0), 1, [m])
+				if not nx.is_empty():
+					var o = nx[0]
+					H.curse(o, 4.0, maxf(0.15, m.hex_more))
+					H.tell(id, "ghost", at, {"x1": o.world.x, "y1": o.world.y})
+					H.tell(id, "wail", o.world)
+					for q in H.near(o.world, H.n("haunting", "r", 1.8), 8, [m, o]):
+						H.curse(q, 3.0, 0.1)
+						H.throw(q, o.world, H.n("haunting", "throw", 0.9))
 		"limbo":
 			H.ground("bubble", i, at, H.n("limbo", "r", 1.3), H.n("limbo", "secs", 1.5), H.n("limbo", "crawl", 0.5))
 			H.tell(id, "still", at)
@@ -242,6 +268,13 @@ func spirit_tick(sp: Dictionary, dt: float) -> void:
 				sp["speed_k"] = 1.0
 		"fetch":
 			sp["next"] = float(sp["next"]) - dt * 0.5
+		"haunting":
+			# (it trails a black shroud: what it passes is cursed)
+			if H.once("shroud%d" % int(sp["id"]), 0.5):
+				H.tell(id, "shroud", Vector2(sp["x"], sp["y"]), {"minor": true})
+				for q in H.near(Vector2(sp["x"], sp["y"]), H.n("haunting", "shroud", 1.0)):
+					if q.hex_t <= 0.0:
+						H.curse(q, 3.0, H.n("haunting", "curse", 0.15))
 		"limbo":
 			if H.once("limbo%d" % int(sp["id"]), 0.4):
 				H.tell(id, "bubble", Vector2(sp["x"], sp["y"]))

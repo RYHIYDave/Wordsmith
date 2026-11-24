@@ -8,7 +8,8 @@
 ##   Rimeblood   a bleeding one frozen bursts in spikes of frozen blood; thorns of ice, chilling
 ##   Bloodboil   one burning and bleeding spatters fire as it moves; thorns on burning ground
 ##   Galvanic    every arc makes bleed, and jerks them a step; thorns that strike with lightning, arcing on
-##   Lacerate    each hit on one bleeding opens it deeper, three times at most; thorns along his path in his burst of speed
+##   Lacerate    each hit on one bleeding opens a cut that shows, the third bursting them open on it and those beside it;
+##               thorns along his path in his burst of speed
 ##   Mangle      as its stun ends, the wound tears: its first steps three times as hard; thorns on cracked ground, worse on the staggered
 ##   Fangs       Twin's second bite doubles the bleeding; a second ring of thorns round the first
 ##   Bloodfeast  what they bleed streams to him, healing him, and hardens into a red shield once he is whole; a pool ringed with
@@ -16,7 +17,8 @@
 ##   Bloodburst  a bleeding one dying bursts, all near it bleeding; a rune ringed by thorns, flinging them out as it goes off
 ##   Artery      a critical opens an artery: three times as hard, its blood jetting out behind, making all it reaches bleed; the
 ##               marked one struck a critical bursts, opening an artery in every enemy it splashes
-##   Bloodrage   the bleeding near him keep his frenzy from fading; at a full frenzy thorns where he strikes
+##   Bloodrage   the bleeding near him keep his frenzy from fading, and at a full frenzy each hit on one bleeding sprays its
+##               blood in an arc on those beside it; at a full frenzy thorns where he strikes
 ##   Thornshield behind his shield, what strikes him bleeds, and its thorns burst out as it breaks; a ward edged with thorns,
 ##               lashing what strikes him while he stands in it
 ##   Hemorrhage  the bleeding grows the longer it runs, and grown full the wound ruptures, all near bleeding; thorns spreading wider
@@ -25,7 +27,8 @@
 ##               bursting out as a flurry of blades spinning outward
 ##   Bramble     the bleeding spreads to those it touches; a wide thicket of thorns
 ##   Fishhook    dragged, they bleed hard; a vortex lined with thorns
-##   Thornspray  Splitting's copies open the bleeding wider; thorns flung out, taking root
+##   Thornspray  Splitting's copies open the bleeding wider and leave thorns taking root under each they strike; thorns flung
+##               out, taking root
 ##   Bloodhex    a cursed one's bleeding never stops, and drips into hex circles under it; a hex circle grown over with thorns,
 ##               each that dies in it spilling a new one
 ##   Clot        slowed, its bleeding is held, and pours out at once as the slow ends; a bubble of slow time full of thorns
@@ -90,6 +93,13 @@ func on(m, i: int, dmg: float, fresh: bool) -> void:
 			if not fresh:
 				m.m52["lac"] = mini(int(H.n("lacerate", "most", 3)), int(m.m52.get("lac", 0)) + 1)
 				H.tell(id, "deeper", m.world, {"n": m.m52["lac"]})
+				if int(m.m52["lac"]) >= int(H.n("lacerate", "most", 3)):
+					# (the third cut: they all burst open, striking it hard and bleeding those beside it)
+					m.m52["lac"] = 0
+					H.tell(id, "burst", m.world)
+					H.hit(m, i, H.n("lacerate", "burst", 0.5))
+					for q in H.near(m.world, H.n("lacerate", "r", 1.3), 4, [m]):
+						_bleed(q, m.bleed_dps * 0.6, _secs(i))
 		"mangle":
 			m.m52["mangle"] = true
 		"fangs":
@@ -267,6 +277,12 @@ func struck(m, i: int, _dmg: float, c: bool, _at: Vector2) -> void:
 			for q in H.near(m.world, H.n("artery", "r", 1.7), 8, [m]):
 				_bleed(q, dps * 0.6, _secs(i))
 				q.m52["artery_t"] = H.clock() + _secs(i)
+	if H.f(i) == "bloodrage" and H.frenzy_full() and H.ok(m) and m.bleed_t > 0.0 and H.once("brage%d" % m.get_instance_id(), 0.3):
+		# (at a full frenzy, a hit on one bleeding sprays its blood in an arc on those beside it)
+		H.tell("bloodrage", "spray", m.world, {"r": 1.4})
+		for q in H.near(m.world, H.n("bloodrage", "arc", 1.4), 4, [m]):
+			H.hit(q, i, H.n("bloodrage", "spray", 0.15))
+			_bleed(q, m.bleed_dps * 0.6, _secs(i))
 	if H.b(i) == "bloodrage" and H.frenzy_full() and H.once("rage%d" % i, H.n("bloodrage", "every", 0.6)) and H.ok(m):
 		H.thorns(i, m.world, 0.7, H.hero.avg_hit(i, float(H.hero.loadout.r(i)["thorns"])) * 0.5, 2.5)
 		H.tell("bloodrage", "spring", m.world)
@@ -285,9 +301,15 @@ func arc(o, i: int, from: Vector2) -> void:
 
 ## Thornspray: a copy of Splitting striking one bleeding opens it wider.
 func copy_hit(o, i: int) -> void:
-	if H.f(i) == "thornspray" and H.ok(o) and o.bleed_t > 0.0:
+	if H.f(i) != "thornspray" or not H.ok(o):
+		return
+	if o.bleed_t > 0.0:
 		o.bleed_dps *= H.n("thornspray", "wider", 1.3)
 		H.tell("thornspray", "wider", o.world)
+	# (thorns take root under it)
+	if H.once("troot%d" % o.get_instance_id(), 1.0):
+		H.thorns(i, o.world, 0.5, H.hero.avg_hit(i, H.n("thornspray", "root", 0.2)), 2.5, {"meld": "thornspray"})
+		H.tell("thornspray", "root", o.world)
 
 
 ## Artery behind: the one Precise marks bleeds while it carries the mark, and a critical on it opens its artery.

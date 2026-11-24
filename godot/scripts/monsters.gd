@@ -684,11 +684,16 @@ func shoot(from: Monster, dir: Vector2, speed: float, reach: float, dmg: float, 
 	FoeHigh.shot(self, from, _arrows.back())
 
 
-## (THE HIGH CITY'S RUNES MELDED: Pitchfork's second shot beside its first; Barrage's and Trident's turned a little)
+## (THE HIGH CITY'S RUNES MELDED: Pitchfork's second shot beside its first; Barrage's and Trident's turned a little. `_copying`
+## while one is loosed, so it makes no copies of its own)
+var _copying := false
 func _shot_beside(m, a: Dictionary, side: Vector2) -> void:
 	if not is_instance_valid(m) or m.dead:
 		return
+	# (a copy is no new shot of its own: it does not make copies again)
+	_copying = true
 	shoot(m, a["dir"], float(a["speed"]), float(a["left"]), float(a["dmg"]), "arrow", float(a["r"]))
+	_copying = false
 	var b: Dictionary = _arrows.back()
 	b["pos"] = a["pos"] + side
 	b["copy"] = true
@@ -698,7 +703,9 @@ func _shot_beside(m, a: Dictionary, side: Vector2) -> void:
 func _shot_turned(m, a: Dictionary, t: float) -> void:
 	if m == null or not is_instance_valid(m) or m.dead:
 		return
+	_copying = true
 	shoot(m, (a["dir"] as Vector2).rotated(t), float(a["speed"]), maxf(1.0, float(a["left"])), float(a["dmg"]), "arrow", float(a["r"]))
+	_copying = false
 	var b: Dictionary = _arrows.back()
 	b["pos"] = a["pos"]
 	b["copy"] = true

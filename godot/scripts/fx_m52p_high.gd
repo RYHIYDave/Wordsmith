@@ -20,7 +20,8 @@ extends "res://scripts/fx_m52kit.gd"
 const LINES := ["fork", "arc", "jump", "soul", "fly", "hurl", "copy", "snip", "throw", "beam", "seek", "cross", "trail", "ground", "cracks",
 	"road", "runes", "hex", "band", "row", "wall", "stand", "linger", "flash", "three", "wide", "reach", "path", "rush", "line", "lance",
 	"shard", "spread", "drag", "pass", "jolt", "haul", "aside", "back", "twice", "draw", "run", "fly",
-	"carry", "stitch", "thread", "jet", "blade", "stream", "drain", "lash", "sight", "shot", "leap", "dart", "thrown", "push", "drink"]
+	"carry", "stitch", "thread", "jet", "blade", "stream", "drain", "lash", "sight", "shot", "leap", "dart", "thrown", "push", "drink",
+	"return", "volley", "flick", "blink", "spears", "lunge", "ghost", "dash", "spark", "zap"]
 const BURSTS := {"go": 1.2, "burst": 1.3, "spikes": 1.0, "spray": 1.0, "fling": 1.0, "land": 1.1, "shatter": 1.2, "pyre": 1.3, "quake": 1.5,
 	"end": 1.2, "echo": 0.9, "again": 1.1, "slam": 1.5, "landed": 1.0, "toll": 1.0, "bolt": 0.9, "crack": 1.0, "blade": 1.4, "split": 0.9,
 	"tear": 1.0, "pour": 1.1, "counted": 0.9, "hang": 0.8, "hour": 0.7, "coup": 0.8, "thud": 1.4, "second": 0.7, "bright": 0.9, "red": 0.8,
@@ -33,7 +34,10 @@ const BURSTS := {"go": 1.2, "burst": 1.3, "spikes": 1.0, "spray": 1.0, "fling": 
 	"haste": 0.6, "shield": 0.7, "heal": 0.7, "dodge": 0.5, "wave": 0.5, "cull": 0.5, "foe": 0.8, "stop": 0.5, "caught": 0.8, "stand2": 0.6,
 	"heap": 1.5, "stake": 1.4, "needle": 0.8, "seek": 0.7, "rupture": 1.0, "cuts": 0.5, "rot": 1.0, "seep": 0.5, "harden": 0.8,
 	"drip": 0.6, "sigil": 0.7, "eye": 0.9, "shade": 0.6, "circle": 0.3, "blink": 0.7, "price": 1.2, "taken": 1.0,
-	"rites": 0.9, "maw": 1.0, "blood": 0.8, "fed": 0.6, "sight": 0.8, "jet": 0.8, "pass": 0.8, "push": 0.6, "thrown": 0.6}
+	"rites": 0.9, "maw": 1.0, "blood": 0.8, "fed": 0.6, "sight": 0.8, "jet": 0.8, "pass": 0.8, "push": 0.6, "thrown": 0.6,
+	"impale": 0.7, "barb": 0.9, "root": 0.6, "image": 0.8, "hand": 1.1, "wail": 0.9, "shroud": 0.5, "slash": 0.5, "whirl": 0.8,
+	"watch": 0.7, "scythe": 1.0, "creep": 0.4, "flood": 1.3, "sweep": 1.0, "blur": 0.5, "rage": 0.7, "gape": 0.8, "shadow": 0.8,
+	"stagger": 0.8, "rake": 0.6, "trail2": 0.4}
 const GROUNDS := {"cloud": 0.8, "ice": 0.8, "fire": 0.8, "storm": 0.9, "vortex": 0.9, "ward": 0.9, "bubble": 0.9, "snare": 0.8, "rune": 0.8,
 	"well": 1.0, "circle": 0.8, "bell": 1.2, "pair": 0.8, "watch": 0.8, "thicket": 0.9, "quick": 0.6, "long": 0.6, "briar": 0.8, "culling": 0.8,
 	"grown": 0.9, "rime": 0.8, "burning": 0.8, "charged": 0.9, "cracked": 1.0, "spring": 0.7, "mark": 0.6, "thorns": 0.6, "spirit": 0.6,
@@ -41,17 +45,23 @@ const GROUNDS := {"cloud": 0.8, "ice": 0.8, "fire": 0.8, "storm": 0.9, "vortex":
 ## (the heavy ones: the screen kicked, how hard)
 const KICK := {"quake": 0.5, "slam": 0.55, "blade": 0.45, "thud": 0.4, "pyre": 0.35, "burst": 0.3, "land": 0.3, "shatter": 0.3, "go": 0.3,
 	"roll": 0.4, "cracked": 0.35, "again": 0.3, "toll": 0.25, "gore": 0.3, "spend": 0.3, "end": 0.3, "bell": 0.3,
-	"heap": 0.45, "stake": 0.4, "price": 0.3, "rupture": 0.2, "taken": 0.3, "maw": 0.25}
+	"heap": 0.45, "stake": 0.4, "price": 0.3, "rupture": 0.2, "taken": 0.3, "maw": 0.25, "flood": 0.45, "sweep": 0.3, "whirl": 0.25,
+	"hand": 0.25, "scythe": 0.25}
 ## (the melds named for a thing: their own moment drawn as that thing, over what its kind draws)
 const SIGN := {"guillotine:blade": "guillotine", "tombstone:thud": "tomb", "gallows:hang": "noose", "noose:tighten": "noose",
 	"fishhook:hook": "hook", "gaff:haul": "hook", "pitchfork:prong": "fork", "scissors:snip": "scissors", "fangs:bite": "fangs",
 	"impaler:stake": "stake", "witchpin:needle": "needle", "ghoul:maw": "maw", "macabre:dance": "dance", "thornshield:burst": "spikes",
 	"lastrites:rites": "rites", "lastrites:pass": "rites", "bastion:ward": "shieldon", "gravewarden:shade": "shieldon",
-	"bloodfeast:harden": "harden", "deadeye:eye": "eyeup"}
+	"bloodfeast:harden": "harden", "deadeye:eye": "eyeup",
+	"spearwall:impale": "stake", "stinger:barb": "barb", "harrow:spikes": "spikes", "thornspray:root": "spikes", "lacerate:deeper": "cuts",
+	"wraithstep:image": "image", "undying:hand": "hand", "haunting:wail": "wail", "coup:slash": "cuts", "massacre:whirl": "whirl",
+	"deathwatch:watch": "hood", "deathwatch:shadow": "hood", "deathwatch:scythe": "scythe", "harvest:sweep": "scythe",
+	"deathwatch:creep": "creep", "purge:flood": "flood", "spearwall:spears": "spears"}
 ## (the redone melds whose moments are their blood's, in blood's red)
-const BLOODY := ["artery", "hemorrhage", "papercut", "bloodfeast", "bloodprice", "bloodharvest", "ghoul", "heartbeat", "thornshield"]
+const BLOODY := ["artery", "hemorrhage", "papercut", "bloodfeast", "bloodprice", "bloodharvest", "ghoul", "heartbeat", "thornshield",
+	"bloodlance", "lacerate", "bloodrage", "harrow"]
 const BLOODY_WHAT := ["burst", "jet", "stream", "draw", "price", "splash", "throb", "pool", "harden", "drain", "drink", "fed", "cut",
-	"cuts", "rupture", "maw", "blood", "lash", "spread", "blade", "flurry", "heal"]
+	"cuts", "rupture", "maw", "blood", "lash", "spread", "blade", "flurry", "heal", "deeper", "spikes", "gape", "rake", "trail", "rage"]
 ## (the enemy's pink burning to gold: what a monster's twist lays on him)
 static var ENEMY := PackedColorArray([Color("#3a0420"), Color("#7a1058"), Color("#c0206a"), Color("#ff4f8a"), Color("#ffb070"), Color("#fff0a0")])
 static var BLOOD := PackedColorArray([Color("#1a0204"), Color("#4a0610"), Color("#800818"), Color("#c0202c"), Color("#ff6a5c"), Color("#ffd0c8")])
@@ -70,7 +80,7 @@ func _R(b: Dictionary) -> PackedColorArray:
 	if b.get("foe", false):
 		return ENEMY
 	var w: String = b["what"]
-	if w in ["fork", "arc", "jump", "bolt", "jolt", "charged", "storm"]:
+	if w in ["fork", "arc", "jump", "bolt", "jolt", "charged", "storm", "spark", "zap"]:
 		return LIGHT
 	if w in ["freeze", "shatter", "spikes", "crack", "rime", "ice", "hail"]:
 		return PackedColorArray(ICE)
@@ -81,7 +91,7 @@ func _R(b: Dictionary) -> PackedColorArray:
 	if str(b["id"]) in BLOODY and w in BLOODY_WHAT:
 		return BLOOD
 	if w in ["soul", "fly", "second", "bright", "rise", "fetch", "longer", "spirit", "haunt", "fast", "dance", "guard", "short", "two", "well",
-			"shade", "circle", "leap", "dart", "haul", "blink"]:
+			"shade", "circle", "leap", "dart", "haul", "blink", "image", "lunge", "ghost", "wail", "hand", "shroud", "creep"]:
 		return SOUL
 	return ramp(b["id"])
 
@@ -92,12 +102,16 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 	if not line and not BURSTS.has(what) and not GROUNDS.has(what):
 		return false
 	# (what a monster's twist does to itself or its kin is drawn on it, not on him)
-	if b.get("foe", false) and what in ["feed", "throb", "ward", "shade", "eye", "frenzy", "blood", "blink", "rot", "burst", "fed", "pass"] and b.has("x1"):
+	if b.get("foe", false) and what in ["feed", "throb", "ward", "shade", "eye", "frenzy", "blood", "blink", "rot", "burst", "fed", "pass",
+			"blur", "rage", "dash", "stagger", "spray", "soul"] and b.has("x1"):
 		b["x"] = b["x1"]
 		b["y"] = b["y1"]
 		line = false
 	b["line"] = line
 	b["end"] = 0.55 if line else float(BURSTS.get(what, GROUNDS.get(what, 0.7)))
+	# (what stands a while, a wall or a row of spears, is drawn for as long as it stands)
+	if b.has("secs") and what in ["wall", "spears"]:
+		b["end"] = float(b["secs"])
 	if fx == null:
 		return true
 	var R := _R(b)
@@ -175,7 +189,7 @@ func paint_air(b: Dictionary) -> void:
 	if b.get("line", false):
 		var x1 := _wx(b["x1"], b["y1"])
 		var y1 := _wy(b["x1"], b["y1"]) - 12.0
-		if what in ["fork", "arc", "jump", "jolt", "bolt", "lash"]:
+		if what in ["fork", "arc", "jump", "jolt", "bolt", "lash", "spark", "zap"]:
 			_bolt(cx, cy, x1, y1, R, sd, fade)
 		elif what in ["thread", "stitch"]:
 			_thread(cx, cy, x1, y1, R, fade, u)
@@ -184,9 +198,10 @@ func paint_air(b: Dictionary) -> void:
 			for k in 9:
 				var f := minf(1.0, u * 1.8) * float(k + 1) / 9.0
 				_drop(cx + (x1 - cx) * f, cy + (y1 - cy) * f - sin(f * PI) * 6.0, R, fade)
-		elif what in ["soul", "fly", "drag", "haul", "draw", "back", "spread", "pass", "run", "stream", "drain", "drink", "leap", "dart", "push", "thrown"]:
+		elif what in ["soul", "fly", "drag", "haul", "draw", "back", "spread", "pass", "run", "stream", "drain", "drink", "leap", "dart", "push", "thrown",
+				"lunge", "ghost", "blink", "dash"]:
 			_wisps(b["x"], b["y"], b["x1"], b["y1"], u, 5, R, sd, 2)
-		elif what in ["hurl", "copy", "snip", "throw", "shard", "three", "blade"]:
+		elif what in ["hurl", "copy", "snip", "throw", "shard", "three", "blade", "return"]:
 			# (a thrown thing: a shard flying from here to there, its trail behind)
 			var px := cx + (x1 - cx) * minf(1.0, u * 1.6)
 			var py := cy + (y1 - cy) * minf(1.0, u * 1.6) - sin(minf(1.0, u * 1.6) * PI) * 10.0
@@ -211,14 +226,14 @@ func paint_air(b: Dictionary) -> void:
 		_ga(1.0)
 		return
 	match what:
-		"wound", "bite", "gore", "open", "tear", "pour", "bleed", "deeper", "unending", "grows", "prick", "wider", "red", "hook", "spray", "jet", "rupture", "cut", "cuts", "price", "splash", "blood", "fed":
+		"wound", "bite", "gore", "open", "tear", "pour", "bleed", "deeper", "unending", "grows", "prick", "wider", "red", "hook", "spray", "jet", "rupture", "cut", "cuts", "price", "splash", "blood", "fed", "gape", "rake", "trail2":
 			# (drops of blood running down, more the deeper the wound)
 			var nd := 3 + (4 if what in ["open", "pour", "tear", "gore"] else 0)
 			for k in nd:
 				var dx := (_rh(sd, k) - 0.5) * 14.0
 				var dy := u * (10.0 + _rh(sd, k + 9) * 10.0)
 				_drop(cx + dx, cy - 4.0 + dy, R, fade)
-		"stun", "thud", "aside", "quake", "slam":
+		"stun", "thud", "aside", "quake", "slam", "stagger":
 			_stars(cx, cy - 10.0, 5, PackedColorArray(DUST6) if not b.get("foe", false) else R, fade, t * 6.0)
 		"curse", "haunt", "hex", "unending", "condemn", "pass", "seek", "sigil", "drip", "eye":
 			_eye(cx, cy - 14.0, R, fade)
@@ -236,7 +251,7 @@ func paint_air(b: Dictionary) -> void:
 			_sight(cx, cy - 4.0, u, R, fade)
 		"counted", "take", "killmark", "hang", "taken":
 			_skull(cx, cy - 18.0, R, fade)
-		"haste", "fast", "rush", "dance":
+		"haste", "fast", "rush", "dance", "blur", "dash":
 			for k in 4:
 				_ga(fade * 0.7)
 				_fs(R[4])
@@ -246,14 +261,14 @@ func paint_air(b: Dictionary) -> void:
 			for k in 4:
 				var a2 := k * TAU / 4.0 + t * 3.0
 				_drop(cx + cos(a2) * 8.0 * fade, cy - 8.0 + sin(a2) * 4.0 * fade - u * 10.0, BLOOD if what != "draw" else R, fade)
-		"frenzy", "keep", "grow":
+		"frenzy", "keep", "grow", "rage":
 			_flames(cx, cy + 4.0, 4, 14.0, 14.0, fade, R, sd)
 		"shield", "guard", "ward":
 			_shield_face(cx, cy - 10.0, 14.0, R, fade)
 		"soul", "bright", "second", "longer", "fetch", "rise", "spirit", "two", "short", "well", "circle", "blink":
 			_wisps(b["x"], b["y"], b["x"], b["y"] - 0.0001, u, 3, SOUL, sd, 2, 6.0, 26.0)
 			_glow(cx, cy - 10.0 - u * 14.0, 10.0, SOUL[4], fade * 0.7)
-		"dose", "fester", "cloud", "rot", "seep":
+		"dose", "fester", "cloud", "rot", "seep", "shroud":
 			for k in 3:
 				_glow(cx + (_rh(sd, k) - 0.5) * 14.0, cy - u * 10.0 - k * 3.0, 6.0, R[4], fade * 0.6)
 		"charge", "drive", "go", "runes", "rune":
@@ -407,6 +422,29 @@ func _thing(sign: String, cx: float, cy: float, R: PackedColorArray, a: float, u
 		"eyeup":
 			_eye(cx, cy - 26.0, R, a)
 			_eye(cx, cy - 26.0, R, a * 0.5)
+		"barb":
+			_barb(cx, cy, R, a, u)
+		"cuts":
+			_slashes(cx, cy, R, a, u, int(b.get("n", 1)))
+		"image":
+			_afterimage(cx, cy, a, u)
+		"hand":
+			_hand_up(cx, cy, a, u)
+		"wail":
+			_wail(cx, cy, R, a, u)
+		"whirl":
+			_whirl(cx, cy, R, a, u, float(b.get("r", 1.8)))
+		"hood":
+			_hood(cx, cy, a, u)
+		"scythe":
+			_scythe(cx, cy, R, a, u)
+		"creep":
+			_skull(cx, cy - 6.0, SOUL, a * 0.8)
+		"flood":
+			_flood(cx, cy, a, u, float(b.get("r", 7.0)))
+		"spears":
+			if b.has("x1"):
+				_spear_row(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 12.0, _wx(b["x1"], b["y1"]), _wy(b["x1"], b["y1"]) - 12.0, R, a, u)
 	_ga(1.0)
 
 
@@ -696,4 +734,170 @@ func _thread(ax: float, ay: float, bx: float, by: float, R: PackedColorArray, a:
 			_fill(_ri(x), _ri(y), 1, 1)
 		px = x
 		py = y
+	_ga(1.0)
+
+
+## A barb left in it, swelling green before it bursts.
+func _barb(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
+	var sw := 2.0 + u * 5.0
+	_ga(a)
+	_fs(R[1])
+	_line(cx - 5.0, cy - 12.0, cx, cy - 4.0, 1)
+	_fs(R[3])
+	for row in int(sw * 2.0):
+		var half := sw * sqrt(maxf(0.0, 1.0 - pow((row - sw) / sw, 2.0)))
+		_fill(_ri(cx - half), _ri(cy - 4.0 - sw + row), maxi(1, _ri(half * 2.0)), 1)
+	_fs(R[5])
+	_fill(_ri(cx) - 1, _ri(cy - 4.0 - sw) + 1, 1, 1)
+	_glow(cx, cy - 4.0, 6.0 + sw, R[4], a * (0.3 + u * 0.4))
+	_ga(1.0)
+
+
+## Slash marks on it, one for each cut, raked across.
+func _slashes(cx: float, cy: float, R: PackedColorArray, a: float, u: float, n: int) -> void:
+	var f := minf(1.0, u / 0.2)
+	for k in clampi(n, 1, 3):
+		var ox := (k - (clampi(n, 1, 3) - 1) * 0.5) * 4.0
+		var x0 := cx + ox - 5.0
+		var y0 := cy - 16.0
+		var x1 := x0 + 10.0 * f
+		var y1 := y0 + 12.0 * f
+		_ga(a)
+		_fs(R[3])
+		_line(x0, y0, x1, y1, 2)
+		_fs(Color.WHITE)
+		_line(x0, y0, x1, y1, 1)
+	_ga(1.0)
+
+
+## A grey afterimage of him where he stood, fading.
+func _afterimage(cx: float, cy: float, a: float, u: float) -> void:
+	_ga(a * 0.55)
+	_fs(SOUL[3])
+	_fill(_ri(cx) - 3, _ri(cy) - 18, 6, 6)
+	_fill(_ri(cx) - 4, _ri(cy) - 12, 8, 10)
+	_fill(_ri(cx) - 4, _ri(cy) - 2, 3, 8)
+	_fill(_ri(cx) + 1, _ri(cy) - 2, 3, 8)
+	_fs(SOUL[5])
+	_fill(_ri(cx) - 1, _ri(cy) - 16, 1, 1)
+	_fill(_ri(cx) + 1, _ri(cy) - 16, 1, 1)
+	_glow(cx, cy - 8.0, 12.0, SOUL[4], a * 0.4)
+	_ga(1.0)
+
+
+## A dead hand bursting up from the ground, its fingers clawing, then closing.
+func _hand_up(cx: float, cy: float, a: float, u: float) -> void:
+	var f := minf(1.0, u / 0.25)
+	var base := cy + 10.0
+	var top := base - 16.0 * f
+	_ga(a)
+	_fs(SOUL[2])
+	_fill(_ri(cx) - 3, _ri(top) + 6, 7, _ri(base - top) - 6)
+	var close := minf(1.0, maxf(0.0, (u - 0.35) / 0.3))
+	for k in 4:
+		var fx := cx - 4.0 + k * 3.0
+		var tip := top - 5.0 + close * 4.0
+		_fs(SOUL[3])
+		_line(fx, top + 6.0, fx + (cx - fx) * close * 0.6, tip, 1)
+	_fs(SOUL[3])
+	_line(cx + 4.0, top + 9.0, cx + 7.0 - close * 3.0, top + 4.0, 1)
+	_fs(DUST6[1])
+	_fill(_ri(cx) - 7, _ri(base), 15, 2)
+	_glow(cx, top + 4.0, 9.0, SOUL[4], a * 0.4)
+	_ga(1.0)
+
+
+## A ghost's wail: rings of sound spreading from it, a gaping mouth.
+func _wail(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
+	for k in 3:
+		var rr := 6.0 + (u * 18.0 + k * 6.0)
+		_ga(a * (1.0 - k * 0.25) * (1.0 - u))
+		_fs(SOUL[4])
+		for j in 18:
+			var ang := j * TAU / 18.0
+			_fill(_ri(cx + cos(ang) * rr), _ri(cy - 8.0 + sin(ang) * rr * 0.5), 1, 1)
+	_ga(a)
+	_fs(SOUL[1])
+	_fill(_ri(cx) - 2, _ri(cy) - 12, 4, 6)
+	_ga(1.0)
+
+
+## A whirl of blades round him, spinning out.
+func _whirl(cx: float, cy: float, R: PackedColorArray, a: float, u: float, r: float) -> void:
+	var rr := r * 16.0 * (0.4 + u * 0.8)
+	for k in 6:
+		var ang := t * 14.0 + k * TAU / 6.0
+		var px := cx + cos(ang) * rr
+		var py := cy + sin(ang) * rr * 0.5
+		_ga(a)
+		_fs(R[4])
+		_line(px, py, px + cos(ang + 1.6) * 7.0, py + sin(ang + 1.6) * 3.5, 2)
+		_fs(Color.WHITE)
+		_line(px, py, px + cos(ang + 1.6) * 7.0, py + sin(ang + 1.6) * 3.5, 1)
+	_ga(1.0)
+
+
+## A reaper's hooded shadow standing over it, watching.
+func _hood(cx: float, cy: float, a: float, u: float) -> void:
+	var top := cy - 34.0
+	_ga(a * 0.75)
+	for row in 26:
+		var half := 3.0 + row * 0.28 if row > 6 else 3.0 + row * 0.5
+		_fs(Color("#0c0a12") if row % 5 != 0 else Color("#1c1826"))
+		_fill(_ri(cx - half), _ri(top + row), _ri(half * 2.0), 1)
+	_fs(Color("#e8e0ff"))
+	_fill(_ri(cx) - 2, _ri(top) + 5, 1, 1)
+	_fill(_ri(cx) + 1, _ri(top) + 5, 1, 1)
+	_ga(1.0)
+
+
+## A scythe's blade sweeping round, its arc of light behind it.
+func _scythe(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
+	var sweep := minf(1.0, u / 0.35) * PI * 1.2
+	var rr := 22.0
+	_ga(a * 0.6)
+	_fs(R[3])
+	var n := 16
+	for k in n:
+		var ang := -PI * 0.6 + sweep * float(k) / n
+		_fill(_ri(cx + cos(ang) * rr), _ri(cy - 6.0 + sin(ang) * rr * 0.5), 2, 1)
+	var ang2 := -PI * 0.6 + sweep
+	var bx := cx + cos(ang2) * rr
+	var by := cy - 6.0 + sin(ang2) * rr * 0.5
+	_ga(a)
+	_fs(DUST6[2])
+	_line(cx, cy - 6.0, bx, by, 1)
+	_fs(Color.WHITE)
+	_line(bx, by, bx + cos(ang2 + 1.9) * 9.0, by + sin(ang2 + 1.9) * 5.0, 2)
+	_fs(R[4])
+	_line(bx, by + 1.0, bx + cos(ang2 + 1.9) * 9.0, by + 1.0 + sin(ang2 + 1.9) * 5.0, 1)
+	_ga(1.0)
+
+
+## A white light flooding out from him, far and wide.
+func _flood(cx: float, cy: float, a: float, u: float, r: float) -> void:
+	var rr := r * 16.0 * minf(1.0, u / 0.4)
+	_glow(cx, cy, rr, Color("#fffbe8"), a * 0.5 * (1.0 - u))
+	_ga(a * (1.0 - u))
+	_fs(Color.WHITE)
+	for k in 48:
+		var ang := k * TAU / 48.0
+		_fill(_ri(cx + cos(ang) * rr), _ri(cy + sin(ang) * rr * 0.5), 2, 1)
+	_ga(1.0)
+
+
+## A row of spears standing up across a line, their points catching the light.
+func _spear_row(ax: float, ay: float, bx: float, by: float, R: PackedColorArray, a: float, u: float) -> void:
+	var f := minf(1.0, u / 0.12)
+	var n := 9
+	for k in n:
+		var g := float(k) / (n - 1)
+		var x := ax + (bx - ax) * g
+		var y := ay + (by - ay) * g + 12.0
+		var h := 14.0 * f
+		_ga(a)
+		_fs(DUST6[3])
+		_line(x, y, x + 1.0, y - h, 1)
+		_fs(R[5])
+		_fill(_ri(x + 1.0), _ri(y - h) - 2, 1, 2)
 	_ga(1.0)

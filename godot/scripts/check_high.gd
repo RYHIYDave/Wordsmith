@@ -37,6 +37,27 @@ const EXPECT := {
 	"heartbeat": {"front": ["stream"], "behind": ["burst"], "foe": ["throb"]},
 	"bastion": {"front": ["wall"], "behind": ["push"], "foe": ["ward"]},
 	"bloodharvest": {"front": ["rise"], "behind": ["splash"], "foe": ["blood"]},
+	# (round 2, his "And then do it again")
+	"bodkin": {"front": ["shard"], "behind": ["seek"], "foe": ["shatter"]},
+	"coup": {"front": ["dash"], "behind": ["slash"], "foe": ["blur"]},
+	"massacre": {"front": ["whirl"], "behind": ["killmark"], "foe": ["frenzy"]},
+	"barrage": {"front": ["volley"], "behind": ["twice"], "foe": ["fan"]},
+	"bloodlance": {"front": ["burst"], "behind": ["draw"], "foe": ["trail"]},
+	"bloodrage": {"front": ["spray"], "behind": ["spring"], "foe": ["rage"]},
+	"dart": {"front": ["return"], "behind": ["path"], "foe": ["dash"]},
+	"harrow": {"front": ["spikes"], "behind": ["row"], "foe": ["rake"]},
+	"harvest": {"front": ["sweep"], "behind": ["rise"], "foe": ["soul"]},
+	"lacerate": {"front": ["burst"], "behind": ["path"], "foe": ["gape"]},
+	"spearwall": {"front": ["spears"], "behind": ["wall"], "foe": ["stagger"]},
+	"thornspray": {"front": ["root"], "behind": ["spray"], "foe": ["spray"]},
+	"undying": {"front": ["hand"], "behind": ["again"], "foe": ["hand"]},
+	"wraithstep": {"front": ["image"], "behind": ["fast"]},
+	"deathwatch": {"front": ["scythe"], "behind": ["creep"], "foe": ["shadow"]},
+	"flicker": {"front": ["blink"], "behind": ["flick"], "foe": ["echo"]},
+	"haunting": {"front": ["wail"], "behind": ["shroud"], "foe": ["wail"]},
+	"spark": {"front": ["zap"], "behind": ["trail"], "foe": ["spark"]},
+	"purge": {"front": ["flood"], "behind": ["wide"]},
+	"stinger": {"front": ["burst"], "behind": ["trail"], "foe": ["cloud"]},
 }
 ## (those the films wait on, as they need it: their front's twist on a kill, a cull, a third use; their behind's, a dodge)
 
@@ -146,6 +167,7 @@ func run(only := "") -> void:
 	var res := {"front": [0, []], "behind": [0, []], "foe": [0, []]}
 	var shot := 0
 	for id in ids:
+		var row := []
 		for side in ["front", "behind", "foe"]:
 			var seen := ""
 			if side == "foe":
@@ -156,7 +178,10 @@ func run(only := "") -> void:
 				res[side][0] += 1
 			else:
 				res[side][1].append(id)
+			row.append(seen.trim_prefix(id + ":") if seen != "" else "MISSING")
 			shot += 1
+		# (as it goes, one line a meld: what it showed in front, behind and on a monster)
+		print("HIGH . %s: %s" % [id, " / ".join(PackedStringArray(row))])
 	h.stats["life_regen"] = regen
 	for side in ["front", "behind", "foe"]:
 		var miss: Array = res[side][1]
@@ -228,6 +253,13 @@ func setup(id: String, side: String) -> void:
 			m.bleed_t = 4.0
 			m.bleed_dps = 6.0
 			m.bleed_move = 2.0
+	# (round 2: Lacerate's first cut already there; one beside him for Coup's cut as he runs past)
+	if id == "lacerate" and side == "front":
+		for m in pack:
+			m.m52["lac"] = 1
+			m.m52["bleed_from"] = 0.0
+	if id == "coup" and side == "behind":
+		pack[1].world = home + across * 0.6
 
 
 ## One meld on one side of the Strike: its setup, the Strike (twice), what it waits on after, and its own moment watched for.
@@ -330,8 +362,12 @@ func foe_setup(id: String, m) -> void:
 		kin.world = m.world + Vector2(-M._w_face.y, M._w_face.x) * 1.0
 		kin.max_life = 600.0
 		kin.life = 300.0
-	if id in ["ghoul", "deadeye", "macabre", "gravewarden"]:
+	if id in ["ghoul", "deadeye", "macabre", "gravewarden", "undying", "haunting", "harvest"]:
 		m.risen = true
+	if id == "bodkin":
+		h.shield = maxf(h.shield, 20.0)
+	if id == "barrage":
+		m.life = m.max_life * 0.3
 	h.bleed_t = 4.0
 	h.bleed_dps = 3.0
 	if of.has("culling"):
@@ -359,7 +395,7 @@ func foe_setup(id: String, m) -> void:
 ## Whether a monster carrying `id` must die for its twist on him to show (its rising, its burst, its rot, its shield passed on).
 static func foe_dies(id: String) -> bool:
 	var of: Array = M52.T()["of"][id]
-	return of.has("reaping") or id in ["bloodburst", "fuse", "deathburst", "gangrene", "lastrites"]
+	return of.has("reaping") and id != "harvest" or id in ["bloodburst", "fuse", "deathburst", "gangrene", "lastrites", "thornspray"]
 
 
 ## Carried by a monster: the moment its twist on him waits on (a blow of it, its shot, its death, its rising, its shockwave),
@@ -376,17 +412,21 @@ func _foe(id: String, snap: bool) -> String:
 	var k := func(w: String) -> float: return 1.0 if m.words.has(w) else 0.0
 	var by: Dictionary = m.blow()
 	# (its blow, twice; its shot; its shield struck)
-	for _j in (3 if id == "artery" else 2):
+	for _j in (3 if id in ["artery", "lacerate"] else 2):
 		h.blow_by = m
 		h.hurt_by(20.0, str(by.get("el", "phys")), m.words, {}, m, m.world)
 		h.blow_by = null
 	if of.has("piercing"):
 		M._monsters.shoot(m, (h.world - m.world).normalized(), 7.0, 6.0, 15.0)
-	if id == "thornshield":
+	if id in ["thornshield", "spearwall"]:
 		m.shield = 50.0
 		M._foe.shield(m, 10.0)
 		m.shield = 0.0
 		M._foe.shield(m, 10.0)
+	if id in ["massacre", "harvest"] and M._w_pack.size() > 1:
+		# (one of its kin dies near it)
+		var kin = M._w_pack[1]
+		kin.damage(kin.life + kin.shield + 10.0, "phys", false, false, [], false, false, -1)
 	if id == "impaler":
 		# (one of its shots going into a wall: it grows; then on him, harder)
 		var wall := Vector2.INF

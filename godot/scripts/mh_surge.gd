@@ -17,7 +17,8 @@
 ##   Bastion     a shield for each it strikes, and it stands round him as a ring of walls of light a few seconds, throwing
 ##               back what reaches it and breaking their shots; a ward where he lands, throwing all inside it out
 ##   Resonance   a ring hanging round him, striking whatever crosses it; his dodge's surge rings on where he dodged from
-##   Spark       a smaller one every second use; his dodge back a third sooner
+##   Spark       a smaller one every second use, throwing off sparks that leap to the nearest; his dodge back a third
+##               sooner, leaving a trail of crackling sparks
 ##   Tsunami     a wave rolling out across the room, carrying them; his dodge's surge three times as wide
 ##   Undertow    goes out, then draws back, dragging what it struck; a vortex where he dodged from
 ##   Ricochet    three more copies of his blow at the nearest; shards out every way from his dodge
@@ -135,6 +136,11 @@ func cast(i: int, at: Vector2, share: float) -> void:
 	if OWN.has(id):
 		H.tell(id, OWN[id], at, {"r": R})
 	match id:
+		"spark":
+			# (it throws off sparks that leap to the nearest)
+			for q in H.near(at, R * H.n("spark", "leap", 1.8), 3):
+				H.hit(q, i, H.n("spark", "spark", 0.15))
+				H.tell(id, "zap", at, {"x1": q.world.x, "y1": q.world.y})
 		"upheaval":
 			for o in struck:
 				if not H.ok(o):
@@ -351,7 +357,11 @@ func dodge(i: int, at: Vector2, share: float) -> void:
 		"resonance":
 			_echoes.append({"at": at, "t": 0.0, "n": int(H.n("resonance", "rings", 3)), "i": i, "share": share * 0.5, "next": 1.0})
 		"spark":
-			pass
+			# (a trail of crackling sparks along the way he went)
+			var w: Vector2 = H.hero.face
+			H.tell(id, "trail", at, {"x1": at.x + w.x * 3.0, "y1": at.y + w.y * 3.0})
+			for k in 4:
+				H.ground("storm", i, at + w * (0.4 + k * 0.85), 0.45, H.n("spark", "trail", 1.6), H.hero.avg_hit(i, 0.15))
 		"undertow":
 			H.ground("vortex", i, at, 1.6, 3.0, 1.0)
 		"ricochet":

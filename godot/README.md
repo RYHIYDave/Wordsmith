@@ -1559,7 +1559,11 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   change to one there, 1 numbers only; in front counted twice), the 20 lowest given new twists he sees happen, their names,
   ideas and stones kept: Impaler, Witchpin, Artery, Hemorrhage, Papercut, Gangrene, Bloodfeast, Thornshield, Bloodhex, Ghoul,
   Deadeye, Macabre, Gravewarden, Fetch, Bloodprice, Mercy, Last Rites, Heartbeat, Bastion, Bloodharvest (check_high.gd EXPECT:
-  each side must show its new moment itself).
+  each side must show its new moment itself). AND AGAIN at his words (“And then do it again”): all 110 scored once more, the
+  20 lowest redone the same way: Bodkin, Coup, Massacre, Barrage, Bloodlance, Bloodrage, Dart, Harrow, Harvest, Lacerate,
+  Spearwall, Thornspray, Undying, Wraithstep, Deathwatch, Flicker, Haunting, Spark, Purge, Stinger. Found on the way: a monster's
+  copied shot (Pitchfork's, Barrage's, Trident's) made copies of its own (monsters.gd `_copying`), and the films never killed a
+  Reaping carrier, so its rising never showed (check_high.gd foe_setup, foe_dies, shared with the films).
   Checks `--only=words --cases=high` (or `high:<id>,<id>`), each meld in front, behind and carried by a monster; films `--fixed-fps 30 -- --only=words
   --cases=m52film:high` (or `high:<from>-<to>`); the page `python3 docs/mockups/meld_films/page.py <films> <out> high`.
 - THE LEXICON IN THE STASH (his words, 24 Nov 2026: “I'd also like to get rid of the lexicon in the middle of town and add it to the
