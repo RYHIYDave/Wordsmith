@@ -321,17 +321,10 @@ func _own(id: String, side := "") -> String:
 	return ""
 
 
-## Carried by a monster: the moment its twist on him waits on (a blow of it, its shot, its death, its rising, its shockwave),
-## and its telling as a monster's (foe).
-func _foe(id: String, snap: bool) -> String:
-	_fresh()
+## A monster carrying `id` set up as its twist on him waits on (also used by the films, check_melds52.gd film): a kin near it,
+## risen already for those whose twist is a risen one's, and him bleeding, poisoned, burning, cursed... as it needs.
+func foe_setup(id: String, m) -> void:
 	var of: Array = M52.T()["of"][id]
-	var m = M._w_pack[0]
-	m.words = [id, of[0], of[1]]
-	m.max_life = 600.0
-	m.life = 600.0
-	m.world = h.world + M._w_face * 1.2
-	# (a kin near it, for what it does to the monsters near it)
 	if M._w_pack.size() > 1:
 		var kin = M._w_pack[1]
 		kin.world = m.world + Vector2(-M._w_face.y, M._w_face.x) * 1.0
@@ -339,7 +332,6 @@ func _foe(id: String, snap: bool) -> String:
 		kin.life = 300.0
 	if id in ["ghoul", "deadeye", "macabre", "gravewarden"]:
 		m.risen = true
-	# (what it waits on, on him)
 	h.bleed_t = 4.0
 	h.bleed_dps = 3.0
 	if of.has("culling"):
@@ -362,6 +354,25 @@ func _foe(id: String, snap: bool) -> String:
 		h.shock_t = 3.0
 	if id in ["briar", "noose"]:
 		h.root_t = 0.5
+
+
+## Whether a monster carrying `id` must die for its twist on him to show (its rising, its burst, its rot, its shield passed on).
+static func foe_dies(id: String) -> bool:
+	var of: Array = M52.T()["of"][id]
+	return of.has("reaping") or id in ["bloodburst", "fuse", "deathburst", "gangrene", "lastrites"]
+
+
+## Carried by a monster: the moment its twist on him waits on (a blow of it, its shot, its death, its rising, its shockwave),
+## and its telling as a monster's (foe).
+func _foe(id: String, snap: bool) -> String:
+	_fresh()
+	var of: Array = M52.T()["of"][id]
+	var m = M._w_pack[0]
+	m.words = [id, of[0], of[1]]
+	m.max_life = 600.0
+	m.life = 600.0
+	m.world = h.world + M._w_face * 1.2
+	foe_setup(id, m)
 	var k := func(w: String) -> float: return 1.0 if m.words.has(w) else 0.0
 	var by: Dictionary = m.blow()
 	# (its blow, twice; its shot; its shield struck)
@@ -394,7 +405,7 @@ func _foe(id: String, snap: bool) -> String:
 		m._surge(0.05)
 	await M._wait(0.6)
 	# (its death, and its rising)
-	if of.has("reaping") or id in ["bloodburst", "fuse", "deathburst", "gangrene", "lastrites"]:
+	if foe_dies(id):
 		m.damage(m.life + m.shield + 10.0, "phys", false, false, [], false, false, -1)
 	var t := 0.0
 	var seen := ""

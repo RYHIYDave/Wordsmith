@@ -479,13 +479,20 @@ func film(only := "") -> void:
 					m.life = 320.0
 			# (THE HIGH CITY'S RUNES MELDED: the pack stood and what each one's own twist waits on made so, as its check makes it:
 			# check_high.gd setup: a kill, one nearly dead, a third use, his frenzy, a mark, burning, poison, a curse...)
-			if M52.is_high(id):
-				preload("res://scripts/check_high.gd").new(M, h).setup(id, side)
+			var CH = preload("res://scripts/check_high.gd").new(M, h) if M52.is_high(id) else null
+			if CH != null:
+				CH.setup(id, side)
 			k = await _frames(k, 0.25)
 			M._w_strike(h)
 			k = await _walk(k, 0.6, id, 1.0)
+			# (what its new moment waits on after the first blow, as its check makes it: a blow on him, one dying in its circle)
+			if CH != null:
+				await CH._after(id, side)
 			M._w_strike(h)
 			if M52.is_high(id) and (M52.T()["of"][id] as Array).has("surging") and side == "behind":
+				if id == "heartbeat":
+					h.last.high.orb(h.world + Vector2(1.6, 0.4))
+					k = await _frames(k, 0.2)
 				h.last.dodge_surge(h.world)
 				k = await _frames(k, 0.3)
 				h.last.high.surge.landed(h.world)
@@ -530,6 +537,10 @@ func film(only := "") -> void:
 		m.max_life = FOE_LIFE
 		m.life = FOE_LIFE * float(FOE_LOW.get(id, 1.0))
 		m.shield = roundf(FOE_LIFE * 0.2) if m.words.has("guarding") else 0.0
+		# (THE HIGH CITY'S: as its check sets it up: a kin near it, risen already where its twist is a risen one's, him as it needs)
+		var CHF = preload("res://scripts/check_high.gd") if M52.is_high(id) else null
+		if CHF != null:
+			CHF.new(M, h).foe_setup(id, m)
 		# (what its twist waits on, made so for the film: him poisoned or shocked, its criticals certain)
 		var tune: Dictionary = M52.T()["tune"]
 		var kept := {}
@@ -546,17 +557,21 @@ func film(only := "") -> void:
 		m._cd = 0.0
 		m.speed = 1.2
 		k = await _frames(k, 2.6)
+		# (a Piercing carrier's shot, flying through walls at him)
+		if CHF != null and (M52.T()["of"][id] as Array).has("piercing") and not m.dead:
+			M._monsters.shoot(m, (h.world - m.world).normalized(), 7.0, 6.0, 15.0)
+			k = await _frames(k, 0.8)
 		m.state = "recover"
 		m._t = 1e9
 		m._cd = 1e9
 		# (he strikes back: its shield struck and broken, it hurt and brought low, or killed, for what each waits on)
-		if FOE_DIES.has(id) or M52.is_reap(id) or ((M52.is_city(id) or M52.is_city2(id)) and not M52.is_new_rank(id) and (M52.T()["of"][id] as Array).has("splitting")) or id in ["hexblast", "slowfuse", "tripwire"]:
+		if FOE_DIES.has(id) or M52.is_reap(id) or (CHF != null and CHF.foe_dies(id)) or ((M52.is_city(id) or M52.is_city2(id)) and not M52.is_new_rank(id) and (M52.T()["of"][id] as Array).has("splitting")) or id in ["hexblast", "slowfuse", "tripwire"]:
 			m.life = 1.0
 		M._w_strike(h)
 		k = await _frames(k, 0.6)
 		if not m.dead:
 			M._w_strike(h)
-		k = await _frames(k, float(FOE_TAIL.get(id, 4.0 if M52.is_reap(id) else 1.4)))
+		k = await _frames(k, float(FOE_TAIL.get(id, 4.0 if M52.is_reap(id) or (CHF != null and CHF.foe_dies(id)) else 1.4)))
 		for w in kept:
 			if kept[w] == null:
 				tune[id].erase(w)
@@ -564,6 +579,10 @@ func film(only := "") -> void:
 				tune[id][w] = kept[w]
 		h.poison_t = 0.0
 		h.shock_t = 0.0
+		if CHF != null:
+			for f in ["bleed_t", "burn_t", "chill_t", "hex_t", "still_t", "root_t"]:
+				h.set(f, 0.0)
+			h.life = h.max_life
 		var out: Array = []
 		# (the High City's 110 smaller, so that all of them go on one page)
 		var crf := "31" if M52.is_high(id) else "26"
@@ -574,7 +593,8 @@ func film(only := "") -> void:
 		DirAccess.remove_absolute(_dir)
 		print("MELDS52 FILM %s: %d frames, ffmpeg %d" % [id, k, code])
 		print("MELDS52 TOLD %s: %s" % [id, ", ".join(PackedStringArray(h.m52.told.keys()))])
-		print("MELDS52 FOE %s: %s" % [id, "shown" if h.m52.told.keys().any(func(t): return str(t).ends_with(":foe") or str(t).ends_with(":foeSplit") or (M52.is_reap(id) and str(t).ends_with(":rise"))) else "NOT SHOWN"])
+		var want: Array = preload("res://scripts/check_high.gd").EXPECT.get(id, {}).get("foe", [])
+		print("MELDS52 FOE %s: %s" % [id, "shown" if h.m52.told.keys().any(func(t): return str(t).ends_with(":foe") or str(t).ends_with(":foeSplit") or (M52.is_reap(id) and str(t).ends_with(":rise")) or want.any(func(w): return str(t) == id + ":" + w)) else "NOT SHOWN"])
 	M52.ON = was
 	M52.REAP_ON = was_reap
 	M52.HIGH_ON = was_high
