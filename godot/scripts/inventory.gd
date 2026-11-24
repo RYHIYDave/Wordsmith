@@ -2888,9 +2888,16 @@ func _dungeon_line(w: String, k: Dictionary, unknown: String) -> String:
 	var FW := preload("res://scripts/foe_words.gd")
 	var meld: bool = FW.is_meld(w) or FW.is_rank(w)
 	if DOOR_GOLD_LINE and loot.DOOR_GOLD_WORDS.has(w):
-		return "%d%% increased gold found in it; no monster in it carries it. Richer loot, and words are likelier." % roundi(loot.DOOR_GOLD)
+		return "%d%% increased gold found in it; no monster in it carries it. %s" % [roundi(loot.DOOR_GOLD), _burn_reward(1)]
 	var t: String = FW.page(w) if meld else str(Words.word(w).get("monsterText", ""))
-	return "Every monster in it: %s%s %s" % [t.substr(0, 1).to_lower(), t.substr(1), "Counts as two words: richer loot, and words are likelier." if meld else "Richer loot, and words are likelier."]
+	return "Every monster in it: %s%s %s" % [t.substr(0, 1).to_lower(), t.substr(1), ("Counts as two words: " if meld else "") + _burn_reward(2 if meld else 1)]
+
+
+## What words burned into a dungeon give, `n` of them, in the game's own way of saying it (his words, 24 Nov 2026: “"it's _____ 50%" is
+## not the way you describe anything in an arpg.  It would be "50% increased gold found"”, and “Likelier words is bad too”): loot.gd
+## on_kill (items and words, 30% each), magic_find (25 each), gain_xp (10% each).
+static func _burn_reward(n: float) -> String:
+	return "%d%% increased item drops, %d%% increased word drops, %d%% increased magic find, %d%% increased experience." % [roundi(30 * n), roundi(30 * n), roundi(25 * n), roundi(10 * n)]
 
 
 ## front and behind (known once made); ON GEAR (what it becomes there, once he has burned it into a piece); ON A DUNGEON (not in
@@ -3125,7 +3132,7 @@ func _gate_side(blink: bool, x0: float, w: float) -> void:
 	y += 3.0 * (CELL + 12.0) + 6.0
 	var n: float = FoeWords.words_weight(laid)
 	if n > 0:
-		for l in _wrap("Reward: +%d%% items, +%d rarity, +%d%% experience, likelier words." % [30 * n, 25 * n, 10 * n], w, 10):
+		for l in _wrap("Reward: " + _burn_reward(n), w, 10):
 			_text(Vector2(x0, y), l, 10, PICK)
 			y += 13.0
 		# (THE RIM'S DOOR: what is burned in drops more, each rune by how many times: loot.gd tilt_word)
@@ -3134,9 +3141,9 @@ func _gate_side(blink: bool, x0: float, w: float) -> void:
 			var bits: Array = []
 			for k in B:
 				if not loot.DOOR_GOLD_WORDS.has(k):
-					bits.append("%s %dx" % [str(Words.word(k)["name"]).to_upper(), 1 + 2 * int(B[k])])
+					bits.append("%d%% increased %s drops" % [200 * int(B[k]), str(Words.word(k)["name"]).to_upper()])
 			if not bits.is_empty():
-				for l in _wrap("Drops more often: %s." % ", ".join(PackedStringArray(bits)), w, 10):
+				for l in _wrap("%s." % ", ".join(PackedStringArray(bits)), w, 10):
 					_text(Vector2(x0, y), l, 10, PICK)
 					y += 13.0
 	_text(Vector2(x0, y), "Its boss waits at the end. %s." % main.ENDLESS_WARN, 10, BAD)

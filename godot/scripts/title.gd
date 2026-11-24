@@ -728,7 +728,7 @@ func _word_page(ci: CanvasItem, w: String, x: float, y0: float, pw: float, ph: f
 	var mt := str(wd.get("monsterText", ""))
 	# (EVERY WORD ON A DUNGEON: a melded or ranked word's too, what it does to every monster there: foe_words.gd page)
 	var ft := FoeWords.page(w) if meld else mt
-	var dun_text := ("Every monster in it: %s%s %s" % [ft.substr(0, 1).to_lower(), ft.substr(1), "Counts as two words: richer loot, and words are likelier." if meld else "Richer loot, and words are likelier."]) if dungeon and (not meld or FoeWords.on()) else unknown
+	var dun_text := ("Every monster in it: %s%s %s" % [ft.substr(0, 1).to_lower(), ft.substr(1), ("Counts as two words: " if meld else "") + preload("res://scripts/inventory.gd")._burn_reward(2 if meld else 1)]) if dungeon and (not meld or FoeWords.on()) else unknown
 	var parts: Array = [
 		[0.0, [[str(wd["about"]), P["white"], false, 0.0]]],
 		[4.0, [head.call("ON AN ATTACK"),
