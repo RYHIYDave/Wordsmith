@@ -118,6 +118,8 @@ a { color: var(--accent); }
 '''.replace('@@SECS@@', ''.join(secs))
 RULES_98 = '<p class="lead">Checked against your Art Rulebook and fixed (shapes, size, the hero kept clear, the freeze on big blows, the colours you said yes to, and every film now shows the meld on a monster): <a href="https://claude.ai/artifact/QNsqwTYmHsxKbx4E9GHBzY">the rules check</a>.</p>'
 if HIGHG:
+    page = page.replace('<p>Tell me in the chat to switch them on, or which ones to change. They stay switched off until you say yes.</p>',
+        '<p>They are switched on, at your “Sure switch it on”. Tell me in the chat which ones to change.</p>')
     page = page.replace('@@TITLE@@', 'High City Melds').replace('@@H1@@', "The High City's runes melded: 110 melds and 5 level 2 runes").replace('@@RULES@@',
         '<p class="lead">The last group: Piercing, Bleeding, Reaping, Culling and Surging with every other rune and with each other. Plundering and Greed never meld, '
         'as you said; Mirroring, now the rare copier of items, is left out. One twist for all of them: the High City rune\'s own act carries the other rune. '
