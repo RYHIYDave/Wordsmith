@@ -176,7 +176,7 @@ static func add_to(D: Dictionary) -> void:
 			D["foe"]["rankBy"][t["rankOf"][id]["word"]] = id
 
 
-## A door word listed among the words to find (door_words.gd ON): the words' list, the count, the Lexicon's page THE DOOR.
+## A door word listed among the words to find (door_words.gd ON): the words' list, the count, the Lexicon's page DOOR.
 static func list_door(D: Dictionary, id: String) -> void:
 	if not D.has("ids") or (D["ids"] as Array).has(id):
 		return
@@ -186,10 +186,10 @@ static func list_door(D: Dictionary, id: String) -> void:
 	if D.has("lexPages"):
 		var pg = null
 		for q in D["lexPages"]:
-			if str(q["name"]) == "THE DOOR":
+			if str(q["name"]) == "DOOR":
 				pg = q
 		if pg == null:
-			pg = {"name": "THE DOOR", "words": []}
+			pg = {"name": "DOOR", "words": []}
 			D["lexPages"].append(pg)
 		pg["words"].append(id)
 

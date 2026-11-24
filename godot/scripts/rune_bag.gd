@@ -40,8 +40,9 @@ const FOE := Color("#ff7aa8")
 const INK := Color("#0e0c24")
 const SHADE := Color(0.027, 0.02, 0.04, 1.0)
 
-const GROUPS := ["ALL", "DAMAGE", "STRIKE", "TIME", "CONTROL", "SPOILS", "MELDS"]
-const GROUP_ICON := {"DAMAGE": "power", "STRIKE": "twin", "TIME": "swift", "CONTROL": "binding", "SPOILS": "leech", "MELDS": "eruption"}
+## (and THE DOOR WORDS' own, DOOR, before MELDS while door_words.gd ON is: the Lexicon's page of that name)
+var GROUPS: Array = ["ALL", "DAMAGE", "STRIKE", "TIME", "CONTROL", "SPOILS", "MELDS"]
+const GROUP_ICON := {"DAMAGE": "power", "STRIKE": "twin", "TIME": "swift", "CONTROL": "binding", "SPOILS": "leech", "DOOR": "chains", "MELDS": "eruption"}
 const SORTS := ["GROUP", "A-Z", "MOST", "NEW"]
 const ATTR := {"str": "STRENGTH", "dex": "DEXTERITY", "int": "INTELLIGENCE"}
 ## (the bag's measures, game pixels from its half's left: the mock-up's)
@@ -99,6 +100,8 @@ var _base: Array = []
 func _init(owner) -> void:
 	inv = owner
 	_base = Words.ids()
+	if preload("res://scripts/door_words.gd").ON:
+		GROUPS.insert(GROUPS.size() - 1, "DOOR")
 	search = LineEdit.new()
 	search.modulate = Color(1, 1, 1, 0)
 	search.visible = false

@@ -1,5 +1,5 @@
 ## THE DOOR WORDS (door_words.gd: Chains, Siege, Toll and Crown, his pick “Four new door-only words”): `--only=doorwords
-## --shots=<dir>`. Switched on for the check (door_words.gd ON): each known, its stone and colour, listed on the Lexicon's page THE
+## --shots=<dir>`. Switched on for the check (door_words.gd ON): each known, its stone and colour, listed on the Lexicon's page
 ## DOOR; no move, no piece of gear, no stronghold's altar and no bench takes one; the Rim's door takes it; it drops only on an
 ## endless level, the four sharing one rune's share; burned in, no monster carries it and it drops no more often. On an endless
 ## level of floor 8: Chains twice the chained rares, Crown the royals' packs for sure and twice as many, Toll the Bells for sure
@@ -73,12 +73,12 @@ func run(main, hero, dir: String) -> void:
 	# THE FOUR, KNOWN
 	var page = null
 	for pg in D["lexPages"]:
-		if str(pg["name"]) == "THE DOOR":
+		if str(pg["name"]) == "DOOR":
 			page = pg
 	var named: Array = DoorWords.IDS.map(func(w): return str(Words.word(w)["name"]))
 	var stones: Array = DoorWords.IDS.filter(func(w): return Melds52.T()["stones"].has(w))
 	_line(named == ["Chains", "Siege", "Toll", "Crown"] and stones.size() == 4 and DoorWords.IDS.all(func(w): return Words.ids().has(w)) and page != null and page["words"] == DoorWords.IDS,
-		"known: %s, each its stone (%d), among the words to find, the Lexicon's page THE DOOR: %s" % [named, stones.size(), page["words"] if page != null else null])
+		"known: %s, each its stone (%d), among the words to find, the Lexicon's page DOOR: %s" % [named, stones.size(), page["words"] if page != null else null])
 	# NOTHING BUT THE DOOR TAKES ONE
 	for w in DoorWords.IDS:
 		M.loot.words[w] = 2

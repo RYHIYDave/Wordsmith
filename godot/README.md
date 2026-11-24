@@ -1524,10 +1524,10 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   yes); TOLL the Muffled Bells for sure, and each bell rung calls its tough ones twice (act2/bells.gd _tough), on the city's
   floors too; CROWN the royals' packs for sure and twice as many, and on the High City's floors a quarter more of its packs
   (main.gd royal_packs). Stones (iron chain links, a brick gatehouse, a bronze bell, a purple crown) with Greed's in
-  melds52.json `extra` (`door`), docs/mockups/door_words/; listed, with the Lexicon's page THE DOOR, only while door_words.gd
-  ON is. ON: OFF until his yes to the pictures. Found on the way: Greed was missing from the words he holds (loot.gd held) and
+  melds52.json `extra` (`door`), docs/mockups/door_words/; listed, with the Lexicon's page and the rune bag's group DOOR, only while door_words.gd
+  ON is. ON at his pick, “Switch them on (Recommended)”, 24 Nov 2026, to the pictures (https://claude.ai/artifact/QxnGXdmQm1j11rGyFaGCYe). Found on the way: Greed was missing from the words he holds (loot.gd held) and
   from the drops' colours, now both kept. `--only=doorwords` 12 of 12 (with altarrooms 10 of 10, rarerunes 12 of 12,
-  doorrunes 11 of 11).
+  doorrunes 11 of 11; on: doorwords 12 of 12, runebag 18 of 18, lexstash 5 of 5).
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/

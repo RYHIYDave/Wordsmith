@@ -12,11 +12,12 @@
 ##     ones twice over (act2/bells.gd _tough); on the city's floors, where the Bells ring for sure already, the tough ones twice.
 ##   CROWN, the royals' packs: on the level for sure (not one level in two) and twice as many of its packs touched by a royal (half,
 ##     not a quarter: main.gd royal_packs); on the High City's floors, whose own royals stay, a quarter more of its packs touched.
-## ON: pictures first (their stones, docs/mockups/door_words/); until his yes none drops, and none is listed among the words.
+## ON: pictures first (their stones, docs/mockups/door_words/, https://claude.ai/artifact/QxnGXdmQm1j11rGyFaGCYe); ON at his pick,
+## “Switch them on (Recommended)”, 24 Nov 2026.
 extends RefCounted
 
 const IDS := ["chains", "siege", "toll", "crown"]
-static var ON := false
+static var ON := true
 ## (how many times as many chained rares, strongholds, royals' packs; the tough ones at each bell)
 const MORE := 2
 ## (Crown on the High City's floors, their own royals kept: the share of the packs left that a royal touches)

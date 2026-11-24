@@ -91,7 +91,7 @@ func run(main, hero, dir: String) -> void:
 		counts[rb.group_of(w)] = int(counts.get(rb.group_of(w), 0)) + 1
 	var secs: Array = rb._sections()
 	var titles: Array = secs.map(func(s): return s["title"])
-	_line(inv._rb_on == "game" and _ids(secs).size() == held.size() and titles == ["DAMAGE", "STRIKE", "TIME", "CONTROL", "SPOILS", "MELDS"].filter(func(t): return counts.has(t)),
+	_line(inv._rb_on == "game" and _ids(secs).size() == held.size() and titles == rb.GROUPS.slice(1).filter(func(t): return counts.has(t)),
 		"the bag over the game's half (%s): every rune held in it, %d of %d, in sections %s" % [inv._rb_on, _ids(secs).size(), held.size(), str(titles)])
 	_line(rb.group_of("fire2") == "DAMAGE" and rb.group_of("twin2") == "STRIKE" and rb.group_of("eruption") == "MELDS" and rb.group_of("plundering") == "SPOILS",
 		"a rank in its rune's group (Flame II %s, Twin II %s), a meld in MELDS (%s), Plundering in SPOILS (%s)" % [rb.group_of("fire2"), rb.group_of("twin2"), rb.group_of("eruption"), rb.group_of("plundering")])
