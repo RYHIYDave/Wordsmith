@@ -1566,8 +1566,7 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   foe_meldshigh.gd, hooked in foe_melds52.gd. Numbers tools/melds52/tune.json, each meld's own keys, with the code's defaults.
   Looks fx_m52p_high.gd: each moment in the meld's own colour (an element's own when it is one), the thing it is (the named ones
   drawn as their things: a guillotine's blade, a gravestone, a noose, a hook, a pitchfork, shears, fangs, a bell), what a monster
-  lays on him in the enemy's pink and gold. melds52.gd HIGH_ON: OFF until his yes to their films (his pick, “Carriers on, melds off
-  (Recommended)”, 24 Nov 2026); the films page https://claude.ai/artifact/TKpwC9ATxHLtGrEny2T5tW (all 110 films show their moments).
+  lays on him in the enemy's pink and gold. melds52.gd HIGH_ON: ON at his pick “Switch them on (Recommended)”, 24 Nov 2026, to the films page https://claude.ai/artifact/TKpwC9ATxHLtGrEny2T5tW (all 110 films show their moments).
   THE 20 LEAST EXCITING REDONE at his words (“Once the melds are done I want you to find the 20 weakest ones and redo them.”),
   weakest read by his pick “Least exciting”: each of the 110 scored on how much each twist shows (3 a new thing seen, 2 a
   change to one there, 1 numbers only; in front counted twice), the 20 lowest given new twists he sees happen, their names,
@@ -1607,7 +1606,7 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   from melds52_rules.gd's hooks (used, struck, killed, marked, wake, step, struck_him, more, crit, orb_taken); on a monster
   foe_meldsredo.gd, from foe_melds52.gd's and foe_words.gd's; their looks fx_m52p_redo.gd (the High City painter's brushes, and
   things of their own: Doom's hammer, Duelist's blades, Eternity's clock, the Hourglass, Manacle's chain, Pin's spike, Sunder's
-  plates, Amber's block, Bullseye's target...). melds52.gd REDO_ON: OFF until his yes to their films (their texts too); the films page
+  plates, Amber's block, Bullseye's target...). melds52.gd REDO_ON: ON (their texts too) at his pick “Switch them on (Recommended)”, 24 Nov 2026, to the films page
   https://claude.ai/artifact/TFf5QMH9oGJxPb1DxWvFBh (all 60 films show their moments).
   Checks `--only=words --cases=redo` (or `redo:round=1`, `redo:<id>,<id>`; check_redo.gd), each in front, behind and on a monster,
   passing only on its new moment (EXPECT); films `--fixed-fps 30 -- --only=words --cases=m52film:redo` (or `redo:round=1`); the page

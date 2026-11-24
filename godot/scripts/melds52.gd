@@ -47,14 +47,16 @@ static var REAP_ON := true
 ## level 2, in the same table (`high`); their text tools/meldshigh/docs_high.txt, their stones docs/mockups/meld_runes6 (both from
 ## tools/meldshigh/design.py), their twists meldshigh_rules.gd, their looks fx_m52p_high.gd. OFF until his yes to their films (his
 ## pick, 24 Nov 2026: "Carriers on, melds off (Recommended)"): the wordsmith does not make them (`makes`); known, as all words are.
-static var HIGH_ON := false
+## ON at his pick, “Switch them on (Recommended)”, 24 Nov 2026, to their films (https://claude.ai/artifact/TKpwC9ATxHLtGrEny2T5tW).
+static var HIGH_ON := true
 ## ALL MELDS: THE LEAST EXCITING REDONE (his words, 24 Nov 2026: “Next I want you to look at the larger pool of all melds, and redo
 ## the 20 weakest.  Then do it again.  Then do it a third time.”; weakest read as least exciting, his pick the time before). All 325
 ## scored (tools/meldsredo/scores_all.py), the 20 lowest redone each round, each keeping its name, idea, stone and what it did, and
 ## gaining on each side a moment seen happen: their texts tools/meldsredo/redo.txt (melds52.json `redo`, `redoRounds`), their
 ## twists meldsredo_rules.gd, on a monster foe_meldsredo.gd, their looks fx_m52p_redo.gd. OFF until his yes to their films: the
-## melds do as before, their texts as before.
-static var REDO_ON := false
+## melds do as before, their texts as before. ON at his pick, “Switch them on (Recommended)”, 24 Nov 2026, to their films
+## (https://claude.ai/artifact/TFf5QMH9oGJxPb1DxWvFBh).
+static var REDO_ON := true
 ## (what each rune is worth inside one on gear: items.ts MELD_GEAR_STRENGTH; a level 2 rune's: RANK2's half again)
 const GEAR := 0.75
 const GEAR_RANK := 1.5
