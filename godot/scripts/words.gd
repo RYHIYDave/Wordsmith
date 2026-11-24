@@ -284,7 +284,14 @@ static func rank_up(w: String) -> String:
 
 ## What two words make when melded, or "" (melds.ts meldOf): two of a damage word, its next rank; two different words, the melded
 ## word of the ten, Volatile's five or the eight that is made of them.
+## PLUNDERING NEVER MELDS (his words, 24 Nov 2026: “I think I want plundering to not meld, since it's a gold farming word and should
+## have a drawback.”): the bench refuses it with any rune, itself too.
+const NO_MELD := ["plundering"]
+
+
 static func meld_of(a: String, b: String) -> String:
+	if NO_MELD.has(a) or NO_MELD.has(b):
+		return ""
 	# (THE 52 DESIGNED MELDS AND THE 11 LEVEL 2 RUNES, melds52.gd, while ON)
 	if Melds52.ON:
 		var n := Melds52.makes(a, b)
@@ -305,6 +312,8 @@ static func meld_of(a: String, b: String) -> String:
 static func meld_problem(a: String, b: String) -> String:
 	if a == "" or b == "":
 		return "Two words go in"
+	if NO_MELD.has(a) or NO_MELD.has(b):
+		return "%s does not meld" % str(word(a if NO_MELD.has(a) else b)["name"])
 	if is_rank(a) or is_rank(b):
 		return "Rank II is the top, for now" if a == b else "A ranked word melds no further"
 	if is_meld(a) or is_meld(b):

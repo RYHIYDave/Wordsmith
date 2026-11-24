@@ -3074,6 +3074,9 @@ func _monster_text(w: String) -> String:
 ## (THE RIM'S DOOR: the line naming what each burned rune drops more often, on the gate's page. On at his word to its picture,
 ## 23 Nov 2026: “K”)
 static var DOOR_ODDS_LINE := true
+## (THE RIM'S DOOR AND PLUNDERING: the line saying what Plundering burned in does, more gold on the level and carried by none: loot.gd
+## DOOR_GOLD. Off until his yes to its picture.)
+static var DOOR_GOLD_LINE := false
 
 # --- THE SHAFT'S RIM'S GATE (ui/town.ts gateSide; game.ts planWord, unplanWord, planProblem, enterEndless): its three sockets, the
 # words burned into the next endless level, what they add up to, and the way in (ENTER ENDLESS N). A word laid by pressing it and
@@ -3125,8 +3128,14 @@ func _gate_side(blink: bool, x0: float, w: float) -> void:
 			var B: Dictionary = loot.burned_runes(laid)
 			var bits: Array = []
 			for k in B:
-				bits.append("%s %dx" % [str(Words.word(k)["name"]).to_upper(), 1 + 2 * int(B[k])])
-			for l in _wrap("Drops more often: %s." % ", ".join(PackedStringArray(bits)), w, 10):
+				if not loot.DOOR_GOLD_WORDS.has(k):
+					bits.append("%s %dx" % [str(Words.word(k)["name"]).to_upper(), 1 + 2 * int(B[k])])
+			if not bits.is_empty():
+				for l in _wrap("Drops more often: %s." % ", ".join(PackedStringArray(bits)), w, 10):
+					_text(Vector2(x0, y), l, 10, PICK)
+					y += 13.0
+		if DOOR_GOLD_LINE and loot.door_gold(laid) > 0.0:
+			for l in _wrap("Plundering: +%d%% gold on this level. No monster carries it." % roundi(loot.door_gold(laid)), w, 10):
 				_text(Vector2(x0, y), l, 10, PICK)
 				y += 13.0
 	_text(Vector2(x0, y), "Its boss waits at the end. %s." % main.ENDLESS_WARN, 10, BAD)

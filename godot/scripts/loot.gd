@@ -897,6 +897,23 @@ func _found() -> String:
 ## share of every other rune the level gives. The door takes a rune only once (main.gd plan_problem, as the game always had it), so
 ## a rune is burned in twice only as its Rank II: Lightning's Rank II makes Lightning five times as likely.
 const BURN_MORE := 2.0
+## THE RIM'S DOOR AND PLUNDERING (his words, 24 Nov 2026: “adding them to the endless door shouldn't give all enemies that word, it
+## should just increase either the gold dropped or magic find of the floor as a whole. It would be pretty game breaking to put
+## plundering in the door once, get a bunch back, meld it into every word on your attacks and be able to put it on every door for the
+## rest of eternity”): burned in at the door, Plundering is carried by no monster there (main.gd) and drops no more often for it
+## (tilt_word); instead the level's gold is worth DOOR_GOLD % more for each one burned in (its gold picked up). The rewards every
+## burned rune gives, Plundering too, as before (+30% items, +25 rarity, +10% experience).
+const DOOR_GOLD_WORDS := ["plundering"]
+const DOOR_GOLD := 50.0
+
+
+## How much more the level's gold is worth, %, for the Plundering burned into it at the door.
+func door_gold(ws = null) -> float:
+	var B := burned_runes(ws)
+	var n := 0
+	for w in DOOR_GOLD_WORDS:
+		n += int(B.get(w, 0))
+	return DOOR_GOLD * n
 
 
 ## How many times each rune is burned into the level he is on (main.gd dungeon_words), or into `ws`: a meld's two runes once each,
@@ -919,6 +936,9 @@ func burned_runes(ws = null) -> Dictionary:
 ## BURN_MORE x S / (n + BURN_MORE x S), S all the burnings, one of the burned (each by its burnings), else `w`.
 func tilt_word(w: String, rng: RandomNumberGenerator = null) -> String:
 	var B := burned_runes()
+	# (Plundering burned in drops no more often for it: DOOR_GOLD_WORDS)
+	for k in DOOR_GOLD_WORDS:
+		B.erase(k)
 	if B.is_empty():
 		return w
 	var n := maxi(1, words_found_at(power()).size())
@@ -1361,7 +1381,7 @@ func _process(dt: float) -> void:
 					if d["kind"] == "stone":
 						_stone_taken(d)
 					elif d["kind"] == "gold":
-						var n := int(round(d["amount"] * (1.0 + hero.stats["gold_find"] / 100.0)))
+						var n := int(round(d["amount"] * (1.0 + (hero.stats["gold_find"] + door_gold()) / 100.0)))
 						gold += n
 						say("+%d gold" % n, Color(1.0, 0.85, 0.4))
 						sfx.play("gold", -6.0)

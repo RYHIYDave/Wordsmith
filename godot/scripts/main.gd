@@ -1424,7 +1424,8 @@ func _build(where: String, arrive: String) -> void:
 		if not dungeon_words.is_empty():
 			if monsters.strength.is_empty():
 				monsters.strength = {"life": 1.0, "boss": 1.0, "dmg": 1.0, "xp": 1.0, "words": []}
-			monsters.strength["laid"] = FoeWords.foe_words_of(dungeon_words)
+			# (Plundering burned in is carried by none of them: its gold is the level's instead, loot.gd DOOR_GOLD_WORDS)
+			monsters.strength["laid"] = FoeWords.foe_words_of(dungeon_words.filter(func(w): return not loot.DOOR_GOLD_WORDS.has(str(w))))
 		var mdata: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dir + "/monsters.json"))
 		if where != "final":
 			grow_packs(mdata, endless_power() if in_endless else int(map.depth))

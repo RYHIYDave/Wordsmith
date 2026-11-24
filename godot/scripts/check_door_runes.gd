@@ -6,6 +6,9 @@
 ## of floor 8 entered: what its monsters carry is tilted toward them (the rune over each one's head what it leaves).
 extends RefCounted
 
+const FoeWords := preload("res://scripts/foe_words.gd")
+const Words := preload("res://scripts/words.gd")
+
 var M
 var h
 var n := 0
@@ -73,6 +76,18 @@ func run(main, hero, dir: String) -> void:
 	_line(_near(o[0], 5.0), "Lightning's Rank II burned in: Lightning %.2f times (5, two of it)" % o[0])
 	o = _odds(["lightning2", "twin", "vast"], ["lightning", "twin", "vast"])
 	_line(_near(o[0], 5.0) and _near(o[1], 3.0) and _near(o[2], 3.0), "Lightning's Rank II, Twin and Vast burned in: Lightning %.2f, Twin %.2f, Vast %.2f times (5, 3, 3)" % [o[0], o[1], o[2]])
+	# PLUNDERING (his words, 24 Nov 2026): it never melds; burned in, it drops no more often, no monster carries it, and the level's
+	# gold is worth half again
+	o = _odds(["plundering", "twin"], ["plundering", "twin"])
+	var in_pool: bool = pool.has("plundering")
+	_line(((in_pool and _near(o[0], 1.0)) or (not in_pool and o[0] == 0.0)) and _near(o[1], 3.0), "Plundering and Twin burned in: Plundering %.2f times as likely as the rest (%s: no more often), Twin %.2f (3)" % [o[0], "1" if in_pool else "0, not found at this depth", o[1]])
+	M.dungeon_words = ["plundering"]
+	var dg: float = M.loot.door_gold()
+	M.dungeon_words = ["plundering", "twin"]
+	var laid: Array = FoeWords.foe_words_of(M.dungeon_words.filter(func(w): return not M.loot.DOOR_GOLD_WORDS.has(str(w))))
+	_line(dg == 50.0 and M.loot.door_gold() == 50.0 and not laid.has("plundering") and laid.has("twin"), "burned in: the level's gold +%d%%; what its monsters carry: %s (no Plundering)" % [dg, laid])
+	var whys := [Words.meld_problem("plundering", "twin"), Words.meld_problem("power", "plundering"), Words.meld_problem("plundering", "plundering")]
+	_line(whys.all(func(x): return x != "") and Words.meld_of("plundering", "twin") == "" and Words.meld_of("plundering", "plundering") == "", "Plundering never melds: with Twin '%s', with Power '%s', with itself '%s'" % whys)
 	# AT THE RIM: the three laid on the gate as he would lay them, its page pictured with the line naming them
 	M.dungeon_words = []
 	M.go_to(M.home_place(), "start")
@@ -88,6 +103,24 @@ func run(main, hero, dir: String) -> void:
 	await _wait(0.3)
 	await M._snap(dir + "/door_odds_line.png")
 	M._inv.toggle()
+	# (the page with Plundering laid beside Twin, the line saying what it does on, for his picture; then the three again)
+	for k in 3:
+		M.unplan_word(0)
+	M.loot.words["plundering"] = int(M.loot.words.get("plundering", 0)) + 1
+	M.plan_word("plundering")
+	M.plan_word("twin")
+	var Inv = M._inv.get_script()
+	var was_line: bool = Inv.DOOR_GOLD_LINE
+	Inv.DOOR_GOLD_LINE = true
+	M._inv.open_service("gate")
+	await _wait(0.3)
+	await M._snap(dir + "/door_plundering.png")
+	M._inv.toggle()
+	Inv.DOOR_GOLD_LINE = was_line
+	for k in 2:
+		M.unplan_word(0)
+	for w in ["lightning2", "twin", "vast"]:
+		M.plan_word(w)
 	# AN ENDLESS LEVEL OF FLOOR 8 ENTERED WITH THEM BURNED IN: what its monsters carry
 	M.enter_endless()
 	await _wait(2.0)
