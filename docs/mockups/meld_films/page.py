@@ -124,6 +124,12 @@ if HIGHG:
         'Plundering and Greed never meld, as you said; Mirroring, now the rare copier of items, is left out. '
         'The looks follow your Art Rulebook: the big moments flash, throw their sparks wide, kick the screen and hold a tenth of a second; every shape is the thing it is '
         '(a lance, a hook, thorns, a gravestone, a guillotine\'s blade, a noose, a bell, a wave); nothing on a monster glows a friend\'s cyan, and what a monster lays on you is in the enemy\'s pink and gold.</p>'
+        '<p class="lead">Then, at your word, the 20 least exciting were found and redone, and then 20 more: each of the 110 scored on how much '
+        'each of its twists shows in play, the lowest given new twists you see happen, their names, ideas and stones kept. '
+        'Round one: Impaler, Witchpin, Artery, Hemorrhage, Papercut, Gangrene, Bloodfeast, Thornshield, Bloodhex, Ghoul, Deadeye, Macabre, '
+        'Gravewarden, Fetch, Bloodprice, Mercy, Last Rites, Heartbeat, Bastion, Bloodharvest. Round two: Bodkin, Coup, Massacre, Barrage, '
+        'Bloodlance, Bloodrage, Dart, Harrow, Harvest, Lacerate, Spearwall, Thornspray, Undying, Wraithstep, Deathwatch, Flicker, Haunting, '
+        'Spark, Purge, Stinger.</p>'
         '@@CHECKED@@').replace('@@NOTES@@',
         '<p class="lead">Each film shows the meld in front of the Strike, then behind it, then carried by a skeleton that comes for you. '
         'What each one waits on is set up: a kill for Reaping, skeletons brought low for Culling, a third use and a dodge for Surging, '
