@@ -93,6 +93,18 @@ func under(m, i: int, u: float, mark: bool) -> float:
 ## `m` has been culled by move `i` (`mark`: by a reaper's mark), where it stood `at`, with `life` left.
 func culled(m, i: int, mark: bool, at: Vector2, life: float) -> void:
 	m.m52["culled_at"] = H.clock()
+	# (Deathwatch: one culled while the shadow watches it, by anything: the scythe falls)
+	for w in _watched:
+		if w["m"] == m:
+			H.tell("deathwatch", "scythe", at)
+			break
+	# (Mercy behind: its marked one culled, by anything: the mark passes to the weakest near)
+	for k in range(_mercy.size() - 1, -1, -1):
+		if _mercy[k]["m"] == m:
+			var mi: int = int(_mercy[k]["i"])
+			_mercy.remove_at(k)
+			_mercy_pass(m, mi, at)
+			break
 	if i < 0 or i > 2:
 		return
 	var id: String = H.b(i) if mark else H.f(i)
@@ -309,6 +321,21 @@ func _gallows(i: int, at: Vector2) -> void:
 	for q in H.near(at, H.n("gallows", "meet", 1.1)):
 		if H.lw.cull_monster(q, _cull(i), i):
 			H.tell("gallows", "hang", q.world)
+
+
+## Mercy behind: the mark passes from `m`, culled at `at`, to the weakest near.
+func _mercy_pass(m, i: int, at: Vector2) -> void:
+	var best = null
+	var low := 2.0
+	for q in H.near(at, H.n("mercy", "pass", 4.0), 8, [m]):
+		var f: float = q.life / maxf(1.0, q.max_life)
+		if f < low:
+			low = f
+			best = q
+	if best != null:
+		H.mark(best, "mercy")
+		_mercy.append({"m": best, "i": i})
+		H.tell("mercy", "pass", at, {"x1": best.world.x, "y1": best.world.y})
 
 
 ## Smite: an arc culls what it strikes, and one that culls jumps on.
@@ -561,17 +588,8 @@ func step(dt: float) -> void:
 		if m.life <= m.max_life * u:
 			_mercy.remove_at(k)
 			var at: Vector2 = m.world
-			H.lw.cull_monster(m, u, int(mc["i"]), true)
 			H.tell("mercy", "take", at)
-			# (the mark passes to the weakest near)
-			var best = null
-			var low := 2.0
-			for q in H.near(at, H.n("mercy", "pass", 4.0), 8, [m]):
-				var f: float = q.life / maxf(1.0, q.max_life)
-				if f < low:
-					low = f
-					best = q
-			if best != null:
-				H.mark(best, "mercy")
-				_mercy.append({"m": best, "i": mc["i"]})
-				H.tell("mercy", "pass", at, {"x1": best.world.x, "y1": best.world.y})
+			# (culled: culled() passes the mark on)
+			_mercy.append({"m": m, "i": mc["i"]})
+			if not H.lw.cull_monster(m, u, int(mc["i"]), true):
+				_mercy.pop_back()

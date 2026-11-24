@@ -428,7 +428,9 @@ func film(only := "") -> void:
 		for side in ["front", "behind"]:
 			_fresh()
 			# (Hourglass behind works on the ground the blow leaves: Guarding beside it, for the film, leaves a ward)
-			M._w_set(h, 0, side, [id, "guarding"] if id == "hourglass" and side == "behind" else [id])
+			# (Purge in front waits on one blow culling three: the Whirl's, as its check makes it)
+			var whirl: bool = id == "purge" and side == "front"
+			M._w_set(h, 1 if whirl else 0, side, [id, "guarding"] if id == "hourglass" and side == "behind" else [id])
 			for m in M._w_pack:
 				if (KILL.has(id) and side == "front") or (KILL_BEHIND.has(id) and side == "behind"):
 					# (a monster's life, not the test pack's million: what bursts for a share of it bursts as in a fight)
@@ -483,12 +485,18 @@ func film(only := "") -> void:
 			if CH != null:
 				CH.setup(id, side)
 			k = await _frames(k, 0.25)
-			M._w_strike(h)
-			k = await _walk(k, 0.6, id, 1.0)
+			if whirl:
+				M._w_whirl_begin(h)
+				k = await _frames(k, 1.6)
+				h.auto_whirl = false
+			else:
+				M._w_strike(h)
+				k = await _walk(k, 0.6, id, 1.0)
 			# (what its new moment waits on after the first blow, as its check makes it: a blow on him, one dying in its circle)
 			if CH != null:
 				await CH._after(id, side)
-			M._w_strike(h)
+			if not whirl:
+				M._w_strike(h)
 			if M52.is_high(id) and (M52.T()["of"][id] as Array).has("surging") and side == "behind":
 				if id == "heartbeat":
 					h.last.high.orb(h.world + Vector2(1.6, 0.4))

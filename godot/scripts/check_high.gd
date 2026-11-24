@@ -51,7 +51,7 @@ const EXPECT := {
 	"spearwall": {"front": ["spears"], "behind": ["wall"], "foe": ["stagger"]},
 	"thornspray": {"front": ["root"], "behind": ["spray"], "foe": ["spray"]},
 	"undying": {"front": ["hand"], "behind": ["again"], "foe": ["hand"]},
-	"wraithstep": {"front": ["image"], "behind": ["fast"]},
+	"wraithstep": {"front": ["image"], "behind": ["fast"], "foe": ["rise"]},
 	"deathwatch": {"front": ["scythe"], "behind": ["creep"], "foe": ["shadow"]},
 	"flicker": {"front": ["blink"], "behind": ["flick"], "foe": ["echo"]},
 	"haunting": {"front": ["wail"], "behind": ["shroud"], "foe": ["wail"]},
@@ -260,6 +260,13 @@ func setup(id: String, side: String) -> void:
 			m.m52["bleed_from"] = 0.0
 	if id == "coup" and side == "behind":
 		pack[1].world = home + across * 0.6
+		pack[1].life = pack[1].max_life * 0.6
+	# (Purge in front: three in reach of one blow)
+	if id == "purge" and side == "front":
+		pack[1].world = home + face * 1.1 + across * 0.55
+		pack[2].world = home + face * 1.1 - across * 0.55
+		for k in 3:
+			pack[k].life = pack[k].max_life * 0.08
 	# (Mercy behind: two left standing, for the mark to pass to)
 	if id == "mercy" and side == "behind":
 		pack[3].life = pack[3].max_life * 0.5
@@ -269,13 +276,19 @@ func setup(id: String, side: String) -> void:
 ## One meld on one side of the Strike: its setup, the Strike (twice), what it waits on after, and its own moment watched for.
 func _case(id: String, side: String, snap: bool) -> String:
 	_fresh()
-	var r: Dictionary = M._w_set(h, 0, side, [id])
+	# (Purge in front waits on one blow culling three: the Whirl's, which strikes all round him; the Strike strikes one)
+	var whirl: bool = id == "purge" and side == "front"
+	var r: Dictionary = M._w_set(h, 1 if whirl else 0, side, [id])
 	setup(id, side)
 	var of: Array = M52.T()["of"][id]
-	await M._w_strike(h)
+	if whirl:
+		await M._w_whirl_begin(h)
+		await M._w_whirl_on(h, 2)
+	else:
+		await M._w_strike(h)
 	await _after(id, side)
 	await M._wait(0.35)
-	if not (of.has("surging") and side == "front"):
+	if not (of.has("surging") and side == "front") and not whirl:
 		await M._w_strike(h)
 	if of.has("surging") and side == "behind":
 		if id == "heartbeat":
@@ -409,6 +422,8 @@ static func foe_dies(id: String) -> bool:
 ## and its telling as a monster's (foe).
 func _foe(id: String, snap: bool) -> String:
 	_fresh()
+	# (he carries no runes here, so what is told is the monster's alone)
+	M._w_put(h, 0, "front", [])
 	var of: Array = M52.T()["of"][id]
 	var m = M._w_pack[0]
 	m.words = [id, of[0], of[1]]
