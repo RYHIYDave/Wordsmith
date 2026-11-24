@@ -37,7 +37,7 @@ const LONG := {
 	"beckon:wisp": 0.6, "horizon:rim": 0.8, "reel:hook": 0.6, "reel:snare": 0.6, "coven:mark": 0.6, "coven:twice": 0.8,
 	"constellation:star": 0.6, "constellation:hang": 0.4, "constellation:touch": 0.5, "web:thread": 0.5, "web:wrap": 0.8, "web:snare": 0.6,
 	"torpor:drowse": 0.8, "witchknot:knot": 0.5, "witchknot:tie": 0.8, "amber:set": 0.9, "binding2:caught": 0.5, "timeslip:quick": 0.4,
-	"burden:stun": 0.6,
+	"burden:stun": 0.6, "stagnation:hold": 0.9, "amber:hold": 0.9,
 }
 ## (the big moments: a flash and its sparks thrown wide, how big, tiles; the lesser: a flash on what it struck)
 const BIG := {"maw:crash": 1.4, "maw:collapse": 2.0, "gravity:crater": 2.0, "embers:burst": 1.2, "firetrap:blaze": 1.6, "stasis:snap": 1.2,
@@ -587,8 +587,12 @@ func paint_air(b: Dictionary) -> void:
 		"anchor:sink":
 			var drop := (1.0 - _ease(minf(1.0, u * 2.5))) * 40.0
 			_anchor(_wx(x, y), _wy(x, y) - drop, 16.0, R, fade)
-		"amber:set":
+		"amber:set", "amber:hold":
 			_amber(mp.x, mp.y, _half(b["m"]) + 4.0, R, fade, sd)
+		"stagnation:hold":
+			for k in 5:
+				_glint(mp.x + (_rh(sd, k) - 0.5) * 22.0, top.y + 4.0 - _rh(sd, k + 9) * 10.0, 1.5, R, fade)
+			_curl(mp.x, mp.y + 4.0, 10.0, [R[1], R[2], R[3]], sd, fade * 0.6)
 		"web:thread", "web:wrap":
 			_ga(fade)
 			_fs(R[4])

@@ -49,7 +49,9 @@ static func after_blow(F, k: Callable, by, dmg: float) -> void:
 	var h = F.main.hero
 	var alive_by: bool = by != null and is_instance_valid(by) and not by.dead
 	var s := func(w: String) -> bool: return float(k.call(w)) > 0.0
+	var done := {}
 	var tell := func(id: String, extra := {}) -> void:
+		done[id] = true
 		var e := {"id": id, "what": "foe", "x": h.world.x, "y": h.world.y, "foe": true}
 		if alive_by:
 			e["x1"] = by.world.x
@@ -126,6 +128,11 @@ static func after_blow(F, k: Callable, by, dmg: float) -> void:
 		by.m52["foe_tether"] = h.root_t
 	if s.call("shackle") and h.root_t > 0.0:
 		tell.call("shackle")
+	# (a meld whose twist on him is its two runes at once, and any not told above: its moment as its blow lands, in its colour; a
+	# curse it lays, in the enemy's pink and gold: fx_m52p_city.gd)
+	for id in M52.T().get("city", []):
+		if not done.has(id) and not M52.is_new_rank(id) and s.call(id):
+			tell.call(id)
 
 
 ## A monster's turn, awake and near, of these.
