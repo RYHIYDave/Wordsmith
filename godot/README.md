@@ -1506,6 +1506,19 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   branch brought in here at his “Yes” (24 Nov 2026) with its fifteen more leveling uniques and twelve leveling weapons; its
   items.json taken with the dodge amulet's name Slipstream kept. Checked after: defuniques 43 of 43, uniques 11 of 11, uniquesdo
   19 of 19, the rune bag 18 of 18, the melds bench 7 of 7.
+- GREED, THE BETTER-LOOT WORD (his “Yes build greed”, 24 Nov 2026): in front, what it kills drops with increased magic find
+  (words.gd GREED); behind, a kill sometimes drops an extra item; on a monster, it hits harder and moves faster and drops an extra
+  item. It never melds (NO_MELD). Burned in at the door, no monster there carries it, and the level's magic find is 50% increased
+  for each (loot.gd DOOR_MF_WORDS, DOOR_MF, door_mf). Its stone and its SPOILS page in the Lexicon (melds52.json `extra`).
+- THE RARE RUNES DROP ONLY IN ENDLESS (his words, 24 Nov 2026: “plundering and the quality word and mirroring should only drop in
+  endless.  Mirroring should be very, extremely rare.”): Plundering and Greed only on endless levels (loot.gd ENDLESS_DROPS), where
+  a carrier is now and then made one of them (RARE_CARRY 0.05); Mirroring only from the Queen on an endless level, 1 in 100
+  (QUEEN_ONLY, MIRROR_CHANCE). `--only=rarerunes` 12 of 12.
+- THE LEXICON IN THE STASH (his words, 24 Nov 2026: “I'd also like to get rid of the lexicon in the middle of town and add it to the
+  stash chest.”): no Lexicon of its own in the town, the camp or the Rim (its station, prop, book, light and glow left out: town.gd,
+  look.gd `_lexicon_out`); its shelf opened by the LEXICON button on the stash's half, and back by STASH (inventory.gd "svc_swap").
+  ON at his “Yes” to its pictures (docs/mockups/lexicon_stash): town.gd LEXICON_IN_STASH true. `--only=lexstash` 5 of 5,
+  `--only=services` 9 of 9 (its Lexicon step opens it from the stash).
 
 ## The other chats' hand-overs brought in (the cloud chat, 23 and 24 Nov 2026)
 
