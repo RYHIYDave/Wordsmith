@@ -351,7 +351,12 @@ func _case(id: String, side: String, snap: bool) -> String:
 
 ## What its twist waits on, after the first Strike: a blow on him behind his shield (Thornshield).
 func _after(id: String, side: String) -> void:
-	var src = M._w_pack[1] if not M._w_pack[1].dead else M._w_pack[2]
+	# (the first of the pack still standing, to strike him)
+	var src = M._w_pack[1]
+	for m in M._w_pack:
+		if not m.dead:
+			src = m
+			break
 	if id == "thornshield" and side == "front":
 		# (a blow on him behind his shield, then one that breaks it)
 		h.hurt_by(5.0, "phys", [], {}, src, h.world)

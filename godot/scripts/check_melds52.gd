@@ -339,6 +339,9 @@ func _fresh() -> void:
 	h.frenzy_t = 0.0
 	h.shield = 0.0
 	h.shield_t = 0.0
+	# (nor the might the film before built up: what is to be left low for a cull is not killed outright)
+	h.might = 0.0
+	h.might_t = 0.0
 	h.m52.forget()
 	# (nothing of the last film's monster still on its way: a shockwave warned, a shot in the air)
 	M._monsters.perils.list.clear()
