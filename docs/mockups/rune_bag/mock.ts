@@ -791,124 +791,167 @@ function dustIcon(x: number, y: number, a: number): void {
 }
 
 // ---------------------------------------------------------------- THE MELDING STONE (the wordsmith's half)
-const HA = { x: 62, y: 68 }, HB = { x: 178, y: 68 }, OUT = { x: 120, y: 170 };
-const HS = 34, OS = 44;
+// His picks, 23 Nov 2026, of the first mock-up's melding: “The stone looks off, Too slow, Layout”; the layout: “Straight down”.
+// So: one block of the slate his standing stones in town are cut from, its runes inlaid in cyan; the two hollows side by side
+// at its top, two short channels straight down from them, turning in at their feet into the hollow beneath; the meld in about
+// two seconds where it was three and a half.
+const HA = { x: 87, y: 68 }, HB = { x: 153, y: 68 }, OUT = { x: 120, y: 172 };
+const HS = 44, OS = 54;
+/** The slab, in game pixels. */
+const SLAB = { x: 34, y: 27, w: 172, h: 203 };
+// his standing stones' slate, darkest to lightest (the town's ring, art/town.ts), and their runes' cyan
+const SL = ['#0d1216', '#141b21', '#1b242b', '#232e36', '#2c3842', '#37444f', '#4a5964', '#66767f', '#8d9ca3'];
 type Pt = { x: number; y: number };
 function bez(p0: Pt, p1: Pt, p2: Pt, p3: Pt, t: number): Pt {
   const u = 1 - t;
   return { x: u * u * u * p0.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * p3.x, y: u * u * u * p0.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * p3.y };
 }
-const CH_A = [{ x: HA.x, y: HA.y + HS / 2 }, { x: HA.x, y: 122 }, { x: 96, y: 134 }, { x: OUT.x - 16, y: OUT.y - 16 }];
-const CH_B = [{ x: HB.x, y: HB.y + HS / 2 }, { x: HB.x, y: 122 }, { x: 144, y: 134 }, { x: OUT.x + 16, y: OUT.y - 16 }];
-const N_PATH = 140;
+const CH_A = [{ x: HA.x, y: HA.y + HS / 2 - 1 }, { x: HA.x, y: 146 }, { x: HA.x + 1, y: 152 }, { x: OUT.x - 13, y: OUT.y - 24 }];
+const CH_B = [{ x: HB.x, y: HB.y + HS / 2 - 1 }, { x: HB.x, y: 146 }, { x: HB.x - 1, y: 152 }, { x: OUT.x + 13, y: OUT.y - 24 }];
+const N_PATH = 110;
 const pathA: Pt[] = [], pathB: Pt[] = [];
 for (let i = 0; i <= N_PATH; i++) {
   pathA.push(bez(CH_A[0], CH_A[1], CH_A[2], CH_A[3], i / N_PATH));
   pathB.push(bez(CH_B[0], CH_B[1], CH_B[2], CH_B[3], i / N_PATH));
 }
-// small carved runes beside the channels, which catch the light as it runs past
-// (the game's own runes, from its meld stones)
+// (the game's own runes, from its meld stones), carved beside the channels, outside them; they catch the light as it runs past
 const GLYPHS: string[][] = RUNE_DATA.glyphs;
 const INK_CH = (ch: string) => ch === 'X' || ch === 'o';
 const MARKS: { x: number; y: number; t: number; side: 0 | 1; gl: number }[] = [];
 for (const side of [0, 1] as const)
-  [0.22, 0.48, 0.74].forEach((t, j) => {
-    const path = side ? pathB : pathA;
-    const i = Math.round(t * N_PATH);
-    const p = path[i], q = path[Math.min(N_PATH, i + 1)];
-    const dx = q.x - p.x, dy = q.y - p.y, l = Math.hypot(dx, dy) || 1;
-    const nx = -dy / l, ny = dx / l;
-    const out = side ? -1 : 1;
-    MARKS.push({ x: Math.round(p.x + nx * 11 * out) - 3, y: Math.round(p.y + ny * 11 * out) - 3, t, side, gl: (j + side * 3) % GLYPHS.length });
+  [0.2, 0.55].forEach((t, j) => {
+    const p = (side ? pathB : pathA)[Math.round(t * N_PATH)];
+    MARKS.push({ x: Math.round(p.x + (side ? 10 : -17)), y: Math.round(p.y - 3), t, side, gl: (j * 2 + side) % GLYPHS.length });
   });
-const STANDING = Array.from({ length: 6 }, (_, i) => { const a = -Math.PI / 2 + (i * Math.PI) / 3; return { a, x: OUT.x + Math.cos(a) * 32, y: OUT.y + Math.sin(a) * 28 }; });
+// the six standing stones of his ring, small, round the hollow beneath (none where the channels come in)
+const STANDING = [-25, 25, 65, 115, 155, 205].map((d) => { const a = (d * Math.PI) / 180; return { a, x: OUT.x + Math.cos(a) * 41, y: OUT.y + 1 + Math.sin(a) * 32 }; });
+// the corner runes of the slab's carved border
+const CORNERS = [{ x: SLAB.x + 6, y: SLAB.y + 6 }, { x: SLAB.x + SLAB.w - 13, y: SLAB.y + 6 }, { x: SLAB.x + 6, y: SLAB.y + SLAB.h - 13 }, { x: SLAB.x + SLAB.w - 13, y: SLAB.y + SLAB.h - 13 }];
 
 let slab: HTMLCanvasElement | null = null;
 function makeSlab(): HTMLCanvasElement {
+  let s = 23;
+  const r = () => ((s = (s * 48271) % 2147483647) / 2147483647);
+  // 1. the block, at the game's own grain: a chipped outline, lit from above, darker below, flecks of mica, cracks
+  const gw = HALF, gh = H;
+  const lo = document.createElement('canvas');
+  lo.width = gw; lo.height = gh;
+  const lx = lo.getContext('2d')!;
+  const id = lx.createImageData(gw, gh);
+  const px = id.data;
+  const hex = (c: string) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+  const SLR = SL.map(hex);
+  const put = (x: number, y: number, k: number, a = 255) => { if (x < 0 || y < 0 || x >= gw || y >= gh) return; const i = (y * gw + x) * 4; const c = SLR[Math.max(0, Math.min(SLR.length - 1, k))]; px[i] = c[0]; px[i + 1] = c[1]; px[i + 2] = c[2]; px[i + 3] = a; };
+  // the chips along its edges: how far each row and column is cut in
+  const chip = (n: number) => { const a: number[] = []; let v = 0; for (let i = 0; i < n; i++) { if (r() < 0.18) v = Math.floor(r() * 3); a.push(v); } return a; };
+  const cl = chip(SLAB.h), cr = chip(SLAB.h), ct = chip(SLAB.w), cb = chip(SLAB.w);
+  const inside = (x: number, y: number) => {
+    const i = x - SLAB.x, j = y - SLAB.y;
+    if (i < 0 || j < 0 || i >= SLAB.w || j >= SLAB.h) return false;
+    const corner = Math.min(i, SLAB.w - 1 - i) + Math.min(j, SLAB.h - 1 - j);
+    return i >= cl[j] && SLAB.w - 1 - i >= cr[j] && j >= ct[i] && SLAB.h - 1 - j >= cb[i] && corner >= 4;
+  };
+  // its shadow on the floor of the panel
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) if (!inside(x, y) && inside(x - 3, y - 3)) put(x, y, 0, 200);
+  const bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  for (let y = SLAB.y; y < SLAB.y + SLAB.h; y++)
+    for (let x = SLAB.x; x < SLAB.x + SLAB.w; x++) {
+      if (!inside(x, y)) continue;
+      // light from above and a little from the left, dithered between the slate's tones
+      const fy = (y - SLAB.y) / SLAB.h, fx = (x - SLAB.x) / SLAB.w;
+      let tone = 4.2 - fy * 2.2 - fx * 0.5;
+      tone += (r() - 0.5) * 0.35;
+      const base = Math.floor(tone);
+      const k = base + ((tone - base) * 16 > bayer[(y % 4) * 4 + (x % 4)] ? 1 : 0);
+      put(x, y, k);
+    }
+  // its edge: the lit lip along the top and left, the dark one along the bottom and right
+  for (let y = SLAB.y; y < SLAB.y + SLAB.h; y++)
+    for (let x = SLAB.x; x < SLAB.x + SLAB.w; x++) {
+      if (!inside(x, y)) continue;
+      if (!inside(x, y - 1) || !inside(x - 1, y)) put(x, y, 7);
+      else if (!inside(x, y - 2) || !inside(x - 2, y)) put(x, y, 6);
+      if (!inside(x, y + 1) || !inside(x + 1, y)) put(x, y, 1);
+      else if (!inside(x, y + 2) || !inside(x + 2, y)) put(x, y, 2);
+    }
+  // flecks of mica, and a few cracks run through it
+  for (let n = 0; n < 260; n++) { const x = SLAB.x + 3 + Math.floor(r() * (SLAB.w - 6)), y = SLAB.y + 3 + Math.floor(r() * (SLAB.h - 6)); if (inside(x, y)) put(x, y, r() < 0.5 ? 6 : 2); }
+  for (const [sx, sy, dx] of [[SLAB.x + 14, SLAB.y + SLAB.h - 3, 1], [SLAB.x + SLAB.w - 8, SLAB.y + 40, -1], [SLAB.x + 4, SLAB.y + 104, 1]] as const) {
+    let x = sx, y = sy;
+    for (let n = 0; n < 26; n++) {
+      if (inside(x, y)) { put(x, y, 0); if (inside(x + 1, y + 1)) put(x + 1, y + 1, 5); }
+      y += sy > SLAB.y + SLAB.h / 2 ? -1 : r() < 0.5 ? 1 : 0;
+      x += r() < 0.6 ? dx : 0;
+    }
+  }
+  lx.putImageData(id, 0, 0);
+  // 2. the carvings, at the screen's finer grain
   const c = document.createElement('canvas');
   c.width = HALF * 2; c.height = H * 2;
   const x = c.getContext('2d')!;
+  x.fillStyle = C.PANEL; x.fillRect(0, 0, c.width, c.height);
+  x.imageSmoothingEnabled = false;
+  x.drawImage(lo, 0, 0, c.width, c.height);
   x.scale(2, 2);
-  let s = 11;
-  const r = () => ((s = (s * 48271) % 2147483647) / 2147483647);
-  x.fillStyle = C.PANEL; x.fillRect(0, 0, HALF, H);
-  // the stone of his slab: laid in courses, each block its own grey
-  const SX = 7, SY = 26, SW = 226, SH = 202;
-  x.save();
-  x.beginPath(); x.rect(SX + 2, SY, SW - 4, SH); x.rect(SX, SY + 2, SW, SH - 4); x.clip();
-  for (let row = 0, y = SY; y < SY + SH; row++, y += 12) {
-    let bx = SX - (row % 2 ? 11 : 3) - Math.floor(r() * 6);
-    while (bx < SX + SW) {
-      const bw = 18 + Math.floor(r() * 14);
-      const tone = r();
-      x.fillStyle = tone < 0.45 ? ST[2] : tone < 0.85 ? ST[3] : ST[4];
-      x.fillRect(bx, y, bw, 12);
-      // a little wear on it
-      for (let k = 0; k < 4; k++) { x.fillStyle = r() < 0.5 ? ST[1] : ST[4]; x.globalAlpha = 0.5; x.fillRect(bx + 2 + Math.floor(r() * (bw - 4)), y + 2 + Math.floor(r() * 8), 1 + Math.floor(r() * 2), 1); x.globalAlpha = 1; }
-      x.fillStyle = ST[5]; x.globalAlpha = 0.45; x.fillRect(bx + 1, y + 1, bw - 2, 0.5); x.fillRect(bx + 1, y + 1, 0.5, 10); x.globalAlpha = 1;
-      x.fillStyle = ST[1]; x.fillRect(bx, y + 11, bw, 1); x.fillRect(bx + bw - 1, y, 1, 12);
-      bx += bw;
-    }
-  }
-  // the slab's dark at its edges: it lies under the ring's light
-  const vg = x.createRadialGradient(OUT.x, 110, 30, OUT.x, 120, 165);
-  vg.addColorStop(0, 'rgba(14,12,36,0)'); vg.addColorStop(1, 'rgba(14,12,36,0.72)');
-  x.fillStyle = vg; x.fillRect(SX, SY, SW, SH);
-  x.restore();
-  // its rim
-  x.fillStyle = ST[6]; x.fillRect(SX + 2, SY, SW - 4, 1); x.fillRect(SX, SY + 2, 1, SH - 4);
-  x.fillStyle = ST[1]; x.fillRect(SX + 2, SY + SH - 1, SW - 4, 1); x.fillRect(SX + SW - 1, SY + 2, 1, SH - 4);
-  x.fillStyle = ST[0]; x.fillRect(SX + 3, SY + SH, SW - 4, 2); x.fillRect(SX + SW, SY + 3, 2, SH - 4);
-  // a line carved round inside the rim, a rune at each corner
-  x.fillStyle = ST[1];
-  x.fillRect(SX + 6, SY + 6, SW - 12, 1); x.fillRect(SX + 6, SY + SH - 7, SW - 12, 1); x.fillRect(SX + 6, SY + 6, 1, SH - 12); x.fillRect(SX + SW - 7, SY + 6, 1, SH - 12);
-  x.fillStyle = ST[5]; x.globalAlpha = 0.6;
-  x.fillRect(SX + 7, SY + 7, SW - 14, 0.5); x.fillRect(SX + 7, SY + SH - 6, SW - 14, 0.5); x.fillRect(SX + 7, SY + 7, 0.5, SH - 13); x.fillRect(SX + SW - 6, SY + 7, 0.5, SH - 13);
+  // a border cut round inside its edge
+  const B = { x: SLAB.x + 9, y: SLAB.y + 9, w: SLAB.w - 18, h: SLAB.h - 18 };
+  x.fillStyle = SL[0];
+  x.fillRect(B.x + 6, B.y, B.w - 12, 1); x.fillRect(B.x + 6, B.y + B.h - 1, B.w - 12, 1);
+  x.fillRect(B.x, B.y + 6, 1, B.h - 12); x.fillRect(B.x + B.w - 1, B.y + 6, 1, B.h - 12);
+  x.fillStyle = SL[6]; x.globalAlpha = 0.8;
+  x.fillRect(B.x + 6, B.y + 1, B.w - 12, 0.5); x.fillRect(B.x + 6, B.y + B.h, B.w - 12, 0.5);
+  x.fillRect(B.x + 1, B.y + 6, 0.5, B.h - 12); x.fillRect(B.x + B.w, B.y + 6, 0.5, B.h - 12);
   x.globalAlpha = 1;
-  // the channels: carved grooves from each hollow down to the one beneath
+  // the channels: grooves cut straight down from each hollow, turning in at their feet
   const groove = (path: Pt[]) => {
-    for (const p of path) { x.fillStyle = ST[5]; x.globalAlpha = 0.7; x.fillRect(Math.round(p.x * 2) / 2 - 3, Math.round(p.y * 2) / 2 - 2, 6, 6); }
-    x.globalAlpha = 1;
-    for (const p of path) { x.fillStyle = ST[1]; x.fillRect(Math.round(p.x * 2) / 2 - 3.5, Math.round(p.y * 2) / 2 - 3.5, 7, 7); }
-    for (const p of path) { x.fillStyle = ST[0]; x.fillRect(Math.round(p.x * 2) / 2 - 2.5, Math.round(p.y * 2) / 2 - 2.5, 5, 5); }
-    for (const p of path) { x.fillStyle = '#16121e'; x.fillRect(Math.round(p.x * 2) / 2 - 1, Math.round(p.y * 2) / 2 - 0.5, 2.5, 2.5); }
+    const at = (p: Pt) => [Math.round(p.x * 2) / 2, Math.round(p.y * 2) / 2];
+    for (const p of path) { const [a, b] = at(p); x.fillStyle = SL[6]; x.fillRect(a - 3, b - 2.5, 7, 7); }
+    for (const p of path) { const [a, b] = at(p); x.fillStyle = SL[1]; x.fillRect(a - 3.5, b - 3.5, 7, 7); }
+    for (const p of path) { const [a, b] = at(p); x.fillStyle = SL[0]; x.fillRect(a - 2.5, b - 2.5, 5, 5); }
+    for (const p of path) { const [a, b] = at(p); x.fillStyle = '#0a1013'; x.fillRect(a - 1, b - 0.5, 2.5, 2.5); }
   };
   groove(pathA); groove(pathB);
-  // the hollows: two above, one beneath, cut deep
+  // the hollows: two above, one beneath, cut deep, with a cut-out corner to each (an octagon)
   const hollow = (cx: number, cy: number, size: number, cut: number) => {
     const x0 = Math.round(cx - size / 2), y0 = Math.round(cy - size / 2);
     const rows = (inset: number, col: string, dx = 0, dy = 0) => {
       x.fillStyle = col;
-      const w = size - inset * 2, h = size - inset * 2, c = Math.max(0, cut - inset);
-      for (let i = 0; i < h; i++) { const k = Math.max(0, c - i, c - (h - 1 - i)); x.fillRect(x0 + inset + k + dx, y0 + inset + i + dy, w - 2 * k, 1); }
+      const w = size - inset * 2, h = size - inset * 2, cc = Math.max(0, cut - inset);
+      for (let i = 0; i < h; i++) { const k = Math.max(0, cc - i, cc - (h - 1 - i)); x.fillRect(x0 + inset + k + dx, y0 + inset + i + dy, w - 2 * k, 1); }
     };
-    rows(-2, ST[5], 0.5, 0.5);
-    rows(-2, ST[1]);
-    rows(-1, ST[4]);
-    rows(0, ST[1]);
-    rows(1, ST[0]);
-    rows(2, '#0f0c16', 0.5, 0.5);
+    rows(-2, SL[7], 0.5, 0.5);
+    rows(-2, SL[1]);
+    rows(-1, SL[5]);
+    rows(0, SL[1]);
+    rows(1, SL[0]);
+    rows(2, '#081014', 0.5, 0.5);
   };
-  hollow(HA.x, HA.y, HS, 9); hollow(HB.x, HB.y, HS, 9);
-  // the six standing stones round the hollow beneath (the wordsmith's ring, small)
+  hollow(HA.x, HA.y, HS, 11); hollow(HB.x, HB.y, HS, 11);
   for (const st of STANDING) {
-    x.fillStyle = ST[0]; x.fillRect(Math.round(st.x) - 2, Math.round(st.y) - 3, 6, 9);
-    x.fillStyle = ST[5]; x.fillRect(Math.round(st.x) - 2.5, Math.round(st.y) - 4, 5, 8);
-    x.fillStyle = ST[6]; x.fillRect(Math.round(st.x) - 2.5, Math.round(st.y) - 4, 5, 1); x.fillRect(Math.round(st.x) - 2.5, Math.round(st.y) - 4, 1, 8);
-    x.fillStyle = ST[3]; x.fillRect(Math.round(st.x) - 1, Math.round(st.y) - 1, 2, 3);
+    const sx = Math.round(st.x), sy = Math.round(st.y);
+    x.fillStyle = SL[0]; x.fillRect(sx - 2, sy - 3, 6, 10);
+    x.fillStyle = SL[5]; x.fillRect(sx - 2.5, sy - 5, 5, 10);
+    x.fillStyle = SL[7]; x.fillRect(sx - 2.5, sy - 5, 5, 1); x.fillRect(sx - 2.5, sy - 5, 1, 10);
+    x.fillStyle = SL[3]; x.fillRect(sx - 1, sy - 2, 2, 4);
   }
-  hollow(OUT.x, OUT.y, OS, 13);
-  // the plus carved between the two above
-  x.fillStyle = ST[1]; x.fillRect(OUT.x - 4, HA.y - 1, 9, 3); x.fillRect(OUT.x - 1, HA.y - 4, 3, 9);
-  x.fillStyle = ST[5]; x.globalAlpha = 0.7; x.fillRect(OUT.x - 4, HA.y + 2, 9, 0.5); x.fillRect(OUT.x + 2, HA.y - 4, 0.5, 9); x.globalAlpha = 1;
-  // the runes carved by the channels
-  for (const m of MARKS) GLYPHS[m.gl].forEach((row, j) => [...row].forEach((ch, i) => { if (INK_CH(ch)) { x.fillStyle = ST[1]; x.fillRect(m.x + i, m.y + j, 1, 1); x.fillStyle = ST[5]; x.globalAlpha = 0.5; x.fillRect(m.x + i + 0.5, m.y + j + 0.5, 0.5, 0.5); x.globalAlpha = 1; } }));
+  hollow(OUT.x, OUT.y, OS, 15);
+  // the plus between the two above
+  x.fillStyle = SL[0]; x.fillRect(OUT.x - 4, HA.y - 1, 9, 3); x.fillRect(OUT.x - 1, HA.y - 4, 3, 9);
+  x.fillStyle = SL[7]; x.globalAlpha = 0.7; x.fillRect(OUT.x - 4, HA.y + 2, 9, 0.5); x.fillRect(OUT.x + 2, HA.y - 4, 0.5, 9); x.globalAlpha = 1;
+  // the runes carved beside the channels and in the border's corners
+  const carve = (m: { x: number; y: number }, gl: number) => GLYPHS[gl].forEach((row, j) => [...row].forEach((ch, i) => {
+    if (!INK_CH(ch)) return;
+    x.fillStyle = SL[0]; x.fillRect(m.x + i, m.y + j, 1, 1);
+    x.fillStyle = SL[6]; x.globalAlpha = 0.6; x.fillRect(m.x + i + 0.5, m.y + j + 0.5, 0.5, 0.5); x.globalAlpha = 1;
+  }));
+  for (const m of MARKS) carve(m, m.gl);
+  CORNERS.forEach((m, i) => carve(m, (i + 2) % GLYPHS.length));
   return c;
 }
 
 const hin: (string | null)[] = [null, null];
 const dropT = [-9, -9];
-interface Meld { t0: number; a: string; b: string; res: string; first: boolean; pix: [number, number, string][]; from: { x: number; y: number; d: number }[]; done: boolean; taken: number; fly: number }
+interface Meld { t0: number; a: string; b: string; res: string; first: boolean; pix: [number, number, string][]; from: { x: number; y: number; d: number }[]; done: boolean; taken: number; fly: number; burst?: boolean }
 let meld: Meld | null = null;
 let note = { s: '', t: -9, c: C.BAD };
 interface Part { x: number; y: number; vx: number; vy: number; life: number; max: number; c: string; s: number; grav: number }
@@ -924,7 +967,7 @@ function layIn(id: string): void {
   if (i < 0) { say('BOTH HOLLOWS ARE FULL: PRESS ONE TO EMPTY IT'); return; }
   hin[i] = id; dropT[i] = now;
   const h = i ? HB : HA;
-  for (let k = 0; k < 10; k++) addPart({ x: h.x + (Math.random() - 0.5) * 20, y: h.y + 10, vx: (Math.random() - 0.5) * 30, vy: -Math.random() * 20, max: 0.5, c: ST[6], grav: 60 });
+  for (let k = 0; k < 10; k++) addPart({ x: h.x + (Math.random() - 0.5) * 24, y: h.y + 14, vx: (Math.random() - 0.5) * 30, vy: -Math.random() * 20, max: 0.5, c: SL[7], grav: 60 });
 }
 function say(s: string, c = C.BAD): void { note = { s, t: now, c }; }
 function pairText(): { s: string; c: string; ok: boolean; res: string | null } {
@@ -942,7 +985,7 @@ function startMeld(): void {
   const [a, b] = hin as [string, string];
   held[a]--; held[b]--; dust--;
   const pix = pixelsOf(pt.res);
-  meld = { t0: now, a, b, res: pt.res, first: !known.has(pt.res), pix, from: pix.map(() => { const ang = Math.random() * Math.PI * 2, rr = 16 + Math.random() * 26; return { x: Math.cos(ang) * rr, y: Math.sin(ang) * rr * 0.8, d: Math.random() * 0.28 }; }), done: false, taken: -1, fly: -1 };
+  meld = { t0: now, a, b, res: pt.res, first: !known.has(pt.res), pix, from: pix.map(() => { const ang = Math.random() * Math.PI * 2, rr = 14 + Math.random() * 22; return { x: Math.cos(ang) * rr, y: Math.sin(ang) * rr * 0.8, d: Math.random() * 0.14 }; }), done: false, taken: -1, fly: -1 };
   libSmith.layout = libLay(libSmith);
 }
 function takeMeld(quick = false): void {
@@ -962,27 +1005,30 @@ function finishTake(): void {
   meld = null; hin[0] = hin[1] = null;
 }
 
-// the times of a meld (seconds from MELD pressed)
-const M_CHARGE = 0.45, M_MELT = 1.0, M_POUR = 1.85, M_SWIRL = 2.45, M_FLASH = 2.62, M_FORM = 3.25, M_NAME = 3.5;
+// the times of a meld (seconds from MELD pressed): about two seconds to the new rune, where the first mock-up took three and a half
+const M_CHARGE = 0.2, M_MELT = 0.5, M_POUR = 0.92, M_SWIRL = 1.25, M_FLASH = 1.36, M_GATHER = 0.3, M_FORM = 1.78, M_NAME = 1.9;
+/** The rune in a hollow above, three of the picture's pixels to one of the stone's. */
+const RS = 36;
+/** The new rune in the hollow beneath: four to one. */
+const NS = 48;
 
 function drawSmith(): void {
   if (!slab) slab = makeSlab();
   const t = meld ? now - meld.t0 : -1;
-  // the shaking of the stone as the light gathers
+  // the stone shakes a little as the light gathers
   let sh = 0;
-  if (meld && t > M_POUR && t < M_FLASH + 0.1) sh = (Math.random() - 0.5) * 2 * clamp01((t - M_POUR) / (M_SWIRL - M_POUR));
+  if (meld && t > M_POUR && t < M_FLASH + 0.08) sh = (Math.random() - 0.5) * 2 * clamp01((t - M_POUR) / (M_SWIRL - M_POUR));
   g.save();
   g.translate(Math.round(sh), Math.round(-sh / 2));
   g.drawImage(slab, 0, 0, HALF, H);
-  // his title, and the trade's tab
   g.restore();
+  // his title, the runedust, and the trade's tab
   T('WORDSMITH', 6, 6, C.PICK);
   T('MELDING', 6 + tw('WORDSMITH') + 6, 8, C.DIM, { font: 'small' });
   const tb = { x: HALF - 48, y: 3, w: 44, h: 14 };
   box(tb.x, tb.y, tb.w, tb.h, C.BOX, C.EDGE);
   T('TRADE', tb.x + tb.w / 2, tb.y + 4.5, C.TEXT, { font: 'small', align: 'center' });
   hit({ x: tb.x, y: tb.y, w: tb.w, h: tb.h, tap: () => say('HIS TRADE IN RUNES, AS IN THE GAME TODAY', C.DIM) });
-  // runedust
   const dx = HALF - 100;
   dustIcon(dx, 5, 1);
   T(`${dust} RUNEDUST`, dx + 11, 8, RUNE_DATA.dust, { font: 'small' });
@@ -990,7 +1036,16 @@ function drawSmith(): void {
   g.translate(Math.round(sh), Math.round(-sh / 2));
   const idle = 0.5 + 0.5 * Math.sin(now * 2);
   const pt = pairText();
-  // the light in the grooves: a breath while waiting, primed when two are laid in that will meld, running while it melds
+  // the runes inlaid in its border's corners: lit, breathing
+  CORNERS.forEach((m, i) => {
+    const gl = GLYPHS[(i + 2) % GLYPHS.length];
+    let a = 0.35 + 0.2 * Math.sin(now * 1.4 + i * 1.6);
+    if (meld && !meld.done && t > M_SWIRL && t < M_FLASH + 0.4) a = 1;
+    glow(m.x + 3.5, m.y + 3.5, 9, C.PICK, a * 0.35);
+    gl.forEach((row, j) => [...row].forEach((ch, k) => { if (INK_CH(ch)) { g.globalAlpha = a; g.fillStyle = C.PICK; g.fillRect(m.x + k, m.y + j, 1, 1); } }));
+    g.globalAlpha = 1;
+  });
+  // the light in the grooves: a shimmer when two are laid in that will meld, running while it melds, glowing after
   const litTo = (path: Pt[], k: number, age: (i: number) => number) => {
     for (let i = 0; i <= N_PATH * k; i++) {
       const p = path[i];
@@ -1004,9 +1059,8 @@ function drawSmith(): void {
   };
   if (!meld) {
     if (pt.ok) {
-      // primed: a slow shimmer runs down both grooves
-      for (const path of [pathA, pathB]) for (let i = 0; i <= N_PATH; i += 1) {
-        const w = 0.5 + 0.5 * Math.sin(i * 0.25 - now * 6);
+      for (const path of [pathA, pathB]) for (let i = 0; i <= N_PATH; i++) {
+        const w = 0.5 + 0.5 * Math.sin(i * 0.3 - now * 7);
         if (w < 0.75) continue;
         const p = path[i];
         g.globalAlpha = (w - 0.75) * 1.6; g.fillStyle = C.PICK;
@@ -1014,129 +1068,116 @@ function drawSmith(): void {
       }
       g.globalAlpha = 1;
     }
-  } else if (t > M_MELT - 0.05 && !meld.done) {
-    const k = clamp01((t - (M_MELT - 0.05)) / (M_POUR - M_MELT));
-    const kk = ease(k);
-    const age = (i: number) => { const ti = i / N_PATH; return 1.15 - (kk - ti) * 1.2 - clamp01((t - M_SWIRL) / 0.5) * 0.6; };
+  } else if (t > M_MELT - 0.04 && !meld.done) {
+    const k = clamp01((t - (M_MELT - 0.04)) / (M_POUR - M_MELT));
+    const kk = k * k * (3 - 2 * k);
+    const age = (i: number) => { const ti = i / N_PATH; return 1.15 - (kk - ti) * 1.1 - clamp01((t - M_SWIRL) / 0.35) * 0.6; };
     litTo(pathA, kk, age); litTo(pathB, kk, age);
-    // the head of each stream, a bright drop with its spray
     if (k < 1) for (const path of [pathA, pathB]) {
       const p = path[Math.round(kk * N_PATH)];
-      glow(p.x, p.y, 14, C.PICK, 0.9);
-      g.fillStyle = '#ffffff'; g.fillRect(p.x - 1.5, p.y - 1.5, 3, 3);
-      if (Math.random() < 0.7) addPart({ x: p.x, y: p.y, vx: (Math.random() - 0.5) * 40, vy: -10 - Math.random() * 30, max: 0.35 + Math.random() * 0.3, c: CY[Math.floor(Math.random() * 3)], grav: 120 });
+      glow(p.x, p.y, 15, C.PICK, 0.95);
+      g.fillStyle = '#ffffff'; g.fillRect(p.x - 2, p.y - 2, 4, 4);
+      for (let n = 0; n < 2; n++) addPart({ x: p.x, y: p.y, vx: (Math.random() - 0.5) * 50, vy: -10 - Math.random() * 35, max: 0.3 + Math.random() * 0.25, c: CY[Math.floor(Math.random() * 3)], grav: 140 });
     }
   } else if (meld && meld.done && meld.taken < 0) {
-    litTo(pathA, 1, (i) => 0.25 + 0.15 * Math.sin(i * 0.2 - now * 3));
-    litTo(pathB, 1, (i) => 0.25 + 0.15 * Math.sin(i * 0.2 - now * 3));
+    litTo(pathA, 1, (i) => 0.3 + 0.18 * Math.sin(i * 0.25 - now * 4));
+    litTo(pathB, 1, (i) => 0.3 + 0.18 * Math.sin(i * 0.25 - now * 4));
   }
-  // the carved runes by the grooves catch the light as it passes
+  // the carved runes by the channels catch the light as it passes
   for (const m of MARKS) {
-    let a = 0.12 + 0.1 * Math.sin(now * 1.5 + m.gl);
-    if (meld && !meld.done) { const k = ease(clamp01((t - (M_MELT - 0.05)) / (M_POUR - M_MELT))); const d = k - m.t; if (d > 0) a = Math.max(a, 1 - d * 1.4); }
+    let a = 0.14 + 0.1 * Math.sin(now * 1.5 + m.gl);
+    if (meld && !meld.done) { const k = clamp01((t - (M_MELT - 0.04)) / (M_POUR - M_MELT)); const d = k * k * (3 - 2 * k) - m.t; if (d > 0) a = Math.max(a, 1 - d * 1.6); }
     else if (meld && meld.done) a = 0.55;
     else if (pt.ok) a = 0.35 + 0.15 * idle;
-    if (a > 0.5) glow(m.x + 3.5, m.y + 3.5, 9, C.PICK, (a - 0.5) * 0.8);
+    if (a > 0.5) glow(m.x + 3.5, m.y + 3.5, 10, C.PICK, (a - 0.5) * 0.9);
     GLYPHS[m.gl].forEach((row, j) => [...row].forEach((ch, i) => { if (INK_CH(ch)) { g.globalAlpha = a; g.fillStyle = C.PICK; g.fillRect(m.x + i, m.y + j, 1, 1); } }));
     g.globalAlpha = 1;
   }
   // the two hollows above
   [HA, HB].forEach((h, i) => {
     const w = hin[i];
-    const empty = !w || (meld && t > M_MELT);
-    const want = empty && !meld;
-    // the rim's light: asking for a rune, or flaring as it melts
-    let rim = want ? 0.18 + 0.14 * idle : 0.12;
+    const want = !w && !meld;
+    let rim = want ? 0.2 + 0.15 * idle : 0.12;
     if (meld && t < M_MELT) rim = 0.3 + 0.7 * clamp01(t / M_CHARGE);
-    glow(h.x, h.y, 26, C.PICK, rim * 0.6);
+    glow(h.x, h.y, 30, C.PICK, rim * 0.6);
     if (want) {
       g.globalAlpha = 0.35 + 0.35 * idle; g.fillStyle = C.PICK;
-      g.fillRect(h.x - 4, h.y, 9, 1); g.fillRect(h.x, h.y - 4, 1, 9); g.globalAlpha = 1;
+      g.fillRect(h.x - 5, h.y, 11, 1); g.fillRect(h.x, h.y - 5, 1, 11); g.globalAlpha = 1;
     }
     hit({ x: h.x - HS / 2, y: h.y - HS / 2, w: HS, h: HS, tap: () => { if (!meld && hin[i]) { hin[i] = null; } }, data: { hollow: i } });
     if (!w) return;
     if (!meld) {
       // laid in: it drops into the hollow and settles
       const d = now - dropT[i];
-      const fall = d < 0.22 ? (1 - ease(d / 0.22)) * -14 : 0;
-      const bob = Math.sin(now * 2 + i) * 0.5;
-      if (d < 0.5) glow(h.x, h.y, 22, R[w].color, (1 - d / 0.5) * 0.7);
-      stone(w, h.x - 12, h.y - 12 + fall + bob, 24);
+      const fall = d < 0.18 ? (1 - ease(d / 0.18)) * -14 : 0;
+      const bob = Math.round(Math.sin(now * 2 + i) * 1) / 2;
+      if (d < 0.45) glow(h.x, h.y, 26, R[w].color, (1 - d / 0.45) * 0.7);
+      stone(w, h.x - RS / 2, h.y - RS / 2 + fall + bob, RS);
       return;
     }
-    // MELD: it rises, trembles and cracks with light; then it melts into light that drains into the groove
+    // MELD: it rises, trembles and cracks with light; then melts into light that drains into its channel
+    const k3 = RS / 24;
     if (t < M_MELT) {
       const c = clamp01(t / M_CHARGE);
       const shake = t < M_CHARGE ? (Math.random() - 0.5) * 2 * c : 0;
       const rise = -3 * ease(c);
       const melt = clamp01((t - M_CHARGE) / (M_MELT - M_CHARGE));
-      const sx = h.x - 12 + shake, sy = h.y - 12 + rise;
+      const sx = h.x - RS / 2 + shake, sy = h.y - RS / 2 + rise;
       const cut = Math.floor(melt * 24);
       const src = tinted(w, Math.min(1, c * 0.55 + melt * 0.6));
-      g.drawImage(src, 0, cut, 24, 24 - cut, Math.round(sx), Math.round(sy + cut), 24, 24 - cut);
-      // the cracks of light across it
+      g.drawImage(src, 0, cut, 24, 24 - cut, Math.round(sx), Math.round(sy + cut * k3), RS, (24 - cut) * k3);
       if (c > 0.2 && melt < 0.6) {
         g.fillStyle = '#ffffff';
         g.globalAlpha = c * (1 - melt / 0.6);
         const cr = [[12, 2, 10, 8], [10, 8, 13, 14], [13, 14, 9, 21], [10, 8, 4, 11], [13, 14, 19, 17]];
-        for (const [x1, y1, x2, y2] of cr) for (let s = 0; s <= 8; s++) { const px = x1 + ((x2 - x1) * s) / 8, py = y1 + ((y2 - y1) * s) / 8; if (py >= cut) g.fillRect(Math.round(sx + px), Math.round(sy + py), 1, 1); }
+        for (const [x1, y1, x2, y2] of cr) for (let s2 = 0; s2 <= 10; s2++) { const px = x1 + ((x2 - x1) * s2) / 10, py = y1 + ((y2 - y1) * s2) / 10; if (py >= cut) g.fillRect(Math.round((sx + px * k3) * 2) / 2, Math.round((sy + py * k3) * 2) / 2, 1.5, 1.5); }
         g.globalAlpha = 1;
       }
-      glow(h.x, h.y + rise, 20, C.PICK, 0.3 + 0.6 * c);
-      // as it melts: drops of light falling from the line it has melted to
-      if (melt > 0 && melt < 1 && stonePx) {
-        for (let k = 0; k < 6; k++) {
-          addPart({ x: sx + 3 + Math.random() * 18, y: sy + cut, vx: (Math.random() - 0.5) * 8, vy: 10 + Math.random() * 25, max: 0.35, c: Math.random() < 0.3 ? '#ffffff' : CY[Math.floor(Math.random() * 3)], grav: 90 });
-        }
-      }
-      // the light pooling in the hollow
+      glow(h.x, h.y + rise, 24, C.PICK, 0.3 + 0.6 * c);
+      if (melt > 0 && melt < 1) for (let n = 0; n < 7; n++) addPart({ x: sx + 4 + Math.random() * (RS - 8), y: sy + cut * k3, vx: (Math.random() - 0.5) * 8, vy: 15 + Math.random() * 30, max: 0.28, c: Math.random() < 0.3 ? '#ffffff' : CY[Math.floor(Math.random() * 3)], grav: 110 });
       if (melt > 0) {
         g.globalAlpha = 0.5 * melt; g.fillStyle = C.PICK;
-        g.fillRect(h.x - 12, h.y + 12 - melt * 8, 24, melt * 8);
+        g.fillRect(h.x - RS / 2, h.y + RS / 2 - melt * 11, RS, melt * 11);
         g.globalAlpha = 1;
-        glow(h.x, h.y + 8, 18, C.PICK, melt * 0.8);
+        glow(h.x, h.y + 10, 22, C.PICK, melt * 0.85);
       }
     } else if (t < M_POUR) {
-      // the pool draining down into its groove
-      const k = clamp01((t - M_MELT) / 0.5);
+      const k = clamp01((t - M_MELT) / 0.3);
       g.globalAlpha = 0.5 * (1 - k); g.fillStyle = C.PICK;
-      g.fillRect(h.x - 12, h.y + 4 + k * 8, 24, 8 * (1 - k));
+      g.fillRect(h.x - RS / 2, h.y + 7 + k * 11, RS, 11 * (1 - k));
       g.globalAlpha = 1;
-      glow(h.x, h.y + 10, 16, C.PICK, 0.8 * (1 - k));
+      glow(h.x, h.y + 12, 20, C.PICK, 0.85 * (1 - k));
     }
   });
-  // the standing stones round the hollow beneath: each wakes as the light runs past it
-  STANDING.forEach((s, i) => {
-    let a = 0.15 + 0.1 * Math.sin(now * 1.3 + i);
-    if (meld && !meld.done && t > M_POUR) {
-      const sw = clamp01((t - M_POUR) / (M_SWIRL - M_POUR));
-      const lead = (sw * 1.6 * 6) % 6;
-      if (lead >= i || sw > 0.6) a = Math.max(a, 1);
-    } else if (meld && meld.done) a = 0.6 + 0.3 * Math.sin(now * 3 + i);
+  // the standing stones under the hollow beneath: each wakes as the light comes round
+  STANDING.forEach((s2, i) => {
+    let a = 0.18 + 0.1 * Math.sin(now * 1.3 + i);
+    if (meld && !meld.done && t > M_POUR) { const sw = clamp01((t - M_POUR) / (M_SWIRL - M_POUR)); if (sw * 7 >= [0, 1, 2, 2, 1, 0][i] * 2 || sw > 0.7) a = 1; }
+    else if (meld && meld.done) a = 0.6 + 0.3 * Math.sin(now * 3 + i);
     else if (pt.ok) a = 0.35 + 0.15 * idle;
     g.fillStyle = C.PICK; g.globalAlpha = a;
-    g.fillRect(Math.round(s.x) - 1, Math.round(s.y) - 1, 2, 3);
+    g.fillRect(Math.round(s2.x) - 1, Math.round(s2.y) - 2, 2, 4);
     g.globalAlpha = 1;
-    if (a > 0.6) glow(s.x, s.y, 9, C.PICK, (a - 0.6) * 1.2);
+    if (a > 0.6) glow(s2.x, s2.y, 10, C.PICK, (a - 0.6) * 1.2);
   });
   // the hollow beneath
   const o = OUT;
   if (!meld) {
-    glow(o.x, o.y, 30, C.PICK, 0.12 + 0.06 * idle);
+    glow(o.x, o.y, 34, C.PICK, 0.12 + 0.06 * idle);
     if (pt.ok && pt.res) {
-      if (known.has(pt.res)) { stone(pt.res, o.x - 12, o.y - 12, 24, 0.25 + 0.12 * idle); }
-      else { glow(o.x, o.y, 16, C.PICK, 0.3 + 0.2 * idle); T('?', o.x, o.y - 7 + Math.sin(now * 3), C.PICK, { scale: 2, align: 'center' }); }
+      if (known.has(pt.res)) stone(pt.res, o.x - NS / 2, o.y - NS / 2, NS, 0.22 + 0.12 * idle);
+      else { glow(o.x, o.y, 18, C.PICK, 0.3 + 0.2 * idle); T('?', o.x, o.y - 7 + Math.round(Math.sin(now * 3)), C.PICK, { scale: 2, align: 'center' }); }
     }
   } else {
     // the two streams come in and wheel round the hollow, closing on its middle
-    if (t > M_POUR - 0.05 && t < M_FLASH) {
-      const sw = clamp01((t - (M_POUR - 0.05)) / (M_SWIRL - M_POUR + 0.05));
-      const rad = 17 * (1 - ease(sw)) + 2;
+    if (t > M_POUR - 0.04 && t < M_FLASH) {
+      const sw = clamp01((t - (M_POUR - 0.04)) / (M_SWIRL - M_POUR + 0.04));
+      const rad = 20 * (1 - ease(sw)) + 2;
       for (const side of [0, 1]) {
-        const base = side ? -Math.PI / 4 : -3 * Math.PI / 4;
+        const base = side ? -Math.PI / 3 : (-2 * Math.PI) / 3;
         const dir = side ? 1 : -1;
         for (let tr = 0; tr < 14; tr++) {
-          const ang = base + dir * (sw * Math.PI * 3.2 - tr * 0.13);
+          const ang = base + dir * (sw * Math.PI * 3 - tr * 0.14);
           const rr = rad + tr * 0.35;
           const px = o.x + Math.cos(ang) * rr, py = o.y + Math.sin(ang) * rr * 0.85;
           g.globalAlpha = 1 - tr / 14; g.fillStyle = tr < 2 ? '#ffffff' : C.PICK;
@@ -1144,107 +1185,107 @@ function drawSmith(): void {
         }
         g.globalAlpha = 1;
       }
-      glow(o.x, o.y, 10 + 24 * sw, C.PICK, 0.4 + 0.6 * sw);
-      glow(o.x, o.y, 8 + 8 * sw, '#ffffff', 0.5 * sw);
+      glow(o.x, o.y, 12 + 26 * sw, C.PICK, 0.4 + 0.6 * sw);
+      glow(o.x, o.y, 8 + 10 * sw, '#ffffff', 0.55 * sw);
     }
-    // the flash: a ring thrown out, sparks
-    if (t >= M_SWIRL && t < M_FLASH + 0.6) {
-      const f = clamp01((t - M_SWIRL) / (M_FLASH + 0.6 - M_SWIRL));
-      const rr = 6 + ease(f) * 80;
+    // the flash: the whole stone whitened a moment, a ring thrown out, sparks
+    if (t >= M_SWIRL && t < M_FLASH + 0.45) {
+      const f = clamp01((t - M_SWIRL) / (M_FLASH + 0.45 - M_SWIRL));
+      const rr = 8 + ease(f) * 84;
       g.fillStyle = f < 0.3 ? '#ffffff' : C.PICK;
-      for (let i = 0; i < 90; i++) {
-        const a = (i / 90) * Math.PI * 2;
+      for (let i = 0; i < 96; i++) {
+        const a = (i / 96) * Math.PI * 2;
         g.globalAlpha = (1 - f) * 0.9;
         g.fillRect(Math.round((o.x + Math.cos(a) * rr) * 2) / 2, Math.round((o.y + Math.sin(a) * rr * 0.8) * 2) / 2, 1.5, 1.5);
       }
       g.globalAlpha = 1;
-      if (!(meld as Meld & { burst?: boolean }).burst && t >= M_FLASH - 0.06) {
-        (meld as Meld & { burst?: boolean }).burst = true;
-        for (let i = 0; i < 34; i++) { const a = Math.random() * Math.PI * 2, sp = 40 + Math.random() * 90; addPart({ x: o.x, y: o.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.8 - 20, max: 0.5 + Math.random() * 0.5, c: CY[Math.floor(Math.random() * 4)], grav: 70, s: Math.random() < 0.3 ? 1.5 : 1 }); }
+      if (!meld.burst && t >= M_FLASH - 0.05) {
+        meld.burst = true;
+        for (let i = 0; i < 40; i++) { const a = Math.random() * Math.PI * 2, sp = 50 + Math.random() * 100; addPart({ x: o.x, y: o.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.8 - 20, max: 0.4 + Math.random() * 0.45, c: CY[Math.floor(Math.random() * 4)], grav: 80, s: Math.random() < 0.3 ? 1.5 : 1 }); }
       }
     }
-    if (t >= M_SWIRL + 0.1 && t < M_SWIRL + 0.45) {
-      const f = (t - M_SWIRL - 0.1) / 0.35;
-      g.fillStyle = 'rgba(214,255,250,' + (0.42 * (1 - f)).toFixed(3) + ')';
-      g.fillRect(7, 26, 226, 202);
+    if (t >= M_SWIRL + 0.05 && t < M_SWIRL + 0.3) {
+      const f = (t - M_SWIRL - 0.05) / 0.25;
+      g.fillStyle = 'rgba(214,255,250,' + (0.45 * (1 - f)).toFixed(3) + ')';
+      g.fillRect(SLAB.x, SLAB.y, SLAB.w, SLAB.h);
     }
     // the new rune forms: its pixels gather out of the light into their places
-    if (t >= M_FLASH - 0.08 && meld.taken < 0) {
-      const ft = t - (M_FLASH - 0.08);
-      const settled = ft > M_FORM - M_FLASH + 0.1;
-      if (!settled) {
+    if (t >= M_FLASH - 0.06 && meld.taken < 0) {
+      const ft = t - (M_FLASH - 0.06);
+      const k4 = NS / 24;
+      if (ft < M_GATHER + 0.16) {
         for (let i = 0; i < meld.pix.length; i++) {
           const [px, py, col] = meld.pix[i];
           const fr = meld.from[i];
-          const k = ease(clamp01((ft - fr.d) / 0.42));
+          const k = ease(clamp01((ft - fr.d) / M_GATHER));
           if (k <= 0) continue;
-          const x = o.x - 18 + px * 1.5 + fr.x * (1 - k), y = o.y - 18 + py * 1.5 + fr.y * (1 - k);
-          g.fillStyle = k < 0.85 ? C.PICK : col; g.globalAlpha = Math.min(1, k * 1.5);
-          g.fillRect(Math.round(x * 2) / 2, Math.round(y * 2) / 2, 1.5, 1.5);
+          const x = o.x - NS / 2 + px * k4 + fr.x * (1 - k), y = o.y - NS / 2 + py * k4 + fr.y * (1 - k);
+          g.fillStyle = k < 0.85 ? C.PICK : col; g.globalAlpha = Math.min(1, k * 1.6);
+          g.fillRect(Math.round(x * 2) / 2, Math.round(y * 2) / 2, k4, k4);
         }
         g.globalAlpha = 1;
-        glow(o.x, o.y, 22, C.PICK, 0.6);
+        glow(o.x, o.y, 26, C.PICK, 0.65);
       } else {
         if (!meld.done) { meld.done = true; held[meld.res]++; known.add(meld.res); fresh.add(meld.res); got[meld.res] = gotN++; libSmith.layout = libLay(libSmith); }
         const age = t - M_FORM;
         const pulse = 0.5 + 0.5 * Math.sin(now * 3);
-        const size = age < 0.14 ? 48 : 36;
-        glow(o.x, o.y, 30 + 6 * pulse, R[meld.res].color, 0.55 + 0.2 * pulse);
-        glow(o.x, o.y, 16, '#ffffff', age < 0.3 ? 0.8 * (1 - age / 0.3) : 0);
-        // beams turning slowly behind it
+        const size = age < 0.1 ? 60 : NS;
+        glow(o.x, o.y, 34 + 6 * pulse, R[meld.res].color, 0.55 + 0.2 * pulse);
+        glow(o.x, o.y, 18, '#ffffff', age < 0.25 ? 0.8 * (1 - age / 0.25) : 0);
         g.save(); g.globalCompositeOperation = 'lighter';
         for (let b = 0; b < 6; b++) {
           const a = now * 0.6 + (b * Math.PI) / 3;
-          for (let s = 10; s < 30; s += 1) { g.globalAlpha = 0.18 * (1 - s / 30); g.fillStyle = C.PICK; g.fillRect(Math.round(o.x + Math.cos(a) * s), Math.round(o.y + Math.sin(a) * s * 0.85), 1, 1); }
+          for (let s2 = 14; s2 < 36; s2++) { g.globalAlpha = 0.18 * (1 - s2 / 36); g.fillStyle = C.PICK; g.fillRect(Math.round(o.x + Math.cos(a) * s2), Math.round(o.y + Math.sin(a) * s2 * 0.85), 1, 1); }
         }
         g.restore();
-        const bob = Math.sin(now * 2.2) * 1.2;
-        stone(meld.res, o.x - size / 2, o.y - size / 2 + Math.round(bob * 2) / 2, size);
-        if (Math.random() < 0.25) addPart({ x: o.x + (Math.random() - 0.5) * 30, y: o.y + 8, vy: -12 - Math.random() * 10, max: 1.2, c: C.PICK });
-        hit({ x: o.x - 22, y: o.y - 22, w: 44, h: 44, tap: () => takeMeld() });
+        const bob = Math.round(Math.sin(now * 2.2) * 2) / 2;
+        stone(meld.res, o.x - size / 2, o.y - size / 2 + bob, size);
+        if (Math.random() < 0.25) addPart({ x: o.x + (Math.random() - 0.5) * 34, y: o.y + 10, vy: -12 - Math.random() * 10, max: 1.2, c: C.PICK });
+        hit({ x: o.x - OS / 2, y: o.y - OS / 2, w: OS, h: OS, tap: () => takeMeld() });
       }
     }
     // taken: the rune flies to its place in the bag
     if (meld.taken >= 0) {
-      const k = clamp01((now - meld.taken) / 0.55);
+      const k = clamp01((now - meld.taken) / 0.45);
       const L = libSmith;
       const it = L.layout?.items.find((i) => i.id === meld!.res);
       const tx = it ? L.x + it.x + 8 : HALF + 120, ty = it ? gridTop(L) + it.y - L.scroll + 3 : 140;
       const e = ease(k);
-      const x = o.x - 12 + (tx - (o.x - 12)) * e, y = o.y - 12 + (ty - (o.y - 12)) * e - Math.sin(k * Math.PI) * 40;
+      const size = Math.round((NS - (NS - 24) * e) / 12) * 12;
+      const x = o.x - NS / 2 + (tx - (o.x - NS / 2)) * e, y = o.y - NS / 2 + (ty - (o.y - NS / 2)) * e - Math.sin(k * Math.PI) * 40;
       g.restore();
       g.save();
-      glow(x + 12, y + 12, 16, C.PICK, 0.7);
-      stone(meld.res, x, y, 24);
-      if (Math.random() < 0.9) addPart({ x: x + 12, y: y + 12, vx: (Math.random() - 0.5) * 20, vy: (Math.random() - 0.5) * 20, max: 0.4, c: C.PICK });
+      glow(x + size / 2, y + size / 2, 18, C.PICK, 0.7);
+      stone(meld.res, x, y, size);
+      if (Math.random() < 0.9) addPart({ x: x + size / 2, y: y + size / 2, vx: (Math.random() - 0.5) * 20, vy: (Math.random() - 0.5) * 20, max: 0.4, c: C.PICK });
       if (k >= 1) finishTake();
     }
   }
   g.restore();
-  // under the hollow beneath: what will come out, or what came out
-  const ny = 203;
+  // under the hollow beneath: what will come out, or what came out, on a dark plate across the stone's foot
+  const ny = 213;
   if (meld && meld.done && meld.taken < 0) {
-    const age = now - meld.t0 - M_NAME + 0.25;
-    const k = ease(clamp01(age / 0.35));
+    const age = now - meld.t0 - M_NAME + 0.15;
+    const k = ease(clamp01(age / 0.25));
     const nm = R[meld.res].name.toUpperCase();
-    const sc = tw(nm, 'normal', 2) < 200 ? 2 : 1;
-    g.globalAlpha = k;
+    const sc = tw(nm, 'normal', 2) < SLAB.w - 16 ? 2 : 1;
     const head = meld.first ? 'A NEW RUNE, FOUND!' : R[meld.res].rankOf ? 'RANKED UP' : 'MELDED';
     const pw = Math.max(tw(nm, 'normal', sc), tw(head, 'small')) + 20;
-    g.fillStyle = 'rgba(14,12,36,0.78)'; g.fillRect(HALF / 2 - pw / 2, ny - 5, pw, sc === 2 ? 26 : 20);
+    g.globalAlpha = k;
+    g.fillStyle = 'rgba(8,12,16,0.8)'; g.fillRect(HALF / 2 - pw / 2, ny - 5, pw, sc === 2 ? 26 : 20);
     T(head, HALF / 2, ny - 2 - (1 - k) * 4, meld.first ? (Math.floor(now * 3) % 2 ? C.PICK : '#ffffff') : C.DIM, { font: 'small', align: 'center', shadow: C.INK });
-    T(nm, HALF / 2, ny + 6 - (1 - k) * 4, R[meld.res].color, { scale: sc, align: 'center', shadow: C.INK });
-    if (age > 0.9) T('PRESS IT TO TAKE IT', HALF / 2, 233, Math.floor(now * 2) % 2 ? C.PICK : C.FAINT, { font: 'small', align: 'center' });
+    T(nm, HALF / 2, ny + 5 - (1 - k) * 4, R[meld.res].color, { scale: sc, align: 'center', shadow: C.INK });
+    if (age > 0.6) T('PRESS IT TO TAKE IT', HALF / 2, 235, Math.floor(now * 2) % 2 ? C.PICK : C.FAINT, { font: 'small', align: 'center' });
     g.globalAlpha = 1;
   } else if (!meld) {
-    if (pt.s) { const pw = tw(pt.s) + 14; g.fillStyle = 'rgba(14,12,36,0.78)'; g.fillRect(HALF / 2 - pw / 2, ny + 2, pw, 13); T(pt.s, HALF / 2, ny + 5, pt.c, { align: 'center' }); }
-    else if (!hin[0] && !hin[1]) T('TWO RUNES IN, ONE OUT. PRESS TWO OF YOURS ON THE RIGHT.', HALF / 2, 233, C.FAINT, { font: 'small', align: 'center' });
-    else { const one = hin[0] ?? hin[1]; T(`THE RUNES THAT MELD WITH ${R[one!].name.toUpperCase()} ARE LIT`, HALF / 2, 233, C.PICK_LO, { font: 'small', align: 'center' }); }
+    if (pt.s) { const pw = tw(pt.s) + 14; g.fillStyle = 'rgba(8,12,16,0.8)'; g.fillRect(HALF / 2 - pw / 2, ny + 2, pw, 13); T(pt.s, HALF / 2, ny + 5, pt.c, { align: 'center' }); }
+    else if (!hin[0] && !hin[1]) T('TWO RUNES IN, ONE OUT. PRESS TWO OF YOURS ON THE RIGHT.', HALF / 2, 235, C.FAINT, { font: 'small', align: 'center' });
+    else { const one = hin[0] ?? hin[1]; T(`THE RUNES THAT MELD WITH ${R[one!].name.toUpperCase()} ARE LIT`, HALF / 2, 235, C.PICK_LO, { font: 'small', align: 'center' }); }
   }
-  if (now - note.t < 2.2) { g.globalAlpha = Math.min(1, 2.2 - (now - note.t)); box(20, 104, HALF - 40, 16, C.PANEL, note.c); T(note.s, HALF / 2, 109, note.c, { font: 'small', align: 'center' }); g.globalAlpha = 1; }
+  if (now - note.t < 2.2) { g.globalAlpha = Math.min(1, 2.2 - (now - note.t)); box(14, 104, HALF - 28, 16, C.PANEL, note.c); T(note.s, HALF / 2, 109, note.c, { font: 'small', align: 'center' }); g.globalAlpha = 1; }
   // MELD
   const can = !meld && pt.ok && dust > 0;
-  const label = `MELD: 1 RUNEDUST`;
+  const label = 'MELD: 1 RUNEDUST';
   const bw = tw(label) + 24;
   const br = { x: Math.round(HALF / 2 - bw / 2), y: 246, w: bw, h: 18 };
   const blink = 0.5 + 0.5 * Math.sin(now * 5);

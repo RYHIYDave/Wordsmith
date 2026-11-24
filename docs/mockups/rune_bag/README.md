@@ -41,17 +41,26 @@ base runes, about half the melds, a few left out on purpose so that a meld can b
 
 ## The melding stone
 
-- His slab, carved: two hollows above, a channel from each down to one hollow beneath, the six standing stones of his ring
-  round that, his runes carved beside the channels. Motes of light rising off it all the time.
+His picks on the first mock-up, 23 Nov 2026 (evening, Eastern): asked what to do once he had tried it, “Change the melding”;
+asked what to change, “The stone looks off, Too slow, Layout”; asked which way the runes should come together, “Straight
+down”. So, in the second:
+
+- ONE BLOCK OF SLATE, the stone his standing stones in town are cut from (in the first it read as a brick wall): chipped
+  edges, lit from above, flecks of mica, a few cracks, a border cut round inside it with his runes lit cyan in its corners.
+- STRAIGHT DOWN: the two hollows side by side at its top, a channel cut straight down from each, turning in at their feet
+  into the hollow beneath; the six standing stones of his ring round that, none where the channels come in; his runes carved
+  beside the channels. The runes laid in are larger (three of the screen's pixels to each of the stone's), the new one larger
+  still (four).
+- QUICKER: the new rune is there about 1.8 s after MELD (it was 3.5 s): the two runes rise, tremble and crack with light
+  (0.2 s); melt into cyan light pooling in their hollows (to 0.5 s); the light runs down the two channels, the carved runes
+  flaring as it passes (to 0.9 s); the two streams wheel round the hollow beneath, the standing stones waking (to 1.25 s);
+  the whole stone flashes white, a ring is thrown out, sparks (to 1.4 s); the new rune's pixels gather out of the light into
+  their places (to 1.8 s); its name, and A NEW RUNE, FOUND! for one not found before (RANKED UP for two of the same).
+  Pressed, it flies across into its place in the bag.
 - At the wordsmith the bag stands on the other half: a rune pressed goes into the next hollow (or dragged to one); a hollow
   pressed gives its rune back. With one laid in, THE BAG SHOWS WHAT MELDS WITH IT: a meld you know lit, a meld not yet found
-  marked ?, a rune that makes nothing dimmed.
-- Two laid in that meld: the channels shimmer, the hollow beneath shows the rune to come (faint), or a ? for one not found.
-- MELD (3.5 s): the two runes rise, tremble and crack with light; melt into cyan light that pools in their hollows; the light
-  pours down the two channels, the carved runes flaring as it passes; the two streams wheel round the hollow beneath, the
-  standing stones waking; a flash over the whole stone, a ring thrown out, sparks; the new rune's pixels gather out of the
-  light into their places; its name, and A NEW RUNE, FOUND! for one not found before (RANKED UP for two of the same). Pressed,
-  it flies across into its place in the bag.
+  marked ?, a rune that makes nothing dimmed. Two laid in that meld: the channels shimmer, and the hollow beneath shows the
+  rune to come (faint), or a ? for one not found.
 
 ## Not in it
 
