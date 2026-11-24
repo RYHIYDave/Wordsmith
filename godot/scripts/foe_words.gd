@@ -198,6 +198,9 @@ func harder(k: Callable, parts: Array, by) -> float:
 		_tell({"t": "burst", "x": h.world.x, "y": h.world.y, "r": 0.7, "el": "frost", "style": "shock", "words": [], "n": 0, "echo": false})
 	if h.poison_t > 0.0 and h.blight_more > 0.0:
 		mult *= 1.0 + h.blight_more
+	# (GREED on it: it fights harder for what it carries: words.gd GREED)
+	if float(k.call("greed")) > 0.0:
+		mult *= float(Words.GREED["foeHarder"])
 	return mult * Foe52.harder(self, k, parts, by)
 
 
@@ -306,6 +309,9 @@ func blast(m) -> Dictionary:
 ## (foeRage) Its pace and the quickness of its blows, as Fervor's feeding hurries it.
 func rage(m) -> float:
 	var k52: float = Foe52.rage(self, m) if on() else 1.0
+	# (GREED on it: faster for what it carries)
+	if m.word_share("greed") > 0.0:
+		k52 *= float(Words.GREED["foeFaster"])
 	if not on() or m.fervor_n <= 0:
 		return k52
 	return k52 * (1.0 + float(T()["fervor"]["speed"]) * m.fervor_n * maxf(0.5, m.word_share("fervor")))

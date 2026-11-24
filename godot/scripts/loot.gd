@@ -746,6 +746,9 @@ func on_kill(m) -> void:
 	if words_fall() or m.get("chained") == 2:
 		for w in m.carries:
 			_word(at, drop_ok(str(w)))
+		# (GREED on it: it carried better loot, an extra item of a hoard's luck)
+		if m.has_method("word_share") and m.word_share("greed") > 0.0:
+			_item(at, 2)
 		# (THE RARE RUNES: the Glass Queen on an endless level, now and then, Mirroring)
 		if queen_mirror(m):
 			_word(at, "mirroring")
@@ -909,6 +912,21 @@ const BURN_MORE := 2.0
 ## burned rune gives, Plundering too, as before (+30% items, +25 rarity, +10% experience).
 const DOOR_GOLD_WORDS := ["plundering"]
 const DOOR_GOLD := 50.0
+## (GREED likewise: burned in, carried by none, no more often for it; the level's magic find DOOR_MF increased for each)
+const DOOR_MF_WORDS := ["greed"]
+const DOOR_MF := 50.0
+const DOOR_WORDS := ["plundering", "greed"]
+## (GREED in front of the move that killed what is falling: the magic find its drops are made with, hero's kill to its drops)
+var kill_mf := 0.0
+
+
+## How much more magic find the level gives, %, for the Greed burned into it at the door.
+func door_mf(ws = null) -> float:
+	var B := burned_runes(ws)
+	var n := 0
+	for w in DOOR_MF_WORDS:
+		n += int(B.get(w, 0))
+	return DOOR_MF * n
 
 
 ## How much more the level's gold is worth, %, for the Plundering burned into it at the door.
@@ -941,7 +959,7 @@ func burned_runes(ws = null) -> Dictionary:
 func tilt_word(w: String, rng: RandomNumberGenerator = null) -> String:
 	var B := burned_runes()
 	# (Plundering burned in drops no more often for it: DOOR_GOLD_WORDS; nor what may not drop here: THE RARE RUNES)
-	for k in DOOR_GOLD_WORDS:
+	for k in DOOR_WORDS:
 		B.erase(k)
 	for k in B.keys():
 		if not may_drop(str(k)):
@@ -1057,7 +1075,9 @@ func words_found_at(d: int) -> Array:
 ## be very, extremely rare. Like most players will never see it. ... Drops only from the queen in endless. But again, extremely
 ## rare.”): Plundering drops only on an endless level; Mirroring only from the Glass Queen on one, MIRROR_CHANCE of her kills. What
 ## the monsters fight with is as it was (words_found_at); what they leave, and what lies about, is of these (drops_at, drop_ok).
-const ENDLESS_DROPS := ["plundering"]
+const ENDLESS_DROPS := ["plundering", "greed"]
+## (on an endless level, now and then a carrier carries Plundering or Greed, and fights with it: the next level's prize: RARE_CARRY of them)
+const RARE_CARRY := 0.05
 const QUEEN_ONLY := ["mirroring"]
 const MIRROR_CHANCE := 0.01
 
@@ -1074,6 +1094,9 @@ func may_drop(w: String) -> bool:
 ## The runes that may drop at depth `d`, here.
 func drops_at(d: int) -> Array:
 	var out: Array = words_found_at(d).filter(func(w): return may_drop(str(w)))
+	# (Greed, found in no floor's table: on an endless level, one of them)
+	if _endless_here() and not out.has("greed"):
+		out.append("greed")
 	return out if not out.is_empty() else [_words["first"]]
 
 
@@ -1094,7 +1117,8 @@ func queen_mirror(m, roll := -1.0) -> bool:
 func magic_find() -> float:
 	# (and 25 for each word burned into the dungeon at the Rim's gate: game.ts rollGear, wordsWeight(dungeonWords))
 	var burned: float = main.burned_weight() if main != null else 0.0
-	return float(hero.stats.get("magic_find", 0.0)) + 25.0 * burned if hero != null else 0.0
+	# (and GREED: its kill's drops, and the level's for each burned in at the door)
+	return float(hero.stats.get("magic_find", 0.0)) + 25.0 * burned + kill_mf + door_mf() if hero != null else 0.0
 
 
 ## A piece of gear for this floor, of quality `quality` (game.ts rollGear: 0 an ordinary monster's, 1 a better one's, 2 a
@@ -1721,6 +1745,26 @@ func burn_options(w: String, it: Dictionary) -> Array:
 ## text and 687 MB once read whole, is read an option at a time as it is asked for (tools/godot_loot_split.mjs): which options a word
 ## has on each kind of piece (imbue.json `of`), and each option once, as its own line of text (`opts`), made a thing when first wanted.
 func imbue_options(w: String, it: Dictionary) -> Array:
+	# (GREED: magic find or Intelligence, on any piece: Plundering's magic find, and Intelligence where it gives Dexterity)
+	if w == "greed":
+		var mf_of := func(ilvl: float) -> Dictionary:
+			for o in imbue_options("plundering", {"slot": "helm", "ilvl": ilvl}):
+				if str(o["stat"]) == "magicFind":
+					return o
+			return {}
+		var g: Array = []
+		for o in imbue_options("plundering", it):
+			var st: String = str(o["stat"])
+			if st == "goldFind" or st == "magicFind":
+				var mfo: Dictionary = mf_of.call(float(it["ilvl"]))
+				if not mfo.is_empty():
+					g.append(mfo)
+			elif st == "dex":
+				for q in imbue_options("reaping", it):
+					if str(q["stat"]) == "int":
+						g.append(q)
+						break
+		return g
 	# (THE 52 DESIGNED MELDS AND THE 11 LEVEL 2 RUNES: made from their runes' own: melds52_options)
 	if Melds52.is_new(w):
 		return melds52_options(w, it)

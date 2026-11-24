@@ -318,10 +318,8 @@ func killed(m, i: int) -> void:
 		var P: Dictionary = L()["plunder"]
 		if float(r["plunder"]) > 0.0 and loot != null:
 			loot._gold(m.world, maxi(1, roundi(base * float(r["plunder"]))))
-			var item: bool = randf() < float(P["eliteItem"] if m.elite or m.champion or m.boss else P["item"])
-			if item:
-				loot._item(m.world, 1)
-			hero._tell({"t": "goldSpray", "x": m.world.x, "y": m.world.y, "item": item})
+			# (its extra item, Greed's now: his yes to Greed, 24 Nov 2026)
+			hero._tell({"t": "goldSpray", "x": m.world.x, "y": m.world.y, "item": false})
 			rec("plunder_spray")
 		if float(r["plunder_burst"]) > 0.0 and loot != null:
 			var n := maxi(1, roundi(base * float(r["plunder_burst"]) * (1.0 + float(hero.stats.get("gold_find", 0.0)) / 100.0)))
@@ -330,6 +328,16 @@ func killed(m, i: int) -> void:
 			hero._tell({"t": "text", "x": hero.world.x, "y": hero.world.y, "text": "+%d" % n, "color": "#ffe070"})
 			rec("plunder_spray")
 			rec("plunder_stream")
+	# GREED (words.gd GREED): in front, what it kills drops better gear (the drops made as it falls, loot.gd kill_mf); behind,
+	# now and then an extra item
+	var loot2 = hero.monsters.loot if hero.monsters != null else null
+	if float(r.get("greed", 0.0)) > 0.0 and loot2 != null:
+		loot2.kill_mf = float(r["greed"])
+	if float(r.get("greed_item", 0.0)) > 0.0 and loot2 != null:
+		var G: Dictionary = preload("res://scripts/words.gd").GREED
+		if randf() < float(G["eliteItem"] if m.elite or m.champion or m.boss else G["item"]):
+			loot2._item(m.world, 1)
+			hero._tell({"t": "text", "x": m.world.x, "y": m.world.y, "text": "Greed!", "color": "#f0d8ff"})
 
 
 ## REAPING behind: a spirit risen where `m` fell, fighting for him REAP.spiritSecs (the oldest gives way past REAP.spirits).

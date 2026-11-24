@@ -2889,6 +2889,8 @@ func _dungeon_line(w: String, k: Dictionary, unknown: String) -> String:
 	var meld: bool = FW.is_meld(w) or FW.is_rank(w)
 	if DOOR_GOLD_LINE and loot.DOOR_GOLD_WORDS.has(w):
 		return "%d%% increased gold found in it; no monster in it carries it. %s" % [roundi(loot.DOOR_GOLD), _burn_reward(1)]
+	if DOOR_GOLD_LINE and loot.DOOR_MF_WORDS.has(w):
+		return "%d%% increased magic find in it; no monster in it carries it. %s" % [roundi(loot.DOOR_MF), _burn_reward(1)]
 	var t: String = FW.page(w) if meld else str(Words.word(w).get("monsterText", ""))
 	return "Every monster in it: %s%s %s" % [t.substr(0, 1).to_lower(), t.substr(1), ("Counts as two words: " if meld else "") + _burn_reward(2 if meld else 1)]
 
@@ -3114,6 +3116,8 @@ func _gate_side(blink: bool, x0: float, w: float) -> void:
 			_text(Vector2(tx, r.position.y + 16), str(Words.word(laid[i])["name"]).to_upper(), 12, loot.word_color(laid[i]))
 			if DOOR_GOLD_LINE and loot.DOOR_GOLD_WORDS.has(str(laid[i])):
 				_text(Vector2(tx, r.position.y + 32), "%d%% increased gold found on this level. No monster carries it." % roundi(loot.DOOR_GOLD), 9, TEXT)
+			elif DOOR_GOLD_LINE and loot.DOOR_MF_WORDS.has(str(laid[i])):
+				_text(Vector2(tx, r.position.y + 32), "%d%% increased magic find on this level. No monster carries it." % roundi(loot.DOOR_MF), 9, TEXT)
 			else:
 				_text(Vector2(tx, r.position.y + 32), "Every monster: %s" % _lower(_monster_text(laid[i])), 9, TEXT)
 			_hits.append([row, "gate_take", i, null])
@@ -3140,7 +3144,7 @@ func _gate_side(blink: bool, x0: float, w: float) -> void:
 			var B: Dictionary = loot.burned_runes(laid)
 			var bits: Array = []
 			for k in B:
-				if not loot.DOOR_GOLD_WORDS.has(k):
+				if not loot.DOOR_WORDS.has(k):
 					bits.append("%d%% increased %s drops" % [200 * int(B[k]), str(Words.word(k)["name"]).to_upper()])
 			if not bits.is_empty():
 				for l in _wrap("%s." % ", ".join(PackedStringArray(bits)), w, 10):

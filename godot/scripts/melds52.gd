@@ -99,6 +99,17 @@ static func add_to(D: Dictionary) -> void:
 		M["of"][id] = t["of"][id]
 	for id in t["rankOf"]:
 		M["rankOf"][id] = t["rankOf"][id]
+	# (GREED, the better-loot word: a plain word kept in this table for its stone and page, words.gd GREED)
+	for id in t.get("extra", {}):
+		D["words"][id] = t["extra"][id]
+		M["attr"][id] = t["extra"][id]["attr"]
+		if D.has("page") and t.get("extraPage", {}).has(id):
+			D["page"][id] = t["extraPage"][id]
+		if D.has("ids") and not (D["ids"] as Array).has(id):
+			D["ids"].append(id)
+	# (and Plundering's extra item, now Greed's: his yes to Greed, 24 Nov 2026)
+	if D["words"].has("plundering") and t.get("extra", {}).has("greed"):
+		D["words"]["plundering"]["frontText"] = "Kills drop more gold."
 	M["d52"] = t["melds"]
 	M["ranks52"] = t["ranks"]
 	# (on a monster, a level 2 rune laid with its rune makes it half as strong again: monster.gd word_share, foe.rankBy)
@@ -114,6 +125,11 @@ static func _attr_name(a: String) -> String:
 ## Into the HUD's tables (hud.json): each one's colour, its names on a move, what it grows with.
 static func add_hud(H: Dictionary) -> void:
 	var t := T()
+	for id in t.get("extra", {}):
+		var we: Dictionary = t["extra"][id]
+		H["word_color"][id] = t["color"][id]
+		H["words"][id] = {"front": str(we["front"]).to_upper(), "behind": str(we["behind"]).trim_prefix("of ").to_upper(),
+			"name": we["name"], "grows": "grows with " + _attr_name(str(we["attr"]))}
 	for id in t["order"]:
 		var wd: Dictionary = t["words"][id]
 		H["word_color"][id] = t["color"][id]

@@ -6,6 +6,7 @@
 extends RefCounted
 
 var M
+var _hero
 var n := 0
 var bad: Array = []
 
@@ -25,8 +26,9 @@ func _draws(k: int) -> Dictionary:
 	return out
 
 
-func run(main, _hero, _dir: String) -> void:
+func run(main, hero_in, _dir: String) -> void:
 	M = main
+	_hero = hero_in
 	var L = M.loot
 	M.endless = 0
 	M.in_endless = false
@@ -51,4 +53,36 @@ func run(main, _hero, _dir: String) -> void:
 	M.in_endless = false
 	M.endless = 0
 	_line(not L.queen_mirror(queen, 0.0), "the Glass Queen on floor 18 as the story has it: never")
+	# GREED (his “Yes build greed”, 24 Nov 2026)
+	var Wd := preload("res://scripts/words.gd")
+	var gw: Dictionary = Wd.word("greed")
+	_line(str(gw.get("name", "")) == "Greed" and Wd.meld_problem("greed", "twin") != "" and Wd.meld_of("greed", "greed") == "" and str(Wd.word("plundering")["frontText"]) == "Kills drop more gold.",
+		"Greed is a word (%s / %s), it never melds ('%s'), and Plundering's extra item is Greed's now (Plundering: '%s')" % [gw.get("front", ""), gw.get("behind", ""), Wd.meld_problem("greed", "twin"), Wd.word("plundering")["frontText"]])
+	_line(not here.has("greed") and L.drops_at(18).has("greed") == false, "Greed never drops on floor 18 as the story has it")
+	M.in_endless = true
+	M.endless = 6
+	_line(L.drops_at(20).has("greed") and L.drops_at(3).has("greed"), "on an endless level of any floor, Greed may drop")
+	M.dungeon_words = ["greed"]
+	var mf0: float = L.magic_find()
+	M.dungeon_words = []
+	var mf1: float = L.magic_find()
+	_line(L.door_mf(["greed"]) == 50.0 and is_equal_approx(mf0 - mf1, 75.0), "burned in at the door: the level's magic find 50%% increased, and the 25 every burned word gives: %.0f more in all" % (mf0 - mf1))
+	L.kill_mf = 60.0
+	var mf2: float = L.magic_find()
+	L.kill_mf = 0.0
+	_line(is_equal_approx(mf2 - mf1, 60.0), "Greedy's kill: its drops made with %.0f more magic find" % (mf2 - mf1))
+	var opts: Array = []
+	for slot in ["mainhand", "ring", "helm", "boots"]:
+		for o in L.imbue_options("greed", {"slot": slot, "ilvl": 12}):
+			opts.append("%s:%s" % [slot, o["stat"]])
+	_line(not opts.is_empty() and opts.all(func(x): return str(x).ends_with("magicFind") or str(x).ends_with(":int")) and opts.any(func(x): return str(x).begins_with("mainhand:magicFind")),
+		"burned into gear: magic find or Intelligence, on any piece (%s)" % ", ".join(PackedStringArray(opts)))
+	M._w_put(_hero, 0, "front", ["greed"])
+	var rf: Dictionary = _hero.loadout.r(0)
+	M._w_put(_hero, 0, "behind", ["greed"])
+	var rb: Dictionary = _hero.loadout.r(0)
+	_line(float(rf["greed"]) >= 50.0 and str(rf["name"]).contains("Greedy") and float(rb["greed_item"]) == 0.05 and str(rb["name"]).contains("of Greed"),
+		"on the Strike: '%s', %.0f%% increased magic find on its kills' drops; '%s', an extra item %.0f%% of its kills" % [rf["name"], float(rf["greed"]), rb["name"], 100.0 * float(rb["greed_item"])])
+	M.in_endless = false
+	M.endless = 0
 	print("RARERUNES: %d checks, %d wrong" % [n, bad.size()])

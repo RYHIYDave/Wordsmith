@@ -118,6 +118,18 @@ for k in order:
         page[k] = {'gear': ['Weapon, gloves, ring, amulet: %s, with %s.' % (ga[0], gb[0]), 'Off hand, helm, chest, belt, boots: %s, with %s.' % (ga[1], gb[1])],
                    'note': 'One property of each, each a quarter weaker than alone. Two of a kind never pair.'}
 
+# GREED, THE BETTER-LOOT WORD (his “Yes build greed”, 24 Nov 2026; his words of before, “I really want a QUALITY word where you get
+# better loot” and “Yeah but make it GREED”): a plain word, not a meld, kept in this table for its stone and its page (melds52.gd
+# add_to, `extra`); its rules words.gd, last_words.gd, loot.gd, foe_words.gd.
+EXTRA = {'greed': {'id': 'greed', 'kind': 'shape', 'name': 'Greed', 'front': 'Greedy', 'behind': 'of Greed', 'attr': 'int', 'element': None,
+                   'about': 'The word of the hoard. The best of what they hold is yours.',
+                   'frontText': 'Kills drop better gear: 50% increased magic find on what they drop.',
+                   'behindText': 'Kills sometimes drop an extra item.',
+                   'monsterText': 'Carries better loot, and fights harder for it.'}}
+EXTRA_LOOK = {'greed': {'color': '#a62a6e', 'glyph': ['...o...', '..XXX..', '.XoXoX.', 'XXXXXXX', '.X.X.X.', '..X.X..', '...X...']}}
+EXTRA_PAGE = {'greed': {'gear': ['Weapon, gloves, ring, amulet: Magic Find or Intelligence.', 'Off hand, helm, chest, belt, boots: Magic Find or Intelligence.'],
+                        'note': 'It never melds, and drops only on endless levels.'}}
+
 color = {k: RUNES[k]['color'] for k in RUNES}
 for w in RANKS:
     color[w + '2'] = COLOR[w]
@@ -139,7 +151,7 @@ def rank_stone(w):
         im.putpixel((x, 10), gl)
     return im
 PITCH, COLS = 25, 16
-rows = (len(order) + COLS - 1) // COLS
+rows = (len(order) + len(EXTRA) + COLS - 1) // COLS
 sheet = Image.new('RGBA', (COLS * PITCH, rows * PITCH), (0, 0, 0, 0))
 for i, k in enumerate(order):
     im = rank_stone(k[:-1]) if k in rank_of else env['stone'](k)
@@ -147,11 +159,21 @@ for i, k in enumerate(order):
     x, y = (i % COLS) * PITCH, (i // COLS) * PITCH
     sheet.paste(im, (x, y), im)
     stones_at[k] = [x, y]
+for j, k in enumerate(EXTRA):
+    env['colors'][k] = EXTRA_LOOK[k]['color']
+    env['R'][k] = {'name': EXTRA[k]['name'], 'of': [k, k], 'color': EXTRA_LOOK[k]['color'], 'glyph': EXTRA_LOOK[k]['glyph']}
+    im = env['stone'](k).resize((24, 24), Image.NEAREST)
+    i = len(order) + j
+    x, y = (i % COLS) * PITCH, (i // COLS) * PITCH
+    sheet.paste(im, (x, y), im)
+    stones_at[k] = [x, y]
+    color[k] = EXTRA_LOOK[k]['color']
+    env['stone'](k).save(ROOT + '/docs/mockups/greed/%s.png' % k)
 sheet.save(G + 'words/melds52.png')
 
 TUNE = json.load(open(ROOT + '/tools/melds52/tune.json'))
 out = {'order': order, 'melds': list(RUNES), 'ranks': [w + '2' for w in RANKS], 'words': words, 'of': of, 'rankOf': rank_of,
        'attr': attr, 'page': page, 'color': color, 'stones': stones_at, 'glyph': {k: RUNES[k]['glyph'] for k in RUNES}, 'tune': TUNE,
-       'city': list(RUNES3) + [w + '2' for w in CITY], 'city2': list(RUNES4)}
+       'city': list(RUNES3) + [w + '2' for w in CITY], 'city2': list(RUNES4), 'extra': EXTRA, 'extraPage': EXTRA_PAGE}
 json.dump(out, open(G + 'words/melds52.json', 'w'), indent=1)
 print(len(RUNES), 'melds,', len(RANKS), 'level 2;', 'sheet', sheet.size)

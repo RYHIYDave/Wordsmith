@@ -286,7 +286,14 @@ static func rank_up(w: String) -> String:
 ## word of the ten, Volatile's five or the eight that is made of them.
 ## PLUNDERING NEVER MELDS (his words, 24 Nov 2026: “I think I want plundering to not meld, since it's a gold farming word and should
 ## have a drawback.”): the bench refuses it with any rune, itself too.
-const NO_MELD := ["plundering"]
+const NO_MELD := ["plundering", "greed"]
+## GREED, THE BETTER-LOOT WORD (his “Yes build greed”, 24 Nov 2026; his words of before: “I really want a QUALITY word where you get
+## better loot”, “Yeah but make it GREED”): in front, what it kills drops better gear (`mf` increased magic find on its drops, more
+## for each point of its attribute, `mfMost` at most); behind, what it kills sometimes drops an extra item (`item`, an elite, a
+## champion or a boss `eliteItem`: Plundering's, moved to it); on a monster, it carries better loot (an extra item of a hoard's luck
+## as it dies) and fights harder for it (`foeHarder`, `foeFaster`). It never melds (NO_MELD), and drops only on endless levels
+## (loot.gd ENDLESS_DROPS); on the Rim's door, the level's magic find (loot.gd DOOR_MF).
+const GREED := {"mf": 50.0, "mfMost": 100.0, "grow": 0.5, "item": 0.05, "eliteItem": 0.2, "foeHarder": 1.25, "foeFaster": 1.15}
 
 
 static func meld_of(a: String, b: String) -> String:
@@ -568,7 +575,7 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		"split": 0.0, "hex": 0.0, "still": 0.0, "bind": 0.0, "shards": 0.0, "hex_circle": 0.0, "bubble": 0.0, "snare": 0.0,
 		# (THE HIGH CITY'S SEVEN LAST WORDS: in front and behind)
 		"through": 0.0, "lance": 0.0, "bleed": 0.0, "thorns": 0.0, "reap": 0.0, "spirit": 0.0, "cull": 0.0, "cull_mark": 0.0,
-		"surge": 0.0, "dodge_surge": 0.0, "plunder": 0.0, "plunder_burst": 0.0, "mirror": 0.0, "mirror_leave": 0.0,
+		"surge": 0.0, "dodge_surge": 0.0, "plunder": 0.0, "plunder_burst": 0.0, "mirror": 0.0, "mirror_leave": 0.0, "greed": 0.0, "greed_item": 0.0,
 	}
 	var frenzy: Dictionary = D["frenzy"]
 	var guard: Dictionary = D["guard"]
@@ -796,7 +803,10 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	if has.call(front, "plundering"):
 		var PL: Dictionary = LW["plunder"]
 		r["plunder"] = minf(float(PL["goldMost"]), float(PL["gold"]) + 0.005 * grows_by.call(front, "plundering"))
-		lines.append("Plundering: an enemy it kills drops %s more gold, and now and then an extra item." % _pct(r["plunder"] * 100.0))
+		lines.append("Plundering: an enemy it kills drops %s more gold." % _pct(r["plunder"] * 100.0))
+	if has.call(front, "greed"):
+		r["greed"] = minf(float(GREED["mfMost"]), float(GREED["mf"]) + float(GREED["grow"]) * grows_by.call(front, "greed"))
+		lines.append("Greedy: what it kills drops better gear, %d%% increased magic find on what they drop." % roundi(r["greed"]))
 	if has.call(front, "mirroring"):
 		var MI: Dictionary = LW["mirroring"]
 		r["mirror"] = minf(float(MI["shareMost"]), float(MI["share"]) + 0.001 * grows_by.call(front, "mirroring"))
@@ -918,6 +928,9 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 		var PL: Dictionary = LW["plunder"]
 		r["plunder_burst"] = minf(float(PL["burstMost"]), float(PL["burst"]) + 0.005 * grows_by.call(behind, "plundering"))
 		lines.append("of Plunder: an enemy it kills bursts with gold that flies to you, %s more." % _pct(r["plunder_burst"] * 100.0))
+	if has.call(behind, "greed"):
+		r["greed_item"] = float(GREED["item"])
+		lines.append("of Greed: an enemy it kills sometimes drops an extra item (%d%% chance; an elite, a champion or a boss %d%%)." % [roundi(100.0 * float(GREED["item"])), roundi(100.0 * float(GREED["eliteItem"]))])
 	if has.call(behind, "mirroring"):
 		var MI: Dictionary = LW["mirroring"]
 		r["mirror_leave"] = minf(float(MI["leaveMost"]), float(MI["leaveShare"]) + 0.001 * grows_by.call(behind, "mirroring"))

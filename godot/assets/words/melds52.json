@@ -6650,7 +6650,8 @@
   "splitting2": "#dcaaf6",
   "hexing2": "#b8b4c8",
   "stilling2": "#86eaae",
-  "binding2": "#c8b48a"
+  "binding2": "#c8b48a",
+  "greed": "#a62a6e"
  },
  "stones": {
   "onslaught": [
@@ -7463,6 +7464,10 @@
   ],
   "binding2": [
    250,
+   300
+  ],
+  "greed": [
+   275,
    300
   ]
  },
@@ -10264,5 +10269,29 @@
   "manacle",
   "snag",
   "dragnet"
- ]
+ ],
+ "extra": {
+  "greed": {
+   "id": "greed",
+   "kind": "shape",
+   "name": "Greed",
+   "front": "Greedy",
+   "behind": "of Greed",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the hoard. The best of what they hold is yours.",
+   "frontText": "Kills drop better gear: 50% increased magic find on what they drop.",
+   "behindText": "Kills sometimes drop an extra item.",
+   "monsterText": "Carries better loot, and fights harder for it."
+  }
+ },
+ "extraPage": {
+  "greed": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Magic Find or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Magic Find or Intelligence."
+   ],
+   "note": "It never melds, and drops only on endless levels."
+  }
+ }
 }

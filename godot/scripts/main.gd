@@ -1425,7 +1425,7 @@ func _build(where: String, arrive: String) -> void:
 			if monsters.strength.is_empty():
 				monsters.strength = {"life": 1.0, "boss": 1.0, "dmg": 1.0, "xp": 1.0, "words": []}
 			# (Plundering burned in is carried by none of them: its gold is the level's instead, loot.gd DOOR_GOLD_WORDS)
-			monsters.strength["laid"] = FoeWords.foe_words_of(dungeon_words.filter(func(w): return not loot.DOOR_GOLD_WORDS.has(str(w))))
+			monsters.strength["laid"] = FoeWords.foe_words_of(dungeon_words.filter(func(w): return not loot.DOOR_WORDS.has(str(w))))
 		var mdata: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dir + "/monsters.json"))
 		if where != "final":
 			grow_packs(mdata, endless_power() if in_endless else int(map.depth))
@@ -1439,6 +1439,14 @@ func _build(where: String, arrive: String) -> void:
 			for d in mdata.get("monsters", []):
 				if d is Dictionary and not (d.get("carries", []) as Array).is_empty():
 					d["carries"] = (d["carries"] as Array).map(func(w): return loot.drop_ok(loot.tilt_word(str(w))))
+					# (on an endless level, now and then one carries Plundering or Greed, and fights with it: loot.gd RARE_CARRY)
+					if in_endless and randf() < loot.RARE_CARRY:
+						var prize: String = ["plundering", "greed"].pick_random()
+						d["carries"] = [prize]
+						var ws: Array = (d.get("words", []) as Array).duplicate()
+						if not ws.has(prize):
+							ws.append(prize)
+						d["words"] = ws
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR, mdata)
 		_chained_mdata = mdata
 		floor_mdata = mdata

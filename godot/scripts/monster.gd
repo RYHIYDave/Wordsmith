@@ -2000,6 +2000,8 @@ func _die() -> void:
 			mgr.hero.last.rec("plunder_spray")
 	if mgr.loot != null:
 		mgr.loot.on_kill(self)
+		# (GREED in front of the move that killed it: its drops made with the better magic find; done)
+		mgr.loot.kill_mf = 0.0
 	if boss and h2 != null and h2.has_method("hurt_voice"):
 		# (a boss whose death is his fight's own sound, begun as he is killed: the Swamp Colossus's, colossus.gd died)
 		pass
