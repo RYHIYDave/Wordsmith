@@ -16,8 +16,8 @@ for spec in sys.argv[3:]:
     m, mats = res[0], res[1]
     post = res[2] if len(res) > 2 else None
     yaw = C['yaw_front'] if face == 'f' else C['yaw_back']
-    ims.append(render(m, yaw, mats, W, H, ox, oy, side=FRIEND if side == 'friend' else ENEMY, post=post))
+    ims.append(render(m, yaw, mats, W, H, ox, oy, side=FRIEND if side == 'friend' else ENEMY, post=post, scale=C.get('scale', 1.0)))
 sheet = np.concatenate(ims, 1)
 bg = Image.new('RGBA', (sheet.shape[1], sheet.shape[0]), (34, 30, 44, 255))
 bg.alpha_composite(Image.fromarray(sheet))
-bg.resize((bg.width * 8, bg.height * 8), Image.NEAREST).save(out)
+bg.resize((bg.width * 6, bg.height * 6), Image.NEAREST).save(out)

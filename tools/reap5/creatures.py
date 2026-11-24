@@ -55,14 +55,15 @@ def key(t, keys):
 # ---------------------------------------------------------------------------------------------------------------------------
 # THE IMP
 IMP_MATS = {
-    'skin': {'ramp': ['#2a0e14', '#4c1618', '#74231e', '#a23a24', '#c95a2e']},
-    'dark': {'ramp': ['#1a0a10', '#2c1016', '#40181a', '#5a2420']},
-    'wing': {'ramp': ['#220a12', '#3a1218', '#561c1e', '#76281f']},
-    'horn': {'ramp': ['#1c1418', '#3a2c28', '#5e4a3c', '#8a7258', '#b09a78']},
-    'bone': {'ramp': ['#2a1214', '#4a2020', '#6e3226', '#8e4a30']},
+    'skin': {'ramp': ['#3e1024', '#8c2430', '#d4503a', '#f49a6a']},
+    'dark': {'ramp': ['#24081a', '#3e1024', '#5e1a2a']},
+    'wing': {'ramp': ['#2a0a22', '#5a1830', '#8a2a3a']},
+    'horn': {'ramp': ['#3a2c48', '#7a6c8a', '#d0c4dc', '#f6f0fa']},
+    'bone': {'ramp': ['#3e1024', '#6e2830', '#9a4436']},
     'fire': {'ramp': ['#c8401a', '#ff8a2a', '#ffc050', '#fff0a0'], 'glow': True},
     'ember': {'ramp': ['#a83018', '#ff8a2a', '#ffc050'], 'glow': True},
-    'mouth': {'ramp': ['#12060a', '#1e0a0e']},
+    'mouth': {'ramp': ['#0e0c24', '#1a0a18', '#1a0a18']},
+    'tooth': {'ramp': ['#b0a4c0', '#f0e8ff', '#ffffff']},
     'eye': {'ramp': ['#28dcf0', '#9cf4ff'], 'glow': True},
 }
 
@@ -149,8 +150,9 @@ def imp(anim, t, side='friend'):
     m.ell(up((0, 10.5 + y0, 0.2)), (5.0, 4.4, 4.2), 'skin', 1)
     # CHEST, a little barrel, the fire showing through cracks in it
     m.ell(up((0, 15.5 + y0, 0.6)), (6.0, 4.8, 4.6), 'skin', 1, rot=(lean * 0.0, 0, 0))
-    m.curve([up((-0.6, 17.2 + y0, 4.9)), up((0.6, 15.2 + y0, 5.2)), up((-0.4, 13.2 + y0, 4.9)), up((0.4, 11.4 + y0, 4.2))],
-            [0.7, 0.9, 0.8, 0.6], 'ember', 1, n=6)
+    # (the fire in it showing through a jagged crack down its chest)
+    m.chain([up((-0.2, 17.6 + y0, 5.0)), up((0.8, 16.2 + y0, 5.3)), up((-0.6, 14.8 + y0, 5.3)), up((0.5, 13.4 + y0, 5.0)),
+             up((0.0, 12.2 + y0, 4.5))], [0.55, 0.75, 0.75, 0.6, 0.4], 'ember', 1, step=0.3)
     # WINGS: small bat wings behind the shoulders
     for sx in (-1, 1):
         root = up((sx * 3.2, 18.5 + y0, -3.0))
@@ -179,9 +181,13 @@ def imp(anim, t, side='friend'):
     m.ell(hc, (5.9, 5.2, 5.0), 'skin', 2)
     m.ell(up((0, 20.8 + y0, 4.8), 1.2), (3.6, 2.3, 2.6), 'skin', 2)
     m.ell(up((0, 24.6 + y0, 5.0), 1.2), (4.6, 1.3, 1.5), 'dark', 2)  # the brow ridge, heavy over the eyes
-    m.ell(up((0, 19.9 - 0.9 * jaw + y0, 6.4), 1.2), (2.8, 0.6 + 0.8 * jaw, 0.8), 'mouth', 2)
+    m.ell(up((0, 19.9 - 0.9 * jaw + y0, 6.4), 1.2), (3.0, 0.8 + 0.8 * jaw, 0.8), 'mouth', 2)
+    # (a wicked grin: a row of little fangs along its top lip, two longer at the corners)
+    for k in range(5):
+        tx = -2.0 + k * 1.0
+        m.ell(up((tx, 20.4 + y0, 6.9), 1.2), (0.38, 0.55 + (0.25 if k in (0, 4) else 0.0), 0.35), 'tooth', 9)
     for sx in (-1, 1):
-        m.ell(up((sx * 2.1, 23.2 + y0, 6.0), 1.2), (1.35, 1.0, 0.8), 'eye', 2)
+        m.ell(up((sx * 2.2, 23.3 + y0, 6.0), 1.2), (1.5, 1.1, 0.8), 'eye', 2, rot=(0, 0, sx * -18))
         m.chain([up((sx * 5.2, 23.6 + y0, 1.0), 1.2), up((sx * 8.2, 24.6 + y0, 0.0), 1.2)], [1.3, 0.3], 'skin', 2)
         m.curve([up((sx * 3.2, 27.4 + y0, 2.4), 1.2), up((sx * 5.4, 29.4 + y0, 1.4), 1.2), up((sx * 6.2, 31.6 + y0, -0.8), 1.2),
                  up((sx * 5.4, 33.2 + y0, -3.0), 1.2)], [1.9, 1.3, 0.8, 0.35], 'horn', 2, n=8)
@@ -207,9 +213,9 @@ def imp(anim, t, side='friend'):
 # ---------------------------------------------------------------------------------------------------------------------------
 # THE RIMELING
 RIME_MATS = {
-    'cloak': {'ramp': ['#16284a', '#22406a', '#335c90', '#4a7cb4', '#6c9cd0']},
-    'ice': {'ramp': ['#2a5e98', '#4a90d8', '#80c4f8', '#c4ecff', '#f0fbff']},
-    'void': {'ramp': ['#060a16', '#0c1222']},
+    'cloak': {'ramp': ['#1a2450', '#2e4a8a', '#4e7cc0', '#8ab8e8']},
+    'ice': {'ramp': ['#3a6ab0', '#7ab8f0', '#c8ecff', '#ffffff']},
+    'void': {'ramp': ['#0e0c24', '#0e0c24', '#0e0c24']},
     'eye': {'ramp': ['#28dcf0', '#c8f8ff'], 'glow': True},
     'shard': {'ramp': ['#4a90d8', '#9ad4ff', '#e8f8ff'], 'glow': True},
 }
@@ -317,9 +323,9 @@ def rimeling(anim, t, side='friend'):
 # ---------------------------------------------------------------------------------------------------------------------------
 # THE STORMWISP
 WISP_MATS = {
-    'wisp': {'ramp': ['#5a4e86', '#a49a78', '#ecd456', '#fff27a', '#fffde8'], 'gamma': 0.75},
+    'wisp': {'ramp': ['#7458b0', '#e8c040', '#fff27a', '#fffde8'], 'cuts': (-0.3, 0.2), 'glint': 0.9},
     'core': {'ramp': ['#fff060', '#fffbd0', '#ffffff'], 'glow': True},
-    'void': {'ramp': ['#1a1406', '#2a200a']},
+    'void': {'ramp': ['#0e0c24', '#0e0c24', '#0e0c24']},
     'eye': {'ramp': ['#28dcf0', '#c8f8ff'], 'glow': True},
 }
 SPARK = [(255, 251, 208), (255, 240, 96)]
@@ -405,28 +411,33 @@ def stormwisp(anim, t, side='friend'):
         dy, dz = yy - piv[1], z - piv[2]
         return (x, piv[1] + dy * math.cos(a) - dz * math.sin(a), piv[2] + dy * math.sin(a) + dz * math.cos(a) + fwd)
 
-    # THE TAIL: streaming down and back from the head, hooked at its end
-    m.curve([up((0, 17.5 + y, -0.6)), up((0.4 + 0.8 * whip, 13.0 + y, -2.6)), up((1.6 + 1.8 * whip, 9.0 + y, -4.4)),
-             up((3.8 + 2.0 * whip, 6.6 + y, -4.2)), up((5.4 + 1.6 * whip, 7.2 + y, -2.0))],
-            [3.6, 2.4, 1.5, 0.8, 0.3], 'wisp', 1, n=10)
-    # THE HEAD: a flame-shaped crown of spikes on it
-    m.ell(up((0, 21.0 + y, 0.4)), (4.8, 5.0, 4.6), 'wisp', 1)
-    for k, (ax, az, h) in enumerate(((0.0, 0.0, 1.0), (-2.6, 0.6, 0.8), (2.6, 0.6, 0.8), (-1.4, -2.2, 0.75), (1.6, -2.0, 0.7))):
+    # THE TAIL: a swirl of storm-light under it in place of legs, curling round and away to a hooked tip
+    m.curve([up((0, 15.0 + y, 0.0)), up((0.8 + 0.8 * whip, 11.6 + y, -1.2)), up((2.8 + 1.6 * whip, 8.6 + y, -1.0)),
+             up((4.6 + 2.0 * whip, 7.4 + y, 1.2)), up((4.4 + 1.6 * whip, 8.2 + y, 3.6)), up((2.8 + 1.0 * whip, 9.4 + y, 4.2))],
+            [3.8, 2.8, 2.0, 1.4, 0.8, 0.35], 'wisp', 1, n=10)
+    # ITS BODY: a little chest under its great head
+    m.ell(up((0, 17.6 + y, 0.4)), (3.8, 3.4, 3.2), 'wisp', 1)
+    # THE HEAD: big for it, a crown of jagged bolts standing off it, crackling
+    m.ell(up((0, 23.4 + y, 0.6)), (5.6, 5.4, 5.0), 'wisp', 2)
+    for k, (ax, az, h) in enumerate(((0.0, -0.4, 1.0), (-3.0, 0.2, 0.8), (3.0, 0.2, 0.8), (-1.8, -2.8, 0.7), (1.8, -2.8, 0.72))):
         hh = h * crown
-        base = up((ax * 0.8, 24.2 + y, az * 0.8 + 0.2))
-        tip = up((ax * 1.9, 24.2 + y + 4.6 * hh, az * 1.9 - 0.8))
-        m.chain([base, tip], [1.4, 0.2], 'wisp', 1)
-    # THE FACE: two slanted dark eyes with points of light in them, a crooked grin
+        base = up((ax * 0.9, 27.4 + y, az * 0.9 + 0.4))
+        kink = up((ax * 1.5 + (0.9 if ax <= 0 else -0.9), 27.4 + y + 3.2 * hh, az * 1.5 - 0.2))
+        tip = up((ax * 2.1 - (0.4 if ax <= 0 else -0.4), 27.4 + y + 6.0 * hh, az * 2.0 - 0.8))
+        m.chain([base, kink, tip], [1.5, 0.8, 0.2], 'wisp', 2)
+    # THE FACE: two great slanted eyes, dark, with a point of light in each, and a sly grin
     for sx in (-1, 1):
-        m.ell(up((sx * 1.8, 21.5 + y, 4.3)), (1.45, 1.7, 0.7), 'void', 2, rot=(0, 0, sx * 25))
-        m.ball(up((sx * 1.7, 21.3 + y, 4.95)), 0.6, 'eye', 2)
-    m.ell(up((0.3, 18.8 + y, 4.5)), (1.8, 0.45, 0.5), 'void', 2, rot=(0, 0, -8))
-    # ARMS: two little spark-arms, crackling
+        m.ell(up((sx * 2.1, 23.6 + y, 4.6)), (1.7, 2.0, 0.8), 'void', 3, rot=(0, 0, sx * 28))
+        m.ell(up((sx * 1.9, 23.3 + y, 5.3)), (0.75, 0.9, 0.5), 'eye', 3)
+    m.ell(up((0.4, 20.6 + y, 4.9)), (2.0, 0.5, 0.6), 'void', 3, rot=(0, 0, -10))
+    # ARMS: two little arms ending in crackling points
     for sx, hand in ((-1, armL), (1, armR)):
-        sh = up((sx * 4.0, 18.6 + y, 0.8))
+        sh = up((sx * 3.4, 18.8 + y, 0.8))
         hd = up((hand[0], hand[1] + y, hand[2]))
-        el = up(((sx * 4.0 + hand[0]) / 2 + sx * 1.0, (18.6 + hand[1]) / 2 - 1.2 + y, (0.8 + hand[2]) / 2))
-        m.chain([sh, el, hd], [1.2, 0.8, 0.45], 'wisp', 40 + (sx > 0))
+        el = up(((sx * 3.4 + hand[0]) / 2 + sx * 1.2, (18.8 + hand[1]) / 2 - 1.0 + y, (0.8 + hand[2]) / 2))
+        m.chain([sh, el, hd], [1.3, 0.9, 0.5], 'wisp', 40 + (sx > 0))
+        for k in (-1, 1):
+            m.chain([hd, (hd[0] + sx * 0.8, hd[1] + k * 1.0, hd[2] + 0.8)], [0.4, 0.15], 'wisp', 40 + (sx > 0))
     if flash > 0.05:
         fa = up((0, 19.0 + y, 9.5))
         m.ball(fa, 1.0 + 1.8 * flash, 'core', 50)
@@ -437,11 +448,11 @@ def stormwisp(anim, t, side='friend'):
 # ---------------------------------------------------------------------------------------------------------------------------
 # THE BLIGHT TOAD
 TOAD_MATS = {
-    'skin': {'ramp': ['#1a2410', '#2c3e16', '#44601c', '#628226', '#86a432']},
-    'belly': {'ramp': ['#4a4a22', '#6e6c30', '#949040', '#bcb658']},
+    'skin': {'ramp': ['#1e3418', '#3e6a24', '#7aa834', '#c8e070']},
+    'belly': {'ramp': ['#5a5a2a', '#9a9448', '#d8d088']},
     'wart': {'ramp': ['#7a9a1c', '#b4cc24', '#e4f46a'], 'glow': True},
-    'eyeball': {'ramp': ['#6a6a1a', '#a8a42a', '#d8d04a', '#f0ec88']},
-    'void': {'ramp': ['#0e1206', '#1a200c']},
+    'eyeball': {'ramp': ['#8a7a1a', '#d8c83a', '#fff6a0', '#ffffff']},
+    'void': {'ramp': ['#0e0c24', '#0e0c24', '#0e0c24']},
     'eye': {'ramp': ['#28dcf0', '#c8f8ff'], 'glow': True},
     'venom': {'ramp': ['#7a9a1c', '#b4cc24', '#e4f46a'], 'glow': True},
 }
@@ -530,8 +541,8 @@ def toad(anim, t, side='friend'):
 # ---------------------------------------------------------------------------------------------------------------------------
 # THE BONEBRUTE
 BONE_MATS = {
-    'bone': {'ramp': ['#2c2824', '#585044', '#8c8270', '#bcb29a', '#e6dec8']},
-    'dark': {'ramp': ['#141018', '#201a22']},
+    'bone': {'ramp': ['#5a4a8a', '#b0a4e0', '#f0e8ff', '#ffffff']},
+    'dark': {'ramp': ['#0e0c24', '#0e0c24', '#0e0c24']},
     'eye': {'ramp': ['#28dcf0', '#c8f8ff'], 'glow': True},
 }
 
@@ -542,7 +553,7 @@ def bonebrute(anim, t, side='friend'):
     if side == 'foe':
         mats['eye'] = {'ramp': ['#ff4f8a', '#ffc0d4'], 'glow': True}
     bob = 0.0
-    hunch = 18.0
+    hunch = 10.0
     sway = 0.0
     stride = 0.0
     breathe = 0.0
@@ -569,7 +580,7 @@ def bonebrute(anim, t, side='friend'):
     elif anim == 'attack':
         # both fists up over its head, rearing back; down on the ground in a flash; held, then back up
         back = key(t, [(0, 0), (0.52, 1), (0.6, 1.05), (0.64, -1), (0.8, -1), (1, 0)])
-        hunch = 18 - 22 * max(0, back) + 14 * max(0, -back)
+        hunch = 10 - 18 * max(0, back) + 16 * max(0, -back)
         crouch = 3.5 * max(0, -back)
         jaw = 0.8 * max(0, back) + 0.4 * max(0, -back)
         if back >= 0:
@@ -628,18 +639,25 @@ def bonebrute(anim, t, side='friend'):
         # (bone spurs jutting off the shoulders)
         m.chain([up((sx * 11.0, 39.0 + y, -1.0)), up((sx * 15.0, 42.4 + y, -3.0))], [1.3, 0.3], 'bone', 3)
     # SKULL: small for its bulk, thrust forward; a heavy jaw
-    # (its neck thrust forward, the skull low between the shoulders, as a brute holds it)
-    m.chain([up((0, 36.0 + y, -1.0)), up((0, 35.6 + y, 4.0))], [1.6, 1.4], 'bone', 4)
-    sk = up((0, 36.4 + y, 8.0), 1.0)
-    m.ell(sk, (4.4, 4.6, 4.6), 'bone', 4)
-    m.ell(up((0, 38.4 + y, 11.4), 1.0), (4.0, 1.3, 1.4), 'bone', 4)          # (the brow, heavy)
-    m.ell(up((0, 32.6 - 1.6 * jaw + y, 10.2), 1.0), (3.8, 1.8, 3.2), 'bone', 5)
-    for k in range(5):
-        m.ball(up((-1.8 + k * 0.9, 34.2 - 0.8 * jaw + y, 12.8), 1.0), 0.45, 'bone', 5)
+    # (its neck thrust forward, the skull set before the shoulders, big and horned, its sockets deep, its teeth bared)
+    m.chain([up((0, 37.0 + y, -1.0)), up((0, 37.4 + y, 4.0))], [1.6, 1.4], 'bone', 4)
+    sk = up((0, 39.2 + y, 8.4), 1.0)
+    m.ell(sk, (5.0, 5.0, 4.8), 'bone', 4)
+    m.ell(up((0, 41.6 + y, 12.2), 1.0), (4.6, 1.3, 1.4), 'bone', 4)          # (the brow, heavy)
     for sx in (-1, 1):
-        m.ell(up((sx * 1.9, 36.8 + y, 12.0), 1.0), (1.7, 1.6, 0.9), 'dark', 4)
-        m.ball(up((sx * 1.9, 36.7 + y, 12.7), 1.0), 0.85, 'eye', 4)
-    m.ell(up((0, 34.9 + y, 12.7), 1.0), (0.7, 0.8, 0.5), 'dark', 4)
+        # (its sockets, deep and dark, a point of light in each)
+        m.ell(up((sx * 2.0, 39.8 + y, 12.4), 1.0), (1.9, 1.7, 1.0), 'dark', 4)
+        m.ball(up((sx * 2.0, 39.6 + y, 13.2), 1.0), 0.9, 'eye', 4)
+        # (horns, sweeping out and forward from its temples)
+        m.curve([up((sx * 4.4, 41.6 + y, 8.2), 1.0), up((sx * 7.8, 42.0 + y, 8.6), 1.0), up((sx * 9.8, 43.2 + y, 10.6), 1.0),
+                 up((sx * 10.2, 44.8 + y, 12.8), 1.0)], [1.9, 1.4, 0.9, 0.35], 'bone', 4, n=8)
+    m.ell(up((0, 37.4 + y, 13.3), 1.0), (0.8, 0.9, 0.5), 'dark', 4)       # (where its nose was)
+    # (its jaw, heavy, hanging open as it bellows; a row of teeth, the gaps between them dark)
+    m.ell(up((0, 34.6 - 1.8 * jaw + y, 10.8), 1.0), (4.0, 1.7, 3.4), 'bone', 5)
+    m.ell(up((0, 35.8 - 0.9 * jaw + y, 13.0), 1.0), (3.2, 0.9 + 0.6 * jaw, 0.7), 'dark', 5)
+    for k in range(5):
+        m.ell(up((-2.2 + k * 1.1, 36.3 + y, 13.6), 1.0), (0.42, 0.7, 0.4), 'bone', 6)
+        m.ell(up((-2.2 + k * 1.1, 35.0 - 1.8 * jaw + y, 13.4), 1.0), (0.42, 0.6, 0.4), 'bone', 7)
     # ARMS: long, ending in great knuckled fists
     for sx, elb, fist in ((-1, elbL, fistL), (1, elbR, fistR)):
         g = 40 + (sx > 0)
@@ -657,14 +675,14 @@ def bonebrute(anim, t, side='friend'):
 
 
 CREATURES = {
-    'imp': {'make': imp, 'yaw_front': 38, 'yaw_back': 142, 'canvas': (64, 64), 'origin': (32, 54),
+    'imp': {'make': imp, 'yaw_front': 18, 'yaw_back': 162, 'canvas': (84, 76), 'origin': (42, 68), 'scale': 1.35,
             'frames': {'idle': 8, 'walk': 8, 'attack': 18}, 'fps': {'idle': 8, 'walk': 14, 'attack': 24}, 'hit': 0.66},
-    'rimeling': {'make': rimeling, 'yaw_front': 38, 'yaw_back': 142, 'canvas': (64, 64), 'origin': (32, 58),
+    'rimeling': {'make': rimeling, 'yaw_front': 18, 'yaw_back': 162, 'canvas': (80, 84), 'origin': (40, 78), 'scale': 1.3,
                  'frames': {'idle': 8, 'walk': 8, 'attack': 18}, 'fps': {'idle': 8, 'walk': 10, 'attack': 24}, 'hit': 0.66},
-    'stormwisp': {'make': stormwisp, 'yaw_front': 38, 'yaw_back': 142, 'canvas': (64, 72), 'origin': (32, 66), 'scale': 1.3,
+    'stormwisp': {'make': stormwisp, 'yaw_front': 18, 'yaw_back': 162, 'canvas': (84, 96), 'origin': (42, 88), 'scale': 1.55,
                   'frames': {'idle': 8, 'walk': 8, 'attack': 18}, 'fps': {'idle': 10, 'walk': 14, 'attack': 24}, 'hit': 0.64},
-    'toad': {'make': toad, 'yaw_front': 38, 'yaw_back': 142, 'canvas': (72, 60), 'origin': (36, 50), 'scale': 1.15,
+    'toad': {'make': toad, 'yaw_front': 22, 'yaw_back': 158, 'canvas': (88, 68), 'origin': (44, 60), 'scale': 1.45,
              'frames': {'idle': 8, 'walk': 8, 'attack': 16}, 'fps': {'idle': 8, 'walk': 12, 'attack': 24}, 'hit': 0.645},
-    'bonebrute': {'make': bonebrute, 'yaw_front': 26, 'yaw_back': 142, 'canvas': (88, 96), 'origin': (44, 84),
+    'bonebrute': {'make': bonebrute, 'yaw_front': 16, 'yaw_back': 164, 'canvas': (108, 124), 'origin': (54, 114), 'scale': 1.25,
                   'frames': {'idle': 8, 'walk': 8, 'attack': 20}, 'fps': {'idle': 6, 'walk': 10, 'attack': 24}, 'hit': 0.64},
 }

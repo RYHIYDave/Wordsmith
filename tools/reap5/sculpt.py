@@ -6,9 +6,11 @@
 import math
 import numpy as np
 
-SEAM = (26, 22, 48)          # deep indigo, where one part ends in front of another (Rulebook, Pixels 5)
-FRIEND = (40, 220, 240)      # the friend's edge, as Reaping's grey Shade has it (W7_FRIEND[2], #28dcf0)
-ENEMY = (255, 79, 138)       # the enemy's edge (ENEMY_RIM, #ff4f8a)
+SEAM = (14, 12, 36)          # deep indigo, where one part ends in front of another and all round the body (Rulebook, Pixels 5;
+                             # the game's own monsters: their outermost pixel is this, #0e0c24, every one)
+FRIEND = (34, 208, 224)      # the friend's edge of light, as the heroes have it (FRIEND_RIM, #22d0e0)
+ENEMY = (255, 79, 139)       # the enemy's edge of light, as the game's monsters have it (ENEMY_RIM)
+RIM_ALPHA = 110              # how strong the edge of light is, as the game's own (RIM_ALPHA, src/art/kit.ts)
 PITCH = math.radians(25.0)   # how far the camera looks down
 LIGHT = np.array([-0.55, 0.62, 0.56])
 LIGHT = LIGHT / np.linalg.norm(LIGHT)
@@ -148,11 +150,19 @@ def render(model, yaw, mats, W, H, ox, oy, S=4, side=FRIEND, seams=True, extra=N
             ramp = mat['ramp']
             if mat.get('glow'):
                 lv = 0.35 + 0.65 * max(0.0, n[2])
+                idx = min(len(ramp) - 1, int(lv * len(ramp)))
             else:
-                lam = max(0.0, float(n @ LIGHT))
-                lv = 0.12 + 0.88 * lam
-                lv = lv ** mat.get('gamma', 0.9)
-            idx = min(len(ramp) - 1, int(lv * len(ramp)))
+                # (the game's way: a few bold tones, not a smooth fall: its dark, its middle, its lit side, and a glint where
+                # the light strikes back at the eye)
+                lam = float(n @ LIGHT)
+                cut = mat.get('cuts', (-0.05, 0.42))
+                idx = 0 if lam < cut[0] else (1 if lam < cut[1] else 2)
+                if len(ramp) > 3:
+                    hv = LIGHT + np.array([0.0, 0.0, 1.0])
+                    hv = hv / np.linalg.norm(hv)
+                    if float(n @ hv) > mat.get('glint', 0.93):
+                        idx = 3
+                idx = min(idx, len(ramp) - 1)
             out[yy, xx, :3] = hexc(ramp[idx])
             out[yy, xx, 3] = 255
             body[yy, xx] = True
@@ -172,15 +182,20 @@ def render(model, yaw, mats, W, H, ox, oy, S=4, side=FRIEND, seams=True, extra=N
     if extra is not None:
         extra(out, body)
         body = out[..., 3] > 0
-    if side is not None:
-        edge = np.zeros((H, W), bool)
+    def ring(mask):
+        e = np.zeros((H, W), bool)
         for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             sh = np.zeros((H, W), bool)
-            sh[max(0, dy):H + min(0, dy), max(0, dx):W + min(0, dx)] = body[max(0, -dy):H + min(0, -dy), max(0, -dx):W + min(0, -dx)]
-            edge |= sh
-        edge &= ~body
+            sh[max(0, dy):H + min(0, dy), max(0, dx):W + min(0, dx)] = mask[max(0, -dy):H + min(0, -dy), max(0, -dx):W + min(0, -dx)]
+            e |= sh
+        return e & ~mask
+    # its outermost pixels deep indigo, as the game's monsters' (its glow's own parts too, so they sit in it)
+    inner = ring(~body) & body
+    out[inner, :3] = SEAM
+    if side is not None:
+        edge = ring(body)
         out[edge, :3] = side
-        out[edge, 3] = 255
+        out[edge, 3] = RIM_ALPHA
     if post is not None:
         post(out, yaw)
     return out
