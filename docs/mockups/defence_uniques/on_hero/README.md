@@ -27,3 +27,15 @@ sheets made again:
   icicle, point up: her own staff).
 - Brass Knuckles: each fist cased in brass, all of it (twice: brass from the knuckles down still read as his own wraps).
   Still the nearest to another of the six: Hot Streak has gilt and white at the knuckles.
+
+## Brass Knuckles and Hot Streak (24 Nov 2026, later still)
+
+His words, told Brass Knuckles was still the nearest of the six to another (Hot Streak's gilt): “I mean we all know what brass
+knuckles look like so if it's similar to another unique I feel like the other one needs to be changed”.
+
+- BRASS KNUCKLES: as brass knuckles are. Black straps, a thick bar of brass over the knuckles, a knob standing off it on every
+  knuckle (`src/art/wrap_skins.ts` BRASS_WRAPS).
+- HOT STREAK (one of the first four, his yes of 15 Nov to its first look): blue silk, a white band at the knuckles, a white
+  rosette with a gilt heart, in place of white linen with gilt round the knuckles and a blue rosette. The brass is Brass
+  Knuckles' alone. CHANGED WITHOUT A PICTURE FIRST, at his word above; `brawler.png` here is its picture, his to turn down.
+- Both baked again; the bag pictures the same. Checked: `defuniques` 43 of 43, `skins` 50 of 50.
