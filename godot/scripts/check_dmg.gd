@@ -18,6 +18,7 @@ extends RefCounted
 
 const Words := preload("res://scripts/words.gd")
 const Talents := preload("res://scripts/talents.gd")
+const M52 := preload("res://scripts/melds52.gd")
 
 var M
 var h
@@ -382,11 +383,29 @@ static func _family(w: String) -> Array:
 
 
 var found_only := false
+var _every: Array = []
 func _all_words() -> Array:
-	var all: Array = (Words.ids() as Array).duplicate()
-	if not found_only:
-		all.append_array(Words.made())
-	return all
+	if found_only:
+		return (Words.ids() as Array).duplicate()
+	if _every.is_empty():
+		_every = (Words.ids() as Array).duplicate()
+		_every.append_array(Words.made())
+		# (ALL THE MELDS (his words, 24 Nov 2026: “I'd like a new test of min/maxed damage with all the new melds”): every one the bench
+		# makes now, melds52.gd: the 52, the city's, the city's with the Wilds', the reaping five, the High City's, and their level 2
+		# runes, as their switches are)
+		var T: Dictionary = M52.T()
+		for m in T["order"]:
+			if _every.has(m):
+				continue
+			var made := ""
+			if T["rankOf"].has(m):
+				var w: String = str(T["rankOf"][m]["word"])
+				made = M52.makes(w, w)
+			elif T["of"].has(m):
+				made = M52.makes(str(T["of"][m][0]), str(T["of"][m][1]))
+			if made == m:
+				_every.append(m)
+	return _every
 
 
 ## Words set in his quick attack's slots: [front0, front1, behind0, behind1], each an id or null.
@@ -522,6 +541,58 @@ func _top(b: Dictionary, n: int, reach: float) -> void:
 	_say("TOP BY THE ELITE: " + "; ".join(rows.map(func(r): return "[%s] %s %d" % [r["fam"], r["w"], int(r["q"])])))
 	rows.sort_custom(func(a, c) -> bool: return float(a["p"]) < float(c["p"]))
 	_say("TOP BY THE PACK: " + "; ".join(rows.map(func(r): return "[%s] %s %.1f s" % [r["fam"], r["w"], r["p"]])))
+
+
+## ALL THE MELDS FOUGHT (his words, 24 Nov 2026: “I'd like a new test of min/maxed damage with all the new melds”): the choosing
+## goes by his numbers worked out, which count a meld's two runes but not its own twist (a burst, a second blow, a mark, a ground
+## left); so every meld of his own kind is set first in front, the other three as chosen, his gear as chosen for them, and FOUGHT:
+## his quick attack into the elite, and the `n` best of them into the tough pack. Ranked; the new ones named (the High City's, the
+## redone).
+func _melds(b: Dictionary, ws: Array, reach: float, n: int) -> void:
+	var fam: String = str(b["must"]) if str(b["must"]) != "" else "power"
+	var cands: Array = [ws.duplicate()]
+	for w in _all_words():
+		if w == ws[0] or not Words.is_meld(w) or not _family(w).has(fam):
+			continue
+		var t: Array = [w, ws[1], ws[2], ws[3]]
+		if not _fits(t):
+			t[1] = null
+			if not _fits(t):
+				continue
+		cands.append(t)
+	_say("ALL THE MELDS OF HIS OWN KIND (%s), each first in front (%d), the rest as chosen: %s" % [fam, cands.size(), _wname(ws)])
+	var rows: Array = []
+	for t in cands:
+		_set_words(t)
+		var est := _dps()
+		var q := await _fight_one(reach)
+		var row := {"t": t, "est": est, "q": q, "p": -1.0, "tag": _tag(str(t[0]))}
+		rows.append(row)
+		_say("MELD %-24s %-12s worked out %9d a second; into the elite %9d a second" % [str(Words.word(t[0])["name"]), row["tag"], int(est), int(q)])
+	rows.sort_custom(func(a, c) -> bool: return float(a["q"]) > float(c["q"]))
+	for r in rows.slice(0, n):
+		_set_words(r["t"])
+		r["p"] = await _fight_pack(reach, false, TOUGH)
+		_say("PACK %-24s %-12s the tough pack dead in %.1f s" % [str(Words.word(r["t"][0])["name"]), r["tag"], float(r["p"])])
+	_say("MELDS BY THE ELITE: " + "; ".join(rows.slice(0, 10).map(func(r): return "%s%s %d" % [Words.word(r["t"][0])["name"], (" (" + r["tag"] + ")") if r["tag"] != "" else "", int(r["q"])])))
+	var fought: Array = rows.filter(func(r): return float(r["p"]) >= 0.0)
+	fought.sort_custom(func(a, c) -> bool: return float(a["p"]) < float(c["p"]))
+	_say("MELDS BY THE PACK: " + "; ".join(fought.map(func(r): return "%s %.1f s" % [Words.word(r["t"][0])["name"], float(r["p"])])))
+	_set_words(ws)
+
+
+func _tag(w: String) -> String:
+	if M52.is_high(w):
+		return "High City"
+	if M52.is_redo(w):
+		return "redone"
+	if M52.is_reap(w):
+		return "reaping"
+	if M52.is_city2(w):
+		return "city+Wilds"
+	if M52.is_city(w):
+		return "city"
+	return ""
 
 
 func _has_family(ws: Array, fam: String) -> bool:
@@ -697,6 +768,10 @@ func _build(b: Dictionary) -> void:
 	# makes shorter, and fire's that spread; the quick attack alone into one enemy is Dexterity's and poison's): all four words in his
 	# quick attack and the same in his hold; his quick attack alone, and it and his hold as often as each is ready, into the elite,
 	# and into a tough pack (six of the floor's own, TOUGH life each, held in a knot), till all are dead (30 s at most)
+	# (WS_DMG_MELDS=n: every meld of his own kind fought in front, the n best into the tough pack too: _melds)
+	if OS.has_environment("WS_DMG_MELDS"):
+		await _melds(b, ws, reach, int(OS.get_environment("WS_DMG_MELDS")))
+		return
 	if OS.has_environment("WS_DMG_ALL"):
 		# (WS_DMG_WORDS="a,b,c,d": these four in place of the chosen, to hold one thing still while another is tried)
 		if OS.has_environment("WS_DMG_WORDS"):
