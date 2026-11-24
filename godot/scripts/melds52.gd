@@ -29,9 +29,10 @@ static var ON := true
 static var CITY_ON := true
 ## THE CITY'S RUNES WITH THE FLOOR 6–10 RUNES (his “Then finish the melds”, 24 Nov 2026, the next group his Floor 11–15 doc named):
 ## 44, in the same table (`city2`); their text tools/meldscity/docs_city2.txt, their stones docs/mockups/meld_runes4, their twists
-## meldscity2_rules.gd, on monsters foe_meldscity2.gd, their looks fx_m52p_city2.gd. OFF until his yes to their page: the
-## wordsmith does not make them (`makes`); known, as all words are.
-static var CITY2_ON := false
+## meldscity2_rules.gd, on monsters foe_meldscity2.gd, their looks fx_m52p_city2.gd. ON at his yes to their page (City and Wilds
+## Melds, https://claude.ai/artifact/9u1bUEVM4YdrjRZq5SHHeG), asked “Want me to switch these 44 on?”: “Switch them on.”, 24 Nov 2026.
+## Off, the wordsmith does not make them (`makes`); known, as all words are.
+static var CITY2_ON := true
 ## (what each rune is worth inside one on gear: items.ts MELD_GEAR_STRENGTH; a level 2 rune's: RANK2's half again)
 const GEAR := 0.75
 const GEAR_RANK := 1.5
