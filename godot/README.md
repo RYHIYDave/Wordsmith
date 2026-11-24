@@ -1564,6 +1564,18 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   Spearwall, Thornspray, Undying, Wraithstep, Deathwatch, Flicker, Haunting, Spark, Purge, Stinger. Found on the way: a monster's
   copied shot (Pitchfork's, Barrage's, Trident's) made copies of its own (monsters.gd `_copying`), and the films never killed a
   Reaping carrier, so its rising never showed (check_high.gd foe_setup, foe_dies, shared with the films).
+  POLICED, every one (his “I need you to police yourself on this”): each of the 110 passed `--cases=high` only once its own
+  moment was seen on all three sides (in front, behind, on a monster; check_high.gd EXPECT for the 40 redone and the six below,
+  any moment not one every meld of its rune sends for the rest), then filmed. Faults it found in the game, fixed: Fishhook did
+  not drag; Deadeye's critical kill went unseen (hero.gd `crit_at`); Mercy's mark could not pass on when another cull took its
+  target, and Deathwatch's scythe fell only on its own culls; Mangle's and Briar's tears were missed after a stun or hold
+  shorter than a bite of the bleeding (now watched every frame); Coldcut and Condemn read a chill or curse the death had
+  already cleared (last_words.gd keeps `m52.was`); Decimate's copies could not split again (city_words.gd `copy_at` set before
+  the hit); Noose's hold ended before its first pull (now two seconds); Harrow's spikes were painted ice, not blood; and
+  Wraithspear's javelin, Deathblow's finish, Breakthrough's breach and thrust, Bloodwave's ring of thorns and Deathknell's
+  toll were told by a name every meld of their rune sends, so drawn like them; now each its own. The check itself: each case
+  starts with nothing of the last one's monster in the air (its warned shockwave, its shots), and a case runs only with
+  `--shots` (without it the game starts in town, with no pack to fight).
   Checks `--only=words --cases=high` (or `high:<id>,<id>`), each meld in front, behind and carried by a monster; films `--fixed-fps 30 -- --only=words
   --cases=m52film:high` (or `high:<from>-<to>`); the page `python3 docs/mockups/meld_films/page.py <films> <out> high`.
 - THE LEXICON IN THE STASH (his words, 24 Nov 2026: “I'd also like to get rid of the lexicon in the middle of town and add it to the

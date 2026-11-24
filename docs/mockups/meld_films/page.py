@@ -130,7 +130,14 @@ if HIGHG:
         'Gravewarden, Fetch, Bloodprice, Mercy, Last Rites, Heartbeat, Bastion, Bloodharvest. Round two: Bodkin, Coup, Massacre, Barrage, '
         'Bloodlance, Bloodrage, Dart, Harrow, Harvest, Lacerate, Spearwall, Thornspray, Undying, Wraithstep, Deathwatch, Flicker, Haunting, '
         'Spark, Purge, Stinger.</p>'
-        '@@CHECKED@@').replace('@@NOTES@@',
+        '<p class="lead">Checked by me, every one, as you asked: each of the 110 played in front of the Strike, behind it and carried by a monster, '
+        'and passed only once its own new moment was seen happening, on all three. The checking found faults in the game itself, now fixed: '
+        'a monster\'s copied shot made copies of its own without end; Fishhook did not drag; Deadeye\'s critical kill went unseen; '
+        'Mercy\'s mark could not pass on when something else took its target, and Deathwatch\'s scythe fell only on its own culls; '
+        'Mangle\'s and Briar\'s wounds missed tearing after a short stun or hold; Coldcut and Condemn looked for a chill or curse '
+        'the death had already cleared; Decimate\'s copies could not split again; Noose\'s hold ended before it could tighten; '
+        'Harrow\'s spikes were drawn ice-blue, not blood red; and five moments looked like any other of their rune and are now drawn as their own '
+        '(Wraithspear\'s javelin, Deathblow\'s finishing flash, Breakthrough\'s wave and thrust, Bloodwave\'s ring of thorns, Deathknell\'s toll).</p>').replace('@@NOTES@@',
         '<p class="lead">Each film shows the meld in front of the Strike, then behind it, then carried by a skeleton that comes for you. '
         'What each one waits on is set up: a kill for Reaping, skeletons brought low for Culling, a third use and a dodge for Surging, '
         'and for some their own moment (skeletons bleeding, burning, poisoned, cursed, chilled or slowed; his frenzy full; a critical; his shield up).</p>')
