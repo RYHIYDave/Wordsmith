@@ -1497,7 +1497,7 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   have a drawback”; and of the Rim's door, “adding them to the endless door shouldn't give all enemies that word, it should just
   increase either the gold dropped or magic find of the floor as a whole”): it never melds (words.gd NO_MELD: the bench refuses it,
   itself too; the High City's melds to come leave it out). Burned in at the door, no monster there carries it and it drops no more
-  often for it, and the level's gold is worth +50% for each (loot.gd DOOR_GOLD_WORDS, DOOR_GOLD, door_gold; main.gd; the rewards
+  often for it, and the level's gold found is 50% increased for each (loot.gd DOOR_GOLD_WORDS, DOOR_GOLD, door_gold; main.gd; the rewards
   every burned rune gives, as before). The door's page says so on its card behind inventory.gd DOOR_GOLD_LINE (off until his yes
   to its picture). `--only=doorrunes` 11 of 11.
 - TWO KINDS IN ONE HIT (his find, 24 Nov 2026): built here, then taken out at his word, “It's already fixed, or another chat
