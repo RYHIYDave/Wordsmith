@@ -25,8 +25,9 @@ RUNES.update(RUNES4)
 RUNES5 = json.load(open(ROOT + '/docs/mockups/meld_runes5/runes.json'))
 RUNES.update(RUNES5)
 # (THE HIGH CITY'S RUNES MELDED, the last group: his "Then we gotta get back to these melds.  I'd like to finish them today.", 24 Nov
-# 2026; their text tools/meldshigh/docs_high.txt and their stones docs/mockups/meld_runes6, both made by tools/meldshigh/design.py;
-# behind melds52.gd HIGH_ON until his yes)
+# 2026, and, of a first try that cut corners, “I don't need this done quick, I need it done right”; each designed on its own in
+# the doc High City Melds, its text tools/meldshigh/docs_high.txt (the doc as text), each its own stone (docs/mockups/meld_runes6,
+# design.py and render6.py); behind melds52.gd HIGH_ON until his yes)
 RUNES6 = json.load(open(ROOT + '/docs/mockups/meld_runes6/runes.json'))
 RUNES.update(RUNES6)
 HIGH = ['piercing', 'bleeding', 'reaping', 'culling', 'surging']

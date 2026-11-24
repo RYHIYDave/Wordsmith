@@ -5,15 +5,15 @@
    "piercing",
    "power"
   ],
-  "color": "#d16669",
+  "color": "#d05a4c",
   "glyph": [
-   ".o...X.",
-   "ooo.XXX",
-   ".o..X.X",
-   ".o...X.",
-   ".o...X.",
-   ".o...X.",
-   ".o...X."
+   ".......",
+   ".X.X.X.",
+   ".X.X.XX",
+   "XXXXXXo",
+   ".X.X.XX",
+   ".X.X.X.",
+   "......."
   ]
  },
  "stinger": {
@@ -22,15 +22,15 @@
    "piercing",
    "poison"
   ],
-  "color": "#b4c454",
+  "color": "#b8c840",
   "glyph": [
-   ".o...X.",
-   "ooo..X.",
-   ".o..XXX",
-   ".o..XXX",
-   ".o..XXX",
-   ".o...X.",
-   ".o....."
+   "..XXX..",
+   ".X...X.",
+   ".XXXXX.",
+   ".X...X.",
+   "..XXX..",
+   "...X...",
+   "...o..."
   ]
  },
  "icelance": {
@@ -39,15 +39,15 @@
    "piercing",
    "frost"
   ],
-  "color": "#78acd9",
+  "color": "#78b8f0",
   "glyph": [
-   ".o.....",
-   "ooo.X.X",
-   ".o...X.",
-   ".o..XXX",
-   ".o...X.",
-   ".o..X.X",
-   ".o....."
+   "......o",
+   ".....X.",
+   "..X.X..",
+   "...X...",
+   "..X.X..",
+   ".X.....",
+   "X......"
   ]
  },
  "sunspear": {
@@ -56,15 +56,15 @@
    "piercing",
    "fire"
   ],
-  "color": "#e59958",
+  "color": "#ff9a3a",
   "glyph": [
-   ".o....X",
-   "ooo..X.",
-   ".o..XX.",
-   ".o..XXX",
-   ".o..XXX",
-   ".o...X.",
-   ".o....."
+   "X..X..X",
+   ".X.o.X.",
+   "..XXX..",
+   "...X...",
+   "...X...",
+   "...X...",
+   "..XXX.."
   ]
  },
  "stormlance": {
@@ -73,15 +73,15 @@
    "piercing",
    "lightning"
   ],
-  "color": "#e5db7b",
+  "color": "#f0e868",
   "glyph": [
-   ".o....X",
-   "ooo..X.",
-   ".o..X..",
-   ".o..XXX",
-   ".o....X",
-   ".o...X.",
-   ".o..X.."
+   "X..X..X",
+   ".X.X.X.",
+   "..XoX..",
+   "...X...",
+   "..X....",
+   "...X...",
+   "..X...."
   ]
  },
  "dart": {
@@ -90,15 +90,15 @@
    "piercing",
    "swift"
   ],
-  "color": "#95c16e",
+  "color": "#90d070",
   "glyph": [
-   ".o..X..",
-   "ooo..X.",
-   ".o..X..",
-   ".o.....",
-   ".o..X..",
-   ".o...X.",
-   ".o..X.."
+   ".......",
+   "XX.....",
+   "...XXX.",
+   "XXXXXXo",
+   "...XXX.",
+   "XX.....",
+   "......."
   ]
  },
  "batteringram": {
@@ -107,15 +107,15 @@
    "piercing",
    "heavy"
   ],
-  "color": "#af9773",
+  "color": "#b08850",
   "glyph": [
-   ".o.....",
-   "ooo.XXX",
-   ".o..XXX",
-   ".o...X.",
-   ".o..XXX",
-   ".o..XXX",
-   ".o....."
+   "...XX..",
+   "..X..XX",
+   "....XXX",
+   "XXXXXoX",
+   "....XXX",
+   "..X..XX",
+   "...XX.."
   ]
  },
  "pitchfork": {
@@ -124,15 +124,15 @@
    "piercing",
    "twin"
   ],
-  "color": "#78bcaf",
+  "color": "#60c0b0",
   "glyph": [
-   ".o..X.X",
-   "ooo.X.X",
-   ".o..X.X",
-   ".o..X.X",
-   ".o..X.X",
-   ".o..X.X",
-   ".o..X.X"
+   ".X...X.",
+   ".X...X.",
+   ".X...X.",
+   ".XXXXX.",
+   "...X...",
+   "...X...",
+   "...o..."
   ]
  },
  "bloodlance": {
@@ -141,32 +141,32 @@
    "piercing",
    "leech"
   ],
-  "color": "#e59990",
+  "color": "#c84a48",
   "glyph": [
-   ".o..XXX",
-   "ooo.XXX",
-   ".o..X.X",
-   ".o..X.X",
-   ".o...X.",
-   ".o...X.",
-   ".o....."
+   "...X...",
+   "..XXX..",
+   ".XXoXX.",
+   ".XXXXX.",
+   "..XXX..",
+   "...X...",
+   "...X..."
   ]
  },
- "shrapnel": {
-  "name": "Shrapnel",
+ "fuse": {
+  "name": "Fuse",
   "of": [
    "piercing",
    "volatile"
   ],
-  "color": "#a278c4",
+  "color": "#9a62d0",
   "glyph": [
-   ".o.....",
-   "ooo.X.X",
-   ".o..XXX",
+   "X......",
+   ".X..o..",
+   "..X....",
+   "...X.o.",
+   "....X..",
    ".o...X.",
-   ".o..XXX",
-   ".o..X.X",
-   ".o....."
+   "......o"
   ]
  },
  "bodkin": {
@@ -175,15 +175,15 @@
    "piercing",
    "precise"
   ],
-  "color": "#dadedf",
+  "color": "#e8ecf4",
   "glyph": [
-   ".o...X.",
-   "ooo..X.",
-   ".o..XXX",
-   ".o..X.X",
-   ".o..XXX",
-   ".o...X.",
-   ".o...X."
+   "...o...",
+   "...X...",
+   "..XXX..",
+   "...X...",
+   "X..X..X",
+   "XX.X.XX",
+   "XX.X.XX"
   ]
  },
  "barrage": {
@@ -192,15 +192,15 @@
    "piercing",
    "frenzied"
   ],
-  "color": "#e57b5e",
+  "color": "#f07048",
   "glyph": [
-   ".o....X",
-   "ooo..X.",
-   ".o..X.X",
-   ".o...X.",
-   ".o..X.X",
-   ".o...X.",
-   ".o..X.."
+   "XXX.o..",
+   ".......",
+   "XXXXX.o",
+   ".......",
+   "XXX.o..",
+   ".......",
+   "XXXXX.o"
   ]
  },
  "spearwall": {
@@ -209,15 +209,15 @@
    "piercing",
    "guarding"
   ],
-  "color": "#5eac80",
+  "color": "#48a870",
   "glyph": [
-   ".o..XXX",
-   "ooo.XXX",
-   ".o..XXX",
-   ".o..XXX",
-   ".o...X.",
-   ".o...X.",
-   ".o....."
+   ".X.X.X.",
+   ".X.X.X.",
+   "XXXXXXX",
+   "X.XoX.X",
+   ".X...X.",
+   "..X.X..",
+   "...X..."
   ]
  },
  "longspear": {
@@ -226,15 +226,15 @@
    "piercing",
    "lasting"
   ],
-  "color": "#ae9790",
+  "color": "#a89088",
   "glyph": [
-   ".o..XXX",
-   "ooo..X.",
-   ".o...X.",
-   ".o..XXX",
-   ".o...X.",
-   ".o...X.",
-   ".o..XXX"
+   ".......",
+   ".....X.",
+   "XXXXXXo",
+   ".....X.",
+   ".......",
+   "X.X.X.X",
+   "......."
   ]
  },
  "flicker": {
@@ -243,15 +243,15 @@
    "piercing",
    "fleeting"
   ],
-  "color": "#e0d3de",
+  "color": "#ece0f4",
   "glyph": [
-   ".o....X",
-   "ooo..XX",
-   ".o...X.",
-   ".o..XX.",
-   ".o..X..",
-   ".o.....",
-   ".o....."
+   ".....X.",
+   "....XoX",
+   ".....X.",
+   "...X...",
+   "..X....",
+   ".......",
+   "X......"
   ]
  },
  "broadspear": {
@@ -260,15 +260,15 @@
    "piercing",
    "vast"
   ],
-  "color": "#86725b",
+  "color": "#b08a58",
   "glyph": [
-   ".o.....",
-   "ooo....",
-   ".o..XXX",
-   ".o.....",
-   ".o..XXX",
-   ".o.....",
-   ".o..XXX"
+   "...X...",
+   "..XXX..",
+   ".XXXXX.",
+   "XXXoXXX",
+   ".XXXXX.",
+   "...X...",
+   "...X..."
   ]
  },
  "gaff": {
@@ -277,15 +277,15 @@
    "piercing",
    "pulling"
   ],
-  "color": "#8e8cce",
+  "color": "#7c78d8",
   "glyph": [
-   ".o...XX",
-   "ooo...X",
-   ".o....X",
-   ".o..X.X",
-   ".o..XXX",
-   ".o.....",
-   ".o....."
+   "......X",
+   "XX..XX.",
+   "XXXX...",
+   "oXXXXXX",
+   "XXXX...",
+   "XX..XX.",
+   "......X"
   ]
  },
  "trident": {
@@ -294,15 +294,15 @@
    "piercing",
    "splitting"
   ],
-  "color": "#ceaedd",
+  "color": "#d8b0f0",
   "glyph": [
-   ".o..X.X",
-   "ooo.X.X",
-   ".o...X.",
-   ".o...X.",
-   ".o...X.",
-   ".o...X.",
-   ".o....."
+   "X..X..X",
+   "X..X..X",
+   "XXXXXXX",
+   "...X...",
+   "...X...",
+   "...o...",
+   "...X..."
   ]
  },
  "witchpin": {
@@ -311,32 +311,32 @@
    "piercing",
    "hexing"
   ],
-  "color": "#b7b4bf",
+  "color": "#b0a8d0",
   "glyph": [
-   ".o.....",
-   "ooo..X.",
-   ".o..X.X",
-   ".o..XXX",
-   ".o..X.X",
-   ".o...X.",
-   ".o....."
+   "...X...",
+   "..XXX..",
+   ".X.X.X.",
+   "XX.o.XX",
+   ".X.X.X.",
+   "..XXX..",
+   "...X..."
   ]
  },
- "stake": {
-  "name": "Stake",
+ "sundial": {
+  "name": "Sundial",
   "of": [
    "piercing",
    "stilling"
   ],
-  "color": "#96d7ae",
+  "color": "#80e0a8",
   "glyph": [
-   ".o..XXX",
-   "ooo.X.X",
-   ".o..XX.",
-   ".o..X.X",
-   ".o..XXX",
-   ".o.....",
-   ".o....."
+   "...X...",
+   "...X...",
+   "...X...",
+   "..XoX..",
+   ".X...X.",
+   "X.....X",
+   "XXXXXXX"
   ]
  },
  "skewer": {
@@ -345,15 +345,15 @@
    "piercing",
    "binding"
   ],
-  "color": "#c1b497",
+  "color": "#c0ac84",
   "glyph": [
-   ".o..XXX",
-   "ooo.X.X",
-   ".o..XXX",
-   ".o...X.",
-   ".o..XXX",
-   ".o..X.X",
-   ".o..XXX"
+   "...o...",
+   "...X...",
+   "X..X..X",
+   ".XXXXX.",
+   "X..X..X",
+   "...X...",
+   "..XXX.."
   ]
  },
  "gore": {
@@ -362,15 +362,15 @@
    "bleeding",
    "power"
   ],
-  "color": "#be2a35",
+  "color": "#d0383c",
   "glyph": [
-   ".o...X.",
-   "ooo.XXX",
-   "ooo.X.X",
-   ".o...X.",
-   ".....X.",
-   ".o...X.",
-   ".....X."
+   "X......",
+   "XX.....",
+   ".XX....",
+   "..XXX..",
+   "...XXX.",
+   "....XoX",
+   ".....o."
   ]
  },
  "gangrene": {
@@ -379,15 +379,15 @@
    "bleeding",
    "poison"
   ],
-  "color": "#a28720",
+  "color": "#8a9a28",
   "glyph": [
-   ".o...X.",
-   "ooo..X.",
-   "ooo.XXX",
-   ".o..XXX",
-   "....XXX",
-   ".o...X.",
-   "......."
+   "X.....X",
+   ".X.X.X.",
+   "..XoX..",
+   ".XXXXX.",
+   "..XoX..",
+   ".X.X.X.",
+   "X.....X"
   ]
  },
  "rimeblood": {
@@ -396,32 +396,32 @@
    "bleeding",
    "frost"
   ],
-  "color": "#6670a4",
+  "color": "#c83c50",
   "glyph": [
-   ".o.....",
-   "ooo.X.X",
-   "ooo..X.",
-   ".o..XXX",
-   ".....X.",
-   ".o..X.X",
-   "......."
+   "...X...",
+   "X.XXX.X",
+   ".XXoXX.",
+   "XXXXXXX",
+   ".XXXXX.",
+   "X.XXX.X",
+   "...X..."
   ]
  },
- "bloodfire": {
-  "name": "Bloodfire",
+ "bloodboil": {
+  "name": "Bloodboil",
   "of": [
    "bleeding",
    "fire"
   ],
-  "color": "#d35c24",
+  "color": "#d0482c",
   "glyph": [
-   ".o....X",
-   "ooo..X.",
-   "ooo.XX.",
-   ".o..XXX",
-   "....XXX",
-   ".o...X.",
-   "......."
+   ".o...o.",
+   "...o...",
+   "X.....X",
+   "XXXXXXX",
+   ".XXXXX.",
+   ".X...X.",
+   "XX...XX"
   ]
  },
  "galvanic": {
@@ -430,15 +430,15 @@
    "bleeding",
    "lightning"
   ],
-  "color": "#d39f47",
+  "color": "#c85040",
   "glyph": [
-   ".o....X",
-   "ooo..X.",
-   "ooo.X..",
-   ".o..XXX",
-   "......X",
-   ".o...X.",
-   "....X.."
+   "....X..",
+   "...X...",
+   "..XXX..",
+   ".XXoXX.",
+   ".XXX.X.",
+   "..X.X..",
+   ".X....."
   ]
  },
  "lacerate": {
@@ -447,32 +447,32 @@
    "bleeding",
    "swift"
   ],
-  "color": "#83853a",
+  "color": "#e04848",
   "glyph": [
+   "X..X..X",
+   ".X..X..",
+   "..X..X.",
+   "o..X..X",
    ".o..X..",
-   "ooo..X.",
-   "ooo.X..",
-   ".o.....",
-   "....X..",
-   ".o...X.",
-   "....X.."
+   "..o..X.",
+   "......."
   ]
  },
- "bludgeon": {
-  "name": "Bludgeon",
+ "mangle": {
+  "name": "Mangle",
   "of": [
    "bleeding",
    "heavy"
   ],
-  "color": "#9d5b3e",
+  "color": "#cc5238",
   "glyph": [
-   ".o.....",
-   "ooo.XXX",
-   "ooo.XXX",
-   ".o...X.",
-   "....XXX",
-   ".o..XXX",
-   "......."
+   "XXXXXXX",
+   "X.X.X.X",
+   ".X.X.X.",
+   "...o...",
+   ".X.X.X.",
+   "X.X.X.X",
+   "XXXXXXX"
   ]
  },
  "fangs": {
@@ -481,15 +481,15 @@
    "bleeding",
    "twin"
   ],
-  "color": "#66807b",
+  "color": "#dc5450",
   "glyph": [
-   ".o..X.X",
-   "ooo.X.X",
-   "ooo.X.X",
-   ".o..X.X",
-   "....X.X",
-   ".o..X.X",
-   "....X.X"
+   "XXXXXXX",
+   ".X...X.",
+   ".X...X.",
+   "..X.X..",
+   ".......",
+   "..o.o..",
+   "..o.o.."
   ]
  },
  "bloodfeast": {
@@ -498,15 +498,15 @@
    "bleeding",
    "leech"
   ],
-  "color": "#d35c5c",
+  "color": "#d8584c",
   "glyph": [
-   ".o..XXX",
-   "ooo.XXX",
-   "ooo.X.X",
-   ".o..X.X",
-   ".....X.",
-   ".o...X.",
-   "......."
+   "XXXXXXX",
+   "X.ooo.X",
+   ".XXXXX.",
+   "..XXX..",
+   "...X...",
+   "...X...",
+   ".XXXXX."
   ]
  },
  "bloodburst": {
@@ -515,15 +515,15 @@
    "bleeding",
    "volatile"
   ],
-  "color": "#823c90",
+  "color": "#e04c34",
   "glyph": [
-   ".o.....",
-   "ooo.X.X",
-   "ooo.XXX",
-   ".o...X.",
-   "....XXX",
-   ".o..X.X",
-   "......."
+   "X..X..X",
+   ".X...X.",
+   "...X...",
+   "X.XoX.X",
+   "..XXX..",
+   ".X...X.",
+   "X..X..X"
   ]
  },
  "artery": {
@@ -532,15 +532,15 @@
    "bleeding",
    "precise"
   ],
-  "color": "#c8a1ab",
+  "color": "#e0605c",
   "glyph": [
-   ".o...X.",
-   "ooo..X.",
-   "ooo.XXX",
-   ".o..X.X",
-   "....XXX",
-   ".o...X.",
-   ".....X."
+   "...X...",
+   "...X...",
+   "..X.X..",
+   ".X...X.",
+   ".X...o.",
+   "X.....X",
+   "X.....X"
   ]
  },
  "bloodrage": {
@@ -549,15 +549,15 @@
    "bleeding",
    "frenzied"
   ],
-  "color": "#d33f2a",
+  "color": "#e04a34",
   "glyph": [
-   ".o....X",
-   "ooo..X.",
-   "ooo.X.X",
-   ".o...X.",
-   "....X.X",
-   ".o...X.",
-   "....X.."
+   "X.X.X.X",
+   ".X.X.X.",
+   "...X...",
+   "..XXX..",
+   ".XXoXX.",
+   ".XXXXX.",
+   "..XXX.."
   ]
  },
  "thornshield": {
@@ -566,15 +566,15 @@
    "bleeding",
    "guarding"
   ],
-  "color": "#4c704c",
+  "color": "#7a8a48",
   "glyph": [
-   ".o..XXX",
-   "ooo.XXX",
-   "ooo.XXX",
-   ".o..XXX",
-   ".....X.",
-   ".o...X.",
-   "......."
+   "X.X.X.X",
+   "XXXXXXX",
+   "XX.o.XX",
+   "XX...XX",
+   ".XX.XX.",
+   "X.XXX.X",
+   "...X..."
   ]
  },
  "hemorrhage": {
@@ -583,15 +583,15 @@
    "bleeding",
    "lasting"
   ],
-  "color": "#9b5b5c",
+  "color": "#d43a48",
   "glyph": [
-   ".o..XXX",
-   "ooo..X.",
-   "ooo..X.",
-   ".o..XXX",
-   ".....X.",
-   ".o...X.",
-   "....XXX"
+   "..X....",
+   ".XXX...",
+   ".XoX...",
+   "..X..X.",
+   "....XXX",
+   "....XXX",
+   ".....X."
   ]
  },
  "papercut": {
@@ -600,15 +600,15 @@
    "bleeding",
    "fleeting"
   ],
-  "color": "#ce979c",
+  "color": "#e6d8f2",
   "glyph": [
-   ".o....X",
-   "ooo..XX",
-   "ooo..X.",
-   ".o..XX.",
+   "......X",
+   ".....X.",
    "....X..",
+   "...X...",
+   "..X....",
    ".o.....",
-   "......."
+   "o.o...."
   ]
  },
  "bramble": {
@@ -617,15 +617,15 @@
    "bleeding",
    "vast"
   ],
-  "color": "#743626",
+  "color": "#9a6c3c",
   "glyph": [
-   ".o.....",
-   "ooo....",
-   "ooo.XXX",
-   ".o.....",
-   "....XXX",
-   ".o.....",
-   "....XXX"
+   "X..X..X",
+   ".XX.XX.",
+   "X.XoX.X",
+   ".X.X.X.",
+   "XX.X.XX",
+   "...X...",
+   "..XXX.."
   ]
  },
  "fishhook": {
@@ -634,15 +634,15 @@
    "bleeding",
    "pulling"
   ],
-  "color": "#7c509a",
+  "color": "#d4583e",
   "glyph": [
-   ".o...XX",
-   "ooo...X",
-   "ooo...X",
-   ".o..X.X",
-   "....XXX",
-   ".o.....",
-   "......."
+   "...X...",
+   "...X...",
+   "...X...",
+   "X..X...",
+   "XX.X...",
+   ".XXo...",
+   "..XX..."
   ]
  },
  "thornspray": {
@@ -651,32 +651,32 @@
    "bleeding",
    "splitting"
   ],
-  "color": "#b071bc",
+  "color": "#c05a4a",
   "glyph": [
-   ".o..X.X",
-   "ooo.X.X",
-   "ooo..X.",
-   ".o...X.",
-   ".....X.",
-   ".o...X.",
-   "......."
+   "X.....X",
+   ".X.X.X.",
+   "..XXX..",
+   "XXXoXXX",
+   "..XXX..",
+   ".X...X.",
+   "X.....X"
   ]
  },
- "thorncurse": {
-  "name": "Thorncurse",
+ "bloodhex": {
+  "name": "Bloodhex",
   "of": [
    "bleeding",
    "hexing"
   ],
-  "color": "#a4788a",
+  "color": "#c6503a",
   "glyph": [
-   ".o.....",
-   "ooo..X.",
-   "ooo.X.X",
-   ".o..XXX",
-   "....X.X",
-   ".o...X.",
-   "......."
+   "X.X.X.X",
+   "..XXX..",
+   ".X...X.",
+   "X..o..X",
+   ".X...X.",
+   "..XXX..",
+   "...X..."
   ]
  },
  "clot": {
@@ -685,15 +685,15 @@
    "bleeding",
    "stilling"
   ],
-  "color": "#849b7a",
+  "color": "#d85058",
   "glyph": [
-   ".o..XXX",
-   "ooo.X.X",
-   "ooo.XX.",
-   ".o..X.X",
-   "....XXX",
-   ".o.....",
-   "......."
+   "..XXX..",
+   ".X...X.",
+   "X..X..X",
+   "X.XoX.X",
+   "X.XXX.X",
+   ".X...X.",
+   "..XXX.."
   ]
  },
  "briar": {
@@ -702,32 +702,32 @@
    "bleeding",
    "binding"
   ],
-  "color": "#af7862",
+  "color": "#b86a48",
   "glyph": [
-   ".o..XXX",
-   "ooo.X.X",
-   "ooo.XXX",
-   ".o...X.",
-   "....XXX",
-   ".o..X.X",
-   "....XXX"
+   "X.XXX.X",
+   ".X...X.",
+   "X..X..X",
+   ".X.o.X.",
+   "X..X..X",
+   ".X...X.",
+   "X.XXX.X"
   ]
  },
- "banshee": {
-  "name": "Banshee",
+ "wraithstep": {
+  "name": "Wraithstep",
   "of": [
    "reaping",
    "swift"
   ],
-  "color": "#7cb25b",
+  "color": "#7cb898",
   "glyph": [
-   "ooo.X..",
-   "..o..X.",
-   "..o.X..",
-   ".o.....",
-   ".o..X..",
-   "o....X.",
-   "o...X.."
+   "....XX.",
+   "...XXoX",
+   "XX.XXX.",
+   "...XXX.",
+   "XX.X.X.",
+   "...X..X",
+   "......."
   ]
  },
  "tombstone": {
@@ -736,15 +736,15 @@
    "reaping",
    "heavy"
   ],
-  "color": "#968860",
+  "color": "#8a8478",
   "glyph": [
-   "ooo....",
-   "..o.XXX",
-   "..o.XXX",
-   ".o...X.",
-   ".o..XXX",
-   "o...XXX",
-   "o......"
+   ".XXXXX.",
+   "XX...XX",
+   "XX.o.XX",
+   "XXX.XXX",
+   "XX...XX",
+   "XXXXXXX",
+   "X.X.X.X"
   ]
  },
  "revenants": {
@@ -753,15 +753,15 @@
    "reaping",
    "twin"
   ],
-  "color": "#5fad9c",
+  "color": "#70b8a8",
   "glyph": [
-   "ooo.X.X",
-   "..o.X.X",
-   "..o.X.X",
-   ".o..X.X",
-   ".o..X.X",
-   "o...X.X",
-   "o...X.X"
+   ".XX.XX.",
+   "XoXXoX.",
+   "XXXXXX.",
+   "XXXXXX.",
+   "X.XX.X.",
+   ".......",
+   "......."
   ]
  },
  "ghoul": {
@@ -770,15 +770,15 @@
    "reaping",
    "leech"
   ],
-  "color": "#cc8a7d",
+  "color": "#b06a5c",
   "glyph": [
-   "ooo.XXX",
-   "..o.XXX",
-   "..o.X.X",
-   ".o..X.X",
-   ".o...X.",
-   "o....X.",
-   "o......"
+   ".XXXXX.",
+   "X..X..X",
+   "X..X..X",
+   ".XXXXX.",
+   "..X.X..",
+   "...o...",
+   "..XXX.."
   ]
  },
  "soulburst": {
@@ -787,15 +787,15 @@
    "reaping",
    "volatile"
   ],
-  "color": "#896ab1",
+  "color": "#8a74c8",
   "glyph": [
-   "ooo....",
-   "..o.X.X",
-   "..o.XXX",
-   ".o...X.",
-   ".o..XXX",
-   "o...X.X",
-   "o......"
+   "X..o..X",
+   ".X.X.X.",
+   "..XXX..",
+   "XXX.XXX",
+   "..XXX..",
+   ".X.X.X.",
+   "X..X..X"
   ]
  },
  "deadeye": {
@@ -804,15 +804,15 @@
    "reaping",
    "precise"
   ],
-  "color": "#c0cfcc",
+  "color": "#d8e4e0",
   "glyph": [
-   "ooo..X.",
-   "..o..X.",
-   "..o.XXX",
-   ".o..X.X",
-   ".o..XXX",
-   "o....X.",
-   "o....X."
+   "...X...",
+   ".XXXXX.",
+   ".X.X.X.",
+   "XXXoXXX",
+   ".X.X.X.",
+   ".XXXXX.",
+   "...X..."
   ]
  },
  "macabre": {
@@ -821,15 +821,15 @@
    "reaping",
    "frenzied"
   ],
-  "color": "#cc6c4b",
+  "color": "#e0805c",
   "glyph": [
-   "ooo...X",
-   "..o..X.",
-   "..o.X.X",
-   ".o...X.",
-   ".o..X.X",
-   "o....X.",
-   "o...X.."
+   "X.X.X.X",
+   ".X.X.X.",
+   ".XXXXX.",
+   "X..X..X",
+   ".XXXXX.",
+   "..XoX..",
+   "......."
   ]
  },
  "gravewarden": {
@@ -838,15 +838,15 @@
    "reaping",
    "guarding"
   ],
-  "color": "#459e6e",
+  "color": "#58a07c",
   "glyph": [
-   "ooo.XXX",
-   "..o.XXX",
-   "..o.XXX",
-   ".o..XXX",
-   ".o...X.",
-   "o....X.",
-   "o......"
+   "XXXXXXX",
+   "X.XXX.X",
+   "XXXXXXX",
+   "XXXoXXX",
+   ".XXXXX.",
+   "..XXX..",
+   "...X..."
   ]
  },
  "undying": {
@@ -855,15 +855,15 @@
    "reaping",
    "lasting"
   ],
-  "color": "#94897d",
+  "color": "#9c8c88",
   "glyph": [
-   "ooo.XXX",
-   "..o..X.",
-   "..o..X.",
-   ".o..XXX",
-   ".o...X.",
-   "o....X.",
-   "o...XXX"
+   "...X...",
+   "..XoX..",
+   "..XXX..",
+   ".X...X.",
+   "..XXX..",
+   "..XXX..",
+   ".X.X.X."
   ]
  },
  "fetch": {
@@ -872,15 +872,15 @@
    "reaping",
    "fleeting"
   ],
-  "color": "#c7c4cb",
+  "color": "#e8e0f0",
   "glyph": [
-   "ooo...X",
-   "..o..XX",
-   "..o..X.",
-   ".o..XX.",
-   ".o..X..",
-   "o......",
-   "o......"
+   "...XX..",
+   "..XoXX.",
+   "...XX..",
+   "..X....",
+   ".X.....",
+   "X......",
+   "......."
   ]
  },
  "legion": {
@@ -889,32 +889,32 @@
    "reaping",
    "vast"
   ],
-  "color": "#6d6348",
+  "color": "#90a880",
   "glyph": [
-   "ooo....",
-   "..o....",
-   "..o.XXX",
-   ".o.....",
-   ".o..XXX",
-   "o......",
-   "o...XXX"
+   "X.X.X.X",
+   "o.o.o.o",
+   "X.X.X.X",
+   ".......",
+   "X.X.X.X",
+   "o.o.o.o",
+   "X.X.X.X"
   ]
  },
- "undertow": {
-  "name": "Undertow",
+ "gravewell": {
+  "name": "Gravewell",
   "of": [
    "reaping",
    "pulling"
   ],
-  "color": "#757dbc",
+  "color": "#6c74b8",
   "glyph": [
-   "ooo..XX",
-   "..o...X",
-   "..o...X",
-   ".o..X.X",
-   ".o..XXX",
-   "o......",
-   "o......"
+   "X..X..X",
+   ".X.X.X.",
+   "..XXX..",
+   "XXXoXXX",
+   "X.....X",
+   "X.....X",
+   "XXXXXXX"
   ]
  },
  "poltergeist": {
@@ -923,15 +923,15 @@
    "reaping",
    "splitting"
   ],
-  "color": "#b59fca",
+  "color": "#c8a8e0",
   "glyph": [
-   "ooo.X.X",
-   "..o.X.X",
-   "..o..X.",
-   ".o...X.",
-   ".o...X.",
-   "o....X.",
-   "o......"
+   "X...X..",
+   "..o...X",
+   ".XXX...",
+   "XXoXX..",
+   "XXXXX.X",
+   "X.X.X..",
+   "......."
   ]
  },
  "haunting": {
@@ -940,15 +940,15 @@
    "reaping",
    "hexing"
   ],
-  "color": "#9da5ac",
+  "color": "#a8a0c8",
   "glyph": [
-   "ooo....",
-   "..o..X.",
-   "..o.X.X",
-   ".o..XXX",
-   ".o..X.X",
-   "o....X.",
-   "o......"
+   ".XXXXX.",
+   "XX...XX",
+   "X..o..X",
+   "XX...XX",
+   "XXXXXXX",
+   "XXXXXXX",
+   "X.X.X.X"
   ]
  },
  "limbo": {
@@ -957,15 +957,15 @@
    "reaping",
    "stilling"
   ],
-  "color": "#7dc89b",
+  "color": "#84d8ac",
   "glyph": [
-   "ooo.XXX",
-   "..o.X.X",
-   "..o.XX.",
-   ".o..X.X",
-   ".o..XXX",
-   "o......",
-   "o......"
+   "XXXXXXX",
+   ".......",
+   "...X...",
+   "..XoX..",
+   "..XXX..",
+   "..X.X..",
+   "XXXXXXX"
   ]
  },
  "gravebind": {
@@ -974,15 +974,15 @@
    "reaping",
    "binding"
   ],
-  "color": "#a8a584",
+  "color": "#a8a07c",
   "glyph": [
-   "ooo.XXX",
-   "..o.X.X",
-   "..o.XXX",
-   ".o...X.",
-   ".o..XXX",
-   "o...X.X",
-   "o...XXX"
+   ".XXXXX.",
+   "XX.X.XX",
+   "XXXXXXX",
+   "X.X.X.X",
+   "XXXoXXX",
+   "..X.X..",
+   "XX...XX"
   ]
  },
  "guillotine": {
@@ -991,15 +991,15 @@
    "culling",
    "power"
   ],
-  "color": "#bc515f",
+  "color": "#c86060",
   "glyph": [
-   "oo...X.",
-   "ooo.XXX",
-   "oo..X.X",
-   ".o...X.",
-   ".o...X.",
-   ".o...X.",
-   ".o...X."
+   "XXXXXXX",
+   "X.....X",
+   "X...XXX",
+   "X.XXXXX",
+   "X.....X",
+   "X..o..X",
+   "XX.X.XX"
   ]
  },
  "nightshade": {
@@ -1008,15 +1008,15 @@
    "culling",
    "poison"
   ],
-  "color": "#9faf4a",
+  "color": "#8a7ab8",
   "glyph": [
-   "oo...X.",
-   "ooo..X.",
-   "oo..XXX",
-   ".o..XXX",
-   ".o..XXX",
-   ".o...X.",
-   ".o....."
+   "X.X.X..",
+   ".XoX...",
+   "X.X.X..",
+   "...X...",
+   "....X..",
+   "...o.o.",
+   "....o.."
   ]
  },
  "coldcut": {
@@ -1025,15 +1025,15 @@
    "culling",
    "frost"
   ],
-  "color": "#6397ce",
+  "color": "#88b8e0",
   "glyph": [
-   "oo.....",
-   "ooo.X.X",
-   "oo...X.",
-   ".o..XXX",
-   ".o...X.",
-   ".o..X.X",
-   ".o....."
+   "XXXXX..",
+   ".....X.",
+   "......X",
+   "...X..X",
+   "..X.X..",
+   ".X..o..",
+   "X......"
   ]
  },
  "cremate": {
@@ -1042,15 +1042,15 @@
    "culling",
    "fire"
   ],
-  "color": "#d0844e",
+  "color": "#e87838",
   "glyph": [
-   "oo....X",
-   "ooo..X.",
-   "oo..XX.",
-   ".o..XXX",
-   ".o..XXX",
-   ".o...X.",
-   ".o....."
+   "...X...",
+   "..X.X..",
+   "..XoX..",
+   ".XXXXX.",
+   "..XXX..",
+   ".......",
+   "X.X.X.X"
   ]
  },
  "smite": {
@@ -1059,15 +1059,15 @@
    "culling",
    "lightning"
   ],
-  "color": "#d0c671",
+  "color": "#e8e070",
   "glyph": [
-   "oo....X",
-   "ooo..X.",
-   "oo..X..",
-   ".o..XXX",
-   ".o....X",
-   ".o...X.",
-   ".o..X.."
+   "XXXXXXX",
+   "...X...",
+   "..X....",
+   "...X...",
+   "....X..",
+   "...o...",
+   "..XXX.."
   ]
  },
  "coup": {
@@ -1076,15 +1076,15 @@
    "culling",
    "swift"
   ],
-  "color": "#80ac64",
+  "color": "#a0c878",
   "glyph": [
-   "oo..X..",
-   "ooo..X.",
-   "oo..X..",
-   ".o.....",
-   ".o..X..",
-   ".o...X.",
-   ".o..X.."
+   "..XXXX.",
+   ".X....X",
+   "X......",
+   "X..X...",
+   "X.XXX..",
+   ".X.o...",
+   "..X...."
   ]
  },
  "crusher": {
@@ -1093,15 +1093,15 @@
    "culling",
    "heavy"
   ],
-  "color": "#9a8268",
+  "color": "#9c8060",
   "glyph": [
-   "oo.....",
-   "ooo.XXX",
-   "oo..XXX",
-   ".o...X.",
-   ".o..XXX",
-   ".o..XXX",
-   ".o....."
+   ".XXXXX.",
+   ".XXXXX.",
+   "...X...",
+   "...X...",
+   "...o...",
+   "X.X.X.X",
+   ".X...X."
   ]
  },
  "scissors": {
@@ -1110,15 +1110,15 @@
    "culling",
    "twin"
   ],
-  "color": "#63a7a5",
+  "color": "#78b8b0",
   "glyph": [
-   "oo..X.X",
-   "ooo.X.X",
-   "oo..X.X",
-   ".o..X.X",
-   ".o..X.X",
-   ".o..X.X",
-   ".o..X.X"
+   "X.....X",
+   ".X...X.",
+   "..X.X..",
+   "...o...",
+   "..X.X..",
+   "XX...XX",
+   "XX...XX"
   ]
  },
  "bloodprice": {
@@ -1127,15 +1127,15 @@
    "culling",
    "leech"
   ],
-  "color": "#d08486",
+  "color": "#c0605c",
   "glyph": [
-   "oo..XXX",
-   "ooo.XXX",
-   "oo..X.X",
-   ".o..X.X",
-   ".o...X.",
-   ".o...X.",
-   ".o....."
+   "...X...",
+   "XXXXXXX",
+   "X..X..X",
+   "X..X.oX",
+   "XX.X.XX",
+   "...X...",
+   "..XXX.."
   ]
  },
  "deathburst": {
@@ -1144,15 +1144,15 @@
    "culling",
    "volatile"
   ],
-  "color": "#8d63ba",
+  "color": "#9068c0",
   "glyph": [
-   "oo.....",
-   "ooo.X.X",
-   "oo..XXX",
-   ".o...X.",
-   ".o..XXX",
-   ".o..X.X",
-   ".o....."
+   "X.....X",
+   ".XXXXX.",
+   ".X.X.X.",
+   ".XXoXX.",
+   "..XXX..",
+   ".X...X.",
+   "X.....X"
   ]
  },
  "mercy": {
@@ -1161,15 +1161,15 @@
    "culling",
    "precise"
   ],
-  "color": "#c5c9d5",
+  "color": "#e0e4ec",
   "glyph": [
-   "oo...X.",
-   "ooo..X.",
-   "oo..XXX",
-   ".o..X.X",
-   ".o..XXX",
-   ".o...X.",
-   ".o...X."
+   "..XXX..",
+   "...X...",
+   ".XXXXX.",
+   "...X...",
+   "...X...",
+   "...X...",
+   "...o..."
   ]
  },
  "massacre": {
@@ -1178,15 +1178,15 @@
    "culling",
    "frenzied"
   ],
-  "color": "#d06654",
+  "color": "#e86040",
   "glyph": [
-   "oo....X",
-   "ooo..X.",
-   "oo..X.X",
-   ".o...X.",
-   ".o..X.X",
-   ".o...X.",
-   ".o..X.."
+   "XX...X.",
+   ".X..XX.",
+   "..XX...",
+   "...o...",
+   "...XX..",
+   ".XX..X.",
+   ".X...XX"
   ]
  },
  "lastrites": {
@@ -1195,15 +1195,15 @@
    "culling",
    "guarding"
   ],
-  "color": "#499776",
+  "color": "#58a090",
   "glyph": [
-   "oo..XXX",
-   "ooo.XXX",
-   "oo..XXX",
-   ".o..XXX",
-   ".o...X.",
-   ".o...X.",
-   ".o....."
+   "...o...",
+   "...X...",
+   ".XXXXX.",
+   ".XXXXX.",
+   "XX.X.XX",
+   ".X...X.",
+   "..XXX.."
   ]
  },
  "deathwatch": {
@@ -1212,15 +1212,15 @@
    "culling",
    "lasting"
   ],
-  "color": "#988286",
+  "color": "#9c8890",
   "glyph": [
-   "oo..XXX",
-   "ooo..X.",
-   "oo...X.",
-   ".o..XXX",
-   ".o...X.",
-   ".o...X.",
-   ".o..XXX"
+   ".......",
+   "..XXX..",
+   ".X...X.",
+   "X..o..X",
+   ".X...X.",
+   "..XXX..",
+   "X.X.X.X"
   ]
  },
  "quietus": {
@@ -1229,15 +1229,15 @@
    "culling",
    "fleeting"
   ],
-  "color": "#cbbed4",
+  "color": "#e4dcf0",
   "glyph": [
-   "oo....X",
-   "ooo..XX",
-   "oo...X.",
-   ".o..XX.",
-   ".o..X..",
-   ".o.....",
-   ".o....."
+   "....X..",
+   "...XX..",
+   "..XoX..",
+   ".XXX...",
+   ".XX....",
+   "X......",
+   "......."
   ]
  },
  "purge": {
@@ -1246,15 +1246,15 @@
    "culling",
    "vast"
   ],
-  "color": "#725d50",
+  "color": "#a8885c",
   "glyph": [
-   "oo.....",
-   "ooo....",
-   "oo..XXX",
-   ".o.....",
-   ".o..XXX",
-   ".o.....",
-   ".o..XXX"
+   "XXXXXXX",
+   "......X",
+   ".....X.",
+   "...XX..",
+   ".XX....",
+   "X......",
+   "o......"
   ]
  },
  "gallows": {
@@ -1263,15 +1263,15 @@
    "culling",
    "pulling"
   ],
-  "color": "#7977c4",
+  "color": "#7a7ac8",
   "glyph": [
-   "oo...XX",
-   "ooo...X",
-   "oo....X",
-   ".o..X.X",
-   ".o..XXX",
-   ".o.....",
-   ".o....."
+   "XXXXXXX",
+   "X....X.",
+   "X....X.",
+   "X...XoX",
+   "X....X.",
+   "X......",
+   "XXX...."
   ]
  },
  "decimate": {
@@ -1280,15 +1280,15 @@
    "culling",
    "splitting"
   ],
-  "color": "#b998d2",
+  "color": "#c8a0e8",
   "glyph": [
-   "oo..X.X",
-   "ooo.X.X",
-   "oo...X.",
-   ".o...X.",
-   ".o...X.",
-   ".o...X.",
-   ".o....."
+   "X.X.X.X",
+   ".X.X.X.",
+   "X.X.X.X",
+   "...X...",
+   "...X...",
+   "..XoX..",
+   "...X..."
   ]
  },
  "condemn": {
@@ -1297,15 +1297,15 @@
    "culling",
    "hexing"
   ],
-  "color": "#a29fb4",
+  "color": "#a8a4c0",
   "glyph": [
-   "oo.....",
-   "ooo..X.",
-   "oo..X.X",
-   ".o..XXX",
-   ".o..X.X",
-   ".o...X.",
-   ".o....."
+   ".XXXX..",
+   "XX..X..",
+   "XXXXXXX",
+   "XX.....",
+   "XXXo...",
+   ".XX....",
+   "......."
   ]
  },
  "finalhour": {
@@ -1314,15 +1314,15 @@
    "culling",
    "stilling"
   ],
-  "color": "#81c2a4",
+  "color": "#88d8b0",
   "glyph": [
-   "oo..XXX",
-   "ooo.X.X",
-   "oo..XX.",
-   ".o..X.X",
-   ".o..XXX",
-   ".o.....",
-   ".o....."
+   "XXXXXXX",
+   ".X...X.",
+   "..X.X..",
+   "...X...",
+   "..XoX..",
+   ".XXXXX.",
+   "XXXXXXX"
   ]
  },
  "noose": {
@@ -1331,32 +1331,32 @@
    "culling",
    "binding"
   ],
-  "color": "#ac9f8c",
+  "color": "#b8a480",
   "glyph": [
-   "oo..XXX",
-   "ooo.X.X",
-   "oo..XXX",
-   ".o...X.",
-   ".o..XXX",
-   ".o..X.X",
-   ".o..XXX"
+   "...X...",
+   "...X...",
+   "..XXX..",
+   "..XXX..",
+   ".X...X.",
+   ".X.o.X.",
+   "..XXX.."
   ]
  },
- "tremor": {
-  "name": "Tremor",
+ "upheaval": {
+  "name": "Upheaval",
   "of": [
    "surging",
    "power"
   ],
-  "color": "#a04149",
+  "color": "#c85a50",
   "glyph": [
-   ".....X.",
-   ".o..XXX",
-   "o.o.X.X",
-   ".....X.",
-   ".o...X.",
-   "o.o..X.",
-   ".....X."
+   "...o...",
+   "..XXX..",
+   ".X.X.X.",
+   "X..X..X",
+   "..XXX..",
+   ".XXXXX.",
+   "XXXXXXX"
   ]
  },
  "pestilence": {
@@ -1365,15 +1365,15 @@
    "surging",
    "poison"
   ],
-  "color": "#849e4d",
+  "color": "#a8c038",
   "glyph": [
-   ".....X.",
-   ".o...X.",
-   "o.o.XXX",
-   "....XXX",
-   ".o..XXX",
-   "o.o..X.",
-   "......."
+   ".XX.XX.",
+   "XXXXXXX",
+   "XXXoXXX",
+   ".XXXXX.",
+   ".......",
+   "X.X.X.X",
+   ".X.X.X."
   ]
  },
  "blizzard": {
@@ -1382,15 +1382,15 @@
    "surging",
    "frost"
   ],
-  "color": "#4887d2",
+  "color": "#70a8e0",
   "glyph": [
-   ".......",
-   ".o..X.X",
-   "o.o..X.",
-   "....XXX",
-   ".o...X.",
-   "o.o.X.X",
-   "......."
+   "X..X..X",
+   ".X..X..",
+   "..X..X.",
+   "o..X..X",
+   ".o..X..",
+   "..o..X.",
+   "...o..o"
   ]
  },
  "nova": {
@@ -1399,15 +1399,15 @@
    "surging",
    "fire"
   ],
-  "color": "#b47451",
+  "color": "#ff8838",
   "glyph": [
-   "......X",
-   ".o...X.",
-   "o.o.XX.",
-   "....XXX",
-   ".o..XXX",
-   "o.o..X.",
-   "......."
+   "...X...",
+   ".X.X.X.",
+   "..XXX..",
+   "XXXoXXX",
+   "..XXX..",
+   ".X.X.X.",
+   "...X..."
   ]
  },
  "thunderclap": {
@@ -1416,15 +1416,15 @@
    "surging",
    "lightning"
   ],
-  "color": "#b4b674",
+  "color": "#e8e060",
   "glyph": [
-   "......X",
-   ".o...X.",
-   "o.o.X..",
-   "....XXX",
-   ".o....X",
-   "o.o..X.",
-   "....X.."
+   "X..X...",
+   ".X..X.X",
+   "..X.X..",
+   "XX.o.XX",
+   "..X.X..",
+   "X.X..X.",
+   "...X..X"
   ]
  },
  "rush": {
@@ -1433,15 +1433,15 @@
    "surging",
    "swift"
   ],
-  "color": "#649c67",
+  "color": "#88c868",
   "glyph": [
-   "....X..",
-   ".o...X.",
-   "o.o.X..",
+   "X..X...",
+   ".X..X..",
+   "..X..Xo",
+   ".X..X..",
+   "X..X...",
    ".......",
-   ".o..X..",
-   "o.o..X.",
-   "....X.."
+   "XXXXXXX"
   ]
  },
  "seismic": {
@@ -1450,32 +1450,32 @@
    "surging",
    "heavy"
   ],
-  "color": "#7e726c",
+  "color": "#a08048",
   "glyph": [
-   ".......",
-   ".o..XXX",
-   "o.o.XXX",
-   ".....X.",
-   ".o..XXX",
-   "o.o.XXX",
-   "......."
+   "...o...",
+   "..XXX..",
+   "XXXXXXX",
+   "...X...",
+   "..X.X..",
+   ".X...X.",
+   "X..X..X"
   ]
  },
- "pulse": {
-  "name": "Pulse",
+ "tremor": {
+  "name": "Tremor",
   "of": [
    "surging",
    "twin"
   ],
-  "color": "#4897a8",
+  "color": "#60b0a8",
   "glyph": [
-   "....X.X",
-   ".o..X.X",
-   "o.o.X.X",
-   "....X.X",
-   ".o..X.X",
-   "o.o.X.X",
-   "....X.X"
+   ".......",
+   "..X..X.",
+   ".X.XX.X",
+   "X...X..",
+   ".......",
+   "..X..o.",
+   ".X.XX.X"
   ]
  },
  "heartbeat": {
@@ -1484,14 +1484,14 @@
    "surging",
    "leech"
   ],
-  "color": "#b47489",
+  "color": "#d0605c",
   "glyph": [
-   "....XXX",
-   ".o..XXX",
-   "o.o.X.X",
-   "....X.X",
-   ".o...X.",
-   "o.o..X.",
+   ".......",
+   "...X...",
+   "..X.X..",
+   "XX...X.",
+   ".....Xo",
+   "......X",
    "......."
   ]
  },
@@ -1501,15 +1501,15 @@
    "surging",
    "volatile"
   ],
-  "color": "#7253bd",
+  "color": "#a868f0",
   "glyph": [
-   ".......",
-   ".o..X.X",
-   "o.o.XXX",
-   ".....X.",
-   ".o..XXX",
-   "o.o.X.X",
-   "......."
+   "X..X..X",
+   "..XXX..",
+   ".XX.XX.",
+   "XX.o.XX",
+   ".XX.XX.",
+   "..XXX..",
+   "X..X..X"
   ]
  },
  "lens": {
@@ -1518,15 +1518,15 @@
    "surging",
    "precise"
   ],
-  "color": "#a9b8d8",
+  "color": "#e0e8f4",
   "glyph": [
-   ".....X.",
-   ".o...X.",
-   "o.o.XXX",
-   "....X.X",
-   ".o..XXX",
-   "o.o..X.",
-   ".....X."
+   "X.....X",
+   ".X...X.",
+   "..XXX..",
+   "..XoXXX",
+   "..XXX..",
+   ".X...X.",
+   "X.....X"
   ]
  },
  "crescendo": {
@@ -1535,15 +1535,15 @@
    "surging",
    "frenzied"
   ],
-  "color": "#b45657",
+  "color": "#e86a40",
   "glyph": [
-   "......X",
-   ".o...X.",
-   "o.o.X.X",
-   ".....X.",
-   ".o..X.X",
-   "o.o..X.",
-   "....X.."
+   ".....XX",
+   "....X..",
+   "..XX...",
+   ".X..XXo",
+   "X..X...",
+   "..X....",
+   ".X....."
   ]
  },
  "bastion": {
@@ -1552,15 +1552,15 @@
    "surging",
    "guarding"
   ],
-  "color": "#2e877a",
+  "color": "#40a070",
   "glyph": [
-   "....XXX",
-   ".o..XXX",
-   "o.o.XXX",
-   "....XXX",
-   ".o...X.",
-   "o.o..X.",
-   "......."
+   "X.X.X.X",
+   "XXXXXXX",
+   "XX.o.XX",
+   "XXXXXXX",
+   "XX.X.XX",
+   ".......",
+   "X.X.X.X"
   ]
  },
  "resonance": {
@@ -1569,15 +1569,15 @@
    "surging",
    "lasting"
   ],
-  "color": "#7d7289",
+  "color": "#9cc4d8",
   "glyph": [
-   "....XXX",
-   ".o...X.",
-   "o.o..X.",
-   "....XXX",
-   ".o...X.",
-   "o.o..X.",
-   "....XXX"
+   "X.....X",
+   ".X...X.",
+   "X.X.X.X",
+   "X..o..X",
+   "X.X.X.X",
+   ".X...X.",
+   "X.....X"
   ]
  },
  "spark": {
@@ -1586,14 +1586,14 @@
    "surging",
    "fleeting"
   ],
-  "color": "#b0aed7",
+  "color": "#f0e4f8",
   "glyph": [
-   "......X",
-   ".o...XX",
-   "o.o..X.",
-   "....XX.",
-   ".o..X..",
-   "o.o....",
+   ".......",
+   "...X...",
+   ".X.X.X.",
+   "..XoX..",
+   ".X.X.X.",
+   "...X...",
    "......."
   ]
  },
@@ -1603,32 +1603,32 @@
    "surging",
    "vast"
   ],
-  "color": "#564d54",
+  "color": "#7aa0d0",
   "glyph": [
-   ".......",
-   ".o.....",
-   "o.o.XXX",
-   ".......",
-   ".o..XXX",
-   "o.o....",
-   "....XXX"
+   "..XXXX.",
+   ".X....X",
+   "X..XX.X",
+   "X.X..oX",
+   "X......",
+   "XX.....",
+   "XXXXXXX"
   ]
  },
- "vortex": {
-  "name": "Vortex",
+ "undertow": {
+  "name": "Undertow",
   "of": [
    "surging",
    "pulling"
   ],
-  "color": "#5e67c8",
+  "color": "#6c70d0",
   "glyph": [
-   ".....XX",
-   ".o....X",
-   "o.o...X",
-   "....X.X",
-   ".o..XXX",
-   "o.o....",
-   "......."
+   "XXXXX..",
+   ".....X.",
+   "......X",
+   "o.....X",
+   ".X...X.",
+   "XXXXX..",
+   ".X....."
   ]
  },
  "ricochet": {
@@ -1637,15 +1637,15 @@
    "surging",
    "splitting"
   ],
-  "color": "#9e88d6",
+  "color": "#d0a8ec",
   "glyph": [
-   "....X.X",
-   ".o..X.X",
-   "o.o..X.",
-   ".....X.",
-   ".o...X.",
-   "o.o..X.",
-   "......."
+   "X.....X",
+   ".X...X.",
+   "..X.X..",
+   "..XoX..",
+   ".X...X.",
+   "X.....X",
+   "..XXX.."
   ]
  },
  "hexwave": {
@@ -1654,15 +1654,15 @@
    "surging",
    "hexing"
   ],
-  "color": "#868fb8",
+  "color": "#a49cc8",
   "glyph": [
-   ".......",
-   ".o...X.",
-   "o.o.X.X",
-   "....XXX",
-   ".o..X.X",
-   "o.o..X.",
-   "......."
+   "XX...XX",
+   "..X.X..",
+   ".XXXXX.",
+   "X.XoX.X",
+   ".XXXXX.",
+   "..X.X..",
+   "XX...XX"
   ]
  },
  "lull": {
@@ -1671,14 +1671,14 @@
    "surging",
    "stilling"
   ],
-  "color": "#66b2a7",
+  "color": "#78d8a4",
   "glyph": [
-   "....XXX",
-   ".o..X.X",
-   "o.o.XX.",
-   "....X.X",
-   ".o..XXX",
-   "o.o....",
+   ".......",
+   "..XXX..",
+   ".X...X.",
+   "XXXXXXX",
+   ".......",
+   "XX.o.XX",
    "......."
   ]
  },
@@ -1688,15 +1688,15 @@
    "surging",
    "binding"
   ],
-  "color": "#918f90",
+  "color": "#b0a078",
   "glyph": [
-   "....XXX",
-   ".o..X.X",
-   "o.o.XXX",
-   ".....X.",
-   ".o..XXX",
-   "o.o.X.X",
-   "....XXX"
+   "XX.X.XX",
+   "X..X..X",
+   ".XXXXX.",
+   "XX.o.XX",
+   ".XXXXX.",
+   "X..X..X",
+   "XX.X.XX"
   ]
  },
  "harrow": {
@@ -1705,15 +1705,15 @@
    "piercing",
    "bleeding"
   ],
-  "color": "#9a5e63",
+  "color": "#c86454",
   "glyph": [
-   ".o...X.",
-   "ooo.XXX",
-   ".o..XXX",
-   ".o...X.",
-   ".o.....",
-   ".o...X.",
-   ".o....."
+   ".......",
+   "X.X.X.X",
+   ".......",
+   "XXXXXXo",
+   ".......",
+   "X.X.X.X",
+   "o.o.o.."
   ]
  },
  "wraithspear": {
@@ -1722,15 +1722,15 @@
    "piercing",
    "reaping"
   ],
-  "color": "#909f93",
+  "color": "#90b0a4",
   "glyph": [
-   ".o..XXX",
-   "ooo...X",
-   ".o....X",
-   ".o...X.",
-   ".o...X.",
-   ".o..X..",
-   ".o..X.."
+   "XX.....",
+   "XoX....",
+   ".XX....",
+   "...X...",
+   "....X..",
+   ".....X.",
+   "......X"
   ]
  },
  "deathblow": {
@@ -1739,15 +1739,15 @@
    "piercing",
    "culling"
   ],
-  "color": "#96969f",
+  "color": "#9898b0",
   "glyph": [
-   ".o..XX.",
-   "ooo.XXX",
-   ".o..XX.",
-   ".o...X.",
-   ".o...X.",
-   ".o...X.",
-   ".o...X."
+   "...X...",
+   ".XXXXX.",
+   "XX.X.XX",
+   "XXXXXXX",
+   ".X.o.X.",
+   "...X...",
+   "...X..."
   ]
  },
  "breakthrough": {
@@ -1756,15 +1756,15 @@
    "piercing",
    "surging"
   ],
-  "color": "#6f7fa4",
+  "color": "#5a7ab8",
   "glyph": [
-   ".o.....",
-   "ooo..X.",
-   ".o..X.X",
-   ".o.....",
-   ".o...X.",
-   ".o..X.X",
-   ".o....."
+   "XX.X...",
+   "XX..X..",
+   "XXXXXXo",
+   "XX..X..",
+   "XX.X...",
+   "XX.....",
+   "XX....."
   ]
  },
  "bloodharvest": {
@@ -1773,15 +1773,15 @@
    "bleeding",
    "reaping"
   ],
-  "color": "#764948",
+  "color": "#c8484c",
   "glyph": [
-   ".o..XXX",
-   "ooo...X",
-   "ooo...X",
-   ".o...X.",
+   "..XXXX.",
+   ".X....X",
+   "......X",
    ".....X.",
-   ".o..X..",
-   "....X.."
+   "...XX..",
+   "..X..o.",
+   ".X...o."
   ]
  },
  "butcher": {
@@ -1790,15 +1790,15 @@
    "bleeding",
    "culling"
   ],
-  "color": "#7c4054",
+  "color": "#cc4444",
   "glyph": [
-   ".o..XX.",
-   "ooo.XXX",
-   "ooo.XX.",
-   ".o...X.",
-   ".....X.",
-   ".o...X.",
-   ".....X."
+   "XXXXX..",
+   "XoXXXXX",
+   "XXXXX..",
+   "XXXXX..",
+   "XXXX...",
+   ".......",
+   ".X.X.X."
   ]
  },
  "bloodwave": {
@@ -1807,15 +1807,15 @@
    "bleeding",
    "surging"
   ],
-  "color": "#552959",
+  "color": "#d84040",
   "glyph": [
-   ".o.....",
-   "ooo..X.",
-   "ooo.X.X",
-   ".o.....",
-   ".....X.",
-   ".o..X.X",
-   "......."
+   "...XXX.",
+   "..X...X",
+   ".X..XoX",
+   "X..X...",
+   "XXX....",
+   ".......",
+   "X.X.X.X"
   ]
  },
  "harvest": {
@@ -1824,15 +1824,15 @@
    "reaping",
    "culling"
   ],
-  "color": "#728184",
+  "color": "#788a78",
   "glyph": [
-   "ooo.XX.",
-   "..o.XXX",
-   "..o.XX.",
-   ".o...X.",
-   ".o...X.",
-   "o....X.",
-   "o....X."
+   "XXXXXX.",
+   ".....X.",
+   "....X..",
+   ".X.X.X.",
+   "..XoX..",
+   "...X...",
+   "..X.X.."
   ]
  },
  "soulstorm": {
@@ -1841,15 +1841,15 @@
    "reaping",
    "surging"
   ],
-  "color": "#4b6a89",
+  "color": "#5a8aa8",
   "glyph": [
-   "ooo....",
-   "..o..X.",
-   "..o.X.X",
-   ".o.....",
-   ".o...X.",
-   "o...X.X",
-   "o......"
+   "o..X...",
+   "..X.XX.",
+   ".X....X",
+   "X..o..X",
+   "X....X.",
+   ".XX.X..",
+   "...X..o"
   ]
  },
  "deathknell": {
@@ -1858,15 +1858,15 @@
    "culling",
    "surging"
   ],
-  "color": "#516195",
+  "color": "#7c8cd0",
   "glyph": [
-   "oo.....",
-   "ooo..X.",
-   "oo..X.X",
-   ".o.....",
-   ".o...X.",
-   ".o..X.X",
-   ".o....."
+   "...X...",
+   "..XXX..",
+   ".X...X.",
+   ".X...X.",
+   "XXXXXXX",
+   "...o...",
+   ".X.X.X."
   ]
  }
 }
