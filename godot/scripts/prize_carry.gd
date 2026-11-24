@@ -10,11 +10,11 @@
 ##   On entering the level, a line: "Something on this level carries PLUNDERING." (main.gd).
 ##   Its name over it in the prize's colour; on the maps, a larger mark in the prize's colour.
 ##   As it dies: a fountain of coins or gems, a flash, the chime.
-## Its colours the enemy's gold and pink family (his Art Rulebook: what glows on an enemy is pink burning to gold). OFF until his
-## yes to its pictures.
+## Its colours the enemy's gold and pink family (his Art Rulebook: what glows on an enemy is pink burning to gold). ON at his pick,
+## 24 Nov 2026, asked what his "Sure switch it on" meant: "Carriers on, melds off (Recommended)".
 extends Node2D
 
-static var ON := false
+static var ON := true
 ## (each prize's colours, darkest to brightest)
 const COL := {"plundering": [Color("#6a3c08"), Color("#d08a18"), Color("#ffd24a"), Color("#fff4b8")],
 	"greed": [Color("#4a0c38"), Color("#a62a6e"), Color("#f060c8"), Color("#ffd4f4")]}

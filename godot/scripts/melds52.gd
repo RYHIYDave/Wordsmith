@@ -44,10 +44,9 @@ static var REAP_ON := true
 ## THE HIGH CITY'S RUNES MELDED, the last group (his "Then we gotta get back to these melds.  I'd like to finish them today.", 24
 ## Nov 2026): Piercing, Bleeding, Reaping, Culling and Surging with every other rune and with each other (110), and each one's
 ## level 2, in the same table (`high`); their text tools/meldshigh/docs_high.txt, their stones docs/mockups/meld_runes6 (both from
-## tools/meldshigh/design.py), their twists meldshigh_rules.gd, their looks fx_m52p_high.gd. ON at his "Sure switch it on", 24 Nov
-## 2026, told they were built and saved switched off while their films were made. Off, the wordsmith does not make them (`makes`);
-## known, as all words are.
-static var HIGH_ON := true
+## tools/meldshigh/design.py), their twists meldshigh_rules.gd, their looks fx_m52p_high.gd. OFF until his yes to their films (his
+## pick, 24 Nov 2026: "Carriers on, melds off (Recommended)"): the wordsmith does not make them (`makes`); known, as all words are.
+static var HIGH_ON := false
 ## (what each rune is worth inside one on gear: items.ts MELD_GEAR_STRENGTH; a level 2 rune's: RANK2's half again)
 const GEAR := 0.75
 const GEAR_RANK := 1.5

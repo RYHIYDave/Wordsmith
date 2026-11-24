@@ -1536,8 +1536,9 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   “Yeah that's cool”): a monster carrying Plundering or Greed (an endless level's RARE_CARRY) stands out (prize_carry.gd): a
   pillar of the prize's light (gold, magenta) rising from over its head above the walls, seen from anywhere on the level; a line
   as the level is entered; the rare find's chime, its rune named and a line at the top as it comes into sight near him, once;
-  its name and its map mark in the prize's colour; a fountain of coins or gems as it dies. Behind prize_carry.gd ON (OFF until
-  his yes to its pictures, docs/mockups/prize_carry, https://claude.ai/artifact/H7xU18nvFLDwxtDuaqyH2D). Check
+  its name and its map mark in the prize's colour; a fountain of coins or gems as it dies. prize_carry.gd ON: ON at his pick,
+  “Carriers on, melds off (Recommended)”, 24 Nov 2026, to its pictures (docs/mockups/prize_carry,
+  https://claude.ai/artifact/H7xU18nvFLDwxtDuaqyH2D). Check
   `--only=words --cases=prize` 9 of 9.
 - THE HIGH CITY'S RUNES MELDED, the last group (his words, 24 Nov 2026: “Then we gotta get back to these melds.  I'd like to
   finish them today.”): Piercing, Bleeding, Reaping, Culling and Surging with every other rune and with each other, 110 melds, and
@@ -1546,7 +1547,8 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   twist for all: the High City rune's own act carries the other rune to what it strikes (meldshigh_rules.gd, hooked in
   last_words.gd): Piercing's line and lance, Bleeding's fresh wounds and thorns, Reaping's soul and spirit, Culling's killing blow
   and mark, Surging's shockwaves; Swift, Leech, Frenzied, Guarding and Fleeting give him something instead, once a moment. Numbers
-  tools/melds52/tune.json `_carry`; looks fx_m52p_high.gd. melds52.gd HIGH_ON: ON at his “Sure switch it on”, 24 Nov 2026.
+  tools/melds52/tune.json `_carry`; looks fx_m52p_high.gd. melds52.gd HIGH_ON: OFF until his yes to their films (his pick,
+  “Carriers on, melds off (Recommended)”, 24 Nov 2026).
   Checks `--only=words --cases=high` (or `high:<id>,<id>`) 6 of 6 (all 220 cases carry); films `--fixed-fps 30 -- --only=words
   --cases=m52film:high` (or `high:<from>-<to>`); the page `python3 docs/mockups/meld_films/page.py <films> <out> high`.
 - THE LEXICON IN THE STASH (his words, 24 Nov 2026: “I'd also like to get rid of the lexicon in the middle of town and add it to the
