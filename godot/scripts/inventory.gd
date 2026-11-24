@@ -2887,6 +2887,8 @@ func _dungeon_line(w: String, k: Dictionary, unknown: String) -> String:
 		return unknown
 	var FW := preload("res://scripts/foe_words.gd")
 	var meld: bool = FW.is_meld(w) or FW.is_rank(w)
+	if DOOR_GOLD_LINE and loot.DOOR_GOLD_WORDS.has(w):
+		return "Its gold +%d%%; no monster in it carries it. Richer loot, and words are likelier." % roundi(loot.DOOR_GOLD)
 	var t: String = FW.page(w) if meld else str(Words.word(w).get("monsterText", ""))
 	return "Every monster in it: %s%s %s" % [t.substr(0, 1).to_lower(), t.substr(1), "Counts as two words: richer loot, and words are likelier." if meld else "Richer loot, and words are likelier."]
 
@@ -3103,7 +3105,10 @@ func _gate_side(blink: bool, x0: float, w: float) -> void:
 		if i < laid.size():
 			_tile(r, laid[i], "name", {"stone": true, "lit": row.has_point(_mouse)})
 			_text(Vector2(tx, r.position.y + 16), str(Words.word(laid[i])["name"]).to_upper(), 12, loot.word_color(laid[i]))
-			_text(Vector2(tx, r.position.y + 32), "Every monster: %s" % _lower(_monster_text(laid[i])), 9, TEXT)
+			if DOOR_GOLD_LINE and loot.DOOR_GOLD_WORDS.has(str(laid[i])):
+				_text(Vector2(tx, r.position.y + 32), "This level: its gold +%d%%. No monster carries it." % roundi(loot.DOOR_GOLD), 9, TEXT)
+			else:
+				_text(Vector2(tx, r.position.y + 32), "Every monster: %s" % _lower(_monster_text(laid[i])), 9, TEXT)
 			_hits.append([row, "gate_take", i, null])
 		else:
 			var here := i == next
@@ -3134,10 +3139,6 @@ func _gate_side(blink: bool, x0: float, w: float) -> void:
 				for l in _wrap("Drops more often: %s." % ", ".join(PackedStringArray(bits)), w, 10):
 					_text(Vector2(x0, y), l, 10, PICK)
 					y += 13.0
-		if DOOR_GOLD_LINE and loot.door_gold(laid) > 0.0:
-			for l in _wrap("Plundering: +%d%% gold on this level. No monster carries it." % roundi(loot.door_gold(laid)), w, 10):
-				_text(Vector2(x0, y), l, 10, PICK)
-				y += 13.0
 	_text(Vector2(x0, y), "Its boss waits at the end. %s." % main.ENDLESS_WARN, 10, BAD)
 	_svc_button("ENTER %s" % where, x0, w, "gate_enter", true, blink)
 
