@@ -37,9 +37,10 @@ static var CITY2_ON := true
 ## the shades.  What would the others be?”; offered the five, “Yes and work on reaping”): Cinderbrood, Wintergrave, Stormwake,
 ## Bogborn and Charnel, Reaping with Flame, Frost, Lightning, Poison and Power, in the same table (`reap`); their text
 ## tools/meldsreap/docs_reap.txt, their stones docs/mockups/meld_runes5, their creatures' pictures tools/reap5 (assets/words/
-## reap5_*.png), their rules meldsreap_rules.gd, their looks fx_m52p_reap.gd. OFF until his yes to their pictures and films: the
-## wordsmith does not make them (`makes`); known, as all words are.
-static var REAP_ON := false
+## reap5_*.png), their rules meldsreap_rules.gd, their looks fx_m52p_reap.gd. ON at his yes to their third pass (the page Reaping
+## Creatures, https://claude.ai/artifact/KjN5NDpT3Ck2y8Ezp9cDuS), asked “Should I switch them on, or keep working on one?”: “Better,
+## yup switch on”, 24 Nov 2026. Off, the wordsmith does not make them (`makes`); known, as all words are.
+static var REAP_ON := true
 ## (what each rune is worth inside one on gear: items.ts MELD_GEAR_STRENGTH; a level 2 rune's: RANK2's half again)
 const GEAR := 0.75
 const GEAR_RANK := 1.5

@@ -1524,8 +1524,11 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   bolt, a poison burst, his might). On an enemy, it rises as its creature against him, every blow marked on the floor first.
   The creatures are pixel art from a small 3D sculptor (tools/reap5: `python3 tools/reap5/paint.py` writes assets/words/
   reap5_<kind>.png and .json, idle, walk and attack from in front and behind, cyan-edged and pink-edged). Rules
-  meldsreap_rules.gd (from last_words.gd and monster.gd), looks fx_m52p_reap.gd and fx_words7.gd _reap_frame. Behind
-  melds52.gd REAP_ON (OFF until his yes to the page, https://claude.ai/artifact/KjN5NDpT3Ck2y8Ezp9cDuS). Checks:
+  meldsreap_rules.gd (from last_words.gd and monster.gd), looks fx_m52p_reap.gd and fx_words7.gd _reap_frame. Drawn again
+  twice at his word (“We can do a little better”; “Frost guy is to lumpy, and the lightning guy is weird.  Maybe it's just like a
+  wisp, just a ball of energy”): the game's own outline and edge of light, bold tones, facing the viewer; the Rimeling one
+  smooth wraith, the Stormwisp a ball of storm-light. melds52.gd REAP_ON: ON at his “Better, yup switch on” to the page
+  (https://claude.ai/artifact/KjN5NDpT3Ck2y8Ezp9cDuS). Checks:
   `--only=words --cases=reap5` 20 of 20; films `--fixed-fps 30 -- --only=words --cases=m52film:reap`; the page
   `python3 docs/mockups/reap5/page.py <films> <lineup png> <out>`.
 - THE LEXICON IN THE STASH (his words, 24 Nov 2026: “I'd also like to get rid of the lexicon in the middle of town and add it to the
