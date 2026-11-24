@@ -38,12 +38,37 @@ const MOMENTS := {
 	"lancet:lance": ["seek", ""], "lancet:drive": ["cut", "dagger"], "lancet:blade": ["", "dagger"], "lancet:drain": ["drink", ""],
 	"lancet:cut": ["seek", ""],
 	"manacle:chain": ["bind", "chainline"], "manacle:link": ["", "chainline"], "manacle:snap": ["", "chainline"],
+	# --- ROUND 2
+	"mauler:fling": ["thrown", ""], "mauler:whip": ["", "chainline"], "mauler:maul": ["stun", ""],
+	"momentum:roll": ["wide", ""], "momentum:drum": ["slam", "roar"], "momentum:barrel": ["stun", ""],
+	"needle:mist": ["cloud", ""], "needle:needles": ["hurl", ""], "needle:needle": ["", "dagger"], "needle:sting": ["dose", ""],
+	"onrush:rush": ["rush", ""], "onrush:bowl": ["push", ""],
+	"pin:spike": ["", "spike"],
+	"quickdraw:draw": ["flick", ""], "quickdraw:glance": ["flick", ""], "quickdraw:gleam": ["flick", ""],
+	"quickening:ripple": ["still", "roar"], "quickening:pulse": ["still", "roar"], "quickening:image": ["", "image"],
+	"rapier:thrust": ["lance", ""], "rapier:flourish": ["", "slashring"], "rapier:lunge": ["lunge", ""],
+	"reverb:echo": ["", "roar"], "reverb:ring": ["push", "roar"],
+	"riposte:answer": ["blade", ""], "riposte:blade": ["blade", ""], "riposte:counter": ["blade", ""],
+	"siphon:thread": ["drain", ""], "siphon:motes": ["drink", ""],
+	"stillpoint:shards": ["still", "shards"], "stillpoint:ring": ["", "duelring"], "stillpoint:hush": ["still", ""],
+	"stillpoint:stop": ["", "clock"],
+	"sunder:plates": ["", "plates"], "sunder:crack": ["quake", ""], "sunder:trip": ["stun", ""],
+	"tailwind:gust": ["push", ""], "tailwind:trail": ["push", ""], "tailwind:grit": ["spread", ""],
+	"tempo:beat": ["slam", "roar"],
+	"timeslip:image": ["", "image"], "timeslip:slip": ["blink", ""],
+	"transfusion:orb": ["heal", "orb"], "transfusion:pool": ["", "pool"], "transfusion:pulse": ["heal", ""], "transfusion:thread": ["drain", ""],
+	"vendetta:sigil": ["", "sigil"], "vendetta:pass": ["pass", ""], "vendetta:slashes": ["cut", "slashring"],
+	"windward:whirl": ["", "windring"], "windward:gust": ["push", ""],
+	"amber:seal": ["", "amberblock"], "amber:stick": ["thread", ""], "amber:shatter": ["burst", "shards"], "amber:amber": ["", "amberblock"],
+	"amber:crack": ["burst", ""],
 }
 ## (how long a thing of its own stands, where its moment says not)
 const LASTS := {"hammer": 0.45, "shadow": 0.9, "blades": 0.9, "clock": 1.2, "roar": 0.6, "weight": 0.5, "spiral": 0.9, "sore": 0.6,
-	"redmark": 1.2, "dagger": 0.8, "tether": 1.5, "chainline": 0.5, "furyring": 0.5, "shieldring": 5.0}
+	"redmark": 1.2, "dagger": 0.8, "tether": 1.5, "chainline": 0.5, "furyring": 0.5, "shieldring": 5.0,
+	"spike": 0.9, "plates": 0.8, "image": 1.0, "slashring": 0.5, "shards": 0.7, "orb": 0.8, "pool": 5.0, "windring": 0.5,
+	"amberblock": 1.5}
 ## (the redone ones whose moments are their blood's, fire's or ice's)
-const BLOOD_IDS := ["lamprey", "lancet"]
+const BLOOD_IDS := ["lamprey", "lancet", "transfusion"]
 const FIRE_IDS := ["fervor"]
 const ICE_IDS := ["glide"]
 
@@ -164,6 +189,17 @@ func paint_floor(b: Dictionary) -> void:
 			_ring(x, y, 1.1 * (0.3 + 0.7 * minf(1.0, u * 1.4)), 2, t * 3.0)
 		"hourstand":
 			_hourglass(_wx(x, y), _wy(x, y) - 20.0, 9.0, R, minf(1.0, fade * 4.0), u)
+		"pool":
+			# (Transfusion's pool of life where it fell: a red ring that pulses while it lasts)
+			_fs(R[3])
+			_ga(0.6 * minf(1.0, fade * 4.0) * (0.7 + 0.3 * sin(t * 6.0)))
+			_ring(x, y, float(b["r"]), 0, t)
+			_ring(x, y, float(b["r"]) * 0.6, 2, -t)
+		"windring":
+			for k in 3:
+				_fs(R[4])
+				_ga(fade * 0.8)
+				_ring(x, y, 0.6 + 0.4 * k + u * 0.4, 3, t * 6.0 + k, 4.0)
 		"furyring":
 			for k in 8:
 				var a := k * TAU / 8.0 + t * 2.0
@@ -290,6 +326,68 @@ func paint_air(b: Dictionary) -> void:
 					_fill(px - 1.0, py - 2.0, 2.0, 4.0)
 		"ember":
 			_flames(cx, cy + 10.0, 2, 6.0, 10.0, minf(1.0, fade * 4.0), R, sd)
+		"spike":
+			# (Pin: a spike of light driven down through it into the floor)
+			var drop: float = minf(1.0, u / 0.25)
+			var sy := cy - 50.0 * (1.0 - drop)
+			_ga(minf(1.0, fade * 3.0))
+			_fs(R[4])
+			_line(cx, sy - 26.0, cx, sy + 10.0, 3)
+			_fs(Color.WHITE)
+			_line(cx, sy - 24.0, cx, sy + 8.0, 1)
+			_fs(R[2])
+			_line(cx - 4.0, sy - 26.0, cx + 4.0, sy - 26.0, 2)
+			if drop >= 1.0:
+				_glow(cx, cy + 10.0, 10.0, R[5], 0.6 * fade)
+		"plates":
+			# (Sunder: plates of its guard flying off it)
+			for k in 5:
+				var a := -PI * 0.5 + (_rh(sd, k) - 0.5) * 2.4
+				var d := 6.0 + u * 22.0
+				var px := cx + cos(a) * d
+				var py := cy - 8.0 + sin(a) * d * 0.8 + u * u * 18.0
+				_fs(R[2] if k % 2 == 0 else R[3])
+				_ga(fade)
+				_fill(px - 3.0, py - 2.0, 6.0, 4.0)
+				_fs(R[5])
+				_fill(px - 3.0, py - 2.0, 6.0, 1.0)
+		"image":
+			_afterimage(cx, cy + 12.0, fade, u)
+		"slashring":
+			# (a flourish: blade slashes sweeping round)
+			for k in 6:
+				var a := k * TAU / 6.0 + u * 2.0
+				var p0 := Vector2(cos(a), sin(a) * 0.5) * 14.0
+				var p1 := Vector2(cos(a + 0.6), sin(a + 0.6) * 0.5) * 22.0
+				_fs(R[4])
+				_ga(fade)
+				_line(cx + p0.x, cy + p0.y, cx + p1.x, cy + p1.y, 2)
+				_fs(Color.WHITE)
+				_line(cx + p0.x, cy + p0.y, cx + (p0.x + p1.x) * 0.5, cy + (p0.y + p1.y) * 0.5, 1)
+		"shards":
+			for k in 6:
+				var a := k * TAU / 6.0 + 0.4
+				_shard(cx + cos(a) * 8.0 * (0.4 + u * 1.6), cy + sin(a) * 4.0 * (0.4 + u * 1.6), 3.0, 6.0, R, sd + k, fade)
+		"orb":
+			# (Transfusion: the red orb gathered over him, bursting)
+			var rr := 5.0 + u * 10.0
+			_glow(cx, cy - 26.0, rr * 1.6, R[4], fade)
+			_fs(R[3])
+			_ga(fade)
+			_fill(cx - rr * 0.5, cy - 26.0 - rr * 0.5, rr, rr)
+			_fs(R[5])
+			_fill(cx - rr * 0.25, cy - 26.0 - rr * 0.4, rr * 0.3, rr * 0.3)
+		"amberblock":
+			# (Amber: a golden block sealing it, cracking as it goes)
+			_ga(0.75 * minf(1.0, fade * 3.0))
+			_fs(R[2])
+			_fill(cx - 10.0, cy - 22.0, 20.0, 30.0)
+			_fs(R[4])
+			_fill(cx - 10.0, cy - 22.0, 20.0, 2.0)
+			_fill(cx - 10.0, cy - 22.0, 2.0, 30.0)
+			_fs(R[5])
+			_ga(0.9 * minf(1.0, fade * 3.0))
+			_line(cx - 4.0, cy - 16.0, cx + 2.0, cy - 6.0 + u * 6.0, 1)
 		"shieldring":
 			# (Bulwark's ward: raised shields standing round its edge)
 			var r: float = float(b["r"])

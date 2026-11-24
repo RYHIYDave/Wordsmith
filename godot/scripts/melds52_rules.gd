@@ -183,7 +183,7 @@ func used(i: int, echo: bool, at := Vector2.INF) -> void:
 	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
 	if not echo and h.last != null:
 		h.last.high.used(i)
-	rd.used(i, echo)
+	rd.used(i, echo, at)
 	var f := fid(i)
 	var b := bid(i)
 	var r: Dictionary = h.loadout.r(i)
@@ -242,7 +242,11 @@ func used(i: int, echo: bool, at := Vector2.INF) -> void:
 # --- a hit ---
 
 func crit(m, i: int, c: bool, quiet: bool) -> bool:
-	return y2.crit(m, i, x.crit(m, i, _crit52(m, i, c, quiet), quiet), quiet)
+	var out: bool = y2.crit(m, i, x.crit(m, i, _crit52(m, i, c, quiet), quiet), quiet)
+	# (ALL MELDS REDONE: when a hit of his was critical, for a kill's twist that waits on one: meldsredo2.gd)
+	if out and M52.REDO_ON and is_instance_valid(m) and h.last != null:
+		m.m52["rd_crit_at"] = rd.clock()
+	return out
 
 
 func _crit52(m, i: int, c: bool, quiet: bool) -> bool:
@@ -315,7 +319,7 @@ func more(m, i: int, quiet: bool) -> float:
 	# DUELIST behind: the one it marked takes more from everything until the mark is spent
 	if m.mark_t > 0.0 and str(m.m52.get("mark", "")) == "duelist":
 		k *= 1.0 + float(_tune("duelist")["more"])
-	return k * x.more(m, i, quiet) * y.more(m, i, quiet) * y2.more(m, i, quiet)
+	return k * x.more(m, i, quiet) * y.more(m, i, quiet) * y2.more(m, i, quiet) * rd.more(m, i)
 
 
 func heal_k(m, i: int) -> float:

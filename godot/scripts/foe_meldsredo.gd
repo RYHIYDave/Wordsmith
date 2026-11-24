@@ -4,7 +4,8 @@
 ## (fx_m52p_redo.gd). Called from foe_melds52.gd's hooks and foe_words.gd's frame. Its own state on the monster is in `m.m52`
 ## ("rd_..."), on him in `foe_hi` ("rd_...").
 ## ROUND 1: Ambush, Berserk, Blight, Bulwark, Canker, Delirium, Doom, Duelist, Eternity, Evil Eye, Fervor, Fever, Fury, Glide,
-## Grudge, Haymaker, Hourglass, Lamprey, Lancet, Manacle.
+## Grudge, Haymaker, Hourglass, Lamprey, Lancet, Manacle. ROUND 2: Mauler, Momentum, Needle, Onrush, Pin, Quickdraw, Quickening,
+## Rapier, Reverb, Riposte, Siphon, Stillpoint, Sunder, Tailwind, Tempo, Timeslip, Transfusion, Vendetta, Windward, Amber.
 extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
@@ -36,6 +37,11 @@ static func harder(F, k: Callable, _parts: Array, by) -> float:
 		by.m52["rd_grudged"] = false
 		mult *= 2.0
 		_tell(h, "grudge", "pay", h.world)
+	# (Sunder's sundered guard and Vendetta's sigil on him: its blows land harder while they last)
+	if float(k.call("sunder")) > 0.0 and F.clock < float(h.foe_hi.get("rd_sunder", -1.0)):
+		mult *= 1.2
+	if float(k.call("vendetta")) > 0.0 and F.clock < float(h.foe_hi.get("rd_vend", -1.0)):
+		mult *= 1.3
 	return mult
 
 
@@ -94,6 +100,43 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 	if s.call("manacle"):
 		h.foe_hi["rd_chain"] = {"m": by, "until": F.clock + 4.0, "next": 0.0}
 		_tell(h, "manacle", "chain", h.world, {"x1": by.world.x, "y1": by.world.y})
+	# --- ROUND 2
+	if s.call("mauler") and (h.root_t > 0.0 or n % 2 == 0) and not h.foe_hi.has("rd_maul"):
+		h.foe_hi["rd_maul"] = {"m": by, "n": 2, "next": F.clock + 0.2}
+	if s.call("momentum") and n % 3 == 0:
+		h.knock(away, 1.6)
+		_tell(h, "momentum", "barrel", h.world)
+	if s.call("needle") and n % 3 == 0:
+		h.foe_hi["rd_sting"] = {"at": F.clock + 2.5, "dps": F._avg(by) * 0.15}
+		_tell(h, "needle", "needle", h.world)
+	if s.call("onrush") and F.clock - float(by.m52.get("rd_rushed", -9.0)) < 1.5:
+		by.m52["rd_rushed"] = -9.0
+		h.knock(away, 1.2)
+		h.held = maxf(h.held, 0.3)
+		_tell(h, "onrush", "bowl", h.world)
+	if s.call("pin") and n % 2 == 1:
+		h.root_t = maxf(h.root_t, 0.5) + 0.6
+		_tell(h, "pin", "spike", h.world)
+	if s.call("reverb"):
+		var ec: Array = h.foe_hi.get("rd_echo", [])
+		ec.append({"at": F.clock + 0.5, "dmg": dmg * 0.3})
+		h.foe_hi["rd_echo"] = ec
+	if s.call("stillpoint") and n % 3 == 0:
+		h.held = maxf(h.held, 0.4)
+		_tell(h, "stillpoint", "stop", h.world, {"secs": 0.4})
+	if s.call("sunder") and n % 2 == 0:
+		h.foe_hi["rd_sunder"] = F.clock + 3.0
+		_tell(h, "sunder", "plates", h.world)
+	if s.call("tempo") and n % 3 == 0:
+		h.held = maxf(h.held, 0.35)
+		_tell(h, "tempo", "beat", h.world)
+	if s.call("vendetta") and n % 3 == 0:
+		h.foe_hi["rd_vend"] = F.clock + 4.0
+		_tell(h, "vendetta", "sigil", h.world, {"secs": 4.0})
+	if s.call("amber"):
+		h.root_t = maxf(h.root_t, 0.8)
+		h.foe_hi["rd_amber"] = true
+		_tell(h, "amber", "amber", h.world, {"secs": h.root_t})
 
 
 ## A monster's turn, awake and near him (`dist` from him).
@@ -154,6 +197,64 @@ static func tick(F, m, _dt: float, dist: float) -> void:
 		m.m52["rd_ice"] = now
 		F._ground(m.world, 0.6, 3.0, "ice", "frost", F._avg(m) * 0.05, [], m, "glide")
 		_tell(h, "glide", "strip", m.world, {"r": 0.6, "stay": true})
+	# --- ROUND 2
+	if m.word_share("onrush") > 0.0 and dist >= 1.8 and dist <= 5.0 and now - float(m.m52.get("rd_rush_at", -9.0)) > 4.0:
+		m.m52["rd_rush_at"] = now
+		m.m52["rd_rushed"] = now
+		var was: Vector2 = Rules.dash_at(m, h.world, 1.0)
+		_tell(h, "onrush", "rush", h.world, {"x1": was.x, "y1": was.y})
+	if m.word_share("quickdraw") > 0.0 and dist >= 1.5 and dist <= 3.2 and now - float(m.m52.get("foe_last", -99.0)) >= 2.0 and now - float(m.m52.get("rd_gleam", -9.0)) > 3.0:
+		m.m52["rd_gleam"] = now
+		var was: Vector2 = Rules.dash_at(m, h.world, 1.0)
+		_tell(h, "quickdraw", "gleam", h.world, {"x1": was.x, "y1": was.y})
+	if m.word_share("quickening") > 0.0 and m.life < m.max_life * 0.7 and dist <= 4.0 and now - float(m.m52.get("rd_image", -9.0)) > 1.5:
+		m.m52["rd_image"] = now
+		h.hurt_by(maxf(1.0, roundf(F._avg(m) * 0.15)), "phys", [], {}, null, Vector2.INF, true)
+		_tell(h, "quickening", "image", m.world, {"stay": true, "x1": h.world.x, "y1": h.world.y})
+	if m.word_share("rapier") > 0.0 and m.life < m.max_life * 0.6 and dist <= 3.0 and now - float(m.m52.get("rd_lunge", -9.0)) > 3.0:
+		m.m52["rd_lunge"] = now
+		var was: Vector2 = m.world
+		var way: Vector2 = (h.world - m.world).normalized() if dist > 0.01 else Vector2(1, 0)
+		m.world = h.world + way * 1.0
+		_tell(h, "rapier", "lunge", h.world, {"x1": was.x, "y1": was.y})
+	if m.word_share("siphon") > 0.0 and h.poison_t > 0.0 and dist <= 6.0 and now - float(m.m52.get("rd_thread", -9.0)) > 0.8:
+		m.m52["rd_thread"] = now
+		h.hurt_by(1.0, "phys", [], {}, null, Vector2.INF, true)
+		m.life = minf(m.max_life, m.life + 2.0)
+		_tell(h, "siphon", "thread", h.world, {"x1": m.world.x, "y1": m.world.y})
+	if m.word_share("tailwind") > 0.0 and dist >= 1.5 and dist <= 4.0 and now - float(m.m52.get("rd_grit", -9.0)) > 1.2:
+		m.m52["rd_grit"] = now
+		h.chill(1.0, 0.25)
+		_tell(h, "tailwind", "grit", h.world, {"x1": m.world.x, "y1": m.world.y})
+	if m.word_share("timeslip") > 0.0 and dist >= 2.0 and dist <= 6.0 and now - float(m.m52.get("rd_slip", -9.0)) > 4.0:
+		m.m52["rd_slip"] = now
+		var was: Vector2 = m.world
+		var side := Vector2(-(h.world - m.world).y, (h.world - m.world).x).normalized()
+		m.world = h.world + side * 1.0
+		_tell(h, "timeslip", "slip", h.world, {"x1": was.x, "y1": was.y})
+	if m.word_share("transfusion") > 0.0 and now - float(m.m52.get("rd_tf", -9.0)) > 1.0:
+		m.m52["rd_tf"] = now
+		for o in F.main._monsters.list:
+			if o != m and _alive(F, o) and o.world.distance_to(m.world) <= 3.0:
+				m.life = minf(m.max_life, m.life + 2.0)
+				_tell(h, "transfusion", "thread", o.world, {"stay": true, "x1": m.world.x, "y1": m.world.y})
+				break
+	if m.word_share("windward") > 0.0 and m.shield > 0.0 and dist <= 1.6 and now - float(m.m52.get("rd_gust", -9.0)) > 1.5:
+		m.m52["rd_gust"] = now
+		var away: Vector2 = (h.world - m.world).normalized() if dist > 0.01 else Vector2(1, 0)
+		h.knock(away, 0.8)
+		_tell(h, "windward", "gust", h.world)
+
+
+## His blow on its shield (`soaked`): Riposte answers with a counter-thrust.
+static func shield(F, m, soaked: float) -> void:
+	if not _on(m) or soaked <= 0.0:
+		return
+	var h = F.main.hero
+	if m.word_share("riposte") > 0.0 and F.clock - float(m.m52.get("rd_counter", -9.0)) > 0.8:
+		m.m52["rd_counter"] = F.clock
+		h.hurt_by(maxf(1.0, roundf(F._avg(m) * 0.4)), "phys", [], {}, null, Vector2.INF, true)
+		_tell(h, "riposte", "counter", h.world, {"x1": m.world.x, "y1": m.world.y})
 
 
 ## A monster has died: Fervor's carriers near it are fed.
@@ -198,6 +299,35 @@ static func frame(F, _dt: float) -> void:
 			h.hurt_by(a, "phys", [], {}, null, Vector2.INF, true)
 			m.life = minf(m.max_life, m.life + a)
 			_tell(h, "lamprey", "drain", h.world, {"x1": m.world.x, "y1": m.world.y, "minor": true})
+	# --- ROUND 2: Mauler's flurry, Needle's sting, Reverb's echoes, Amber cracking away
+	if h.foe_hi.has("rd_maul") and now >= float(h.foe_hi["rd_maul"]["next"]):
+		var mu: Dictionary = h.foe_hi["rd_maul"]
+		var mm = mu["m"]
+		if _alive(F, mm):
+			h.hurt_by(maxf(1.0, roundf(F._avg(mm) * 0.25)), "phys", [], {}, null, Vector2.INF, true)
+			_tell(h, "mauler", "maul", h.world)
+		mu["n"] = int(mu["n"]) - 1
+		mu["next"] = now + 0.2
+		if int(mu["n"]) <= 0 or not _alive(F, mm):
+			h.foe_hi.erase("rd_maul")
+	if h.foe_hi.has("rd_sting") and now >= float(h.foe_hi["rd_sting"]["at"]):
+		var dps: float = float(h.foe_hi["rd_sting"]["dps"])
+		h.foe_hi.erase("rd_sting")
+		h.poison_dps = maxf(h.poison_dps if h.poison_t > 0.0 else 0.0, maxf(1.0, dps))
+		h.poison_t = maxf(h.poison_t, 3.0)
+		_tell(h, "needle", "sting", h.world)
+	if h.foe_hi.has("rd_echo"):
+		var ec: Array = h.foe_hi["rd_echo"]
+		for k in range(ec.size() - 1, -1, -1):
+			if now >= float(ec[k]["at"]):
+				h.hurt_by(maxf(1.0, roundf(float(ec[k]["dmg"]))), "phys", [], {}, null, Vector2.INF, true)
+				_tell(h, "reverb", "echo", h.world)
+				ec.remove_at(k)
+		if ec.is_empty():
+			h.foe_hi.erase("rd_echo")
+	if h.foe_hi.has("rd_amber") and h.root_t <= 0.0:
+		h.foe_hi.erase("rd_amber")
+		_tell(h, "amber", "crack", h.world)
 	if h.foe_hi.has("rd_chain"):
 		var c: Dictionary = h.foe_hi["rd_chain"]
 		var m = c["m"]

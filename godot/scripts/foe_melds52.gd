@@ -239,6 +239,7 @@ static func shield(F, m, soaked: float) -> void:
 	F46.shield(F, m, soaked)
 	FC2.shield(F, m, soaked)
 	FH.shield(F, m, soaked)
+	FR.shield(F, m, soaked)
 	var h = F.main.hero
 	if m.word_share("hemlock") > 0.0 and F.clock - float(m.m52.get("foe_hem", -99.0)) > 0.8:
 		m.m52["foe_hem"] = F.clock

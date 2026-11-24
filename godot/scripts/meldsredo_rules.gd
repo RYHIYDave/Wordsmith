@@ -28,11 +28,14 @@ var chains: Array = []
 var rings: Array = []
 var embers: Array = []
 var fervor_until := -99.0
+## (round 2's own: meldsredo2.gd)
+var r2
 
 
 func _init(hero, r) -> void:
 	h = hero
 	rules = r
+	r2 = preload("res://scripts/meldsredo2.gd").new(self, hero)
 
 
 func _H():
@@ -127,8 +130,11 @@ static func dash_at(m, to: Vector2, stop: float) -> Vector2:
 
 # --- a use ---
 
-func used(i: int, echo: bool) -> void:
-	if not M52.REDO_ON or echo or _H() == null:
+func used(i: int, echo: bool, at := Vector2.INF) -> void:
+	if not M52.REDO_ON or _H() == null:
+		return
+	r2.used(i, echo, at)
+	if echo:
 		return
 	var fi := f(i)
 	match fi:
@@ -325,6 +331,14 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2) -> void:
 			m.m52.erase("rd_lancet")
 			drains.append({"m": m, "until": clock() + 3.0, "i": i, "next": 0.0})
 			tell("lancet", "drive", m.world)
+	r2.struck(m, i, dmg, c, at)
+
+
+## How much harder his hit lands on `m`, of these.
+func more(m, i: int) -> float:
+	if not M52.REDO_ON or _H() == null or not is_instance_valid(m):
+		return 1.0
+	return r2.more(m, i)
 
 
 # --- a kill of his ---
@@ -375,6 +389,7 @@ func killed(m, i: int) -> void:
 				for q in near(at, 1.4, 6, [m]):
 					H.curse(q, 4.0, 0.15)
 					H.stun(q, 0.3)
+	r2.killed(m, i, was_poisoned)
 
 
 # --- Precise behind's marks ---
@@ -396,12 +411,14 @@ func marked(m, i: int) -> void:
 		"lancet":
 			m.m52["rd_lancet"] = true
 			tell("lancet", "blade", m.world, {"secs": secs})
+	r2.marked(m, i)
 
 
 # --- what a move behind left on the ground ---
 
 const ZONE_SECS := {"bulwark": 5.0, "canker": 10.0, "delirium": 5.0, "doom": 5.0, "eternity": 8.0, "grudge": 10.0, "hourglass": 3.0,
-	"glide": 5.0, "manacle": 10.0}
+	"glide": 5.0, "manacle": 10.0,
+	"mauler": 10.0, "pin": 10.0, "amber": 10.0, "riposte": 5.0, "timeslip": 6.0, "windward": 5.0, "quickening": 6.0}
 
 
 func wake(i: int, at: Vector2, rad: float) -> void:
@@ -584,6 +601,7 @@ func step(dt: float) -> void:
 				var what: String = "drain" if lst != bites else "drip"
 				tell("lamprey" if lst != drains else "lancet", what, m.world, {"x1": h.world.x, "y1": h.world.y, "minor": true})
 	# (Manacle's chains: no farther than the chain's length from where it was held)
+	r2.step(dt)
 	for k in range(chains.size() - 1, -1, -1):
 		var ch: Dictionary = chains[k]
 		var m = ch["m"]
@@ -598,9 +616,11 @@ func step(dt: float) -> void:
 			tell("manacle", "link", at, {"x1": m.world.x, "y1": m.world.y, "minor": true, "secs": 0.35})
 
 
-## A blow on him (his shield up or not): nothing of these yet.
-func struck_him(_src) -> void:
-	pass
+## A blow on him (his shield up or not).
+func struck_him(src) -> void:
+	if not M52.REDO_ON or _H() == null:
+		return
+	r2.struck_him(src)
 
 
 func fresh() -> void:
@@ -617,3 +637,4 @@ func fresh() -> void:
 	rings = []
 	embers = []
 	fervor_until = -99.0
+	r2.fresh()

@@ -31,11 +31,36 @@ const EXPECT := {
 	"lamprey": {"front": ["latch"], "behind": ["drip"], "foe": ["latch"]},
 	"lancet": {"front": ["lance"], "behind": ["drive"], "foe": ["cut"]},
 	"manacle": {"front": ["chain"], "behind": ["snap"], "foe": ["chain"]},
+	# --- ROUND 2
+	"mauler": {"front": ["fling"], "behind": ["whip"], "foe": ["maul"]},
+	"momentum": {"front": ["roll"], "behind": ["drum"], "foe": ["barrel"]},
+	"needle": {"front": ["mist"], "behind": ["needles"], "foe": ["needle"]},
+	"onrush": {"front": ["rush"], "behind": ["bowl"], "foe": ["rush"]},
+	"pin": {"front": ["spike"], "behind": ["spike"], "foe": ["spike"]},
+	"quickdraw": {"front": ["draw"], "behind": ["glance"], "foe": ["gleam"]},
+	"quickening": {"front": ["ripple"], "behind": ["pulse"], "foe": ["image"]},
+	"rapier": {"front": ["thrust"], "behind": ["flourish"], "foe": ["lunge"]},
+	"reverb": {"front": ["echo"], "behind": ["ring"], "foe": ["echo"]},
+	"riposte": {"front": ["answer"], "behind": ["blade"], "foe": ["counter"]},
+	"siphon": {"front": ["thread"], "behind": ["motes"], "foe": ["thread"]},
+	"stillpoint": {"front": ["shards"], "behind": ["hush"], "foe": ["stop"]},
+	"sunder": {"front": ["plates"], "behind": ["crack"], "foe": ["plates"]},
+	"tailwind": {"front": ["gust"], "behind": ["trail"], "foe": ["grit"]},
+	"tempo": {"front": ["beat"], "behind": ["beat"], "foe": ["beat"]},
+	"timeslip": {"front": ["slip"], "behind": ["image"], "foe": ["slip"]},
+	"transfusion": {"front": ["orb"], "behind": ["pulse"], "foe": ["thread"]},
+	"vendetta": {"front": ["sigil"], "behind": ["slashes"], "foe": ["sigil"]},
+	"windward": {"front": ["whirl"], "behind": ["gust"], "foe": ["gust"]},
+	"amber": {"front": ["seal"], "behind": ["seal"], "foe": ["amber"]},
 }
-## (those whose front waits on a third blow on what it curses)
-const THIRD := ["doom", "grudge"]
+## (those whose front waits on a third blow: on what it curses, a count of blows)
+const THIRD := ["doom", "grudge", "tempo", "transfusion"]
+## (those whose behind waits on a third blow on the same one)
+const THIRD_B := ["vendetta"]
 ## (those whose behind waits on a death in what it left: one brought low once it is laid)
-const DIE_IN := ["canker", "delirium", "doom"]
+const DIE_IN := ["canker", "delirium", "doom", "quickening"]
+## (his first move struck at it first, on a monster: what it does when he does)
+const STRUCK_FIRST := ["grudge", "riposte"]
 
 var M
 var h
@@ -167,9 +192,40 @@ func setup(id: String, side: String) -> void:
 		h.frenzy = int(Words.data()["frenzy"]["max"])
 		h.frenzy_t = 9.0
 	match id:
-		"berserk", "delirium", "fever", "fury":
+		"berserk", "delirium", "fever", "fury", "mauler", "quickening":
 			if side == "front":
 				fullf.call()
+		"tempo":
+			if side == "behind":
+				fullf.call()
+	if id in ["needle", "pin", "rapier", "stillpoint", "vendetta"] or id == "quickdraw" and side == "behind":
+		h.stats["crit_chance"] = 100.0
+	if id == "momentum" and side == "front":
+		h.m52.momentum = int(M52.tune("momentum").get("most", 5))
+		h.m52.momentum_at = h.m52.time
+	if id == "momentum" and side == "behind":
+		h.might = h.m52.might_most(0)
+	if id in ["onrush", "tailwind"]:
+		h.haste = 30.0
+		h.haste_t = 6.0
+	if id == "onrush" and side == "behind":
+		pack[1].world = home + across * 0.7
+	if id == "tailwind":
+		# (one behind him, for the wind at his back)
+		pack[3].world = home - face * 1.0
+	if id == "windward" and side == "front":
+		pack[1].world = home + across * 0.9
+	if id == "sunder":
+		# (its twist waits on one stunned)
+		for m in pack:
+			m.stun_t = 3.0
+	if id in ["siphon"]:
+		for m in pack:
+			m.poison_t = 5.0
+			m.poison_dps = 4.0
+			m.poison_n = 2
+	if id in ["rapier", "siphon", "transfusion"] and side == "behind":
+		pack[0].life = 1.0
 	if id in ["delirium", "doom", "evileye", "grudge"]:
 		for m in pack:
 			m.hex_t = 6.0
@@ -216,6 +272,15 @@ func _after(id: String, side: String) -> void:
 				m.world += M._w_face * 2.4
 	if id == "haymaker" and side == "behind":
 		h.might = h.m52.might_most(0)
+	if id == "momentum" and side == "behind":
+		h.might = h.m52.might_most(0)
+	if id == "riposte":
+		# (his shield up, and a blow on him)
+		h.shield = maxf(h.shield, 50.0)
+		var src = pack[1] if not pack[1].dead else pack[2]
+		h.blow_by = src
+		h.hurt_by(10.0, "phys", [], {}, src, src.world)
+		h.blow_by = null
 
 
 ## One meld on one side of the Strike: its setup, the Strike (twice, thrice for those that wait on a third), what it waits on, and
@@ -228,7 +293,7 @@ func _case(id: String, side: String, snap: bool) -> String:
 	await _after(id, side)
 	await M._wait(0.35)
 	await M._w_strike(h)
-	if side == "front" and id in THIRD:
+	if side == "front" and id in THIRD or side == "behind" and id in THIRD_B:
 		await M._wait(0.35)
 		await M._w_strike(h)
 	var t := 0.0
@@ -274,8 +339,17 @@ func foe_setup(id: String, m) -> void:
 		kin.world = m.world + Vector2(-face.y, face.x) * 1.0
 		kin.max_life = 600.0
 		kin.life = 300.0
-	if id in ["ambush", "bulwark", "delirium", "duelist", "fury"]:
+	if id in ["ambush", "bulwark", "delirium", "duelist", "fury", "onrush", "quickdraw", "timeslip", "rapier", "tailwind"]:
 		m.world = h.world + face * 2.6
+	if id == "quickening":
+		m.life = m.max_life * 0.5
+	if id == "rapier":
+		m.life = m.max_life * 0.4
+	if id in ["riposte", "windward"]:
+		m.shield = 50.0
+	if id == "siphon":
+		h.poison_t = 4.0
+		h.poison_dps = 2.0
 	if id == "duelist":
 		for k in range(1, M._w_pack.size()):
 			M._w_pack[k].world = h.world + Vector2(8.0, 8.0) + Vector2(k, 0)
@@ -307,8 +381,10 @@ func _foe(id: String, snap: bool) -> String:
 	m.life = 600.0
 	m.world = h.world + M._w_face * 1.2
 	foe_setup(id, m)
-	if id == "grudge":
-		# (he strikes it first: it remembers)
+	if id in STRUCK_FIRST:
+		# (he strikes it first: it remembers; its shield answers)
+		if id == "riposte":
+			m.world = h.world + M._w_face * 1.2
 		await M._w_strike(h)
 		await M._wait(0.2)
 	var by: Dictionary = m.blow()

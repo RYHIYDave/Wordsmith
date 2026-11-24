@@ -16058,6 +16058,106 @@
    "frontText": "Holds what it hits for twice as long, and the manacle stays on: when the hold ends, a chain still runs from it to the floor where it was held, and it can't go farther than the chain's length.",
    "behindText": "Leaves a snare that lasts twice as long and holds what it catches twice as long; when it catches, manacles snap shut on every enemy near it, chained to it.",
    "monsterText": "Its poison, burning and chill last longer on you; its blows root you twice as long, and clap a manacle on you: a chain runs from you to it, and you can't go farther from it than the chain's length."
+  },
+  "mauler": {
+   "frontText": "Each use makes the next faster, up to five times; hitting a held enemy adds a step, and at a full frenzy your blow tears a held enemy loose and flings it into the nearest other enemy, striking both.",
+   "behindText": "Kills keep the frenzy going; an enemy its snare catches adds a step, and the snare's chain whips out and drags the nearest other enemy onto it too.",
+   "monsterText": "Speeds up as it is hurt; its blows root you, and while you are rooted it mauls you in a flurry of quick blows."
+  },
+  "momentum": {
+   "frontText": "More damage and a bigger hit; each hit that lands makes the next a little harder, the build-up holding until you go three seconds without landing one, and at its full each blow rolls on as a shockwave through the enemies before you.",
+   "behindText": "Power's damage bonus lasts half again as long and builds two steps higher; at its height a heavy drumbeat booms out from you, staggering everything near.",
+   "monsterText": "Hits harder and has more life; each blow it lands makes its next harder, and every third it barrels into you, knocking you flying."
+  },
+  "needle": {
+   "frontText": "A weaker hit that poisons; a critical hit puts three doses on at once and leaves the needle in it, spraying its poison in a fine mist over those beside it.",
+   "behindText": "Marks an enemy: your next hit on it is a certain critical and doubles the poison already on it, and the poison bursts out of it in green needles that fly at the nearest enemies, poisoning them.",
+   "monsterText": "Its hits find the gaps in your armour; poisons you. Its critical hits poison you three times over, and every third blow leaves a needle in you that stings again a few seconds later."
+  },
+  "onrush": {
+   "frontText": "Faster to use again; more damage and a bigger hit, half again as hard while a burst of speed is on you, and with speed on you each use carries you forward in a rush, bowling aside the enemies in your way.",
+   "behindText": "Each use gives you a burst of speed; while it lasts Power's damage bonus doesn't fade, and enemies you run into are bowled aside.",
+   "monsterText": "Moves and attacks faster; hits harder and has more life. Its first blow after running at you hits half again as hard, coming in a headlong rush that bowls you over."
+  },
+  "pin": {
+   "frontText": "More damage, a smaller area; holds what it hits, and your first hit on a held enemy is a certain critical that drives a spike through it into the floor, holding it twice as long.",
+   "behindText": "Marks the enemy its snare catches, and a spike of light drives down through it, holding it and the enemies beside it for a moment.",
+   "monsterText": "Its hits find the gaps in your armour; its blows root you, a spike driven through your shadow holding you longer."
+  },
+  "quickdraw": {
+   "frontText": "Faster to use again; the first use after two seconds without using it is a certain critical, drawn in a flash: a gleam of steel, and the blow reaches a step farther.",
+   "behindText": "Marks an enemy; landing the marked critical gives you a burst of speed and shortens its cooldown, and the blow glances on to the next enemy, a certain critical too.",
+   "monsterText": "Moves and attacks faster; its hits find the gaps in your armour. Its first blow after a pause is critical, drawn so fast you see only the gleam as it strikes from out of reach."
+  },
+  "quickening": {
+   "frontText": "Each use makes the next faster, up to five times; at full frenzy its slow is twice as deep, and each use sends out a ripple of slowed time from you, slowing every enemy near.",
+   "behindText": "Kills keep the frenzy going; inside its bubble your frenzy builds twice as fast, and each kill there makes the bubble pulse, slowing everything inside deeper.",
+   "monsterText": "Speeds up as it is hurt; its blows slow your cooldowns, and as it speeds up it leaves afterimages behind it that lash out at you."
+  },
+  "rapier": {
+   "frontText": "More damage, a smaller area; each use makes the next faster, the higher the frenzy the more often it lands a critical hit, and each critical thrusts on through: a line of light runs through it to the enemy behind, striking that too.",
+   "behindText": "Kills keep the frenzy going, a critical kill adds two steps to it, and with a flourish a slash of light sweeps round you, striking all near.",
+   "monsterText": "Speeds up as it is hurt; its hits find the gaps in your armour, the more hurt it is the more often critical, and once hurt it lunges through you, carrying it past you to your far side."
+  },
+  "reverb": {
+   "frontText": "Strikes twice, and every poison, burn, chill or shock it leaves lasts half again as long for each blow that lands; each blow rings, and its echo strikes the enemies beside it a moment later.",
+   "behindText": "Repeats itself a moment later, and what the repeat leaves lasts twice as long; the repeat rings out from where it lands, throwing the enemies near back a step.",
+   "monsterText": "Attacks twice; its poison, burning and chill last longer on you with every blow that lands, and each blow rings on in you: a moment later its echo strikes you again, weaker."
+  },
+  "riposte": {
+   "frontText": "Each use gives you a brief shield; whatever strikes the shield, your next hit on it is a certain critical, and the shield answers at once: a flashing blade strikes back at whatever struck it.",
+   "behindText": "Leaves a ward circle; your hits on enemies inside it are critical more often, and an enemy that strikes you while you are inside is answered by a blade of light from the circle's edge.",
+   "monsterText": "Carries a shield that soaks damage; its hits find the gaps in your armour. Strike its shield and it answers at once with a quick counter-thrust, and its next blow on you is critical."
+  },
+  "siphon": {
+   "frontText": "Your poison heals you while it eats them: a thin green thread runs from each enemy it poisons to you, carrying its life to you while the poison lasts.",
+   "behindText": "Your poison heals you a little, and an enemy that dies poisoned breaks into green motes that fly to you, healing you.",
+   "monsterText": "While its poison is on you, you heal less, and a green thread runs from you to it, carrying your life to it."
+  },
+  "stillpoint": {
+   "frontText": "More damage, a smaller area; slows in time what it hits, your hits on a slowed enemy are critical more often, and a critical on a slowed one cracks it like glass: shards of stilled time fly off it, slowing those they strike.",
+   "behindText": "Marks an enemy and slows it in time, and a ring of stilled air stands round it: enemies that step into it are slowed too.",
+   "monsterText": "Its hits find the gaps in your armour; its blows slow your cooldowns, and every third blow stops you still for a moment."
+  },
+  "sunder": {
+   "frontText": "Stunned enemies take extra damage, and a hit on a stunned enemy sunders it: its guard cracks open, plates flying off, and it takes more from your blows for a few seconds.",
+   "behindText": "Stunned enemies take a little extra damage, and the ground cracks under each enemy you stun: enemies that step on the crack are stunned too.",
+   "monsterText": "Its next blow soon after one that knocked you back is harder, and sunders your guard: plates fly off you, and its blows land harder for a few seconds."
+  },
+  "tailwind": {
+   "frontText": "Faster to use again; each use also gives a burst of speed that lasts while you keep using it, and while it lasts a wind at your back blows the enemies behind you away.",
+   "behindText": "Each use gives you a burst of speed that lasts half again as long, and gusts trail behind you, pushing back the enemies that follow.",
+   "monsterText": "Moves and attacks faster and stays fast long after each blow; the wind at its back throws grit at you as it comes, slowing you."
+  },
+  "tempo": {
+   "frontText": "Strikes twice, and both blows add to the frenzy, so it builds twice as fast; every fifth blow lands on the beat, a drumbeat ring bursting out round you that strikes everything near.",
+   "behindText": "Repeats itself a moment later, and the repeat's kills keep the frenzy going too; at a full frenzy it repeats twice.",
+   "monsterText": "Attacks twice; speeds up as it is hurt, every blow it lands speeding it up a little more, and every third blow falls on the beat, staggering you."
+  },
+  "timeslip": {
+   "frontText": "Faster to use again; slows what it hits in time, each slowed enemy near you takes a little off its wait, and you slip through time: after each use you blink a step on, leaving a fading afterimage of you that strikes what it touches.",
+   "behindText": "Leaves a bubble where enemies crawl and you move faster; inside it you leave afterimages as you move, which strike the enemies they touch.",
+   "monsterText": "Moves and attacks faster; its blows slow your cooldowns, and it slips through time, vanishing and stepping out again beside you."
+  },
+  "transfusion": {
+   "frontText": "Heals you for every enemy hit, and the healing keeps coming in over the next few seconds, half again as much in all; the blood you draw gathers in a red orb over you, and every third hit it bursts, healing you and striking those near.",
+   "behindText": "Enemies it kills drop life orbs that last much longer and heal over a few seconds, and each orb pulses, healing you while you stand near it.",
+   "monsterText": "Heals when it hits you, and keeps healing for a few seconds after, red threads of life running into it from the monsters near it."
+  },
+  "vendetta": {
+   "frontText": "More damage, a smaller area; a critical hit marks the enemy for vengeance with a red sigil, every hit on it more likely to be critical until it dies, and when it dies the vendetta passes to the nearest enemy.",
+   "behindText": "Marks an enemy until it dies: every third hit on it is a certain critical, landing in a burst of crossed slashes.",
+   "monsterText": "Its hits find the gaps in your armour. Every third blow marks you with a red sigil, and its blows land harder while the mark lasts."
+  },
+  "windward": {
+   "frontText": "Faster to use again; each use gives you a brief shield, while it holds you move faster, and a whirl of wind round you blows back the enemies that come close.",
+   "behindText": "Leaves a ward circle; inside it you move faster and take less damage, and a wind blows outward from its edge, pushing back the enemies coming in.",
+   "monsterText": "Carries a shield that soaks damage; moves and attacks faster, faster still while its shield holds, and the wind round it blows you back when you come close."
+  },
+  "amber": {
+   "frontText": "Holds what it hits and slows it in time, the hold lasting as long as the slow; the held enemy is sealed in amber, and when the amber breaks it shatters, striking those near.",
+   "behindText": "Leaves a snare inside a bubble; what it catches is sealed in amber, and the enemies near it stick to the amber's edge, slowed.",
+   "monsterText": "Its blows root you and slow your cooldowns, sealing your feet in amber that cracks away when the hold ends."
   }
  },
  "redoRounds": [
@@ -16082,6 +16182,28 @@
    "lamprey",
    "lancet",
    "manacle"
+  ],
+  [
+   "mauler",
+   "momentum",
+   "needle",
+   "onrush",
+   "pin",
+   "quickdraw",
+   "quickening",
+   "rapier",
+   "reverb",
+   "riposte",
+   "siphon",
+   "stillpoint",
+   "sunder",
+   "tailwind",
+   "tempo",
+   "timeslip",
+   "transfusion",
+   "vendetta",
+   "windward",
+   "amber"
   ]
  ]
 }
