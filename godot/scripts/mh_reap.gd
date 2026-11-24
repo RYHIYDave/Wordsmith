@@ -349,7 +349,7 @@ func spirit_hit(sp: Dictionary, o, at: Vector2) -> void:
 					H.lw.bleed_monster(q, maxf(1.0, o.bleed_dps * 0.6), 3.0)
 		"wraithspear":
 			var w: Vector2 = (o.world - at).normalized() if o.world.distance_to(at) > 0.1 else H.hero.face
-			H.tell(id, "lance", at, {"x1": at.x + w.x * 3.0, "y1": at.y + w.y * 3.0})
+			H.tell(id, "javelin", at, {"x1": at.x + w.x * 3.0, "y1": at.y + w.y * 3.0})
 			for q in H.on_line(at, w, H.n("wraithspear", "len", 3.0), 0.4, [o]):
 				H.hit(q, i, H.n("wraithspear", "lance", 0.4))
 	var HIT := {"tombstone": "stun", "ghoul": "feed", "legion": "splash", "haunting": "curse", "gravebind": "bind", "bloodharvest": "bleed"}

@@ -21,7 +21,7 @@ const LINES := ["fork", "arc", "jump", "soul", "fly", "hurl", "copy", "snip", "t
 	"road", "runes", "hex", "band", "row", "wall", "stand", "linger", "flash", "three", "wide", "reach", "path", "rush", "line", "lance",
 	"shard", "spread", "drag", "pass", "jolt", "haul", "aside", "back", "twice", "draw", "run", "fly",
 	"carry", "stitch", "thread", "jet", "blade", "stream", "drain", "lash", "sight", "shot", "leap", "dart", "thrown", "push", "drink",
-	"return", "volley", "flick", "blink", "spears", "lunge", "ghost", "dash", "spark", "zap"]
+	"return", "volley", "flick", "blink", "spears", "lunge", "ghost", "dash", "spark", "zap", "javelin"]
 const BURSTS := {"go": 1.2, "burst": 1.3, "spikes": 1.0, "spray": 1.0, "fling": 1.0, "land": 1.1, "shatter": 1.2, "pyre": 1.3, "quake": 1.5,
 	"end": 1.2, "echo": 0.9, "again": 1.1, "slam": 1.5, "landed": 1.0, "toll": 1.0, "bolt": 0.9, "crack": 1.0, "blade": 1.4, "split": 0.9,
 	"tear": 1.0, "pour": 1.1, "counted": 0.9, "hang": 0.8, "hour": 0.7, "coup": 0.8, "thud": 1.4, "second": 0.7, "bright": 0.9, "red": 0.8,
@@ -211,7 +211,7 @@ func paint_air(b: Dictionary) -> void:
 			_shard(px - 2.0, py - 3.0, 5.0, 7.0, R, sd, fade)
 		else:
 			# (a spear's line flashing: white heart, its colour round it, thinning as it goes)
-			var w := 5 if what in ["beam", "rush", "road", "wide", "lance", "line", "carry"] else (1 if what == "sight" else 3)
+			var w := 5 if what in ["beam", "rush", "road", "wide", "lance", "line", "carry", "javelin"] else (1 if what == "sight" else 3)
 			_ga(0.35 * fade)
 			_fs(R[2])
 			_line(cx, cy, x1, y1, w + 4)
