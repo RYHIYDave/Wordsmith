@@ -1478,7 +1478,15 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   behind, a vortex's end waited for, a skeleton walked onto each snare). Stagnation's twist was made one that shows: while the
   slow holds, the poison does not wear off (meldscity_rules.gd step). All 45 filmed (every monster moment shown, no script
   errors) and put on one page for his yes: City Meld Films, https://claude.ai/artifact/C6a3KHBrT98YMvi4YpKAD9
-  (`python3 docs/mockups/meld_films/page.py <films> <out> city`; the films are not kept in the repository, 40 MB).
+  (`python3 docs/mockups/meld_films/page.py <films> <out> city`; the films are not kept in the repository, 40 MB). ON at his
+  “Yes” to “Want me to switch them on?” (24 Nov 2026): `Melds52.CITY_ON` true.
+- TWO KINDS IN ONE HIT (his find, 24 Nov 2026: “two damage types on a meld just picked one of those damage types and made the
+  entire attack deal 1 kind of damage instead of 2 while still allowing a craft on an item to add both damage types, leaving part
+  of the craft completely worthless”): Scald (Flame and Frost), Wildfire (Flame and Lightning) and Hailstorm (Frost and Lightning)
+  made the whole hit their first word's kind. Now (words.gd `BOTH_KINDS`, on) the hit is half of each: half the weapon's roll each,
+  what his gear adds flat to one kind's hits all to its own half, each half made more by its own kind's bonus (hero.gd
+  `kinds_hit`: the hit, its average, the attacks page's figures). Its looks and all else that goes by the hit's kind are its first
+  word's (`element`), as before; the second is `element2`. `--only=twokinds` (check_twokinds.gd, 10 checks).
 
 ## The other chats' hand-overs brought in (the cloud chat, 23 and 24 Nov 2026)
 
