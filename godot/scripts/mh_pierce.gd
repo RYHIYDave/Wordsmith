@@ -1,7 +1,8 @@
 ## PIERCING'S MELDS AT WORK (meldshigh_rules.gd; his doc High City Melds, "Piercing"). In front, Piercing's blow goes on through the
 ## first enemy it strikes along a line (last_words.gd pierce_on); behind, a lance of light strikes down its line a moment later
 ## (throw_lance, _lance_lands). Each meld's line does something of its own:
-##   Impaler     harder on each it goes through; its lance spends Power's might, harder for each step of it
+##   Impaler     carries all it runs through on its point to its line's end, slamming them into a heap; its lance spends
+##               Power's might, wider for each step of it, and drives a stake that bursts where it ends
 ##   Stinger     a dose more on each down the line; its lance leaves a trail of poison
 ##   Icelance    a chill harder down the line, the last frozen; its lance leaves a strip of ice that freezes as it cracks
 ##   Sunspear    sets the line burning, and one dying burning runs its fire down the line; its lance leaves burning ground
@@ -19,7 +20,8 @@
 ##   Broadspear  a line three times as wide; its lance as wide as a road
 ##   Gaff        the line dragged back to the first; its lance drags all into a vortex at its far end
 ##   Trident     three lines after the first; shards that go through, from the lance's end
-##   Witchpin    the curse deeper down the line; its lance a strip of hex
+##   Witchpin    stitches the line together with a thread of curse: a hit on one stings them all; its lance a strip of hex
+##               where each that crosses is pinned a moment by a needle
 ##   Sundial     the slow deeper down the line, the last stood still; its lance a band of slow time
 ##   Skewer      the line pinned together; its lance a snare along its line
 ##   Harrow (with Bleeding) a wound that bleeds standing still; its lance a row of thorns
@@ -43,6 +45,8 @@ var _dart: Array = [null, null, null]
 ## (Sunspear: who was set burning by one line {line: [monsters]})
 var _sun := {}
 var _sun_n := 0
+## (Witchpin behind: its strips' needles {a, way, len, t, dur, i, pinned})
+var _needles: Array = []
 
 
 func _init(h) -> void:
@@ -57,6 +61,7 @@ func fresh() -> void:
 	_snares = []
 	_dart = [null, null, null]
 	_sun = {}
+	_needles = []
 
 
 static func _rot(v: Vector2, a: float) -> Vector2:
@@ -177,6 +182,31 @@ func end(i: int, first, hits: Array, at: Vector2, w: Vector2, line: float, frac:
 	var lat: Vector2 = last.world if last != null and is_instance_valid(last) else at + w * line
 	H.tell(id, "line", at, {"x1": at.x + w.x * line, "y1": at.y + w.y * line, "n": hits.size()})
 	match id:
+		"impaler":
+			# (all it ran through carried on its point to the line's end, and slammed there in a heap)
+			var to: Vector2 = at + w * line
+			if not H.open(to):
+				to = lat
+			var n := 0
+			for o in all:
+				if H.ok(o) and not o.boss:
+					H.drag(o, to, 0.35)
+					n += 1
+			if n > 0:
+				H.tell(id, "carry", at, {"x1": to.x, "y1": to.y, "n": n})
+				var share: float = H.n("impaler", "heap", 0.25) + H.n("impaler", "perBody", 0.1) * n
+				H.later(0.28, func() -> void:
+					H.tell("impaler", "heap", to, {"n": n})
+					H.blast(i, to, H.n("impaler", "heapR", 1.3), share))
+		"witchpin":
+			# (the line stitched together with a thread of the curse)
+			var until: float = H.clock() + H.n("witchpin", "thread", 4.0)
+			for o in all:
+				if H.ok(o):
+					o.m52["thread"] = _sun_n
+					o.m52["thread_t"] = until
+			if all.size() > 1:
+				H.tell(id, "stitch", at, {"x1": lat.x, "y1": lat.y, "n": all.size()})
 		"barrage":
 			if H.hero.frenzy > 0:
 				H.tell(id, "reach", at + w * line, {"n": H.hero.frenzy})
@@ -238,6 +268,19 @@ func _flash(i: int, all: Array, at: Vector2, w: Vector2, line: float) -> void:
 		H.hit(o, i, H.n("flicker", "again", 0.33))
 
 
+## A hit of move `i` on `m`: Witchpin's thread stings all the others it stitched to `m`.
+func struck(m, i: int, _dmg: float, _c: bool, _at: Vector2) -> void:
+	if not H.ok(m) or not m.m52.has("thread") or H.clock() > float(m.m52.get("thread_t", 0.0)):
+		return
+	if not H.once("thr%d" % m.get_instance_id(), H.n("witchpin", "every", 0.3)):
+		return
+	var line = m.m52["thread"]
+	for o in H.list():
+		if H.ok(o) and o != m and o.m52.get("thread", -1) == line and H.clock() <= float(o.m52.get("thread_t", 0.0)):
+			H.hit(o, i, H.n("witchpin", "sting", 0.25))
+			H.tell("witchpin", "thread", m.world, {"x1": o.world.x, "y1": o.world.y})
+
+
 ## A kill of move `i`: Sunspear's fire runs down its line; Wraithspear's soul flies on.
 func killed(m, i: int) -> void:
 	if m.m52.has("sunspear") and m.burn_t > 0.0:
@@ -274,7 +317,10 @@ func lance(i: int, q: Dictionary) -> void:
 	match id:
 		"impaler":
 			if H.hero.might > 0.0:
-				q["share"] = float(q["share"]) * (1.0 + H.hero.might / 100.0 * H.n("impaler", "spend", 1.5))
+				var k: float = H.hero.might / 100.0
+				q["share"] = float(q["share"]) * (1.0 + k * H.n("impaler", "spend", 1.5))
+				q["w"] = float(H.lw.L()["pierce"]["lanceW"]) * minf(3.0, 1.0 + k * H.n("impaler", "wider", 4.0))
+				q["stake"] = k
 				H.tell(id, "spend", H.hero.world, {"n": H.hero.might})
 				H.hero.might = 0.0
 		"flicker":
@@ -359,6 +405,11 @@ func lance_end(i: int, q: Dictionary, hits: Array) -> void:
 			k += gap
 		return out
 	match id:
+		"impaler":
+			if q.has("stake"):
+				var r: float = minf(2.6, H.n("impaler", "stakeR", 1.0) + float(q["stake"]) * H.n("impaler", "stakeGrow", 3.0))
+				H.tell(id, "stake", e, {"r": r})
+				H.blast(i, e, r, H.n("impaler", "stake", 0.4))
 		"stinger":
 			H.tell(id, "trail", a, {"x1": e.x, "y1": e.y})
 			for p in pts.call(1.3):
@@ -433,6 +484,7 @@ func lance_end(i: int, q: Dictionary, hits: Array) -> void:
 			H.tell(id, "hex", a, {"x1": e.x, "y1": e.y})
 			for p in pts.call(1.4):
 				H.ground("hex", i, p, 0.8, H.n("witchpin", "hex", 4.0), H.n("witchpin", "weaken", 0.25))
+			_needles.append({"a": a, "way": w, "len": len, "t": 0.0, "dur": H.n("witchpin", "hex", 4.0), "i": i, "pinned": []})
 		"sundial":
 			H.tell(id, "band", a, {"x1": e.x, "y1": e.y})
 			for p in pts.call(1.4):
@@ -457,7 +509,7 @@ func _crack(i: int, a: Vector2, w: Vector2, len: float) -> void:
 func blocks(p0: Vector2, p1: Vector2) -> bool:
 	for wl in walls:
 		if Geometry2D.segment_intersects_segment(p0, p1, wl["a"], wl["b"]) != null:
-			H.tell("spearwall", "stop", p1)
+			H.tell(str(wl.get("id", "spearwall")), "stop", p1)
 			return true
 	return false
 
@@ -488,6 +540,19 @@ func step(dt: float) -> void:
 				else:
 					H.hero.hit_monster(o, int(L["i"]), float(L["share"]), true)
 				H.tell("longspear", "cross", o.world)
+	for k in range(_needles.size() - 1, -1, -1):
+		var N: Dictionary = _needles[k]
+		N["t"] = float(N["t"]) + dt
+		if float(N["t"]) >= float(N["dur"]):
+			_needles.remove_at(k)
+			continue
+		for o in H.on_line(N["a"], N["way"], float(N["len"]), 0.45):
+			if N["pinned"].has(o.get_instance_id()) or o.state == "sleep":
+				continue
+			N["pinned"].append(o.get_instance_id())
+			H.bind(o, H.n("witchpin", "pin", 0.7))
+			H.curse(o, 3.0, H.n("witchpin", "curse", 0.12))
+			H.tell("witchpin", "needle", o.world)
 	for k in range(walls.size() - 1, -1, -1):
 		walls[k]["t"] = float(walls[k]["t"]) + dt
 		if float(walls[k]["t"]) >= float(walls[k]["dur"]):

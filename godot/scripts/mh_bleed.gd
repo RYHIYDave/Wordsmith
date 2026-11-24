@@ -3,24 +3,31 @@
 ## thorns where it ends cut whatever walks through (add_thorns, _step_zones, which ask `thorns` and `cut`). Each meld's wound or
 ## thorns do something of their own:
 ##   Gore        throws back, the wound running harder while they stagger; thorns grown with Power's might
-##   Gangrene    each dose of poison on a bleeding one makes it bleed harder; thorns in a cloud of poison
+##   Gangrene    each dose of poison on a bleeding one makes it bleed harder, and it dies in a cloud of rot; thorns in a cloud of
+##               poison, what they cut festering and leaving puffs of rot as it walks
 ##   Rimeblood   a bleeding one frozen bursts in spikes of frozen blood; thorns of ice, chilling
 ##   Bloodboil   one burning and bleeding spatters fire as it moves; thorns on burning ground
 ##   Galvanic    every arc makes bleed, and jerks them a step; thorns that strike with lightning, arcing on
 ##   Lacerate    each hit on one bleeding opens it deeper, three times at most; thorns along his path in his burst of speed
 ##   Mangle      as its stun ends, the wound tears: its first steps three times as hard; thorns on cracked ground, worse on the staggered
 ##   Fangs       Twin's second bite doubles the bleeding; a second ring of thorns round the first
-##   Bloodfeast  he is healed by a share of what they bleed; a thorn's cut sheds a drop that heals him
+##   Bloodfeast  what they bleed streams to him, healing him, and hardens into a red shield once he is whole; a pool ringed with
+##               thorns, draining the bleeding near into it and healing him inside
 ##   Bloodburst  a bleeding one dying bursts, all near it bleeding; a rune ringed by thorns, flinging them out as it goes off
-##   Artery      a critical opens an artery: three times as hard; the marked one bleeds, and a critical opens its artery
+##   Artery      a critical opens an artery: three times as hard, its blood jetting out behind, making all it reaches bleed; the
+##               marked one struck a critical bursts, opening an artery in every enemy it splashes
 ##   Bloodrage   the bleeding near him keep his frenzy from fading; at a full frenzy thorns where he strikes
-##   Thornshield behind his shield, what strikes him bleeds; a ward edged with thorns
-##   Hemorrhage  the bleeding grows the longer it runs; thorns cutting deeper the longer they stand
-##   Papercut    each hit on one bleeding cuts it again at once; thorns cutting twice as often
+##   Thornshield behind his shield, what strikes him bleeds, and its thorns burst out as it breaks; a ward edged with thorns,
+##               lashing what strikes him while he stands in it
+##   Hemorrhage  the bleeding grows the longer it runs, and grown full the wound ruptures, all near bleeding; thorns spreading wider
+##               the longer they stand
+##   Papercut    each hit on one bleeding cuts it again at once, a paper blade flying on to the next one bleeding; thorns
+##               bursting out as a flurry of blades spinning outward
 ##   Bramble     the bleeding spreads to those it touches; a wide thicket of thorns
 ##   Fishhook    dragged, they bleed hard; a vortex lined with thorns
 ##   Thornspray  Splitting's copies open the bleeding wider; thorns flung out, taking root
-##   Bloodhex    a cursed one's bleeding never stops while the curse holds; a hex circle grown over with thorns
+##   Bloodhex    a cursed one's bleeding never stops, and drips into hex circles under it; a hex circle grown over with thorns,
+##               each that dies in it spilling a new one
 ##   Clot        slowed, its bleeding is held, and pours out at once as the slow ends; a bubble of slow time full of thorns
 ##   Briar       held, then torn free: it bleeds hard; a snare of briars, the first to cross held and cut
 ##   with the High City's others: Bloodharvest (mh_reap.gd), Butcher (a cull flings blood; thorns that cull), Bloodwave (mh_surge.gd)
@@ -32,6 +39,12 @@ const Words := preload("res://scripts/words.gd")
 var H
 ## (Lacerate behind: where his path's last thorns were laid, each move)
 var _path: Array = [Vector2.INF, Vector2.INF, Vector2.INF]
+## (Thornshield: his shield a moment ago, and when he was last struck; its wards behind {at, r, until, i})
+var _shield_was := 0.0
+var _hit_at := -9.0
+var _wards: Array = []
+## (Bloodhex behind: its circles {at, r, until, i})
+var _circles: Array = []
 
 
 func _init(h) -> void:
@@ -40,6 +53,10 @@ func _init(h) -> void:
 
 func fresh() -> void:
 	_path = [Vector2.INF, Vector2.INF, Vector2.INF]
+	_shield_was = 0.0
+	_hit_at = -9.0
+	_wards = []
+	_circles = []
 
 
 func _secs(i: int) -> float:
@@ -60,8 +77,9 @@ func on(m, i: int, dmg: float, fresh: bool) -> void:
 		return
 	m.m52["bleed_by"] = id
 	m.m52["bleed_i"] = i
-	if fresh:
+	if fresh or not m.m52.has("bleed_from"):
 		m.m52["bleed_from"] = H.clock()
+	if fresh:
 		m.m52["lac"] = 0
 	match id:
 		"gore":
@@ -83,6 +101,12 @@ func on(m, i: int, dmg: float, fresh: bool) -> void:
 				var cut: float = m.bleed_dps * H.n("papercut", "cut", 0.6)
 				m.damage(maxf(1.0, roundf(cut)), "phys", false, false, [], false, true, i)
 				H.tell(id, "cut", m.world)
+				# (the cut flies on as a paper blade to the nearest other one bleeding)
+				for q in H.near(m.world, H.n("papercut", "reach", 3.0), 4, [m]):
+					if q.bleed_t > 0.0:
+						q.damage(maxf(1.0, roundf(cut * H.n("papercut", "blade", 0.8))), "phys", false, false, [], false, true, i)
+						H.tell(id, "blade", m.world, {"x1": q.world.x, "y1": q.world.y})
+						break
 		"bramble":
 			m.m52["bramble"] = true
 		"fishhook":
@@ -131,9 +155,16 @@ func tick(m, dmg: float, moved: bool) -> float:
 		"lacerate":
 			k *= 1.0 + H.n("lacerate", "per", 0.5) * int(m.m52.get("lac", 0))
 		"hemorrhage":
-			k *= minf(H.n("hemorrhage", "most", 3.0), 1.0 + H.n("hemorrhage", "grow", 0.25) * (now - float(m.m52.get("bleed_from", now))))
+			var grown: float = 1.0 + H.n("hemorrhage", "grow", 0.5) * (now - float(m.m52.get("bleed_from", now)))
+			k *= minf(H.n("hemorrhage", "most", 3.0), grown)
 			if H.once("hem%d" % m.get_instance_id(), 1.0):
 				H.tell(id, "grows", m.world)
+			if grown >= H.n("hemorrhage", "full", 2.0):
+				# (grown full, the wound ruptures: all near it bleed, and it opens again, fresh)
+				m.m52["bleed_from"] = now
+				H.tell(id, "rupture", m.world)
+				for q in H.near(m.world, H.n("hemorrhage", "r", 1.6), 6, [m]):
+					_bleed(q, m.bleed_dps * H.n("hemorrhage", "spray", 0.6), 3.0)
 		"fishhook":
 			if not m.thrown.is_empty():
 				k *= H.n("fishhook", "dragged", 3.0)
@@ -144,6 +175,10 @@ func tick(m, dmg: float, moved: bool) -> float:
 				m.bleed_t = maxf(m.bleed_t, 0.6)
 				if H.once("bhex%d" % m.get_instance_id(), 1.0):
 					H.tell(id, "unending", m.world)
+				# (its blood drips into hex circles under it as it goes)
+				if H.once("drip%d" % m.get_instance_id(), H.n("bloodhex", "drip", 1.2)):
+					H.ground("hex", int(m.m52.get("bleed_i", 0)), m.world, 0.8, H.n("bloodhex", "circle", 3.0), 0.25)
+					H.tell(id, "drip", m.world)
 		"rimeblood":
 			if m.frozen_t > 0.0 and not m.m52.get("rime", false):
 				m.m52["rime"] = true
@@ -186,7 +221,15 @@ func tick(m, dmg: float, moved: bool) -> float:
 				m.damage(maxf(1.0, roundf(m.bleed_dps * H.n("briar", "tear", 1.5))), "phys", false, false, [], false, true, int(m.m52.get("bleed_i", -1)))
 				H.tell(id, "tear", m.world)
 		"bloodfeast":
-			H.heal_life(dmg * k * H.n("bloodfeast", "share", 0.25), id)
+			# (what it bleeds streams to him, healing him; once he is whole, it hardens round him into a red shield)
+			if H.hero.life >= H.hero.max_life - 0.5:
+				H.shield(H.n("bloodfeast", "harden", 0.006), id)
+				if H.once("harden", 1.0):
+					H.tell(id, "harden", H.hero.world)
+			else:
+				H.heal_life(dmg * k * H.n("bloodfeast", "share", 0.25), id)
+			if H.once("feast%d" % m.get_instance_id(), 0.6):
+				H.tell(id, "stream", m.world, {"x1": H.hero.world.x, "y1": H.hero.world.y})
 	if m.bleed_t <= 0.0:
 		m.m52["lac"] = 0
 	return dmg * k
@@ -203,10 +246,27 @@ func _spikes(m) -> void:
 
 ## A hit of move `i` has landed on `m` (`c`: a critical): Artery's, and at a full frenzy Bloodrage's thorns.
 func struck(m, i: int, _dmg: float, c: bool, _at: Vector2) -> void:
-	if c and H.ok(m) and (H.f(i) == "artery" or m.m52.get("artery_mark", false)):
+	var front_a: bool = H.f(i) == "artery"
+	var marked_a: bool = H.ok(m) and m.m52.get("artery_mark", false)
+	if c and H.ok(m) and (front_a or marked_a):
 		m.m52["artery_t"] = H.clock() + _secs(i)
 		m.m52.erase("artery_mark")
 		H.tell("artery", "open", m.world)
+		var dps: float = maxf(m.bleed_dps, H.hero.avg_hit(i, 0.3))
+		if front_a:
+			# (its blood jets out behind it, and all the jet reaches bleed)
+			var d: Vector2 = m.world - H.hero.world
+			var w: Vector2 = d.normalized() if d.length() > 0.1 else H.hero.face
+			var len: float = H.n("artery", "jet", 2.6)
+			H.tell("artery", "jet", m.world, {"x1": m.world.x + w.x * len, "y1": m.world.y + w.y * len})
+			for o in H.on_line(m.world, w, len, 0.5, [m]):
+				_bleed(o, dps * H.n("artery", "jetShare", 0.8), _secs(i))
+		if marked_a:
+			# (the marked one's blood bursts out, opening an artery in every enemy it splashes)
+			H.tell("artery", "burst", m.world)
+			for q in H.near(m.world, H.n("artery", "r", 1.7), 8, [m]):
+				_bleed(q, dps * 0.6, _secs(i))
+				q.m52["artery_t"] = H.clock() + _secs(i)
 	if H.b(i) == "bloodrage" and H.frenzy_full() and H.once("rage%d" % i, H.n("bloodrage", "every", 0.6)) and H.ok(m):
 		H.thorns(i, m.world, 0.7, H.hero.avg_hit(i, float(H.hero.loadout.r(i)["thorns"])) * 0.5, 2.5)
 		H.tell("bloodrage", "spring", m.world)
@@ -241,15 +301,30 @@ func marked(m, i: int) -> void:
 
 ## Thornshield in front: behind his shield, what strikes him bleeds.
 func struck_him(src) -> void:
-	var i: int = H.any("thornshield")
-	if i < 0 or src == null or not H.ok(src) or (H.hero.shield <= 0.0 and H.hero.barrier <= 0.0):
+	_hit_at = H.clock()
+	if src == null or not H.ok(src):
 		return
-	_bleed(src, H.hero.avg_hit(i, H.n("thornshield", "bleed", 0.4)), _secs(i))
-	H.tell("thornshield", "prick", src.world)
+	var i: int = H.any("thornshield")
+	if i >= 0 and (H.hero.shield > 0.0 or H.hero.barrier > 0.0):
+		_bleed(src, H.hero.avg_hit(i, H.n("thornshield", "bleed", 0.4)), _secs(i))
+		H.tell("thornshield", "prick", src.world)
+	# (behind: the ward's thorns lash what strikes him while he stands in it)
+	for wd in _wards:
+		if H.clock() <= float(wd["until"]) and H.hero.world.distance_to(wd["at"]) <= float(wd["r"]) and H.once("lash", 0.4):
+			H.hit(src, int(wd["i"]), H.n("thornshield", "lash", 0.3))
+			_bleed(src, H.hero.avg_hit(int(wd["i"]), 0.25), _secs(int(wd["i"])))
+			H.tell("thornshield", "lash", wd["at"], {"x1": src.world.x, "y1": src.world.y})
+			break
 
 
 ## A kill of move `i`: Bloodburst's spray.
 func killed(m, i: int) -> void:
+	if H.f(i) == "gangrene" and m.poison_t > 0.0 and m.bleed_t > 0.0:
+		# (festering, it dies in a cloud of rot that poisons and bleeds those near)
+		H.tell("gangrene", "rot", m.world)
+		H.ground("venom", i, m.world, H.n("gangrene", "rot", 1.4), 4.0, H.hero.avg_hit(i, H.n("gangrene", "dps", 0.15)))
+		for q in H.near(m.world, H.n("gangrene", "rot", 1.4), 6, [m]):
+			_bleed(q, maxf(m.bleed_dps, H.hero.avg_hit(i, 0.2)) * 0.6, _secs(i))
 	if H.f(i) == "bloodburst" and m.bleed_t > 0.0:
 		H.tell("bloodburst", "spray", m.world)
 		for q in H.near(m.world, H.n("bloodburst", "r", 1.8), 8, [m]):
@@ -258,6 +333,19 @@ func killed(m, i: int) -> void:
 
 func used(_i: int) -> void:
 	pass
+
+
+## Any enemy dead: one dying in Bloodhex's circle spills a new one where it fell.
+func died(m) -> void:
+	for c in _circles.duplicate():
+		if H.clock() <= float(c["until"]) and m.world.distance_to(c["at"]) <= float(c["r"]) + 0.3:
+			var i: int = int(c["i"])
+			var r: float = float(c["r"]) * 0.8
+			H.ground("hex", i, m.world, r, 3.0, 0.25)
+			H.thorns(i, m.world, r, H.hero.avg_hit(i, 0.2), 3.0, {"meld": "bloodhex"})
+			_circles.append({"at": m.world, "r": r, "until": H.clock() + 3.0, "i": i})
+			H.tell("bloodhex", "spill", m.world, {"r": r})
+			return
 
 
 # --- behind: the thorns ---
@@ -292,8 +380,15 @@ func thorns(i: int, z: Dictionary) -> void:
 			H.ground("ward", i, at, R, float(z["dur"]), H.n("thornshield", "guard", 0.3))
 			z["r"] = R
 			z["rin"] = R - 0.55
+			_wards.append({"at": at, "r": R, "until": H.clock() + float(z["dur"]), "i": i})
+		"hemorrhage":
+			z["r0"] = z["r"]
+		"bloodfeast":
+			z["pool"] = true
 		"papercut":
 			z["every"] = 0.25
+			z["r0"] = float(z["r"]) * H.n("papercut", "out", 1.6)
+			z["r"] = float(z["r0"]) * 0.25
 		"bramble":
 			z["r"] = float(z["r"]) * H.n("bramble", "wide", 2.2)
 		"fishhook":
@@ -305,13 +400,15 @@ func thorns(i: int, z: Dictionary) -> void:
 			H.tell(id, "fling", at)
 		"bloodhex":
 			H.ground("hex", i, at, float(z["r"]), float(z["dur"]), 0.25)
+			_circles.append({"at": at, "r": float(z["r"]), "until": H.clock() + float(z["dur"]), "i": i})
 		"clot":
 			H.ground("bubble", i, at, float(z["r"]), float(z["dur"]), 0.5)
 			z["every"] = 0.3
 		"briar":
 			z["briar"] = true
 	var BEH := {"gore": "grown", "gangrene": "cloud", "rimeblood": "rime", "bloodboil": "burning", "galvanic": "charged", "mangle": "cracked",
-		"fangs": "ring", "bloodburst": "rune", "thornshield": "ward", "hemorrhage": "long", "papercut": "quick", "bramble": "thicket",
+		"fangs": "ring", "bloodburst": "rune", "thornshield": "ward", "hemorrhage": "long", "papercut": "flurry", "bramble": "thicket",
+		"bloodfeast": "pool",
 		"fishhook": "vortex", "thornspray": "spray", "bloodhex": "hex", "clot": "bubble", "briar": "briar", "butcher": "culling"}
 	H.tell(id, BEH.get(id, "thorns"), at, {"r": z["r"]})
 
@@ -342,10 +439,9 @@ func cut(o, z: Dictionary) -> void:
 		"mangle":
 			if o.stagger_t > 0.0:
 				H.hit(o, i, H.n("mangle", "staggered", 0.3))
-		"bloodfeast":
-			if H.once("feastcut", 0.25):
-				H.heal_life(H.hero.max_life * H.n("bloodfeast", "drop", 0.006), id)
-				H.tell(id, "drop", o.world)
+		"gangrene":
+			o.m52["fester_t"] = H.clock() + H.n("gangrene", "fester", 4.0)
+			o.m52["fester_i"] = i
 		"hemorrhage":
 			H.hit(o, i, H.n("hemorrhage", "deeper", 0.05) * float(z["t"]))
 		"briar":
@@ -372,6 +468,52 @@ func step(_dt: float) -> void:
 				H.tell("lacerate", "path", H.hero.world)
 		else:
 			_path[i] = Vector2.INF
+	# (Thornshield in front: as his shield breaks under a blow, its thorns burst out all round him)
+	var sh: float = H.hero.shield + H.hero.barrier
+	var ti: int = H.any("thornshield")
+	if ti >= 0 and _shield_was > 0.0 and sh <= 0.0 and now - _hit_at < 0.3:
+		H.tell("thornshield", "burst", H.hero.world)
+		for q in H.near(H.hero.world, H.n("thornshield", "burst", 1.8)):
+			H.hit(q, ti, H.n("thornshield", "burstShare", 0.3))
+			_bleed(q, H.hero.avg_hit(ti, 0.25), _secs(ti))
+	_shield_was = sh
+	for k in range(_wards.size() - 1, -1, -1):
+		if now > float(_wards[k]["until"]):
+			_wards.remove_at(k)
+	for k in range(_circles.size() - 1, -1, -1):
+		if now > float(_circles[k]["until"]):
+			_circles.remove_at(k)
+	# (their thorns as they stand: Hemorrhage's spreading, Papercut's flurry spinning out, Bloodfeast's pool draining)
+	for z in H.lw.zones:
+		if z["kind"] != "thorns":
+			continue
+		var zat := Vector2(z["x"], z["y"])
+		match str(z.get("meld", "")):
+			"hemorrhage":
+				z["r"] = float(z["r0"]) * minf(H.n("hemorrhage", "widest", 2.2), 1.0 + H.n("hemorrhage", "spread", 0.6) * float(z["t"]))
+				if H.once("hspread" + str(zat), 1.0):
+					H.tell("hemorrhage", "spread", zat, {"r": z["r"]})
+			"papercut":
+				z["r"] = float(z["r0"]) * minf(1.0, 0.25 + float(z["t"]) / H.n("papercut", "spin", 0.6))
+			"bloodfeast":
+				var zi: int = int(z["skill"])
+				if H.hero.world.distance_to(zat) <= float(z["r"]) + 0.3 and H.once("pool", 0.5):
+					H.heal_life(H.hero.max_life * H.n("bloodfeast", "pool", 0.006), "bloodfeast")
+					H.tell("bloodfeast", "heal", H.hero.world)
+				for o in H.near(zat, float(z["r"]) + H.n("bloodfeast", "drain", 1.6)):
+					if o.bleed_t > 0.0 and H.once("drain%d" % o.get_instance_id(), 0.6):
+						o.damage(maxf(1.0, roundf(o.bleed_dps * 0.5)), "phys", false, false, [], false, true, zi)
+						H.tell("bloodfeast", "drain", o.world, {"x1": zat.x, "y1": zat.y})
+	# (Gangrene behind: one festering leaves puffs of rot behind it as it walks)
+	for o in H.list():
+		if not H.ok(o) or float(o.m52.get("fester_t", 0.0)) < now:
+			continue
+		var last: Vector2 = o.m52.get("seep_at", Vector2.INF)
+		if (last == Vector2.INF or o.world.distance_to(last) > 0.05) and H.once("seep%d" % o.get_instance_id(), H.n("gangrene", "seep", 0.8)):
+			o.m52["seep_at"] = o.world
+			var gi: int = int(o.m52.get("fester_i", 0))
+			H.ground("venom", gi, o.world, 0.55, 2.5, H.hero.avg_hit(gi, 0.08))
+			H.tell("gangrene", "seep", o.world)
 	if H.any("bloodrage") >= 0 and H.hero.frenzy > 0:
 		for q in H.near(H.hero.world, H.n("bloodrage", "near", 4.0), 1):
 			if q.bleed_t > 0.0:

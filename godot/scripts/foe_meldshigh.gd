@@ -15,10 +15,11 @@ static func _n(id: String, key: String, d: float) -> float:
 	return float(M52.tune(id).get(key, d))
 
 
-static func _tell(h, id: String, by, what := "foe") -> void:
+static func _tell(h, id: String, by, what := "foe", at := Vector2.INF) -> void:
 	if h == null or h.m52 == null:
 		return
-	var e := {"id": id, "what": what, "x": h.world.x, "y": h.world.y, "foe": true}
+	var p: Vector2 = h.world if at == Vector2.INF else at
+	var e := {"id": id, "what": what, "x": p.x, "y": p.y, "foe": true}
 	if by != null and is_instance_valid(by) and by is Node2D:
 		e["x1"] = by.world.x
 		e["y1"] = by.world.y
@@ -51,11 +52,26 @@ static func harder(F, k: Callable, _parts: Array, by) -> float:
 	if _low(h):
 		if s.call("mercy"):
 			mult *= _n("mercy", "foeCrit", 1.5)
-			_tell(h, "mercy", by)
+			_tell(h, "mercy", by, "sight")
 		if s.call("scissors") and _ok(by) and int(by.m52.get("foe_sc", 0)) % 2 == 1:
 			mult *= _n("scissors", "foeSecond", 1.5)
 	if s.call("scissors") and _ok(by):
 		by.m52["foe_sc"] = int(by.m52.get("foe_sc", 0)) + 1
+	# (Deadeye risen: the eye over it lets the monsters near it find a gap with every blow)
+	if _ok(by) and float(by.m52.get("foe_eye_t", 0.0)) > F.clock:
+		mult *= _n("deadeye", "foeEye", 1.2)
+	# (Papercut's cuts on him open again with every blow)
+	var cuts: int = int(h.foe_hi.get("cuts", 0))
+	if cuts > 0:
+		mult *= 1.0 + _n("papercut", "foeCut", 0.06) * cuts
+		if F.clock - float(h.foe_hi.get("cuts_tell", -9.0)) > 0.5:
+			h.foe_hi["cuts_tell"] = F.clock
+			_tell(h, "papercut", by, "cuts")
+	# (Bloodfeast: what it drank of his blood makes its next blow harder)
+	if s.call("bloodfeast") and _ok(by) and int(by.m52.get("feast", 0)) > 0:
+		mult *= 1.0 + _n("bloodfeast", "foeFed", 0.05) * int(by.m52["feast"])
+		by.m52["feast"] = 0
+		_tell(h, "bloodfeast", by, "fed")
 	return mult
 
 
@@ -109,9 +125,6 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 			if int(by.m52["foe_fang"]) % 2 == 0:
 				h.bleed_dps *= 2.0
 				tell.call("fangs")
-		if s.call("artery"):
-			h.bleed_dps *= _n("artery", "foeGap", 1.5)
-			tell.call("artery")
 		if s.call("bloodrage") and alive_by:
 			h.bleed_dps *= 1.0 + clampf(1.0 - by.life / maxf(1.0, by.max_life), 0.0, 1.0)
 			tell.call("bloodrage")
@@ -121,6 +134,21 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 		if s.call("butcher") and low:
 			h.bleed_dps *= _n("butcher", "foeLow", 1.5)
 			tell.call("butcher")
+	if s.call("artery") and alive_by:
+		by.m52["foe_art"] = int(by.m52.get("foe_art", 0)) + 1
+		if int(by.m52["foe_art"]) % 3 == 0:
+			# (every third: his artery opened, blood jetting from him, three times as hard a moment)
+			h.foe_hi["art_t"] = F.clock + _n("artery", "foeSecs", 1.5)
+			var B: Dictionary = preload("res://scripts/words.gd").data()["last"]["bleed"]
+			h.bleed_dps = maxf(h.bleed_dps if h.bleed_t > 0.0 else 0.0, h.max_life * float(B["heroDps"]))
+			h.bleed_t = maxf(h.bleed_t, 2.0)
+			done["artery"] = true
+			_tell(h, "artery", by, "jet")
+	if s.call("papercut"):
+		h.foe_hi["cuts"] = mini(5, int(h.foe_hi.get("cuts", 0)) + 1)
+		h.foe_hi["cuts_t"] = F.clock
+		done["papercut"] = true
+		_tell(h, "papercut", by, "cut")
 	if s.call("briar") and h.root_t > 0.0:
 		h.foe_hi["briar"] = by
 		tell.call("briar")
@@ -152,6 +180,11 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 	if alive_by and by.risen:
 		if s.call("ghoul"):
 			by.life = minf(by.max_life, by.life + dmg * _n("ghoul", "foeHeal", 0.5))
+			# (and the monsters near it feed too)
+			for o in F.main.monsters.list:
+				if _ok(o) and o != by and o.world.distance_to(by.world) <= _n("ghoul", "foeNear", 2.5):
+					o.life = minf(o.max_life, o.life + dmg * 0.25)
+					_tell(h, "ghoul", o, "feed")
 			tell.call("ghoul")
 	# (CULLING'S: while he is low)
 	if low:
@@ -175,8 +208,10 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 			h.held = maxf(h.held, 0.5)
 			tell.call("crusher")
 		if s.call("bloodprice") and alive_by:
-			by.life = minf(by.max_life, by.life + by.max_life * _n("bloodprice", "foeHeal", 0.04))
-			tell.call("bloodprice")
+			# (his blood streams to it, healing it twice as much)
+			by.life = minf(by.max_life, by.life + by.max_life * _n("bloodprice", "foeHeal", 0.08))
+			done["bloodprice"] = true
+			_tell(h, "bloodprice", by, "drink")
 		if s.call("deathwatch"):
 			for f in ["poison_t", "burn_t", "chill_t"]:
 				if float(h.get(f)) > 0.0:
@@ -211,7 +246,14 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 
 ## A blow of his on its shield: Thornshield makes him bleed.
 static func shield(F, m, soaked: float) -> void:
-	if soaked <= 0.0 or not _has(m, "thornshield") or F.clock - float(m.m52.get("foe_thorn", -99.0)) < 0.6:
+	if soaked <= 0.0 or not _has(m, "thornshield"):
+		return
+	if m.shield <= 0.0 and not m.m52.get("foe_tbroke", false):
+		# (broken, its thorns burst out at him)
+		m.m52["foe_tbroke"] = true
+		F.main.monsters.perils.warn(m.world.x, m.world.y, _n("thornshield", "foeBurst", 1.8), 0.3, (m.dmg_min + m.dmg_max) / 2.0 * 0.6, m, m.blow())
+		_tell(F.main.hero, "thornshield", m, "burst")
+	if F.clock - float(m.m52.get("foe_thorn", -99.0)) < 0.6:
 		return
 	m.m52["foe_thorn"] = F.clock
 	var h = F.main.hero
@@ -237,6 +279,8 @@ static func rage(F, m) -> float:
 		k *= _n("macabre", "foeFast", 1.6)
 	if float(m.m52.get("foe_rush", 0.0)) > F.clock:
 		k *= 1.8
+	if float(m.m52.get("foe_frenzy_t", 0.0)) > F.clock:
+		k *= _n("macabre", "foeSpread", 1.3)
 	if _has(m, "dart"):
 		k *= _n("dart", "foeQuick", 1.2)
 	return k
@@ -255,6 +299,20 @@ static func tick(F, m, dt: float, dist: float) -> void:
 	if m.risen and _has(m, "limbo") and dist < 10.0:
 		h.still_t = maxf(h.still_t, 0.5)
 		h.still_k = maxf(h.still_k, 0.25)
+	if m.risen and (_has(m, "deadeye") or _has(m, "macabre")):
+		# (Deadeye: an eye over it, the monsters near it finding a gap with every blow; Macabre: its frenzy spreads to them)
+		var key: String = "foe_eye_t" if _has(m, "deadeye") else "foe_frenzy_t"
+		for o in F.main.monsters.list:
+			if _ok(o) and o.world.distance_to(m.world) <= _n("deadeye", "foeNear", 3.0):
+				o.m52[key] = F.clock + 0.5
+		if F.clock - float(m.m52.get("foe_aura", -9.0)) > 1.0:
+			m.m52["foe_aura"] = F.clock
+			_tell(h, "deadeye" if _has(m, "deadeye") else "macabre", m, "eye" if _has(m, "deadeye") else "frenzy")
+	if m.risen and _has(m, "gravewarden") and F.clock - float(m.m52.get("foe_shade", -9.0)) > _n("gravewarden", "foeEvery", 3.0):
+		# (a shade circles it, taking the first blow he lands each few seconds)
+		m.m52["foe_shade"] = F.clock
+		m.shield = maxf(m.shield, m.max_life * _n("gravewarden", "foeShade", 0.15))
+		_tell(h, "gravewarden", m, "shade")
 	if m.risen and _has(m, "fetch") and float(m.m52.get("foe_end", 0.0)) > 0.0 and F.clock > float(m.m52["foe_end"]):
 		m.m52["foe_end"] = 0.0
 		m.damage(m.life + 1.0, "phys", false, false, [], false, true, -1)
@@ -271,6 +329,20 @@ static func death(F, m) -> void:
 		h.bleed_dps = maxf(h.bleed_dps if h.bleed_t > 0.0 else 0.0, h.max_life * float(B["heroDps"]) * 1.5)
 		h.bleed_t = maxf(h.bleed_t, 3.0)
 		_tell(h, "bloodburst", m)
+	if _has(m, "lastrites"):
+		# (its shield passes to the nearest monster)
+		var best = null
+		var bd: float = _n("lastrites", "foePass", 4.0)
+		for o in F.main.monsters.list:
+			if _ok(o) and o != m and o.world.distance_to(m.world) < bd:
+				bd = o.world.distance_to(m.world)
+				best = o
+		if best != null:
+			best.shield = maxf(best.shield, best.max_life * 0.25)
+			_tell(h, "lastrites", best, "pass")
+	if _has(m, "gangrene"):
+		F._ground(m.world, _n("gangrene", "foeRot", 1.4), 4.0, "venom", "poison", (m.dmg_min + m.dmg_max) / 2.0 * 0.15, [], m, "gangrene")
+		_tell(h, "gangrene", m, "rot")
 	if _has(m, "fuse"):
 		var w: Vector2 = (h.world - m.world).normalized() if h.world.distance_to(m.world) > 0.1 else Vector2(1, 0)
 		for k in 4:
@@ -316,6 +388,15 @@ static func fly(mgr, a: Dictionary, p0: Vector2, p1: Vector2) -> void:
 	var h = mgr.hero
 	var map = mgr.map
 	var in_wall: bool = not map.open_at(floori(p1.x), floori(p1.y))
+	# (Impaler: each wall it goes into makes the shot bigger and harder)
+	if id == "impaler" and in_wall and not a.get("in_wall", false):
+		a["walls_n"] = int(a.get("walls_n", 0)) + 1
+		a["r"] = minf(float(a["r"]) * 1.3, 1.2)
+		var nd = a.get("node")
+		if nd != null and is_instance_valid(nd) and nd is Node2D:
+			nd.scale *= 1.3
+		_tell(h, "impaler", null, "grow", p1)
+	a["in_wall"] = in_wall
 	if in_wall and not a.get("walled", false):
 		a["walled"] = true
 		if id == "trident" and not a.get("copy", false):
@@ -335,6 +416,16 @@ static func fly(mgr, a: Dictionary, p0: Vector2, p1: Vector2) -> void:
 				a["arced"] = true
 				h.hurt_by(float(a["dmg"]) * 0.5, "lightning", [], {}, null, p1, true)
 				_tell(h, "stormlance", null, "arc")
+		"witchpin":
+			# (while he is cursed, its shots turn in the air to follow him)
+			if h.alive and h.hex_t > 0.0 and not a["hit"]:
+				var want: Vector2 = (h.world - p1).normalized()
+				var cur: Vector2 = a["dir"]
+				var turn: float = clampf(cur.angle_to(want), -0.07, 0.07)
+				a["dir"] = cur.rotated(turn)
+				if not a.get("sought", false):
+					a["sought"] = true
+					_tell(h, "witchpin", null, "seek", p1)
 		"bloodlance":
 			var src = a.get("src")
 			for o in mgr.list:
@@ -349,9 +440,9 @@ static func fly(mgr, a: Dictionary, p0: Vector2, p1: Vector2) -> void:
 ## A shot `a` has struck him for `dmg`: how hard (Impaler through a wall harder), and what it leaves.
 static func hit_k(mgr, a: Dictionary) -> float:
 	var id: String = str(a.get("high", ""))
-	if id == "impaler" and a.get("walled", false):
+	if id == "impaler" and int(a.get("walls_n", 0)) > 0:
 		_tell(mgr.hero, "impaler", null)
-		return _n("impaler", "foeWall", 1.5)
+		return 1.0 + _n("impaler", "foeWall", 0.4) * int(a["walls_n"])
 	return 1.0
 
 
@@ -395,6 +486,11 @@ static func rise(words: Array, M, o) -> void:
 		o.life = o.max_life
 	if words.has("fetch"):
 		o.m52["foe_end"] = M.main._foe.clock + _n("fetch", "foeBrief", 5.0) if M.main.get("_foe") != null else 0.0
+		# (it blinks to his side as it rises)
+		var side: Vector2 = h.world + Vector2(1, 0).rotated(randf() * TAU) * 1.2
+		if M.map.open_at(floori(side.x), floori(side.y)):
+			_tell(h, "fetch", o, "blink")
+			o.world = side
 	for id in ["wraithstep", "fetch", "macabre", "haunting"]:
 		if words.has(id) and not o.words.has(id):
 			o.words.append(id)
@@ -411,6 +507,15 @@ static func rise(words: Array, M, o) -> void:
 		M.shoot(o, (h.world - o.world).normalized(), 7.0, 12.0, (o.dmg_min + o.dmg_max) / 2.0, "arrow")
 		if not M._arrows.is_empty():
 			M._arrows.back()["walls"] = true
+	if words.has("bloodharvest") and h.bleed_t > 0.0:
+		# (the blood he has shed rises with it as a second, small one)
+		var two = M.call_up(o.kind, o.world + Vector2(-0.6, 0.0), o.pack_id, o.face)
+		if two != null:
+			two.max_life = o.max_life * _n("bloodharvest", "foeSmall", 0.4)
+			two.life = two.max_life
+			two.words = ["bleeding"]
+			two.risen = true
+			_tell(h, "bloodharvest", two, "blood")
 	if words.has("revenants"):
 		var two = M.call_up(o.kind, o.world + Vector2(0.6, 0.0), o.pack_id, o.face)
 		if two != null:
@@ -467,9 +572,19 @@ static func surged(m, at: Vector2, r: float, wait: float) -> void:
 					if is_instance_valid(m) and not m.dead:
 						M.perils.warn(at.x, at.y, r, 0.2, dmg * 0.4, m, by))
 		"heartbeat":
+			# (it throbs red, healing it and every monster it washes over)
 			m.life = minf(m.max_life, m.life + m.max_life * _n("heartbeat", "foeHeal", 0.08))
+			for o in M.list:
+				if _ok(o) and o != m and o.world.distance_to(at) <= r:
+					o.life = minf(o.max_life, o.life + o.max_life * _n("heartbeat", "foeHeal", 0.08))
+					_tell(h, "heartbeat", o, "throb")
 		"bastion":
+			# (its shield made whole, and every monster it washes over shielded)
 			m.shield = maxf(m.shield, m.max_life * 0.3)
+			for o in M.list:
+				if _ok(o) and o != m and o.world.distance_to(at) <= r:
+					o.shield = maxf(o.shield, o.max_life * _n("bastion", "foeShare", 0.2))
+					_tell(h, "bastion", o, "ward")
 		"overload":
 			var p: Vector2 = h.world
 			M.after(wait, func() -> void: M.perils.warn(p.x, p.y, 1.0, 0.8, dmg * 0.8, null, {"el": m.element(), "words": [], "half": {}}))
@@ -523,6 +638,8 @@ static func bleed_k(F, h, b: float, moved: bool) -> float:
 	if not M52.HIGH_ON or h.foe_hi.is_empty():
 		return b
 	var id: String = str(h.foe_hi.get("bleed_by", ""))
+	if F.clock < float(h.foe_hi.get("art_t", -9.0)):
+		b *= _n("artery", "foeOpen", 3.0)
 	match id:
 		"harrow":
 			if not moved:
@@ -531,8 +648,18 @@ static func bleed_k(F, h, b: float, moved: bool) -> float:
 			var src = h.foe_hi.get("bleed_src")
 			if _ok(src):
 				src.life = minf(src.max_life, src.life + b)
+				src.m52["feast"] = mini(10, int(src.m52.get("feast", 0)) + 1)
+				if F.clock - float(h.foe_hi.get("drink_t", -9.0)) > 0.8:
+					h.foe_hi["drink_t"] = F.clock
+					_tell(h, "bloodfeast", src, "drink")
 		"hemorrhage":
-			b *= minf(3.0, 1.0 + 0.25 * (F.clock - float(h.foe_hi.get("bleed_from", F.clock))))
+			var grown: float = 1.0 + 0.5 * (F.clock - float(h.foe_hi.get("bleed_from", F.clock)))
+			b *= minf(3.0, grown)
+			if grown >= 2.0:
+				# (grown full, it ruptures and opens again, fresh)
+				h.foe_hi["bleed_from"] = F.clock
+				h.bleed_t = maxf(h.bleed_t, 4.0)
+				_tell(h, "hemorrhage", null, "rupture")
 		"papercut":
 			b *= _n("papercut", "foeFast", 1.5)
 		"bloodhex":
@@ -552,6 +679,15 @@ static func frame(F, _dt: float) -> void:
 		h.bleed_dps = maxf(h.bleed_dps if h.bleed_t > 0.0 else 0.0, h.max_life * float(B["heroDps"]) * 1.5)
 		h.bleed_t = maxf(h.bleed_t, 3.0)
 		_tell(h, "briar", null, "tear")
+	if h.foe_hi.has("cuts") and F.clock - float(h.foe_hi.get("cuts_t", 0.0)) > 6.0:
+		h.foe_hi.erase("cuts")
+	if str(h.foe_hi.get("bleed_by", "")) == "bloodhex" and h.bleed_t > 0.0 and h.hex_t > 0.0:
+		# (a ring of hex follows under his feet, slowing him)
+		h.chill_t = maxf(h.chill_t, 0.3)
+		h.chill_k = maxf(h.chill_k, _n("bloodhex", "foeSlow", 0.25))
+		if F.clock - float(h.foe_hi.get("sigil_t", -9.0)) > 0.8:
+			h.foe_hi["sigil_t"] = F.clock
+			_tell(h, "bloodhex", null, "sigil")
 	if h.bleed_t <= 0.0 and h.foe_hi.has("bleed_by"):
 		h.foe_hi.erase("bleed_by")
 		h.foe_hi.erase("bleed_src")

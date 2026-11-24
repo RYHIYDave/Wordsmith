@@ -9,11 +9,13 @@
 ##   Rush        he surges forward with it, through those in his path; his dodge twice as far, surging at both ends
 ##   Seismic     the ground cracks open in lines out from him; his landing slams, stunning those near
 ##   Tremor      it comes twice, the second wider; his dodge's surge again where he lands
-##   Heartbeat   heals him for each it strikes; his dodge's surge draws the life orbs near to him
+##   Heartbeat   throbs red: each it strikes bleeds a stream of blood back to him, healing him; his dodge's surge draws the
+##               life orbs near to him, each bursting on its way as a small surge
 ##   Overload    a rune on each it strikes, going off a moment later; a rune where he dodged from, going off as a surge
 ##   Lens        a beam straight ahead, far stronger, a certain critical; his dodge's surge flies to the marked one
 ##   Crescendo   grows with the frenzy, every second use at a full frenzy; at a full frenzy each dodge surges twice
-##   Bastion     a shield for each it strikes; a ward where he lands
+##   Bastion     a shield for each it strikes, and it stands round him as a ring of walls of light a few seconds, throwing
+##               back what reaches it and breaking their shots; a ward where he lands, throwing all inside it out
 ##   Resonance   a ring hanging round him, striking whatever crosses it; his dodge's surge rings on where he dodged from
 ##   Spark       a smaller one every second use; his dodge back a third sooner
 ##   Tsunami     a wave rolling out across the room, carrying them; his dodge's surge three times as wide
@@ -42,6 +44,8 @@ var _echoes: Array = []
 var _raise := {}
 ## (Rush, Tremor, Seismic, Bastion: the dodge of move `i` to be landed)
 var _dodging := -1
+## (Bastion in front: its ring of walls {at, r, until, i, pushed})
+var _bastion := {}
 
 
 func _init(h) -> void:
@@ -58,6 +62,7 @@ func fresh() -> void:
 	_echoes = []
 	_raise = {}
 	_dodging = -1
+	_bastion = {}
 
 
 func _S() -> Dictionary:
@@ -179,7 +184,12 @@ func cast(i: int, at: Vector2, share: float) -> void:
 				H.tell("tremor", "again", at, {"r": R * 1.5})
 				H.blast(i, at, R * H.n("tremor", "wider", 1.5), share * H.n("tremor", "second", 0.7)))
 		"heartbeat":
+			# (it throbs red: each it strikes bleeds a stream of blood back to him, healing him)
 			H.heal_life(H.hero.max_life * H.n("heartbeat", "per", 0.012) * struck.size(), id)
+			H.tell(id, "throb", at, {"r": R})
+			for o in struck.slice(0, 6):
+				if H.ok(o):
+					H.tell(id, "stream", o.world, {"x1": H.hero.world.x, "y1": H.hero.world.y})
 		"overload":
 			for o in struck:
 				if H.ok(o):
@@ -187,6 +197,14 @@ func cast(i: int, at: Vector2, share: float) -> void:
 		"bastion":
 			if not struck.is_empty():
 				H.shield(H.n("bastion", "per", 0.015) * struck.size(), id)
+			# (it stands round him as a ring of walls of light: what reaches it is thrown back, and shots break on it)
+			var secs: float = H.n("bastion", "secs", 3.0)
+			_bastion = {"at": at, "r": R, "until": H.clock() + secs, "i": i, "pushed": {}}
+			for k in 8:
+				var a0: Vector2 = at + Vector2(1, 0).rotated(TAU * k / 8.0) * R
+				var a1: Vector2 = at + Vector2(1, 0).rotated(TAU * (k + 1) / 8.0) * R
+				H.pierce.walls.append({"a": a0, "b": a1, "t": 0.0, "dur": secs, "id": "bastion"})
+				H.tell(id, "wall", a0, {"x1": a1.x, "y1": a1.y, "secs": secs})
 		"resonance":
 			_rings.append({"at": at, "r": R, "t": 0.0, "dur": H.n("resonance", "secs", 3.0), "i": i, "last": {}})
 		"undertow":
@@ -314,6 +332,11 @@ func dodge(i: int, at: Vector2, share: float) -> void:
 			var n := 0
 			for d in drops:
 				if d["kind"] == "orb" and (d["at"] as Vector2).distance_to(H.hero.world) <= H.n("heartbeat", "draw", 5.0):
+					# (each bursts on its way as a small surge)
+					var p: Vector2 = d["at"]
+					H.tell(id, "burst", p)
+					H.tell(id, "draw", p, {"x1": H.hero.world.x, "y1": H.hero.world.y})
+					H.blast(i, p, H.n("heartbeat", "orbR", 1.0), H.n("heartbeat", "orb", 0.2))
 					d["at"] = H.hero.world
 					d["age"] = 99.0
 					n += 1
@@ -382,8 +405,14 @@ func landed(at: Vector2) -> void:
 			for q in H.near(at, H.n("seismic", "slam", 1.8)):
 				H.stun(q, H.n("seismic", "stun", 0.8))
 		"bastion":
-			H.ground("ward", i, at, H.n("bastion", "ward", 1.6), 4.0, 0.3)
+			var wr: float = H.n("bastion", "ward", 1.6)
+			H.ground("ward", i, at, wr, 4.0, 0.3)
 			H.tell("bastion", "ward", at)
+			# (his landing throws every enemy inside the ward out of it)
+			for q in H.near(at, wr):
+				var d: float = q.world.distance_to(at)
+				H.throw(q, at, wr - d + 0.6)
+				H.tell("bastion", "push", at, {"x1": q.world.x, "y1": q.world.y})
 
 
 ## A kill: Soulstorm behind, one its dodge's surge killed rises as his spirit.
@@ -406,6 +435,20 @@ func used(_i: int) -> void:
 
 func step(dt: float) -> void:
 	var now: float = H.clock()
+	# (Bastion in front: what reaches its ring of walls is thrown back)
+	if not _bastion.is_empty():
+		if now > float(_bastion["until"]):
+			_bastion = {}
+		else:
+			var bat: Vector2 = _bastion["at"]
+			var br: float = _bastion["r"]
+			for o in H.near(bat, br + 0.35):
+				var d: float = o.world.distance_to(bat)
+				var key := str(o.get_instance_id())
+				if d >= br - 0.7 and now - float(_bastion["pushed"].get(key, -9.0)) > 0.6:
+					_bastion["pushed"][key] = now
+					H.throw(o, bat, H.n("bastion", "push", 1.0))
+					H.tell("bastion", "push", o.world)
 	if not _hail.is_empty():
 		if now > float(_hail["until"]):
 			_hail = {}

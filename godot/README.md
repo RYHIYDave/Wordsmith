@@ -1554,6 +1554,12 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   drawn as their things: a guillotine's blade, a gravestone, a noose, a hook, a pitchfork, shears, fangs, a bell), what a monster
   lays on him in the enemy's pink and gold. melds52.gd HIGH_ON: OFF until his yes to their films (his pick, “Carriers on, melds off
   (Recommended)”, 24 Nov 2026).
+  THE 20 LEAST EXCITING REDONE at his words (“Once the melds are done I want you to find the 20 weakest ones and redo them.”),
+  weakest read by his pick “Least exciting”: each of the 110 scored on how much each twist shows (3 a new thing seen, 2 a
+  change to one there, 1 numbers only; in front counted twice), the 20 lowest given new twists he sees happen, their names,
+  ideas and stones kept: Impaler, Witchpin, Artery, Hemorrhage, Papercut, Gangrene, Bloodfeast, Thornshield, Bloodhex, Ghoul,
+  Deadeye, Macabre, Gravewarden, Fetch, Bloodprice, Mercy, Last Rites, Heartbeat, Bastion, Bloodharvest (check_high.gd EXPECT:
+  each side must show its new moment itself).
   Checks `--only=words --cases=high` (or `high:<id>,<id>`), each meld in front, behind and carried by a monster; films `--fixed-fps 30 -- --only=words
   --cases=m52film:high` (or `high:<from>-<to>`); the page `python3 docs/mockups/meld_films/page.py <films> <out> high`.
 - THE LEXICON IN THE STASH (his words, 24 Nov 2026: “I'd also like to get rid of the lexicon in the middle of town and add it to the

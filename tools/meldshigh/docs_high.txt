@@ -14,9 +14,9 @@ Piercing
 Piercing's blow goes on through the first enemy it strikes, striking every enemy in a line behind it; behind, a lance of light strikes down its line a moment later. In each of its melds, that line does something of its own.
 Impaler
 Piercing and Power. Every body it passes through only drives it harder. On a move: Impaler Strike, Strike of the Impaler.
-In front: more damage and a bigger hit that goes on through everything in its path, harder on each enemy it goes through than on the one before.
-Behind: each hit that lands builds a short damage bonus; the lance of light spends the bonus, hitting harder for each step of it.
-On enemies: hits harder and has more life; its shots fly through walls, and a shot that has gone through a wall hits harder.
+In front: more damage and a bigger hit that goes on through everything in its path, carrying every enemy it runs through along on its point to the end of its line, where they are slammed into a heap that strikes everything round it, harder for each body.
+Behind: each hit that lands builds a short damage bonus; the lance of light spends the bonus, growing wider with each step of it, and drives a stake into the ground where it ends that bursts, wider for each step.
+On enemies: hits harder and has more life; its shots fly through walls, and each wall a shot goes through makes it bigger and harder.
 Stinger
 Piercing and Poison. One sting, carried down the whole line. On a move: Stinger Strike, Strike of the Stinger.
 In front: a weaker hit that poisons and goes on through; each enemy it goes through takes one more dose than the one before it.
@@ -104,9 +104,9 @@ Behind: where the lance ends, shards fly out in every direction, and each goes t
 On enemies: splits in two when it dies; its shots split into three as they pass through a wall.
 Witchpin
 Piercing and Hexing. One pin through a line of curses. On a move: Witchpin Strike, Strike of the Witchpin.
-In front: curses what it hits and goes on through; the curse grows on each enemy down the line, the last cursed worst.
-Behind: the lance of light leaves its line as a strip of hex: enemies standing on it deal less damage.
-On enemies: its blows curse you, so you take more damage; its shots fly through walls, and hit harder while you are cursed.
+In front: curses what it hits and goes on through, stitching every enemy in its line together with a black thread of the curse: a hit on any one of them stings all the others on the thread.
+Behind: the lance of light leaves its line as a strip of hex: enemies standing on it deal less damage, and each that crosses it is pinned in place for a moment by a black needle.
+On enemies: its blows curse you, so you take more damage; its shots fly through walls, and while you are cursed they turn in the air to follow you.
 Sundial
 Piercing and Stilling. The shadow of a needle, laid across time. On a move: Sundial Strike, Strike of the Sundial.
 In front: what it hits is slowed in time; it goes on through, slowing each enemy in its line more than the one before, and the last stands still for a moment.
@@ -126,9 +126,9 @@ Behind: each hit that lands builds a short damage bonus; its thorns grow bigger 
 On enemies: hits harder and has more life; its blows make you bleed, harder the harder they hit.
 Gangrene
 Bleeding and Poison. An open wound, and something in it. On a move: Gangrene Strike, Strike of Gangrene.
-In front: a weaker hit that poisons and makes them bleed; an enemy both poisoned and bleeding festers: each dose of poison it takes makes it bleed harder.
-Behind: leaves thorns in a cloud of poison: whatever they cut is poisoned too.
-On enemies: poisons you and makes you bleed; while you bleed, its poison lasts longer.
+In front: a weaker hit that poisons and makes them bleed; an enemy both poisoned and bleeding festers, each dose of poison making it bleed harder, and when it dies it bursts in a cloud of rot that poisons and bleeds those near it.
+Behind: leaves thorns in a cloud of poison: whatever they cut is poisoned and festers, leaving puffs of rot behind it as it walks.
+On enemies: poisons you and makes you bleed; while you bleed, its poison lasts longer, and when it dies it bursts in a cloud of rot where it falls.
 Rimeblood
 Bleeding and Frost. Blood that freezes into spikes. On a move: Rimeblood Strike, Strike of Rimeblood.
 In front: frost damage that chills, then freezes, and makes them bleed; a bleeding enemy that freezes has its blood freeze into spikes that burst out of it, cutting those near it.
@@ -161,9 +161,9 @@ Behind: repeats itself a moment later: a second ring of thorns springs up round 
 On enemies: attacks twice; each bite makes you bleed, and the second doubles it.
 Bloodfeast
 Bleeding and Leech. Every drop they lose comes to you. On a move: Bloodfeast Strike, Strike of the Bloodfeast.
-In front: heals you for every enemy hit, and for a share of everything they bleed.
-Behind: enemies it kills drop life orbs; whatever its thorns cut sheds drops of blood that fly to you and heal you.
-On enemies: heals when it hits you, and heals by what you bleed.
+In front: heals you for every enemy hit; everything they bleed streams to you as drops of blood that heal you as they land, and once you are whole, the blood hardens round you into a red shield.
+Behind: enemies it kills drop life orbs; it leaves a pool of blood ringed with thorns: bleeding enemies near it are drained into it in red streams, and it heals you while you stand in it.
+On enemies: heals when it hits you; your blood streams to it as you bleed, and each drink makes its next blow harder.
 Bloodburst
 Bleeding and Volatile. A body full of blood, ready to burst. On a move: Bloodburst Strike, Strike of the Bloodburst.
 In front: enemies it kills explode; a bleeding enemy that dies bursts in a spray of blood that makes everyone near it bleed.
@@ -171,9 +171,9 @@ Behind: leaves a rune ringed by thorns; when it goes off, the thorns are flung o
 On enemies: explodes when it dies, and the blast makes you bleed.
 Artery
 Bleeding and Precise. One sure cut, in the right place. On a move: Arterial Strike, Strike of the Artery.
-In front: more damage, a smaller area; a critical hit opens an artery, and the enemy bleeds three times as hard.
-Behind: marks an enemy: your next hit on it is a certain critical; the marked enemy bleeds while it carries the mark, and your critical opens its artery.
-On enemies: its hits find the gaps in your armour, and those that do make you bleed hard.
+In front: more damage, a smaller area; a critical hit opens an artery: the enemy bleeds three times as hard, and its blood jets out behind it in a line, making everything the jet reaches bleed.
+Behind: marks an enemy: your next hit on it is a certain critical; when it lands, the marked enemy's blood bursts out all round it and opens an artery in every enemy it splashes.
+On enemies: its hits find the gaps in your armour; every third hit opens your artery: your blood jets out, and you bleed three times as hard for a moment.
 Bloodrage
 Bleeding and Frenzied. The smell of blood drives you on. On a move: Bloodrage Strike, Strike of Bloodrage.
 In front: each use makes the next faster, up to five times; every bleeding enemy near you keeps the frenzy from fading.
@@ -181,19 +181,19 @@ Behind: kills keep the frenzy going; at full frenzy, thorns spring up wherever y
 On enemies: speeds up as it is hurt; its blows make you bleed, harder the faster it goes.
 Thornshield
 Bleeding and Guarding. A shield with thorns on its face. On a move: Thornshield Strike, Strike of the Thornshield.
-In front: each use gives you a brief shield; while it holds, whatever strikes you bleeds.
-Behind: leaves a ward circle edged with thorns: you take less damage inside, and whatever crosses its edge is cut.
-On enemies: carries a shield that soaks damage; striking its shield makes you bleed.
+In front: each use gives you a brief shield bristling with thorns; while it holds, whatever strikes you bleeds, and when it breaks, its thorns burst out all round you, cutting everything near.
+Behind: leaves a ward circle edged with thorns: you take less damage inside, whatever crosses its edge is cut, and the thorns lash out at any enemy that strikes you while you stand in it.
+On enemies: carries a shield that soaks damage; striking its shield makes you bleed, and when you break it, its thorns burst out at you.
 Hemorrhage
 Bleeding and Lasting. A wound that will not close. On a move: Hemorrhaging Strike, Strike of Hemorrhage.
-In front: the bleeding lasts half as long again, and grows the longer it runs.
-Behind: its thorns last half as long again, and cut deeper the longer they stand.
-On enemies: its bleeding on you lasts longer, and grows the longer it runs.
+In front: the bleeding lasts half as long again and grows the longer it runs; once it has grown full, the wound ruptures, spraying blood that makes everyone near it bleed, and opens again, fresh.
+Behind: its thorns last half as long again and spread as they stand, growing wider the longer they last.
+On enemies: its bleeding on you lasts longer and grows the longer it runs; once it has grown full, the wound ruptures and opens again, fresh.
 Papercut
 Bleeding and Fleeting. Many small, quick cuts. On a move: Papercut Strike, Strike of Papercuts.
-In front: everything it makes and gives is a third shorter and does as much in that time; each hit on an enemy already bleeding cuts it again at once.
-Behind: its thorns spring up and are gone a third sooner, cutting twice as often while they stand.
-On enemies: its poison, burning and bleeding hurt you faster.
+In front: everything it makes and gives is a third shorter and does as much in that time; each hit on an enemy already bleeding cuts it again at once, and the cut flies on as a paper-thin blade to the nearest other enemy that is bleeding.
+Behind: its thorns burst out as a flurry of paper blades spinning outward from where it ended, cutting everything they pass twice as often, and gone a third sooner.
+On enemies: its poison, burning and bleeding hurt you faster; each of its blows leaves a paper cut on you, up to five, and every cut opens again each time you are struck.
 Bramble
 Bleeding and Vast. A whole thicket of thorns. On a move: Bramble Strike, Strike of the Bramble.
 In front: a much bigger area, a little less damage; the bleeding spreads: an enemy bleeding from it makes those it touches bleed too.
@@ -211,9 +211,9 @@ Behind: where it ends, thorns fly out in every direction and take root where the
 On enemies: its blows make you bleed; when it dies it splits in two, and each half's blows make you bleed.
 Bloodhex
 Bleeding and Hexing. A curse in the blood that will not stop. On a move: Bloodhex Strike, Strike of the Bloodhex.
-In front: curses what it hits, so it takes more damage from everything; a cursed enemy's bleeding never stops while the curse holds.
-Behind: leaves a hex circle grown over with thorns: enemies inside deal less damage and are cut.
-On enemies: its blows curse you and make you bleed; while you are cursed, the bleeding does not stop.
+In front: curses what it hits, so it takes more damage from everything; a cursed enemy's bleeding never stops while the curse holds, and its blood drips into hex circles under it as it goes: enemies standing in them deal less damage.
+Behind: leaves a hex circle grown over with thorns: enemies inside deal less damage and are cut, and any enemy that dies in it spills a new circle where it fell.
+On enemies: its blows curse you and make you bleed; while you are cursed the bleeding does not stop, and a ring of hex follows under your feet, slowing you.
 Clot
 Bleeding and Stilling. The blood held still, then let go. On a move: Clotting Strike, Strike of the Clot.
 In front: what it hits is slowed in time, and its bleeding is held back; when the slow ends, all of it pours out at once.
@@ -243,9 +243,9 @@ Behind: kills raise two spirits side by side, each weaker.
 On enemies: attacks twice; when it dies it rises as two, each half as strong.
 Ghoul
 Reaping and Leech. The dead feed you. On a move: Ghoul Strike, Strike of the Ghoul.
-In front: heals you for every enemy hit; each soul you gather heals you too.
-Behind: enemies it kills drop life orbs; every blow your spirits land heals you a little.
-On enemies: heals when it hits you; when it dies it rises once, and every blow it lands then heals it.
+In front: heals you for every enemy hit; where a kill falls, a ghoul's maw opens in the ground and bites the enemies near it, and each bite heals you.
+Behind: enemies it kills drop life orbs; kills raise a spirit that feeds: every blow it lands sends a stream of blood to you, healing you.
+On enemies: heals when it hits you; when it dies it rises once, and every blow it lands then heals it and the monsters near it.
 Soulburst
 Reaping and Volatile. The soul goes up with the body. On a move: Soulburst Strike, Strike of the Soulburst.
 In front: enemies it kills explode, and the soul bursts out with the blast, striking those near it, and still takes time off your waits.
@@ -253,19 +253,19 @@ Behind: kills raise a spirit that bursts when its time is up, striking everythin
 On enemies: explodes when it dies, then rises once from the blast.
 Deadeye
 Reaping and Precise. Spirits that never miss. On a move: Deadeye Strike, Strike of the Deadeye.
-In front: more damage, a smaller area; a kill by a critical hit leaves a bright soul that takes twice the time off.
-Behind: marks an enemy: your next hit on it is a certain critical; your spirits go for the marked enemy first, and each of their blows on it is a certain critical.
-On enemies: its hits find the gaps in your armour; when it dies it rises once, and its first blow then is certain to find a gap.
+In front: more damage, a smaller area; a kill by a critical hit leaves a bright soul that takes twice the time off, and stays a while as an eye over you that marks the nearest enemy each second: your next hit on a marked one is a certain critical.
+Behind: marks an enemy: your next hit on it is a certain critical; each time you mark one, every spirit you have fires a bright shot at it from wherever it stands, a certain critical, then goes for it.
+On enemies: its hits find the gaps in your armour; when it dies it rises once, and a bright eye opens over it: while it stands, the monsters near it strike you harder, finding the gaps.
 Macabre
 Reaping and Frenzied. A dance with the dead. On a move: Macabre Strike, Strike of the Macabre.
-In front: each use makes the next faster, up to five times; each soul you gather adds a step of frenzy.
-Behind: kills keep the frenzy going; your spirits strike faster for each step of it.
-On enemies: speeds up as it is hurt; when it dies it rises once, already at its fastest.
+In front: each use makes the next faster, up to five times; each soul you gather adds a step of frenzy, and at full frenzy each kill's corpse jerks up and dances a moment among its kin, striking them.
+Behind: kills keep the frenzy going; your spirits strike faster for each step of it, and at full frenzy they catch its flames, moving and striking twice as fast.
+On enemies: speeds up as it is hurt; when it dies it rises once, already at its fastest, and its frenzy spreads: the monsters near it speed up too.
 Gravewarden
 Reaping and Guarding. The dead stand guard. On a move: Gravewarden Strike, Strike of the Gravewarden.
-In front: each use gives you a brief shield; each soul you gather tops it up.
-Behind: kills raise a spirit that stands guard by you: while it is near, you take less damage.
-On enemies: carries a shield that soaks damage; when it dies it rises once, its shield whole again.
+In front: each use gives you a brief shield; each soul you gather stays as a shade circling you, up to three, and each shade takes the next blow that would strike you.
+Behind: kills raise a spirit that stands guard by you: while it is near, you take less damage, and it hauls back to it any enemy that comes at you.
+On enemies: carries a shield that soaks damage; when it dies it rises once, its shield whole again, and a shade circles it that takes the first blow you land on it every few seconds.
 Undying
 Reaping and Lasting. Death does not keep them down. On a move: Undying Strike, Strike of the Undying.
 In front: each soul takes half as much time again off your waits.
@@ -273,9 +273,9 @@ Behind: kills raise a spirit that fights half as long again, and when its time i
 On enemies: its poison, burning and chill last longer on you; when it dies it rises once, with half as much life again.
 Fetch
 Reaping and Fleeting. The soul is yours the moment they fall. On a move: Fetch Strike, Strike of the Fetch.
-In front: each soul comes to you the instant its enemy falls, and takes a little more off for every other kill in the second before.
-Behind: kills raise a spirit for a third less time that strikes half as often again.
-On enemies: its poison and burning hurt you faster; when it dies it rises once, briefly, and fast.
+In front: each soul comes to you the instant its enemy falls, leaping on through the enemies near it first and striking each, a leap more for every other kill in the second before.
+Behind: kills raise a spirit for a third less time that strikes half as often again, darting on to the next enemy after each blow.
+On enemies: its poison and burning hurt you faster; when it dies it rises once, briefly and fast, and blinks to your side as it rises.
 Legion
 Reaping and Vast. An army of the dead. On a move: Legion Strike, Strike of the Legion.
 In front: a much bigger area, a little less damage; each soul flies to you through the enemies near it, striking them on its way.
@@ -350,9 +350,9 @@ Behind: repeats itself a moment later: a second reaper's mark beside the first.
 On enemies: attacks twice; while you are low, its second blow lands harder.
 Bloodprice
 Culling and Leech. Their last life is yours. On a move: Bloodprice Strike, Strike of the Bloodprice.
-In front: heals you for every enemy hit; each cull heals you for a share of the life the enemy had left.
-Behind: enemies it kills drop life orbs; one it culls drops a big one.
-On enemies: heals when it hits you; while you are low, it heals more.
+In front: heals you for every enemy hit; a cull splits the life the enemy had left: half flies to you and heals you, half bursts out of the body as a red blast that strikes the enemies near it.
+Behind: enemies it kills drop life orbs; its reaper's mark takes a price: when it culls an enemy, every enemy near the mark loses as much life as the culled one had left, in a red flash.
+On enemies: heals when it hits you; while you are low, your blood streams to it as it strikes, and it heals twice as much.
 Deathburst
 Culling and Volatile. A death that takes others with it. On a move: Deathburst Strike, Strike of the Deathburst.
 In front: enemies it kills explode, and the blast culls the weak it strikes.
@@ -360,9 +360,9 @@ Behind: leaves a rune that detonates a moment later; a weak enemy that lives thr
 On enemies: explodes when it dies, harder while you are low.
 Mercy
 Culling and Precise. A narrow blade, for the end. On a move: Merciful Strike, Strike of Mercy.
-In front: more damage, a smaller area; a critical hit culls from twice as high.
-Behind: marks an enemy: your next hit on it is a certain critical; once the marked enemy is nearly dead, the mark culls it wherever it stands.
-On enemies: its hits find the gaps in your armour; while you are low, every one of its hits does.
+In front: more damage, a smaller area; a critical hit culls from twice as high, and every cull sets a sight on the weakest enemy near it: your next hit on that one is a certain critical.
+Behind: marks an enemy: your next hit on it is a certain critical; once the marked enemy is nearly dead, the mark culls it wherever it stands, and passes to the weakest enemy near it.
+On enemies: its hits find the gaps in your armour; while you are low, a sight hangs over you and every one of its hits finds a gap.
 Massacre
 Culling and Frenzied. Each kill quickens the next. On a move: Massacre Strike, Strike of the Massacre.
 In front: each use makes the next faster, up to five times; each cull adds two steps of frenzy.
@@ -370,9 +370,9 @@ Behind: kills keep the frenzy going; while the frenzy is full, every kill leaves
 On enemies: speeds up as it is hurt; while you are low, it speeds up more.
 Last Rites
 Culling and Guarding. A shield from the fallen. On a move: Last Rites Strike, Strike of Last Rites.
-In front: each use gives you a brief shield; each cull adds to it.
-Behind: leaves a ward circle: you take less damage inside, and weak enemies that step into it are culled.
-On enemies: carries a shield that soaks damage; while you are low, its shield grows back.
+In front: each use gives you a brief shield; each cull adds to it, and the rites are said over it: while it holds, the next enemy to strike you is struck down if it is weak, and thrown back if not.
+Behind: leaves a ward circle: you take less damage inside, and weak enemies that step into it are culled; the ward grows wider with each it takes.
+On enemies: carries a shield that soaks damage; while you are low, its shield grows back, and when it dies its shield passes to the monster nearest it.
 Deathwatch
 Culling and Lasting. The reaper waits. On a move: Deathwatch Strike, Strike of the Deathwatch.
 In front: an enemy it hits is watched for a few seconds: if anything brings it nearly dead in that time, it dies outright.
@@ -457,9 +457,9 @@ Behind: repeats itself a moment later: your dodge's surge comes again where you 
 On enemies: attacks twice; its shockwave comes twice.
 Heartbeat
 Surging and Leech. Every pulse brings life back. On a move: Heartbeat Strike, Strike of the Heartbeat.
-In front: heals you for every enemy hit; every third use the shockwave heals you for each enemy it strikes.
-Behind: enemies it kills drop life orbs; your dodge's surge draws every life orb near you to you.
-On enemies: heals when it hits you; its shockwave heals it.
+In front: heals you for every enemy hit; every third use the shockwave throbs red: each enemy it strikes bleeds a stream of blood back to you that heals you.
+Behind: enemies it kills drop life orbs; your dodge's surge draws every life orb near you to you, and each bursts on its way as a small surge, striking the enemies near it.
+On enemies: heals when it hits you; its shockwave throbs red, healing it and every monster it washes over.
 Overload
 Surging and Volatile. Every one it touches is primed. On a move: Overload Strike, Strike of the Overload.
 In front: enemies it kills explode; every third use the shockwave leaves a rune on each enemy it strikes, which goes off a moment later.
@@ -477,9 +477,9 @@ Behind: kills keep the frenzy going; at full frenzy, each dodge surges twice.
 On enemies: speeds up as it is hurt; its shockwaves come faster as it is hurt.
 Bastion
 Surging and Guarding. The wave becomes a wall. On a move: Bastion Strike, Strike of the Bastion.
-In front: each use gives you a brief shield; every third use the shockwave adds to it for each enemy it strikes.
-Behind: your dodge leaves a ward circle where you land: you take less damage inside.
-On enemies: carries a shield that soaks damage; its shockwave makes the shield whole again.
+In front: each use gives you a brief shield; every third use the shockwave adds to it for each enemy it strikes, and stands round you as a ring of walls of light for a few seconds: enemies that reach it are thrown back, and their shots break on it.
+Behind: your dodge leaves a ward circle where you land: you take less damage inside, and your landing throws every enemy inside the circle out of it.
+On enemies: carries a shield that soaks damage; its shockwave makes the shield whole again, and shields every monster it washes over.
 Resonance
 Surging and Lasting. A note that rings on. On a move: Resonant Strike, Strike of Resonance.
 In front: everything it makes lasts half as long again; every third use the shockwave hangs in the air round you as a ring that strikes whatever crosses it for a few seconds.
@@ -544,9 +544,9 @@ Behind: your dodge releases a surge, and a lance of light down the way you dodge
 On enemies: its shots fly through walls; its shockwave rolls through walls to reach you.
 Bloodharvest
 Bleeding and Reaping. What bleeds out, rises. On a move: Bloodharvest Strike, Strike of the Bloodharvest.
-In front: makes what it hits bleed; an enemy that bleeds to death leaves a red soul that takes twice the time off.
-Behind: kills raise a spirit whose blows make what they strike bleed.
-On enemies: its blows make you bleed; when it dies it rises once, and its blows still make you bleed.
+In front: makes what it hits bleed; an enemy that bleeds to death rises at once as a spirit that fights for you for a few seconds, and its red soul takes twice the time off.
+Behind: kills raise a spirit whose blows make what they strike bleed; a blow on an enemy already bleeding tears the wound, splashing its blood on those round it, and they bleed too.
+On enemies: its blows make you bleed; when it dies it rises once, and if you are bleeding, a second, small one rises from your blood beside it.
 Butcher
 Bleeding and Culling. Cut down, and cut apart. On a move: Butcher's Strike, Strike of the Butcher.
 In front: makes what it hits bleed; an enemy it culls is cut apart, flinging blood on those near it, and they bleed hard.

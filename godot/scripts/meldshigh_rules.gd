@@ -322,6 +322,7 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2) -> void:
 		return
 	if c and ok(m):
 		m.m52["crit_at"] = clock()
+	pierce.struck(m, i, dmg, c, at)
 	bleed.struck(m, i, dmg, c, at)
 	cull.struck(m, i, dmg, c, at)
 	surge.struck(m, i, dmg, c, at)
@@ -343,6 +344,7 @@ func died(m) -> void:
 	if not M52.HIGH_ON:
 		return
 	reap.died(m)
+	bleed.died(m)
 
 
 func used(i: int) -> void:
@@ -368,6 +370,7 @@ func marked(m, i: int) -> void:
 		return
 	bleed.marked(m, i)
 	cull.marked(m, i)
+	reap.marked(m, i)
 
 
 ## A blow on him from `src` (a monster, or null).
@@ -375,13 +378,15 @@ func struck_him(src) -> void:
 	if not M52.HIGH_ON:
 		return
 	bleed.struck_him(src)
+	cull.struck_him(src)
+	reap.struck_him(src)
 
 
 ## How much less harm he takes, of these (Gravewarden's spirit by him): a multiplier.
 func hurt_k() -> float:
 	if not M52.HIGH_ON:
 		return 1.0
-	return reap.hurt_k()
+	return reap.hurt_k() * reap.shade_k()
 
 
 ## A copy or a shard of Splitting of move `i` striking `o` (`kind` "copy" or "shard").

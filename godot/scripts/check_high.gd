@@ -10,10 +10,34 @@ extends RefCounted
 
 const Words := preload("res://scripts/words.gd")
 const M52 := preload("res://scripts/melds52.gd")
+const FoeHigh := preload("res://scripts/foe_meldshigh.gd")
 
 const HC := ["piercing", "bleeding", "reaping", "culling", "surging"]
 ## (tellings every meld of a rune sends: not the twist's own)
 const GENERIC := ["line", "lance", "thorns", "spirit", "blow", "cull", "mark", "take", "wave", "dodge", "foe"]
+## THE 20 REDONE (his pick "Least exciting", 24 Nov 2026): each side must show its new moment itself, not just any of its own.
+const EXPECT := {
+	"impaler": {"front": ["heap"], "behind": ["stake"], "foe": ["grow"]},
+	"witchpin": {"front": ["thread"], "behind": ["needle"], "foe": ["seek"]},
+	"artery": {"front": ["jet"], "behind": ["burst"], "foe": ["jet"]},
+	"hemorrhage": {"front": ["rupture"], "behind": ["spread"], "foe": ["rupture"]},
+	"papercut": {"front": ["blade"], "behind": ["flurry"], "foe": ["cuts"]},
+	"gangrene": {"front": ["rot"], "behind": ["seep"], "foe": ["rot"]},
+	"bloodfeast": {"front": ["stream"], "behind": ["drain"], "foe": ["drink"]},
+	"thornshield": {"front": ["burst"], "behind": ["lash"], "foe": ["burst"]},
+	"bloodhex": {"front": ["drip"], "behind": ["spill"], "foe": ["sigil"]},
+	"ghoul": {"front": ["maw"], "behind": ["stream"], "foe": ["feed"]},
+	"deadeye": {"front": ["sight"], "behind": ["shot"], "foe": ["eye"]},
+	"macabre": {"front": ["dance"], "behind": ["frenzy"], "foe": ["frenzy"]},
+	"gravewarden": {"front": ["ward"], "behind": ["haul"], "foe": ["shade"]},
+	"fetch": {"front": ["leap"], "behind": ["dart"], "foe": ["blink"]},
+	"bloodprice": {"front": ["price"], "behind": ["price"], "foe": ["drink"]},
+	"mercy": {"front": ["sight"], "behind": ["pass"], "foe": ["sight"]},
+	"lastrites": {"front": ["taken", "thrown"], "behind": ["grow"], "foe": ["pass"]},
+	"heartbeat": {"front": ["stream"], "behind": ["burst"], "foe": ["throb"]},
+	"bastion": {"front": ["wall"], "behind": ["push"], "foe": ["ward"]},
+	"bloodharvest": {"front": ["rise"], "behind": ["splash"], "foe": ["blood"]},
+}
 ## (those the films wait on, as they need it: their front's twist on a kill, a cull, a third use; their behind's, a dodge)
 
 var M
@@ -160,7 +184,7 @@ func setup(id: String, side: String) -> void:
 	var hcs: Array = of.filter(func(w): return w in HC)
 	var other: String = of[1] if hcs.has(of[0]) else of[0]
 	# (a kill for Reaping: the first struck dies; its others nearby still to act on)
-	if hcs.has("reaping") or id in ["bloodburst", "deathburst", "sunspear", "massacre"]:
+	if hcs.has("reaping") or id in ["bloodburst", "deathburst", "sunspear", "massacre", "gangrene"]:
 		pack[0].life = 1.0
 	# (one nearly dead for Culling: left just over one Strike's worth, so the Strike leaves it low; or low already behind)
 	if hcs.has("culling"):
@@ -199,7 +223,7 @@ func setup(id: String, side: String) -> void:
 		for m in pack:
 			m.chill_t = 2.0
 			m.chill = 0.3
-	if id in ["bloodwave", "bloodburst", "bloodharvest", "thornspray", "bloodrage", "lacerate", "papercut", "fangs"] or other == "bleeding" and side == "front":
+	if id in ["bloodwave", "bloodburst", "bloodharvest", "thornspray", "bloodrage", "lacerate", "papercut", "fangs", "gangrene"] or other == "bleeding" and side == "front":
 		for m in pack:
 			m.bleed_t = 4.0
 			m.bleed_dps = 6.0
@@ -218,6 +242,9 @@ func _case(id: String, side: String, snap: bool) -> String:
 	if not (of.has("surging") and side == "front"):
 		await M._w_strike(h)
 	if of.has("surging") and side == "behind":
+		if id == "heartbeat":
+			h.last.high.orb(h.world + Vector2(1.6, 0.4))
+			await M._wait(0.1)
 		h.last.dodge_surge(h.world)
 		await M._wait(0.3)
 		h.last.high.surge.landed(h.world)
@@ -228,7 +255,7 @@ func _case(id: String, side: String, snap: bool) -> String:
 		t += 0.1
 		h.world = M._w_home
 		_nudge()
-		seen = _own(id)
+		seen = _own(id, side)
 		if id in ["undying", "soulburst"] and side == "behind":
 			for sp in h.last.spirits:
 				sp["t"] = maxf(float(sp["t"]), float(sp["life"]) - 0.15)
@@ -245,8 +272,30 @@ func _case(id: String, side: String, snap: bool) -> String:
 
 ## What its twist waits on, after the first Strike: a blow on him behind his shield (Thornshield).
 func _after(id: String, side: String) -> void:
+	var src = M._w_pack[1] if not M._w_pack[1].dead else M._w_pack[2]
 	if id == "thornshield" and side == "front":
-		h.hurt_by(5.0, "phys", [], {}, M._w_pack[1], h.world)
+		# (a blow on him behind his shield, then one that breaks it)
+		h.hurt_by(5.0, "phys", [], {}, src, h.world)
+		await M._wait(0.1)
+		h.shield = 3.0
+		h.hurt_by(30.0, "phys", [], {}, src, h.world)
+	if id == "thornshield" and side == "behind":
+		# (struck while he stands in the ward)
+		var W: Array = h.last.high.bleed._wards
+		if not W.is_empty():
+			h.world = W[0]["at"]
+			h.hurt_by(5.0, "phys", [], {}, src, h.world)
+			h.world = M._w_home
+	if id == "lastrites" and side == "front":
+		h.shield = maxf(h.shield, 20.0)
+		h.hurt_by(5.0, "phys", [], {}, src, h.world)
+	if id == "bloodhex" and side == "behind":
+		# (one dies in the circle)
+		var C: Array = h.last.high.bleed._circles
+		if not C.is_empty():
+			var m = M._w_pack[3]
+			m.world = C[0]["at"]
+			m.damage(m.life + m.shield + 10.0, "phys", false, false, [], false, false, -1)
 
 
 ## The pack moves a little each moment (what bleeds while it moves, Bloodboil's spatter, needs it).
@@ -257,13 +306,17 @@ func _nudge() -> void:
 
 
 ## Its own moment, if seen ("id:what" not one every meld of its rune sends), or "".
-func _own(id: String) -> String:
+func _own(id: String, side := "") -> String:
+	var want: Array = EXPECT.get(id, {}).get(side, [])
 	for k in h.m52.told.keys():
 		var s := str(k)
 		if not s.begins_with(id + ":"):
 			continue
 		var what := s.trim_prefix(id + ":")
-		if not GENERIC.has(what):
+		if not want.is_empty():
+			if want.has(what):
+				return s
+		elif not GENERIC.has(what):
 			return s
 	return ""
 
@@ -278,6 +331,14 @@ func _foe(id: String, snap: bool) -> String:
 	m.max_life = 600.0
 	m.life = 600.0
 	m.world = h.world + M._w_face * 1.2
+	# (a kin near it, for what it does to the monsters near it)
+	if M._w_pack.size() > 1:
+		var kin = M._w_pack[1]
+		kin.world = m.world + Vector2(-M._w_face.y, M._w_face.x) * 1.0
+		kin.max_life = 600.0
+		kin.life = 300.0
+	if id in ["ghoul", "deadeye", "macabre", "gravewarden"]:
+		m.risen = true
 	# (what it waits on, on him)
 	h.bleed_t = 4.0
 	h.bleed_dps = 3.0
@@ -304,7 +365,7 @@ func _foe(id: String, snap: bool) -> String:
 	var k := func(w: String) -> float: return 1.0 if m.words.has(w) else 0.0
 	var by: Dictionary = m.blow()
 	# (its blow, twice; its shot; its shield struck)
-	for _j in 2:
+	for _j in (3 if id == "artery" else 2):
 		h.blow_by = m
 		h.hurt_by(20.0, str(by.get("el", "phys")), m.words, {}, m, m.world)
 		h.blow_by = null
@@ -313,13 +374,27 @@ func _foe(id: String, snap: bool) -> String:
 	if id == "thornshield":
 		m.shield = 50.0
 		M._foe.shield(m, 10.0)
+		m.shield = 0.0
+		M._foe.shield(m, 10.0)
+	if id == "impaler":
+		# (one of its shots going into a wall: it grows; then on him, harder)
+		var wall := Vector2.INF
+		for dy in range(-12, 13):
+			for dx in range(-12, 13):
+				var c := Vector2i(floori(h.world.x) + dx, floori(h.world.y) + dy)
+				if wall == Vector2.INF and not M._monsters.map.open_at(c.x, c.y):
+					wall = Vector2(c.x + 0.5, c.y + 0.5)
+		if wall != Vector2.INF:
+			var a := {"high": "impaler", "r": 0.3, "dir": Vector2(1, 0), "hit": false, "src": m}
+			FoeHigh.fly(M._monsters, a, h.world, wall)
+			FoeHigh.hit_k(M._monsters, a)
 	# (its shockwave)
 	if of.has("surging"):
 		m.surge_t = 0.01
 		m._surge(0.05)
 	await M._wait(0.6)
 	# (its death, and its rising)
-	if of.has("reaping") or id in ["bloodburst", "fuse", "deathburst"]:
+	if of.has("reaping") or id in ["bloodburst", "fuse", "deathburst", "gangrene", "lastrites"]:
 		m.damage(m.life + m.shield + 10.0, "phys", false, false, [], false, false, -1)
 	var t := 0.0
 	var seen := ""
@@ -328,8 +403,9 @@ func _foe(id: String, snap: bool) -> String:
 		await M._wait(0.1)
 		t += 0.1
 		h.world = M._w_home
+		var want: Array = EXPECT.get(id, {}).get("foe", [])
 		for kk in h.m52.told.keys():
-			if str(kk).begins_with(id + ":"):
+			if str(kk).begins_with(id + ":") and (want.is_empty() or want.has(str(kk).trim_prefix(id + ":"))):
 				seen = str(kk)
 	if snap and dir != "":
 		await M._snap("%s/high_%s_foe.png" % [dir, id])

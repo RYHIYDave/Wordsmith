@@ -5,20 +5,26 @@
 ##   Wraithstep  each soul a burst of speed; while his speed lasts, his spirits move and strike as fast
 ##   Tombstone   a soul falls with a thud, staggering those near; a slow, heavy spirit whose blows stun
 ##   Revenants   two souls; two spirits, each weaker
-##   Ghoul       each soul heals him; each blow of his spirits heals him
+##   Ghoul       where a kill falls a ghoul's maw opens, biting those near, each bite healing him; his spirits' blows send
+##               blood streaming to him
 ##   Soulburst   the soul bursts from the body, striking those near; a spirit that bursts as its time ends
-##   Deadeye     a kill by a critical a bright soul, twice the time off; spirits go for the marked first, certain criticals on it
-##   Macabre     each soul a step of frenzy; his spirits strike faster for each step
-##   Gravewarden each soul tops his shield up; a spirit that stands guard by him: near it he takes less harm
+##   Deadeye     a kill by a critical a bright soul, twice the time off, staying as an eye over him that marks the nearest each
+##               second; as he marks one, every spirit fires a bright bolt at it, a certain critical
+##   Macabre     each soul a step of frenzy, and at a full frenzy each kill's corpse jerks up and dances among its kin, striking
+##               them; his spirits strike faster for each step, and at a full frenzy catch its flames, twice as fast
+##   Gravewarden each soul a shade circling him, up to three, each taking the next blow; a spirit that stands guard by him: near
+##               it he takes less harm, and it hauls back to it any enemy that comes at him
 ##   Undying     a soul half as much again; a spirit half as long again, rising once more as it ends
-##   Fetch       a soul the instant it falls, more for each other kill just before; a spirit for less time, striking oftener
+##   Fetch       a soul the instant it falls, leaping on through those near it first, a leap more for each other kill just
+##               before; a spirit for less time, striking oftener, darting from one to the next after each blow
 ##   Legion      a soul flying to him through those near, striking them; a spirit whose blows strike all round what it hits
 ##   Gravewell   a soul drags those near to where it fell; a vortex where any enemy that dies rises as his spirit
 ##   Poltergeist each soul hurls a shard at the nearest; a spirit that hurls shards at what it fights
 ##   Haunting    a cursed one's soul curses those near; a hex circle, and spirits that curse what they strike
 ##   Limbo       time slows round where a soul rises; a spirit in a bubble of slow time that goes with it
 ##   Gravebind   a soul binds the nearest; a spirit whose blows hold what they strike
-##   with the High City's others: Wraithspear (a spirit hurling lances), Bloodharvest (a red soul; spirits that make bleed),
+##   with the High City's others: Wraithspear (a spirit hurling lances), Bloodharvest (one bled to death rises at once; spirits
+##   whose blows make bleed, splashing the bleeding's blood on those round it),
 ##   Harvest and Soulstorm (mh_cull.gd, mh_surge.gd)
 extends RefCounted
 
@@ -31,6 +37,11 @@ var _kills: Array = []
 var _wells: Array = []
 ## (Soulstorm: when the souls he gathered came)
 var souls: Array = []
+## (Deadeye in front: the bright soul's eye over him {until, i, next}; Macabre: the dancing corpses {at, t, dur, i, next};
+## Gravewarden: the shades circling him)
+var _eye := {}
+var _dancers: Array = []
+var _shades := 0
 
 
 func _init(h) -> void:
@@ -41,6 +52,9 @@ func fresh() -> void:
 	_kills = []
 	_wells = []
 	souls = []
+	_eye = {}
+	_dancers = []
+	_shades = 0
 
 
 func _r(i: int) -> Dictionary:
@@ -74,7 +88,13 @@ func soul(m, i: int) -> void:
 			H.hero.cool_by(reap_k)
 			H.tell(id, "second", at)
 		"ghoul":
-			H.heal_life(H.hero.max_life * H.n("ghoul", "heal", 0.02), id)
+			# (a ghoul's maw opens where it fell, biting those near; each bite heals him)
+			var bit := 0
+			for q in H.near(at, H.n("ghoul", "r", 1.5), 6, [m]):
+				H.hit(q, i, H.n("ghoul", "bite", 0.3))
+				bit += 1
+			H.heal_life(H.hero.max_life * H.n("ghoul", "heal", 0.01) * (1 + bit), id)
+			H.tell(id, "maw", at, {"n": bit})
 		"soulburst":
 			H.tell(id, "burst", at)
 			for q in H.near(at, H.n("soulburst", "r", 1.5), 8, [m]):
@@ -83,10 +103,18 @@ func soul(m, i: int) -> void:
 			if now - float(m.m52.get("crit_at", -9.0)) < 0.2:
 				H.hero.cool_by(reap_k)
 				H.tell(id, "bright", at)
+				# (the bright soul stays a while as an eye over him, marking the nearest each second)
+				_eye = {"until": now + H.n("deadeye", "eye", 4.0), "i": i, "next": 0.0}
 		"macabre":
 			H.frenzy_up(i, 1, id)
+			if H.frenzy_full():
+				# (at a full frenzy the corpse jerks up and dances a moment among its kin, striking them)
+				_dancers.append({"at": at, "t": 0.0, "dur": H.n("macabre", "dance", 1.4), "i": i, "next": 0.0})
+				H.tell(id, "rise", at)
 		"gravewarden":
-			H.shield(H.n("gravewarden", "shield", 0.02), id)
+			# (the soul stays as a shade circling him, up to three, each taking the next blow on him)
+			_shades = mini(int(H.n("gravewarden", "shades", 3)), _shades + 1)
+			H.tell(id, "shade", H.hero.world, {"n": _shades})
 		"undying":
 			H.hero.cool_by(reap_k * H.n("undying", "more", 0.5))
 			H.tell(id, "longer", at)
@@ -95,6 +123,17 @@ func soul(m, i: int) -> void:
 			if more > 0:
 				H.hero.cool_by(H.n("fetch", "per", 0.2) * more)
 			H.tell(id, "fetch", at, {"n": more})
+			# (the soul leaps on through those near before it comes, a leap more for each other kill just before)
+			var cur: Vector2 = at
+			var gone: Array = [m]
+			for _k in mini(1 + more, int(H.n("fetch", "leaps", 5))):
+				var nx: Array = H.near(cur, H.n("fetch", "reach", 3.5), 1, gone)
+				if nx.is_empty():
+					break
+				H.hit(nx[0], i, H.n("fetch", "leap", 0.3))
+				H.tell(id, "leap", cur, {"x1": nx[0].world.x, "y1": nx[0].world.y})
+				gone.append(nx[0])
+				cur = nx[0].world
 		"legion":
 			var to: Vector2 = H.hero.world
 			H.tell(id, "fly", at, {"x1": to.x, "y1": to.y})
@@ -133,6 +172,12 @@ func soul(m, i: int) -> void:
 			if m.bleed_t > 0.0:
 				H.hero.cool_by(reap_k)
 				H.tell(id, "red", at)
+				# (bled to death, it rises at once as his spirit for a few seconds)
+				H.raise_at(at, i, H.n("bloodharvest", "share", 0.45))
+				var sp: Dictionary = H.lw.spirits.back()
+				sp["life"] = H.n("bloodharvest", "secs", 4.0)
+				sp["meld"] = "bloodharvest"
+				H.tell(id, "rise", at)
 
 
 func struck(_m, _i: int, _dmg: float, _c: bool, _at: Vector2) -> void:
@@ -187,8 +232,14 @@ func spirit_tick(sp: Dictionary, dt: float) -> void:
 				sp["speed_k"] = 1.0
 		"macabre":
 			sp["next"] = float(sp["next"]) - dt * H.n("macabre", "per", 0.2) * H.hero.frenzy
-			if H.hero.frenzy > 0 and H.once("mac%d" % int(sp["id"]), 1.0):
-				H.tell(id, "dance", Vector2(sp["x"], sp["y"]), {"n": H.hero.frenzy})
+			if H.frenzy_full():
+				# (at a full frenzy it catches the frenzy's flames: twice as fast)
+				sp["speed_k"] = 2.0
+				sp["next"] = float(sp["next"]) - dt
+				if H.once("mac%d" % int(sp["id"]), 0.5):
+					H.tell(id, "frenzy", Vector2(sp["x"], sp["y"]), {"n": H.hero.frenzy})
+			else:
+				sp["speed_k"] = 1.0
 		"fetch":
 			sp["next"] = float(sp["next"]) - dt * 0.5
 		"limbo":
@@ -197,8 +248,14 @@ func spirit_tick(sp: Dictionary, dt: float) -> void:
 				for q in H.near(Vector2(sp["x"], sp["y"]), H.n("limbo", "bubble", 1.5)):
 					H.still(q, 0.6, H.n("limbo", "crawl", 0.5))
 		"gravewarden":
-			if Vector2(sp["x"], sp["y"]).distance_to(H.hero.world) <= H.n("gravewarden", "near", 2.5) and H.once("gw%d" % int(sp["id"]), 1.0):
-				H.tell(id, "guard", Vector2(sp["x"], sp["y"]))
+			var at := Vector2(sp["x"], sp["y"])
+			if at.distance_to(H.hero.world) <= H.n("gravewarden", "near", 2.5) and H.once("gw%d" % int(sp["id"]), 1.0):
+				H.tell(id, "guard", at)
+				# (it hauls back to it any enemy that comes at him)
+				for o in H.near(H.hero.world, H.n("gravewarden", "haul", 1.8)):
+					if not o.boss and o.world.distance_to(at) > 0.8:
+						H.drag(o, at, 0.7)
+						H.tell(id, "haul", o.world, {"x1": at.x, "y1": at.y})
 
 
 ## Whom spirit `sp` goes for (`best`: the nearest).
@@ -224,6 +281,16 @@ func spirit_hit(sp: Dictionary, o, at: Vector2) -> void:
 			H.stun(o, H.n("tombstone", "blow", 0.6))
 		"ghoul":
 			H.heal_life(H.hero.max_life * H.n("ghoul", "blow", 0.008), id)
+			H.tell(id, "stream", o.world, {"x1": H.hero.world.x, "y1": H.hero.world.y})
+		"fetch":
+			# (it darts on to the next one after each blow)
+			var nx: Array = H.near(o.world, H.n("fetch", "dart", 3.0), 1, [o])
+			if not nx.is_empty():
+				var d: Vector2 = (nx[0].world - o.world).normalized()
+				var to: Vector2 = nx[0].world - d * 0.6
+				H.tell(id, "dart", at, {"x1": to.x, "y1": to.y})
+				sp["x"] = to.x
+				sp["y"] = to.y
 		"deadeye":
 			if o.mark_t > 0.0:
 				H.hit(o, i, float(sp["share"]), "", true)
@@ -240,7 +307,13 @@ func spirit_hit(sp: Dictionary, o, at: Vector2) -> void:
 		"gravebind":
 			H.bind(o, H.n("gravebind", "blow", 0.8))
 		"bloodharvest":
+			var was: bool = o.bleed_t > 0.0
 			H.lw.bleed_monster(o, maxf(1.0, H.hero.avg_hit(i, H.n("bloodharvest", "bleed", 0.3))), 3.0)
+			if was and H.once("bh%d" % int(sp["id"]), 0.8):
+				# (a blow on one bleeding tears it, splashing its blood on those round it)
+				H.tell(id, "splash", o.world)
+				for q in H.near(o.world, H.n("bloodharvest", "splash", 1.3), 4, [o]):
+					H.lw.bleed_monster(q, maxf(1.0, o.bleed_dps * 0.6), 3.0)
 		"wraithspear":
 			var w: Vector2 = (o.world - at).normalized() if o.world.distance_to(at) > 0.1 else H.hero.face
 			H.tell(id, "lance", at, {"x1": at.x + w.x * 3.0, "y1": at.y + w.y * 3.0})
@@ -290,6 +363,29 @@ func leaves(i: int, at: Vector2, _rad: float) -> void:
 			H.ground("hex", i, at, H.n("haunting", "circle", 1.5), 4.0, 0.25)
 
 
+## Deadeye behind: as he marks one, every one of his spirits fires a bright bolt at it, a certain critical.
+func marked(m, i: int) -> void:
+	if H.b(i) != "deadeye" or not H.ok(m):
+		return
+	for sp in H.lw.spirits:
+		if str(sp.get("meld", "")) == "deadeye":
+			H.hit(m, i, float(sp["share"]), "", true)
+			H.tell("deadeye", "shot", Vector2(sp["x"], sp["y"]), {"x1": m.world.x, "y1": m.world.y})
+
+
+func struck_him(_src) -> void:
+	pass
+
+
+## Gravewarden in front: a shade circling him takes the blow.
+func shade_k() -> float:
+	if _shades <= 0:
+		return 1.0
+	_shades -= 1
+	H.tell("gravewarden", "ward", H.hero.world, {"n": _shades})
+	return H.n("gravewarden", "shade", 0.15)
+
+
 ## Gravewarden: near a spirit standing guard, he takes less harm.
 func hurt_k() -> float:
 	for sp in H.lw.spirits:
@@ -316,6 +412,44 @@ func died(m) -> void:
 
 
 func step(dt: float) -> void:
+	var now: float = H.clock()
+	# (Deadeye in front: the eye over him marks the nearest each second)
+	if not _eye.is_empty():
+		if now > float(_eye["until"]):
+			_eye = {}
+		else:
+			_eye["next"] = float(_eye["next"]) - dt
+			if float(_eye["next"]) <= 0.0:
+				_eye["next"] = 1.0
+				H.tell("deadeye", "eye", H.hero.world)
+				for o in H.near(H.hero.world, H.n("deadeye", "reach", 6.0)):
+					if o.mark_t <= 0.0:
+						H.mark(o, "deadeye")
+						H.tell("deadeye", "sight", H.hero.world, {"x1": o.world.x, "y1": o.world.y})
+						break
+	# (Macabre in front: the dancing corpses whirl among their kin, striking them)
+	for k in range(_dancers.size() - 1, -1, -1):
+		var dc: Dictionary = _dancers[k]
+		dc["t"] = float(dc["t"]) + dt
+		if float(dc["t"]) >= float(dc["dur"]):
+			_dancers.remove_at(k)
+			continue
+		var nx: Array = H.near(dc["at"], 4.0, 1)
+		if not nx.is_empty():
+			var d: Vector2 = nx[0].world - dc["at"]
+			if d.length() > 0.5:
+				dc["at"] = dc["at"] + d.normalized() * minf(d.length() - 0.5, 3.5 * dt)
+		dc["next"] = float(dc["next"]) - dt
+		if float(dc["next"]) <= 0.0:
+			dc["next"] = 0.3
+			H.tell("macabre", "dance", dc["at"])
+			for q in H.near(dc["at"], H.n("macabre", "r", 1.1)):
+				H.hit(q, int(dc["i"]), H.n("macabre", "blow", 0.15))
+	# (Gravewarden in front: the shades circling him)
+	if _shades > 0 and H.once("shades", 0.15):
+		for k in _shades:
+			var a: float = now * 3.0 + TAU * k / float(_shades)
+			H.tell("gravewarden", "circle", H.hero.world + Vector2(cos(a), sin(a)) * 0.9, {"minor": true})
 	for k in range(_wells.size() - 1, -1, -1):
 		_wells[k]["t"] = float(_wells[k]["t"]) + dt
 		if float(_wells[k]["t"]) >= float(_wells[k]["dur"]):
