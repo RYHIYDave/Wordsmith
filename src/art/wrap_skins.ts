@@ -178,14 +178,19 @@ const BRASS_K: Ramp = ['#3a2410', '#6a4620', '#a07436', '#d0a656', '#f2d892'];
 const BLACK_STRAP: Ramp = ['#0a0816', '#16122a', '#262040', '#3a3258', '#5a5078'];
 
 /**
- * BRASS KNUCKLES (level 15: physical damage, a chance to stun). Black straps at the wrist, and the whole front of each fist cased
- * in brass, from above the knuckles down. (First a thin bar of brass across dark straps: too like his own wraps.)
+ * BRASS KNUCKLES (level 15: physical damage, a chance to stun). Each fist and forearm cased in brass, all of it, a black band at
+ * the wrist. (First a thin bar of brass across dark straps, then brass from the knuckles down: both too like his own wraps and
+ * Hot Streak's gilt.)
  */
 export const BRASS_WRAPS: WrapSkin = {
   id: 'brassknuckles',
   name: 'Brass Knuckles',
-  strap: BLACK_STRAP,
-  strapPaint: (h, w) => (downHand(h.p, w) > 1.15 ? sh(BRASS_K, h.tone + 1 - (w.far ? 1 : 0)) : null),
+  strap: BRASS_K,
+  strapPaint: (h, w) => {
+    const k = downHand(h.p, w);
+    if (Math.abs(k - 0.1) < 0.22) return sh(BLACK_STRAP, h.tone - (w.far ? 1 : 0));
+    return sh(BRASS_K, h.tone + 1 - (w.far ? 1 : 0));
+  },
 };
 
 /** THE FOUR, by their ids. */
