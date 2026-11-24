@@ -1159,7 +1159,7 @@ game/world_sounds.ts; `sfx.gd`, `monsters.gd`, `monster.gd`, `town.gd`, `main.gd
 
 ## The unique weapons drawn as themselves (the cloud chat, 22 Nov 2026)
 
-- **The heroes' pictures of the released game 25.3.22** (bake eccc11d9382f, tools/godot_heroes.mjs, read from the published game
+- **The heroes' pictures of the released game 25.3.22** (bake eccc11d9382f; since 24 Nov the demon from eight sides, de72bc23a8fd, below; tools/godot_heroes.mjs, read from the published game
   as `scripts/baked_hero.gd` reads it; the packs of a hero kept in packs, one file in the bake since 25.3.22, cut into a sheet each
   here as before): every group, the unique weapons' own among them, and the Warlock's demon a group of its own.
 - **Holding a unique weapon, drawn holding it** (art/heroes.ts wornSkin, render.ts heroArt; `skins.gd`, `hero.gd` dress): the
@@ -1462,6 +1462,20 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
 - `--only=words --cases=m52`: the bench (on and off), the 23 melds as they were, the stones, the gear, and each of the 63 in front of
   the Strike and behind it (its name, its line, the blow landing, its twist seen): 126 of 126. `--cases=m52film`, with
   `--fixed-fps 30`: a film of each meld, in front, behind and carried by a monster (ffmpeg makes each into an mp4).
+
+## The other chats' hand-overs brought in (the cloud chat, 23 and 24 Nov 2026)
+
+His word, 23 Nov 2026: “You can bring anything in we do here.  I'm not really using the chats anymore”.
+
+- THE MUSIC (the sound chat's two): Vellum's camp and floors 11 to 15 their own walks and fights (`assets/music/music.json`); the
+  prison town's and floors 1 to 10's walks each opening with its song's intro and going round from `loopStart` (`music.gd`).
+- THE WARLOCK'S DEMON FROM ALL EIGHT SIDES (the art chat's, `docs/mockups/demon_eight/`; his “Yes, all eight are right
+  (Recommended)”, 22 Nov 2026): `warlock-demon` baked again (bake de72bc23a8fd, `tools/bake_heroes.mjs` with only that group; the
+  other 39 groups as they were, heroes/eccc11d9382f, so the Tinkerer's 30-a-second stand still waits on his yes), brought over
+  by `tools/godot_heroes.mjs de72bc23a8fd`: eight sides, each truly painted or a mirror the bake has drawn, so the game shows it
+  as it shows the man (`hero.gd` mirrors only a two-sided one); 192 packs (40 before), its three sheets always held the same
+  size as before. `checks/demon_eight_check.gd` (eight sides, every list as long on each, every frame inside its sheet, 443 held and 6349 in its packs,
+  and a sheet of it from all eight: its stand, run, slash, Damning and burning out); `--only=heroes --cls=warlock` 11 of 11.
 
 ## Not in it yet
 

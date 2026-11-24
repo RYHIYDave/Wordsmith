@@ -82,3 +82,8 @@ by 09:41: “Yes, all eight are right (Recommended)”.** SO EIGHT_MORE.demon IS
 (`tests/shadow_eight.test.ts` 1, `tests/sides_more.test.ts`; `tests/warlock_packs.test.ts` 3 kept from its two sides with the
 switch off for it, 4 asked for ahead from its eight). Handed back on the queue page's ship list,
 `draw-the-demon-from-eight-sides`, for the Godot chat to bake (above, “For the Godot chat”).
+
+BROUGHT INTO THE GODOT COPY, 24 Nov 2026 (the cloud chat, at his word of 23 Nov: “You can bring anything in we do here.  I'm not
+really using the chats anymore”): baked whole from all eight sides, the mirrors included (bake de72bc23a8fd, only this group; the
+others as the Godot copy had them), and read as the game reads it. `godot/checks/demon_eight_check.gd`: eight sides, every list as
+long on each, every frame inside its sheet; the Warlock's hero check 11 of 11. See godot/README.md, “The other chats' hand-overs”.
