@@ -9,3 +9,4 @@ node_modules
 .bake/
 # the unit suite run by tools/unit.mjs: its frozen copies, its results kept, its logs
 .unit/
+__pycache__/
