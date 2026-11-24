@@ -352,9 +352,13 @@ func _after(id: String, side: String) -> void:
 
 ## The pack moves a little each moment (what bleeds while it moves, Bloodboil's spatter, needs it).
 func _nudge() -> void:
-	for m in M._w_pack:
+	# (each walks a small circle, as a monster in a fight is always on the move)
+	var t: float = Time.get_ticks_msec() / 1000.0
+	for k in M._w_pack.size():
+		var m = M._w_pack[k]
 		if not m.dead:
-			m.world += Vector2(randf_range(-0.12, 0.12), randf_range(-0.12, 0.12))
+			var a: float = t * 3.0 + k
+			m.world += Vector2(-sin(a), cos(a)) * 0.09
 
 
 ## Its own moment, if seen ("id:what" not one every meld of its rune sends), or "".

@@ -215,21 +215,6 @@ func tick(m, dmg: float, moved: bool) -> float:
 				m.m52["held"] = 0.0
 				H.tell(id, "pour", m.world, {"n": all})
 				return dmg * k + all
-		"mangle":
-			if m.stun_t > 0.0:
-				m.m52["stunned"] = true
-			elif m.m52.get("stunned", false):
-				m.m52["stunned"] = false
-				m.m52["tear_t"] = now + H.n("mangle", "secs", 1.5)
-				H.tell(id, "tear", m.world)
-		"briar":
-			if m.bind_t > 0.0:
-				m.m52["bound"] = true
-			elif m.m52.get("bound", false):
-				m.m52["bound"] = false
-				m.m52["tear_t"] = now + H.n("briar", "secs", 1.5)
-				m.damage(maxf(1.0, roundf(m.bleed_dps * H.n("briar", "tear", 1.5))), "phys", false, false, [], false, true, int(m.m52.get("bleed_i", -1)))
-				H.tell(id, "tear", m.world)
 		"bloodfeast":
 			# (what it bleeds streams to him, healing him; once he is whole, it hardens round him into a red shield)
 			if H.hero.life >= H.hero.max_life - 0.5:
@@ -526,6 +511,27 @@ func step(_dt: float) -> void:
 					if o.bleed_t > 0.0 and H.once("drain%d" % o.get_instance_id(), 0.6):
 						o.damage(maxf(1.0, roundf(o.bleed_dps * 0.5)), "phys", false, false, [], false, true, zi)
 						H.tell("bloodfeast", "drain", o.world, {"x1": zat.x, "y1": zat.y})
+	# (Mangle and Briar in front: as its stun ends, or it tears free of its hold, the wound tears open: watched every frame, a
+	# stun shorter than a bite of the bleeding seen too)
+	for o in H.list():
+		if not H.ok(o) or o.bleed_t <= 0.0:
+			continue
+		match str(o.m52.get("bleed_by", "")):
+			"mangle":
+				if o.stun_t > 0.0:
+					o.m52["stunned"] = true
+				elif o.m52.get("stunned", false):
+					o.m52["stunned"] = false
+					o.m52["tear_t"] = now + H.n("mangle", "secs", 1.5)
+					H.tell("mangle", "tear", o.world)
+			"briar":
+				if o.bind_t > 0.0:
+					o.m52["bound"] = true
+				elif o.m52.get("bound", false):
+					o.m52["bound"] = false
+					o.m52["tear_t"] = now + H.n("briar", "secs", 1.5)
+					o.damage(maxf(1.0, roundf(o.bleed_dps * H.n("briar", "tear", 1.5))), "phys", false, false, [], false, true, int(o.m52.get("bleed_i", -1)))
+					H.tell("briar", "tear", o.world)
 	# (Gangrene behind: one festering leaves puffs of rot behind it as it walks)
 	for o in H.list():
 		if not H.ok(o) or float(o.m52.get("fester_t", 0.0)) < now:
