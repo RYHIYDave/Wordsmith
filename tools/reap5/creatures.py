@@ -13,7 +13,9 @@
 #     ground.
 # Their eyes glow in their side's colour (his rule: what glows on a friend is cyan, on the enemy pink).
 import math
-from sculpt import Model
+from sculpt import Model, hexc
+FRIEND_RIM = (34, 208, 224)
+ENEMY_RIM = (255, 79, 139)
 
 TAU = math.pi * 2
 
@@ -277,46 +279,60 @@ def rimeling(anim, t, side='friend'):
         dy, dz = yy - piv[1], z - piv[2]
         return (x, piv[1] + dy * math.cos(a) - dz * math.sin(a), piv[2] + dy * math.sin(a) + dz * math.cos(a))
 
-    # THE HEM: icicles hanging round it, swaying, trailing as it glides
+    # (ONE SMOOTH BODY, his "Frost guy is to lumpy": a tall cloak that tapers from its shoulders to a flared hem, one surface from
+    # the hem to the hood's point, never a stack of lumps)
+    def cloak(keys, n=40):
+        """A smooth body through `keys` [(y, z, half-width, half-depth)], eased between them."""
+        for k in range(n + 1):
+            u = k / n * (len(keys) - 1)
+            a = min(len(keys) - 2, int(u))
+            f = u - a
+            f = f * f * (3 - 2 * f)
+            y0, z0, w0, d0 = keys[a]
+            y1, z1, w1, d1 = keys[a + 1]
+            yy, zz, ww, dd = y0 + (y1 - y0) * f, z0 + (z1 - z0) * f, w0 + (w1 - w0) * f, d0 + (d1 - d0) * f
+            r = min(ww, dd)
+            m.ell(up((0.0, yy + y, zz)), (ww, max(0.9, r * 0.55), dd), 'cloak', 1)
+    tr = -2.2 * trail
+    cloak([(9.6, -0.6 + tr, 4.6, 3.6), (12.5, -0.3 + tr * 0.6, 4.0, 3.2), (16.0, 0.0, 4.4, 3.4), (19.6, 0.0, 5.6, 3.8), (22.2, 0.2, 5.0, 3.6),
+           (24.2, 0.4, 3.0, 2.6)])
+    # THE HEM: a fringe of icicles hanging from it, longest at the front, swaying, trailing as it glides
     for k, (a, ln) in enumerate(HEM):
         ang = a * TAU
-        r = 4.6
-        top = up((r * math.cos(ang), 11.5 + y, r * math.sin(ang) * 0.9))
-        sw = 0.9 * math.sin(ang * 2 + sway * 2.0)
-        low = up((1.05 * r * math.cos(ang) + sw, 11.5 + y - ln, 1.05 * r * math.sin(ang) * 0.9 - 3.5 * trail - 0.6))
-        m.chain([top, low], [2.0, 0.3], 'ice', 60 + k % 2)
-    # THE ROBE: tapering down from the mantle
-    m.ell(up((0, 12.5 + y, 0.0)), (4.4, 3.0, 3.6), 'cloak', 1)
-    m.ell(up((0, 15.5 + y, 0.2)), (5.4, 4.6, 4.2), 'cloak', 1)
-    m.ell(up((0, 20.5 + y, -0.4)), (7.4, 4.0, 4.9), 'cloak', 1)
-    # (frost crusted on the mantle: shards standing off the shoulders)
+        top = up((4.2 * math.cos(ang), 10.4 + y, 3.2 * math.sin(ang) - 0.6 + tr))
+        sw = 0.7 * math.sin(ang * 2 + sway * 2.0)
+        low = up((4.2 * math.cos(ang) + sw, 10.4 + y - ln * 1.15, 3.2 * math.sin(ang) - 0.6 + tr - 3.0 * trail))
+        m.chain([top, low], [1.6, 0.2], 'ice', 60 + k % 2)
+    # THE HOOD: one smooth cowl rising from the shoulders to a point that falls back
+    m.ell(up((0, 27.2 + y, 0.4)), (4.6, 4.4, 4.2), 'cloak', 2)
+    m.curve([up((0, 29.4 + y, -1.2)), up((0, 30.6 + y, -3.8)), up((0.6, 30.0 + y, -6.4)), up((1.4, 28.0 + y, -8.6))],
+            [3.6, 2.6, 1.4, 0.4], 'cloak', 2, n=10)
+    # (the hood's opening: the dark in it, two eyes, a rim of frost round it)
+    m.ell(up((0, 26.8 + y, 3.6)), (3.2, 3.6, 1.2), 'void', 2)
     for sx in (-1, 1):
-        m.chain([up((sx * 6.0, 22.0 + y, 0.4)), up((sx * 10.0, 26.4 + y, -0.6))], [1.6, 0.3], 'ice', 3)
-        m.chain([up((sx * 5.0, 23.0 + y, -1.4)), up((sx * 7.2, 28.6 + y, -3.0))], [1.3, 0.25], 'ice', 3)
-    # THE HOOD: a deep cowl, its point falling back; in it, the dark and two eyes
-    m.ell(up((0, 26.6 + y, 0.2)), (5.0, 5.2, 5.0), 'cloak', 2)
-    m.curve([up((0, 30.0 + y, -1.0)), up((0, 32.6 + y, -3.6)), up((0.4, 32.4 + y, -6.4)), up((1.2, 30.6 + y, -8.4))],
-            [3.0, 2.0, 1.1, 0.4], 'cloak', 2, n=8)
-    m.ell(up((0, 26.2 + y, 3.8)), (3.3, 3.9, 1.4), 'void', 2)
+        m.ell(up((sx * 1.3, 27.2 + y, 4.6)), (0.9, 0.7, 0.5), 'eye', 2, rot=(0, 0, sx * -15))
+    # (frost on the shoulders: two thin sharp shards a side, not lumps)
     for sx in (-1, 1):
-        m.ell(up((sx * 1.35, 26.6 + y, 4.9)), (0.85, 0.65, 0.5), 'eye', 2)
-    # ARMS: long and thin, their sleeves ragged, their claws of ice
+        m.chain([up((sx * 4.8, 22.6 + y, -0.4)), up((sx * 7.4, 25.6 + y, -1.0))], [0.9, 0.15], 'ice', 3)
+        m.chain([up((sx * 3.6, 23.4 + y, -1.6)), up((sx * 4.8, 27.0 + y, -3.0))], [0.8, 0.12], 'ice', 3)
+    # ARMS: long and thin, the sleeves widening a little to the wrist, claws of ice
     for sx, elb, hand in ((-1, elbL, handL), (1, elbR, handR)):
-        sh = up((sx * 6.2, 21.0 + y, 0.2))
-        e = up((elb[0], elb[1] + y, elb[2]))
-        hd = up((hand[0], hand[1] + y, hand[2]))
+        sh = up((sx * 5.0, 21.4 + y, 0.2))
+        e = up((elb[0] * 0.95, elb[1] + y, elb[2]))
+        hd = up((hand[0] * 0.95, hand[1] + y, hand[2]))
         g = 40 + (sx > 0)
-        m.chain([sh, e], [1.7, 1.3], 'cloak', g)
-        m.chain([e, hd], [1.3, 1.6], 'cloak', g)
+        m.chain([sh, e], [1.4, 1.1], 'cloak', g, step=0.3)
+        m.chain([e, hd], [1.1, 1.5], 'cloak', g, step=0.3)
         for k in (-1, 0, 1):
-            m.chain([hd, (hd[0] + 0.8 * k, hd[1] - 2.2, hd[2] + 1.4)], [0.6, 0.2], 'ice', g)
-    # THE ICICLE it draws between its claws over its head, growing
+            m.chain([hd, (hd[0] + 0.7 * k, hd[1] - 2.4, hd[2] + 1.2)], [0.5, 0.15], 'ice', g)
+    # THE ICICLE it draws between its claws over its head, growing: a long spike, point forward
     if spike > 0.05:
         hr = up((handR[0], handR[1] + y, handR[2]))
         hl = up((handL[0], handL[1] + y, handL[2]))
-        mid = ((hr[0] + hl[0]) / 2, (hr[1] + hl[1]) / 2 + 2.5, (hr[2] + hl[2]) / 2 + 0.5)
-        ln = 3.0 + 8.0 * spike
-        m.chain([(mid[0] - ln * 0.5, mid[1] - 0.4, mid[2] + 0.6), (mid[0] + ln * 0.6, mid[1] + 1.0, mid[2] + 1.2)], [1.2 + 1.3 * spike, 0.3], 'shard', 50)
+        mid = ((hr[0] + hl[0]) / 2, (hr[1] + hl[1]) / 2 + 2.0, (hr[2] + hl[2]) / 2 + 0.5)
+        ln = 3.0 + 7.0 * spike
+        m.chain([(mid[0] - ln * 0.35, mid[1] - 0.2, mid[2] - 0.4), (mid[0], mid[1] + 0.3, mid[2] + 0.6), (mid[0] + ln * 0.65, mid[1] + 1.2, mid[2] + 1.6)],
+                [0.6 + 0.4 * spike, 0.9 + 0.9 * spike, 0.15], 'shard', 50)
     return m, mats
 
 
@@ -364,85 +380,113 @@ def draw_sparks(img, n, seed):
 
 
 def stormwisp(anim, t, side='friend'):
-    m = Model()
-    mats = dict(WISP_MATS)
-    if side == 'foe':
-        mats['eye'] = {'ramp': ['#ff4f8a', '#ffc0d4'], 'glow': True}
-    hov = 8.0
+    """THE STORMWISP, AT HIS WORD (24 Nov 2026: “the lightning guy is weird.  Maybe it's just like a wisp, just a ball of
+    energy”): no body and no face, a ball of storm-light: a white-hot heart, its edge never still, tongues of light licking off
+    it, little bolts crackling out and sparks circling it; trailing light as it darts; swelling and crackling harder as it
+    gathers, then a flash of bolts as it strikes. Painted straight onto the picture (it is light, not a body): only its edge of
+    light in its side's colour, as everything of either side has."""
+    import random
+    import numpy as np
+    bob = 0.0
+    swell = 0.0
+    arcs = 2
+    burst = 0.0
+    trail = 0.0
     lean = 0.0
-    fwd = 0.0
-    whip = 0.0
-    spk = 3
-    flash = 0.0
-    armR = (7.6, 17.0, 4.2)
-    armL = (-7.6, 17.0, 4.2)
-    crown = 1.0
     if anim == 'idle':
-        hov += 1.5 * s(t)
-        whip = s(t + 0.3)
-        crown = 0.85 + 0.15 * s(t * 2)
+        bob = 2.0 * s(t)
+        swell = 0.06 * s(t * 2)
     elif anim == 'walk':
-        hov += 0.8 * s(t * 2)
-        lean = 26.0
-        whip = 0.6 * s(t * 2)
-        armR = (6.6, 15.4, 0.8)
-        armL = (-6.6, 15.4, 0.8)
+        bob = 1.0 * s(t * 2)
+        trail = 1.0
+        lean = 2.0
     elif anim == 'attack':
-        back = key(t, [(0, 0), (0.55, 1), (0.62, 1.05), (0.66, -1), (0.82, -0.8), (1, 0)])
-        lean = -16 * max(0, back) + 30 * max(0, -back)
-        fwd = -2.0 * max(0, back) + 4.0 * max(0, -back)
-        hov += 1.0 * max(0, back)
-        whip = -1.0 * back
-        spk = 3 + int(5 * max(0, back))
-        crown = 1.0 + 0.4 * max(0, back)
-        flash = key(t, [(0, 0), (0.62, 0), (0.64, 1.0), (0.74, 0.5), (0.8, 0)])
-        if back >= 0:
-            armR = lerp3((7.6, 17.0, 4.2), (8.4, 20.5, -2.0), back)
-            armL = lerp3((-7.6, 17.0, 4.2), (-8.4, 20.5, -2.0), back)
-        else:
-            armR = lerp3((7.6, 17.0, 4.2), (3.4, 18.0, 8.5), -back)
-            armL = lerp3((-7.6, 17.0, 4.2), (-3.4, 18.0, 8.5), -back)
-    y = hov
-    piv = (0.0, 16.0 + y, 0.0)
+        back = key(t, [(0, 0), (0.55, 1), (0.62, 1.05), (0.64, -1), (0.8, -0.6), (1, 0)])
+        swell = 0.35 * max(0, back) - 0.15 * max(0, -back)
+        arcs = 2 + int(4 * max(0, back))
+        burst = key(t, [(0, 0), (0.62, 0), (0.64, 1.0), (0.76, 0.4), (0.84, 0)])
+        bob = -1.5 * max(0, back)
+    rim = FRIEND_RIM if side == 'friend' else ENEMY_RIM
+    seed = int(t * 997) + {'idle': 1, 'walk': 2, 'attack': 3}[anim] * 7919
 
-    def up(p):
-        x, yy, z = p
-        a = math.radians(lean)
-        dy, dz = yy - piv[1], z - piv[2]
-        return (x, piv[1] + dy * math.cos(a) - dz * math.sin(a), piv[2] + dy * math.sin(a) + dz * math.cos(a) + fwd)
+    def paint(img, yaw):
+        H, W = img.shape[:2]
+        rnd = random.Random(seed)
+        cx = W / 2 + lean
+        cy = H - 6 - 26 - bob
+        R = 8.2 * (1.0 + swell)
+        ph = t * TAU
+        lit = np.zeros((H, W), bool)
+        col = np.zeros((H, W, 3), np.uint8)
+        # (the light it trails as it darts: smaller and dimmer behind it)
+        blobs = []
+        if trail > 0:
+            for k, (dx, dy, rr) in enumerate(((-7.0, 2.0, 0.55), (-12.0, 3.5, 0.36), (-16.0, 4.5, 0.2))):
+                blobs.append((cx + dx + 1.0 * s(t * 2 + k * 0.3), cy + dy, R * rr, 1))
+        blobs.append((cx, cy, R, 0))
+        for bx, by, br, dim in blobs:
+            for yy in range(max(0, int(by - br * 1.5)), min(H, int(by + br * 1.5) + 1)):
+                for xx in range(max(0, int(bx - br * 1.5)), min(W, int(bx + br * 1.5) + 1)):
+                    vx, vy = xx + 0.5 - bx, yy + 0.5 - by
+                    th = math.atan2(vy, vx)
+                    # (its edge never still: rippling round it, and tongues of light licking off it)
+                    rr = br * (1.0 + 0.05 * math.sin(3 * th + ph * 2) + 0.04 * math.sin(5 * th - ph * 3) + 0.03 * math.sin(7 * th + ph))
+                    d = math.hypot(vx, vy) / max(0.5, rr)
+                    if d > 1.0:
+                        continue
+                    # (lit from the upper left: its heart a little up and left of its middle)
+                    dc = math.hypot(vx + br * 0.18, vy + br * 0.18) / max(0.5, rr)
+                    if dim:
+                        c = '#e0a028' if d > 0.6 else '#ffe040'
+                    elif dc < 0.34:
+                        c = '#ffffff'
+                    elif dc < 0.56:
+                        c = '#fff8c0'
+                    elif d < 0.8:
+                        c = '#ffe040'
+                    else:
+                        c = '#e0a028'
+                    lit[yy, xx] = True
+                    col[yy, xx] = hexc(c)
+        # its edge of light, its side's colour, at the game's strength
+        edge = np.zeros((H, W), bool)
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            sh = np.zeros((H, W), bool)
+            sh[max(0, dy):H + min(0, dy), max(0, dx):W + min(0, dx)] = lit[max(0, -dy):H + min(0, -dy), max(0, -dx):W + min(0, -dx)]
+            edge |= sh
+        edge &= ~lit
+        img[lit, :3] = col[lit]
+        img[lit, 3] = 255
+        img[edge, :3] = rim
+        img[edge, 3] = 110
 
-    # THE TAIL: a swirl of storm-light under it in place of legs, curling round and away to a hooked tip
-    m.curve([up((0, 15.0 + y, 0.0)), up((0.8 + 0.8 * whip, 11.6 + y, -1.2)), up((2.8 + 1.6 * whip, 8.6 + y, -1.0)),
-             up((4.6 + 2.0 * whip, 7.4 + y, 1.2)), up((4.4 + 1.6 * whip, 8.2 + y, 3.6)), up((2.8 + 1.0 * whip, 9.4 + y, 4.2))],
-            [3.8, 2.8, 2.0, 1.4, 0.8, 0.35], 'wisp', 1, n=10)
-    # ITS BODY: a little chest under its great head
-    m.ell(up((0, 17.6 + y, 0.4)), (3.8, 3.4, 3.2), 'wisp', 1)
-    # THE HEAD: big for it, a crown of jagged bolts standing off it, crackling
-    m.ell(up((0, 23.4 + y, 0.6)), (5.6, 5.4, 5.0), 'wisp', 2)
-    for k, (ax, az, h) in enumerate(((0.0, -0.4, 1.0), (-3.0, 0.2, 0.8), (3.0, 0.2, 0.8), (-1.8, -2.8, 0.7), (1.8, -2.8, 0.72))):
-        hh = h * crown
-        base = up((ax * 0.9, 27.4 + y, az * 0.9 + 0.4))
-        kink = up((ax * 1.5 + (0.9 if ax <= 0 else -0.9), 27.4 + y + 3.2 * hh, az * 1.5 - 0.2))
-        tip = up((ax * 2.1 - (0.4 if ax <= 0 else -0.4), 27.4 + y + 6.0 * hh, az * 2.0 - 0.8))
-        m.chain([base, kink, tip], [1.5, 0.8, 0.2], 'wisp', 2)
-    # THE FACE: two great slanted eyes, dark, with a point of light in each, and a sly grin
-    for sx in (-1, 1):
-        m.ell(up((sx * 2.1, 23.6 + y, 4.6)), (1.7, 2.0, 0.8), 'void', 3, rot=(0, 0, sx * 28))
-        m.ell(up((sx * 1.9, 23.3 + y, 5.3)), (0.75, 0.9, 0.5), 'eye', 3)
-    m.ell(up((0.4, 20.6 + y, 4.9)), (2.0, 0.5, 0.6), 'void', 3, rot=(0, 0, -10))
-    # ARMS: two little arms ending in crackling points
-    for sx, hand in ((-1, armL), (1, armR)):
-        sh = up((sx * 3.4, 18.8 + y, 0.8))
-        hd = up((hand[0], hand[1] + y, hand[2]))
-        el = up(((sx * 3.4 + hand[0]) / 2 + sx * 1.2, (18.8 + hand[1]) / 2 - 1.0 + y, (0.8 + hand[2]) / 2))
-        m.chain([sh, el, hd], [1.3, 0.9, 0.5], 'wisp', 40 + (sx > 0))
-        for k in (-1, 1):
-            m.chain([hd, (hd[0] + sx * 0.8, hd[1] + k * 1.0, hd[2] + 0.8)], [0.4, 0.15], 'wisp', 40 + (sx > 0))
-    if flash > 0.05:
-        fa = up((0, 19.0 + y, 9.5))
-        m.ball(fa, 1.0 + 1.8 * flash, 'core', 50)
-    seed = int(t * 1000) + {'idle': 1, 'walk': 2, 'attack': 3}[anim] * 7919
-    return m, mats, (lambda img, yaw: draw_sparks(img, spk, seed + int(yaw)))
+        def dot(x, y, c):
+            x, y = int(round(x)), int(round(y))
+            if 0 <= x < W and 0 <= y < H and not lit[y, x]:
+                img[y, x, :3] = hexc(c)
+                img[y, x, 3] = 255
+        # little bolts crackling out of it, new each frame; a great flash of them as it strikes
+        n = arcs + (7 if burst > 0.3 else 0)
+        for k in range(n):
+            th = rnd.uniform(0, TAU)
+            ln = rnd.uniform(4.0, 8.0) + 9.0 * burst
+            x, y = cx + math.cos(th) * R * 0.9, cy + math.sin(th) * R * 0.9
+            steps = int(ln)
+            for q in range(steps):
+                jag = rnd.choice((-1, 0, 1))
+                x += math.cos(th) + jag * -math.sin(th) * 0.9
+                y += math.sin(th) + jag * math.cos(th) * 0.9
+                dot(x, y, '#ffffff' if q < steps * 0.5 else '#fff27a')
+        # its halo: light flickering just off its edge, new each frame
+        for k in range(int(10 + 10 * swell)):
+            th = rnd.uniform(0, TAU)
+            rr = R * rnd.uniform(1.12, 1.4)
+            dot(cx + math.cos(th) * rr, cy + math.sin(th) * rr, rnd.choice(('#ffe040', '#e0a028', '#fff8c0')))
+        # sparks circling it
+        for k in range(3):
+            a = ph * (1.0 + 0.3 * k) + k * TAU / 3
+            dot(cx + math.cos(a) * (R + 4.5), cy + math.sin(a) * (R + 4.5) * 0.6, '#fffde8')
+    return Model(), {}, paint
 
 
 # ---------------------------------------------------------------------------------------------------------------------------
@@ -677,9 +721,9 @@ def bonebrute(anim, t, side='friend'):
 CREATURES = {
     'imp': {'make': imp, 'yaw_front': 18, 'yaw_back': 162, 'canvas': (84, 76), 'origin': (42, 68), 'scale': 1.35,
             'frames': {'idle': 8, 'walk': 8, 'attack': 18}, 'fps': {'idle': 8, 'walk': 14, 'attack': 24}, 'hit': 0.66},
-    'rimeling': {'make': rimeling, 'yaw_front': 18, 'yaw_back': 162, 'canvas': (80, 84), 'origin': (40, 78), 'scale': 1.3,
+    'rimeling': {'make': rimeling, 'yaw_front': 18, 'yaw_back': 162, 'canvas': (84, 92), 'origin': (42, 86), 'scale': 1.45,
                  'frames': {'idle': 8, 'walk': 8, 'attack': 18}, 'fps': {'idle': 8, 'walk': 10, 'attack': 24}, 'hit': 0.66},
-    'stormwisp': {'make': stormwisp, 'yaw_front': 18, 'yaw_back': 162, 'canvas': (84, 96), 'origin': (42, 88), 'scale': 1.55,
+    'stormwisp': {'make': stormwisp, 'yaw_front': 18, 'yaw_back': 162, 'canvas': (64, 72), 'origin': (32, 66), 'scale': 1.0,
                   'frames': {'idle': 8, 'walk': 8, 'attack': 18}, 'fps': {'idle': 10, 'walk': 14, 'attack': 24}, 'hit': 0.64},
     'toad': {'make': toad, 'yaw_front': 22, 'yaw_back': 158, 'canvas': (88, 68), 'origin': (44, 60), 'scale': 1.45,
              'frames': {'idle': 8, 'walk': 8, 'attack': 16}, 'fps': {'idle': 8, 'walk': 12, 'attack': 24}, 'hit': 0.645},

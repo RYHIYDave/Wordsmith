@@ -104,8 +104,8 @@ h1 { font: 700 30px/1.15 var(--display); letter-spacing: .02em; margin: 0 0 6px;
 </style>
 <main>
 <h1>Reaping Creatures</h1>
-<div class="status">Second pass &middot; built and switched off &middot; waiting for your yes</div>
-<p class="lede">The second pass: each creature bigger, facing you so its face reads, in bold tones with purple shadows, with the deep outline and the soft edge of light the game's own monsters have. The Stormwisp is made anew, the Bonebrute has a horned skull, and the Imp has a grin.</p>
+<div class="status">Third pass &middot; built and switched off &middot; waiting for your yes</div>
+<p class="lede">The third pass, at your word: the Rimeling made one smooth hooded wraith, no lumps; the Stormwisp a true wisp, a crackling ball of storm-light with no body or face. The others as in the second pass: bigger, facing you, in bold tones with purple shadows, with the deep outline and the soft edge of light the game's own monsters have.</p>
 <p class="quote">“Like reaping and fire makes little imps that throw fireballs instead of the shades.  What would the others be?”</p>
 <p class="lede">Five new melds put Reaping together with Flame, Frost, Lightning, Poison and Power. Behind an attack, what you kill rises as that rune's own creature in place of the grey spirit, with a cyan edge because it fights for you. An enemy carrying one rises as the same creature against you, with a pink edge, and every blow it throws is marked on the floor first so you can step out of it.</p>
 <section class="stage"><img src="pics/lineup.png" alt="All five creatures standing in the game: his in cyan beside him, the five risen against him in pink"><p>All ten in the game: the five fighting for you (cyan) beside the knight, and the five risen against you (pink) behind them.</p></section>

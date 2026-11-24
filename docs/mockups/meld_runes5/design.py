@@ -14,8 +14,8 @@ rune("cinderbrood", "Cinderbrood", "reaping", "fire", "#d0582a", "A horned head 
      ["X.....X", "XX...XX", ".XXXXX.", ".XoXoX.", "..XXX..", ".X.X.X.", "XX.X.XX"])
 rune("wintergrave", "Wintergrave", "reaping", "frost", "#6aa0d8", "A hooded head over a fringe of icicles",
      ["...X...", "..XXX..", ".XX.XX.", ".XoXoX.", ".XXXXX.", "X.X.X.X", "X.X.X.."])
-rune("stormwake", "Stormwake", "reaping", "lightning", "#d8c860", "A crowned wisp with a bolt for a tail",
-     ["X.X.X.X", ".XXXXX.", ".XoXoX.", "..XXX..", "...X...", "..X....", ".X....."])
+rune("stormwake", "Stormwake", "reaping", "lightning", "#d8c860", "A ball of storm-light, bolts crackling off it",
+     ["..X....", "...X.X.", "..XXX..", ".XXoXX.", "..XXX..", ".X.X...", "....X.."])
 rune("bogborn", "Bogborn", "reaping", "poison", "#8aa83a", "A squatting toad, its eyes on top",
      [".......", ".oX.Xo.", "XXXXXXX", "X.XXX.X", "XXXXXXX", ".X...X.", "XX...XX"])
 rune("charnel", "Charnel", "reaping", "power", "#b8b098", "A skull over two great fists",
