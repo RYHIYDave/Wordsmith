@@ -32,7 +32,22 @@
 ## it goes, and it goes nowhere else ("Your first word goes on an attack").
 ## LEXICON beside the bag (WORD_LEX): every word he holds on a panel of its own over the game's half. At a service, the tile at
 ## the end of the words' line (WORD_ROOM): ALL turns the bottom to every word, BAG back to the bag.
+## THE RUNE BAG AND THE MELDING STONE (RUNE_BAG, on at his yes, 23 Nov 2026: “Build both in the game (Recommended)”): the LEXICON
+## panel is the RUNE BAG (rune_bag.gd: groups, a search, sorting, a card when a rune is held), opened by RUNES; at the wordsmith,
+## while he melds, the bag stands on this panel's half and his half is the MELDING STONE (meld_stone.gd), the meld played out on
+## it. docs/mockups/rune_bag is the picture he said yes to.
 extends Control
+
+const RuneBag := preload("res://scripts/rune_bag.gd")
+const MeldStone := preload("res://scripts/meld_stone.gd")
+## (his yes to the mock-up, 23 Nov 2026: “Build both in the game (Recommended)”)
+const RUNE_BAG := {"on": true}
+var _rb  # rune_bag.gd
+var _ms  # meld_stone.gd
+## (when each hollow above was last laid in, on the stone's clock: the rune drops in and settles)
+var _ms_drop := [-9.0, -9.0]
+## (whether the bag was drawn this frame, and on which half: "game", "panel" or "")
+var _rb_on := ""
 
 const Words := preload("res://scripts/words.gd")
 const FoeWords := preload("res://scripts/foe_words.gd")
@@ -188,6 +203,8 @@ func _ready() -> void:
 	Melds52.add_hud(_hud)
 	_hud_tex = load("res://assets/hud/hud.png")
 	_tal = TalentsPage.new(self, _hud["theme"], _hud["palette"])
+	_rb = RuneBag.new(self)
+	_ms = MeldStone.new(self)
 	visible = false
 	if not InputMap.has_action("inventory"):
 		InputMap.add_action("inventory")
@@ -198,12 +215,15 @@ func _ready() -> void:
 
 
 func _process(dt: float) -> void:
-	if Input.is_action_just_pressed("inventory") and not (main != null and (main._title != null or main._cards != null)):
+	if Input.is_action_just_pressed("inventory") and not (main != null and (main._title != null or main._cards != null)) and not (_rb != null and _rb.typing()):
 		toggle()
 	if not visible:
 		return
 	_t += dt
 	_dt = dt
+	if RUNE_BAG.on:
+		_rb.step(dt)
+		_ms.step(dt)
 	_note_t = maxf(0.0, _note_t - dt)
 	if not _flash.is_empty():
 		_flash["t"] += dt
@@ -241,6 +261,10 @@ func toggle() -> void:
 		altar = -1
 		wsmith = ""
 		svc = ""
+		if _rb != null:
+			_rb.closed()
+			_ms.anim = {}
+			_ms.parts = []
 	mouse_filter = Control.MOUSE_FILTER_STOP if visible else Control.MOUSE_FILTER_IGNORE
 	# (the HUD and the small map are not over the game's half while the panel is up: ui/inventory.ts, the game draws neither)
 	if main != null:
@@ -279,7 +303,11 @@ func _gui_input(ev: InputEvent) -> void:
 	if e is InputEventMouseMotion:
 		_mouse = e.position
 		_hover = {}
+		if _rb != null and not _rb.ptr.is_empty():
+			_rb.motion(e.position)
 		for h in _hits:
+			if _rb_on != "" and _rb.rect.has_point(e.position):
+				break
 			if h[0].has_point(e.position) and (h[1] == "worn" or h[1] == "bag" or h[1] == "buy" or h[1] == "buyback" or h[1] == "st_take"):
 				_hover = {"item": h[3], "at": e.position}
 		if not _drag.is_empty() and not _drag["moving"] and e.position.distance_to(_drag["at"]) > 5.0 * K:
@@ -289,6 +317,10 @@ func _gui_input(ev: InputEvent) -> void:
 				dd["moving"] = true
 	if e is InputEventMouseButton:
 		_mouse = e.position
+		if e.pressed and (e.button_index == MOUSE_BUTTON_WHEEL_UP or e.button_index == MOUSE_BUTTON_WHEEL_DOWN) and _rb_on != "" and _rb.rect.has_point(e.position):
+			_rb.wheel(-1.0 if e.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0)
+			accept_event()
+			return
 		if e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 			_pressed(e.position)
 			accept_event()
@@ -324,6 +356,9 @@ func _pressed(at: Vector2) -> void:
 		if b[0].has_point(at):
 			_press(b[1], null)
 			return
+	# (THE RUNE BAG: a press on it is its own)
+	if _rb_on != "" and _rb.press(at):
+		return
 	if _done.has_point(at):
 		_press("close", null)
 		return
@@ -392,6 +427,9 @@ func _pressed(at: Vector2) -> void:
 
 
 func _released(at: Vector2) -> void:
+	if _rb != null and not _rb.ptr.is_empty():
+		_rb.release(at)
+		return
 	var W := _hw()
 	if not _shelf_drag.is_empty():
 		var d := _shelf_drag
@@ -561,6 +599,13 @@ func _press(action: String, arg) -> void:
 			_say(loot.buy_back(arg))
 		"lex":
 			_lex = not _lex
+			if RUNE_BAG.on:
+				if _lex:
+					_rb.opened()
+				else:
+					_rb.closed()
+		"ms_take":
+			_ms.take()
 		"swap":
 			_all = not _all
 		"shelf_take":
@@ -858,7 +903,7 @@ func _lay() -> void:
 	# (WORD_LEX, open: every word as its rune stone, in lines over the game's half at its foot, on a panel of its own: ui/inventory.ts
 	# halfRoom, layPouch with `runes`; laid in the other half's lay, from W)
 	_lex_panel = Rect2()
-	if _lex and _lex_r.has_area() and _page != "talents":
+	if _lex and _lex_r.has_area() and _page != "talents" and not RUNE_BAG.on:
 		var half_w := W - 2.0 * 6.0 * K
 		var half_lines := maxi(1, floori((H - 2.0 * 6.0 * K - CAP - 4.0 * K + 2.0 * K) / LINE))
 		var cells: Array = []
@@ -964,41 +1009,48 @@ func _draw() -> void:
 	var gr := -offset_right
 	var gb := -offset_bottom
 	draw_rect(Rect2(-gl, -gt, W + gl + gr, _vh() + gt + gb), PANEL)
-	# (the bottom that never changes stands on a ground of its own; not on THE SKILL TREES' page)
-	if _page != "talents":
-		draw_rect(Rect2(-gl, _strip_y - 3.0 * K, W + gl + gr, _vh() - _strip_y + 3.0 * K + gb), BOX)
-		draw_rect(Rect2(-gl, _strip_y - 3.0 * K, W + gl + gr, 1), EDGE)
-	# (its edge against the game: a line, and a hair of light along it)
-	draw_rect(Rect2(0, -gt, K, _vh() + gt + gb), EDGE_HI)
-	draw_rect(Rect2(0, -gt, 1, _vh() + gt + gb), PICK_LO)
 	var first: bool = loot.first_word_waits()
-	for tb in _tabs:
-		var on: bool = tb["page"] == _page
-		var off: bool = first and tb["page"] != "attacks"
-		var r: Rect2 = tb["r"]
-		var hot: bool = not off and not on and r.has_point(_mouse)
-		_gbox(r, HOT if on else (BG2 if hot else BOX), PICK if on else (EDGE_HI if hot else EDGE))
-		_mid(r, PAGE_LABEL[tb["page"]], NORMAL, FAINT if off else (PICK if on else TEXT))
-	# (pink is the one thing to press: DONE)
-	_gbutton(_done, "DONE", true, (_coached and blink) or _done.has_point(_mouse))
-	_tal_buttons = []
-	if _page == "attacks":
-		_draw_attacks(blink, first)
-	elif _page == "talents":
-		_tal.lay_out(hero.cls, Rect2(M / K, _page_y / K, (W - 2.0 * M) / K, _page_h / K))
-		_tal.draw(hero, loot.talent_level(), _t, _dt)
-	elif _page == "stats":
-		_draw_stats(Rect2(M, _page_y, W - 2.0 * M, _page_h))
+	_rb_on = ""
+	if RUNE_BAG.on and wsmith == "meld":
+		# (THE RUNE BAG beside the melding stone, on this panel's half)
+		_rb_on = "panel"
+		_rb.draw(Rect2(0, 0, W, _vh()), true)
+		_half(1)
 	else:
-		_draw_gear()
-	if _page != "talents":
-		_draw_bag(blink, first)
-		_draw_words(first)
-	if _note_t > 0.0:
-		var nw := minf(W - 8.0, _width(_note, NORMAL) + 16.0)
-		var nr := Rect2(floorf((W - nw) / 2.0), _strip_y - 16.0 * K, nw, 11.0 * K)
-		draw_rect(nr, Color.BLACK)
-		_mid(nr, _note, NORMAL, BAD)
+		# (the bottom that never changes stands on a ground of its own; not on THE SKILL TREES' page)
+		if _page != "talents":
+			draw_rect(Rect2(-gl, _strip_y - 3.0 * K, W + gl + gr, _vh() - _strip_y + 3.0 * K + gb), BOX)
+			draw_rect(Rect2(-gl, _strip_y - 3.0 * K, W + gl + gr, 1), EDGE)
+		# (its edge against the game: a line, and a hair of light along it)
+		draw_rect(Rect2(0, -gt, K, _vh() + gt + gb), EDGE_HI)
+		draw_rect(Rect2(0, -gt, 1, _vh() + gt + gb), PICK_LO)
+		for tb in _tabs:
+			var on: bool = tb["page"] == _page
+			var off: bool = first and tb["page"] != "attacks"
+			var r: Rect2 = tb["r"]
+			var hot: bool = not off and not on and r.has_point(_mouse)
+			_gbox(r, HOT if on else (BG2 if hot else BOX), PICK if on else (EDGE_HI if hot else EDGE))
+			_mid(r, PAGE_LABEL[tb["page"]], NORMAL, FAINT if off else (PICK if on else TEXT))
+		# (pink is the one thing to press: DONE)
+		_gbutton(_done, "DONE", true, (_coached and blink) or _done.has_point(_mouse))
+		_tal_buttons = []
+		if _page == "attacks":
+			_draw_attacks(blink, first)
+		elif _page == "talents":
+			_tal.lay_out(hero.cls, Rect2(M / K, _page_y / K, (W - 2.0 * M) / K, _page_h / K))
+			_tal.draw(hero, loot.talent_level(), _t, _dt)
+		elif _page == "stats":
+			_draw_stats(Rect2(M, _page_y, W - 2.0 * M, _page_h))
+		else:
+			_draw_gear()
+		if _page != "talents":
+			_draw_bag(blink, first)
+			_draw_words(first)
+		if _note_t > 0.0:
+			var nw := minf(W - 8.0, _width(_note, NORMAL) + 16.0)
+			var nr := Rect2(floorf((W - nw) / 2.0), _strip_y - 16.0 * K, nw, 11.0 * K)
+			draw_rect(nr, Color.BLACK)
+			_mid(nr, _note, NORMAL, BAD)
 	# (THE SERVICES, on the left half: ui/inventory.ts gameRect; laid out from W)
 	_half(-1)
 	# (UPRIGHT: the part above the panel is a game pixel or so taller than a half is laid out: a service's ground reaches down to it)
@@ -1015,8 +1067,17 @@ func _draw() -> void:
 	# (WORD_LEX: his lexicon open, every word on a panel of its own over the game's half)
 	if _lex_panel.has_area():
 		_draw_lex()
-	# (what is read, on a card over the game's half against the panel's edge)
-	_draw_reading(blink, first)
+	# (THE RUNE BAG over the game's half: RUNES pressed, away from the services)
+	if RUNE_BAG.on and _lex and _lex_r.has_area() and _page != "talents" and _rb_on == "":
+		_rb_on = "game"
+		_rb.draw(Rect2(W, 0, W, _vh()), false)
+		_half(-1)
+	elif RUNE_BAG.on and _rb_on == "":
+		_rb.closed()
+	# (what is read, on a card over the game's half against the panel's edge; with the bag over it or the stone there, only a
+	# question waiting or what came of it)
+	if _rb_on == "" or not _pending.is_empty() or not _result.is_empty():
+		_draw_reading(blink, first)
 	# (THE SKILL TREES: the card of the talent being read, over the game's half)
 	if _page == "talents":
 		_tal_buttons = _tal.draw_card(hero, loot.talent_level(), loot.gold, main.is_home(main.place), W / K, _vh() / K, loot.level)
@@ -1429,7 +1490,19 @@ func _draw_bag(_blink: bool, first: bool) -> void:
 	var W := _hw()
 	# (WORD_LEX: LEXICON, under the gold and the level beside the bag)
 	if _lex_r.has_area():
-		_gbutton(_lex_r, "LEXICON", false, _lex or _lex_r.has_point(_mouse))
+		if RUNE_BAG.on:
+			# (RUNES: a rune's stone, RUNES, and how many he holds; lit while the bag is open)
+			var lit: bool = _lex or _lex_r.has_point(_mouse)
+			_gbox(_lex_r, PICK_BG if _lex else (HOT if lit else BG2), PICK if lit else EDGE_HI)
+			var cy := _lex_r.position.y + floorf((_lex_r.size.y - 12.0 * K) / (2.0 * K)) * K
+			if loot.pics.has("word:eruption"):
+				_icon("word:eruption", Rect2(_lex_r.position.x + 2.0 * K, cy, 12.0 * K, 12.0 * K))
+			_top(Vector2(_lex_r.position.x + 16.0 * K, _lex_r.position.y + 4.0 * K), "RUNES", NORMAL, PICK if _lex else TEXT)
+			var nheld := "%d" % loot.held().size()
+			if 16.0 * K + _width("RUNES", NORMAL) + 4.0 * K + _width(nheld, SMALL) + 3.0 * K <= _lex_r.size.x:
+				_small(Vector2(_lex_r.end.x - 3.0 * K, _lex_r.position.y + 6.0 * K), nheld, DIM, true)
+		else:
+			_gbutton(_lex_r, "LEXICON", false, _lex or _lex_r.has_point(_mouse))
 		_hits.append([_lex_r, "lex", null, null])
 	if _all:
 		return
@@ -2467,9 +2540,20 @@ func _ws_lay(w: String) -> String:
 	var no := _ws_problem(w)
 	if no != "":
 		return no
-	meld_in[meld_in.find(null)] = w
+	var i := meld_in.find(null)
+	meld_in[i] = w
 	loot.melded = {}
+	if RUNE_BAG.on:
+		_ms.finish_now()
+		_ms_drop[i] = _ms._now
 	return ""
+
+
+## (THE RUNE BAG at the wordsmith) A rune pressed there, or sent TO THE MELD from its card: laid in his next hollow.
+func _ms_lay(w: String) -> void:
+	var no := _ws_lay(w)
+	if no != "":
+		_say(no)
 
 
 ## The hint on a word's card while his half is melding (ui/meld.ts wordHint).
@@ -2532,13 +2616,18 @@ func _ws_press(action: String, arg) -> void:
 			else:
 				_word = ""
 		"ws_meld":
+			# (THE MELDING STONE: one meld at a time is played out)
+			if RUNE_BAG.on:
+				_ms.finish_now()
 			_word = ""
 			var a: String = meld_in[0] if meld_in[0] != null else ""
 			var b: String = meld_in[1] if meld_in[1] != null else ""
-			var no: String = loot.meld_words(a, b)
+			var no: String = loot.meld_words(a, b, RUNE_BAG.on)
 			_say(no)
 			if no == "":
 				meld_in = [null, null]
+				if RUNE_BAG.on:
+					_ms.start(a, b, str(loot.melded["word"]), bool(loot.melded["first"]))
 
 
 ## Why the two laid in cannot be melded now, or "" (game.ts meldProblem).
@@ -2551,7 +2640,12 @@ func _ws_side(blink: bool) -> void:
 	var L := _ws_layout()
 	var x0: float = L["x0"]
 	var w: float = L["w"]
-	draw_rect(Rect2(x0 - 12, 0, w + 24, _vh()), PANEL)
+	var stone: bool = RUNE_BAG.on and wsmith == "meld"
+	if stone:
+		# (THE MELDING STONE: the whole half; his name and the trade's tab over it)
+		_ms.draw(x0 - 12.0, w + 24.0, _vh(), _hits)
+	else:
+		draw_rect(Rect2(x0 - 12, 0, w + 24, _vh()), PANEL)
 	_text(Vector2(x0, 22), "WORDSMITH", 16, PICK)
 	var tw := _width("WORDSMITH", 16)
 	if wsmith == "meld":
@@ -2566,6 +2660,8 @@ func _ws_side(blink: bool) -> void:
 		_hits.append([tab, "ws_tab", null, null])
 	if wsmith == "trade":
 		_ws_trade(blink, x0, w)
+		return
+	if stone:
 		return
 	# what melding is
 	var y: float = 42.0

@@ -1,0 +1,38 @@
+<title>Rune Bag and Melding Stone</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap">
+<style>
+/* One screen: the Godot game's 16:9 picture, the two scenes to switch between above it; turned a quarter turn on a phone held upright. */
+:root {
+  --ground: #07050a;
+  --panel: #0e0c24;
+  --edge: #3a3478;
+  --text: #f0e8ff;
+  --dim: #9c96dc;
+  --pick: #7af8f0;
+  --pick-bg: #12506a;
+  --display: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; background: var(--ground); color: var(--text); overflow: hidden; }
+body { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0; }
+#stage { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); transform-origin: 50% 50%; display: grid; gap: 4px; }
+#bar { display: flex; gap: 6px; align-items: center; min-width: 0; }
+#bar button { font: 600 13px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); background: var(--panel); border: 1px solid var(--edge); border-radius: 3px; padding: 7px 10px; cursor: pointer; white-space: nowrap; }
+#bar button[aria-pressed="true"] { color: var(--pick); border-color: var(--pick); background: var(--pick-bg); }
+#bar button:focus-visible { outline: 2px solid var(--pick); outline-offset: 2px; }
+#bar .hint { margin-left: auto; font: 600 11px/1.2 var(--display); letter-spacing: .05em; color: var(--dim); text-transform: uppercase; text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#game { display: block; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; background: var(--panel); }
+#search { position: fixed; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; font-size: 16px; border: 0; padding: 0; }
+</style>
+<div id="stage">
+  <div id="bar">
+    <button type="button" data-scene="bag" aria-pressed="true">The rune bag</button>
+    <button type="button" data-scene="smith" aria-pressed="false">Melding</button>
+    <span class="hint">Mock-up · hold a rune to read it</span>
+  </div>
+  <canvas id="game" width="960" height="540" aria-label="The game's screen"></canvas>
+</div>
+<input id="search" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search runes">

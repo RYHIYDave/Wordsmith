@@ -2119,7 +2119,7 @@ func meld_problem(a: String, b: String) -> String:
 ## THE WORDSMITH MELDS two spare words into one, for runedust (game.ts meldWords): both used up, the word made among his words,
 ## known from now on, in front and behind. `melded` says what came of it, and whether it was the first of its kind. "" if it was
 ## done, else why not.
-func meld_words(a: String, b: String) -> String:
+func meld_words(a: String, b: String, quiet := false) -> String:
 	var why := meld_problem(a, b)
 	if why != "":
 		return why
@@ -2136,7 +2136,9 @@ func meld_words(a: String, b: String) -> String:
 	k["front"] = true
 	k["behind"] = true
 	melded = {"word": m, "first": first}
-	sfx.play("rare")
+	# (`quiet`: THE MELDING STONE plays the chime as the new rune forms, inventory.gd RUNE_BAG)
+	if not quiet:
+		sfx.play("rare")
 	return ""
 
 
