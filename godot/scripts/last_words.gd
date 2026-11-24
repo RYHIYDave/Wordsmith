@@ -155,6 +155,8 @@ func cull_monster(m, under: float, i: int, mark := false) -> bool:
 	rec("cull_mark" if mark else "cull_kill")
 	var at: Vector2 = m.world
 	var was: float = m.life
+	# (what it was under as it was culled, for the High City's melds: its death clears it before they look)
+	m.m52["was"] = {"cold": m.chill_t > 0.0 or m.frozen_t > 0.0, "hex_t": m.hex_t, "hex_more": m.hex_more}
 	m.damage(maxf(1.0, ceilf(m.life + m.shield)), "phys", false, false, [], false, false, i)
 	high.cull.culled(m, i, mark, at, was)
 	return true

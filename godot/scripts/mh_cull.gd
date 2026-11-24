@@ -122,7 +122,7 @@ func culled(m, i: int, mark: bool, at: Vector2, life: float) -> void:
 				for q in H.near(land, H.n("guillotine", "r", 1.2)):
 					H.hit(q, i, H.n("guillotine", "land", 0.6)))
 		"coldcut":
-			if m.chill_t > 0.0 or m.frozen_t > 0.0:
+			if m.m52.get("was", {}).get("cold", m.chill_t > 0.0 or m.frozen_t > 0.0):
 				H.tell(id, "shatter", at)
 				for q in H.near(at, H.n("coldcut", "r", 1.6), 8, [m]):
 					H.hit(q, i, H.n("coldcut", "shard", 0.35), "frost")
@@ -202,10 +202,11 @@ func culled(m, i: int, mark: bool, at: Vector2, life: float) -> void:
 				H.mark(best, "mercy")
 				H.tell(id, "sight", at, {"x1": best.world.x, "y1": best.world.y})
 		"condemn":
-			if m.hex_t > 0.0:
+			var was: Dictionary = m.m52.get("was", {"hex_t": m.hex_t, "hex_more": m.hex_more})
+			if float(was["hex_t"]) > 0.0:
 				var nx: Array = H.near(at, H.n("condemn", "reach", 3.0), 1, [m])
 				if not nx.is_empty():
-					H.curse(nx[0], maxf(m.hex_t, 3.0), m.hex_more)
+					H.curse(nx[0], maxf(float(was["hex_t"]), 3.0), float(was["hex_more"]))
 					H.tell(id, "pass", at, {"x1": nx[0].world.x, "y1": nx[0].world.y})
 		"harvest":
 			H.hero.cool_by(float(H.hero.loadout.r(i)["reap"]) * 2.0 if float(H.hero.loadout.r(i)["reap"]) > 0.0 else H.n("harvest", "soul", 0.5))
