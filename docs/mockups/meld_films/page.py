@@ -4,15 +4,17 @@
 #   python3 page.py <films dir> <out dir> 46     the last 46 of floors 1-10 (../meld_runes2)
 #   python3 page.py <films dir> <out dir> city   the city's 45 (../meld_runes3)
 #   python3 page.py <films dir> <out dir> city2  the city's runes with the floor 6-10 runes, 44 (../meld_runes4), each with what it does
+#   python3 page.py <films dir> <out dir> high   the High City's runes melded, 110 (../meld_runes6), each with what it does, and the five level 2
 import json, sys, os, shutil, html
 HERE = os.path.dirname(os.path.abspath(__file__))
 films, out = sys.argv[1], sys.argv[2]
 LAST = len(sys.argv) > 3 and sys.argv[3] == '46'
 CITY = len(sys.argv) > 3 and sys.argv[3] == 'city'
 CITY2 = len(sys.argv) > 3 and sys.argv[3] == 'city2'
-RUNES = HERE + ('/../meld_runes4' if CITY2 else '/../meld_runes3' if CITY else '/../meld_runes2' if LAST else '/../meld_runes')
+HIGHG = len(sys.argv) > 3 and sys.argv[3] == 'high'
+RUNES = HERE + ('/../meld_runes6' if HIGHG else '/../meld_runes4' if CITY2 else '/../meld_runes3' if CITY else '/../meld_runes2' if LAST else '/../meld_runes')
 # (what each does, as the game has it: melds52.json, made from their designs, tools/meldscity/docs_city2.txt)
-WORDS = json.load(open(HERE + '/../../../godot/assets/words/melds52.json'))['words'] if CITY2 else {}
+WORDS = json.load(open(HERE + '/../../../godot/assets/words/melds52.json'))['words'] if CITY2 or HIGHG else {}
 R = json.load(open(RUNES + '/runes.json'))
 os.makedirs(out + '/film', exist_ok=True)
 os.makedirs(out + '/stones', exist_ok=True)
@@ -21,7 +23,8 @@ def nm(w): return NAME.get(w, w.capitalize())
 groups = {}
 CW = ['pulling', 'splitting', 'hexing', 'stilling', 'binding']
 for k, v in R.items():
-    groups.setdefault('each' if CITY and v['of'][1] in CW else v['of'][0], []).append(k)
+    HC = ['piercing', 'bleeding', 'reaping', 'culling', 'surging']
+    groups.setdefault('each' if (CITY and v['of'][1] in CW) or (HIGHG and v['of'][1] in HC) else v['of'][0], []).append(k)
 secs = []
 have = 0
 for a, ks in groups.items():
@@ -37,14 +40,21 @@ for a, ks in groups.items():
         else:
             vid = '<div class="none">No film</div>'
         does = ''
-        if CITY2:
+        if CITY2 or HIGHG:
             w = WORDS[k]
             idea = w['about'].split('melded. ', 1)[-1]
             does = ('<p class="idea">%s</p><dl class="does"><dt>In front</dt><dd>%s</dd><dt>Behind</dt><dd>%s</dd><dt>On enemies</dt><dd>%s</dd></dl>'
                     % (html.escape(idea), html.escape(w['frontText']), html.escape(w['behindText']), html.escape(w['monsterText'])))
         cards.append('<article class="card"><header><img src="stones/%s.png" width="48" height="48" alt=""><div><b>%s</b><span>%s + %s</span></div></header>%s%s</article>'
                      % (k, html.escape(R[k]['name']), nm(a0), nm(R[k]['of'][1]), vid, does))
-    secs.append('<section><h2>%s</h2><div class="cards">%s</div></section>' % ("The city's runes with each other" if a == 'each' else nm(a) + ' melds', ''.join(cards)))
+    secs.append('<section><h2>%s</h2><div class="cards">%s</div></section>' % (("The High City's runes with each other" if HIGHG else "The city's runes with each other") if a == 'each' else nm(a) + ' melds', ''.join(cards)))
+if HIGHG:
+    rk = []
+    for w in ['piercing', 'bleeding', 'reaping', 'culling', 'surging']:
+        x = WORDS[w + '2']
+        rk.append('<article class="card"><header><div><b>%s</b><span>%s + %s</span></div></header><dl class="does"><dt>In front</dt><dd>%s</dd><dt>Behind</dt><dd>%s</dd><dt>On enemies</dt><dd>%s</dd></dl></article>'
+                  % (html.escape(x['name']), nm(w), nm(w), html.escape(x['frontText']), html.escape(x['behindText']), html.escape(x['monsterText'])))
+    secs.append('<section><h2>Level 2</h2><div class="cards">%s</div></section>' % ''.join(rk))
 page = '''<title>@@TITLE@@</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -107,7 +117,16 @@ a { color: var(--accent); }
 </div>
 '''.replace('@@SECS@@', ''.join(secs))
 RULES_98 = '<p class="lead">Checked against your Art Rulebook and fixed (shapes, size, the hero kept clear, the freeze on big blows, the colours you said yes to, and every film now shows the meld on a monster): <a href="https://claude.ai/artifact/QNsqwTYmHsxKbx4E9GHBzY">the rules check</a>.</p>'
-if CITY2:
+if HIGHG:
+    page = page.replace('@@TITLE@@', 'High City Melds').replace('@@H1@@', "The High City's runes melded: 110 melds and 5 level 2 runes").replace('@@RULES@@',
+        '<p class="lead">The last group: Piercing, Bleeding, Reaping, Culling and Surging with every other rune and with each other. Plundering and Greed never meld, '
+        'as you said; Mirroring, now the rare copier of items, is left out. One twist for all of them: the High City rune\'s own act carries the other rune. '
+        'Piercing\'s line and its lance, Bleeding\'s wounds and thorns, Reaping\'s soul and spirit, Culling\'s killing blow and its mark, Surging\'s shockwaves '
+        'set what they strike burning, chill it, poison it, stun it, curse it, drag it, split to the next; or quicken, heal, shield you. '
+        'Each stone shows its two runes: the High City rune\'s mark glowing on the left, the other\'s on the right.</p>').replace('@@NOTES@@',
+        '<p class="lead">Each film shows the meld in front of the Strike, then behind it, then carried by a skeleton that comes for you. '
+        'What each High City rune waits on is set up: a kill for Reaping, skeletons brought low for Culling, a third use and a dodge for Surging.</p>')
+elif CITY2:
     page = page.replace('@@TITLE@@', 'City and Wilds Melds').replace('@@H1@@', "The city's runes with the floor 6–10 runes: 44 melds").replace('@@RULES@@',
         '<p class="lead">Each card is the whole meld for your yes in one place: its stone, its idea, what it does in front, behind and on enemies, and its film. '
         'Made by your Art Rulebook: big moments flash and throw their sparks wide, the blasts kick the screen and hold a tenth of a second, every shape the thing it is '

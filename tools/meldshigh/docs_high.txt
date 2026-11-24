@@ -1,0 +1,580 @@
+The High City's Runes Melded
+·
+The last group: Piercing, Bleeding, Reaping, Culling and Surging with every other rune and with each other, and each one's level 2. Plundering and Greed never meld; Mirroring, now the rare copier of items, is left out. Reaping with the damage runes was made already (Cinderbrood, Wintergrave, Stormwake, Bogborn, Charnel).
+Each one does the work of both its runes, and the High City rune's own act carries the other: what it strikes is set burning, chilled, poisoned, stunned, cursed, dragged, or it quickens, shields or heals you.
+Each meld below has its idea in a line, its names on a move, and what it does in front, behind and on enemies, as before.
+Impaler
+Piercing and Power. Through them all, with force. On a move: Impaler Strike, Strike of the Impaler.
+In front: goes through everything in its path, carrying more force into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying more force.
+On enemies: Its shots fly through walls to reach you. Hits harder and has more life.
+Stinger
+Piercing and Poison. Through them all, with poison. On a move: Stinger Strike, Strike of the Stinger.
+In front: goes through everything in its path, carrying poison into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying poison.
+On enemies: Its shots fly through walls to reach you. Poisons you.
+Icelance
+Piercing and Frost. Through them all, with frost. On a move: Icelance Strike, Strike of the Icelance.
+In front: goes through everything in its path, carrying a chill that freezes on the second into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying a chill that freezes on the second.
+On enemies: Its shots fly through walls to reach you. Deals frost damage and slows you.
+Sunspear
+Piercing and Flame. Through them all, with fire. On a move: Sunspear Strike, Strike of the Sunspear.
+In front: goes through everything in its path, carrying fire that sets them burning into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying fire that sets them burning.
+On enemies: Its shots fly through walls to reach you. Deals fire damage and sets you burning.
+Stormlance
+Piercing and Lightning. Through them all, with lightning. On a move: Stormlance Strike, Strike of the Stormlance.
+In front: goes through everything in its path, carrying lightning that arcs on to the next enemy into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying lightning that arcs on to the next enemy.
+On enemies: Its shots fly through walls to reach you. Deals lightning damage and shocks you.
+Dart
+Piercing and Swift. Through them all, with speed. On a move: Dart Strike, Strike of the Dart.
+In front: goes through everything in its path, and each enemy it goes through gives you haste.
+Behind: a lance of light strikes down its line a moment later, and each enemy it strikes gives you haste.
+On enemies: Its shots fly through walls to reach you. Moves and attacks faster.
+Battering Ram
+Piercing and Heavy. Through them all, with weight. On a move: Battering Ram Strike, Strike of the Battering Ram.
+In front: goes through everything in its path, carrying a stun into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying a stun.
+On enemies: Its shots fly through walls to reach you. Its blows knock you back.
+Pitchfork
+Piercing and Twin. Through them all, with a second blow. On a move: Pitchfork Strike, Strike of the Pitchfork.
+In front: goes through everything in its path, carrying a second strike into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying a second strike.
+On enemies: Its shots fly through walls to reach you. Attacks twice.
+Bloodlance
+Piercing and Leech. Through them all, with a thirst. On a move: Bloodlance Strike, Strike of the Bloodlance.
+In front: goes through everything in its path, and each enemy it goes through gives you life back.
+Behind: a lance of light strikes down its line a moment later, and each enemy it strikes gives you life back.
+On enemies: Its shots fly through walls to reach you. Heals when it hits you.
+Shrapnel
+Piercing and Volatile. Through them all, with a blast. On a move: Shrapnel Strike, Strike of the Shrapnel.
+In front: goes through everything in its path, carrying a burst into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying a burst.
+On enemies: Its shots fly through walls to reach you. Explodes when it dies.
+Bodkin
+Piercing and Precise. Through them all, with certainty. On a move: Bodkin Strike, Strike of the Bodkin.
+In front: goes through everything in its path, carrying a certain critical into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying a certain critical.
+On enemies: Its shots fly through walls to reach you. Its hits find the gaps in your armour.
+Barrage
+Piercing and Frenzied. Through them all, with frenzy. On a move: Barrage Strike, Strike of the Barrage.
+In front: goes through everything in its path, and each enemy it goes through gives you frenzy.
+Behind: a lance of light strikes down its line a moment later, and each enemy it strikes gives you frenzy.
+On enemies: Its shots fly through walls to reach you. Speeds up as it is hurt.
+Spearwall
+Piercing and Guarding. Through them all, with a shield. On a move: Spearwall Strike, Strike of the Spearwall.
+In front: goes through everything in its path, and each enemy it goes through gives you a shield.
+Behind: a lance of light strikes down its line a moment later, and each enemy it strikes gives you a shield.
+On enemies: Its shots fly through walls to reach you. Carries a shield that soaks damage.
+Longspear
+Piercing and Lasting. Through them all, with a lingering. On a move: Longspear Strike, Strike of the Longspear.
+In front: goes through everything in its path, carrying a lingering that makes what ails them last longer into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying a lingering that makes what ails them last longer.
+On enemies: Its shots fly through walls to reach you. Its poison, burning and chill last longer on you.
+Flicker
+Piercing and Fleeting. Through them all, with haste. On a move: Flicker Strike, Strike of the Flicker.
+In front: goes through everything in its path, and each enemy it goes through gives you time off your waits.
+Behind: a lance of light strikes down its line a moment later, and each enemy it strikes gives you time off your waits.
+On enemies: Its shots fly through walls to reach you. Its poison and burning hurt you faster.
+Broadspear
+Piercing and Vast. Through them all, with reach. On a move: Broadspear Strike, Strike of the Broadspear.
+In front: goes through everything in its path, carrying a wider strike into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying a wider strike.
+On enemies: Its shots fly through walls to reach you. Its attacks reach wider.
+Gaff
+Piercing and Pulling. Through them all, with a pull. On a move: Gaff Strike, Strike of the Gaff.
+In front: goes through everything in its path, carrying a pull toward you into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying a pull toward you.
+On enemies: Its shots fly through walls to reach you. Its blows drag you toward it.
+Trident
+Piercing and Splitting. Through them all, with a split. On a move: Trident Strike, Strike of the Trident.
+In front: goes through everything in its path, carrying a split to two more enemies into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying a split to two more enemies.
+On enemies: Its shots fly through walls to reach you. Splits in two when it dies.
+Witchpin
+Piercing and Hexing. Through them all, with a curse. On a move: Witchpin Strike, Strike of the Witchpin.
+In front: goes through everything in its path, carrying a curse into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying a curse.
+On enemies: Its shots fly through walls to reach you. Its blows curse you: you take more damage.
+Stake
+Piercing and Stilling. Through them all, with a stillness. On a move: Stake Strike, Strike of the Stake.
+In front: goes through everything in its path, carrying a stillness that slows their attacks into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying a stillness that slows their attacks.
+On enemies: Its shots fly through walls to reach you. Its blows slow your cooldowns.
+Skewer
+Piercing and Binding. Through them all, with a binding. On a move: Skewer Strike, Strike of the Skewer.
+In front: goes through everything in its path, carrying a root that holds them into each enemy it goes through.
+Behind: a lance of light strikes down its line a moment later, carrying a root that holds them.
+On enemies: Its shots fly through walls to reach you. Its blows root you to the spot.
+Gore
+Bleeding and Power. Open wounds, with force. On a move: Gore Strike, Strike of the Gore.
+In front: makes enemies bleed, worse while they move; each fresh wound carries more force.
+Behind: leaves thorns that cut whatever walks through, carrying more force.
+On enemies: Its blows make you bleed. Hits harder and has more life.
+Gangrene
+Bleeding and Poison. Open wounds, with poison. On a move: Gangrene Strike, Strike of the Gangrene.
+In front: makes enemies bleed, worse while they move; each fresh wound carries poison.
+Behind: leaves thorns that cut whatever walks through, carrying poison.
+On enemies: Its blows make you bleed. Poisons you.
+Rimeblood
+Bleeding and Frost. Open wounds, with frost. On a move: Rimeblood Strike, Strike of the Rimeblood.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a chill that freezes on the second.
+Behind: leaves thorns that cut whatever walks through, carrying a chill that freezes on the second.
+On enemies: Its blows make you bleed. Deals frost damage and slows you.
+Bloodfire
+Bleeding and Flame. Open wounds, with fire. On a move: Bloodfire Strike, Strike of the Bloodfire.
+In front: makes enemies bleed, worse while they move; each fresh wound carries fire that sets them burning.
+Behind: leaves thorns that cut whatever walks through, carrying fire that sets them burning.
+On enemies: Its blows make you bleed. Deals fire damage and sets you burning.
+Galvanic
+Bleeding and Lightning. Open wounds, with lightning. On a move: Galvanic Strike, Strike of the Galvanic.
+In front: makes enemies bleed, worse while they move; each fresh wound carries lightning that arcs on to the next enemy.
+Behind: leaves thorns that cut whatever walks through, carrying lightning that arcs on to the next enemy.
+On enemies: Its blows make you bleed. Deals lightning damage and shocks you.
+Lacerate
+Bleeding and Swift. Open wounds, with speed. On a move: Lacerate Strike, Strike of the Lacerate.
+In front: makes enemies bleed, worse while they move; each fresh wound gives you haste.
+Behind: leaves thorns that cut whatever walks through; each cut gives you haste.
+On enemies: Its blows make you bleed. Moves and attacks faster.
+Bludgeon
+Bleeding and Heavy. Open wounds, with weight. On a move: Bludgeon Strike, Strike of the Bludgeon.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a stun.
+Behind: leaves thorns that cut whatever walks through, carrying a stun.
+On enemies: Its blows make you bleed. Its blows knock you back.
+Fangs
+Bleeding and Twin. Open wounds, with a second blow. On a move: Fangs Strike, Strike of the Fangs.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a second strike.
+Behind: leaves thorns that cut whatever walks through, carrying a second strike.
+On enemies: Its blows make you bleed. Attacks twice.
+Bloodfeast
+Bleeding and Leech. Open wounds, with a thirst. On a move: Bloodfeast Strike, Strike of the Bloodfeast.
+In front: makes enemies bleed, worse while they move; each fresh wound gives you life back.
+Behind: leaves thorns that cut whatever walks through; each cut gives you life back.
+On enemies: Its blows make you bleed. Heals when it hits you.
+Bloodburst
+Bleeding and Volatile. Open wounds, with a blast. On a move: Bloodburst Strike, Strike of the Bloodburst.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a burst.
+Behind: leaves thorns that cut whatever walks through, carrying a burst.
+On enemies: Its blows make you bleed. Explodes when it dies.
+Artery
+Bleeding and Precise. Open wounds, with certainty. On a move: Artery Strike, Strike of the Artery.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a certain critical.
+Behind: leaves thorns that cut whatever walks through, carrying a certain critical.
+On enemies: Its blows make you bleed. Its hits find the gaps in your armour.
+Bloodrage
+Bleeding and Frenzied. Open wounds, with frenzy. On a move: Bloodrage Strike, Strike of the Bloodrage.
+In front: makes enemies bleed, worse while they move; each fresh wound gives you frenzy.
+Behind: leaves thorns that cut whatever walks through; each cut gives you frenzy.
+On enemies: Its blows make you bleed. Speeds up as it is hurt.
+Thornshield
+Bleeding and Guarding. Open wounds, with a shield. On a move: Thornshield Strike, Strike of the Thornshield.
+In front: makes enemies bleed, worse while they move; each fresh wound gives you a shield.
+Behind: leaves thorns that cut whatever walks through; each cut gives you a shield.
+On enemies: Its blows make you bleed. Carries a shield that soaks damage.
+Hemorrhage
+Bleeding and Lasting. Open wounds, with a lingering. On a move: Hemorrhage Strike, Strike of the Hemorrhage.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a lingering that makes what ails them last longer.
+Behind: leaves thorns that cut whatever walks through, carrying a lingering that makes what ails them last longer.
+On enemies: Its blows make you bleed. Its poison, burning and chill last longer on you.
+Papercut
+Bleeding and Fleeting. Open wounds, with haste. On a move: Papercut Strike, Strike of the Papercut.
+In front: makes enemies bleed, worse while they move; each fresh wound gives you time off your waits.
+Behind: leaves thorns that cut whatever walks through; each cut gives you time off your waits.
+On enemies: Its blows make you bleed. Its poison and burning hurt you faster.
+Bramble
+Bleeding and Vast. Open wounds, with reach. On a move: Bramble Strike, Strike of the Bramble.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a wider strike.
+Behind: leaves thorns that cut whatever walks through, carrying a wider strike.
+On enemies: Its blows make you bleed. Its attacks reach wider.
+Fishhook
+Bleeding and Pulling. Open wounds, with a pull. On a move: Fishhook Strike, Strike of the Fishhook.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a pull toward you.
+Behind: leaves thorns that cut whatever walks through, carrying a pull toward you.
+On enemies: Its blows make you bleed. Its blows drag you toward it.
+Thornspray
+Bleeding and Splitting. Open wounds, with a split. On a move: Thornspray Strike, Strike of the Thornspray.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a split to two more enemies.
+Behind: leaves thorns that cut whatever walks through, carrying a split to two more enemies.
+On enemies: Its blows make you bleed. Splits in two when it dies.
+Thorncurse
+Bleeding and Hexing. Open wounds, with a curse. On a move: Thorncurse Strike, Strike of the Thorncurse.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a curse.
+Behind: leaves thorns that cut whatever walks through, carrying a curse.
+On enemies: Its blows make you bleed. Its blows curse you: you take more damage.
+Clot
+Bleeding and Stilling. Open wounds, with a stillness. On a move: Clot Strike, Strike of the Clot.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a stillness that slows their attacks.
+Behind: leaves thorns that cut whatever walks through, carrying a stillness that slows their attacks.
+On enemies: Its blows make you bleed. Its blows slow your cooldowns.
+Briar
+Bleeding and Binding. Open wounds, with a binding. On a move: Briar Strike, Strike of the Briar.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a root that holds them.
+Behind: leaves thorns that cut whatever walks through, carrying a root that holds them.
+On enemies: Its blows make you bleed. Its blows root you to the spot.
+Banshee
+Reaping and Swift. The dead rise, with speed. On a move: Banshee Strike, Strike of the Banshee.
+In front: kills leave a soul that takes time off your cooldowns and gives you haste.
+Behind: kills raise a spirit that fights for you; its blows give you haste.
+On enemies: Rises once after it dies. Moves and attacks faster.
+Tombstone
+Reaping and Heavy. The dead rise, with weight. On a move: Tombstone Strike, Strike of the Tombstone.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a stun.
+Behind: kills raise a spirit that fights for you; its blows carry a stun.
+On enemies: Rises once after it dies. Its blows knock you back.
+Revenants
+Reaping and Twin. The dead rise, with a second blow. On a move: Revenants Strike, Strike of the Revenants.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a second strike.
+Behind: kills raise a spirit that fights for you; its blows carry a second strike.
+On enemies: Rises once after it dies. Attacks twice.
+Ghoul
+Reaping and Leech. The dead rise, with a thirst. On a move: Ghoul Strike, Strike of the Ghoul.
+In front: kills leave a soul that takes time off your cooldowns and gives you life back.
+Behind: kills raise a spirit that fights for you; its blows give you life back.
+On enemies: Rises once after it dies. Heals when it hits you.
+Soulburst
+Reaping and Volatile. The dead rise, with a blast. On a move: Soulburst Strike, Strike of the Soulburst.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a burst.
+Behind: kills raise a spirit that fights for you; its blows carry a burst.
+On enemies: Rises once after it dies. Explodes when it dies.
+Deadeye
+Reaping and Precise. The dead rise, with certainty. On a move: Deadeye Strike, Strike of the Deadeye.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a certain critical.
+Behind: kills raise a spirit that fights for you; its blows carry a certain critical.
+On enemies: Rises once after it dies. Its hits find the gaps in your armour.
+Macabre
+Reaping and Frenzied. The dead rise, with frenzy. On a move: Macabre Strike, Strike of the Macabre.
+In front: kills leave a soul that takes time off your cooldowns and gives you frenzy.
+Behind: kills raise a spirit that fights for you; its blows give you frenzy.
+On enemies: Rises once after it dies. Speeds up as it is hurt.
+Gravewarden
+Reaping and Guarding. The dead rise, with a shield. On a move: Gravewarden Strike, Strike of the Gravewarden.
+In front: kills leave a soul that takes time off your cooldowns and gives you a shield.
+Behind: kills raise a spirit that fights for you; its blows give you a shield.
+On enemies: Rises once after it dies. Carries a shield that soaks damage.
+Undying
+Reaping and Lasting. The dead rise, with a lingering. On a move: Undying Strike, Strike of the Undying.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a lingering that makes what ails them last longer.
+Behind: kills raise a spirit that fights for you; its blows carry a lingering that makes what ails them last longer.
+On enemies: Rises once after it dies. Its poison, burning and chill last longer on you.
+Fetch
+Reaping and Fleeting. The dead rise, with haste. On a move: Fetch Strike, Strike of the Fetch.
+In front: kills leave a soul that takes time off your cooldowns and gives you time off your waits.
+Behind: kills raise a spirit that fights for you; its blows give you time off your waits.
+On enemies: Rises once after it dies. Its poison and burning hurt you faster.
+Legion
+Reaping and Vast. The dead rise, with reach. On a move: Legion Strike, Strike of the Legion.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a wider strike.
+Behind: kills raise a spirit that fights for you; its blows carry a wider strike.
+On enemies: Rises once after it dies. Its attacks reach wider.
+Undertow
+Reaping and Pulling. The dead rise, with a pull. On a move: Undertow Strike, Strike of the Undertow.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a pull toward you.
+Behind: kills raise a spirit that fights for you; its blows carry a pull toward you.
+On enemies: Rises once after it dies. Its blows drag you toward it.
+Poltergeist
+Reaping and Splitting. The dead rise, with a split. On a move: Poltergeist Strike, Strike of the Poltergeist.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a split to two more enemies.
+Behind: kills raise a spirit that fights for you; its blows carry a split to two more enemies.
+On enemies: Rises once after it dies. Splits in two when it dies.
+Haunting
+Reaping and Hexing. The dead rise, with a curse. On a move: Haunting Strike, Strike of the Haunting.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a curse.
+Behind: kills raise a spirit that fights for you; its blows carry a curse.
+On enemies: Rises once after it dies. Its blows curse you: you take more damage.
+Limbo
+Reaping and Stilling. The dead rise, with a stillness. On a move: Limbo Strike, Strike of the Limbo.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a stillness that slows their attacks.
+Behind: kills raise a spirit that fights for you; its blows carry a stillness that slows their attacks.
+On enemies: Rises once after it dies. Its blows slow your cooldowns.
+Gravebind
+Reaping and Binding. The dead rise, with a binding. On a move: Gravebind Strike, Strike of the Gravebind.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a root that holds them.
+Behind: kills raise a spirit that fights for you; its blows carry a root that holds them.
+On enemies: Rises once after it dies. Its blows root you to the spot.
+Guillotine
+Culling and Power. The weak end, with force. On a move: Guillotine Strike, Strike of the Guillotine.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying more force.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying more force.
+On enemies: Hits much harder when you are low. Hits harder and has more life.
+Nightshade
+Culling and Poison. The weak end, with poison. On a move: Nightshade Strike, Strike of the Nightshade.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying poison.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying poison.
+On enemies: Hits much harder when you are low. Poisons you.
+Coldcut
+Culling and Frost. The weak end, with frost. On a move: Coldcut Strike, Strike of the Coldcut.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a chill that freezes on the second.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a chill that freezes on the second.
+On enemies: Hits much harder when you are low. Deals frost damage and slows you.
+Cremate
+Culling and Flame. The weak end, with fire. On a move: Cremate Strike, Strike of the Cremate.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying fire that sets them burning.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying fire that sets them burning.
+On enemies: Hits much harder when you are low. Deals fire damage and sets you burning.
+Smite
+Culling and Lightning. The weak end, with lightning. On a move: Smite Strike, Strike of the Smite.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying lightning that arcs on to the next enemy.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying lightning that arcs on to the next enemy.
+On enemies: Hits much harder when you are low. Deals lightning damage and shocks you.
+Coup
+Culling and Swift. The weak end, with speed. On a move: Coup Strike, Strike of the Coup.
+In front: enemies left nearly dead by its hit die outright, and each one culled gives you haste.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it; each one culled gives you haste.
+On enemies: Hits much harder when you are low. Moves and attacks faster.
+Crusher
+Culling and Heavy. The weak end, with weight. On a move: Crusher Strike, Strike of the Crusher.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a stun.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a stun.
+On enemies: Hits much harder when you are low. Its blows knock you back.
+Scissors
+Culling and Twin. The weak end, with a second blow. On a move: Scissors Strike, Strike of the Scissors.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a second strike.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a second strike.
+On enemies: Hits much harder when you are low. Attacks twice.
+Bloodprice
+Culling and Leech. The weak end, with a thirst. On a move: Bloodprice Strike, Strike of the Bloodprice.
+In front: enemies left nearly dead by its hit die outright, and each one culled gives you life back.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it; each one culled gives you life back.
+On enemies: Hits much harder when you are low. Heals when it hits you.
+Deathburst
+Culling and Volatile. The weak end, with a blast. On a move: Deathburst Strike, Strike of the Deathburst.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a burst.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a burst.
+On enemies: Hits much harder when you are low. Explodes when it dies.
+Mercy
+Culling and Precise. The weak end, with certainty. On a move: Mercy Strike, Strike of the Mercy.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a certain critical.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a certain critical.
+On enemies: Hits much harder when you are low. Its hits find the gaps in your armour.
+Massacre
+Culling and Frenzied. The weak end, with frenzy. On a move: Massacre Strike, Strike of the Massacre.
+In front: enemies left nearly dead by its hit die outright, and each one culled gives you frenzy.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it; each one culled gives you frenzy.
+On enemies: Hits much harder when you are low. Speeds up as it is hurt.
+Last Rites
+Culling and Guarding. The weak end, with a shield. On a move: Last Rites Strike, Strike of the Last Rites.
+In front: enemies left nearly dead by its hit die outright, and each one culled gives you a shield.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it; each one culled gives you a shield.
+On enemies: Hits much harder when you are low. Carries a shield that soaks damage.
+Deathwatch
+Culling and Lasting. The weak end, with a lingering. On a move: Deathwatch Strike, Strike of the Deathwatch.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a lingering that makes what ails them last longer.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a lingering that makes what ails them last longer.
+On enemies: Hits much harder when you are low. Its poison, burning and chill last longer on you.
+Quietus
+Culling and Fleeting. The weak end, with haste. On a move: Quietus Strike, Strike of the Quietus.
+In front: enemies left nearly dead by its hit die outright, and each one culled gives you time off your waits.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it; each one culled gives you time off your waits.
+On enemies: Hits much harder when you are low. Its poison and burning hurt you faster.
+Purge
+Culling and Vast. The weak end, with reach. On a move: Purge Strike, Strike of the Purge.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a wider strike.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a wider strike.
+On enemies: Hits much harder when you are low. Its attacks reach wider.
+Gallows
+Culling and Pulling. The weak end, with a pull. On a move: Gallows Strike, Strike of the Gallows.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a pull toward you.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a pull toward you.
+On enemies: Hits much harder when you are low. Its blows drag you toward it.
+Decimate
+Culling and Splitting. The weak end, with a split. On a move: Decimate Strike, Strike of the Decimate.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a split to two more enemies.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a split to two more enemies.
+On enemies: Hits much harder when you are low. Splits in two when it dies.
+Condemn
+Culling and Hexing. The weak end, with a curse. On a move: Condemn Strike, Strike of the Condemn.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a curse.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a curse.
+On enemies: Hits much harder when you are low. Its blows curse you: you take more damage.
+Final Hour
+Culling and Stilling. The weak end, with a stillness. On a move: Final Hour Strike, Strike of the Final Hour.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a stillness that slows their attacks.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a stillness that slows their attacks.
+On enemies: Hits much harder when you are low. Its blows slow your cooldowns.
+Noose
+Culling and Binding. The weak end, with a binding. On a move: Noose Strike, Strike of the Noose.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a root that holds them.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a root that holds them.
+On enemies: Hits much harder when you are low. Its blows root you to the spot.
+Tremor
+Surging and Power. A wave round you, with force. On a move: Tremor Strike, Strike of the Tremor.
+In front: every third use releases a shockwave round you, carrying more force.
+Behind: your dodge releases a surge, carrying more force.
+On enemies: Sends out a shockwave every few seconds. Hits harder and has more life.
+Pestilence
+Surging and Poison. A wave round you, with poison. On a move: Pestilence Strike, Strike of the Pestilence.
+In front: every third use releases a shockwave round you, carrying poison.
+Behind: your dodge releases a surge, carrying poison.
+On enemies: Sends out a shockwave every few seconds. Poisons you.
+Blizzard
+Surging and Frost. A wave round you, with frost. On a move: Blizzard Strike, Strike of the Blizzard.
+In front: every third use releases a shockwave round you, carrying a chill that freezes on the second.
+Behind: your dodge releases a surge, carrying a chill that freezes on the second.
+On enemies: Sends out a shockwave every few seconds. Deals frost damage and slows you.
+Nova
+Surging and Flame. A wave round you, with fire. On a move: Nova Strike, Strike of the Nova.
+In front: every third use releases a shockwave round you, carrying fire that sets them burning.
+Behind: your dodge releases a surge, carrying fire that sets them burning.
+On enemies: Sends out a shockwave every few seconds. Deals fire damage and sets you burning.
+Thunderclap
+Surging and Lightning. A wave round you, with lightning. On a move: Thunderclap Strike, Strike of the Thunderclap.
+In front: every third use releases a shockwave round you, carrying lightning that arcs on to the next enemy.
+Behind: your dodge releases a surge, carrying lightning that arcs on to the next enemy.
+On enemies: Sends out a shockwave every few seconds. Deals lightning damage and shocks you.
+Rush
+Surging and Swift. A wave round you, with speed. On a move: Rush Strike, Strike of the Rush.
+In front: every third use releases a shockwave round you that gives you haste.
+Behind: your dodge releases a surge that gives you haste.
+On enemies: Sends out a shockwave every few seconds. Moves and attacks faster.
+Seismic
+Surging and Heavy. A wave round you, with weight. On a move: Seismic Strike, Strike of the Seismic.
+In front: every third use releases a shockwave round you, carrying a stun.
+Behind: your dodge releases a surge, carrying a stun.
+On enemies: Sends out a shockwave every few seconds. Its blows knock you back.
+Pulse
+Surging and Twin. A wave round you, with a second blow. On a move: Pulse Strike, Strike of the Pulse.
+In front: every third use releases a shockwave round you, carrying a second strike.
+Behind: your dodge releases a surge, carrying a second strike.
+On enemies: Sends out a shockwave every few seconds. Attacks twice.
+Heartbeat
+Surging and Leech. A wave round you, with a thirst. On a move: Heartbeat Strike, Strike of the Heartbeat.
+In front: every third use releases a shockwave round you that gives you life back.
+Behind: your dodge releases a surge that gives you life back.
+On enemies: Sends out a shockwave every few seconds. Heals when it hits you.
+Overload
+Surging and Volatile. A wave round you, with a blast. On a move: Overload Strike, Strike of the Overload.
+In front: every third use releases a shockwave round you, carrying a burst.
+Behind: your dodge releases a surge, carrying a burst.
+On enemies: Sends out a shockwave every few seconds. Explodes when it dies.
+Lens
+Surging and Precise. A wave round you, with certainty. On a move: Lens Strike, Strike of the Lens.
+In front: every third use releases a shockwave round you, carrying a certain critical.
+Behind: your dodge releases a surge, carrying a certain critical.
+On enemies: Sends out a shockwave every few seconds. Its hits find the gaps in your armour.
+Crescendo
+Surging and Frenzied. A wave round you, with frenzy. On a move: Crescendo Strike, Strike of the Crescendo.
+In front: every third use releases a shockwave round you that gives you frenzy.
+Behind: your dodge releases a surge that gives you frenzy.
+On enemies: Sends out a shockwave every few seconds. Speeds up as it is hurt.
+Bastion
+Surging and Guarding. A wave round you, with a shield. On a move: Bastion Strike, Strike of the Bastion.
+In front: every third use releases a shockwave round you that gives you a shield.
+Behind: your dodge releases a surge that gives you a shield.
+On enemies: Sends out a shockwave every few seconds. Carries a shield that soaks damage.
+Resonance
+Surging and Lasting. A wave round you, with a lingering. On a move: Resonance Strike, Strike of the Resonance.
+In front: every third use releases a shockwave round you, carrying a lingering that makes what ails them last longer.
+Behind: your dodge releases a surge, carrying a lingering that makes what ails them last longer.
+On enemies: Sends out a shockwave every few seconds. Its poison, burning and chill last longer on you.
+Spark
+Surging and Fleeting. A wave round you, with haste. On a move: Spark Strike, Strike of the Spark.
+In front: every third use releases a shockwave round you that gives you time off your waits.
+Behind: your dodge releases a surge that gives you time off your waits.
+On enemies: Sends out a shockwave every few seconds. Its poison and burning hurt you faster.
+Tsunami
+Surging and Vast. A wave round you, with reach. On a move: Tsunami Strike, Strike of the Tsunami.
+In front: every third use releases a shockwave round you, carrying a wider strike.
+Behind: your dodge releases a surge, carrying a wider strike.
+On enemies: Sends out a shockwave every few seconds. Its attacks reach wider.
+Vortex
+Surging and Pulling. A wave round you, with a pull. On a move: Vortex Strike, Strike of the Vortex.
+In front: every third use releases a shockwave round you, carrying a pull toward you.
+Behind: your dodge releases a surge, carrying a pull toward you.
+On enemies: Sends out a shockwave every few seconds. Its blows drag you toward it.
+Ricochet
+Surging and Splitting. A wave round you, with a split. On a move: Ricochet Strike, Strike of the Ricochet.
+In front: every third use releases a shockwave round you, carrying a split to two more enemies.
+Behind: your dodge releases a surge, carrying a split to two more enemies.
+On enemies: Sends out a shockwave every few seconds. Splits in two when it dies.
+Hexwave
+Surging and Hexing. A wave round you, with a curse. On a move: Hexwave Strike, Strike of the Hexwave.
+In front: every third use releases a shockwave round you, carrying a curse.
+Behind: your dodge releases a surge, carrying a curse.
+On enemies: Sends out a shockwave every few seconds. Its blows curse you: you take more damage.
+Lull
+Surging and Stilling. A wave round you, with a stillness. On a move: Lull Strike, Strike of the Lull.
+In front: every third use releases a shockwave round you, carrying a stillness that slows their attacks.
+Behind: your dodge releases a surge, carrying a stillness that slows their attacks.
+On enemies: Sends out a shockwave every few seconds. Its blows slow your cooldowns.
+Tangle
+Surging and Binding. A wave round you, with a binding. On a move: Tangle Strike, Strike of the Tangle.
+In front: every third use releases a shockwave round you, carrying a root that holds them.
+Behind: your dodge releases a surge, carrying a root that holds them.
+On enemies: Sends out a shockwave every few seconds. Its blows root you to the spot.
+Harrow
+Piercing and Bleeding. Through them all, with blood. On a move: Harrow Strike, Strike of the Harrow.
+In front: goes through everything in its path, carrying bleeding into each enemy it goes through; and makes enemies bleed, worse while they move; each fresh wound carries a strike through to the one behind.
+Behind: a lance of light strikes down its line a moment later, carrying bleeding; and leaves thorns that cut whatever walks through, carrying a strike through to the one behind.
+On enemies: Its shots fly through walls to reach you. Its blows make you bleed.
+Wraithspear
+Piercing and Reaping. Through them all, with the dead. On a move: Wraithspear Strike, Strike of the Wraithspear.
+In front: goes through everything in its path, carrying death's hold, so that any it kills rises as a spirit into each enemy it goes through; and kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a strike through to the one behind.
+Behind: a lance of light strikes down its line a moment later, carrying death's hold, so that any it kills rises as a spirit; and kills raise a spirit that fights for you; its blows carry a strike through to the one behind.
+On enemies: Its shots fly through walls to reach you. Rises once after it dies.
+Deathblow
+Piercing and Culling. Through them all, with the cull. On a move: Deathblow Strike, Strike of the Deathblow.
+In front: goes through everything in its path, carrying a cull of the weak into each enemy it goes through; and enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a strike through to the one behind.
+Behind: a lance of light strikes down its line a moment later, carrying a cull of the weak; and leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a strike through to the one behind.
+On enemies: Its shots fly through walls to reach you. Hits much harder when you are low.
+Breakthrough
+Piercing and Surging. Through them all, with a surge. On a move: Breakthrough Strike, Strike of the Breakthrough.
+In front: goes through everything in its path, carrying a shockwave into each enemy it goes through; and every third use releases a shockwave round you, carrying a strike through to the one behind.
+Behind: a lance of light strikes down its line a moment later, carrying a shockwave; and your dodge releases a surge, carrying a strike through to the one behind.
+On enemies: Its shots fly through walls to reach you. Sends out a shockwave every few seconds.
+Bloodharvest
+Bleeding and Reaping. Open wounds, with the dead. On a move: Bloodharvest Strike, Strike of the Bloodharvest.
+In front: makes enemies bleed, worse while they move; each fresh wound carries death's hold, so that any it kills rises as a spirit; and kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying bleeding.
+Behind: leaves thorns that cut whatever walks through, carrying death's hold, so that any it kills rises as a spirit; and kills raise a spirit that fights for you; its blows carry bleeding.
+On enemies: Its blows make you bleed. Rises once after it dies.
+Butcher
+Bleeding and Culling. Open wounds, with the cull. On a move: Butcher Strike, Strike of the Butcher.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a cull of the weak; and enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying bleeding.
+Behind: leaves thorns that cut whatever walks through, carrying a cull of the weak; and leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying bleeding.
+On enemies: Its blows make you bleed. Hits much harder when you are low.
+Bloodwave
+Bleeding and Surging. Open wounds, with a surge. On a move: Bloodwave Strike, Strike of the Bloodwave.
+In front: makes enemies bleed, worse while they move; each fresh wound carries a shockwave; and every third use releases a shockwave round you, carrying bleeding.
+Behind: leaves thorns that cut whatever walks through, carrying a shockwave; and your dodge releases a surge, carrying bleeding.
+On enemies: Its blows make you bleed. Sends out a shockwave every few seconds.
+Harvest
+Reaping and Culling. The dead rise, with the cull. On a move: Harvest Strike, Strike of the Harvest.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a cull of the weak; and enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying death's hold, so that any it kills rises as a spirit.
+Behind: kills raise a spirit that fights for you; its blows carry a cull of the weak; and leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying death's hold, so that any it kills rises as a spirit.
+On enemies: Rises once after it dies. Hits much harder when you are low.
+Soulstorm
+Reaping and Surging. The dead rise, with a surge. On a move: Soulstorm Strike, Strike of the Soulstorm.
+In front: kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a shockwave; and every third use releases a shockwave round you, carrying death's hold, so that any it kills rises as a spirit.
+Behind: kills raise a spirit that fights for you; its blows carry a shockwave; and your dodge releases a surge, carrying death's hold, so that any it kills rises as a spirit.
+On enemies: Rises once after it dies. Sends out a shockwave every few seconds.
+Deathknell
+Culling and Surging. The weak end, with a surge. On a move: Deathknell Strike, Strike of the Deathknell.
+In front: enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a shockwave; and every third use releases a shockwave round you, carrying a cull of the weak.
+Behind: leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a shockwave; and your dodge releases a surge, carrying a cull of the weak.
+On enemies: Hits much harder when you are low. Sends out a shockwave every few seconds.
+Piercing II
+Piercing and Piercing. Piercing at level 2. On a move: Piercing II Strike, Strike of Piercing II.
+In front: goes through everything in its path, farther, and strikes what it goes through harder.
+Behind: a lance of light strikes down its line a moment later, wider and harder.
+On enemies: its shots fly through walls to reach you, and strike harder.
+Bleeding II
+Bleeding and Bleeding. Bleeding at level 2. On a move: Bleeding II Strike, Strike of Bleeding II.
+In front: makes enemies bleed half as hard again, worse while they move.
+Behind: leaves wider thorns that cut half as hard again.
+On enemies: its blows make you bleed, half as hard again.
+Reaping II
+Reaping and Reaping. Reaping at level 2. On a move: Reaping II Strike, Strike of Reaping II.
+In front: kills leave a soul that takes more time off your cooldowns.
+Behind: kills raise a spirit that fights harder.
+On enemies: rises once after it dies, with more of its life.
+Culling II
+Culling and Culling. Culling at level 2. On a move: Culling II Strike, Strike of Culling II.
+In front: enemies left low by its hit die outright, from higher.
+Behind: leaves a reaper's mark that culls from higher.
+On enemies: hits much harder still when you are low.
+Surging II
+Surging and Surging. Surging at level 2. On a move: Surging II Strike, Strike of Surging II.
+In front: every third use releases a greater shockwave round you.
+Behind: your dodge releases a greater surge.
+On enemies: sends out a greater shockwave every few seconds.

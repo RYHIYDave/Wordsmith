@@ -41,6 +41,12 @@ static var CITY2_ON := true
 ## Creatures, https://claude.ai/artifact/KjN5NDpT3Ck2y8Ezp9cDuS), asked “Should I switch them on, or keep working on one?”: “Better,
 ## yup switch on”, 24 Nov 2026. Off, the wordsmith does not make them (`makes`); known, as all words are.
 static var REAP_ON := true
+## THE HIGH CITY'S RUNES MELDED, the last group (his "Then we gotta get back to these melds.  I'd like to finish them today.", 24
+## Nov 2026): Piercing, Bleeding, Reaping, Culling and Surging with every other rune and with each other (110), and each one's
+## level 2, in the same table (`high`); their text tools/meldshigh/docs_high.txt, their stones docs/mockups/meld_runes6 (both from
+## tools/meldshigh/design.py), their twists meldshigh_rules.gd, their looks fx_m52p_high.gd. OFF until his yes to their page: the
+## wordsmith does not make them (`makes`); known, as all words are.
+static var HIGH_ON := false
 ## (what each rune is worth inside one on gear: items.ts MELD_GEAR_STRENGTH; a level 2 rune's: RANK2's half again)
 const GEAR := 0.75
 const GEAR_RANK := 1.5
@@ -73,7 +79,7 @@ static func is_new_rank(w) -> bool:
 static func makes(a: String, b: String) -> String:
 	if a == b:
 		var r: String = a + "2"
-		return r if T()["rankOf"].has(r) and (CITY_ON or not is_city(r)) else ""
+		return r if T()["rankOf"].has(r) and (CITY_ON or not is_city(r)) and (HIGH_ON or not is_high(r)) else ""
 	for m in T()["melds"]:
 		var of: Array = T()["of"][m]
 		if (of[0] == a and of[1] == b) or (of[0] == b and of[1] == a):
@@ -81,6 +87,8 @@ static func makes(a: String, b: String) -> String:
 				return m if CITY2_ON else ""
 			if is_reap(m):
 				return m if REAP_ON else ""
+			if is_high(m):
+				return m if HIGH_ON else ""
 			return m if CITY_ON or not is_city(m) else ""
 	return ""
 
@@ -93,6 +101,11 @@ static func is_city(w) -> bool:
 ## Is it one of the city's runes with the floor 6–10 runes?
 static func is_city2(w) -> bool:
 	return w is String and T().get("city2", []).has(w)
+
+
+## Is it one of the High City's runes melded (or its level 2)?
+static func is_high(w) -> bool:
+	return w is String and T().get("high", []).has(w)
 
 
 ## Is it one of Reaping's melds with the damage runes?
@@ -295,6 +308,32 @@ static func _rank(w: String, front: bool, r: Dictionary, loc: Dictionary) -> voi
 					loc["rate"] = float(loc["rate"]) * 1.15
 			else:
 				r["haste"] = float(r["haste"]) * float(t["k"])
+		# (THE HIGH CITY'S LEVEL 2 RUNES: its rune half as strong again, as its doc line says)
+		"piercing2":
+			if front:
+				r["through"] = float(r["through"]) * 1.5
+			else:
+				r["lance"] = float(r["lance"]) * 1.5
+		"bleeding2":
+			if front:
+				r["bleed"] = float(r["bleed"]) * 1.5
+			else:
+				r["thorns"] = float(r["thorns"]) * 1.5
+		"reaping2":
+			if front:
+				r["reap"] = float(r["reap"]) * 1.5
+			else:
+				r["spirit"] = float(r["spirit"]) * 1.5
+		"culling2":
+			if front:
+				r["cull"] = minf(0.4, float(r["cull"]) * 1.5)
+			else:
+				r["cull_mark"] = minf(0.6, float(r["cull_mark"]) * 1.5)
+		"surging2":
+			if front:
+				r["surge"] = float(r["surge"]) * 1.5
+			else:
+				r["dodge_surge"] = float(r["dodge_surge"]) * 1.5
 		"heavy2":
 			if front:
 				loc["dmg_mult"] = float(loc["dmg_mult"]) * float(t["more"])

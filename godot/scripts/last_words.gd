@@ -46,6 +46,8 @@ var _next_id := 1
 ## REAPING WITH THE DAMAGE RUNES (meldsreap_rules.gd, behind melds52.gd REAP_ON): their twists, his creatures, and the ones risen
 ## against him
 var reap
+## THE HIGH CITY'S RUNES MELDED (meldshigh_rules.gd, behind melds52.gd HIGH_ON): what each one's act carries
+var high
 ## (CULLING on a monster: its fire kindling as he comes low, heard once each time)
 var _kindled := false
 
@@ -53,6 +55,7 @@ var _kindled := false
 func _init(h) -> void:
 	hero = h
 	reap = preload("res://scripts/meldsreap_rules.gd").new(self)
+	high = preload("res://scripts/meldshigh_rules.gd").new(self)
 
 
 static func L() -> Dictionary:
@@ -105,6 +108,7 @@ func pierce_on(i: int, first, at: Vector2, way: Vector2, frac: float) -> void:
 			continue
 		if absf(p.y * way.x - p.x * way.y) <= 0.45 + o.r:
 			hero.hit_monster(o, i, frac, true)
+			high.carry("piercing", i, "front", o, at)
 
 
 ## BLEEDING: `m` bleeds for `secs`, `dps` a second (the stronger of this and what it bled already), more while it walks.
@@ -136,7 +140,9 @@ func cull_monster(m, under: float, i: int, mark := false) -> bool:
 		e["whole"] = true
 	hero._tell(e)
 	rec("cull_mark" if mark else "cull_kill")
+	var at: Vector2 = m.world
 	m.damage(maxf(1.0, ceilf(m.life + m.shield)), "phys", false, false, [], false, false, i)
+	high.carry_round("culling", i, "behind" if mark else "front", at, float(high.C()["burstR"]), m)
 	return true
 
 
@@ -144,7 +150,10 @@ func cull_monster(m, under: float, i: int, mark := false) -> bool:
 func struck(m, i: int, dmg: float) -> void:
 	var r: Dictionary = hero.loadout.r(i)
 	if float(r["bleed"]) > 0.0:
+		var fresh: bool = m.bleed_t < 0.5
 		bleed_monster(m, dmg * float(r["bleed"]) * float(r["pace"]), float(L()["bleed"]["secs"]) * float(r["last"]))
+		if fresh:
+			high.carry("bleeding", i, "front", m)
 	if float(r["cull"]) > 0.0:
 		cull_monster(m, float(r["cull"]), i)
 
@@ -185,6 +194,7 @@ func _lance_lands(q: Dictionary) -> void:
 		var way: Vector2 = q["way"]
 		if absf(p.y * way.x - p.x * way.y) <= w + m.r:
 			hero.hit_monster(m, i, q["share"], true)
+			high.carry("piercing", i, "behind", m, q["from"])
 
 
 ## BLEEDING behind: thorns at `at`, cutting whatever walks in them; one a move each BLEED.thornEvery seconds.
@@ -252,6 +262,7 @@ func cast(i: int, from: Vector2, way: Vector2, frac: float, again: Callable) -> 
 		hero._tell({"t": "surge", "x": hero.world.x, "y": hero.world.y, "r": S["radius"]})
 		rec("surge_wave")
 		hero._blast(i, hero.world, float(S["radius"]), frac * float(r["surge"]), "nova", false, -6.0)
+		high.carry_round("surging", i, "front", hero.world, float(S["radius"]))
 	if float(r["mirror"]) > 0.0:
 		var side := mirror_side(hero.face)
 		var at: Vector2 = from + side * float(L()["mirroring"]["side"])
@@ -295,6 +306,7 @@ func dodge_surge(at: Vector2) -> void:
 	hero._tell({"t": "surge", "x": at.x, "y": at.y, "r": S["dodgeRadius"], "dodge": true})
 	rec("surge_wave")
 	hero._blast(best, at, float(S["dodgeRadius"]), float(hero.loadout.r(best)["dodge_surge"]), "nova", false, -6.0)
+	high.carry_round("surging", best, "behind", at, float(S["dodgeRadius"]))
 
 
 ## (game.ts plunderGold) What the gold an enemy drops is worth, for Plundering: an ordinary one's, more for an elite, a guardian, a
@@ -309,6 +321,8 @@ func _plunder_gold(m) -> float:
 ## What the last words of the move that killed `m` make of the kill (game.ts lastWordsKill): Reaping's soul and spirit, Plundering's
 ## gold.
 func killed(m, i: int) -> void:
+	# (THE HIGH CITY'S RUNES MELDED: one in death's hold rises as his spirit, whatever killed it)
+	high.reap_hold(m)
 	if i < 0 or i > 2:
 		return
 	var r: Dictionary = hero.loadout.r(i)
@@ -318,6 +332,17 @@ func killed(m, i: int) -> void:
 		rec("reap_soul")
 		if reap.on() and reap.is_reap(r.get("meld")):
 			reap.front_kill(m, i, str(r["meld"]))
+		# (THE HIGH CITY'S RUNES MELDED: the soul flies at the nearest enemy, carrying the other rune)
+		var soul_to = null
+		var sd: float = float(high.C()["soulR"])
+		for o in _list():
+			if is_instance_valid(o) and not o.dead and o != m and not _shut(o) and o.world.distance_to(m.world) < sd:
+				sd = o.world.distance_to(m.world)
+				soul_to = o
+		if soul_to != null:
+			high.carry("reaping", i, "front", soul_to, m.world)
+		elif high.SELF.size() > 0:
+			high.carry_round("reaping", i, "front", m.world, 0.0)
 	if float(r["spirit"]) > 0.0 and not m.boss:
 		_raise_spirit(m, i, r["spirit"])
 	if float(r["plunder"]) > 0.0 or float(r["plunder_burst"]) > 0.0:
@@ -408,6 +433,10 @@ func _step_zones(dt: float) -> void:
 					o.damage(hero.side(o, maxf(1.0, roundf(float(z["dmg"]) * 0.5)), int(z["skill"])), "phys", false, false, [], false, true, int(z["skill"]))
 					bleed_monster(o, float(z["dmg"]) * 0.5, float(L()["bleed"]["secs"]))
 					rec("bleed_cut")
+					# (THE HIGH CITY'S RUNES MELDED: a cut of the thorns carries the other rune, again on one no sooner than thornAgain)
+					if _clock - float(o.m52.get("high_thorn", -9.0)) >= float(high.C()["thornAgain"]):
+						o.m52["high_thorn"] = _clock
+						high.carry("bleeding", int(z["skill"]), "behind", o, at)
 		elif z["kind"] == "reaper":
 			var took := false
 			for o in _list().duplicate():
@@ -462,3 +491,5 @@ func _step_spirits(dt: float) -> void:
 			hero._tell({"t": "spiritHit", "id": sp["id"], "x0": at.x, "y0": at.y, "x1": best.world.x, "y1": best.world.y})
 			rec("reap_rake")
 			best.damage(hero.side(best, maxf(1.0, roundf(hero.avg_hit(int(sp["skill"]), float(sp["share"])))), int(sp["skill"])), hero.loadout.r(int(sp["skill"]))["element"], false, false, [], false, false, -1)
+			# (THE HIGH CITY'S RUNES MELDED: the spirit's blow carries the other rune)
+			high.carry("reaping", int(sp["skill"]), "behind", best, at)

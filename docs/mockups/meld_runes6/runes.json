@@ -1,0 +1,1872 @@
+{
+ "impaler": {
+  "name": "Impaler",
+  "of": [
+   "piercing",
+   "power"
+  ],
+  "color": "#d16669",
+  "glyph": [
+   ".o...X.",
+   "ooo.XXX",
+   ".o..X.X",
+   ".o...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o...X."
+  ]
+ },
+ "stinger": {
+  "name": "Stinger",
+  "of": [
+   "piercing",
+   "poison"
+  ],
+  "color": "#b4c454",
+  "glyph": [
+   ".o...X.",
+   "ooo..X.",
+   ".o..XXX",
+   ".o..XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "icelance": {
+  "name": "Icelance",
+  "of": [
+   "piercing",
+   "frost"
+  ],
+  "color": "#78acd9",
+  "glyph": [
+   ".o.....",
+   "ooo.X.X",
+   ".o...X.",
+   ".o..XXX",
+   ".o...X.",
+   ".o..X.X",
+   ".o....."
+  ]
+ },
+ "sunspear": {
+  "name": "Sunspear",
+  "of": [
+   "piercing",
+   "fire"
+  ],
+  "color": "#e59958",
+  "glyph": [
+   ".o....X",
+   "ooo..X.",
+   ".o..XX.",
+   ".o..XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "stormlance": {
+  "name": "Stormlance",
+  "of": [
+   "piercing",
+   "lightning"
+  ],
+  "color": "#e5db7b",
+  "glyph": [
+   ".o....X",
+   "ooo..X.",
+   ".o..X..",
+   ".o..XXX",
+   ".o....X",
+   ".o...X.",
+   ".o..X.."
+  ]
+ },
+ "dart": {
+  "name": "Dart",
+  "of": [
+   "piercing",
+   "swift"
+  ],
+  "color": "#95c16e",
+  "glyph": [
+   ".o..X..",
+   "ooo..X.",
+   ".o..X..",
+   ".o.....",
+   ".o..X..",
+   ".o...X.",
+   ".o..X.."
+  ]
+ },
+ "batteringram": {
+  "name": "Battering Ram",
+  "of": [
+   "piercing",
+   "heavy"
+  ],
+  "color": "#af9773",
+  "glyph": [
+   ".o.....",
+   "ooo.XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o..XXX",
+   ".o..XXX",
+   ".o....."
+  ]
+ },
+ "pitchfork": {
+  "name": "Pitchfork",
+  "of": [
+   "piercing",
+   "twin"
+  ],
+  "color": "#78bcaf",
+  "glyph": [
+   ".o..X.X",
+   "ooo.X.X",
+   ".o..X.X",
+   ".o..X.X",
+   ".o..X.X",
+   ".o..X.X",
+   ".o..X.X"
+  ]
+ },
+ "bloodlance": {
+  "name": "Bloodlance",
+  "of": [
+   "piercing",
+   "leech"
+  ],
+  "color": "#e59990",
+  "glyph": [
+   ".o..XXX",
+   "ooo.XXX",
+   ".o..X.X",
+   ".o..X.X",
+   ".o...X.",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "shrapnel": {
+  "name": "Shrapnel",
+  "of": [
+   "piercing",
+   "volatile"
+  ],
+  "color": "#a278c4",
+  "glyph": [
+   ".o.....",
+   "ooo.X.X",
+   ".o..XXX",
+   ".o...X.",
+   ".o..XXX",
+   ".o..X.X",
+   ".o....."
+  ]
+ },
+ "bodkin": {
+  "name": "Bodkin",
+  "of": [
+   "piercing",
+   "precise"
+  ],
+  "color": "#dadedf",
+  "glyph": [
+   ".o...X.",
+   "ooo..X.",
+   ".o..XXX",
+   ".o..X.X",
+   ".o..XXX",
+   ".o...X.",
+   ".o...X."
+  ]
+ },
+ "barrage": {
+  "name": "Barrage",
+  "of": [
+   "piercing",
+   "frenzied"
+  ],
+  "color": "#e57b5e",
+  "glyph": [
+   ".o....X",
+   "ooo..X.",
+   ".o..X.X",
+   ".o...X.",
+   ".o..X.X",
+   ".o...X.",
+   ".o..X.."
+  ]
+ },
+ "spearwall": {
+  "name": "Spearwall",
+  "of": [
+   "piercing",
+   "guarding"
+  ],
+  "color": "#5eac80",
+  "glyph": [
+   ".o..XXX",
+   "ooo.XXX",
+   ".o..XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "longspear": {
+  "name": "Longspear",
+  "of": [
+   "piercing",
+   "lasting"
+  ],
+  "color": "#ae9790",
+  "glyph": [
+   ".o..XXX",
+   "ooo..X.",
+   ".o...X.",
+   ".o..XXX",
+   ".o...X.",
+   ".o...X.",
+   ".o..XXX"
+  ]
+ },
+ "flicker": {
+  "name": "Flicker",
+  "of": [
+   "piercing",
+   "fleeting"
+  ],
+  "color": "#e0d3de",
+  "glyph": [
+   ".o....X",
+   "ooo..XX",
+   ".o...X.",
+   ".o..XX.",
+   ".o..X..",
+   ".o.....",
+   ".o....."
+  ]
+ },
+ "broadspear": {
+  "name": "Broadspear",
+  "of": [
+   "piercing",
+   "vast"
+  ],
+  "color": "#86725b",
+  "glyph": [
+   ".o.....",
+   "ooo....",
+   ".o..XXX",
+   ".o.....",
+   ".o..XXX",
+   ".o.....",
+   ".o..XXX"
+  ]
+ },
+ "gaff": {
+  "name": "Gaff",
+  "of": [
+   "piercing",
+   "pulling"
+  ],
+  "color": "#8e8cce",
+  "glyph": [
+   ".o...XX",
+   "ooo...X",
+   ".o....X",
+   ".o..X.X",
+   ".o..XXX",
+   ".o.....",
+   ".o....."
+  ]
+ },
+ "trident": {
+  "name": "Trident",
+  "of": [
+   "piercing",
+   "splitting"
+  ],
+  "color": "#ceaedd",
+  "glyph": [
+   ".o..X.X",
+   "ooo.X.X",
+   ".o...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "witchpin": {
+  "name": "Witchpin",
+  "of": [
+   "piercing",
+   "hexing"
+  ],
+  "color": "#b7b4bf",
+  "glyph": [
+   ".o.....",
+   "ooo..X.",
+   ".o..X.X",
+   ".o..XXX",
+   ".o..X.X",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "stake": {
+  "name": "Stake",
+  "of": [
+   "piercing",
+   "stilling"
+  ],
+  "color": "#96d7ae",
+  "glyph": [
+   ".o..XXX",
+   "ooo.X.X",
+   ".o..XX.",
+   ".o..X.X",
+   ".o..XXX",
+   ".o.....",
+   ".o....."
+  ]
+ },
+ "skewer": {
+  "name": "Skewer",
+  "of": [
+   "piercing",
+   "binding"
+  ],
+  "color": "#c1b497",
+  "glyph": [
+   ".o..XXX",
+   "ooo.X.X",
+   ".o..XXX",
+   ".o...X.",
+   ".o..XXX",
+   ".o..X.X",
+   ".o..XXX"
+  ]
+ },
+ "gore": {
+  "name": "Gore",
+  "of": [
+   "bleeding",
+   "power"
+  ],
+  "color": "#be2a35",
+  "glyph": [
+   ".o...X.",
+   "ooo.XXX",
+   "ooo.X.X",
+   ".o...X.",
+   ".....X.",
+   ".o...X.",
+   ".....X."
+  ]
+ },
+ "gangrene": {
+  "name": "Gangrene",
+  "of": [
+   "bleeding",
+   "poison"
+  ],
+  "color": "#a28720",
+  "glyph": [
+   ".o...X.",
+   "ooo..X.",
+   "ooo.XXX",
+   ".o..XXX",
+   "....XXX",
+   ".o...X.",
+   "......."
+  ]
+ },
+ "rimeblood": {
+  "name": "Rimeblood",
+  "of": [
+   "bleeding",
+   "frost"
+  ],
+  "color": "#6670a4",
+  "glyph": [
+   ".o.....",
+   "ooo.X.X",
+   "ooo..X.",
+   ".o..XXX",
+   ".....X.",
+   ".o..X.X",
+   "......."
+  ]
+ },
+ "bloodfire": {
+  "name": "Bloodfire",
+  "of": [
+   "bleeding",
+   "fire"
+  ],
+  "color": "#d35c24",
+  "glyph": [
+   ".o....X",
+   "ooo..X.",
+   "ooo.XX.",
+   ".o..XXX",
+   "....XXX",
+   ".o...X.",
+   "......."
+  ]
+ },
+ "galvanic": {
+  "name": "Galvanic",
+  "of": [
+   "bleeding",
+   "lightning"
+  ],
+  "color": "#d39f47",
+  "glyph": [
+   ".o....X",
+   "ooo..X.",
+   "ooo.X..",
+   ".o..XXX",
+   "......X",
+   ".o...X.",
+   "....X.."
+  ]
+ },
+ "lacerate": {
+  "name": "Lacerate",
+  "of": [
+   "bleeding",
+   "swift"
+  ],
+  "color": "#83853a",
+  "glyph": [
+   ".o..X..",
+   "ooo..X.",
+   "ooo.X..",
+   ".o.....",
+   "....X..",
+   ".o...X.",
+   "....X.."
+  ]
+ },
+ "bludgeon": {
+  "name": "Bludgeon",
+  "of": [
+   "bleeding",
+   "heavy"
+  ],
+  "color": "#9d5b3e",
+  "glyph": [
+   ".o.....",
+   "ooo.XXX",
+   "ooo.XXX",
+   ".o...X.",
+   "....XXX",
+   ".o..XXX",
+   "......."
+  ]
+ },
+ "fangs": {
+  "name": "Fangs",
+  "of": [
+   "bleeding",
+   "twin"
+  ],
+  "color": "#66807b",
+  "glyph": [
+   ".o..X.X",
+   "ooo.X.X",
+   "ooo.X.X",
+   ".o..X.X",
+   "....X.X",
+   ".o..X.X",
+   "....X.X"
+  ]
+ },
+ "bloodfeast": {
+  "name": "Bloodfeast",
+  "of": [
+   "bleeding",
+   "leech"
+  ],
+  "color": "#d35c5c",
+  "glyph": [
+   ".o..XXX",
+   "ooo.XXX",
+   "ooo.X.X",
+   ".o..X.X",
+   ".....X.",
+   ".o...X.",
+   "......."
+  ]
+ },
+ "bloodburst": {
+  "name": "Bloodburst",
+  "of": [
+   "bleeding",
+   "volatile"
+  ],
+  "color": "#823c90",
+  "glyph": [
+   ".o.....",
+   "ooo.X.X",
+   "ooo.XXX",
+   ".o...X.",
+   "....XXX",
+   ".o..X.X",
+   "......."
+  ]
+ },
+ "artery": {
+  "name": "Artery",
+  "of": [
+   "bleeding",
+   "precise"
+  ],
+  "color": "#c8a1ab",
+  "glyph": [
+   ".o...X.",
+   "ooo..X.",
+   "ooo.XXX",
+   ".o..X.X",
+   "....XXX",
+   ".o...X.",
+   ".....X."
+  ]
+ },
+ "bloodrage": {
+  "name": "Bloodrage",
+  "of": [
+   "bleeding",
+   "frenzied"
+  ],
+  "color": "#d33f2a",
+  "glyph": [
+   ".o....X",
+   "ooo..X.",
+   "ooo.X.X",
+   ".o...X.",
+   "....X.X",
+   ".o...X.",
+   "....X.."
+  ]
+ },
+ "thornshield": {
+  "name": "Thornshield",
+  "of": [
+   "bleeding",
+   "guarding"
+  ],
+  "color": "#4c704c",
+  "glyph": [
+   ".o..XXX",
+   "ooo.XXX",
+   "ooo.XXX",
+   ".o..XXX",
+   ".....X.",
+   ".o...X.",
+   "......."
+  ]
+ },
+ "hemorrhage": {
+  "name": "Hemorrhage",
+  "of": [
+   "bleeding",
+   "lasting"
+  ],
+  "color": "#9b5b5c",
+  "glyph": [
+   ".o..XXX",
+   "ooo..X.",
+   "ooo..X.",
+   ".o..XXX",
+   ".....X.",
+   ".o...X.",
+   "....XXX"
+  ]
+ },
+ "papercut": {
+  "name": "Papercut",
+  "of": [
+   "bleeding",
+   "fleeting"
+  ],
+  "color": "#ce979c",
+  "glyph": [
+   ".o....X",
+   "ooo..XX",
+   "ooo..X.",
+   ".o..XX.",
+   "....X..",
+   ".o.....",
+   "......."
+  ]
+ },
+ "bramble": {
+  "name": "Bramble",
+  "of": [
+   "bleeding",
+   "vast"
+  ],
+  "color": "#743626",
+  "glyph": [
+   ".o.....",
+   "ooo....",
+   "ooo.XXX",
+   ".o.....",
+   "....XXX",
+   ".o.....",
+   "....XXX"
+  ]
+ },
+ "fishhook": {
+  "name": "Fishhook",
+  "of": [
+   "bleeding",
+   "pulling"
+  ],
+  "color": "#7c509a",
+  "glyph": [
+   ".o...XX",
+   "ooo...X",
+   "ooo...X",
+   ".o..X.X",
+   "....XXX",
+   ".o.....",
+   "......."
+  ]
+ },
+ "thornspray": {
+  "name": "Thornspray",
+  "of": [
+   "bleeding",
+   "splitting"
+  ],
+  "color": "#b071bc",
+  "glyph": [
+   ".o..X.X",
+   "ooo.X.X",
+   "ooo..X.",
+   ".o...X.",
+   ".....X.",
+   ".o...X.",
+   "......."
+  ]
+ },
+ "thorncurse": {
+  "name": "Thorncurse",
+  "of": [
+   "bleeding",
+   "hexing"
+  ],
+  "color": "#a4788a",
+  "glyph": [
+   ".o.....",
+   "ooo..X.",
+   "ooo.X.X",
+   ".o..XXX",
+   "....X.X",
+   ".o...X.",
+   "......."
+  ]
+ },
+ "clot": {
+  "name": "Clot",
+  "of": [
+   "bleeding",
+   "stilling"
+  ],
+  "color": "#849b7a",
+  "glyph": [
+   ".o..XXX",
+   "ooo.X.X",
+   "ooo.XX.",
+   ".o..X.X",
+   "....XXX",
+   ".o.....",
+   "......."
+  ]
+ },
+ "briar": {
+  "name": "Briar",
+  "of": [
+   "bleeding",
+   "binding"
+  ],
+  "color": "#af7862",
+  "glyph": [
+   ".o..XXX",
+   "ooo.X.X",
+   "ooo.XXX",
+   ".o...X.",
+   "....XXX",
+   ".o..X.X",
+   "....XXX"
+  ]
+ },
+ "banshee": {
+  "name": "Banshee",
+  "of": [
+   "reaping",
+   "swift"
+  ],
+  "color": "#7cb25b",
+  "glyph": [
+   "ooo.X..",
+   "..o..X.",
+   "..o.X..",
+   ".o.....",
+   ".o..X..",
+   "o....X.",
+   "o...X.."
+  ]
+ },
+ "tombstone": {
+  "name": "Tombstone",
+  "of": [
+   "reaping",
+   "heavy"
+  ],
+  "color": "#968860",
+  "glyph": [
+   "ooo....",
+   "..o.XXX",
+   "..o.XXX",
+   ".o...X.",
+   ".o..XXX",
+   "o...XXX",
+   "o......"
+  ]
+ },
+ "revenants": {
+  "name": "Revenants",
+  "of": [
+   "reaping",
+   "twin"
+  ],
+  "color": "#5fad9c",
+  "glyph": [
+   "ooo.X.X",
+   "..o.X.X",
+   "..o.X.X",
+   ".o..X.X",
+   ".o..X.X",
+   "o...X.X",
+   "o...X.X"
+  ]
+ },
+ "ghoul": {
+  "name": "Ghoul",
+  "of": [
+   "reaping",
+   "leech"
+  ],
+  "color": "#cc8a7d",
+  "glyph": [
+   "ooo.XXX",
+   "..o.XXX",
+   "..o.X.X",
+   ".o..X.X",
+   ".o...X.",
+   "o....X.",
+   "o......"
+  ]
+ },
+ "soulburst": {
+  "name": "Soulburst",
+  "of": [
+   "reaping",
+   "volatile"
+  ],
+  "color": "#896ab1",
+  "glyph": [
+   "ooo....",
+   "..o.X.X",
+   "..o.XXX",
+   ".o...X.",
+   ".o..XXX",
+   "o...X.X",
+   "o......"
+  ]
+ },
+ "deadeye": {
+  "name": "Deadeye",
+  "of": [
+   "reaping",
+   "precise"
+  ],
+  "color": "#c0cfcc",
+  "glyph": [
+   "ooo..X.",
+   "..o..X.",
+   "..o.XXX",
+   ".o..X.X",
+   ".o..XXX",
+   "o....X.",
+   "o....X."
+  ]
+ },
+ "macabre": {
+  "name": "Macabre",
+  "of": [
+   "reaping",
+   "frenzied"
+  ],
+  "color": "#cc6c4b",
+  "glyph": [
+   "ooo...X",
+   "..o..X.",
+   "..o.X.X",
+   ".o...X.",
+   ".o..X.X",
+   "o....X.",
+   "o...X.."
+  ]
+ },
+ "gravewarden": {
+  "name": "Gravewarden",
+  "of": [
+   "reaping",
+   "guarding"
+  ],
+  "color": "#459e6e",
+  "glyph": [
+   "ooo.XXX",
+   "..o.XXX",
+   "..o.XXX",
+   ".o..XXX",
+   ".o...X.",
+   "o....X.",
+   "o......"
+  ]
+ },
+ "undying": {
+  "name": "Undying",
+  "of": [
+   "reaping",
+   "lasting"
+  ],
+  "color": "#94897d",
+  "glyph": [
+   "ooo.XXX",
+   "..o..X.",
+   "..o..X.",
+   ".o..XXX",
+   ".o...X.",
+   "o....X.",
+   "o...XXX"
+  ]
+ },
+ "fetch": {
+  "name": "Fetch",
+  "of": [
+   "reaping",
+   "fleeting"
+  ],
+  "color": "#c7c4cb",
+  "glyph": [
+   "ooo...X",
+   "..o..XX",
+   "..o..X.",
+   ".o..XX.",
+   ".o..X..",
+   "o......",
+   "o......"
+  ]
+ },
+ "legion": {
+  "name": "Legion",
+  "of": [
+   "reaping",
+   "vast"
+  ],
+  "color": "#6d6348",
+  "glyph": [
+   "ooo....",
+   "..o....",
+   "..o.XXX",
+   ".o.....",
+   ".o..XXX",
+   "o......",
+   "o...XXX"
+  ]
+ },
+ "undertow": {
+  "name": "Undertow",
+  "of": [
+   "reaping",
+   "pulling"
+  ],
+  "color": "#757dbc",
+  "glyph": [
+   "ooo..XX",
+   "..o...X",
+   "..o...X",
+   ".o..X.X",
+   ".o..XXX",
+   "o......",
+   "o......"
+  ]
+ },
+ "poltergeist": {
+  "name": "Poltergeist",
+  "of": [
+   "reaping",
+   "splitting"
+  ],
+  "color": "#b59fca",
+  "glyph": [
+   "ooo.X.X",
+   "..o.X.X",
+   "..o..X.",
+   ".o...X.",
+   ".o...X.",
+   "o....X.",
+   "o......"
+  ]
+ },
+ "haunting": {
+  "name": "Haunting",
+  "of": [
+   "reaping",
+   "hexing"
+  ],
+  "color": "#9da5ac",
+  "glyph": [
+   "ooo....",
+   "..o..X.",
+   "..o.X.X",
+   ".o..XXX",
+   ".o..X.X",
+   "o....X.",
+   "o......"
+  ]
+ },
+ "limbo": {
+  "name": "Limbo",
+  "of": [
+   "reaping",
+   "stilling"
+  ],
+  "color": "#7dc89b",
+  "glyph": [
+   "ooo.XXX",
+   "..o.X.X",
+   "..o.XX.",
+   ".o..X.X",
+   ".o..XXX",
+   "o......",
+   "o......"
+  ]
+ },
+ "gravebind": {
+  "name": "Gravebind",
+  "of": [
+   "reaping",
+   "binding"
+  ],
+  "color": "#a8a584",
+  "glyph": [
+   "ooo.XXX",
+   "..o.X.X",
+   "..o.XXX",
+   ".o...X.",
+   ".o..XXX",
+   "o...X.X",
+   "o...XXX"
+  ]
+ },
+ "guillotine": {
+  "name": "Guillotine",
+  "of": [
+   "culling",
+   "power"
+  ],
+  "color": "#bc515f",
+  "glyph": [
+   "oo...X.",
+   "ooo.XXX",
+   "oo..X.X",
+   ".o...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o...X."
+  ]
+ },
+ "nightshade": {
+  "name": "Nightshade",
+  "of": [
+   "culling",
+   "poison"
+  ],
+  "color": "#9faf4a",
+  "glyph": [
+   "oo...X.",
+   "ooo..X.",
+   "oo..XXX",
+   ".o..XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "coldcut": {
+  "name": "Coldcut",
+  "of": [
+   "culling",
+   "frost"
+  ],
+  "color": "#6397ce",
+  "glyph": [
+   "oo.....",
+   "ooo.X.X",
+   "oo...X.",
+   ".o..XXX",
+   ".o...X.",
+   ".o..X.X",
+   ".o....."
+  ]
+ },
+ "cremate": {
+  "name": "Cremate",
+  "of": [
+   "culling",
+   "fire"
+  ],
+  "color": "#d0844e",
+  "glyph": [
+   "oo....X",
+   "ooo..X.",
+   "oo..XX.",
+   ".o..XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "smite": {
+  "name": "Smite",
+  "of": [
+   "culling",
+   "lightning"
+  ],
+  "color": "#d0c671",
+  "glyph": [
+   "oo....X",
+   "ooo..X.",
+   "oo..X..",
+   ".o..XXX",
+   ".o....X",
+   ".o...X.",
+   ".o..X.."
+  ]
+ },
+ "coup": {
+  "name": "Coup",
+  "of": [
+   "culling",
+   "swift"
+  ],
+  "color": "#80ac64",
+  "glyph": [
+   "oo..X..",
+   "ooo..X.",
+   "oo..X..",
+   ".o.....",
+   ".o..X..",
+   ".o...X.",
+   ".o..X.."
+  ]
+ },
+ "crusher": {
+  "name": "Crusher",
+  "of": [
+   "culling",
+   "heavy"
+  ],
+  "color": "#9a8268",
+  "glyph": [
+   "oo.....",
+   "ooo.XXX",
+   "oo..XXX",
+   ".o...X.",
+   ".o..XXX",
+   ".o..XXX",
+   ".o....."
+  ]
+ },
+ "scissors": {
+  "name": "Scissors",
+  "of": [
+   "culling",
+   "twin"
+  ],
+  "color": "#63a7a5",
+  "glyph": [
+   "oo..X.X",
+   "ooo.X.X",
+   "oo..X.X",
+   ".o..X.X",
+   ".o..X.X",
+   ".o..X.X",
+   ".o..X.X"
+  ]
+ },
+ "bloodprice": {
+  "name": "Bloodprice",
+  "of": [
+   "culling",
+   "leech"
+  ],
+  "color": "#d08486",
+  "glyph": [
+   "oo..XXX",
+   "ooo.XXX",
+   "oo..X.X",
+   ".o..X.X",
+   ".o...X.",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "deathburst": {
+  "name": "Deathburst",
+  "of": [
+   "culling",
+   "volatile"
+  ],
+  "color": "#8d63ba",
+  "glyph": [
+   "oo.....",
+   "ooo.X.X",
+   "oo..XXX",
+   ".o...X.",
+   ".o..XXX",
+   ".o..X.X",
+   ".o....."
+  ]
+ },
+ "mercy": {
+  "name": "Mercy",
+  "of": [
+   "culling",
+   "precise"
+  ],
+  "color": "#c5c9d5",
+  "glyph": [
+   "oo...X.",
+   "ooo..X.",
+   "oo..XXX",
+   ".o..X.X",
+   ".o..XXX",
+   ".o...X.",
+   ".o...X."
+  ]
+ },
+ "massacre": {
+  "name": "Massacre",
+  "of": [
+   "culling",
+   "frenzied"
+  ],
+  "color": "#d06654",
+  "glyph": [
+   "oo....X",
+   "ooo..X.",
+   "oo..X.X",
+   ".o...X.",
+   ".o..X.X",
+   ".o...X.",
+   ".o..X.."
+  ]
+ },
+ "lastrites": {
+  "name": "Last Rites",
+  "of": [
+   "culling",
+   "guarding"
+  ],
+  "color": "#499776",
+  "glyph": [
+   "oo..XXX",
+   "ooo.XXX",
+   "oo..XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "deathwatch": {
+  "name": "Deathwatch",
+  "of": [
+   "culling",
+   "lasting"
+  ],
+  "color": "#988286",
+  "glyph": [
+   "oo..XXX",
+   "ooo..X.",
+   "oo...X.",
+   ".o..XXX",
+   ".o...X.",
+   ".o...X.",
+   ".o..XXX"
+  ]
+ },
+ "quietus": {
+  "name": "Quietus",
+  "of": [
+   "culling",
+   "fleeting"
+  ],
+  "color": "#cbbed4",
+  "glyph": [
+   "oo....X",
+   "ooo..XX",
+   "oo...X.",
+   ".o..XX.",
+   ".o..X..",
+   ".o.....",
+   ".o....."
+  ]
+ },
+ "purge": {
+  "name": "Purge",
+  "of": [
+   "culling",
+   "vast"
+  ],
+  "color": "#725d50",
+  "glyph": [
+   "oo.....",
+   "ooo....",
+   "oo..XXX",
+   ".o.....",
+   ".o..XXX",
+   ".o.....",
+   ".o..XXX"
+  ]
+ },
+ "gallows": {
+  "name": "Gallows",
+  "of": [
+   "culling",
+   "pulling"
+  ],
+  "color": "#7977c4",
+  "glyph": [
+   "oo...XX",
+   "ooo...X",
+   "oo....X",
+   ".o..X.X",
+   ".o..XXX",
+   ".o.....",
+   ".o....."
+  ]
+ },
+ "decimate": {
+  "name": "Decimate",
+  "of": [
+   "culling",
+   "splitting"
+  ],
+  "color": "#b998d2",
+  "glyph": [
+   "oo..X.X",
+   "ooo.X.X",
+   "oo...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "condemn": {
+  "name": "Condemn",
+  "of": [
+   "culling",
+   "hexing"
+  ],
+  "color": "#a29fb4",
+  "glyph": [
+   "oo.....",
+   "ooo..X.",
+   "oo..X.X",
+   ".o..XXX",
+   ".o..X.X",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "finalhour": {
+  "name": "Final Hour",
+  "of": [
+   "culling",
+   "stilling"
+  ],
+  "color": "#81c2a4",
+  "glyph": [
+   "oo..XXX",
+   "ooo.X.X",
+   "oo..XX.",
+   ".o..X.X",
+   ".o..XXX",
+   ".o.....",
+   ".o....."
+  ]
+ },
+ "noose": {
+  "name": "Noose",
+  "of": [
+   "culling",
+   "binding"
+  ],
+  "color": "#ac9f8c",
+  "glyph": [
+   "oo..XXX",
+   "ooo.X.X",
+   "oo..XXX",
+   ".o...X.",
+   ".o..XXX",
+   ".o..X.X",
+   ".o..XXX"
+  ]
+ },
+ "tremor": {
+  "name": "Tremor",
+  "of": [
+   "surging",
+   "power"
+  ],
+  "color": "#a04149",
+  "glyph": [
+   ".....X.",
+   ".o..XXX",
+   "o.o.X.X",
+   ".....X.",
+   ".o...X.",
+   "o.o..X.",
+   ".....X."
+  ]
+ },
+ "pestilence": {
+  "name": "Pestilence",
+  "of": [
+   "surging",
+   "poison"
+  ],
+  "color": "#849e4d",
+  "glyph": [
+   ".....X.",
+   ".o...X.",
+   "o.o.XXX",
+   "....XXX",
+   ".o..XXX",
+   "o.o..X.",
+   "......."
+  ]
+ },
+ "blizzard": {
+  "name": "Blizzard",
+  "of": [
+   "surging",
+   "frost"
+  ],
+  "color": "#4887d2",
+  "glyph": [
+   ".......",
+   ".o..X.X",
+   "o.o..X.",
+   "....XXX",
+   ".o...X.",
+   "o.o.X.X",
+   "......."
+  ]
+ },
+ "nova": {
+  "name": "Nova",
+  "of": [
+   "surging",
+   "fire"
+  ],
+  "color": "#b47451",
+  "glyph": [
+   "......X",
+   ".o...X.",
+   "o.o.XX.",
+   "....XXX",
+   ".o..XXX",
+   "o.o..X.",
+   "......."
+  ]
+ },
+ "thunderclap": {
+  "name": "Thunderclap",
+  "of": [
+   "surging",
+   "lightning"
+  ],
+  "color": "#b4b674",
+  "glyph": [
+   "......X",
+   ".o...X.",
+   "o.o.X..",
+   "....XXX",
+   ".o....X",
+   "o.o..X.",
+   "....X.."
+  ]
+ },
+ "rush": {
+  "name": "Rush",
+  "of": [
+   "surging",
+   "swift"
+  ],
+  "color": "#649c67",
+  "glyph": [
+   "....X..",
+   ".o...X.",
+   "o.o.X..",
+   ".......",
+   ".o..X..",
+   "o.o..X.",
+   "....X.."
+  ]
+ },
+ "seismic": {
+  "name": "Seismic",
+  "of": [
+   "surging",
+   "heavy"
+  ],
+  "color": "#7e726c",
+  "glyph": [
+   ".......",
+   ".o..XXX",
+   "o.o.XXX",
+   ".....X.",
+   ".o..XXX",
+   "o.o.XXX",
+   "......."
+  ]
+ },
+ "pulse": {
+  "name": "Pulse",
+  "of": [
+   "surging",
+   "twin"
+  ],
+  "color": "#4897a8",
+  "glyph": [
+   "....X.X",
+   ".o..X.X",
+   "o.o.X.X",
+   "....X.X",
+   ".o..X.X",
+   "o.o.X.X",
+   "....X.X"
+  ]
+ },
+ "heartbeat": {
+  "name": "Heartbeat",
+  "of": [
+   "surging",
+   "leech"
+  ],
+  "color": "#b47489",
+  "glyph": [
+   "....XXX",
+   ".o..XXX",
+   "o.o.X.X",
+   "....X.X",
+   ".o...X.",
+   "o.o..X.",
+   "......."
+  ]
+ },
+ "overload": {
+  "name": "Overload",
+  "of": [
+   "surging",
+   "volatile"
+  ],
+  "color": "#7253bd",
+  "glyph": [
+   ".......",
+   ".o..X.X",
+   "o.o.XXX",
+   ".....X.",
+   ".o..XXX",
+   "o.o.X.X",
+   "......."
+  ]
+ },
+ "lens": {
+  "name": "Lens",
+  "of": [
+   "surging",
+   "precise"
+  ],
+  "color": "#a9b8d8",
+  "glyph": [
+   ".....X.",
+   ".o...X.",
+   "o.o.XXX",
+   "....X.X",
+   ".o..XXX",
+   "o.o..X.",
+   ".....X."
+  ]
+ },
+ "crescendo": {
+  "name": "Crescendo",
+  "of": [
+   "surging",
+   "frenzied"
+  ],
+  "color": "#b45657",
+  "glyph": [
+   "......X",
+   ".o...X.",
+   "o.o.X.X",
+   ".....X.",
+   ".o..X.X",
+   "o.o..X.",
+   "....X.."
+  ]
+ },
+ "bastion": {
+  "name": "Bastion",
+  "of": [
+   "surging",
+   "guarding"
+  ],
+  "color": "#2e877a",
+  "glyph": [
+   "....XXX",
+   ".o..XXX",
+   "o.o.XXX",
+   "....XXX",
+   ".o...X.",
+   "o.o..X.",
+   "......."
+  ]
+ },
+ "resonance": {
+  "name": "Resonance",
+  "of": [
+   "surging",
+   "lasting"
+  ],
+  "color": "#7d7289",
+  "glyph": [
+   "....XXX",
+   ".o...X.",
+   "o.o..X.",
+   "....XXX",
+   ".o...X.",
+   "o.o..X.",
+   "....XXX"
+  ]
+ },
+ "spark": {
+  "name": "Spark",
+  "of": [
+   "surging",
+   "fleeting"
+  ],
+  "color": "#b0aed7",
+  "glyph": [
+   "......X",
+   ".o...XX",
+   "o.o..X.",
+   "....XX.",
+   ".o..X..",
+   "o.o....",
+   "......."
+  ]
+ },
+ "tsunami": {
+  "name": "Tsunami",
+  "of": [
+   "surging",
+   "vast"
+  ],
+  "color": "#564d54",
+  "glyph": [
+   ".......",
+   ".o.....",
+   "o.o.XXX",
+   ".......",
+   ".o..XXX",
+   "o.o....",
+   "....XXX"
+  ]
+ },
+ "vortex": {
+  "name": "Vortex",
+  "of": [
+   "surging",
+   "pulling"
+  ],
+  "color": "#5e67c8",
+  "glyph": [
+   ".....XX",
+   ".o....X",
+   "o.o...X",
+   "....X.X",
+   ".o..XXX",
+   "o.o....",
+   "......."
+  ]
+ },
+ "ricochet": {
+  "name": "Ricochet",
+  "of": [
+   "surging",
+   "splitting"
+  ],
+  "color": "#9e88d6",
+  "glyph": [
+   "....X.X",
+   ".o..X.X",
+   "o.o..X.",
+   ".....X.",
+   ".o...X.",
+   "o.o..X.",
+   "......."
+  ]
+ },
+ "hexwave": {
+  "name": "Hexwave",
+  "of": [
+   "surging",
+   "hexing"
+  ],
+  "color": "#868fb8",
+  "glyph": [
+   ".......",
+   ".o...X.",
+   "o.o.X.X",
+   "....XXX",
+   ".o..X.X",
+   "o.o..X.",
+   "......."
+  ]
+ },
+ "lull": {
+  "name": "Lull",
+  "of": [
+   "surging",
+   "stilling"
+  ],
+  "color": "#66b2a7",
+  "glyph": [
+   "....XXX",
+   ".o..X.X",
+   "o.o.XX.",
+   "....X.X",
+   ".o..XXX",
+   "o.o....",
+   "......."
+  ]
+ },
+ "tangle": {
+  "name": "Tangle",
+  "of": [
+   "surging",
+   "binding"
+  ],
+  "color": "#918f90",
+  "glyph": [
+   "....XXX",
+   ".o..X.X",
+   "o.o.XXX",
+   ".....X.",
+   ".o..XXX",
+   "o.o.X.X",
+   "....XXX"
+  ]
+ },
+ "harrow": {
+  "name": "Harrow",
+  "of": [
+   "piercing",
+   "bleeding"
+  ],
+  "color": "#9a5e63",
+  "glyph": [
+   ".o...X.",
+   "ooo.XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o.....",
+   ".o...X.",
+   ".o....."
+  ]
+ },
+ "wraithspear": {
+  "name": "Wraithspear",
+  "of": [
+   "piercing",
+   "reaping"
+  ],
+  "color": "#909f93",
+  "glyph": [
+   ".o..XXX",
+   "ooo...X",
+   ".o....X",
+   ".o...X.",
+   ".o...X.",
+   ".o..X..",
+   ".o..X.."
+  ]
+ },
+ "deathblow": {
+  "name": "Deathblow",
+  "of": [
+   "piercing",
+   "culling"
+  ],
+  "color": "#96969f",
+  "glyph": [
+   ".o..XX.",
+   "ooo.XXX",
+   ".o..XX.",
+   ".o...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o...X."
+  ]
+ },
+ "breakthrough": {
+  "name": "Breakthrough",
+  "of": [
+   "piercing",
+   "surging"
+  ],
+  "color": "#6f7fa4",
+  "glyph": [
+   ".o.....",
+   "ooo..X.",
+   ".o..X.X",
+   ".o.....",
+   ".o...X.",
+   ".o..X.X",
+   ".o....."
+  ]
+ },
+ "bloodharvest": {
+  "name": "Bloodharvest",
+  "of": [
+   "bleeding",
+   "reaping"
+  ],
+  "color": "#764948",
+  "glyph": [
+   ".o..XXX",
+   "ooo...X",
+   "ooo...X",
+   ".o...X.",
+   ".....X.",
+   ".o..X..",
+   "....X.."
+  ]
+ },
+ "butcher": {
+  "name": "Butcher",
+  "of": [
+   "bleeding",
+   "culling"
+  ],
+  "color": "#7c4054",
+  "glyph": [
+   ".o..XX.",
+   "ooo.XXX",
+   "ooo.XX.",
+   ".o...X.",
+   ".....X.",
+   ".o...X.",
+   ".....X."
+  ]
+ },
+ "bloodwave": {
+  "name": "Bloodwave",
+  "of": [
+   "bleeding",
+   "surging"
+  ],
+  "color": "#552959",
+  "glyph": [
+   ".o.....",
+   "ooo..X.",
+   "ooo.X.X",
+   ".o.....",
+   ".....X.",
+   ".o..X.X",
+   "......."
+  ]
+ },
+ "harvest": {
+  "name": "Harvest",
+  "of": [
+   "reaping",
+   "culling"
+  ],
+  "color": "#728184",
+  "glyph": [
+   "ooo.XX.",
+   "..o.XXX",
+   "..o.XX.",
+   ".o...X.",
+   ".o...X.",
+   "o....X.",
+   "o....X."
+  ]
+ },
+ "soulstorm": {
+  "name": "Soulstorm",
+  "of": [
+   "reaping",
+   "surging"
+  ],
+  "color": "#4b6a89",
+  "glyph": [
+   "ooo....",
+   "..o..X.",
+   "..o.X.X",
+   ".o.....",
+   ".o...X.",
+   "o...X.X",
+   "o......"
+  ]
+ },
+ "deathknell": {
+  "name": "Deathknell",
+  "of": [
+   "culling",
+   "surging"
+  ],
+  "color": "#516195",
+  "glyph": [
+   "oo.....",
+   "ooo..X.",
+   "oo..X.X",
+   ".o.....",
+   ".o...X.",
+   ".o..X.X",
+   ".o....."
+  ]
+ }
+}

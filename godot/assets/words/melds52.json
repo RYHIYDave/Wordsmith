@@ -192,6 +192,116 @@
   "stormwake",
   "bogborn",
   "charnel",
+  "impaler",
+  "stinger",
+  "icelance",
+  "sunspear",
+  "stormlance",
+  "dart",
+  "batteringram",
+  "pitchfork",
+  "bloodlance",
+  "shrapnel",
+  "bodkin",
+  "barrage",
+  "spearwall",
+  "longspear",
+  "flicker",
+  "broadspear",
+  "gaff",
+  "trident",
+  "witchpin",
+  "stake",
+  "skewer",
+  "gore",
+  "gangrene",
+  "rimeblood",
+  "bloodfire",
+  "galvanic",
+  "lacerate",
+  "bludgeon",
+  "fangs",
+  "bloodfeast",
+  "bloodburst",
+  "artery",
+  "bloodrage",
+  "thornshield",
+  "hemorrhage",
+  "papercut",
+  "bramble",
+  "fishhook",
+  "thornspray",
+  "thorncurse",
+  "clot",
+  "briar",
+  "banshee",
+  "tombstone",
+  "revenants",
+  "ghoul",
+  "soulburst",
+  "deadeye",
+  "macabre",
+  "gravewarden",
+  "undying",
+  "fetch",
+  "legion",
+  "undertow",
+  "poltergeist",
+  "haunting",
+  "limbo",
+  "gravebind",
+  "guillotine",
+  "nightshade",
+  "coldcut",
+  "cremate",
+  "smite",
+  "coup",
+  "crusher",
+  "scissors",
+  "bloodprice",
+  "deathburst",
+  "mercy",
+  "massacre",
+  "lastrites",
+  "deathwatch",
+  "quietus",
+  "purge",
+  "gallows",
+  "decimate",
+  "condemn",
+  "finalhour",
+  "noose",
+  "tremor",
+  "pestilence",
+  "blizzard",
+  "nova",
+  "thunderclap",
+  "rush",
+  "seismic",
+  "pulse",
+  "heartbeat",
+  "overload",
+  "lens",
+  "crescendo",
+  "bastion",
+  "resonance",
+  "spark",
+  "tsunami",
+  "vortex",
+  "ricochet",
+  "hexwave",
+  "lull",
+  "tangle",
+  "harrow",
+  "wraithspear",
+  "deathblow",
+  "breakthrough",
+  "bloodharvest",
+  "butcher",
+  "bloodwave",
+  "harvest",
+  "soulstorm",
+  "deathknell",
   "twin2",
   "leech2",
   "volatile2",
@@ -207,7 +317,12 @@
   "splitting2",
   "hexing2",
   "stilling2",
-  "binding2"
+  "binding2",
+  "piercing2",
+  "bleeding2",
+  "reaping2",
+  "culling2",
+  "surging2"
  ],
  "melds": [
   "onslaught",
@@ -401,7 +516,117 @@
   "wintergrave",
   "stormwake",
   "bogborn",
-  "charnel"
+  "charnel",
+  "impaler",
+  "stinger",
+  "icelance",
+  "sunspear",
+  "stormlance",
+  "dart",
+  "batteringram",
+  "pitchfork",
+  "bloodlance",
+  "shrapnel",
+  "bodkin",
+  "barrage",
+  "spearwall",
+  "longspear",
+  "flicker",
+  "broadspear",
+  "gaff",
+  "trident",
+  "witchpin",
+  "stake",
+  "skewer",
+  "gore",
+  "gangrene",
+  "rimeblood",
+  "bloodfire",
+  "galvanic",
+  "lacerate",
+  "bludgeon",
+  "fangs",
+  "bloodfeast",
+  "bloodburst",
+  "artery",
+  "bloodrage",
+  "thornshield",
+  "hemorrhage",
+  "papercut",
+  "bramble",
+  "fishhook",
+  "thornspray",
+  "thorncurse",
+  "clot",
+  "briar",
+  "banshee",
+  "tombstone",
+  "revenants",
+  "ghoul",
+  "soulburst",
+  "deadeye",
+  "macabre",
+  "gravewarden",
+  "undying",
+  "fetch",
+  "legion",
+  "undertow",
+  "poltergeist",
+  "haunting",
+  "limbo",
+  "gravebind",
+  "guillotine",
+  "nightshade",
+  "coldcut",
+  "cremate",
+  "smite",
+  "coup",
+  "crusher",
+  "scissors",
+  "bloodprice",
+  "deathburst",
+  "mercy",
+  "massacre",
+  "lastrites",
+  "deathwatch",
+  "quietus",
+  "purge",
+  "gallows",
+  "decimate",
+  "condemn",
+  "finalhour",
+  "noose",
+  "tremor",
+  "pestilence",
+  "blizzard",
+  "nova",
+  "thunderclap",
+  "rush",
+  "seismic",
+  "pulse",
+  "heartbeat",
+  "overload",
+  "lens",
+  "crescendo",
+  "bastion",
+  "resonance",
+  "spark",
+  "tsunami",
+  "vortex",
+  "ricochet",
+  "hexwave",
+  "lull",
+  "tangle",
+  "harrow",
+  "wraithspear",
+  "deathblow",
+  "breakthrough",
+  "bloodharvest",
+  "butcher",
+  "bloodwave",
+  "harvest",
+  "soulstorm",
+  "deathknell"
  ],
  "ranks": [
   "twin2",
@@ -419,7 +644,12 @@
   "splitting2",
   "hexing2",
   "stilling2",
-  "binding2"
+  "binding2",
+  "piercing2",
+  "bleeding2",
+  "reaping2",
+  "culling2",
+  "surging2"
  ],
  "words": {
   "onslaught": {
@@ -3878,6 +4108,1986 @@
     "power"
    ]
   },
+  "impaler": {
+   "id": "impaler",
+   "kind": "meld",
+   "name": "Impaler",
+   "front": "Impaler",
+   "behind": "of the Impaler",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Power, melded. Through them all, with force.",
+   "frontText": "Goes through everything in its path, carrying more force into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying more force.",
+   "monsterText": "Its shots fly through walls to reach you. Hits harder and has more life.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "power"
+   ]
+  },
+  "stinger": {
+   "id": "stinger",
+   "kind": "meld",
+   "name": "Stinger",
+   "front": "Stinger",
+   "behind": "of the Stinger",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Poison, melded. Through them all, with poison.",
+   "frontText": "Goes through everything in its path, carrying poison into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying poison.",
+   "monsterText": "Its shots fly through walls to reach you. Poisons you.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "poison"
+   ]
+  },
+  "icelance": {
+   "id": "icelance",
+   "kind": "meld",
+   "name": "Icelance",
+   "front": "Icelance",
+   "behind": "of the Icelance",
+   "attr": "dex",
+   "element": "frost",
+   "about": "Piercing and Frost, melded. Through them all, with frost.",
+   "frontText": "Goes through everything in its path, carrying a chill that freezes on the second into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a chill that freezes on the second.",
+   "monsterText": "Its shots fly through walls to reach you. Deals frost damage and slows you.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "frost"
+   ]
+  },
+  "sunspear": {
+   "id": "sunspear",
+   "kind": "meld",
+   "name": "Sunspear",
+   "front": "Sunspear",
+   "behind": "of the Sunspear",
+   "attr": "dex",
+   "element": "fire",
+   "about": "Piercing and Flame, melded. Through them all, with fire.",
+   "frontText": "Goes through everything in its path, carrying fire that sets them burning into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying fire that sets them burning.",
+   "monsterText": "Its shots fly through walls to reach you. Deals fire damage and sets you burning.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "fire"
+   ]
+  },
+  "stormlance": {
+   "id": "stormlance",
+   "kind": "meld",
+   "name": "Stormlance",
+   "front": "Stormlance",
+   "behind": "of the Stormlance",
+   "attr": "dex",
+   "element": "lightning",
+   "about": "Piercing and Lightning, melded. Through them all, with lightning.",
+   "frontText": "Goes through everything in its path, carrying lightning that arcs on to the next enemy into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying lightning that arcs on to the next enemy.",
+   "monsterText": "Its shots fly through walls to reach you. Deals lightning damage and shocks you.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "lightning"
+   ]
+  },
+  "dart": {
+   "id": "dart",
+   "kind": "meld",
+   "name": "Dart",
+   "front": "Dart",
+   "behind": "of the Dart",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Swift, melded. Through them all, with speed.",
+   "frontText": "Goes through everything in its path, and each enemy it goes through gives you haste.",
+   "behindText": "A lance of light strikes down its line a moment later, and each enemy it strikes gives you haste.",
+   "monsterText": "Its shots fly through walls to reach you. Moves and attacks faster.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "swift"
+   ]
+  },
+  "batteringram": {
+   "id": "batteringram",
+   "kind": "meld",
+   "name": "Battering Ram",
+   "front": "Battering Ram",
+   "behind": "of the Battering Ram",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Heavy, melded. Through them all, with weight.",
+   "frontText": "Goes through everything in its path, carrying a stun into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a stun.",
+   "monsterText": "Its shots fly through walls to reach you. Its blows knock you back.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "heavy"
+   ]
+  },
+  "pitchfork": {
+   "id": "pitchfork",
+   "kind": "meld",
+   "name": "Pitchfork",
+   "front": "Pitchfork",
+   "behind": "of the Pitchfork",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Twin, melded. Through them all, with a second blow.",
+   "frontText": "Goes through everything in its path, carrying a second strike into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a second strike.",
+   "monsterText": "Its shots fly through walls to reach you. Attacks twice.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "twin"
+   ]
+  },
+  "bloodlance": {
+   "id": "bloodlance",
+   "kind": "meld",
+   "name": "Bloodlance",
+   "front": "Bloodlance",
+   "behind": "of the Bloodlance",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Leech, melded. Through them all, with a thirst.",
+   "frontText": "Goes through everything in its path, and each enemy it goes through gives you life back.",
+   "behindText": "A lance of light strikes down its line a moment later, and each enemy it strikes gives you life back.",
+   "monsterText": "Its shots fly through walls to reach you. Heals when it hits you.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "leech"
+   ]
+  },
+  "shrapnel": {
+   "id": "shrapnel",
+   "kind": "meld",
+   "name": "Shrapnel",
+   "front": "Shrapnel",
+   "behind": "of the Shrapnel",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Volatile, melded. Through them all, with a blast.",
+   "frontText": "Goes through everything in its path, carrying a burst into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a burst.",
+   "monsterText": "Its shots fly through walls to reach you. Explodes when it dies.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "volatile"
+   ]
+  },
+  "bodkin": {
+   "id": "bodkin",
+   "kind": "meld",
+   "name": "Bodkin",
+   "front": "Bodkin",
+   "behind": "of the Bodkin",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Precise, melded. Through them all, with certainty.",
+   "frontText": "Goes through everything in its path, carrying a certain critical into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a certain critical.",
+   "monsterText": "Its shots fly through walls to reach you. Its hits find the gaps in your armour.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "precise"
+   ]
+  },
+  "barrage": {
+   "id": "barrage",
+   "kind": "meld",
+   "name": "Barrage",
+   "front": "Barrage",
+   "behind": "of the Barrage",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Frenzied, melded. Through them all, with frenzy.",
+   "frontText": "Goes through everything in its path, and each enemy it goes through gives you frenzy.",
+   "behindText": "A lance of light strikes down its line a moment later, and each enemy it strikes gives you frenzy.",
+   "monsterText": "Its shots fly through walls to reach you. Speeds up as it is hurt.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "frenzied"
+   ]
+  },
+  "spearwall": {
+   "id": "spearwall",
+   "kind": "meld",
+   "name": "Spearwall",
+   "front": "Spearwall",
+   "behind": "of the Spearwall",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Guarding, melded. Through them all, with a shield.",
+   "frontText": "Goes through everything in its path, and each enemy it goes through gives you a shield.",
+   "behindText": "A lance of light strikes down its line a moment later, and each enemy it strikes gives you a shield.",
+   "monsterText": "Its shots fly through walls to reach you. Carries a shield that soaks damage.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "guarding"
+   ]
+  },
+  "longspear": {
+   "id": "longspear",
+   "kind": "meld",
+   "name": "Longspear",
+   "front": "Longspear",
+   "behind": "of the Longspear",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Lasting, melded. Through them all, with a lingering.",
+   "frontText": "Goes through everything in its path, carrying a lingering that makes what ails them last longer into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a lingering that makes what ails them last longer.",
+   "monsterText": "Its shots fly through walls to reach you. Its poison, burning and chill last longer on you.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "lasting"
+   ]
+  },
+  "flicker": {
+   "id": "flicker",
+   "kind": "meld",
+   "name": "Flicker",
+   "front": "Flicker",
+   "behind": "of the Flicker",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Fleeting, melded. Through them all, with haste.",
+   "frontText": "Goes through everything in its path, and each enemy it goes through gives you time off your waits.",
+   "behindText": "A lance of light strikes down its line a moment later, and each enemy it strikes gives you time off your waits.",
+   "monsterText": "Its shots fly through walls to reach you. Its poison and burning hurt you faster.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "fleeting"
+   ]
+  },
+  "broadspear": {
+   "id": "broadspear",
+   "kind": "meld",
+   "name": "Broadspear",
+   "front": "Broadspear",
+   "behind": "of the Broadspear",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Vast, melded. Through them all, with reach.",
+   "frontText": "Goes through everything in its path, carrying a wider strike into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a wider strike.",
+   "monsterText": "Its shots fly through walls to reach you. Its attacks reach wider.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "vast"
+   ]
+  },
+  "gaff": {
+   "id": "gaff",
+   "kind": "meld",
+   "name": "Gaff",
+   "front": "Gaff",
+   "behind": "of the Gaff",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Pulling, melded. Through them all, with a pull.",
+   "frontText": "Goes through everything in its path, carrying a pull toward you into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a pull toward you.",
+   "monsterText": "Its shots fly through walls to reach you. Its blows drag you toward it.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "pulling"
+   ]
+  },
+  "trident": {
+   "id": "trident",
+   "kind": "meld",
+   "name": "Trident",
+   "front": "Trident",
+   "behind": "of the Trident",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Splitting, melded. Through them all, with a split.",
+   "frontText": "Goes through everything in its path, carrying a split to two more enemies into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a split to two more enemies.",
+   "monsterText": "Its shots fly through walls to reach you. Splits in two when it dies.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "splitting"
+   ]
+  },
+  "witchpin": {
+   "id": "witchpin",
+   "kind": "meld",
+   "name": "Witchpin",
+   "front": "Witchpin",
+   "behind": "of the Witchpin",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Hexing, melded. Through them all, with a curse.",
+   "frontText": "Goes through everything in its path, carrying a curse into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a curse.",
+   "monsterText": "Its shots fly through walls to reach you. Its blows curse you: you take more damage.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "hexing"
+   ]
+  },
+  "stake": {
+   "id": "stake",
+   "kind": "meld",
+   "name": "Stake",
+   "front": "Stake",
+   "behind": "of the Stake",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Stilling, melded. Through them all, with a stillness.",
+   "frontText": "Goes through everything in its path, carrying a stillness that slows their attacks into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a stillness that slows their attacks.",
+   "monsterText": "Its shots fly through walls to reach you. Its blows slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "stilling"
+   ]
+  },
+  "skewer": {
+   "id": "skewer",
+   "kind": "meld",
+   "name": "Skewer",
+   "front": "Skewer",
+   "behind": "of the Skewer",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Binding, melded. Through them all, with a binding.",
+   "frontText": "Goes through everything in its path, carrying a root that holds them into each enemy it goes through.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a root that holds them.",
+   "monsterText": "Its shots fly through walls to reach you. Its blows root you to the spot.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "binding"
+   ]
+  },
+  "gore": {
+   "id": "gore",
+   "kind": "meld",
+   "name": "Gore",
+   "front": "Gore",
+   "behind": "of the Gore",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Power, melded. Open wounds, with force.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries more force.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying more force.",
+   "monsterText": "Its blows make you bleed. Hits harder and has more life.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "power"
+   ]
+  },
+  "gangrene": {
+   "id": "gangrene",
+   "kind": "meld",
+   "name": "Gangrene",
+   "front": "Gangrene",
+   "behind": "of the Gangrene",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Poison, melded. Open wounds, with poison.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries poison.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying poison.",
+   "monsterText": "Its blows make you bleed. Poisons you.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "poison"
+   ]
+  },
+  "rimeblood": {
+   "id": "rimeblood",
+   "kind": "meld",
+   "name": "Rimeblood",
+   "front": "Rimeblood",
+   "behind": "of the Rimeblood",
+   "attr": "str",
+   "element": "frost",
+   "about": "Bleeding and Frost, melded. Open wounds, with frost.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a chill that freezes on the second.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a chill that freezes on the second.",
+   "monsterText": "Its blows make you bleed. Deals frost damage and slows you.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "frost"
+   ]
+  },
+  "bloodfire": {
+   "id": "bloodfire",
+   "kind": "meld",
+   "name": "Bloodfire",
+   "front": "Bloodfire",
+   "behind": "of the Bloodfire",
+   "attr": "str",
+   "element": "fire",
+   "about": "Bleeding and Flame, melded. Open wounds, with fire.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries fire that sets them burning.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying fire that sets them burning.",
+   "monsterText": "Its blows make you bleed. Deals fire damage and sets you burning.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "fire"
+   ]
+  },
+  "galvanic": {
+   "id": "galvanic",
+   "kind": "meld",
+   "name": "Galvanic",
+   "front": "Galvanic",
+   "behind": "of the Galvanic",
+   "attr": "str",
+   "element": "lightning",
+   "about": "Bleeding and Lightning, melded. Open wounds, with lightning.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries lightning that arcs on to the next enemy.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying lightning that arcs on to the next enemy.",
+   "monsterText": "Its blows make you bleed. Deals lightning damage and shocks you.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "lightning"
+   ]
+  },
+  "lacerate": {
+   "id": "lacerate",
+   "kind": "meld",
+   "name": "Lacerate",
+   "front": "Lacerate",
+   "behind": "of the Lacerate",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Swift, melded. Open wounds, with speed.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound gives you haste.",
+   "behindText": "Leaves thorns that cut whatever walks through; each cut gives you haste.",
+   "monsterText": "Its blows make you bleed. Moves and attacks faster.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "swift"
+   ]
+  },
+  "bludgeon": {
+   "id": "bludgeon",
+   "kind": "meld",
+   "name": "Bludgeon",
+   "front": "Bludgeon",
+   "behind": "of the Bludgeon",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Heavy, melded. Open wounds, with weight.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a stun.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a stun.",
+   "monsterText": "Its blows make you bleed. Its blows knock you back.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "heavy"
+   ]
+  },
+  "fangs": {
+   "id": "fangs",
+   "kind": "meld",
+   "name": "Fangs",
+   "front": "Fangs",
+   "behind": "of the Fangs",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Twin, melded. Open wounds, with a second blow.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a second strike.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a second strike.",
+   "monsterText": "Its blows make you bleed. Attacks twice.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "twin"
+   ]
+  },
+  "bloodfeast": {
+   "id": "bloodfeast",
+   "kind": "meld",
+   "name": "Bloodfeast",
+   "front": "Bloodfeast",
+   "behind": "of the Bloodfeast",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Leech, melded. Open wounds, with a thirst.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound gives you life back.",
+   "behindText": "Leaves thorns that cut whatever walks through; each cut gives you life back.",
+   "monsterText": "Its blows make you bleed. Heals when it hits you.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "leech"
+   ]
+  },
+  "bloodburst": {
+   "id": "bloodburst",
+   "kind": "meld",
+   "name": "Bloodburst",
+   "front": "Bloodburst",
+   "behind": "of the Bloodburst",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Volatile, melded. Open wounds, with a blast.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a burst.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a burst.",
+   "monsterText": "Its blows make you bleed. Explodes when it dies.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "volatile"
+   ]
+  },
+  "artery": {
+   "id": "artery",
+   "kind": "meld",
+   "name": "Artery",
+   "front": "Artery",
+   "behind": "of the Artery",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Precise, melded. Open wounds, with certainty.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a certain critical.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a certain critical.",
+   "monsterText": "Its blows make you bleed. Its hits find the gaps in your armour.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "precise"
+   ]
+  },
+  "bloodrage": {
+   "id": "bloodrage",
+   "kind": "meld",
+   "name": "Bloodrage",
+   "front": "Bloodrage",
+   "behind": "of the Bloodrage",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Frenzied, melded. Open wounds, with frenzy.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound gives you frenzy.",
+   "behindText": "Leaves thorns that cut whatever walks through; each cut gives you frenzy.",
+   "monsterText": "Its blows make you bleed. Speeds up as it is hurt.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "frenzied"
+   ]
+  },
+  "thornshield": {
+   "id": "thornshield",
+   "kind": "meld",
+   "name": "Thornshield",
+   "front": "Thornshield",
+   "behind": "of the Thornshield",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Guarding, melded. Open wounds, with a shield.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound gives you a shield.",
+   "behindText": "Leaves thorns that cut whatever walks through; each cut gives you a shield.",
+   "monsterText": "Its blows make you bleed. Carries a shield that soaks damage.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "guarding"
+   ]
+  },
+  "hemorrhage": {
+   "id": "hemorrhage",
+   "kind": "meld",
+   "name": "Hemorrhage",
+   "front": "Hemorrhage",
+   "behind": "of the Hemorrhage",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Lasting, melded. Open wounds, with a lingering.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a lingering that makes what ails them last longer.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a lingering that makes what ails them last longer.",
+   "monsterText": "Its blows make you bleed. Its poison, burning and chill last longer on you.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "lasting"
+   ]
+  },
+  "papercut": {
+   "id": "papercut",
+   "kind": "meld",
+   "name": "Papercut",
+   "front": "Papercut",
+   "behind": "of the Papercut",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Fleeting, melded. Open wounds, with haste.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound gives you time off your waits.",
+   "behindText": "Leaves thorns that cut whatever walks through; each cut gives you time off your waits.",
+   "monsterText": "Its blows make you bleed. Its poison and burning hurt you faster.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "fleeting"
+   ]
+  },
+  "bramble": {
+   "id": "bramble",
+   "kind": "meld",
+   "name": "Bramble",
+   "front": "Bramble",
+   "behind": "of the Bramble",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Vast, melded. Open wounds, with reach.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a wider strike.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a wider strike.",
+   "monsterText": "Its blows make you bleed. Its attacks reach wider.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "vast"
+   ]
+  },
+  "fishhook": {
+   "id": "fishhook",
+   "kind": "meld",
+   "name": "Fishhook",
+   "front": "Fishhook",
+   "behind": "of the Fishhook",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Pulling, melded. Open wounds, with a pull.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a pull toward you.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a pull toward you.",
+   "monsterText": "Its blows make you bleed. Its blows drag you toward it.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "pulling"
+   ]
+  },
+  "thornspray": {
+   "id": "thornspray",
+   "kind": "meld",
+   "name": "Thornspray",
+   "front": "Thornspray",
+   "behind": "of the Thornspray",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Splitting, melded. Open wounds, with a split.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a split to two more enemies.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a split to two more enemies.",
+   "monsterText": "Its blows make you bleed. Splits in two when it dies.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "splitting"
+   ]
+  },
+  "thorncurse": {
+   "id": "thorncurse",
+   "kind": "meld",
+   "name": "Thorncurse",
+   "front": "Thorncurse",
+   "behind": "of the Thorncurse",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Hexing, melded. Open wounds, with a curse.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a curse.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a curse.",
+   "monsterText": "Its blows make you bleed. Its blows curse you: you take more damage.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "hexing"
+   ]
+  },
+  "clot": {
+   "id": "clot",
+   "kind": "meld",
+   "name": "Clot",
+   "front": "Clot",
+   "behind": "of the Clot",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Stilling, melded. Open wounds, with a stillness.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a stillness that slows their attacks.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a stillness that slows their attacks.",
+   "monsterText": "Its blows make you bleed. Its blows slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "stilling"
+   ]
+  },
+  "briar": {
+   "id": "briar",
+   "kind": "meld",
+   "name": "Briar",
+   "front": "Briar",
+   "behind": "of the Briar",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Binding, melded. Open wounds, with a binding.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a root that holds them.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a root that holds them.",
+   "monsterText": "Its blows make you bleed. Its blows root you to the spot.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "binding"
+   ]
+  },
+  "banshee": {
+   "id": "banshee",
+   "kind": "meld",
+   "name": "Banshee",
+   "front": "Banshee",
+   "behind": "of the Banshee",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Swift, melded. The dead rise, with speed.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and gives you haste.",
+   "behindText": "Kills raise a spirit that fights for you; its blows give you haste.",
+   "monsterText": "Rises once after it dies. Moves and attacks faster.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "swift"
+   ]
+  },
+  "tombstone": {
+   "id": "tombstone",
+   "kind": "meld",
+   "name": "Tombstone",
+   "front": "Tombstone",
+   "behind": "of the Tombstone",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Heavy, melded. The dead rise, with weight.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a stun.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a stun.",
+   "monsterText": "Rises once after it dies. Its blows knock you back.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "heavy"
+   ]
+  },
+  "revenants": {
+   "id": "revenants",
+   "kind": "meld",
+   "name": "Revenants",
+   "front": "Revenants",
+   "behind": "of the Revenants",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Twin, melded. The dead rise, with a second blow.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a second strike.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a second strike.",
+   "monsterText": "Rises once after it dies. Attacks twice.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "twin"
+   ]
+  },
+  "ghoul": {
+   "id": "ghoul",
+   "kind": "meld",
+   "name": "Ghoul",
+   "front": "Ghoul",
+   "behind": "of the Ghoul",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Leech, melded. The dead rise, with a thirst.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and gives you life back.",
+   "behindText": "Kills raise a spirit that fights for you; its blows give you life back.",
+   "monsterText": "Rises once after it dies. Heals when it hits you.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "leech"
+   ]
+  },
+  "soulburst": {
+   "id": "soulburst",
+   "kind": "meld",
+   "name": "Soulburst",
+   "front": "Soulburst",
+   "behind": "of the Soulburst",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Volatile, melded. The dead rise, with a blast.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a burst.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a burst.",
+   "monsterText": "Rises once after it dies. Explodes when it dies.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "volatile"
+   ]
+  },
+  "deadeye": {
+   "id": "deadeye",
+   "kind": "meld",
+   "name": "Deadeye",
+   "front": "Deadeye",
+   "behind": "of the Deadeye",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Precise, melded. The dead rise, with certainty.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a certain critical.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a certain critical.",
+   "monsterText": "Rises once after it dies. Its hits find the gaps in your armour.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "precise"
+   ]
+  },
+  "macabre": {
+   "id": "macabre",
+   "kind": "meld",
+   "name": "Macabre",
+   "front": "Macabre",
+   "behind": "of the Macabre",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Frenzied, melded. The dead rise, with frenzy.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and gives you frenzy.",
+   "behindText": "Kills raise a spirit that fights for you; its blows give you frenzy.",
+   "monsterText": "Rises once after it dies. Speeds up as it is hurt.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "frenzied"
+   ]
+  },
+  "gravewarden": {
+   "id": "gravewarden",
+   "kind": "meld",
+   "name": "Gravewarden",
+   "front": "Gravewarden",
+   "behind": "of the Gravewarden",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Guarding, melded. The dead rise, with a shield.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and gives you a shield.",
+   "behindText": "Kills raise a spirit that fights for you; its blows give you a shield.",
+   "monsterText": "Rises once after it dies. Carries a shield that soaks damage.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "guarding"
+   ]
+  },
+  "undying": {
+   "id": "undying",
+   "kind": "meld",
+   "name": "Undying",
+   "front": "Undying",
+   "behind": "of the Undying",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Lasting, melded. The dead rise, with a lingering.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a lingering that makes what ails them last longer.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a lingering that makes what ails them last longer.",
+   "monsterText": "Rises once after it dies. Its poison, burning and chill last longer on you.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "lasting"
+   ]
+  },
+  "fetch": {
+   "id": "fetch",
+   "kind": "meld",
+   "name": "Fetch",
+   "front": "Fetch",
+   "behind": "of the Fetch",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Fleeting, melded. The dead rise, with haste.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and gives you time off your waits.",
+   "behindText": "Kills raise a spirit that fights for you; its blows give you time off your waits.",
+   "monsterText": "Rises once after it dies. Its poison and burning hurt you faster.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "fleeting"
+   ]
+  },
+  "legion": {
+   "id": "legion",
+   "kind": "meld",
+   "name": "Legion",
+   "front": "Legion",
+   "behind": "of the Legion",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Vast, melded. The dead rise, with reach.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a wider strike.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a wider strike.",
+   "monsterText": "Rises once after it dies. Its attacks reach wider.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "vast"
+   ]
+  },
+  "undertow": {
+   "id": "undertow",
+   "kind": "meld",
+   "name": "Undertow",
+   "front": "Undertow",
+   "behind": "of the Undertow",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Pulling, melded. The dead rise, with a pull.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a pull toward you.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a pull toward you.",
+   "monsterText": "Rises once after it dies. Its blows drag you toward it.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "pulling"
+   ]
+  },
+  "poltergeist": {
+   "id": "poltergeist",
+   "kind": "meld",
+   "name": "Poltergeist",
+   "front": "Poltergeist",
+   "behind": "of the Poltergeist",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Splitting, melded. The dead rise, with a split.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a split to two more enemies.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a split to two more enemies.",
+   "monsterText": "Rises once after it dies. Splits in two when it dies.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "splitting"
+   ]
+  },
+  "haunting": {
+   "id": "haunting",
+   "kind": "meld",
+   "name": "Haunting",
+   "front": "Haunting",
+   "behind": "of the Haunting",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Hexing, melded. The dead rise, with a curse.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a curse.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a curse.",
+   "monsterText": "Rises once after it dies. Its blows curse you: you take more damage.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "hexing"
+   ]
+  },
+  "limbo": {
+   "id": "limbo",
+   "kind": "meld",
+   "name": "Limbo",
+   "front": "Limbo",
+   "behind": "of the Limbo",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Stilling, melded. The dead rise, with a stillness.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a stillness that slows their attacks.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a stillness that slows their attacks.",
+   "monsterText": "Rises once after it dies. Its blows slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "stilling"
+   ]
+  },
+  "gravebind": {
+   "id": "gravebind",
+   "kind": "meld",
+   "name": "Gravebind",
+   "front": "Gravebind",
+   "behind": "of the Gravebind",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Binding, melded. The dead rise, with a binding.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a root that holds them.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a root that holds them.",
+   "monsterText": "Rises once after it dies. Its blows root you to the spot.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "binding"
+   ]
+  },
+  "guillotine": {
+   "id": "guillotine",
+   "kind": "meld",
+   "name": "Guillotine",
+   "front": "Guillotine",
+   "behind": "of the Guillotine",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Power, melded. The weak end, with force.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying more force.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying more force.",
+   "monsterText": "Hits much harder when you are low. Hits harder and has more life.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "power"
+   ]
+  },
+  "nightshade": {
+   "id": "nightshade",
+   "kind": "meld",
+   "name": "Nightshade",
+   "front": "Nightshade",
+   "behind": "of the Nightshade",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Poison, melded. The weak end, with poison.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying poison.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying poison.",
+   "monsterText": "Hits much harder when you are low. Poisons you.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "poison"
+   ]
+  },
+  "coldcut": {
+   "id": "coldcut",
+   "kind": "meld",
+   "name": "Coldcut",
+   "front": "Coldcut",
+   "behind": "of the Coldcut",
+   "attr": "str",
+   "element": "frost",
+   "about": "Culling and Frost, melded. The weak end, with frost.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a chill that freezes on the second.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a chill that freezes on the second.",
+   "monsterText": "Hits much harder when you are low. Deals frost damage and slows you.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "frost"
+   ]
+  },
+  "cremate": {
+   "id": "cremate",
+   "kind": "meld",
+   "name": "Cremate",
+   "front": "Cremate",
+   "behind": "of the Cremate",
+   "attr": "str",
+   "element": "fire",
+   "about": "Culling and Flame, melded. The weak end, with fire.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying fire that sets them burning.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying fire that sets them burning.",
+   "monsterText": "Hits much harder when you are low. Deals fire damage and sets you burning.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "fire"
+   ]
+  },
+  "smite": {
+   "id": "smite",
+   "kind": "meld",
+   "name": "Smite",
+   "front": "Smite",
+   "behind": "of the Smite",
+   "attr": "str",
+   "element": "lightning",
+   "about": "Culling and Lightning, melded. The weak end, with lightning.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying lightning that arcs on to the next enemy.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying lightning that arcs on to the next enemy.",
+   "monsterText": "Hits much harder when you are low. Deals lightning damage and shocks you.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "lightning"
+   ]
+  },
+  "coup": {
+   "id": "coup",
+   "kind": "meld",
+   "name": "Coup",
+   "front": "Coup",
+   "behind": "of the Coup",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Swift, melded. The weak end, with speed.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and each one culled gives you haste.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it; each one culled gives you haste.",
+   "monsterText": "Hits much harder when you are low. Moves and attacks faster.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "swift"
+   ]
+  },
+  "crusher": {
+   "id": "crusher",
+   "kind": "meld",
+   "name": "Crusher",
+   "front": "Crusher",
+   "behind": "of the Crusher",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Heavy, melded. The weak end, with weight.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a stun.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a stun.",
+   "monsterText": "Hits much harder when you are low. Its blows knock you back.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "heavy"
+   ]
+  },
+  "scissors": {
+   "id": "scissors",
+   "kind": "meld",
+   "name": "Scissors",
+   "front": "Scissors",
+   "behind": "of the Scissors",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Twin, melded. The weak end, with a second blow.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a second strike.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a second strike.",
+   "monsterText": "Hits much harder when you are low. Attacks twice.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "twin"
+   ]
+  },
+  "bloodprice": {
+   "id": "bloodprice",
+   "kind": "meld",
+   "name": "Bloodprice",
+   "front": "Bloodprice",
+   "behind": "of the Bloodprice",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Leech, melded. The weak end, with a thirst.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and each one culled gives you life back.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it; each one culled gives you life back.",
+   "monsterText": "Hits much harder when you are low. Heals when it hits you.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "leech"
+   ]
+  },
+  "deathburst": {
+   "id": "deathburst",
+   "kind": "meld",
+   "name": "Deathburst",
+   "front": "Deathburst",
+   "behind": "of the Deathburst",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Volatile, melded. The weak end, with a blast.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a burst.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a burst.",
+   "monsterText": "Hits much harder when you are low. Explodes when it dies.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "volatile"
+   ]
+  },
+  "mercy": {
+   "id": "mercy",
+   "kind": "meld",
+   "name": "Mercy",
+   "front": "Mercy",
+   "behind": "of the Mercy",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Precise, melded. The weak end, with certainty.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a certain critical.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a certain critical.",
+   "monsterText": "Hits much harder when you are low. Its hits find the gaps in your armour.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "precise"
+   ]
+  },
+  "massacre": {
+   "id": "massacre",
+   "kind": "meld",
+   "name": "Massacre",
+   "front": "Massacre",
+   "behind": "of the Massacre",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Frenzied, melded. The weak end, with frenzy.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and each one culled gives you frenzy.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it; each one culled gives you frenzy.",
+   "monsterText": "Hits much harder when you are low. Speeds up as it is hurt.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "frenzied"
+   ]
+  },
+  "lastrites": {
+   "id": "lastrites",
+   "kind": "meld",
+   "name": "Last Rites",
+   "front": "Last Rites",
+   "behind": "of the Last Rites",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Guarding, melded. The weak end, with a shield.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and each one culled gives you a shield.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it; each one culled gives you a shield.",
+   "monsterText": "Hits much harder when you are low. Carries a shield that soaks damage.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "guarding"
+   ]
+  },
+  "deathwatch": {
+   "id": "deathwatch",
+   "kind": "meld",
+   "name": "Deathwatch",
+   "front": "Deathwatch",
+   "behind": "of the Deathwatch",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Lasting, melded. The weak end, with a lingering.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a lingering that makes what ails them last longer.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a lingering that makes what ails them last longer.",
+   "monsterText": "Hits much harder when you are low. Its poison, burning and chill last longer on you.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "lasting"
+   ]
+  },
+  "quietus": {
+   "id": "quietus",
+   "kind": "meld",
+   "name": "Quietus",
+   "front": "Quietus",
+   "behind": "of the Quietus",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Fleeting, melded. The weak end, with haste.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and each one culled gives you time off your waits.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it; each one culled gives you time off your waits.",
+   "monsterText": "Hits much harder when you are low. Its poison and burning hurt you faster.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "fleeting"
+   ]
+  },
+  "purge": {
+   "id": "purge",
+   "kind": "meld",
+   "name": "Purge",
+   "front": "Purge",
+   "behind": "of the Purge",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Vast, melded. The weak end, with reach.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a wider strike.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a wider strike.",
+   "monsterText": "Hits much harder when you are low. Its attacks reach wider.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "vast"
+   ]
+  },
+  "gallows": {
+   "id": "gallows",
+   "kind": "meld",
+   "name": "Gallows",
+   "front": "Gallows",
+   "behind": "of the Gallows",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Pulling, melded. The weak end, with a pull.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a pull toward you.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a pull toward you.",
+   "monsterText": "Hits much harder when you are low. Its blows drag you toward it.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "pulling"
+   ]
+  },
+  "decimate": {
+   "id": "decimate",
+   "kind": "meld",
+   "name": "Decimate",
+   "front": "Decimate",
+   "behind": "of the Decimate",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Splitting, melded. The weak end, with a split.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a split to two more enemies.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a split to two more enemies.",
+   "monsterText": "Hits much harder when you are low. Splits in two when it dies.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "splitting"
+   ]
+  },
+  "condemn": {
+   "id": "condemn",
+   "kind": "meld",
+   "name": "Condemn",
+   "front": "Condemn",
+   "behind": "of the Condemn",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Hexing, melded. The weak end, with a curse.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a curse.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a curse.",
+   "monsterText": "Hits much harder when you are low. Its blows curse you: you take more damage.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "hexing"
+   ]
+  },
+  "finalhour": {
+   "id": "finalhour",
+   "kind": "meld",
+   "name": "Final Hour",
+   "front": "Final Hour",
+   "behind": "of the Final Hour",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Stilling, melded. The weak end, with a stillness.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a stillness that slows their attacks.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a stillness that slows their attacks.",
+   "monsterText": "Hits much harder when you are low. Its blows slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "stilling"
+   ]
+  },
+  "noose": {
+   "id": "noose",
+   "kind": "meld",
+   "name": "Noose",
+   "front": "Noose",
+   "behind": "of the Noose",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Binding, melded. The weak end, with a binding.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a root that holds them.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a root that holds them.",
+   "monsterText": "Hits much harder when you are low. Its blows root you to the spot.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "binding"
+   ]
+  },
+  "tremor": {
+   "id": "tremor",
+   "kind": "meld",
+   "name": "Tremor",
+   "front": "Tremor",
+   "behind": "of the Tremor",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Power, melded. A wave round you, with force.",
+   "frontText": "Every third use releases a shockwave round you, carrying more force.",
+   "behindText": "Your dodge releases a surge, carrying more force.",
+   "monsterText": "Sends out a shockwave every few seconds. Hits harder and has more life.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "power"
+   ]
+  },
+  "pestilence": {
+   "id": "pestilence",
+   "kind": "meld",
+   "name": "Pestilence",
+   "front": "Pestilence",
+   "behind": "of the Pestilence",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Poison, melded. A wave round you, with poison.",
+   "frontText": "Every third use releases a shockwave round you, carrying poison.",
+   "behindText": "Your dodge releases a surge, carrying poison.",
+   "monsterText": "Sends out a shockwave every few seconds. Poisons you.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "poison"
+   ]
+  },
+  "blizzard": {
+   "id": "blizzard",
+   "kind": "meld",
+   "name": "Blizzard",
+   "front": "Blizzard",
+   "behind": "of the Blizzard",
+   "attr": "int",
+   "element": "frost",
+   "about": "Surging and Frost, melded. A wave round you, with frost.",
+   "frontText": "Every third use releases a shockwave round you, carrying a chill that freezes on the second.",
+   "behindText": "Your dodge releases a surge, carrying a chill that freezes on the second.",
+   "monsterText": "Sends out a shockwave every few seconds. Deals frost damage and slows you.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "frost"
+   ]
+  },
+  "nova": {
+   "id": "nova",
+   "kind": "meld",
+   "name": "Nova",
+   "front": "Nova",
+   "behind": "of the Nova",
+   "attr": "int",
+   "element": "fire",
+   "about": "Surging and Flame, melded. A wave round you, with fire.",
+   "frontText": "Every third use releases a shockwave round you, carrying fire that sets them burning.",
+   "behindText": "Your dodge releases a surge, carrying fire that sets them burning.",
+   "monsterText": "Sends out a shockwave every few seconds. Deals fire damage and sets you burning.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "fire"
+   ]
+  },
+  "thunderclap": {
+   "id": "thunderclap",
+   "kind": "meld",
+   "name": "Thunderclap",
+   "front": "Thunderclap",
+   "behind": "of the Thunderclap",
+   "attr": "int",
+   "element": "lightning",
+   "about": "Surging and Lightning, melded. A wave round you, with lightning.",
+   "frontText": "Every third use releases a shockwave round you, carrying lightning that arcs on to the next enemy.",
+   "behindText": "Your dodge releases a surge, carrying lightning that arcs on to the next enemy.",
+   "monsterText": "Sends out a shockwave every few seconds. Deals lightning damage and shocks you.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "lightning"
+   ]
+  },
+  "rush": {
+   "id": "rush",
+   "kind": "meld",
+   "name": "Rush",
+   "front": "Rush",
+   "behind": "of the Rush",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Swift, melded. A wave round you, with speed.",
+   "frontText": "Every third use releases a shockwave round you that gives you haste.",
+   "behindText": "Your dodge releases a surge that gives you haste.",
+   "monsterText": "Sends out a shockwave every few seconds. Moves and attacks faster.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "swift"
+   ]
+  },
+  "seismic": {
+   "id": "seismic",
+   "kind": "meld",
+   "name": "Seismic",
+   "front": "Seismic",
+   "behind": "of the Seismic",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Heavy, melded. A wave round you, with weight.",
+   "frontText": "Every third use releases a shockwave round you, carrying a stun.",
+   "behindText": "Your dodge releases a surge, carrying a stun.",
+   "monsterText": "Sends out a shockwave every few seconds. Its blows knock you back.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "heavy"
+   ]
+  },
+  "pulse": {
+   "id": "pulse",
+   "kind": "meld",
+   "name": "Pulse",
+   "front": "Pulse",
+   "behind": "of the Pulse",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Twin, melded. A wave round you, with a second blow.",
+   "frontText": "Every third use releases a shockwave round you, carrying a second strike.",
+   "behindText": "Your dodge releases a surge, carrying a second strike.",
+   "monsterText": "Sends out a shockwave every few seconds. Attacks twice.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "twin"
+   ]
+  },
+  "heartbeat": {
+   "id": "heartbeat",
+   "kind": "meld",
+   "name": "Heartbeat",
+   "front": "Heartbeat",
+   "behind": "of the Heartbeat",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Leech, melded. A wave round you, with a thirst.",
+   "frontText": "Every third use releases a shockwave round you that gives you life back.",
+   "behindText": "Your dodge releases a surge that gives you life back.",
+   "monsterText": "Sends out a shockwave every few seconds. Heals when it hits you.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "leech"
+   ]
+  },
+  "overload": {
+   "id": "overload",
+   "kind": "meld",
+   "name": "Overload",
+   "front": "Overload",
+   "behind": "of the Overload",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Volatile, melded. A wave round you, with a blast.",
+   "frontText": "Every third use releases a shockwave round you, carrying a burst.",
+   "behindText": "Your dodge releases a surge, carrying a burst.",
+   "monsterText": "Sends out a shockwave every few seconds. Explodes when it dies.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "volatile"
+   ]
+  },
+  "lens": {
+   "id": "lens",
+   "kind": "meld",
+   "name": "Lens",
+   "front": "Lens",
+   "behind": "of the Lens",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Precise, melded. A wave round you, with certainty.",
+   "frontText": "Every third use releases a shockwave round you, carrying a certain critical.",
+   "behindText": "Your dodge releases a surge, carrying a certain critical.",
+   "monsterText": "Sends out a shockwave every few seconds. Its hits find the gaps in your armour.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "precise"
+   ]
+  },
+  "crescendo": {
+   "id": "crescendo",
+   "kind": "meld",
+   "name": "Crescendo",
+   "front": "Crescendo",
+   "behind": "of the Crescendo",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Frenzied, melded. A wave round you, with frenzy.",
+   "frontText": "Every third use releases a shockwave round you that gives you frenzy.",
+   "behindText": "Your dodge releases a surge that gives you frenzy.",
+   "monsterText": "Sends out a shockwave every few seconds. Speeds up as it is hurt.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "frenzied"
+   ]
+  },
+  "bastion": {
+   "id": "bastion",
+   "kind": "meld",
+   "name": "Bastion",
+   "front": "Bastion",
+   "behind": "of the Bastion",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Guarding, melded. A wave round you, with a shield.",
+   "frontText": "Every third use releases a shockwave round you that gives you a shield.",
+   "behindText": "Your dodge releases a surge that gives you a shield.",
+   "monsterText": "Sends out a shockwave every few seconds. Carries a shield that soaks damage.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "guarding"
+   ]
+  },
+  "resonance": {
+   "id": "resonance",
+   "kind": "meld",
+   "name": "Resonance",
+   "front": "Resonance",
+   "behind": "of the Resonance",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Lasting, melded. A wave round you, with a lingering.",
+   "frontText": "Every third use releases a shockwave round you, carrying a lingering that makes what ails them last longer.",
+   "behindText": "Your dodge releases a surge, carrying a lingering that makes what ails them last longer.",
+   "monsterText": "Sends out a shockwave every few seconds. Its poison, burning and chill last longer on you.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "lasting"
+   ]
+  },
+  "spark": {
+   "id": "spark",
+   "kind": "meld",
+   "name": "Spark",
+   "front": "Spark",
+   "behind": "of the Spark",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Fleeting, melded. A wave round you, with haste.",
+   "frontText": "Every third use releases a shockwave round you that gives you time off your waits.",
+   "behindText": "Your dodge releases a surge that gives you time off your waits.",
+   "monsterText": "Sends out a shockwave every few seconds. Its poison and burning hurt you faster.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "fleeting"
+   ]
+  },
+  "tsunami": {
+   "id": "tsunami",
+   "kind": "meld",
+   "name": "Tsunami",
+   "front": "Tsunami",
+   "behind": "of the Tsunami",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Vast, melded. A wave round you, with reach.",
+   "frontText": "Every third use releases a shockwave round you, carrying a wider strike.",
+   "behindText": "Your dodge releases a surge, carrying a wider strike.",
+   "monsterText": "Sends out a shockwave every few seconds. Its attacks reach wider.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "vast"
+   ]
+  },
+  "vortex": {
+   "id": "vortex",
+   "kind": "meld",
+   "name": "Vortex",
+   "front": "Vortex",
+   "behind": "of the Vortex",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Pulling, melded. A wave round you, with a pull.",
+   "frontText": "Every third use releases a shockwave round you, carrying a pull toward you.",
+   "behindText": "Your dodge releases a surge, carrying a pull toward you.",
+   "monsterText": "Sends out a shockwave every few seconds. Its blows drag you toward it.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "pulling"
+   ]
+  },
+  "ricochet": {
+   "id": "ricochet",
+   "kind": "meld",
+   "name": "Ricochet",
+   "front": "Ricochet",
+   "behind": "of the Ricochet",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Splitting, melded. A wave round you, with a split.",
+   "frontText": "Every third use releases a shockwave round you, carrying a split to two more enemies.",
+   "behindText": "Your dodge releases a surge, carrying a split to two more enemies.",
+   "monsterText": "Sends out a shockwave every few seconds. Splits in two when it dies.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "splitting"
+   ]
+  },
+  "hexwave": {
+   "id": "hexwave",
+   "kind": "meld",
+   "name": "Hexwave",
+   "front": "Hexwave",
+   "behind": "of the Hexwave",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Hexing, melded. A wave round you, with a curse.",
+   "frontText": "Every third use releases a shockwave round you, carrying a curse.",
+   "behindText": "Your dodge releases a surge, carrying a curse.",
+   "monsterText": "Sends out a shockwave every few seconds. Its blows curse you: you take more damage.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "hexing"
+   ]
+  },
+  "lull": {
+   "id": "lull",
+   "kind": "meld",
+   "name": "Lull",
+   "front": "Lull",
+   "behind": "of the Lull",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Stilling, melded. A wave round you, with a stillness.",
+   "frontText": "Every third use releases a shockwave round you, carrying a stillness that slows their attacks.",
+   "behindText": "Your dodge releases a surge, carrying a stillness that slows their attacks.",
+   "monsterText": "Sends out a shockwave every few seconds. Its blows slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "stilling"
+   ]
+  },
+  "tangle": {
+   "id": "tangle",
+   "kind": "meld",
+   "name": "Tangle",
+   "front": "Tangle",
+   "behind": "of the Tangle",
+   "attr": "int",
+   "element": null,
+   "about": "Surging and Binding, melded. A wave round you, with a binding.",
+   "frontText": "Every third use releases a shockwave round you, carrying a root that holds them.",
+   "behindText": "Your dodge releases a surge, carrying a root that holds them.",
+   "monsterText": "Sends out a shockwave every few seconds. Its blows root you to the spot.",
+   "melds52": true,
+   "of": [
+    "surging",
+    "binding"
+   ]
+  },
+  "harrow": {
+   "id": "harrow",
+   "kind": "meld",
+   "name": "Harrow",
+   "front": "Harrow",
+   "behind": "of the Harrow",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Bleeding, melded. Through them all, with blood.",
+   "frontText": "Goes through everything in its path, carrying bleeding into each enemy it goes through; and makes enemies bleed, worse while they move; each fresh wound carries a strike through to the one behind.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying bleeding; and leaves thorns that cut whatever walks through, carrying a strike through to the one behind.",
+   "monsterText": "Its shots fly through walls to reach you. Its blows make you bleed.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "bleeding"
+   ]
+  },
+  "wraithspear": {
+   "id": "wraithspear",
+   "kind": "meld",
+   "name": "Wraithspear",
+   "front": "Wraithspear",
+   "behind": "of the Wraithspear",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Reaping, melded. Through them all, with the dead.",
+   "frontText": "Goes through everything in its path, carrying death's hold, so that any it kills rises as a spirit into each enemy it goes through; and kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a strike through to the one behind.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying death's hold, so that any it kills rises as a spirit; and kills raise a spirit that fights for you; its blows carry a strike through to the one behind.",
+   "monsterText": "Its shots fly through walls to reach you. Rises once after it dies.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "reaping"
+   ]
+  },
+  "deathblow": {
+   "id": "deathblow",
+   "kind": "meld",
+   "name": "Deathblow",
+   "front": "Deathblow",
+   "behind": "of the Deathblow",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Culling, melded. Through them all, with the cull.",
+   "frontText": "Goes through everything in its path, carrying a cull of the weak into each enemy it goes through; and enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a strike through to the one behind.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a cull of the weak; and leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a strike through to the one behind.",
+   "monsterText": "Its shots fly through walls to reach you. Hits much harder when you are low.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "culling"
+   ]
+  },
+  "breakthrough": {
+   "id": "breakthrough",
+   "kind": "meld",
+   "name": "Breakthrough",
+   "front": "Breakthrough",
+   "behind": "of the Breakthrough",
+   "attr": "dex",
+   "element": null,
+   "about": "Piercing and Surging, melded. Through them all, with a surge.",
+   "frontText": "Goes through everything in its path, carrying a shockwave into each enemy it goes through; and every third use releases a shockwave round you, carrying a strike through to the one behind.",
+   "behindText": "A lance of light strikes down its line a moment later, carrying a shockwave; and your dodge releases a surge, carrying a strike through to the one behind.",
+   "monsterText": "Its shots fly through walls to reach you. Sends out a shockwave every few seconds.",
+   "melds52": true,
+   "of": [
+    "piercing",
+    "surging"
+   ]
+  },
+  "bloodharvest": {
+   "id": "bloodharvest",
+   "kind": "meld",
+   "name": "Bloodharvest",
+   "front": "Bloodharvest",
+   "behind": "of the Bloodharvest",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Reaping, melded. Open wounds, with the dead.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries death's hold, so that any it kills rises as a spirit; and kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying bleeding.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying death's hold, so that any it kills rises as a spirit; and kills raise a spirit that fights for you; its blows carry bleeding.",
+   "monsterText": "Its blows make you bleed. Rises once after it dies.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "reaping"
+   ]
+  },
+  "butcher": {
+   "id": "butcher",
+   "kind": "meld",
+   "name": "Butcher",
+   "front": "Butcher",
+   "behind": "of the Butcher",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Culling, melded. Open wounds, with the cull.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a cull of the weak; and enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying bleeding.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a cull of the weak; and leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying bleeding.",
+   "monsterText": "Its blows make you bleed. Hits much harder when you are low.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "culling"
+   ]
+  },
+  "bloodwave": {
+   "id": "bloodwave",
+   "kind": "meld",
+   "name": "Bloodwave",
+   "front": "Bloodwave",
+   "behind": "of the Bloodwave",
+   "attr": "str",
+   "element": null,
+   "about": "Bleeding and Surging, melded. Open wounds, with a surge.",
+   "frontText": "Makes enemies bleed, worse while they move; each fresh wound carries a shockwave; and every third use releases a shockwave round you, carrying bleeding.",
+   "behindText": "Leaves thorns that cut whatever walks through, carrying a shockwave; and your dodge releases a surge, carrying bleeding.",
+   "monsterText": "Its blows make you bleed. Sends out a shockwave every few seconds.",
+   "melds52": true,
+   "of": [
+    "bleeding",
+    "surging"
+   ]
+  },
+  "harvest": {
+   "id": "harvest",
+   "kind": "meld",
+   "name": "Harvest",
+   "front": "Harvest",
+   "behind": "of the Harvest",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Culling, melded. The dead rise, with the cull.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a cull of the weak; and enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying death's hold, so that any it kills rises as a spirit.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a cull of the weak; and leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying death's hold, so that any it kills rises as a spirit.",
+   "monsterText": "Rises once after it dies. Hits much harder when you are low.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "culling"
+   ]
+  },
+  "soulstorm": {
+   "id": "soulstorm",
+   "kind": "meld",
+   "name": "Soulstorm",
+   "front": "Soulstorm",
+   "behind": "of the Soulstorm",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Surging, melded. The dead rise, with a surge.",
+   "frontText": "Kills leave a soul that takes time off your cooldowns and flies at the nearest enemy, carrying a shockwave; and every third use releases a shockwave round you, carrying death's hold, so that any it kills rises as a spirit.",
+   "behindText": "Kills raise a spirit that fights for you; its blows carry a shockwave; and your dodge releases a surge, carrying death's hold, so that any it kills rises as a spirit.",
+   "monsterText": "Rises once after it dies. Sends out a shockwave every few seconds.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "surging"
+   ]
+  },
+  "deathknell": {
+   "id": "deathknell",
+   "kind": "meld",
+   "name": "Deathknell",
+   "front": "Deathknell",
+   "behind": "of the Deathknell",
+   "attr": "str",
+   "element": null,
+   "about": "Culling and Surging, melded. The weak end, with a surge.",
+   "frontText": "Enemies left nearly dead by its hit die outright, and the killing blow bursts out to those near, carrying a shockwave; and every third use releases a shockwave round you, carrying a cull of the weak.",
+   "behindText": "Leaves a reaper's mark that culls the first weak enemy to cross it, and the cull bursts out to those near, carrying a shockwave; and your dodge releases a surge, carrying a cull of the weak.",
+   "monsterText": "Hits much harder when you are low. Sends out a shockwave every few seconds.",
+   "melds52": true,
+   "of": [
+    "culling",
+    "surging"
+   ]
+  },
   "twin2": {
    "id": "twin2",
    "kind": "rank",
@@ -4100,6 +6310,76 @@
    "frontText": "Holds the enemies it hits half as long again.",
    "behindText": "Its snare catches the next two enemies to cross it.",
    "monsterText": "Its blows root you half as long again.",
+   "melds52": true
+  },
+  "piercing2": {
+   "id": "piercing2",
+   "kind": "rank",
+   "name": "Piercing II",
+   "front": "Piercing II",
+   "behind": "of Piercing II",
+   "attr": "dex",
+   "element": null,
+   "about": "Two Piercing, melded: Piercing at level 2.",
+   "frontText": "Goes through everything in its path, farther, and strikes what it goes through harder.",
+   "behindText": "A lance of light strikes down its line a moment later, wider and harder.",
+   "monsterText": "Its shots fly through walls to reach you, and strike harder.",
+   "melds52": true
+  },
+  "bleeding2": {
+   "id": "bleeding2",
+   "kind": "rank",
+   "name": "Bleeding II",
+   "front": "Bleeding II",
+   "behind": "of Bleeding II",
+   "attr": "str",
+   "element": null,
+   "about": "Two Bleeding, melded: Bleeding at level 2.",
+   "frontText": "Makes enemies bleed half as hard again, worse while they move.",
+   "behindText": "Leaves wider thorns that cut half as hard again.",
+   "monsterText": "Its blows make you bleed, half as hard again.",
+   "melds52": true
+  },
+  "reaping2": {
+   "id": "reaping2",
+   "kind": "rank",
+   "name": "Reaping II",
+   "front": "Reaping II",
+   "behind": "of Reaping II",
+   "attr": "int",
+   "element": null,
+   "about": "Two Reaping, melded: Reaping at level 2.",
+   "frontText": "Kills leave a soul that takes more time off your cooldowns.",
+   "behindText": "Kills raise a spirit that fights harder.",
+   "monsterText": "Rises once after it dies, with more of its life.",
+   "melds52": true
+  },
+  "culling2": {
+   "id": "culling2",
+   "kind": "rank",
+   "name": "Culling II",
+   "front": "Culling II",
+   "behind": "of Culling II",
+   "attr": "str",
+   "element": null,
+   "about": "Two Culling, melded: Culling at level 2.",
+   "frontText": "Enemies left low by its hit die outright, from higher.",
+   "behindText": "Leaves a reaper's mark that culls from higher.",
+   "monsterText": "Hits much harder still when you are low.",
+   "melds52": true
+  },
+  "surging2": {
+   "id": "surging2",
+   "kind": "rank",
+   "name": "Surging II",
+   "front": "Surging II",
+   "behind": "of Surging II",
+   "attr": "int",
+   "element": null,
+   "about": "Two Surging, melded: Surging at level 2.",
+   "frontText": "Every third use releases a greater shockwave round you.",
+   "behindText": "Your dodge releases a greater surge.",
+   "monsterText": "Sends out a greater shockwave every few seconds.",
    "melds52": true
   }
  },
@@ -4871,6 +7151,446 @@
   "charnel": [
    "reaping",
    "power"
+  ],
+  "impaler": [
+   "piercing",
+   "power"
+  ],
+  "stinger": [
+   "piercing",
+   "poison"
+  ],
+  "icelance": [
+   "piercing",
+   "frost"
+  ],
+  "sunspear": [
+   "piercing",
+   "fire"
+  ],
+  "stormlance": [
+   "piercing",
+   "lightning"
+  ],
+  "dart": [
+   "piercing",
+   "swift"
+  ],
+  "batteringram": [
+   "piercing",
+   "heavy"
+  ],
+  "pitchfork": [
+   "piercing",
+   "twin"
+  ],
+  "bloodlance": [
+   "piercing",
+   "leech"
+  ],
+  "shrapnel": [
+   "piercing",
+   "volatile"
+  ],
+  "bodkin": [
+   "piercing",
+   "precise"
+  ],
+  "barrage": [
+   "piercing",
+   "frenzied"
+  ],
+  "spearwall": [
+   "piercing",
+   "guarding"
+  ],
+  "longspear": [
+   "piercing",
+   "lasting"
+  ],
+  "flicker": [
+   "piercing",
+   "fleeting"
+  ],
+  "broadspear": [
+   "piercing",
+   "vast"
+  ],
+  "gaff": [
+   "piercing",
+   "pulling"
+  ],
+  "trident": [
+   "piercing",
+   "splitting"
+  ],
+  "witchpin": [
+   "piercing",
+   "hexing"
+  ],
+  "stake": [
+   "piercing",
+   "stilling"
+  ],
+  "skewer": [
+   "piercing",
+   "binding"
+  ],
+  "gore": [
+   "bleeding",
+   "power"
+  ],
+  "gangrene": [
+   "bleeding",
+   "poison"
+  ],
+  "rimeblood": [
+   "bleeding",
+   "frost"
+  ],
+  "bloodfire": [
+   "bleeding",
+   "fire"
+  ],
+  "galvanic": [
+   "bleeding",
+   "lightning"
+  ],
+  "lacerate": [
+   "bleeding",
+   "swift"
+  ],
+  "bludgeon": [
+   "bleeding",
+   "heavy"
+  ],
+  "fangs": [
+   "bleeding",
+   "twin"
+  ],
+  "bloodfeast": [
+   "bleeding",
+   "leech"
+  ],
+  "bloodburst": [
+   "bleeding",
+   "volatile"
+  ],
+  "artery": [
+   "bleeding",
+   "precise"
+  ],
+  "bloodrage": [
+   "bleeding",
+   "frenzied"
+  ],
+  "thornshield": [
+   "bleeding",
+   "guarding"
+  ],
+  "hemorrhage": [
+   "bleeding",
+   "lasting"
+  ],
+  "papercut": [
+   "bleeding",
+   "fleeting"
+  ],
+  "bramble": [
+   "bleeding",
+   "vast"
+  ],
+  "fishhook": [
+   "bleeding",
+   "pulling"
+  ],
+  "thornspray": [
+   "bleeding",
+   "splitting"
+  ],
+  "thorncurse": [
+   "bleeding",
+   "hexing"
+  ],
+  "clot": [
+   "bleeding",
+   "stilling"
+  ],
+  "briar": [
+   "bleeding",
+   "binding"
+  ],
+  "banshee": [
+   "reaping",
+   "swift"
+  ],
+  "tombstone": [
+   "reaping",
+   "heavy"
+  ],
+  "revenants": [
+   "reaping",
+   "twin"
+  ],
+  "ghoul": [
+   "reaping",
+   "leech"
+  ],
+  "soulburst": [
+   "reaping",
+   "volatile"
+  ],
+  "deadeye": [
+   "reaping",
+   "precise"
+  ],
+  "macabre": [
+   "reaping",
+   "frenzied"
+  ],
+  "gravewarden": [
+   "reaping",
+   "guarding"
+  ],
+  "undying": [
+   "reaping",
+   "lasting"
+  ],
+  "fetch": [
+   "reaping",
+   "fleeting"
+  ],
+  "legion": [
+   "reaping",
+   "vast"
+  ],
+  "undertow": [
+   "reaping",
+   "pulling"
+  ],
+  "poltergeist": [
+   "reaping",
+   "splitting"
+  ],
+  "haunting": [
+   "reaping",
+   "hexing"
+  ],
+  "limbo": [
+   "reaping",
+   "stilling"
+  ],
+  "gravebind": [
+   "reaping",
+   "binding"
+  ],
+  "guillotine": [
+   "culling",
+   "power"
+  ],
+  "nightshade": [
+   "culling",
+   "poison"
+  ],
+  "coldcut": [
+   "culling",
+   "frost"
+  ],
+  "cremate": [
+   "culling",
+   "fire"
+  ],
+  "smite": [
+   "culling",
+   "lightning"
+  ],
+  "coup": [
+   "culling",
+   "swift"
+  ],
+  "crusher": [
+   "culling",
+   "heavy"
+  ],
+  "scissors": [
+   "culling",
+   "twin"
+  ],
+  "bloodprice": [
+   "culling",
+   "leech"
+  ],
+  "deathburst": [
+   "culling",
+   "volatile"
+  ],
+  "mercy": [
+   "culling",
+   "precise"
+  ],
+  "massacre": [
+   "culling",
+   "frenzied"
+  ],
+  "lastrites": [
+   "culling",
+   "guarding"
+  ],
+  "deathwatch": [
+   "culling",
+   "lasting"
+  ],
+  "quietus": [
+   "culling",
+   "fleeting"
+  ],
+  "purge": [
+   "culling",
+   "vast"
+  ],
+  "gallows": [
+   "culling",
+   "pulling"
+  ],
+  "decimate": [
+   "culling",
+   "splitting"
+  ],
+  "condemn": [
+   "culling",
+   "hexing"
+  ],
+  "finalhour": [
+   "culling",
+   "stilling"
+  ],
+  "noose": [
+   "culling",
+   "binding"
+  ],
+  "tremor": [
+   "surging",
+   "power"
+  ],
+  "pestilence": [
+   "surging",
+   "poison"
+  ],
+  "blizzard": [
+   "surging",
+   "frost"
+  ],
+  "nova": [
+   "surging",
+   "fire"
+  ],
+  "thunderclap": [
+   "surging",
+   "lightning"
+  ],
+  "rush": [
+   "surging",
+   "swift"
+  ],
+  "seismic": [
+   "surging",
+   "heavy"
+  ],
+  "pulse": [
+   "surging",
+   "twin"
+  ],
+  "heartbeat": [
+   "surging",
+   "leech"
+  ],
+  "overload": [
+   "surging",
+   "volatile"
+  ],
+  "lens": [
+   "surging",
+   "precise"
+  ],
+  "crescendo": [
+   "surging",
+   "frenzied"
+  ],
+  "bastion": [
+   "surging",
+   "guarding"
+  ],
+  "resonance": [
+   "surging",
+   "lasting"
+  ],
+  "spark": [
+   "surging",
+   "fleeting"
+  ],
+  "tsunami": [
+   "surging",
+   "vast"
+  ],
+  "vortex": [
+   "surging",
+   "pulling"
+  ],
+  "ricochet": [
+   "surging",
+   "splitting"
+  ],
+  "hexwave": [
+   "surging",
+   "hexing"
+  ],
+  "lull": [
+   "surging",
+   "stilling"
+  ],
+  "tangle": [
+   "surging",
+   "binding"
+  ],
+  "harrow": [
+   "piercing",
+   "bleeding"
+  ],
+  "wraithspear": [
+   "piercing",
+   "reaping"
+  ],
+  "deathblow": [
+   "piercing",
+   "culling"
+  ],
+  "breakthrough": [
+   "piercing",
+   "surging"
+  ],
+  "bloodharvest": [
+   "bleeding",
+   "reaping"
+  ],
+  "butcher": [
+   "bleeding",
+   "culling"
+  ],
+  "bloodwave": [
+   "bleeding",
+   "surging"
+  ],
+  "harvest": [
+   "reaping",
+   "culling"
+  ],
+  "soulstorm": [
+   "reaping",
+   "surging"
+  ],
+  "deathknell": [
+   "culling",
+   "surging"
   ]
  },
  "rankOf": {
@@ -4936,6 +7656,26 @@
   },
   "binding2": {
    "word": "binding",
+   "rank": 2
+  },
+  "piercing2": {
+   "word": "piercing",
+   "rank": 2
+  },
+  "bleeding2": {
+   "word": "bleeding",
+   "rank": 2
+  },
+  "reaping2": {
+   "word": "reaping",
+   "rank": 2
+  },
+  "culling2": {
+   "word": "culling",
+   "rank": 2
+  },
+  "surging2": {
+   "word": "surging",
    "rank": 2
   }
  },
@@ -5132,6 +7872,116 @@
   "stormwake": "int",
   "bogborn": "int",
   "charnel": "int",
+  "impaler": "dex",
+  "stinger": "dex",
+  "icelance": "dex",
+  "sunspear": "dex",
+  "stormlance": "dex",
+  "dart": "dex",
+  "batteringram": "dex",
+  "pitchfork": "dex",
+  "bloodlance": "dex",
+  "shrapnel": "dex",
+  "bodkin": "dex",
+  "barrage": "dex",
+  "spearwall": "dex",
+  "longspear": "dex",
+  "flicker": "dex",
+  "broadspear": "dex",
+  "gaff": "dex",
+  "trident": "dex",
+  "witchpin": "dex",
+  "stake": "dex",
+  "skewer": "dex",
+  "gore": "str",
+  "gangrene": "str",
+  "rimeblood": "str",
+  "bloodfire": "str",
+  "galvanic": "str",
+  "lacerate": "str",
+  "bludgeon": "str",
+  "fangs": "str",
+  "bloodfeast": "str",
+  "bloodburst": "str",
+  "artery": "str",
+  "bloodrage": "str",
+  "thornshield": "str",
+  "hemorrhage": "str",
+  "papercut": "str",
+  "bramble": "str",
+  "fishhook": "str",
+  "thornspray": "str",
+  "thorncurse": "str",
+  "clot": "str",
+  "briar": "str",
+  "banshee": "int",
+  "tombstone": "int",
+  "revenants": "int",
+  "ghoul": "int",
+  "soulburst": "int",
+  "deadeye": "int",
+  "macabre": "int",
+  "gravewarden": "int",
+  "undying": "int",
+  "fetch": "int",
+  "legion": "int",
+  "undertow": "int",
+  "poltergeist": "int",
+  "haunting": "int",
+  "limbo": "int",
+  "gravebind": "int",
+  "guillotine": "str",
+  "nightshade": "str",
+  "coldcut": "str",
+  "cremate": "str",
+  "smite": "str",
+  "coup": "str",
+  "crusher": "str",
+  "scissors": "str",
+  "bloodprice": "str",
+  "deathburst": "str",
+  "mercy": "str",
+  "massacre": "str",
+  "lastrites": "str",
+  "deathwatch": "str",
+  "quietus": "str",
+  "purge": "str",
+  "gallows": "str",
+  "decimate": "str",
+  "condemn": "str",
+  "finalhour": "str",
+  "noose": "str",
+  "tremor": "int",
+  "pestilence": "int",
+  "blizzard": "int",
+  "nova": "int",
+  "thunderclap": "int",
+  "rush": "int",
+  "seismic": "int",
+  "pulse": "int",
+  "heartbeat": "int",
+  "overload": "int",
+  "lens": "int",
+  "crescendo": "int",
+  "bastion": "int",
+  "resonance": "int",
+  "spark": "int",
+  "tsunami": "int",
+  "vortex": "int",
+  "ricochet": "int",
+  "hexwave": "int",
+  "lull": "int",
+  "tangle": "int",
+  "harrow": "dex",
+  "wraithspear": "dex",
+  "deathblow": "dex",
+  "breakthrough": "dex",
+  "bloodharvest": "str",
+  "butcher": "str",
+  "bloodwave": "str",
+  "harvest": "int",
+  "soulstorm": "int",
+  "deathknell": "str",
   "twin2": "dex",
   "leech2": "str",
   "volatile2": "int",
@@ -5147,7 +7997,12 @@
   "splitting2": "dex",
   "hexing2": "int",
   "stilling2": "int",
-  "binding2": "str"
+  "binding2": "str",
+  "piercing2": "dex",
+  "bleeding2": "str",
+  "reaping2": "int",
+  "culling2": "str",
+  "surging2": "int"
  },
  "page": {
   "onslaught": {
@@ -6494,6 +9349,776 @@
    ],
    "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
   },
+  "impaler": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "stinger": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "icelance": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "sunspear": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "stormlance": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "dart": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "batteringram": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "pitchfork": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bloodlance": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Max Life or Life Regen."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "shrapnel": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bodkin": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "barrage": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Movement Speed or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "spearwall": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Barrier or Strength.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Barrier or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "longspear": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Life Regen or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "flicker": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Cooldown Recovery or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "broadspear": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "gaff": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Pickup Reach.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Pickup Reach."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "trident": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Damage or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "witchpin": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "stake": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Cooldown Recovery or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "skewer": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "gore": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "gangrene": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "rimeblood": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bloodfire": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "galvanic": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "lacerate": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bludgeon": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "fangs": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bloodfeast": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Max Life or Life Regen."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bloodburst": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "artery": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bloodrage": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Movement Speed or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "thornshield": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Barrier or Strength.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Barrier or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "hemorrhage": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Life Regen or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "papercut": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Cooldown Recovery or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bramble": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "fishhook": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Pickup Reach.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Pickup Reach."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "thornspray": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Damage or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "thorncurse": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "clot": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Cooldown Recovery or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "briar": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "banshee": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "tombstone": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "revenants": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "ghoul": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Max Life or Life Regen."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "soulburst": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "deadeye": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "macabre": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Movement Speed or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "gravewarden": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Barrier or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Barrier or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "undying": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Life Regen or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "fetch": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Cooldown Recovery or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "legion": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "undertow": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Pickup Reach.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Pickup Reach."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "poltergeist": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Damage or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "haunting": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "limbo": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Cooldown Recovery or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "gravebind": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "guillotine": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "nightshade": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "coldcut": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "cremate": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "smite": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "coup": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "crusher": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "scissors": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bloodprice": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Max Life or Life Regen."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "deathburst": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "mercy": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "massacre": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Movement Speed or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "lastrites": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Barrier or Strength.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Barrier or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "deathwatch": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Life Regen or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "quietus": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Cooldown Recovery or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "purge": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "gallows": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Pickup Reach.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Pickup Reach."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "decimate": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Damage or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "condemn": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "finalhour": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Cooldown Recovery or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "noose": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Armour or Strength.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Damage or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "tremor": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "pestilence": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "blizzard": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "nova": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "thunderclap": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "rush": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "seismic": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "pulse": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "heartbeat": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Life on Hit or Life on Kill.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Max Life or Life Regen."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "overload": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Cooldown Recovery or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Area of Effect or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "lens": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Critical Chance or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Critical Damage or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "crescendo": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Attack Speed or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Movement Speed or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bastion": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Barrier or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Barrier or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "resonance": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Life Regen or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "spark": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Cooldown Recovery or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Cooldown Recovery or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "tsunami": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Area of Effect or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "vortex": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Pickup Reach.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Pickup Reach."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "ricochet": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Damage or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "hexwave": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "lull": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Cooldown Recovery or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "tangle": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence, with Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "harrow": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Physical Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Life Regen or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "wraithspear": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Life on Kill or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "deathblow": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Max Life or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "breakthrough": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity, with Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bloodharvest": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Life on Kill or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "butcher": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Max Life or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bloodwave": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength, with Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "harvest": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Max Life or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "soulstorm": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "deathknell": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
   "twin2": {
    "gear": [
     "Weapon, gloves, ring, amulet: Critical Chance or Dexterity.",
@@ -6605,6 +10230,41 @@
     "Off hand, helm, chest, belt, boots: Armour or Strength."
    ],
    "note": "Half as strong again as Binding."
+  },
+  "piercing2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Critical Damage or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Critical Damage or Dexterity."
+   ],
+   "note": "Half as strong again as Piercing."
+  },
+  "bleeding2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Physical Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Life Regen or Strength."
+   ],
+   "note": "Half as strong again as Bleeding."
+  },
+  "reaping2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
+   ],
+   "note": "Half as strong again as Reaping."
+  },
+  "culling2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Max Life or Strength."
+   ],
+   "note": "Half as strong again as Culling."
+  },
+  "surging2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Area of Effect or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
+   ],
+   "note": "Half as strong again as Surging."
   }
  },
  "color": {
@@ -6800,6 +10460,116 @@
   "stormwake": "#d8c860",
   "bogborn": "#8aa83a",
   "charnel": "#b8b098",
+  "impaler": "#d16669",
+  "stinger": "#b4c454",
+  "icelance": "#78acd9",
+  "sunspear": "#e59958",
+  "stormlance": "#e5db7b",
+  "dart": "#95c16e",
+  "batteringram": "#af9773",
+  "pitchfork": "#78bcaf",
+  "bloodlance": "#e59990",
+  "shrapnel": "#a278c4",
+  "bodkin": "#dadedf",
+  "barrage": "#e57b5e",
+  "spearwall": "#5eac80",
+  "longspear": "#ae9790",
+  "flicker": "#e0d3de",
+  "broadspear": "#86725b",
+  "gaff": "#8e8cce",
+  "trident": "#ceaedd",
+  "witchpin": "#b7b4bf",
+  "stake": "#96d7ae",
+  "skewer": "#c1b497",
+  "gore": "#be2a35",
+  "gangrene": "#a28720",
+  "rimeblood": "#6670a4",
+  "bloodfire": "#d35c24",
+  "galvanic": "#d39f47",
+  "lacerate": "#83853a",
+  "bludgeon": "#9d5b3e",
+  "fangs": "#66807b",
+  "bloodfeast": "#d35c5c",
+  "bloodburst": "#823c90",
+  "artery": "#c8a1ab",
+  "bloodrage": "#d33f2a",
+  "thornshield": "#4c704c",
+  "hemorrhage": "#9b5b5c",
+  "papercut": "#ce979c",
+  "bramble": "#743626",
+  "fishhook": "#7c509a",
+  "thornspray": "#b071bc",
+  "thorncurse": "#a4788a",
+  "clot": "#849b7a",
+  "briar": "#af7862",
+  "banshee": "#7cb25b",
+  "tombstone": "#968860",
+  "revenants": "#5fad9c",
+  "ghoul": "#cc8a7d",
+  "soulburst": "#896ab1",
+  "deadeye": "#c0cfcc",
+  "macabre": "#cc6c4b",
+  "gravewarden": "#459e6e",
+  "undying": "#94897d",
+  "fetch": "#c7c4cb",
+  "legion": "#6d6348",
+  "undertow": "#757dbc",
+  "poltergeist": "#b59fca",
+  "haunting": "#9da5ac",
+  "limbo": "#7dc89b",
+  "gravebind": "#a8a584",
+  "guillotine": "#bc515f",
+  "nightshade": "#9faf4a",
+  "coldcut": "#6397ce",
+  "cremate": "#d0844e",
+  "smite": "#d0c671",
+  "coup": "#80ac64",
+  "crusher": "#9a8268",
+  "scissors": "#63a7a5",
+  "bloodprice": "#d08486",
+  "deathburst": "#8d63ba",
+  "mercy": "#c5c9d5",
+  "massacre": "#d06654",
+  "lastrites": "#499776",
+  "deathwatch": "#988286",
+  "quietus": "#cbbed4",
+  "purge": "#725d50",
+  "gallows": "#7977c4",
+  "decimate": "#b998d2",
+  "condemn": "#a29fb4",
+  "finalhour": "#81c2a4",
+  "noose": "#ac9f8c",
+  "tremor": "#a04149",
+  "pestilence": "#849e4d",
+  "blizzard": "#4887d2",
+  "nova": "#b47451",
+  "thunderclap": "#b4b674",
+  "rush": "#649c67",
+  "seismic": "#7e726c",
+  "pulse": "#4897a8",
+  "heartbeat": "#b47489",
+  "overload": "#7253bd",
+  "lens": "#a9b8d8",
+  "crescendo": "#b45657",
+  "bastion": "#2e877a",
+  "resonance": "#7d7289",
+  "spark": "#b0aed7",
+  "tsunami": "#564d54",
+  "vortex": "#5e67c8",
+  "ricochet": "#9e88d6",
+  "hexwave": "#868fb8",
+  "lull": "#66b2a7",
+  "tangle": "#918f90",
+  "harrow": "#9a5e63",
+  "wraithspear": "#909f93",
+  "deathblow": "#96969f",
+  "breakthrough": "#6f7fa4",
+  "bloodharvest": "#764948",
+  "butcher": "#7c4054",
+  "bloodwave": "#552959",
+  "harvest": "#728184",
+  "soulstorm": "#4b6a89",
+  "deathknell": "#516195",
   "twin2": "#58c0b0",
   "leech2": "#ff8a80",
   "volatile2": "#9858d0",
@@ -6816,6 +10586,11 @@
   "hexing2": "#b8b4c8",
   "stilling2": "#86eaae",
   "binding2": "#c8b48a",
+  "piercing2": "#b4b4ae",
+  "bleeding2": "#800818",
+  "reaping2": "#6c8a78",
+  "culling2": "#787890",
+  "surging2": "#2a4a9a",
   "greed": "#a62a6e"
  },
  "stones": {
@@ -7587,73 +11362,533 @@
    375,
    275
   ],
-  "twin2": [
+  "impaler": [
    0,
    300
   ],
-  "leech2": [
+  "stinger": [
    25,
    300
   ],
-  "volatile2": [
+  "icelance": [
    50,
    300
   ],
-  "precise2": [
+  "sunspear": [
    75,
    300
   ],
-  "frenzied2": [
+  "stormlance": [
    100,
    300
   ],
-  "guarding2": [
+  "dart": [
    125,
    300
   ],
-  "lasting2": [
+  "batteringram": [
    150,
    300
   ],
-  "fleeting2": [
+  "pitchfork": [
    175,
    300
   ],
-  "vast2": [
+  "bloodlance": [
    200,
    300
   ],
-  "swift2": [
+  "shrapnel": [
    225,
    300
   ],
-  "heavy2": [
+  "bodkin": [
    250,
    300
   ],
-  "pulling2": [
+  "barrage": [
    275,
    300
   ],
-  "splitting2": [
+  "spearwall": [
    300,
    300
   ],
-  "hexing2": [
+  "longspear": [
    325,
    300
   ],
-  "stilling2": [
+  "flicker": [
    350,
    300
   ],
-  "binding2": [
+  "broadspear": [
    375,
    300
   ],
-  "greed": [
+  "gaff": [
    0,
    325
+  ],
+  "trident": [
+   25,
+   325
+  ],
+  "witchpin": [
+   50,
+   325
+  ],
+  "stake": [
+   75,
+   325
+  ],
+  "skewer": [
+   100,
+   325
+  ],
+  "gore": [
+   125,
+   325
+  ],
+  "gangrene": [
+   150,
+   325
+  ],
+  "rimeblood": [
+   175,
+   325
+  ],
+  "bloodfire": [
+   200,
+   325
+  ],
+  "galvanic": [
+   225,
+   325
+  ],
+  "lacerate": [
+   250,
+   325
+  ],
+  "bludgeon": [
+   275,
+   325
+  ],
+  "fangs": [
+   300,
+   325
+  ],
+  "bloodfeast": [
+   325,
+   325
+  ],
+  "bloodburst": [
+   350,
+   325
+  ],
+  "artery": [
+   375,
+   325
+  ],
+  "bloodrage": [
+   0,
+   350
+  ],
+  "thornshield": [
+   25,
+   350
+  ],
+  "hemorrhage": [
+   50,
+   350
+  ],
+  "papercut": [
+   75,
+   350
+  ],
+  "bramble": [
+   100,
+   350
+  ],
+  "fishhook": [
+   125,
+   350
+  ],
+  "thornspray": [
+   150,
+   350
+  ],
+  "thorncurse": [
+   175,
+   350
+  ],
+  "clot": [
+   200,
+   350
+  ],
+  "briar": [
+   225,
+   350
+  ],
+  "banshee": [
+   250,
+   350
+  ],
+  "tombstone": [
+   275,
+   350
+  ],
+  "revenants": [
+   300,
+   350
+  ],
+  "ghoul": [
+   325,
+   350
+  ],
+  "soulburst": [
+   350,
+   350
+  ],
+  "deadeye": [
+   375,
+   350
+  ],
+  "macabre": [
+   0,
+   375
+  ],
+  "gravewarden": [
+   25,
+   375
+  ],
+  "undying": [
+   50,
+   375
+  ],
+  "fetch": [
+   75,
+   375
+  ],
+  "legion": [
+   100,
+   375
+  ],
+  "undertow": [
+   125,
+   375
+  ],
+  "poltergeist": [
+   150,
+   375
+  ],
+  "haunting": [
+   175,
+   375
+  ],
+  "limbo": [
+   200,
+   375
+  ],
+  "gravebind": [
+   225,
+   375
+  ],
+  "guillotine": [
+   250,
+   375
+  ],
+  "nightshade": [
+   275,
+   375
+  ],
+  "coldcut": [
+   300,
+   375
+  ],
+  "cremate": [
+   325,
+   375
+  ],
+  "smite": [
+   350,
+   375
+  ],
+  "coup": [
+   375,
+   375
+  ],
+  "crusher": [
+   0,
+   400
+  ],
+  "scissors": [
+   25,
+   400
+  ],
+  "bloodprice": [
+   50,
+   400
+  ],
+  "deathburst": [
+   75,
+   400
+  ],
+  "mercy": [
+   100,
+   400
+  ],
+  "massacre": [
+   125,
+   400
+  ],
+  "lastrites": [
+   150,
+   400
+  ],
+  "deathwatch": [
+   175,
+   400
+  ],
+  "quietus": [
+   200,
+   400
+  ],
+  "purge": [
+   225,
+   400
+  ],
+  "gallows": [
+   250,
+   400
+  ],
+  "decimate": [
+   275,
+   400
+  ],
+  "condemn": [
+   300,
+   400
+  ],
+  "finalhour": [
+   325,
+   400
+  ],
+  "noose": [
+   350,
+   400
+  ],
+  "tremor": [
+   375,
+   400
+  ],
+  "pestilence": [
+   0,
+   425
+  ],
+  "blizzard": [
+   25,
+   425
+  ],
+  "nova": [
+   50,
+   425
+  ],
+  "thunderclap": [
+   75,
+   425
+  ],
+  "rush": [
+   100,
+   425
+  ],
+  "seismic": [
+   125,
+   425
+  ],
+  "pulse": [
+   150,
+   425
+  ],
+  "heartbeat": [
+   175,
+   425
+  ],
+  "overload": [
+   200,
+   425
+  ],
+  "lens": [
+   225,
+   425
+  ],
+  "crescendo": [
+   250,
+   425
+  ],
+  "bastion": [
+   275,
+   425
+  ],
+  "resonance": [
+   300,
+   425
+  ],
+  "spark": [
+   325,
+   425
+  ],
+  "tsunami": [
+   350,
+   425
+  ],
+  "vortex": [
+   375,
+   425
+  ],
+  "ricochet": [
+   0,
+   450
+  ],
+  "hexwave": [
+   25,
+   450
+  ],
+  "lull": [
+   50,
+   450
+  ],
+  "tangle": [
+   75,
+   450
+  ],
+  "harrow": [
+   100,
+   450
+  ],
+  "wraithspear": [
+   125,
+   450
+  ],
+  "deathblow": [
+   150,
+   450
+  ],
+  "breakthrough": [
+   175,
+   450
+  ],
+  "bloodharvest": [
+   200,
+   450
+  ],
+  "butcher": [
+   225,
+   450
+  ],
+  "bloodwave": [
+   250,
+   450
+  ],
+  "harvest": [
+   275,
+   450
+  ],
+  "soulstorm": [
+   300,
+   450
+  ],
+  "deathknell": [
+   325,
+   450
+  ],
+  "twin2": [
+   350,
+   450
+  ],
+  "leech2": [
+   375,
+   450
+  ],
+  "volatile2": [
+   0,
+   475
+  ],
+  "precise2": [
+   25,
+   475
+  ],
+  "frenzied2": [
+   50,
+   475
+  ],
+  "guarding2": [
+   75,
+   475
+  ],
+  "lasting2": [
+   100,
+   475
+  ],
+  "fleeting2": [
+   125,
+   475
+  ],
+  "vast2": [
+   150,
+   475
+  ],
+  "swift2": [
+   175,
+   475
+  ],
+  "heavy2": [
+   200,
+   475
+  ],
+  "pulling2": [
+   225,
+   475
+  ],
+  "splitting2": [
+   250,
+   475
+  ],
+  "hexing2": [
+   275,
+   475
+  ],
+  "stilling2": [
+   300,
+   475
+  ],
+  "binding2": [
+   325,
+   475
+  ],
+  "piercing2": [
+   350,
+   475
+  ],
+  "bleeding2": [
+   375,
+   475
+  ],
+  "reaping2": [
+   0,
+   500
+  ],
+  "culling2": [
+   25,
+   500
+  ],
+  "surging2": [
+   50,
+   500
+  ],
+  "greed": [
+   75,
+   500
   ]
  },
  "glyph": {
@@ -9359,6 +13594,996 @@
    "XX...XX",
    "XX...XX",
    "......."
+  ],
+  "impaler": [
+   ".o...X.",
+   "ooo.XXX",
+   ".o..X.X",
+   ".o...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o...X."
+  ],
+  "stinger": [
+   ".o...X.",
+   "ooo..X.",
+   ".o..XXX",
+   ".o..XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o....."
+  ],
+  "icelance": [
+   ".o.....",
+   "ooo.X.X",
+   ".o...X.",
+   ".o..XXX",
+   ".o...X.",
+   ".o..X.X",
+   ".o....."
+  ],
+  "sunspear": [
+   ".o....X",
+   "ooo..X.",
+   ".o..XX.",
+   ".o..XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o....."
+  ],
+  "stormlance": [
+   ".o....X",
+   "ooo..X.",
+   ".o..X..",
+   ".o..XXX",
+   ".o....X",
+   ".o...X.",
+   ".o..X.."
+  ],
+  "dart": [
+   ".o..X..",
+   "ooo..X.",
+   ".o..X..",
+   ".o.....",
+   ".o..X..",
+   ".o...X.",
+   ".o..X.."
+  ],
+  "batteringram": [
+   ".o.....",
+   "ooo.XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o..XXX",
+   ".o..XXX",
+   ".o....."
+  ],
+  "pitchfork": [
+   ".o..X.X",
+   "ooo.X.X",
+   ".o..X.X",
+   ".o..X.X",
+   ".o..X.X",
+   ".o..X.X",
+   ".o..X.X"
+  ],
+  "bloodlance": [
+   ".o..XXX",
+   "ooo.XXX",
+   ".o..X.X",
+   ".o..X.X",
+   ".o...X.",
+   ".o...X.",
+   ".o....."
+  ],
+  "shrapnel": [
+   ".o.....",
+   "ooo.X.X",
+   ".o..XXX",
+   ".o...X.",
+   ".o..XXX",
+   ".o..X.X",
+   ".o....."
+  ],
+  "bodkin": [
+   ".o...X.",
+   "ooo..X.",
+   ".o..XXX",
+   ".o..X.X",
+   ".o..XXX",
+   ".o...X.",
+   ".o...X."
+  ],
+  "barrage": [
+   ".o....X",
+   "ooo..X.",
+   ".o..X.X",
+   ".o...X.",
+   ".o..X.X",
+   ".o...X.",
+   ".o..X.."
+  ],
+  "spearwall": [
+   ".o..XXX",
+   "ooo.XXX",
+   ".o..XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o...X.",
+   ".o....."
+  ],
+  "longspear": [
+   ".o..XXX",
+   "ooo..X.",
+   ".o...X.",
+   ".o..XXX",
+   ".o...X.",
+   ".o...X.",
+   ".o..XXX"
+  ],
+  "flicker": [
+   ".o....X",
+   "ooo..XX",
+   ".o...X.",
+   ".o..XX.",
+   ".o..X..",
+   ".o.....",
+   ".o....."
+  ],
+  "broadspear": [
+   ".o.....",
+   "ooo....",
+   ".o..XXX",
+   ".o.....",
+   ".o..XXX",
+   ".o.....",
+   ".o..XXX"
+  ],
+  "gaff": [
+   ".o...XX",
+   "ooo...X",
+   ".o....X",
+   ".o..X.X",
+   ".o..XXX",
+   ".o.....",
+   ".o....."
+  ],
+  "trident": [
+   ".o..X.X",
+   "ooo.X.X",
+   ".o...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o....."
+  ],
+  "witchpin": [
+   ".o.....",
+   "ooo..X.",
+   ".o..X.X",
+   ".o..XXX",
+   ".o..X.X",
+   ".o...X.",
+   ".o....."
+  ],
+  "stake": [
+   ".o..XXX",
+   "ooo.X.X",
+   ".o..XX.",
+   ".o..X.X",
+   ".o..XXX",
+   ".o.....",
+   ".o....."
+  ],
+  "skewer": [
+   ".o..XXX",
+   "ooo.X.X",
+   ".o..XXX",
+   ".o...X.",
+   ".o..XXX",
+   ".o..X.X",
+   ".o..XXX"
+  ],
+  "gore": [
+   ".o...X.",
+   "ooo.XXX",
+   "ooo.X.X",
+   ".o...X.",
+   ".....X.",
+   ".o...X.",
+   ".....X."
+  ],
+  "gangrene": [
+   ".o...X.",
+   "ooo..X.",
+   "ooo.XXX",
+   ".o..XXX",
+   "....XXX",
+   ".o...X.",
+   "......."
+  ],
+  "rimeblood": [
+   ".o.....",
+   "ooo.X.X",
+   "ooo..X.",
+   ".o..XXX",
+   ".....X.",
+   ".o..X.X",
+   "......."
+  ],
+  "bloodfire": [
+   ".o....X",
+   "ooo..X.",
+   "ooo.XX.",
+   ".o..XXX",
+   "....XXX",
+   ".o...X.",
+   "......."
+  ],
+  "galvanic": [
+   ".o....X",
+   "ooo..X.",
+   "ooo.X..",
+   ".o..XXX",
+   "......X",
+   ".o...X.",
+   "....X.."
+  ],
+  "lacerate": [
+   ".o..X..",
+   "ooo..X.",
+   "ooo.X..",
+   ".o.....",
+   "....X..",
+   ".o...X.",
+   "....X.."
+  ],
+  "bludgeon": [
+   ".o.....",
+   "ooo.XXX",
+   "ooo.XXX",
+   ".o...X.",
+   "....XXX",
+   ".o..XXX",
+   "......."
+  ],
+  "fangs": [
+   ".o..X.X",
+   "ooo.X.X",
+   "ooo.X.X",
+   ".o..X.X",
+   "....X.X",
+   ".o..X.X",
+   "....X.X"
+  ],
+  "bloodfeast": [
+   ".o..XXX",
+   "ooo.XXX",
+   "ooo.X.X",
+   ".o..X.X",
+   ".....X.",
+   ".o...X.",
+   "......."
+  ],
+  "bloodburst": [
+   ".o.....",
+   "ooo.X.X",
+   "ooo.XXX",
+   ".o...X.",
+   "....XXX",
+   ".o..X.X",
+   "......."
+  ],
+  "artery": [
+   ".o...X.",
+   "ooo..X.",
+   "ooo.XXX",
+   ".o..X.X",
+   "....XXX",
+   ".o...X.",
+   ".....X."
+  ],
+  "bloodrage": [
+   ".o....X",
+   "ooo..X.",
+   "ooo.X.X",
+   ".o...X.",
+   "....X.X",
+   ".o...X.",
+   "....X.."
+  ],
+  "thornshield": [
+   ".o..XXX",
+   "ooo.XXX",
+   "ooo.XXX",
+   ".o..XXX",
+   ".....X.",
+   ".o...X.",
+   "......."
+  ],
+  "hemorrhage": [
+   ".o..XXX",
+   "ooo..X.",
+   "ooo..X.",
+   ".o..XXX",
+   ".....X.",
+   ".o...X.",
+   "....XXX"
+  ],
+  "papercut": [
+   ".o....X",
+   "ooo..XX",
+   "ooo..X.",
+   ".o..XX.",
+   "....X..",
+   ".o.....",
+   "......."
+  ],
+  "bramble": [
+   ".o.....",
+   "ooo....",
+   "ooo.XXX",
+   ".o.....",
+   "....XXX",
+   ".o.....",
+   "....XXX"
+  ],
+  "fishhook": [
+   ".o...XX",
+   "ooo...X",
+   "ooo...X",
+   ".o..X.X",
+   "....XXX",
+   ".o.....",
+   "......."
+  ],
+  "thornspray": [
+   ".o..X.X",
+   "ooo.X.X",
+   "ooo..X.",
+   ".o...X.",
+   ".....X.",
+   ".o...X.",
+   "......."
+  ],
+  "thorncurse": [
+   ".o.....",
+   "ooo..X.",
+   "ooo.X.X",
+   ".o..XXX",
+   "....X.X",
+   ".o...X.",
+   "......."
+  ],
+  "clot": [
+   ".o..XXX",
+   "ooo.X.X",
+   "ooo.XX.",
+   ".o..X.X",
+   "....XXX",
+   ".o.....",
+   "......."
+  ],
+  "briar": [
+   ".o..XXX",
+   "ooo.X.X",
+   "ooo.XXX",
+   ".o...X.",
+   "....XXX",
+   ".o..X.X",
+   "....XXX"
+  ],
+  "banshee": [
+   "ooo.X..",
+   "..o..X.",
+   "..o.X..",
+   ".o.....",
+   ".o..X..",
+   "o....X.",
+   "o...X.."
+  ],
+  "tombstone": [
+   "ooo....",
+   "..o.XXX",
+   "..o.XXX",
+   ".o...X.",
+   ".o..XXX",
+   "o...XXX",
+   "o......"
+  ],
+  "revenants": [
+   "ooo.X.X",
+   "..o.X.X",
+   "..o.X.X",
+   ".o..X.X",
+   ".o..X.X",
+   "o...X.X",
+   "o...X.X"
+  ],
+  "ghoul": [
+   "ooo.XXX",
+   "..o.XXX",
+   "..o.X.X",
+   ".o..X.X",
+   ".o...X.",
+   "o....X.",
+   "o......"
+  ],
+  "soulburst": [
+   "ooo....",
+   "..o.X.X",
+   "..o.XXX",
+   ".o...X.",
+   ".o..XXX",
+   "o...X.X",
+   "o......"
+  ],
+  "deadeye": [
+   "ooo..X.",
+   "..o..X.",
+   "..o.XXX",
+   ".o..X.X",
+   ".o..XXX",
+   "o....X.",
+   "o....X."
+  ],
+  "macabre": [
+   "ooo...X",
+   "..o..X.",
+   "..o.X.X",
+   ".o...X.",
+   ".o..X.X",
+   "o....X.",
+   "o...X.."
+  ],
+  "gravewarden": [
+   "ooo.XXX",
+   "..o.XXX",
+   "..o.XXX",
+   ".o..XXX",
+   ".o...X.",
+   "o....X.",
+   "o......"
+  ],
+  "undying": [
+   "ooo.XXX",
+   "..o..X.",
+   "..o..X.",
+   ".o..XXX",
+   ".o...X.",
+   "o....X.",
+   "o...XXX"
+  ],
+  "fetch": [
+   "ooo...X",
+   "..o..XX",
+   "..o..X.",
+   ".o..XX.",
+   ".o..X..",
+   "o......",
+   "o......"
+  ],
+  "legion": [
+   "ooo....",
+   "..o....",
+   "..o.XXX",
+   ".o.....",
+   ".o..XXX",
+   "o......",
+   "o...XXX"
+  ],
+  "undertow": [
+   "ooo..XX",
+   "..o...X",
+   "..o...X",
+   ".o..X.X",
+   ".o..XXX",
+   "o......",
+   "o......"
+  ],
+  "poltergeist": [
+   "ooo.X.X",
+   "..o.X.X",
+   "..o..X.",
+   ".o...X.",
+   ".o...X.",
+   "o....X.",
+   "o......"
+  ],
+  "haunting": [
+   "ooo....",
+   "..o..X.",
+   "..o.X.X",
+   ".o..XXX",
+   ".o..X.X",
+   "o....X.",
+   "o......"
+  ],
+  "limbo": [
+   "ooo.XXX",
+   "..o.X.X",
+   "..o.XX.",
+   ".o..X.X",
+   ".o..XXX",
+   "o......",
+   "o......"
+  ],
+  "gravebind": [
+   "ooo.XXX",
+   "..o.X.X",
+   "..o.XXX",
+   ".o...X.",
+   ".o..XXX",
+   "o...X.X",
+   "o...XXX"
+  ],
+  "guillotine": [
+   "oo...X.",
+   "ooo.XXX",
+   "oo..X.X",
+   ".o...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o...X."
+  ],
+  "nightshade": [
+   "oo...X.",
+   "ooo..X.",
+   "oo..XXX",
+   ".o..XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o....."
+  ],
+  "coldcut": [
+   "oo.....",
+   "ooo.X.X",
+   "oo...X.",
+   ".o..XXX",
+   ".o...X.",
+   ".o..X.X",
+   ".o....."
+  ],
+  "cremate": [
+   "oo....X",
+   "ooo..X.",
+   "oo..XX.",
+   ".o..XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o....."
+  ],
+  "smite": [
+   "oo....X",
+   "ooo..X.",
+   "oo..X..",
+   ".o..XXX",
+   ".o....X",
+   ".o...X.",
+   ".o..X.."
+  ],
+  "coup": [
+   "oo..X..",
+   "ooo..X.",
+   "oo..X..",
+   ".o.....",
+   ".o..X..",
+   ".o...X.",
+   ".o..X.."
+  ],
+  "crusher": [
+   "oo.....",
+   "ooo.XXX",
+   "oo..XXX",
+   ".o...X.",
+   ".o..XXX",
+   ".o..XXX",
+   ".o....."
+  ],
+  "scissors": [
+   "oo..X.X",
+   "ooo.X.X",
+   "oo..X.X",
+   ".o..X.X",
+   ".o..X.X",
+   ".o..X.X",
+   ".o..X.X"
+  ],
+  "bloodprice": [
+   "oo..XXX",
+   "ooo.XXX",
+   "oo..X.X",
+   ".o..X.X",
+   ".o...X.",
+   ".o...X.",
+   ".o....."
+  ],
+  "deathburst": [
+   "oo.....",
+   "ooo.X.X",
+   "oo..XXX",
+   ".o...X.",
+   ".o..XXX",
+   ".o..X.X",
+   ".o....."
+  ],
+  "mercy": [
+   "oo...X.",
+   "ooo..X.",
+   "oo..XXX",
+   ".o..X.X",
+   ".o..XXX",
+   ".o...X.",
+   ".o...X."
+  ],
+  "massacre": [
+   "oo....X",
+   "ooo..X.",
+   "oo..X.X",
+   ".o...X.",
+   ".o..X.X",
+   ".o...X.",
+   ".o..X.."
+  ],
+  "lastrites": [
+   "oo..XXX",
+   "ooo.XXX",
+   "oo..XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o...X.",
+   ".o....."
+  ],
+  "deathwatch": [
+   "oo..XXX",
+   "ooo..X.",
+   "oo...X.",
+   ".o..XXX",
+   ".o...X.",
+   ".o...X.",
+   ".o..XXX"
+  ],
+  "quietus": [
+   "oo....X",
+   "ooo..XX",
+   "oo...X.",
+   ".o..XX.",
+   ".o..X..",
+   ".o.....",
+   ".o....."
+  ],
+  "purge": [
+   "oo.....",
+   "ooo....",
+   "oo..XXX",
+   ".o.....",
+   ".o..XXX",
+   ".o.....",
+   ".o..XXX"
+  ],
+  "gallows": [
+   "oo...XX",
+   "ooo...X",
+   "oo....X",
+   ".o..X.X",
+   ".o..XXX",
+   ".o.....",
+   ".o....."
+  ],
+  "decimate": [
+   "oo..X.X",
+   "ooo.X.X",
+   "oo...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o....."
+  ],
+  "condemn": [
+   "oo.....",
+   "ooo..X.",
+   "oo..X.X",
+   ".o..XXX",
+   ".o..X.X",
+   ".o...X.",
+   ".o....."
+  ],
+  "finalhour": [
+   "oo..XXX",
+   "ooo.X.X",
+   "oo..XX.",
+   ".o..X.X",
+   ".o..XXX",
+   ".o.....",
+   ".o....."
+  ],
+  "noose": [
+   "oo..XXX",
+   "ooo.X.X",
+   "oo..XXX",
+   ".o...X.",
+   ".o..XXX",
+   ".o..X.X",
+   ".o..XXX"
+  ],
+  "tremor": [
+   ".....X.",
+   ".o..XXX",
+   "o.o.X.X",
+   ".....X.",
+   ".o...X.",
+   "o.o..X.",
+   ".....X."
+  ],
+  "pestilence": [
+   ".....X.",
+   ".o...X.",
+   "o.o.XXX",
+   "....XXX",
+   ".o..XXX",
+   "o.o..X.",
+   "......."
+  ],
+  "blizzard": [
+   ".......",
+   ".o..X.X",
+   "o.o..X.",
+   "....XXX",
+   ".o...X.",
+   "o.o.X.X",
+   "......."
+  ],
+  "nova": [
+   "......X",
+   ".o...X.",
+   "o.o.XX.",
+   "....XXX",
+   ".o..XXX",
+   "o.o..X.",
+   "......."
+  ],
+  "thunderclap": [
+   "......X",
+   ".o...X.",
+   "o.o.X..",
+   "....XXX",
+   ".o....X",
+   "o.o..X.",
+   "....X.."
+  ],
+  "rush": [
+   "....X..",
+   ".o...X.",
+   "o.o.X..",
+   ".......",
+   ".o..X..",
+   "o.o..X.",
+   "....X.."
+  ],
+  "seismic": [
+   ".......",
+   ".o..XXX",
+   "o.o.XXX",
+   ".....X.",
+   ".o..XXX",
+   "o.o.XXX",
+   "......."
+  ],
+  "pulse": [
+   "....X.X",
+   ".o..X.X",
+   "o.o.X.X",
+   "....X.X",
+   ".o..X.X",
+   "o.o.X.X",
+   "....X.X"
+  ],
+  "heartbeat": [
+   "....XXX",
+   ".o..XXX",
+   "o.o.X.X",
+   "....X.X",
+   ".o...X.",
+   "o.o..X.",
+   "......."
+  ],
+  "overload": [
+   ".......",
+   ".o..X.X",
+   "o.o.XXX",
+   ".....X.",
+   ".o..XXX",
+   "o.o.X.X",
+   "......."
+  ],
+  "lens": [
+   ".....X.",
+   ".o...X.",
+   "o.o.XXX",
+   "....X.X",
+   ".o..XXX",
+   "o.o..X.",
+   ".....X."
+  ],
+  "crescendo": [
+   "......X",
+   ".o...X.",
+   "o.o.X.X",
+   ".....X.",
+   ".o..X.X",
+   "o.o..X.",
+   "....X.."
+  ],
+  "bastion": [
+   "....XXX",
+   ".o..XXX",
+   "o.o.XXX",
+   "....XXX",
+   ".o...X.",
+   "o.o..X.",
+   "......."
+  ],
+  "resonance": [
+   "....XXX",
+   ".o...X.",
+   "o.o..X.",
+   "....XXX",
+   ".o...X.",
+   "o.o..X.",
+   "....XXX"
+  ],
+  "spark": [
+   "......X",
+   ".o...XX",
+   "o.o..X.",
+   "....XX.",
+   ".o..X..",
+   "o.o....",
+   "......."
+  ],
+  "tsunami": [
+   ".......",
+   ".o.....",
+   "o.o.XXX",
+   ".......",
+   ".o..XXX",
+   "o.o....",
+   "....XXX"
+  ],
+  "vortex": [
+   ".....XX",
+   ".o....X",
+   "o.o...X",
+   "....X.X",
+   ".o..XXX",
+   "o.o....",
+   "......."
+  ],
+  "ricochet": [
+   "....X.X",
+   ".o..X.X",
+   "o.o..X.",
+   ".....X.",
+   ".o...X.",
+   "o.o..X.",
+   "......."
+  ],
+  "hexwave": [
+   ".......",
+   ".o...X.",
+   "o.o.X.X",
+   "....XXX",
+   ".o..X.X",
+   "o.o..X.",
+   "......."
+  ],
+  "lull": [
+   "....XXX",
+   ".o..X.X",
+   "o.o.XX.",
+   "....X.X",
+   ".o..XXX",
+   "o.o....",
+   "......."
+  ],
+  "tangle": [
+   "....XXX",
+   ".o..X.X",
+   "o.o.XXX",
+   ".....X.",
+   ".o..XXX",
+   "o.o.X.X",
+   "....XXX"
+  ],
+  "harrow": [
+   ".o...X.",
+   "ooo.XXX",
+   ".o..XXX",
+   ".o...X.",
+   ".o.....",
+   ".o...X.",
+   ".o....."
+  ],
+  "wraithspear": [
+   ".o..XXX",
+   "ooo...X",
+   ".o....X",
+   ".o...X.",
+   ".o...X.",
+   ".o..X..",
+   ".o..X.."
+  ],
+  "deathblow": [
+   ".o..XX.",
+   "ooo.XXX",
+   ".o..XX.",
+   ".o...X.",
+   ".o...X.",
+   ".o...X.",
+   ".o...X."
+  ],
+  "breakthrough": [
+   ".o.....",
+   "ooo..X.",
+   ".o..X.X",
+   ".o.....",
+   ".o...X.",
+   ".o..X.X",
+   ".o....."
+  ],
+  "bloodharvest": [
+   ".o..XXX",
+   "ooo...X",
+   "ooo...X",
+   ".o...X.",
+   ".....X.",
+   ".o..X..",
+   "....X.."
+  ],
+  "butcher": [
+   ".o..XX.",
+   "ooo.XXX",
+   "ooo.XX.",
+   ".o...X.",
+   ".....X.",
+   ".o...X.",
+   ".....X."
+  ],
+  "bloodwave": [
+   ".o.....",
+   "ooo..X.",
+   "ooo.X.X",
+   ".o.....",
+   ".....X.",
+   ".o..X.X",
+   "......."
+  ],
+  "harvest": [
+   "ooo.XX.",
+   "..o.XXX",
+   "..o.XX.",
+   ".o...X.",
+   ".o...X.",
+   "o....X.",
+   "o....X."
+  ],
+  "soulstorm": [
+   "ooo....",
+   "..o..X.",
+   "..o.X.X",
+   ".o.....",
+   ".o...X.",
+   "o...X.X",
+   "o......"
+  ],
+  "deathknell": [
+   "oo.....",
+   "ooo..X.",
+   "oo..X.X",
+   ".o.....",
+   ".o...X.",
+   ".o..X.X",
+   ".o....."
   ]
  },
  "tune": {
@@ -10485,6 +15710,50 @@
    "foeR": 1.5,
    "foeWait": 0.8,
    "foeSpeed": 2.6
+  },
+  "_carry": {
+   "power": 0.35,
+   "powerThrow": 0.4,
+   "poison": 0.25,
+   "frost": 0.35,
+   "fire": 0.25,
+   "fireSecs": 3.0,
+   "lightning": 0.4,
+   "reach": 3.0,
+   "swift": 15.0,
+   "swiftSecs": 2.5,
+   "heavy": 0.5,
+   "twin": 0.4,
+   "twinAfter": 0.15,
+   "leech": 0.01,
+   "volatile": 0.3,
+   "volatileR": 1.4,
+   "precise": 0.5,
+   "guarding": 0.02,
+   "lasting": 1.5,
+   "lastingMost": 3.0,
+   "fleeting": 0.15,
+   "vast": 0.3,
+   "vastR": 1.2,
+   "pulling": 0.8,
+   "splitting": 0.3,
+   "hexSecs": 3.0,
+   "hex": 0.15,
+   "stillSecs": 3.0,
+   "still": 0.3,
+   "bind": 1.0,
+   "bleed": 0.15,
+   "bleedSecs": 4.0,
+   "piercing": 0.4,
+   "reapSecs": 3.0,
+   "reapShare": 0.5,
+   "cull": 0.2,
+   "surge": 0.3,
+   "surgeR": 1.2,
+   "burstR": 1.8,
+   "soulR": 5.0,
+   "thornAgain": 1.5,
+   "selfEvery": 0.25
   }
  },
  "city": [
@@ -10591,6 +15860,123 @@
   "stormwake",
   "bogborn",
   "charnel"
+ ],
+ "high": [
+  "impaler",
+  "stinger",
+  "icelance",
+  "sunspear",
+  "stormlance",
+  "dart",
+  "batteringram",
+  "pitchfork",
+  "bloodlance",
+  "shrapnel",
+  "bodkin",
+  "barrage",
+  "spearwall",
+  "longspear",
+  "flicker",
+  "broadspear",
+  "gaff",
+  "trident",
+  "witchpin",
+  "stake",
+  "skewer",
+  "gore",
+  "gangrene",
+  "rimeblood",
+  "bloodfire",
+  "galvanic",
+  "lacerate",
+  "bludgeon",
+  "fangs",
+  "bloodfeast",
+  "bloodburst",
+  "artery",
+  "bloodrage",
+  "thornshield",
+  "hemorrhage",
+  "papercut",
+  "bramble",
+  "fishhook",
+  "thornspray",
+  "thorncurse",
+  "clot",
+  "briar",
+  "banshee",
+  "tombstone",
+  "revenants",
+  "ghoul",
+  "soulburst",
+  "deadeye",
+  "macabre",
+  "gravewarden",
+  "undying",
+  "fetch",
+  "legion",
+  "undertow",
+  "poltergeist",
+  "haunting",
+  "limbo",
+  "gravebind",
+  "guillotine",
+  "nightshade",
+  "coldcut",
+  "cremate",
+  "smite",
+  "coup",
+  "crusher",
+  "scissors",
+  "bloodprice",
+  "deathburst",
+  "mercy",
+  "massacre",
+  "lastrites",
+  "deathwatch",
+  "quietus",
+  "purge",
+  "gallows",
+  "decimate",
+  "condemn",
+  "finalhour",
+  "noose",
+  "tremor",
+  "pestilence",
+  "blizzard",
+  "nova",
+  "thunderclap",
+  "rush",
+  "seismic",
+  "pulse",
+  "heartbeat",
+  "overload",
+  "lens",
+  "crescendo",
+  "bastion",
+  "resonance",
+  "spark",
+  "tsunami",
+  "vortex",
+  "ricochet",
+  "hexwave",
+  "lull",
+  "tangle",
+  "harrow",
+  "wraithspear",
+  "deathblow",
+  "breakthrough",
+  "bloodharvest",
+  "butcher",
+  "bloodwave",
+  "harvest",
+  "soulstorm",
+  "deathknell",
+  "piercing2",
+  "bleeding2",
+  "reaping2",
+  "culling2",
+  "surging2"
  ],
  "extra": {
   "greed": {

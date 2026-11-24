@@ -404,6 +404,16 @@ func film(only := "") -> void:
 	if only == "reap":
 		ids = T["reap"]
 		only = ""
+	# (`high`: the High City's runes melded, 110; `high:<from>-<to>`, a run of them by their order)
+	var was_high: bool = M52.HIGH_ON
+	M52.HIGH_ON = true
+	if only.begins_with("high"):
+		var hi: Array = T["high"].filter(func(w): return not M52.is_new_rank(w))
+		var span := only.trim_prefix("high").trim_prefix(":")
+		if span.contains("-"):
+			hi = hi.slice(int(span.get_slice("-", 0)), int(span.get_slice("-", 1)))
+		ids = hi
+		only = ""
 	# (any words named: the game's own melds too, filmed the same way to set beside these)
 	if only != "":
 		ids = Array(only.split(","))
@@ -428,6 +438,16 @@ func film(only := "") -> void:
 					m.stun_t = 3.0
 				# (REAPING WITH A DAMAGE RUNE: the first it strikes falls, burning, frozen or poisoned for the twist in front; behind,
 				# the rest stand for its creature to fight)
+				# (THE HIGH CITY'S RUNES MELDED: what its act waits on: a kill for Reaping, one brought low for Culling)
+				if M52.is_high(id):
+					var hof: Array = M52.T()["of"][id]
+					if hof.has("reaping") and m == M._w_pack[0]:
+						m.max_life = FOE_LIFE
+						m.life = 1.0
+					if hof.has("culling"):
+						var hit: float = float(M._w_hit(h, 0))
+						m.max_life = 4000.0
+						m.life = hit * (1.05 if side == "front" else 2.2) + m.max_life * (0.06 if side == "front" else 0.1)
 				if M52.is_reap(id) and (m == M._w_pack[0] or side == "front" and M._w_pack.find(m) < 3):
 					m.max_life = FOE_LIFE
 					m.life = 1.0
@@ -467,10 +487,15 @@ func film(only := "") -> void:
 				for m in M._w_pack:
 					m.max_life = 2500.0
 					m.life = 320.0
+			# (Surging's: a third use in front; behind, his dodge)
+			if M52.is_high(id) and (M52.T()["of"][id] as Array).has("surging") and side == "front":
+				h.uses[0] = 1
 			k = await _frames(k, 0.25)
 			M._w_strike(h)
 			k = await _walk(k, 0.6, id, 1.0)
 			M._w_strike(h)
+			if M52.is_high(id) and (M52.T()["of"][id] as Array).has("surging") and side == "behind":
+				h.last.dodge_surge(h.world)
 			var rest := (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0)) + (2.2 if M52.is_reap(id) and side == "behind" else 0.0)
 			# (THE CITY'S MELDS behind: a vortex's end is its own moment; a snare springs on one walked onto it)
 			if side == "behind" and (M52.is_city(id) or M52.is_city2(id)) and not M52.is_new_rank(id):
@@ -542,7 +567,9 @@ func film(only := "") -> void:
 		h.poison_t = 0.0
 		h.shock_t = 0.0
 		var out: Array = []
-		var code := OS.execute("ffmpeg", ["-y", "-loglevel", "error", "-framerate", "30", "-i", _dir + "/%04d.jpg", "-vf", "crop=400:280:290:130,scale=800:560:flags=neighbor", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "26", "-movflags", "+faststart", root + "/" + id + ".mp4"], out, true)
+		# (the High City's 110 smaller, so that all of them go on one page)
+		var crf := "31" if M52.is_high(id) else "26"
+		var code := OS.execute("ffmpeg", ["-y", "-loglevel", "error", "-framerate", "30", "-i", _dir + "/%04d.jpg", "-vf", "crop=400:280:290:130,scale=800:560:flags=neighbor", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", crf, "-movflags", "+faststart", root + "/" + id + ".mp4"], out, true)
 		OS.execute("ffmpeg", ["-y", "-loglevel", "error", "-ss", "0.9", "-i", root + "/" + id + ".mp4", "-frames:v", "1", root + "/" + id + ".jpg"], out, true)
 		for f in DirAccess.get_files_at(_dir):
 			DirAccess.remove_absolute(_dir + "/" + f)
@@ -552,6 +579,7 @@ func film(only := "") -> void:
 		print("MELDS52 FOE %s: %s" % [id, "shown" if h.m52.told.keys().any(func(t): return str(t).ends_with(":foe") or str(t).ends_with(":foeSplit") or (M52.is_reap(id) and str(t).ends_with(":rise"))) else "NOT SHOWN"])
 	M52.ON = was
 	M52.REAP_ON = was_reap
+	M52.HIGH_ON = was_high
 
 
 ## The words one carrying meld `id` has on it, as an altar lays them (foe_words.gd foe_words_of).
