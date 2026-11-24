@@ -1463,6 +1463,11 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   the Strike and behind it (its name, its line, the blow landing, its twist seen): 126 of 126. `--cases=m52film`, with
   `--fixed-fps 30`: a film of each meld, in front, behind and carried by a monster (ffmpeg makes each into an mp4).
 
+- THE NEXT GROUP (his “Let's get some more melds in”, 24 Nov 2026): Floor 11–15 Melds, his doc
+  https://claude.ai/artifact/CMMUpdDX2f9DwDPe8avGqQ: the city's five runes (Pulling, Splitting, Hexing, Stilling, Binding) with
+  the floor 1–5 runes and with each other, 45 melds and 5 level 2 runes. Waiting on his word; then the stones, the animations,
+  the build behind a switch and films, as before.
+
 ## The other chats' hand-overs brought in (the cloud chat, 23 and 24 Nov 2026)
 
 His word, 23 Nov 2026: “You can bring anything in we do here.  I'm not really using the chats anymore”.
