@@ -1528,6 +1528,21 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   ON is. ON at his pick, “Switch them on (Recommended)”, 24 Nov 2026, to the pictures (https://claude.ai/artifact/QxnGXdmQm1j11rGyFaGCYe). Found on the way: Greed was missing from the words he holds (loot.gd held) and
   from the drops' colours, now both kept. `--only=doorwords` 12 of 12 (with altarrooms 10 of 10, rarerunes 12 of 12,
   doorrunes 11 of 11; on: doorwords 12 of 12, runebag 18 of 18, lexstash 5 of 5).
+- THE BUG HUNT, ROUND 1 (his words, 24 Nov 2026: “I'd like some agents to run the game and look for bugs”): three agents played
+  the story floors and the town, the city, the High City and endless, and the heroes, words, melds, gear and screens, and reported;
+  what they found was fixed. ENDLESS: the Bells' copies carry no royal's crest nor rune (bells_any.gd _plain); a rung bell does not
+  call a chained rare off his stakes (bells.gd ring); no bell stands on a monster, no chained rare on a bell; the Bells try room
+  after room, and with Toll a looser plan too; Siege drops and is listed only while the altar rooms are on (door_words.gd live);
+  Chains on a crowded floor brings more, nearer each other (chained_rare.gd APART_CHAINS). HEROES AND WORDS: Frostbite redone on
+  monsters freezes him once a moment however many carry it (foe_meldsredo.gd); Cauterize redone on a monster sears once, its own
+  way (foe_words.gd); the evasive move's long name kept right of the slow attack's key, wrapped (hud.gd); a monster looked up by
+  its living number only (fx.gd _monster_of, no engine error). TOWN AND FLOORS: floor 5's cage, once down, is walked into (ways.gd
+  `_opened` "shaft"); a townsman's spoken line gone once he has left the town (speech.gd). FROM THE NEW DAMAGE TEST: Brand in
+  front made a burning one's burn twice as hot again on every critical hit, so it grew without end (362 million a second into
+  the elite); now twice once a burning (melds52_rules.gd `brand_hot`), and Needle's doubled poison the same (`needle_hot`); and
+  thirteen of the monsters' melds that make his burn or poison worse (Cremate, Flashfire, Brand, Needle, Viper, Fever, Hornet,
+  Mire, Hourglass, Plague, Strangler, Firetrap, Nightshade) did so again with every blow: now once a burn or a poison each
+  (hero.gd `worse`). `--only=bughunt` 5 of 5.
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/

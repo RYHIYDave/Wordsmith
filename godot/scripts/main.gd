@@ -3173,9 +3173,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 	if _arg("only") == "charge":
 		await preload("res://scripts/check_charge.gd").new().run(self, hero, dir)
 		get_tree().quit()
+		return
 	if _arg("only") == "twin":
 		await preload("res://scripts/check_twin.gd").new().run(self, hero, dir)
 		get_tree().quit()
+		return
 	if _arg("only") == "safe":
 		await preload("res://scripts/check_safe.gd").new().run(self, hero, dir)
 		get_tree().quit()
@@ -5970,7 +5972,8 @@ func _map_shots(h: Hero, dir: String) -> void:
 ## (it opens), a barrel or an urn struck (it breaks); then the boss struck dead in his hall, the way on pictured as it opens
 ## and once it is open, and taken: where he comes out is pictured too.
 func _way_shots(h: Hero, dir: String) -> void:
-	var n := int(_arg("floor")) if _arg("floor") != "" else 2
+	# (floor 3 by default: floor 2's way on is its stairwell, stairs.gd, not a way of ways.gd)
+	var n := int(_arg("floor")) if _arg("floor") != "" else 3
 	go_to("floor%d" % n, "down" if n > 1 else "start")
 	await _wait(1.5)
 	var tag := dir + "/w%d_" % n
@@ -6889,7 +6892,8 @@ func _descent_shots(h: Hero, dir: String) -> void:
 	var said := [_wu_said(loot.MELD_TAKES), _wu_said("He gives you two words"), _wu_said(loot.MELD_LESSON[0]), _wu_said(loot.MELD_LESSON[1]), _wu_said("The wordsmith unbars the gate")]
 	await _d_step(dir, "wordsmith_given", giving == "E: Give the Meldstone" and loot.meld == "open" and int(loot.words.get("fire", 0)) == had[0] + 1 and int(loot.words.get("frost", 0)) == had[1] + 1 and not said.has("") and way_depth == 6 and town.unbar == -1.0,
 		"\"%s\": FLAME %d -> %d, FROST %d -> %d; said: %s" % [giving, had[0], int(loot.words.get("fire", 0)), had[1], int(loot.words.get("frost", 0)), " / ".join(said)])
-	await _wait(1.4)
+	# (the stone's flight to the slab takes nearly three seconds, town.gd GIVEN: waited for, four at the most)
+	await _w_until(func(): return town._kept.size() == 2 and town._kept[0].visible, 4.0)
 	await _d_step(dir, "wordsmith_keeps_it", town._kept.size() == 2 and town._kept[0].visible, "the Meldstone kept over his slab, going round the column of light")
 	# --- the gate unbarred, rising, through it ---
 	h.world = gm + Vector2(0, 4.5)

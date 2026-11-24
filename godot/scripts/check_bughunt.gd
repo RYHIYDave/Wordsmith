@@ -1,7 +1,8 @@
 ## THE BUG HUNT'S FINDS, FIXED (24 Nov 2026, his ask: “I'd like some agents to run the game and look for bugs”): `--only=bughunt
 ## --shots=<dir>`. Frostbite redone on monsters: four carrying it freeze him no more often than one does; Cauterize redone on a
 ## monster: it sears its wounds once, its own way, not also the old way; the evasive move's long name kept off the slow attack's
-## plate (pictured).
+## plate (pictured); floor 5's cage walked into once it is down. And from the damage test: Brand in front makes a burn twice as hot
+## once, not again on each crit (it grew to millions); a monster's meld makes his burn or poison worse once a burn, not each blow.
 extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
@@ -92,6 +93,49 @@ func run(main, hero, dir: String) -> void:
 		last = m.life
 	_line(M52.is_redo("cauterize") and ups == 1 and most <= 2000.0 + 0.16 * 10000.0, "Cauterize on a monster at a fifth of its life: seared %d time(s), up to %d of 10000 (its own 15%%, not 35%% more)" % [ups, int(most)])
 	m.words = []
+	# BRAND IN FRONT (the damage test): ten critical hits on a burning one make its burn twice as hot, not 2^10 times
+	m.max_life = 1.0e9
+	m.life = 1.0e9
+	h.loadout.front[0] = ["brand", null]
+	h.loadout._r = [null, null, null]
+	m.set_alight(100.0, 30.0)
+	var d0: float = m.burn_dps
+	for k in 10:
+		h.m52.struck(m, 0, 100.0, true, m.world, true, true, false, false, false)
+	var d1: float = m.burn_dps
+	# (its burn out and lit again: twice as hot again, once)
+	m.burn_t = 0.0
+	h.m52.status_end(m, "burn")
+	m.set_alight(100.0, 30.0)
+	for k in 5:
+		h.m52.struck(m, 0, 100.0, true, m.world, true, true, false, false, false)
+	var d2: float = m.burn_dps
+	_line(is_equal_approx(d1, d0 * 2.0) and is_equal_approx(d2, 200.0), "Brand: ten crits on a burning one, its burn %d a second to %d (twice, once); burned out and lit again, five crits, %d" % [int(d0), int(d1), int(d2)])
+	h.loadout.front[0] = [null, null]
+	h.loadout._r = [null, null, null]
+	m.burn_t = 0.0
+	# A MONSTER'S MELD ON HIS BURN (Cremate, Flashfire, a Brand crit and the rest): five blows, worse once
+	h.burn_t = 10.0
+	h.burn_dps = 100.0
+	for k in 5:
+		h.worse("burn", "cremate", 1.5)
+	var hb1: float = h.burn_dps
+	h.poison_t = 10.0
+	h.poison_dps = 100.0
+	for k in 5:
+		h.worse("poison", "strangler", 2.0, true)
+	var hp1: float = h.poison_dps
+	var ht1: float = h.poison_t
+	# (both run out as they do, in his own time)
+	h.burn_t = 0.01
+	h.poison_t = 0.01
+	await _wait(0.2)
+	h.burn_t = 10.0
+	h.burn_dps = 100.0
+	h.worse("burn", "cremate", 1.5)
+	_line(is_equal_approx(hb1, 150.0) and is_equal_approx(hp1, 200.0) and is_equal_approx(ht1, 5.0) and is_equal_approx(h.burn_dps, 150.0), "his burn after five blows of Cremate %d (from 100), his poison after five of Strangler %d over %.1f s (from 100 over 10); a new burn, worse again: %d" % [int(hb1), int(hp1), ht1, int(h.burn_dps)])
+	h.burn_t = 0.0
+	h.poison_t = 0.0
 	# THE EVASIVE MOVE'S LONG NAME: the longest melds on it in front and behind; pictured
 	M.loot.level = 20
 	h.loadout.front[2] = ["pressurepoint", "flashfreeze"]
@@ -101,4 +145,42 @@ func run(main, hero, dir: String) -> void:
 	h.loadout._r = [null, null, null]
 	await _wait(0.5)
 	await M._snap(dir + "/bughunt_hud_long_name.png")
+	# FLOOR 5'S CAGE: down, walked into from before it (not set on it), it takes him up
+	h.loadout.front[2] = [null, null]
+	h.loadout.behind[2] = [null, null]
+	h.loadout.front[1] = [null, null]
+	h.loadout.behind[1] = [null, null]
+	h.loadout._r = [null, null, null]
+	await M.go_to("floor5", "start")
+	await _wait(1.0)
+	var W = M.ways
+	var went := false
+	var walk := -1
+	if W != null and W.way_kind() == "shaft":
+		for o in M._monsters.list:
+			if is_instance_valid(o) and o.boss:
+				o.damage(o.life + o.shield + 10.0, "phys", false, false, [], false, false, -1)
+		await _wait(1.0)
+		var st0: String = W.state
+		# (the Fleshmancer's own fight may keep him from falling to one blow: the way opened as his death opens it)
+		if W.state != "opening" and W.state != "open":
+			W._boss_dead = true
+			W._open()
+		var t3 := 0.0
+		while t3 < 15.0 and W.state != "open":
+			await M.get_tree().process_frame
+			t3 += M.get_process_delta_time()
+		var goal := Vector2(float(W._w["shaft"]["x"]) + 0.5, float(W._w["shaft"]["y"]) + 0.5)
+		walk = M.map.walk[floori(goal.y) * M.map.w + floori(goal.x)]
+		h.world = goal + Vector2(0.0, 1.2)
+		var here: String = M.place
+		var t4 := 0.0
+		while t4 < 5.0 and not M._going and M.place == here:
+			await M.get_tree().process_frame
+			t4 += M.get_process_delta_time()
+			var wd: Vector2 = goal - h.world
+			h.auto_dir = preload("res://scripts/iso.gd").to_screen(wd.x, wd.y).normalized() if wd.length() > 0.02 else Vector2.ZERO
+		h.auto_dir = Vector2.ZERO
+		went = M._going or M.place != here
+	_line(went and walk == 1, "floor 5's cage down (way %s): its tile walked (%d), and walked into from before it, it takes him up (%s)" % [W.state if W != null else "none", walk, went])
 	print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

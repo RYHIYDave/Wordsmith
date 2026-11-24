@@ -400,7 +400,9 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 			if c:
 				_tag(m)
 				m.m52["brand"] = float(_tune("brand")["secs"])
-				if m.burn_t > 0.0:
+				# (twice as hot once a burning: a crit on one branded already does not double it again, which made it grow without end)
+				if m.burn_t > 0.0 and not m.m52.has("brand_hot"):
+					m.m52["brand_hot"] = true
 					m.burn_dps *= float(_tune("brand")["hot"])
 				_tell({"id": "brand", "what": "brand", "x": at.x, "y": at.y, "m": m})
 		"fever":
@@ -627,7 +629,9 @@ func marked(m, i: int) -> void:
 func mark_spent(m) -> void:
 	x.mark_spent(m)
 	var b: String = str(m.m52.get("mark", ""))
-	if b == "needle" and m.poison_t > 0.0:
+	# (twice once a poisoning: the next mark spent on it while the same poison runs does not double it again)
+	if b == "needle" and m.poison_t > 0.0 and not m.m52.has("needle_hot"):
+		m.m52["needle_hot"] = true
 		m.poison_dps *= float(_tune("needle")["double"])
 		_tell({"id": "needle", "what": "double", "x": m.world.x, "y": m.world.y, "m": m})
 	elif b == "quickdraw":
@@ -1052,6 +1056,7 @@ func status_end(m, what: String) -> void:
 	if m.dead:
 		return
 	if what == "burn":
+		m.m52.erase("brand_hot")
 		if int(m.m52.get("rekindle", 0)) > 0:
 			_tag(m)
 			m.m52["rekindle"] = int(m.m52["rekindle"]) - 1
@@ -1065,6 +1070,7 @@ func status_end(m, what: String) -> void:
 					o.damage(maxf(1.0, roundf(float(F["dmg"]))), "fire", false, false, [], false, false, int(F["i"]))
 			_tell({"id": "flashfire", "what": "flare", "x": m.world.x, "y": m.world.y, "r": float(_tune("flashfire")["r"])})
 	elif what == "poison":
+		m.m52.erase("needle_hot")
 		if m.m52.has("bloat"):
 			var B: Dictionary = m.m52["bloat"]
 			m.m52.erase("bloat")

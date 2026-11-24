@@ -2352,7 +2352,9 @@ func foewords(main, hero, dir: String) -> void:
 	m.life = m.max_life * 0.2
 	var low: float = m.life
 	await M._wait(1.0)
-	_line(m.seared and m.life > low, "Cauterize: low on life, it sears its wounds shut once (%.0f to %.0f)" % [low, m.life])
+	# (redone, the meld's own searing, once, foe_meldsredo.gd, in place of the old: the bug hunt, 24 Nov 2026)
+	var sear: bool = bool(m.m52.get("rd_sear", false)) if preload("res://scripts/melds52.gd").is_redo("cauterize") else m.seared
+	_line(sear and m.life > low, "Cauterize: low on life, it sears its wounds shut once (%.0f to %.0f)" % [low, m.life])
 	give.call(["frost", "lightning", "hailstorm"])
 	m.hail_t = 0.05
 	w0 = M._monsters.perils.list.size()

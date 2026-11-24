@@ -78,13 +78,13 @@ static func after_blow(F, k: Callable, by, dmg: float) -> void:
 	var rest: float = F.clock - (float(by.m52.get("foe_last46", -99.0)) if alive_by else -99.0)
 	var crit: bool = alive_by and bool(by.m52.get("foe_crit46", false))
 	if s.call("hornet") and rest < float(_t("hornet")["foeWindow"]) and h.poison_t > 0.0:
-		h.poison_dps *= 1.0 + float(_t("hornet")["foeDose"])
+		h.worse("poison", "hornet", 1.0 + float(_t("hornet")["foeDose"]))
 		tell.call("hornet")
 	if s.call("charge") and alive_by and rest >= float(_t("charge")["foeRest"]):
 		h.knock(away, float(_t("charge")["foeShove"]))
 		tell.call("charge", {"dx": away.x, "dy": away.y})
 	if s.call("mire") and h.poison_t > 0.0 and (h.held > 0.0 or h._knock_t > 0.0):
-		h.poison_dps *= float(_t("mire")["foeFaster"])
+		h.worse("poison", "mire", float(_t("mire")["foeFaster"]))
 		tell.call("mire")
 	if s.call("icebreaker") and h.chill_t > 0.0:
 		h.held = maxf(h.held, float(_t("icebreaker")["foeFreeze"]))
@@ -153,9 +153,9 @@ static func after_blow(F, k: Callable, by, dmg: float) -> void:
 	if s.call("hourglass"):
 		var L2: float = float(_t("hourglass")["foeLonger"])
 		h.poison_t = minf(12.0, h.poison_t * L2)
-		h.poison_dps *= L2
+		h.worse("poison", "hourglass", L2)
 		h.burn_t = minf(12.0, h.burn_t * L2)
-		h.burn_dps *= L2
+		h.worse("burn", "hourglass", L2)
 		tell.call("hourglass")
 	if s.call("aftermath") and alive_by:
 		F._ground(h.world, 1.0, float(_t("aftermath")["foeSecs"]), "cracks", "phys", F._avg(by) * float(_t("aftermath")["foeDps"]), [], by, "aftermath")

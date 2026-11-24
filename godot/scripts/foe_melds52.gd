@@ -88,7 +88,7 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 	if s.call("viper") > 0.0:
 		h.m52._tell({"id": "viper", "what": "foe", "x": h.world.x, "y": h.world.y, "foe": true})
 	if s.call("viper") > 0.0 and h.poison_t > 0.0:
-		h.poison_dps *= 1.0 + float(_t("viper")["foeDoses"]) * 0.5
+		h.worse("poison", "viper", 1.0 + float(_t("viper")["foeDoses"]) * 0.5)
 	if s.call("flashfreeze") > 0.0 and h.chill_t > 0.0:
 		h.held = maxf(h.held, float(_t("flashfreeze")["foeFreeze"]))
 		h.frozen_t = maxf(h.frozen_t, float(_t("flashfreeze")["foeFreeze"]))
@@ -118,9 +118,9 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 		var crit: String = str(by.m52.get("foe_crit", ""))
 		by.m52.erase("foe_crit")
 		if crit == "needle" and h.poison_t > 0.0:
-			h.poison_dps *= 2.0
+			h.worse("poison", "needle", 2.0)
 		if crit == "brand" and h.burn_t > 0.0:
-			h.burn_dps *= 2.0
+			h.worse("burn", "brand", 2.0)
 			F._say(h.world, "Branded", "#ff8a80")
 		if s.call("pressurepoint") > 0.0 and h._knock_t > 0.0:
 			by.m52["foe_point"] = true
@@ -129,7 +129,7 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 		if s.call("flurry") > 0.0:
 			by.m52["foe_flurry"] = minf(float(_t("flurry")["foeMost"]), float(by.m52.get("foe_flurry", 0.0)) + float(_t("flurry")["foeFaster"]))
 	if s.call("fever") > 0.0 and alive_by and h.poison_t > 0.0:
-		h.poison_dps *= 1.0 + 0.5 * _hurt_k(by) * float(_t("fever")["foeFaster"])
+		h.worse("poison", "fever", 1.0 + 0.5 * _hurt_k(by) * float(_t("fever")["foeFaster"]))
 	if s.call("whiteout") > 0.0 and alive_by and h.chill_t > 0.0:
 		h.chill_k = minf(0.85, h.chill_k + float(_t("whiteout")["foeSlow"]) * _hurt_k(by))
 	if s.call("overcharge") > 0.0 and alive_by and parts.any(func(p): return p[0] == "lightning") and _hurt_k(by) > 0.4:
@@ -147,7 +147,7 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 		h.chill_t = minf(h.chill_t, 1.2)
 		h.chill_k = minf(0.85, h.chill_k * 1.5)
 	if s.call("flashfire") > 0.0 and h.burn_t > 0.0:
-		h.burn_dps *= 1.5
+		h.worse("burn", "flashfire", 1.5)
 		h.burn_t = minf(h.burn_t, 1.5)
 		h.m52.on_him["flare"] = F._avg(by) if alive_by else dmg
 	if s.call("jolt") > 0.0 and parts.any(func(p): return p[0] == "lightning"):

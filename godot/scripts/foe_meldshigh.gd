@@ -201,14 +201,14 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 			h.knock(away, _n("guillotine", "foeThrow", 1.2))
 			tell.call("guillotine")
 		if s.call("nightshade") and h.poison_t > 0.0:
-			h.poison_dps *= _n("nightshade", "foeLow", 1.5)
+			h.worse("poison", "nightshade", _n("nightshade", "foeLow", 1.5))
 			tell.call("nightshade")
 		if s.call("coldcut"):
 			h.held = maxf(h.held, 0.5)
 			h.frozen_t = maxf(h.frozen_t, 0.5)
 			tell.call("coldcut")
 		if s.call("cremate") and h.burn_t > 0.0:
-			h.burn_dps *= _n("cremate", "foeLow", 1.5)
+			h.worse("burn", "cremate", _n("cremate", "foeLow", 1.5))
 			tell.call("cremate")
 		if s.call("smite"):
 			F.main.hero.hurt_by(dmg * _n("smite", "foeBolt", 0.3), "lightning", [], {}, null, h.world, true)

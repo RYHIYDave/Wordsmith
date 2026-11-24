@@ -277,6 +277,14 @@ func _opened() -> void:
 				map.walk[i] = 1
 			# (game.ts joinSteps: on a floor with heights the way's tiles are joined to the floor beside them)
 			map.join_steps(_way_tiles())
+		"shaft":
+			# (game.ts stepShaft: the cage down, its tile his to walk into, shut to every monster as a shut door is; THE BUG HUNT,
+			# 24 Nov 2026: it was left solid, and he could not step into the cage to be taken up)
+			var sh: Dictionary = _w["shaft"]
+			var si: int = int(sh["y"]) * map.w + int(sh["x"])
+			map.walk[si] = 1
+			if map.shut.size() > si:
+				map.shut[si] = 1
 		"onward":
 			# (game.ts updateWays: what it threw out solid where it fell, but never where he or a living monster stands)
 			var taken := {floori(hero.world.y) * map.w + floori(hero.world.x): true}

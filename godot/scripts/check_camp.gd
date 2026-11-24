@@ -72,6 +72,9 @@ func run(main, hero, dir: String) -> void:
 	for s in M.town.data["stations"]:
 		at[s["kind"]] = Vector2(s["x"], s["y"])
 	var want := {"wordsmith": "E: Wordsmith", "armourer": "E: Armourer", "mystic": "E: Mystic", "stash": "E: Stash", "lexicon": "E: Lexicon", "stranger": "E: Stranger", "gate": ""}
+	# (the Lexicon in the stash since 24 Nov, town.gd LEXICON_IN_STASH: no station of its own)
+	if preload("res://scripts/town.gd").LEXICON_IN_STASH:
+		want.erase("lexicon")
 	var got := {}
 	for k in want:
 		if not at.has(k):

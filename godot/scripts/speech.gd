@@ -163,7 +163,8 @@ func _process(dt: float) -> void:
 			quip = {}
 	if not tag.is_empty():
 		tag["t"] = float(tag["t"]) + dt
-		if float(tag["t"]) > TAG_TIME:
+		# (a townsperson's line ends as he leaves the town: THE BUG HUNT, 24 Nov 2026, it followed him down the waypoint)
+		if float(tag["t"]) > TAG_TIME or main.town == null or not is_instance_valid(main.town):
 			tag = {}
 	if not _arrival.is_empty():
 		_arrival["t"] = float(_arrival["t"]) + dt

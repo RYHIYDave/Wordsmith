@@ -85,9 +85,8 @@ static func after_blow(F, k: Callable, by, dmg: float) -> void:
 		h.pulled_to(by.world, 1.0)
 		tell.call("gravity")
 	# (HEXING'S MELDS, on a cursed him)
-	if s.call("plague") and h.hex_t > 0.0 and h.poison_t > 0.0 and not bool(h.get_meta("plague_fast", false)):
-		h.poison_dps *= float(_t("plague")["foeFaster"])
-		h.poison_t /= float(_t("plague")["foeFaster"])
+	if s.call("plague") and h.hex_t > 0.0 and h.poison_t > 0.0:
+		h.worse("poison", "plague", float(_t("plague")["foeFaster"]), true)
 		tell.call("plague")
 	if s.call("hoarfrost") and h.chill_t > 0.0 and h.hex_t > 0.0:
 		h.hex_t *= float(_t("hoarfrost")["foeLonger"])
@@ -111,14 +110,13 @@ static func after_blow(F, k: Callable, by, dmg: float) -> void:
 		tell.call("stormglass")
 	# (BINDING'S MELDS, on a rooted him)
 	if s.call("strangler") and h.root_t > 0.0 and h.poison_t > 0.0:
-		h.poison_dps *= float(_t("strangler")["foeFaster"])
-		h.poison_t /= float(_t("strangler")["foeFaster"])
+		h.worse("poison", "strangler", float(_t("strangler")["foeFaster"]), true)
 		tell.call("strangler")
 	if s.call("icebound") and h.root_t > 0.0 and h.chill_t > 0.0:
 		h.root_t *= float(_t("icebound")["foeLonger"])
 		tell.call("icebound")
 	if s.call("firetrap") and h.root_t > 0.0 and h.burn_t > 0.0:
-		h.burn_dps *= float(_t("firetrap")["foeHotter"])
+		h.worse("burn", "firetrap", float(_t("firetrap")["foeHotter"]))
 		tell.call("firetrap")
 	if s.call("anchor") and h.root_t > 0.0:
 		# (rooted where he stands, not knocked back)

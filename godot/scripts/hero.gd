@@ -285,6 +285,8 @@ var foe_hi := {}
 var root_again := 0.0
 var poison_t := 0.0
 var poison_dps := 0.0
+## (which monsters' melds have made his burn or poison worse, "burn:<id>", each once a burn or a poison: worse())
+var _worse := {}
 ## (the last blow that reached him, as hurt_by weighed it: for a check to read)
 var last_blow := {}
 ## (defs.ts TUNE.poisonTime: how long a monster's poison works on him; PACKS.minion: a minion's share of its leader's words)
@@ -1390,8 +1392,12 @@ func _process(dt: float) -> void:
 		shock_t -= dt
 	if burn_t > 0.0:
 		burn_t -= dt
+		if burn_t <= 0.0:
+			_worse_end("burn")
 	if poison_t > 0.0:
 		poison_t -= dt
+		if poison_t <= 0.0:
+			_worse_end("poison")
 	_t += dt
 	var d := (Vector2.ZERO if scene_pace > 0.0 else Input.get_vector("move_left", "move_right", "move_up", "move_down")) + auto_dir
 	var way := Iso.screen_dir_to_world(d)
@@ -2340,6 +2346,7 @@ func fresh_place() -> void:
 	shock_t = 0.0
 	poison_t = 0.0
 	poison_dps = 0.0
+	_worse = {}
 	# (ACT 2, THE HUSH: none carries off the place; his words are his again: game.ts clearLevel)
 	hush_t = 0.0
 	loadout.set_hushed(false)
@@ -3033,3 +3040,29 @@ func smashed(m, way: Vector2) -> void:
 	if m.daze >= 1.0 - 1e-9:
 		m.daze = 0.0
 		m.stun_for(float(S["stun"]))
+
+
+## A MONSTER'S MELD MAKING HIS BURN OR POISON WORSE (`what` "burn" or "poison", `id` the meld's): `k` times as bad, and if
+## `faster`, run out `k` times sooner (the same in all, sooner). Once a burn (or poison) for each meld: a blow after a blow
+## made it worse each time, without end (found as the damage test showed the hero's own Brand doing so, 24 Nov 2026).
+func worse(what: String, id: String, k: float, faster := false) -> bool:
+	var key := what + ":" + id
+	if _worse.has(key) or (burn_t if what == "burn" else poison_t) <= 0.0:
+		return false
+	_worse[key] = true
+	if what == "burn":
+		burn_dps *= k
+		if faster:
+			burn_t /= k
+	else:
+		poison_dps *= k
+		if faster:
+			poison_t /= k
+	return true
+
+
+## His burn (or poison) out: the melds that made it worse may again on the next.
+func _worse_end(what: String) -> void:
+	for key in _worse.keys():
+		if str(key).begins_with(what + ":"):
+			_worse.erase(key)
