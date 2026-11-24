@@ -1,0 +1,261 @@
+Floor 11–15 Melds
+·
+45 new melds and 5 level 2 runes bring the city's five runes into wordsmithing. Pulling, Splitting, Hexing, Stilling and Binding each meld with the seven floor 1–5 runes (Power, Poison, Frost, Flame, Lightning, Swift and Heavy) and with each other, and each melds with itself to level 2. The city's runes with the floor 6–10 runes are the next group.
+Burned into gear, a meld gives one property of each of its two runes, each a quarter weaker than alone, as now. A level 2 rune gives its rune's, half as strong again. Two properties of the same kind never pair. What each rune gives:
+Each meld below has its idea in a line, its names on a move, and what it does in front, behind and on enemies, as before.
+Pulling
+Maw
+Pulling and Power. Drag them in, then crush them together. On a move: Maw Strike, Strike of the Maw.
+In front: more damage and a bigger hit that drags the enemies it hits toward where it struck; those that meet there crash together and hurt each other.
+Behind: leaves a vortex that keeps drawing enemies in; when it ends it collapses in a blast, harder for each enemy inside.
+On enemies: hits harder and has more life; its blows drag you toward it, and its next blow after a drag hits harder.
+Sump
+Pulling and Poison. Everything drains to one place. On a move: Sump Strike, Strike of the Sump.
+In front: a weaker hit that poisons and drags what it hits toward where it struck; each enemy pulled in takes one more dose for each poisoned enemy beside it, up to three.
+Behind: leaves a vortex of poison that draws enemies in and poisons them while it holds them.
+On enemies: poisons you; its blows drag you toward it, and each drag leaves one more dose on you.
+Drift
+Pulling and Frost. They slide in on the ice. On a move: Drifting Strike, Strike of the Drift.
+In front: frost damage that chills, then freezes; drags what it hits toward where it struck, chilled enemies twice as far, and those that slide into each other freeze (never a boss).
+Behind: leaves an icy vortex; enemies drawn across it are slowed, and those that reach its middle freeze for a moment (never a boss).
+On enemies: deals frost damage and slows you; its blows drag you toward it, twice as far while you are chilled.
+Firewhirl
+Pulling and Flame. A whirl of fire that feeds on what it gathers. On a move: Firewhirl Strike, Strike of the Firewhirl.
+In front: fire damage that explodes and sets enemies burning; the blast drags enemies at its edge into its middle, and those it pulls in burn hotter.
+Behind: leaves a vortex of fire that draws enemies in and sets burning whatever it holds.
+On enemies: deals fire damage and sets you burning; its blows drag you toward it, and each drag sets you burning again.
+Lodestone
+Pulling and Lightning. The bolt drags what it touches along. On a move: Lodestone Strike, Strike of the Lodestone.
+In front: lightning damage that arcs to nearby enemies; every enemy an arc strikes is dragged toward the one it leapt from.
+Behind: leaves a storm that draws enemies in; its bolts strike first the ones it has pulled closest.
+On enemies: deals lightning damage and shocks you; its blows drag you toward it, farther while you are shocked.
+Riptide
+Pulling and Swift. A current too quick to stand against. On a move: Riptide Strike, Strike of the Riptide.
+In front: faster to use again; drags what it hits toward where it struck, and each use within a second of the last pulls from farther, up to three times.
+Behind: each use gives you a burst of speed; while it lasts, enemies near you are drawn along in your wake.
+On enemies: moves and attacks faster; its blows drag you toward it, and it rushes in after each drag.
+Gravity
+Pulling and Heavy. The ground itself pulls everything in. On a move: Gravity Strike, Strike of Gravity.
+In front: slower, hits much harder and stuns; drags in everything near where it struck, not only what it hits, and stuns those it pulls in for longer.
+Behind: leaves a vortex over cracked ground; what it draws in is staggered again and again.
+On enemies: its blows pull you in instead of knocking you back, and its next blow lands harder.
+Pulling II
+Pulling and Pulling. On a move: Pulling II Strike, Strike of the Vortex II.
+In front: drags the enemies it hits toward where it struck, from half as far again.
+Behind: leaves a vortex half as wide and strong again.
+On enemies: its blows drag you toward it, half as far again.
+Splitting
+Splinter
+Splitting and Power. It breaks, and every piece still hits like the whole. On a move: Splintering Strike, Strike of Splinters.
+In front: more damage and a bigger hit; breaks into three copies that fly on, each half as strong again as Splitting's, and each knocks back what it hits.
+Behind: where it ends, shards fly out in every direction; each shard that lands builds Power's damage bonus.
+On enemies: hits harder and has more life; splits in two when it dies, and its halves keep its strength.
+Spore
+Splitting and Poison. A sickness that scatters. On a move: Spore Strike, Strike of Spores.
+In front: a weaker hit that poisons; breaks into three copies that fly on and poison what they hit.
+Behind: where it ends, shards fly out and each leaves a small cloud of poison where it lands.
+On enemies: poisons you; splits in two when it dies, and each half leaves a puff of poison.
+Sleet
+Splitting and Frost. Cold that comes down in pieces. On a move: Sleeting Strike, Strike of Sleet.
+In front: frost damage that chills, then freezes; breaks into three icy copies that fly on, and a copy that hits a frozen enemy splits again, once.
+Behind: where it ends, shards of ice fly out and each leaves a patch of ice that slows.
+On enemies: deals frost damage and slows you; splits in two when it dies, and its halves leave ice where they walk.
+Embers
+Splitting and Flame. The fire breaks into sparks that start fires of their own. On a move: Ember Strike, Strike of Embers.
+In front: fire damage that explodes and sets enemies burning; breaks into three copies that fly on, each exploding where it lands.
+Behind: where it ends, burning shards fly out and each leaves a small patch of burning ground.
+On enemies: deals fire damage and sets you burning; splits in two when it dies, both halves burning.
+Fractal
+Splitting and Lightning. Every branch grows branches. On a move: Fractal Strike, Strike of the Fractal.
+In front: lightning damage that arcs to nearby enemies; breaks into three copies that fly on, and each copy arcs on its own.
+Behind: where it ends, shards fly out, and each one that strikes calls a small bolt down where it lands.
+On enemies: deals lightning damage and shocks you; splits in two when it dies, and a crackling arc joins its halves that hurts you to cross.
+Scatter
+Splitting and Swift. The faster you go, the more pieces. On a move: Scattering Strike, Strike of Scattering.
+In front: faster to use again; breaks into three copies, and each use within a second of the last makes one more copy, up to five.
+Behind: each use gives you a burst of speed; while it lasts, every hit you land throws off a shard.
+On enemies: moves and attacks faster; splits in two when it dies, and its halves are faster still.
+Rubble
+Splitting and Heavy. It breaks like a boulder breaks. On a move: Rubble Strike, Strike of Rubble.
+In front: slower, hits much harder and stuns; breaks into three heavy copies that fly on and stagger what they hit.
+Behind: where it ends, chunks fly out and crack the ground where each lands, staggering enemies that cross.
+On enemies: its blows knock you back; splits in two when it dies, and each half lands with a knock.
+Splitting II
+Splitting and Splitting. On a move: Splitting II Strike, Strike of Shards II.
+In front: breaks into four copies instead of three, each a little stronger.
+Behind: half as many shards again, flying farther.
+On enemies: splits in three when it dies.
+Hexing
+Doom
+Hexing and Power. A curse that deepens with every blow. On a move: Doom Strike, Strike of Doom.
+In front: more damage and a bigger hit that curses; each hit on a cursed enemy deepens its curse, up to three times.
+Behind: leaves a hex circle where enemies deal less damage; each hit you land on an enemy inside builds Power's damage bonus twice as fast.
+On enemies: hits harder and has more life; its blows curse you, and it hits a cursed you harder still.
+Plague
+Hexing and Poison. The curse and the sickness pass on together. On a move: Plague Strike, Strike of the Plague.
+In front: a weaker hit that poisons and curses; a cursed enemy that dies passes its curse and its poison to the nearest enemy.
+Behind: leaves a hex circle that poisons; enemies inside deal less damage and are poisoned while they stand in it.
+On enemies: poisons you and curses you; while you are cursed its poison hurts you faster.
+Hoarfrost
+Hexing and Frost. A cold that settles into the bones. On a move: Hoarfrost Strike, Strike of Hoarfrost.
+In front: frost damage that chills, then freezes, and curses; a frozen enemy takes twice the curse's extra damage.
+Behind: leaves a hex circle of ice; enemies inside deal less damage and are slowed.
+On enemies: deals frost damage and slows you; its blows curse you, and the curse lasts twice as long while you are chilled.
+Brimstone
+Hexing and Flame. Damning fire. On a move: Brimstone Strike, Strike of Brimstone.
+In front: fire damage that explodes, sets enemies burning and curses them; a cursed enemy burns hotter.
+Behind: leaves a burning hex circle; enemies inside deal less damage and are set burning.
+On enemies: deals fire damage and sets you burning; its blows curse you, and your burning lasts longer while you are cursed.
+Jinx
+Hexing and Lightning. Bad luck that jumps from one to the next. On a move: Jinxed Strike, Strike of the Jinx.
+In front: lightning damage that arcs to nearby enemies; each arc carries the curse to the enemy it strikes.
+Behind: leaves a storm inside a hex circle; enemies inside deal less damage, and its bolts strike cursed enemies first.
+On enemies: deals lightning damage and shocks you; its blows curse you, and its arcs reach you from farther while you are cursed.
+Whisper
+Hexing and Swift. A curse said quickly, again and again. On a move: Whispered Strike, Strike of Whispers.
+In front: faster to use again; curses what it hits, and hitting an enemy already cursed takes a little more off its wait.
+Behind: each use gives you a burst of speed; while it lasts, enemies you pass close by are cursed.
+On enemies: moves and attacks faster; its blows curse you, and it moves faster still while you are cursed.
+Burden
+Hexing and Heavy. A weight laid on the soul. On a move: Burdening Strike, Strike of the Burden.
+In front: slower, hits much harder and stuns, and curses; the curse lasts twice as long on a stunned enemy.
+Behind: leaves cracked ground inside a hex circle; enemies inside deal less damage, and those it staggers are cursed.
+On enemies: its blows knock you back and curse you; you are knocked farther while you are cursed.
+Hexing II
+Hexing and Hexing. On a move: Hexing II Strike, Strike of Hexes II.
+In front: its curse is half as strong again.
+Behind: its hex circle is half as wide and strong again.
+On enemies: its curse on you is half as strong again.
+Stilling
+Stasis
+Stilling and Power. The blow is held, then lands again. On a move: Stasis Strike, Strike of Stasis.
+In front: more damage and a bigger hit that slows what it hits in time; when the slow ends, a quarter of the damage it took lands again.
+Behind: leaves a bubble where enemies and their shots crawl; while you stand in it, Power's damage bonus doesn't fade.
+On enemies: hits harder and has more life; its blows slow your cooldowns, and it hits harder the slower they are.
+Stagnation
+Stilling and Poison. Still water goes bad. On a move: Stagnant Strike, Strike of Stagnation.
+In front: a weaker hit that poisons and slows what it hits in time; the poison on a slowed enemy doesn't wear off until the slow ends.
+Behind: leaves a bubble that fills with poison; enemies crawl in it and are poisoned.
+On enemies: poisons you; its blows slow your cooldowns, and your poison wears off more slowly.
+Frostlock
+Stilling and Frost. Locked in ice and in time. On a move: Frostlocked Strike, Strike of the Frostlock.
+In front: frost damage that chills, then freezes, and slows what it hits in time; a slowed enemy freezes sooner and stays frozen longer (never a boss).
+Behind: leaves a bubble of cold where enemies and their shots crawl; those that stay in it a while freeze (never a boss).
+On enemies: deals frost damage and slows you; its blows slow your cooldowns too.
+Slow Burn
+Stilling and Flame. A fire that takes its time. On a move: Slow-Burning Strike, Strike of the Slow Burn.
+In front: fire damage that explodes, sets enemies burning and slows them in time; a slowed enemy burns twice as long, as hot.
+Behind: leaves a bubble over burning ground; enemies crawl through the fire.
+On enemies: deals fire damage and sets you burning; its blows slow your cooldowns, and your burning lasts longer.
+Stormglass
+Stilling and Lightning. Lightning caught in the air, waiting. On a move: Stormglass Strike, Strike of Stormglass.
+In front: lightning damage that arcs and slows what it hits in time; its arcs hang between slowed enemies and strike again when the slow ends.
+Behind: leaves a bubble with a storm inside; its bolts strike everything the bubble holds.
+On enemies: deals lightning damage and shocks you; its blows slow your cooldowns, and its shock lasts longer on you.
+Timeslip
+Stilling and Swift. Their time slows, yours doesn't. On a move: Timeslip Strike, Strike of the Timeslip.
+In front: faster to use again; slows what it hits in time, and each slowed enemy near you takes a little more off its wait.
+Behind: leaves a bubble where enemies crawl and you move faster.
+On enemies: moves and attacks faster; its blows slow your cooldowns.
+Standstill
+Stilling and Heavy. The stun that time forgot to end. On a move: Standstill Strike, Strike of the Standstill.
+In front: slower, hits much harder and stuns; a stunned enemy is also slowed in time, so its stun lasts half as long again.
+Behind: leaves a bubble over cracked ground; enemies crawl through it and are staggered again and again.
+On enemies: its blows knock you back and slow your cooldowns.
+Stilling II
+Stilling and Stilling. On a move: Stilling II Strike, Strike of Stillness II.
+In front: what it hits is slowed in time half as much again.
+Behind: its bubble is half as wide again and lasts half as long again.
+On enemies: its blows slow your cooldowns half as much again.
+Binding
+Shackle
+Binding and Power. Hold it still, then hit it where it stands. On a move: Shackling Strike, Strike of the Shackle.
+In front: more damage and a bigger hit that holds what it hits in place; your hits on a held enemy hit harder.
+Behind: leaves a snare that bites as it closes, hurting what it catches as well as holding it.
+On enemies: hits harder and has more life; its blows root you, and it hits harder while you are rooted.
+Strangler
+Binding and Poison. Thorned vines that hold and sting. On a move: Strangling Strike, Strike of the Strangler.
+In front: a weaker hit that poisons and holds what it hits; poison bites twice as fast on a held enemy.
+Behind: leaves a snare of poisoned thorns; what it catches is held and poisoned.
+On enemies: poisons you; its blows root you, and you are poisoned faster while rooted.
+Icebound
+Binding and Frost. Held fast by the ice. On a move: Icebound Strike, Strike of the Icebound.
+In front: frost damage that chills, then freezes, and holds what it hits; a held enemy chills twice as fast.
+Behind: leaves a snare of ice; what it catches is held, then frozen (never a boss).
+On enemies: deals frost damage and slows you; its blows root you, longer while you are chilled.
+Firetrap
+Binding and Flame. The snare that catches fire. On a move: Firetrap Strike, Strike of the Firetrap.
+In front: fire damage that explodes, sets enemies burning and holds them; a held enemy burns hotter.
+Behind: leaves a snare that bursts into flame when it catches an enemy, setting everything near it burning.
+On enemies: deals fire damage and sets you burning; its blows root you, and you burn hotter while rooted.
+Tether
+Binding and Lightning. Bound together by the bolt. On a move: Tethered Strike, Strike of the Tether.
+In front: lightning damage that arcs and holds what it hits; while two held enemies are near, arcs leap between them again and again.
+Behind: leaves a snare that, when it catches an enemy, sends a bolt to every enemy near it.
+On enemies: deals lightning damage and shocks you; its blows root you, and it shocks you again while you are rooted.
+Lasso
+Binding and Swift. Thrown fast, pulled tight. On a move: Lassoing Strike, Strike of the Lasso.
+In front: faster to use again; holds what it hits, and each use within a second of the last holds a little longer, up to three times.
+Behind: each use gives you a burst of speed; while it lasts, the first enemy you pass is caught in a snare.
+On enemies: moves and attacks faster; its blows root you.
+Anchor
+Binding and Heavy. What it hits isn't going anywhere. On a move: Anchoring Strike, Strike of the Anchor.
+In front: slower, hits much harder and stuns; holds what it hits, and a held enemy is stunned twice as long.
+Behind: leaves a snare over cracked ground; what it catches is held and staggered.
+On enemies: its blows root you where you stand instead of knocking you back, and hit harder while you can't move.
+Binding II
+Binding and Binding. On a move: Binding II Strike, Strike of the Snare II.
+In front: holds the enemies it hits half as long again.
+Behind: its snare catches the next two enemies to cross it.
+On enemies: its blows root you half as long again.
+The city's runes with each other
+Confluence
+Pulling and Splitting. The pieces fly out and drag it all back to one place. On a move: Confluent Strike, Strike of Confluence.
+In front: breaks into three copies that fly on; each drags what it hits back toward where the first one struck.
+Behind: where it ends, shards fly out, then a vortex draws them back in, hitting again on the way.
+On enemies: its blows drag you toward it; splits in two when it dies, and both halves drag you.
+Beckon
+Pulling and Hexing. The curse calls them closer. On a move: Beckoning Strike, Strike of the Beckoning.
+In front: curses what it hits and drags it toward where it struck; a cursed enemy is dragged twice as far.
+Behind: leaves a vortex inside a hex circle; what it draws in deals less damage.
+On enemies: its blows drag you toward it and curse you.
+Horizon
+Pulling and Stilling. The closer they come, the slower they move. On a move: Horizon Strike, Strike of the Horizon.
+In front: drags what it hits toward where it struck and slows it in time when it gets there.
+Behind: leaves a vortex that slows in time whatever it draws in.
+On enemies: its blows drag you toward it and slow your cooldowns.
+Reel
+Pulling and Binding. Hooked, hauled in, held. On a move: Reeling Strike, Strike of the Reel.
+In front: drags what it hits toward where it struck and holds it there.
+Behind: leaves a snare with a vortex round it that draws enemies onto the snare.
+On enemies: its blows drag you toward it and root you there.
+Coven
+Splitting and Hexing. Many voices saying one curse. On a move: Coven Strike, Strike of the Coven.
+In front: breaks into three copies that fly on and curse what they hit; an enemy cursed by two copies is cursed for twice as long.
+Behind: where it ends, shards fly out and each leaves a small hex circle where it lands.
+On enemies: curses you; splits in two when it dies, both halves cursing.
+Constellation
+Splitting and Stilling. The pieces hang in the air, then fall. On a move: Constellation Strike, Strike of the Constellation.
+In front: breaks into three copies that hang still in the air for a moment, then fly at the nearest enemies and slow in time what they hit.
+Behind: where it ends, shards fly out and stop in the air; whatever touches one is slowed in time.
+On enemies: its blows slow your cooldowns; splits in two when it dies.
+Web
+Splitting and Binding. Strands in every direction. On a move: Webbed Strike, Strike of the Web.
+In front: breaks into three copies that fly on and hold what they hit; an enemy held by two copies is held twice as long.
+Behind: where it ends, shards fly out and each leaves a small snare where it lands.
+On enemies: its blows root you; splits in two when it dies, both halves rooting.
+Torpor
+Hexing and Stilling. A heavy, cursed sleep. On a move: Torpid Strike, Strike of Torpor.
+In front: curses what it hits and slows it in time; a cursed and slowed enemy takes more damage still.
+Behind: leaves a circle that hexes and stills; enemies inside crawl and deal less damage.
+On enemies: its blows curse you and slow your cooldowns.
+Witchknot
+Hexing and Binding. A knot tied with a curse. On a move: Witchknot Strike, Strike of the Witchknot.
+In front: curses and holds what it hits; a held and cursed enemy takes more damage still.
+Behind: leaves a snare inside a hex circle; what it catches is held and cursed.
+On enemies: its blows curse you and root you.
+Amber
+Stilling and Binding. Caught fast, and time stops around it. On a move: Amber Strike, Strike of Amber.
+In front: holds what it hits and slows it in time, and the hold lasts as long as the slow.
+Behind: leaves a snare inside a bubble; what it catches is held and slowed in time.
+On enemies: its blows root you and slow your cooldowns.

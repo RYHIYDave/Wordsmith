@@ -348,7 +348,11 @@ func _snare(z: Dictionary) -> void:
 		var held: float = monsters.hero.city.bind_monster(o, z["dmg"])
 		if held > 0.0:
 			_tell({"t": "snareSprung", "id": o.id, "m": o, "x": at.x, "y": at.y, "secs": held})
-			z["dur"] = z["t"]
+			# (THE CITY'S MELDS: the snare's meld at work on what it caught; Binding II's catches two: meldscity_rules.gd)
+			if monsters.hero.m52.y.snared(z, o):
+				z["dur"] = z["t"]
+			else:
+				z["on_it"].append(o.id)
 		return
 
 

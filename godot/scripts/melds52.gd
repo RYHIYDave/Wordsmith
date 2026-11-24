@@ -21,6 +21,11 @@ const FILE := "res://assets/words/melds52.json"
 const SHEET := "res://assets/words/melds52.png"
 ## (ON at his yes to the films: “Get those melds in”, 23 Nov 2026)
 static var ON := true
+## THE CITY'S MELDS (his doc Floor 11–15 Melds, their runes and their animations: “Good”, “Yep good”, “Good to go”, 24 Nov 2026): the
+## city's five runes (Pulling, Splitting, Hexing, Stilling, Binding) with the floor 1–5 runes and with each other, 45, and their five
+## level 2 runes, in the same table (`city`); their twists meldscity_rules.gd, on monsters foe_meldscity.gd, their looks
+## fx_m52p_city.gd. OFF until his yes to their films: the wordsmith does not make them (`makes`); known, as all words are.
+static var CITY_ON := false
 ## (what each rune is worth inside one on gear: items.ts MELD_GEAR_STRENGTH; a level 2 rune's: RANK2's half again)
 const GEAR := 0.75
 const GEAR_RANK := 1.5
@@ -49,16 +54,21 @@ static func is_new_rank(w) -> bool:
 	return w is String and T()["rankOf"].has(w)
 
 
-## What two words make, or "": one of the 52 made of them, or two of one of the eleven its level 2.
+## What two words make, or "": one of the 52 made of them, or two of one of the eleven its level 2 (the city's, while CITY_ON).
 static func makes(a: String, b: String) -> String:
 	if a == b:
 		var r: String = a + "2"
-		return r if T()["rankOf"].has(r) else ""
+		return r if T()["rankOf"].has(r) and (CITY_ON or not is_city(r)) else ""
 	for m in T()["melds"]:
 		var of: Array = T()["of"][m]
 		if (of[0] == a and of[1] == b) or (of[0] == b and of[1] == a):
-			return m
+			return m if CITY_ON or not is_city(m) else ""
 	return ""
+
+
+## Is it one of the city's melds or level 2 runes?
+static func is_city(w) -> bool:
+	return w is String and T().get("city", []).has(w)
 
 
 ## Into the words' tables (words.json): each one as a melded or ranked word, its parts, its attribute, its Lexicon page; and the

@@ -279,7 +279,7 @@ func arcs(m: Monster, n: int, dmg: float, skill := -1, meld := "") -> int:
 		o.damage(dmg, "lightning", false, false, [], false, false, skill)
 		# (Conduit: each one an arc strikes heals him)
 		if hero != null and is_instance_valid(hero):
-			hero.m52.arc_struck(o, skill)
+			hero.m52.arc_struck(o, skill, from)
 		if meld != "" and hero != null and is_instance_valid(hero):
 			hero.melds.arc(o, m, skill, dmg, near)
 	if near.is_empty():

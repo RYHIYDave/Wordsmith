@@ -54,22 +54,28 @@ func pull_in(i: int, at: Vector2, rad: float, single: bool) -> void:
 		return
 	var P: Dictionary = C()["pull"]
 	var reach: float = maxf(rad, float(P["reach"])) if single else rad
+	# (THE CITY'S MELDS: Gravity drags in all near, Firewhirl its blast's edge; Drift, Beckon, Riptide drag farther: meldscity_rules.gd)
+	var Y = hero.m52.y
+	reach = Y.pull_reach(i, reach, single)
+	var moved: Array = []
 	for o in _list():
 		if not is_instance_valid(o) or o.dead or o.boss or _shut(o):
 			continue
 		var d: float = o.world.distance_to(at)
 		if d > reach + o.r or d <= float(P["stop"]):
 			continue
-		var far := minf(float(r["pull"]) * (0.5 if o.elite else 1.0), d - float(P["stop"]))
+		var far := minf(float(r["pull"]) * (0.5 if o.elite else 1.0) * Y.pull_k(i, o), d - float(P["stop"]))
 		if far < 0.05:
 			continue
 		if o.state == "sleep":
 			hero.monsters.wake(o)
 		hero.melds._slide(o, (at - o.world) / d * far, 6)
+		moved.append(o)
 	# (its look, a ring closing in, at most every quarter second for one move: a whirlwind's turns are many)
 	if _clock - float(_pull_shown[i]) >= 0.25:
 		_pull_shown[i] = _clock
 		hero._tell({"t": "pull", "x": at.x, "y": at.y, "r": reach})
+	Y.pulled(i, at, moved)
 
 
 ## SPLITTING in front: the first hit of a use of move `i`, on `m` at `at`, breaks into copies flying on to the nearest others.
@@ -95,24 +101,29 @@ func split_first(m, i: int, frac: float, at: Vector2) -> void:
 		if is_instance_valid(o) and not o.dead and o != m and not _shut(o) and o.world.distance_to(at) <= float(S["reach"]) + o.r:
 			near.append(o)
 	near.sort_custom(func(a, b): return a.world.distance_to(at) < b.world.distance_to(at))
-	near = near.slice(0, int(S["copies"]))
+	# (THE CITY'S MELDS: Scatter's and Splitting II's more copies, Splinter's stronger, Constellation's hanging first)
+	var Y = hero.m52.y
+	near = near.slice(0, Y.split_n(i, int(S["copies"])))
+	var hang: float = Y.split_delay(i)
 	var to: Array = []
 	for o in near:
-		to.append({"x": o.world.x, "y": o.world.y, "secs": maxf(0.06, o.world.distance_to(at) / float(S["speed"]))})
+		to.append({"x": o.world.x, "y": o.world.y, "secs": hang + maxf(0.06, o.world.distance_to(at) / float(S["speed"]))})
 	hero._tell({"t": "split", "x": at.x, "y": at.y, "dx": at.x - hero.world.x, "dy": at.y - hero.world.y, "to": to, "fly": to.is_empty()})
-	var f := frac * float(r["split"])
+	Y.split_begun(i, at, to)
+	var f: float = frac * float(r["split"]) * float(Y.split_k(i))
 	for k in near.size():
 		var o = near[k]
-		hero._after(float(to[k]["secs"]), func() -> void: _copy_hit(o, i, f))
+		hero._after(float(to[k]["secs"]), func() -> void: _copy_hit(o, i, f, "copy"))
 
 
-## A copy or a shard of move `i` strikes `o` for `f` of a hit (it breaks no further).
-func _copy_hit(o, i: int, f: float) -> void:
+## A copy or a shard of move `i` strikes `o` for `f` of a hit (it breaks no further); `kind` which (the city's melds' twists).
+func _copy_hit(o, i: int, f: float, kind := "copy") -> void:
 	if not is_instance_valid(o) or o.dead:
 		return
 	copying = true
 	hero.hit_monster(o, i, f, true)
 	copying = false
+	hero.m52.y.copy_hit(o, i, kind)
 
 
 ## SPLITTING behind: where move `i` ends, at `at`, shards fly out in every direction, each striking the first enemy on its line.
@@ -125,7 +136,15 @@ func throw_shards(i: int, at: Vector2, frac: float) -> void:
 	var share := frac * float(r["shards"])
 	hero._tell({"t": "shards", "x": at.x, "y": at.y, "r": float(S["shardReach"]) * 0.5})
 	var a0 := fmod(_clock * 2.399, TAU)
-	var n: int = S["shards"]
+	# (THE CITY'S MELDS: Splitting II's more shards, flying farther; where each comes down, the melds' own: meldscity_rules.gd)
+	var Y = hero.m52.y
+	var n: int = Y.shard_n(i, int(S["shards"]))
+	var far: float = float(S["shardReach"]) * Y.shard_reach(i)
+	var lands: Array = []
+	for k in n:
+		var a := a0 + (float(k) / n) * TAU
+		lands.append(at + Vector2(cos(a), sin(a)) * far)
+	Y.shards_begun(i, at, lands)
 	for k in n:
 		var a := a0 + (float(k) / n) * TAU
 		var u := Vector2(cos(a), sin(a))
@@ -137,7 +156,7 @@ func throw_shards(i: int, at: Vector2, frac: float) -> void:
 			var d: Vector2 = o.world - at
 			var t := d.dot(u)
 			# (it flies out from where the move ended: what stands there, the one it struck, it leaves)
-			if t < 0.35 or t > float(S["shardReach"]) + o.r or t >= along:
+			if t < 0.35 or t > far + o.r or t >= along:
 				continue
 			if absf(d.x * u.y - d.y * u.x) > float(S["shardWidth"]) + o.r:
 				continue
@@ -145,7 +164,13 @@ func throw_shards(i: int, at: Vector2, frac: float) -> void:
 			along = t
 		if best != null:
 			var o = best
-			hero._after(maxf(0.05, along / float(S["speed"])), func() -> void: _copy_hit(o, i, share))
+			var land: Vector2 = at + u * along
+			hero._after(maxf(0.05, along / float(S["speed"])), func() -> void:
+				_copy_hit(o, i, share, "shard")
+				Y.shard_land(i, land))
+		else:
+			var land: Vector2 = lands[k]
+			hero._after(maxf(0.05, far / float(S["speed"])), func() -> void: Y.shard_land(i, land))
 
 
 ## BINDING: holds `m` where it stands for `secs` (an elite half as long; a boss never; nor one held not long since); how long (0: not).

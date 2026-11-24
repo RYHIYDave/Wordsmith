@@ -819,7 +819,8 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 			m.bleed_dps = maxf(m.bleed_dps if m.bleed_t > 0.0 else 0.0, dmg * float(WF["bleed"]) / float(WF["secs"]))
 			m.bleed_t = maxf(m.bleed_t, float(WF["secs"]))
 		if float(r["bind"]) > 0.0:
-			var held_for: float = city.bind_monster(m, r["bind"])
+			# (THE CITY'S MELDS: Lasso's quick uses, Amber's slow: meldscity_rules.gd)
+			var held_for: float = city.bind_monster(m, m52.y.bind_secs(i, m, float(r["bind"])))
 			if held_for > 0.0:
 				_tell({"t": "bind", "id": m.id, "m": m, "secs": held_for})
 		# THE LAST WORDS: BLEEDING in front makes what it hits bleed; CULLING in front takes one its hit left nearly dead
@@ -1049,6 +1050,8 @@ func _wake(i: int, at: Vector2, rad: float, frac: float, ground := true) -> void
 		city.throw_shards(i, at, frac)
 	if float(r["snare"]) > 0.0:
 		city.lay_snare(i, at, r["snare"])
+	# (THE CITY'S MELDS: what each one behind makes of what was left: meldscity_rules.gd)
+	m52.y.wake_city(i, from52)
 	# (THE LAST WORDS behind: Piercing's lance down the line; Bleeding's thorns; Culling's reaper's mark)
 	last.leaves(i, at, rad, frac)
 

@@ -71,11 +71,14 @@ var _him_poison := 0.0
 
 ## (THE LAST FLOOR 1–10 MELDS, the 46 after these: their twists, handed on to from each moment here: melds46_rules.gd)
 var x
+## (THE CITY'S MELDS, the 45 after those, and their five level 2 runes: meldscity_rules.gd; the city's words call it too)
+var y
 
 
 func _init(hero) -> void:
 	h = hero
 	x = preload("res://scripts/melds46_rules.gd").new(hero, self)
+	y = preload("res://scripts/meldscity_rules.gd").new(hero, self)
 
 
 static func on() -> bool:
@@ -220,6 +223,7 @@ func used(i: int, echo: bool, at := Vector2.INF) -> void:
 			h.haste_t = maxf(h.haste_t, float(F["hasteSecs"]))
 			_tell({"id": "flurry", "what": "gust", "x": h.world.x, "y": h.world.y})
 	x.used(i, echo, at)
+	y.used(i, echo, at)
 
 
 # --- a hit ---
@@ -298,7 +302,7 @@ func more(m, i: int, quiet: bool) -> float:
 	# DUELIST behind: the one it marked takes more from everything until the mark is spent
 	if m.mark_t > 0.0 and str(m.m52.get("mark", "")) == "duelist":
 		k *= 1.0 + float(_tune("duelist")["more"])
-	return k * x.more(m, i, quiet)
+	return k * x.more(m, i, quiet) * y.more(m, i, quiet)
 
 
 func heal_k(m, i: int) -> float:
@@ -327,6 +331,7 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 	var f := fid(i)
 	var r: Dictionary = h.loadout.r(i)
 	x.struck(m, i, dmg, c, at, quiet, was_frozen)
+	y.struck(m, i, dmg, c, at, quiet, was_frozen)
 	if f == "":
 		return
 	if f == "haymaker" and not quiet and time - float(_throttle.get("haymaker", -9.0)) > 0.2:
@@ -515,6 +520,7 @@ func killed(m, i: int) -> void:
 	if i < 0 or i > 2:
 		return
 	x.killed(m, i)
+	y.killed(m, i)
 	var f := fid(i)
 	var b := bid(i)
 	var r: Dictionary = h.loadout.r(i)
@@ -630,8 +636,9 @@ func arc_pick(near: Array, i: int) -> Array:
 	return seek_first(near)
 
 
-func arc_struck(o, i: int) -> void:
+func arc_struck(o, i: int, from := Vector2.INF) -> void:
 	x.arc_struck(o, i)
+	y.arc_struck(o, i, from)
 	if fid(i) == "seeker":
 		_tell({"id": "seeker", "what": "seek", "x": o.world.x, "y": o.world.y, "m": o})
 	if fid(i) == "conduit":
@@ -753,6 +760,7 @@ func wake(i: int, at: Vector2, rad: float, from: int) -> void:
 		if str(z["kind"]) in ["ward", "cracks", "burn", "ice", "storm", "venom", "rune"]:
 			_wards.append(z)
 	x.wake(i, laid, b)
+	y.wake(i, laid, b)
 
 
 # --- what goes on ---
@@ -834,6 +842,7 @@ func step(dt: float) -> void:
 	_grounds(dt)
 	_on_him()
 	x.step(dt)
+	y.step(dt)
 
 
 ## (ON HIM, a monster's melds: Rekindle's burn lights again once as it goes out; Flashfire's flares round him; Bloat's poison
@@ -959,6 +968,7 @@ func _grounds(dt: float) -> void:
 						z["y"] = to.y
 			_:
 				x.ground(z, id, at, rad, tick, dt)
+				y.ground(z, id, at, rad, tick, dt)
 	for z in gone:
 		_wards.erase(z)
 
@@ -1064,7 +1074,7 @@ func pace() -> float:
 		k *= 1.0 + tail_k / 100.0
 	if blink_t > 0.0:
 		k *= 1.0 + blink_k / 100.0
-	return k * x.pace()
+	return k * x.pace() * y.pace()
 
 
 func dodge() -> float:
@@ -1164,6 +1174,7 @@ func parried(at: Vector2) -> bool:
 
 func forget() -> void:
 	x.forget()
+	y.forget()
 	_later.clear()
 	webs.clear()
 	links.clear()

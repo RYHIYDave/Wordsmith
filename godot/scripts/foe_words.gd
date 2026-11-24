@@ -460,6 +460,14 @@ func zone(z: Dictionary, dt: float) -> void:
 			_tick(z, dt, inside, 0.5)
 		"contagion":
 			_tick(z, dt, inside, float(U["contagion"]["tick"]))
+		"constellation":
+			# (THE CITY'S MELDS: Constellation's still points where its halves came from: touching one slows his cooldowns)
+			if inside and h.still_t < 0.5:
+				var SL: Dictionary = Words.data()["city"]["still"]
+				h.still_k = maxf(h.still_k if h.still_t > 0.0 else 0.0, float(SL["cooldowns"]))
+				h.still_t = float(SL["monsterSecs"])
+				_tell({"t": "heroStilled", "x": h.world.x, "y": h.world.y, "secs": SL["monsterSecs"]})
+				h.m52._tell({"id": "constellation", "what": "foe", "x": h.world.x, "y": h.world.y, "x1": at.x, "y1": at.y, "foe": true})
 		_:
 			_tick(z, dt, inside, 0.5)
 

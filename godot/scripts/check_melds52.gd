@@ -63,6 +63,51 @@ const KILL_BEHIND := ["bloodlust", "coldblood", "secondwind", "berserk", "fever"
 const LONGER := {"rekindle:front": 2.6, "rekindle:behind": 2.0, "bloat:front": 1.6, "jolt:behind": 1.2, "smoulder:front": 1.0,
 	"timebomb:front": 1.2, "timebomb:behind": 2.0, "detonator:front": 1.0, "cluster:front": 0.6, "fury:front": 1.5, "redoubt:front": 1.0, "transfusion:front": 1.0}
 const STUNNED := ["pressurepoint", "daze", "charge", "mire", "anvil"]
+## THE CITY'S MELDS (meldscity_rules.gd): what one Strike shows of each, in front (behind: its shards flying, or what it left), and
+## what its twist waits on made so on the pack before the Strike: cursed, slowed in time, held, chilled, frozen. "" in front: seen
+## only over quick uses (the films strike twice) or nothing told (Amber's longer hold).
+const CITY_FRONT := {"maw": "maw:crash", "sump": "sump:drain", "drift": "drift:slide", "firewhirl": "firewhirl:whirl", "lodestone": "lodestone:tug",
+	"riptide": "", "gravity": "gravity:crater", "pulling2": "", "splinter": "splinter:jolt", "spore": "spore:puff", "sleet": "sleet:sliver",
+	"embers": "embers:burst", "fractal": "fractal:fork", "scatter": "", "rubble": "rubble:thud", "splitting2": "", "doom": "doom:thorn",
+	"plague": "plague:pass", "hoarfrost": "hoarfrost:frozen", "brimstone": "brimstone:flare", "jinx": "jinx:mark", "whisper": "whisper:wisp",
+	"burden": "burden:weight", "hexing2": "", "stasis": "stasis:hold", "stagnation": "", "frostlock": "frostlock:lock", "slowburn": "slowburn:slow",
+	"stormglass": "stormglass:hang", "timeslip": "timeslip:hand", "standstill": "standstill:stun", "stilling2": "", "shackle": "shackle:clank",
+	"strangler": "strangler:vines", "icebound": "icebound:climb", "firetrap": "firetrap:tongues", "tether": "tether:chain", "lasso": "",
+	"anchor": "anchor:stun", "binding2": "", "confluence": "confluence:drag", "beckon": "beckon:wisp", "horizon": "horizon:rim", "reel": "reel:hook",
+	"coven": "coven:mark", "constellation": "constellation:star", "web": "web:thread", "torpor": "torpor:drowse", "witchknot": "witchknot:knot", "amber": ""}
+const CITY_PRE := {"tether": ["bind"], "doom": ["hex"], "plague": ["hex"], "hoarfrost": ["hex", "frozen"], "brimstone": ["hex"], "whisper": ["hex"], "beckon": ["hex"],
+	"stasis": ["still"], "frostlock": ["still", "chill"], "slowburn": ["still"], "stormglass": ["still"], "timeslip": ["still"],
+	"shackle": ["bind"], "icebound": ["bind", "chill"], "firetrap": ["bind"], "drift": ["chill"], "torpor": ["hex", "still"], "witchknot": ["hex", "bind"]}
+## (whose moment in front is a kill's)
+const CITY_KILL := ["plague"]
+
+
+## What a city meld's twist waits on, made so on `m`.
+func _pre(id: String, m) -> void:
+	for w in CITY_PRE.get(id, []):
+		match w:
+			"hex":
+				m.hex_t = 4.0
+				m.hex_more = 0.2
+			"still":
+				m.still_t = 3.0
+				m.still_k = 0.3
+			"bind":
+				m.bind_t = 3.0
+				m.bind_again = 0.0
+			"chill":
+				m.chill_t = 2.5
+				m.chill = 0.3
+			"frozen":
+				m.frozen_t = 2.0
+
+
+## What one Strike behind shows of a city meld: its shards flying, or the city's ground it left.
+func _city_behind(id: String) -> String:
+	if not M52.is_city(id) or M52.is_new_rank(id):
+		return ""
+	var of: Array = M52.T()["of"][id]
+	return id + (":shards" if of.has("splitting") else ":leave")
 
 
 func _init(main, hero) -> void:
@@ -79,7 +124,13 @@ func _line(ok: bool, s: String) -> void:
 
 func run(only := "") -> void:
 	var was: bool = M52.ON
+	var was_city: bool = M52.CITY_ON
 	var T: Dictionary = M52.T()
+	# (THE CITY'S MELDS: off, the bench makes none of them; on for the rest of the check)
+	M52.ON = true
+	M52.CITY_ON = false
+	_line(Words.meld_of("pulling", "power") == "" and Words.meld_of("binding", "binding") == "" and Words.meld_of("twin", "power") == "onslaught", "the city's melds switched off, the bench makes none of them (Pulling + Power: '%s'), the 98 as before" % Words.meld_of("pulling", "power"))
+	M52.CITY_ON = true
 	# --- THE BENCH
 	M52.ON = false
 	_line(Words.meld_of("twin", "power") == "" and Words.meld_of("swift", "swift") == "" and Words.meld_problem("twin", "power") != "", "switched off, the bench makes none of them (Twin + Power: '%s')" % Words.meld_of("twin", "power"))
@@ -93,7 +144,7 @@ func run(only := "") -> void:
 		var w: String = T["rankOf"][id]["word"]
 		if Words.meld_of(w, w) != id or Words.meld_problem(w, w) != "":
 			wrong.append(id)
-	_line(wrong.is_empty(), "switched on, the bench makes all 52 from their two runes and the 11 level 2 runes from two of one%s" % ("" if wrong.is_empty() else " (not: %s)" % ", ".join(PackedStringArray(wrong))))
+	_line(wrong.is_empty(), "switched on, the bench makes all %d from their two runes and the %d level 2 runes from two of one%s" % [T["melds"].size(), T["ranks"].size(), "" if wrong.is_empty() else " (not: %s)" % ", ".join(PackedStringArray(wrong))])
 	var kept: bool = Words.meld_of("power", "fire") == "eruption" and Words.meld_of("leech", "poison") == "siphon" and Words.meld_of("power", "power") == "power2" and Words.meld_of("twin", "lightning") == "forking"
 	_line(kept, "the 23 melds and the damage runes' Rank II as they were (Power + Flame: %s, Twin + Lightning: %s)" % [Words.meld_of("power", "fire"), Words.meld_of("twin", "lightning")])
 	# --- STONES AND GEAR
@@ -137,6 +188,10 @@ func run(only := "") -> void:
 				m.burn_t = 0.0
 				m.poison_t = 0.0
 				m.mark_t = 0.0
+				m.hex_t = 0.0
+				m.still_t = 0.0
+				m.bind_t = 0.0
+				m.bind_again = 0.0
 			var r: Dictionary = M._w_set(h, 0, side, [id])
 			# (what its twist waits on, made so for the one Strike: a kill, a stunned one)
 			h.haste_t = 0.0
@@ -145,6 +200,10 @@ func run(only := "") -> void:
 					m.life = 1.0
 				if STUNNED.has(id):
 					m.stun_t = 3.0
+				if side == "front":
+					_pre(id, m)
+					if CITY_KILL.has(id):
+						m.life = 1.0
 			if HASTE.has(id):
 				h.haste = 30.0
 				h.haste_t = 6.0
@@ -160,6 +219,8 @@ func run(only := "") -> void:
 				lost += maxi(0, int(roundf(M._w_was[k] - M._w_pack[k].life)))
 			h.stats["crit_chance"] = 0.0
 			var want: String = (FRONT if side == "front" else BEHIND).get(id, "")
+			if M52.is_city(id):
+				want = CITY_FRONT.get(id, "") if side == "front" else _city_behind(id)
 			var seen: bool = want == "" or int(h.m52.told.get(want, 0)) > 0
 			if not seen:
 				not_seen.append("%s %s" % [id, side])
@@ -171,6 +232,7 @@ func run(only := "") -> void:
 	h.stats["life_regen"] = regen
 	_line(fine == cases, "each one in front of the Strike and behind it, %d cases: its name, its line, the blow landing, its twist seen: %d%s" % [cases, fine, "" if not_seen.is_empty() else " (twist not seen: %s)" % ", ".join(PackedStringArray(not_seen))])
 	M52.ON = was
+	M52.CITY_ON = was_city
 	print("MELDS52: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
 
@@ -222,6 +284,10 @@ func _fresh() -> void:
 		m.burn_t = 0.0
 		m.poison_t = 0.0
 		m.mark_t = 0.0
+		m.hex_t = 0.0
+		m.still_t = 0.0
+		m.bind_t = 0.0
+		m.bind_again = 0.0
 		m.words = []
 		m.shield = 0.0
 	# (the loot its kills dropped, cleared: a film shows the melds, not a helmet's label)
@@ -234,6 +300,10 @@ func _fresh() -> void:
 	h.burn_t = 0.0
 	h.chill_t = 0.0
 	h.held = 0.0
+	h.hex_t = 0.0
+	h.still_t = 0.0
+	h.root_t = 0.0
+	h.root_again = 0.0
 	h.life = h.max_life
 
 
@@ -250,6 +320,10 @@ func film(only := "") -> void:
 	for f in ["met", "quick", "slow", "evade", "flask"]:
 		M.guide.set(f, true)
 	var ids: Array = T["melds"]
+	# (`city`: the city's 45)
+	if only == "city":
+		ids = T["city"].filter(func(w): return not M52.is_new_rank(w))
+		only = ""
 	# (any words named: the game's own melds too, filmed the same way to set beside these)
 	if only != "":
 		ids = Array(only.split(","))
@@ -272,6 +346,11 @@ func film(only := "") -> void:
 					m.life = 1.0
 				if STUNNED.has(id) and side == "front":
 					m.stun_t = 3.0
+				if side == "front":
+					_pre(id, m)
+					if CITY_KILL.has(id):
+						m.max_life = FOE_LIFE
+						m.life = 1.0
 			# (what a twist waits on, made so for the film: one alone, certain criticals, a frenzy built up)
 			if SOLO.has(id) and side == "front":
 				for j in range(1, M._w_pack.size()):

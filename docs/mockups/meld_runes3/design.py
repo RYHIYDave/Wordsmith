@@ -1,7 +1,7 @@
 # The 45 meld runes of Floor 11-15 Melds (his doc, https://claude.ai/artifact/CMMUpdDX2f9DwDPe8avGqQ; his word, 24 Nov 2026:
 # "Good"): each its own glyph ('X' its colour, 'o' its glow), its colour, its two runes (for the foot), and what the symbol shows.
 # Drawn by ../meld_runes/render.py's stone(). By his Art Rulebook (his reminder, 24 Nov 2026: “Remember to follow the rules
-# for art and animations”): nothing on his side in the enemy's pink (Implosion blood red, Splinter salmon red, as Bloodbloom and
+# for art and animations”): nothing on his side in the enemy's pink (Maw blood red, Splinter salmon red, as Bloodbloom and
 # Lamprey were made), and no plain box (Icebound two chain links, not nested squares).
 R3 = {}
 SHOWS3 = {}
@@ -13,7 +13,7 @@ def rune(id, name, a, b, color, shows, glyph):
     SHOWS3[id] = shows
 
 # --- PULLING ---
-rune("implosion", "Implosion", "pulling", "power", "#c42c3c", "Four points driven into one",
+rune("maw", "Maw", "pulling", "power", "#c42c3c", "Four points driven into one",
      ["X.....X", ".X...X.", "..XoX..", "...o...", "..XoX..", ".X...X.", "X.....X"])
 rune("sump", "Sump", "pulling", "poison", "#6e8c4a", "Venom draining down a funnel",
      [".XXXXX.", "X.ooo.X", ".X.o.X.", "..XoX..", "...X...", "..o.o..", "...o..."])

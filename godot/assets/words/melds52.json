@@ -98,6 +98,51 @@
   "hourglass",
   "aftermath",
   "whipcrack",
+  "maw",
+  "sump",
+  "drift",
+  "firewhirl",
+  "lodestone",
+  "riptide",
+  "gravity",
+  "splinter",
+  "spore",
+  "sleet",
+  "embers",
+  "fractal",
+  "scatter",
+  "rubble",
+  "doom",
+  "plague",
+  "hoarfrost",
+  "brimstone",
+  "jinx",
+  "whisper",
+  "burden",
+  "stasis",
+  "stagnation",
+  "frostlock",
+  "slowburn",
+  "stormglass",
+  "timeslip",
+  "standstill",
+  "shackle",
+  "strangler",
+  "icebound",
+  "firetrap",
+  "tether",
+  "lasso",
+  "anchor",
+  "confluence",
+  "beckon",
+  "horizon",
+  "reel",
+  "coven",
+  "constellation",
+  "web",
+  "torpor",
+  "witchknot",
+  "amber",
   "twin2",
   "leech2",
   "volatile2",
@@ -108,7 +153,12 @@
   "fleeting2",
   "vast2",
   "swift2",
-  "heavy2"
+  "heavy2",
+  "pulling2",
+  "splitting2",
+  "hexing2",
+  "stilling2",
+  "binding2"
  ],
  "melds": [
   "onslaught",
@@ -208,7 +258,52 @@
   "aegis",
   "hourglass",
   "aftermath",
-  "whipcrack"
+  "whipcrack",
+  "maw",
+  "sump",
+  "drift",
+  "firewhirl",
+  "lodestone",
+  "riptide",
+  "gravity",
+  "splinter",
+  "spore",
+  "sleet",
+  "embers",
+  "fractal",
+  "scatter",
+  "rubble",
+  "doom",
+  "plague",
+  "hoarfrost",
+  "brimstone",
+  "jinx",
+  "whisper",
+  "burden",
+  "stasis",
+  "stagnation",
+  "frostlock",
+  "slowburn",
+  "stormglass",
+  "timeslip",
+  "standstill",
+  "shackle",
+  "strangler",
+  "icebound",
+  "firetrap",
+  "tether",
+  "lasso",
+  "anchor",
+  "confluence",
+  "beckon",
+  "horizon",
+  "reel",
+  "coven",
+  "constellation",
+  "web",
+  "torpor",
+  "witchknot",
+  "amber"
  ],
  "ranks": [
   "twin2",
@@ -221,7 +316,12 @@
   "fleeting2",
   "vast2",
   "swift2",
-  "heavy2"
+  "heavy2",
+  "pulling2",
+  "splitting2",
+  "hexing2",
+  "stilling2",
+  "binding2"
  ],
  "words": {
   "onslaught": {
@@ -1988,6 +2088,816 @@
     "vast"
    ]
   },
+  "maw": {
+   "id": "maw",
+   "kind": "meld",
+   "name": "Maw",
+   "front": "Maw",
+   "behind": "of the Maw",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Power, melded. Drag them in, then crush them together.",
+   "frontText": "More damage and a bigger hit that drags the enemies it hits toward where it struck; those that meet there crash together and hurt each other.",
+   "behindText": "Leaves a vortex that keeps drawing enemies in; when it ends it collapses in a blast, harder for each enemy inside.",
+   "monsterText": "Hits harder and has more life; its blows drag you toward it, and its next blow after a drag hits harder.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "power"
+   ]
+  },
+  "sump": {
+   "id": "sump",
+   "kind": "meld",
+   "name": "Sump",
+   "front": "Sump",
+   "behind": "of the Sump",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Poison, melded. Everything drains to one place.",
+   "frontText": "A weaker hit that poisons and drags what it hits toward where it struck; each enemy pulled in takes one more dose for each poisoned enemy beside it, up to three.",
+   "behindText": "Leaves a vortex of poison that draws enemies in and poisons them while it holds them.",
+   "monsterText": "Poisons you; its blows drag you toward it, and each drag leaves one more dose on you.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "poison"
+   ]
+  },
+  "drift": {
+   "id": "drift",
+   "kind": "meld",
+   "name": "Drift",
+   "front": "Drifting",
+   "behind": "of the Drift",
+   "attr": "int",
+   "element": "frost",
+   "about": "Pulling and Frost, melded. They slide in on the ice.",
+   "frontText": "Frost damage that chills, then freezes; drags what it hits toward where it struck, chilled enemies twice as far, and those that slide into each other freeze (never a boss).",
+   "behindText": "Leaves an icy vortex; enemies drawn across it are slowed, and those that reach its middle freeze for a moment (never a boss).",
+   "monsterText": "Deals frost damage and slows you; its blows drag you toward it, twice as far while you are chilled.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "frost"
+   ]
+  },
+  "firewhirl": {
+   "id": "firewhirl",
+   "kind": "meld",
+   "name": "Firewhirl",
+   "front": "Firewhirl",
+   "behind": "of the Firewhirl",
+   "attr": "int",
+   "element": "fire",
+   "about": "Pulling and Flame, melded. A whirl of fire that feeds on what it gathers.",
+   "frontText": "Fire damage that explodes and sets enemies burning; the blast drags enemies at its edge into its middle, and those it pulls in burn hotter.",
+   "behindText": "Leaves a vortex of fire that draws enemies in and sets burning whatever it holds.",
+   "monsterText": "Deals fire damage and sets you burning; its blows drag you toward it, and each drag sets you burning again.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "fire"
+   ]
+  },
+  "lodestone": {
+   "id": "lodestone",
+   "kind": "meld",
+   "name": "Lodestone",
+   "front": "Lodestone",
+   "behind": "of the Lodestone",
+   "attr": "int",
+   "element": "lightning",
+   "about": "Pulling and Lightning, melded. The bolt drags what it touches along.",
+   "frontText": "Lightning damage that arcs to nearby enemies; every enemy an arc strikes is dragged toward the one it leapt from.",
+   "behindText": "Leaves a storm that draws enemies in; its bolts strike first the ones it has pulled closest.",
+   "monsterText": "Deals lightning damage and shocks you; its blows drag you toward it, farther while you are shocked.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "lightning"
+   ]
+  },
+  "riptide": {
+   "id": "riptide",
+   "kind": "meld",
+   "name": "Riptide",
+   "front": "Riptide",
+   "behind": "of the Riptide",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Swift, melded. A current too quick to stand against.",
+   "frontText": "Faster to use again; drags what it hits toward where it struck, and each use within a second of the last pulls from farther, up to three times.",
+   "behindText": "Each use gives you a burst of speed; while it lasts, enemies near you are drawn along in your wake.",
+   "monsterText": "Moves and attacks faster; its blows drag you toward it, and it rushes in after each drag.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "swift"
+   ]
+  },
+  "gravity": {
+   "id": "gravity",
+   "kind": "meld",
+   "name": "Gravity",
+   "front": "Gravity",
+   "behind": "of Gravity",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Heavy, melded. The ground itself pulls everything in.",
+   "frontText": "Slower, hits much harder and stuns; drags in everything near where it struck, not only what it hits, and stuns those it pulls in for longer.",
+   "behindText": "Leaves a vortex over cracked ground; what it draws in is staggered again and again.",
+   "monsterText": "Its blows pull you in instead of knocking you back, and its next blow lands harder.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "heavy"
+   ]
+  },
+  "splinter": {
+   "id": "splinter",
+   "kind": "meld",
+   "name": "Splinter",
+   "front": "Splintering",
+   "behind": "of Splinters",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Power, melded. It breaks, and every piece still hits like the whole.",
+   "frontText": "More damage and a bigger hit; breaks into three copies that fly on, each half as strong again as Splitting's, and each knocks back what it hits.",
+   "behindText": "Where it ends, shards fly out in every direction; each shard that lands builds Power's damage bonus.",
+   "monsterText": "Hits harder and has more life; splits in two when it dies, and its halves keep its strength.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "power"
+   ]
+  },
+  "spore": {
+   "id": "spore",
+   "kind": "meld",
+   "name": "Spore",
+   "front": "Spore",
+   "behind": "of Spores",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Poison, melded. A sickness that scatters.",
+   "frontText": "A weaker hit that poisons; breaks into three copies that fly on and poison what they hit.",
+   "behindText": "Where it ends, shards fly out and each leaves a small cloud of poison where it lands.",
+   "monsterText": "Poisons you; splits in two when it dies, and each half leaves a puff of poison.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "poison"
+   ]
+  },
+  "sleet": {
+   "id": "sleet",
+   "kind": "meld",
+   "name": "Sleet",
+   "front": "Sleeting",
+   "behind": "of Sleet",
+   "attr": "dex",
+   "element": "frost",
+   "about": "Splitting and Frost, melded. Cold that comes down in pieces.",
+   "frontText": "Frost damage that chills, then freezes; breaks into three icy copies that fly on, and a copy that hits a frozen enemy splits again, once.",
+   "behindText": "Where it ends, shards of ice fly out and each leaves a patch of ice that slows.",
+   "monsterText": "Deals frost damage and slows you; splits in two when it dies, and its halves leave ice where they walk.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "frost"
+   ]
+  },
+  "embers": {
+   "id": "embers",
+   "kind": "meld",
+   "name": "Embers",
+   "front": "Ember",
+   "behind": "of Embers",
+   "attr": "dex",
+   "element": "fire",
+   "about": "Splitting and Flame, melded. The fire breaks into sparks that start fires of their own.",
+   "frontText": "Fire damage that explodes and sets enemies burning; breaks into three copies that fly on, each exploding where it lands.",
+   "behindText": "Where it ends, burning shards fly out and each leaves a small patch of burning ground.",
+   "monsterText": "Deals fire damage and sets you burning; splits in two when it dies, both halves burning.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "fire"
+   ]
+  },
+  "fractal": {
+   "id": "fractal",
+   "kind": "meld",
+   "name": "Fractal",
+   "front": "Fractal",
+   "behind": "of the Fractal",
+   "attr": "dex",
+   "element": "lightning",
+   "about": "Splitting and Lightning, melded. Every branch grows branches.",
+   "frontText": "Lightning damage that arcs to nearby enemies; breaks into three copies that fly on, and each copy arcs on its own.",
+   "behindText": "Where it ends, shards fly out, and each one that strikes calls a small bolt down where it lands.",
+   "monsterText": "Deals lightning damage and shocks you; splits in two when it dies, and a crackling arc joins its halves that hurts you to cross.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "lightning"
+   ]
+  },
+  "scatter": {
+   "id": "scatter",
+   "kind": "meld",
+   "name": "Scatter",
+   "front": "Scattering",
+   "behind": "of Scattering",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Swift, melded. The faster you go, the more pieces.",
+   "frontText": "Faster to use again; breaks into three copies, and each use within a second of the last makes one more copy, up to five.",
+   "behindText": "Each use gives you a burst of speed; while it lasts, every hit you land throws off a shard.",
+   "monsterText": "Moves and attacks faster; splits in two when it dies, and its halves are faster still.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "swift"
+   ]
+  },
+  "rubble": {
+   "id": "rubble",
+   "kind": "meld",
+   "name": "Rubble",
+   "front": "Rubble",
+   "behind": "of Rubble",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Heavy, melded. It breaks like a boulder breaks.",
+   "frontText": "Slower, hits much harder and stuns; breaks into three heavy copies that fly on and stagger what they hit.",
+   "behindText": "Where it ends, chunks fly out and crack the ground where each lands, staggering enemies that cross.",
+   "monsterText": "Its blows knock you back; splits in two when it dies, and each half lands with a knock.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "heavy"
+   ]
+  },
+  "doom": {
+   "id": "doom",
+   "kind": "meld",
+   "name": "Doom",
+   "front": "Doom",
+   "behind": "of Doom",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Power, melded. A curse that deepens with every blow.",
+   "frontText": "More damage and a bigger hit that curses; each hit on a cursed enemy deepens its curse, up to three times.",
+   "behindText": "Leaves a hex circle where enemies deal less damage; each hit you land on an enemy inside builds Power's damage bonus twice as fast.",
+   "monsterText": "Hits harder and has more life; its blows curse you, and it hits a cursed you harder still.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "power"
+   ]
+  },
+  "plague": {
+   "id": "plague",
+   "kind": "meld",
+   "name": "Plague",
+   "front": "Plague",
+   "behind": "of the Plague",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Poison, melded. The curse and the sickness pass on together.",
+   "frontText": "A weaker hit that poisons and curses; a cursed enemy that dies passes its curse and its poison to the nearest enemy.",
+   "behindText": "Leaves a hex circle that poisons; enemies inside deal less damage and are poisoned while they stand in it.",
+   "monsterText": "Poisons you and curses you; while you are cursed its poison hurts you faster.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "poison"
+   ]
+  },
+  "hoarfrost": {
+   "id": "hoarfrost",
+   "kind": "meld",
+   "name": "Hoarfrost",
+   "front": "Hoarfrost",
+   "behind": "of Hoarfrost",
+   "attr": "int",
+   "element": "frost",
+   "about": "Hexing and Frost, melded. A cold that settles into the bones.",
+   "frontText": "Frost damage that chills, then freezes, and curses; a frozen enemy takes twice the curse's extra damage.",
+   "behindText": "Leaves a hex circle of ice; enemies inside deal less damage and are slowed.",
+   "monsterText": "Deals frost damage and slows you; its blows curse you, and the curse lasts twice as long while you are chilled.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "frost"
+   ]
+  },
+  "brimstone": {
+   "id": "brimstone",
+   "kind": "meld",
+   "name": "Brimstone",
+   "front": "Brimstone",
+   "behind": "of Brimstone",
+   "attr": "int",
+   "element": "fire",
+   "about": "Hexing and Flame, melded. Damning fire.",
+   "frontText": "Fire damage that explodes, sets enemies burning and curses them; a cursed enemy burns hotter.",
+   "behindText": "Leaves a burning hex circle; enemies inside deal less damage and are set burning.",
+   "monsterText": "Deals fire damage and sets you burning; its blows curse you, and your burning lasts longer while you are cursed.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "fire"
+   ]
+  },
+  "jinx": {
+   "id": "jinx",
+   "kind": "meld",
+   "name": "Jinx",
+   "front": "Jinxed",
+   "behind": "of the Jinx",
+   "attr": "int",
+   "element": "lightning",
+   "about": "Hexing and Lightning, melded. Bad luck that jumps from one to the next.",
+   "frontText": "Lightning damage that arcs to nearby enemies; each arc carries the curse to the enemy it strikes.",
+   "behindText": "Leaves a storm inside a hex circle; enemies inside deal less damage, and its bolts strike cursed enemies first.",
+   "monsterText": "Deals lightning damage and shocks you; its blows curse you, and its arcs reach you from farther while you are cursed.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "lightning"
+   ]
+  },
+  "whisper": {
+   "id": "whisper",
+   "kind": "meld",
+   "name": "Whisper",
+   "front": "Whispered",
+   "behind": "of Whispers",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Swift, melded. A curse said quickly, again and again.",
+   "frontText": "Faster to use again; curses what it hits, and hitting an enemy already cursed takes a little more off its wait.",
+   "behindText": "Each use gives you a burst of speed; while it lasts, enemies you pass close by are cursed.",
+   "monsterText": "Moves and attacks faster; its blows curse you, and it moves faster still while you are cursed.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "swift"
+   ]
+  },
+  "burden": {
+   "id": "burden",
+   "kind": "meld",
+   "name": "Burden",
+   "front": "Burdening",
+   "behind": "of the Burden",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Heavy, melded. A weight laid on the soul.",
+   "frontText": "Slower, hits much harder and stuns, and curses; the curse lasts twice as long on a stunned enemy.",
+   "behindText": "Leaves cracked ground inside a hex circle; enemies inside deal less damage, and those it staggers are cursed.",
+   "monsterText": "Its blows knock you back and curse you; you are knocked farther while you are cursed.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "heavy"
+   ]
+  },
+  "stasis": {
+   "id": "stasis",
+   "kind": "meld",
+   "name": "Stasis",
+   "front": "Stasis",
+   "behind": "of Stasis",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Power, melded. The blow is held, then lands again.",
+   "frontText": "More damage and a bigger hit that slows what it hits in time; when the slow ends, a quarter of the damage it took lands again.",
+   "behindText": "Leaves a bubble where enemies and their shots crawl; while you stand in it, Power's damage bonus doesn't fade.",
+   "monsterText": "Hits harder and has more life; its blows slow your cooldowns, and it hits harder the slower they are.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "power"
+   ]
+  },
+  "stagnation": {
+   "id": "stagnation",
+   "kind": "meld",
+   "name": "Stagnation",
+   "front": "Stagnant",
+   "behind": "of Stagnation",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Poison, melded. Still water goes bad.",
+   "frontText": "A weaker hit that poisons and slows what it hits in time; the poison on a slowed enemy doesn't wear off until the slow ends.",
+   "behindText": "Leaves a bubble that fills with poison; enemies crawl in it and are poisoned.",
+   "monsterText": "Poisons you; its blows slow your cooldowns, and your poison wears off more slowly.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "poison"
+   ]
+  },
+  "frostlock": {
+   "id": "frostlock",
+   "kind": "meld",
+   "name": "Frostlock",
+   "front": "Frostlocked",
+   "behind": "of the Frostlock",
+   "attr": "int",
+   "element": "frost",
+   "about": "Stilling and Frost, melded. Locked in ice and in time.",
+   "frontText": "Frost damage that chills, then freezes, and slows what it hits in time; a slowed enemy freezes sooner and stays frozen longer (never a boss).",
+   "behindText": "Leaves a bubble of cold where enemies and their shots crawl; those that stay in it a while freeze (never a boss).",
+   "monsterText": "Deals frost damage and slows you; its blows slow your cooldowns too.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "frost"
+   ]
+  },
+  "slowburn": {
+   "id": "slowburn",
+   "kind": "meld",
+   "name": "Slow Burn",
+   "front": "Slow-Burning",
+   "behind": "of the Slow Burn",
+   "attr": "int",
+   "element": "fire",
+   "about": "Stilling and Flame, melded. A fire that takes its time.",
+   "frontText": "Fire damage that explodes, sets enemies burning and slows them in time; a slowed enemy burns twice as long, as hot.",
+   "behindText": "Leaves a bubble over burning ground; enemies crawl through the fire.",
+   "monsterText": "Deals fire damage and sets you burning; its blows slow your cooldowns, and your burning lasts longer.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "fire"
+   ]
+  },
+  "stormglass": {
+   "id": "stormglass",
+   "kind": "meld",
+   "name": "Stormglass",
+   "front": "Stormglass",
+   "behind": "of Stormglass",
+   "attr": "int",
+   "element": "lightning",
+   "about": "Stilling and Lightning, melded. Lightning caught in the air, waiting.",
+   "frontText": "Lightning damage that arcs and slows what it hits in time; its arcs hang between slowed enemies and strike again when the slow ends.",
+   "behindText": "Leaves a bubble with a storm inside; its bolts strike everything the bubble holds.",
+   "monsterText": "Deals lightning damage and shocks you; its blows slow your cooldowns, and its shock lasts longer on you.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "lightning"
+   ]
+  },
+  "timeslip": {
+   "id": "timeslip",
+   "kind": "meld",
+   "name": "Timeslip",
+   "front": "Timeslip",
+   "behind": "of the Timeslip",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Swift, melded. Their time slows, yours doesn't.",
+   "frontText": "Faster to use again; slows what it hits in time, and each slowed enemy near you takes a little more off its wait.",
+   "behindText": "Leaves a bubble where enemies crawl and you move faster.",
+   "monsterText": "Moves and attacks faster; its blows slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "swift"
+   ]
+  },
+  "standstill": {
+   "id": "standstill",
+   "kind": "meld",
+   "name": "Standstill",
+   "front": "Standstill",
+   "behind": "of the Standstill",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Heavy, melded. The stun that time forgot to end.",
+   "frontText": "Slower, hits much harder and stuns; a stunned enemy is also slowed in time, so its stun lasts half as long again.",
+   "behindText": "Leaves a bubble over cracked ground; enemies crawl through it and are staggered again and again.",
+   "monsterText": "Its blows knock you back and slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "heavy"
+   ]
+  },
+  "shackle": {
+   "id": "shackle",
+   "kind": "meld",
+   "name": "Shackle",
+   "front": "Shackling",
+   "behind": "of the Shackle",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Power, melded. Hold it still, then hit it where it stands.",
+   "frontText": "More damage and a bigger hit that holds what it hits in place; your hits on a held enemy hit harder.",
+   "behindText": "Leaves a snare that bites as it closes, hurting what it catches as well as holding it.",
+   "monsterText": "Hits harder and has more life; its blows root you, and it hits harder while you are rooted.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "power"
+   ]
+  },
+  "strangler": {
+   "id": "strangler",
+   "kind": "meld",
+   "name": "Strangler",
+   "front": "Strangling",
+   "behind": "of the Strangler",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Poison, melded. Thorned vines that hold and sting.",
+   "frontText": "A weaker hit that poisons and holds what it hits; poison bites twice as fast on a held enemy.",
+   "behindText": "Leaves a snare of poisoned thorns; what it catches is held and poisoned.",
+   "monsterText": "Poisons you; its blows root you, and you are poisoned faster while rooted.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "poison"
+   ]
+  },
+  "icebound": {
+   "id": "icebound",
+   "kind": "meld",
+   "name": "Icebound",
+   "front": "Icebound",
+   "behind": "of the Icebound",
+   "attr": "str",
+   "element": "frost",
+   "about": "Binding and Frost, melded. Held fast by the ice.",
+   "frontText": "Frost damage that chills, then freezes, and holds what it hits; a held enemy chills twice as fast.",
+   "behindText": "Leaves a snare of ice; what it catches is held, then frozen (never a boss).",
+   "monsterText": "Deals frost damage and slows you; its blows root you, longer while you are chilled.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "frost"
+   ]
+  },
+  "firetrap": {
+   "id": "firetrap",
+   "kind": "meld",
+   "name": "Firetrap",
+   "front": "Firetrap",
+   "behind": "of the Firetrap",
+   "attr": "str",
+   "element": "fire",
+   "about": "Binding and Flame, melded. The snare that catches fire.",
+   "frontText": "Fire damage that explodes, sets enemies burning and holds them; a held enemy burns hotter.",
+   "behindText": "Leaves a snare that bursts into flame when it catches an enemy, setting everything near it burning.",
+   "monsterText": "Deals fire damage and sets you burning; its blows root you, and you burn hotter while rooted.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "fire"
+   ]
+  },
+  "tether": {
+   "id": "tether",
+   "kind": "meld",
+   "name": "Tether",
+   "front": "Tethered",
+   "behind": "of the Tether",
+   "attr": "str",
+   "element": "lightning",
+   "about": "Binding and Lightning, melded. Bound together by the bolt.",
+   "frontText": "Lightning damage that arcs and holds what it hits; while two held enemies are near, arcs leap between them again and again.",
+   "behindText": "Leaves a snare that, when it catches an enemy, sends a bolt to every enemy near it.",
+   "monsterText": "Deals lightning damage and shocks you; its blows root you, and it shocks you again while you are rooted.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "lightning"
+   ]
+  },
+  "lasso": {
+   "id": "lasso",
+   "kind": "meld",
+   "name": "Lasso",
+   "front": "Lassoing",
+   "behind": "of the Lasso",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Swift, melded. Thrown fast, pulled tight.",
+   "frontText": "Faster to use again; holds what it hits, and each use within a second of the last holds a little longer, up to three times.",
+   "behindText": "Each use gives you a burst of speed; while it lasts, the first enemy you pass is caught in a snare.",
+   "monsterText": "Moves and attacks faster; its blows root you.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "swift"
+   ]
+  },
+  "anchor": {
+   "id": "anchor",
+   "kind": "meld",
+   "name": "Anchor",
+   "front": "Anchoring",
+   "behind": "of the Anchor",
+   "attr": "str",
+   "element": null,
+   "about": "Binding and Heavy, melded. What it hits isn't going anywhere.",
+   "frontText": "Slower, hits much harder and stuns; holds what it hits, and a held enemy is stunned twice as long.",
+   "behindText": "Leaves a snare over cracked ground; what it catches is held and staggered.",
+   "monsterText": "Its blows root you where you stand instead of knocking you back, and hit harder while you can't move.",
+   "melds52": true,
+   "of": [
+    "binding",
+    "heavy"
+   ]
+  },
+  "confluence": {
+   "id": "confluence",
+   "kind": "meld",
+   "name": "Confluence",
+   "front": "Confluent",
+   "behind": "of Confluence",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Splitting, melded. The pieces fly out and drag it all back to one place.",
+   "frontText": "Breaks into three copies that fly on; each drags what it hits back toward where the first one struck.",
+   "behindText": "Where it ends, shards fly out, then a vortex draws them back in, hitting again on the way.",
+   "monsterText": "Its blows drag you toward it; splits in two when it dies, and both halves drag you.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "splitting"
+   ]
+  },
+  "beckon": {
+   "id": "beckon",
+   "kind": "meld",
+   "name": "Beckon",
+   "front": "Beckoning",
+   "behind": "of the Beckoning",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Hexing, melded. The curse calls them closer.",
+   "frontText": "Curses what it hits and drags it toward where it struck; a cursed enemy is dragged twice as far.",
+   "behindText": "Leaves a vortex inside a hex circle; what it draws in deals less damage.",
+   "monsterText": "Its blows drag you toward it and curse you.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "hexing"
+   ]
+  },
+  "horizon": {
+   "id": "horizon",
+   "kind": "meld",
+   "name": "Horizon",
+   "front": "Horizon",
+   "behind": "of the Horizon",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Stilling, melded. The closer they come, the slower they move.",
+   "frontText": "Drags what it hits toward where it struck and slows it in time when it gets there.",
+   "behindText": "Leaves a vortex that slows in time whatever it draws in.",
+   "monsterText": "Its blows drag you toward it and slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "stilling"
+   ]
+  },
+  "reel": {
+   "id": "reel",
+   "kind": "meld",
+   "name": "Reel",
+   "front": "Reeling",
+   "behind": "of the Reel",
+   "attr": "int",
+   "element": null,
+   "about": "Pulling and Binding, melded. Hooked, hauled in, held.",
+   "frontText": "Drags what it hits toward where it struck and holds it there.",
+   "behindText": "Leaves a snare with a vortex round it that draws enemies onto the snare.",
+   "monsterText": "Its blows drag you toward it and root you there.",
+   "melds52": true,
+   "of": [
+    "pulling",
+    "binding"
+   ]
+  },
+  "coven": {
+   "id": "coven",
+   "kind": "meld",
+   "name": "Coven",
+   "front": "Coven",
+   "behind": "of the Coven",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Hexing, melded. Many voices saying one curse.",
+   "frontText": "Breaks into three copies that fly on and curse what they hit; an enemy cursed by two copies is cursed for twice as long.",
+   "behindText": "Where it ends, shards fly out and each leaves a small hex circle where it lands.",
+   "monsterText": "Curses you; splits in two when it dies, both halves cursing.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "hexing"
+   ]
+  },
+  "constellation": {
+   "id": "constellation",
+   "kind": "meld",
+   "name": "Constellation",
+   "front": "Constellation",
+   "behind": "of the Constellation",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Stilling, melded. The pieces hang in the air, then fall.",
+   "frontText": "Breaks into three copies that hang still in the air for a moment, then fly at the nearest enemies and slow in time what they hit.",
+   "behindText": "Where it ends, shards fly out and stop in the air; whatever touches one is slowed in time.",
+   "monsterText": "Its blows slow your cooldowns; splits in two when it dies.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "stilling"
+   ]
+  },
+  "web": {
+   "id": "web",
+   "kind": "meld",
+   "name": "Web",
+   "front": "Webbed",
+   "behind": "of the Web",
+   "attr": "dex",
+   "element": null,
+   "about": "Splitting and Binding, melded. Strands in every direction.",
+   "frontText": "Breaks into three copies that fly on and hold what they hit; an enemy held by two copies is held twice as long.",
+   "behindText": "Where it ends, shards fly out and each leaves a small snare where it lands.",
+   "monsterText": "Its blows root you; splits in two when it dies, both halves rooting.",
+   "melds52": true,
+   "of": [
+    "splitting",
+    "binding"
+   ]
+  },
+  "torpor": {
+   "id": "torpor",
+   "kind": "meld",
+   "name": "Torpor",
+   "front": "Torpid",
+   "behind": "of Torpor",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Stilling, melded. A heavy, cursed sleep.",
+   "frontText": "Curses what it hits and slows it in time; a cursed and slowed enemy takes more damage still.",
+   "behindText": "Leaves a circle that hexes and stills; enemies inside crawl and deal less damage.",
+   "monsterText": "Its blows curse you and slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "stilling"
+   ]
+  },
+  "witchknot": {
+   "id": "witchknot",
+   "kind": "meld",
+   "name": "Witchknot",
+   "front": "Witchknot",
+   "behind": "of the Witchknot",
+   "attr": "int",
+   "element": null,
+   "about": "Hexing and Binding, melded. A knot tied with a curse.",
+   "frontText": "Curses and holds what it hits; a held and cursed enemy takes more damage still.",
+   "behindText": "Leaves a snare inside a hex circle; what it catches is held and cursed.",
+   "monsterText": "Its blows curse you and root you.",
+   "melds52": true,
+   "of": [
+    "hexing",
+    "binding"
+   ]
+  },
+  "amber": {
+   "id": "amber",
+   "kind": "meld",
+   "name": "Amber",
+   "front": "Amber",
+   "behind": "of Amber",
+   "attr": "int",
+   "element": null,
+   "about": "Stilling and Binding, melded. Caught fast, and time stops around it.",
+   "frontText": "Holds what it hits and slows it in time, and the hold lasts as long as the slow.",
+   "behindText": "Leaves a snare inside a bubble; what it catches is held and slowed in time.",
+   "monsterText": "Its blows root you and slow your cooldowns.",
+   "melds52": true,
+   "of": [
+    "stilling",
+    "binding"
+   ]
+  },
   "twin2": {
    "id": "twin2",
    "kind": "rank",
@@ -2140,6 +3050,76 @@
    "frontText": "Slower, hits harder still, and stuns half as long again.",
    "behindText": "Leaves wider cracked ground that staggers longer.",
    "monsterText": "Its blows knock you back farther.",
+   "melds52": true
+  },
+  "pulling2": {
+   "id": "pulling2",
+   "kind": "rank",
+   "name": "Pulling II",
+   "front": "Pulling II",
+   "behind": "of the Vortex II",
+   "attr": "int",
+   "element": null,
+   "about": "Two Pulling, melded: Pulling at level 2.",
+   "frontText": "Drags the enemies it hits toward where it struck, from half as far again.",
+   "behindText": "Leaves a vortex half as wide and strong again.",
+   "monsterText": "Its blows drag you toward it, half as far again.",
+   "melds52": true
+  },
+  "splitting2": {
+   "id": "splitting2",
+   "kind": "rank",
+   "name": "Splitting II",
+   "front": "Splitting II",
+   "behind": "of Shards II",
+   "attr": "dex",
+   "element": null,
+   "about": "Two Splitting, melded: Splitting at level 2.",
+   "frontText": "Breaks into four copies instead of three, each a little stronger.",
+   "behindText": "Half as many shards again, flying farther.",
+   "monsterText": "Splits in three when it dies.",
+   "melds52": true
+  },
+  "hexing2": {
+   "id": "hexing2",
+   "kind": "rank",
+   "name": "Hexing II",
+   "front": "Hexing II",
+   "behind": "of Hexes II",
+   "attr": "int",
+   "element": null,
+   "about": "Two Hexing, melded: Hexing at level 2.",
+   "frontText": "Its curse is half as strong again.",
+   "behindText": "Its hex circle is half as wide and strong again.",
+   "monsterText": "Its curse on you is half as strong again.",
+   "melds52": true
+  },
+  "stilling2": {
+   "id": "stilling2",
+   "kind": "rank",
+   "name": "Stilling II",
+   "front": "Stilling II",
+   "behind": "of Stillness II",
+   "attr": "int",
+   "element": null,
+   "about": "Two Stilling, melded: Stilling at level 2.",
+   "frontText": "What it hits is slowed in time half as much again.",
+   "behindText": "Its bubble is half as wide again and lasts half as long again.",
+   "monsterText": "Its blows slow your cooldowns half as much again.",
+   "melds52": true
+  },
+  "binding2": {
+   "id": "binding2",
+   "kind": "rank",
+   "name": "Binding II",
+   "front": "Binding II",
+   "behind": "of the Snare II",
+   "attr": "str",
+   "element": null,
+   "about": "Two Binding, melded: Binding at level 2.",
+   "frontText": "Holds the enemies it hits half as long again.",
+   "behindText": "Its snare catches the next two enemies to cross it.",
+   "monsterText": "Its blows root you half as long again.",
    "melds52": true
   }
  },
@@ -2535,6 +3515,186 @@
   "whipcrack": [
    "fleeting",
    "vast"
+  ],
+  "maw": [
+   "pulling",
+   "power"
+  ],
+  "sump": [
+   "pulling",
+   "poison"
+  ],
+  "drift": [
+   "pulling",
+   "frost"
+  ],
+  "firewhirl": [
+   "pulling",
+   "fire"
+  ],
+  "lodestone": [
+   "pulling",
+   "lightning"
+  ],
+  "riptide": [
+   "pulling",
+   "swift"
+  ],
+  "gravity": [
+   "pulling",
+   "heavy"
+  ],
+  "splinter": [
+   "splitting",
+   "power"
+  ],
+  "spore": [
+   "splitting",
+   "poison"
+  ],
+  "sleet": [
+   "splitting",
+   "frost"
+  ],
+  "embers": [
+   "splitting",
+   "fire"
+  ],
+  "fractal": [
+   "splitting",
+   "lightning"
+  ],
+  "scatter": [
+   "splitting",
+   "swift"
+  ],
+  "rubble": [
+   "splitting",
+   "heavy"
+  ],
+  "doom": [
+   "hexing",
+   "power"
+  ],
+  "plague": [
+   "hexing",
+   "poison"
+  ],
+  "hoarfrost": [
+   "hexing",
+   "frost"
+  ],
+  "brimstone": [
+   "hexing",
+   "fire"
+  ],
+  "jinx": [
+   "hexing",
+   "lightning"
+  ],
+  "whisper": [
+   "hexing",
+   "swift"
+  ],
+  "burden": [
+   "hexing",
+   "heavy"
+  ],
+  "stasis": [
+   "stilling",
+   "power"
+  ],
+  "stagnation": [
+   "stilling",
+   "poison"
+  ],
+  "frostlock": [
+   "stilling",
+   "frost"
+  ],
+  "slowburn": [
+   "stilling",
+   "fire"
+  ],
+  "stormglass": [
+   "stilling",
+   "lightning"
+  ],
+  "timeslip": [
+   "stilling",
+   "swift"
+  ],
+  "standstill": [
+   "stilling",
+   "heavy"
+  ],
+  "shackle": [
+   "binding",
+   "power"
+  ],
+  "strangler": [
+   "binding",
+   "poison"
+  ],
+  "icebound": [
+   "binding",
+   "frost"
+  ],
+  "firetrap": [
+   "binding",
+   "fire"
+  ],
+  "tether": [
+   "binding",
+   "lightning"
+  ],
+  "lasso": [
+   "binding",
+   "swift"
+  ],
+  "anchor": [
+   "binding",
+   "heavy"
+  ],
+  "confluence": [
+   "pulling",
+   "splitting"
+  ],
+  "beckon": [
+   "pulling",
+   "hexing"
+  ],
+  "horizon": [
+   "pulling",
+   "stilling"
+  ],
+  "reel": [
+   "pulling",
+   "binding"
+  ],
+  "coven": [
+   "splitting",
+   "hexing"
+  ],
+  "constellation": [
+   "splitting",
+   "stilling"
+  ],
+  "web": [
+   "splitting",
+   "binding"
+  ],
+  "torpor": [
+   "hexing",
+   "stilling"
+  ],
+  "witchknot": [
+   "hexing",
+   "binding"
+  ],
+  "amber": [
+   "stilling",
+   "binding"
   ]
  },
  "rankOf": {
@@ -2580,6 +3740,26 @@
   },
   "heavy2": {
    "word": "heavy",
+   "rank": 2
+  },
+  "pulling2": {
+   "word": "pulling",
+   "rank": 2
+  },
+  "splitting2": {
+   "word": "splitting",
+   "rank": 2
+  },
+  "hexing2": {
+   "word": "hexing",
+   "rank": 2
+  },
+  "stilling2": {
+   "word": "stilling",
+   "rank": 2
+  },
+  "binding2": {
+   "word": "binding",
    "rank": 2
   }
  },
@@ -2682,6 +3862,51 @@
   "hourglass": "int",
   "aftermath": "int",
   "whipcrack": "dex",
+  "maw": "int",
+  "sump": "int",
+  "drift": "int",
+  "firewhirl": "int",
+  "lodestone": "int",
+  "riptide": "int",
+  "gravity": "int",
+  "splinter": "dex",
+  "spore": "dex",
+  "sleet": "dex",
+  "embers": "dex",
+  "fractal": "dex",
+  "scatter": "dex",
+  "rubble": "dex",
+  "doom": "int",
+  "plague": "int",
+  "hoarfrost": "int",
+  "brimstone": "int",
+  "jinx": "int",
+  "whisper": "int",
+  "burden": "int",
+  "stasis": "int",
+  "stagnation": "int",
+  "frostlock": "int",
+  "slowburn": "int",
+  "stormglass": "int",
+  "timeslip": "int",
+  "standstill": "int",
+  "shackle": "str",
+  "strangler": "str",
+  "icebound": "str",
+  "firetrap": "str",
+  "tether": "str",
+  "lasso": "str",
+  "anchor": "str",
+  "confluence": "int",
+  "beckon": "int",
+  "horizon": "int",
+  "reel": "int",
+  "coven": "dex",
+  "constellation": "dex",
+  "web": "dex",
+  "torpor": "int",
+  "witchknot": "int",
+  "amber": "int",
   "twin2": "dex",
   "leech2": "str",
   "volatile2": "int",
@@ -2692,7 +3917,12 @@
   "fleeting2": "dex",
   "vast2": "str",
   "swift2": "dex",
-  "heavy2": "str"
+  "heavy2": "str",
+  "pulling2": "int",
+  "splitting2": "dex",
+  "hexing2": "int",
+  "stilling2": "int",
+  "binding2": "str"
  },
  "page": {
   "onslaught": {
@@ -3381,6 +4611,321 @@
    ],
    "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
   },
+  "maw": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "sump": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "drift": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "firewhirl": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "lodestone": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "riptide": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "gravity": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "splinter": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "spore": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "sleet": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "embers": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "fractal": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "scatter": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "rubble": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "doom": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "plague": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "hoarfrost": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "brimstone": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "jinx": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "whisper": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "burden": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "stasis": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "stagnation": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "frostlock": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "slowburn": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "stormglass": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "timeslip": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "standstill": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "shackle": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "strangler": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "icebound": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "firetrap": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "tether": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "lasso": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Attack Speed or Dexterity (boots: Movement Speed).",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Dodge or Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "anchor": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength, with Chance to Stun or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "confluence": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Damage or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Dexterity."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "beckon": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "horizon": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Cooldown Recovery or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "reel": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach, with Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "coven": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "constellation": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Cooldown Recovery or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "web": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity, with Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Dexterity, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "torpor": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Cooldown Recovery or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Cooldown Recovery or Intelligence."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "witchknot": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence, with Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "amber": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence, with Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
   "twin2": {
    "gear": [
     "Weapon, gloves, ring, amulet: Critical Chance or Dexterity.",
@@ -3457,6 +5002,41 @@
     "Off hand, helm, chest, belt, boots: Armour or Strength."
    ],
    "note": "Half as strong again as Heavy."
+  },
+  "pulling2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Pickup Reach.",
+    "Off hand, helm, chest, belt, boots: Pickup Reach."
+   ],
+   "note": "Half as strong again as Pulling."
+  },
+  "splitting2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Dexterity.",
+    "Off hand, helm, chest, belt, boots: Dexterity."
+   ],
+   "note": "Half as strong again as Splitting."
+  },
+  "hexing2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Intelligence."
+   ],
+   "note": "Half as strong again as Hexing."
+  },
+  "stilling2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Cooldown Recovery or Intelligence.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence."
+   ],
+   "note": "Half as strong again as Stilling."
+  },
+  "binding2": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Armour or Strength."
+   ],
+   "note": "Half as strong again as Binding."
   }
  },
  "color": {
@@ -3558,6 +5138,51 @@
   "hourglass": "#d0a8c0",
   "aftermath": "#8c6c58",
   "whipcrack": "#e4b890",
+  "maw": "#c42c3c",
+  "sump": "#6e8c4a",
+  "drift": "#94a8f4",
+  "firewhirl": "#f08860",
+  "lodestone": "#b8b0f8",
+  "riptide": "#6aa0c8",
+  "gravity": "#8a6ab0",
+  "splinter": "#e8705a",
+  "spore": "#c0c870",
+  "sleet": "#a8c0f8",
+  "embers": "#f8b080",
+  "fractal": "#f0e8a0",
+  "scatter": "#b8d090",
+  "rubble": "#b09080",
+  "doom": "#a03850",
+  "plague": "#8a9a60",
+  "hoarfrost": "#b8c8e8",
+  "brimstone": "#d06040",
+  "jinx": "#d8d090",
+  "whisper": "#c0d0b0",
+  "burden": "#c8a8d0",
+  "stasis": "#b4a070",
+  "stagnation": "#9ed46a",
+  "frostlock": "#90d8e0",
+  "slowburn": "#d8b060",
+  "stormglass": "#c8f0c0",
+  "timeslip": "#a8e090",
+  "standstill": "#a8b880",
+  "shackle": "#c06050",
+  "strangler": "#9aa848",
+  "icebound": "#a0c0d8",
+  "firetrap": "#e86a3a",
+  "tether": "#e8d888",
+  "lasso": "#b8c070",
+  "anchor": "#9a8060",
+  "confluence": "#a890f0",
+  "beckon": "#9894d8",
+  "horizon": "#80b0d0",
+  "reel": "#c4b4e8",
+  "coven": "#c8b0e0",
+  "constellation": "#b0e0d8",
+  "web": "#d0c0b0",
+  "torpor": "#98c8b0",
+  "witchknot": "#b0a0a8",
+  "amber": "#e0a040",
   "twin2": "#58c0b0",
   "leech2": "#ff8a80",
   "volatile2": "#9858d0",
@@ -3568,7 +5193,12 @@
   "fleeting2": "#f8e4f8",
   "vast2": "#6e4e2e",
   "swift2": "#84c84c",
-  "heavy2": "#ac8753"
+  "heavy2": "#ac8753",
+  "pulling2": "#7a76e0",
+  "splitting2": "#dcaaf6",
+  "hexing2": "#b8b4c8",
+  "stilling2": "#86eaae",
+  "binding2": "#c8b48a"
  },
  "stones": {
   "onslaught": [
@@ -3963,49 +5593,249 @@
    25,
    150
   ],
-  "twin2": [
+  "maw": [
    50,
    150
   ],
-  "leech2": [
+  "sump": [
    75,
    150
   ],
-  "volatile2": [
+  "drift": [
    100,
    150
   ],
-  "precise2": [
+  "firewhirl": [
    125,
    150
   ],
-  "frenzied2": [
+  "lodestone": [
    150,
    150
   ],
-  "guarding2": [
+  "riptide": [
    175,
    150
   ],
-  "lasting2": [
+  "gravity": [
    200,
    150
   ],
-  "fleeting2": [
+  "splinter": [
    225,
    150
   ],
-  "vast2": [
+  "spore": [
    250,
    150
   ],
-  "swift2": [
+  "sleet": [
    275,
    150
   ],
-  "heavy2": [
+  "embers": [
    300,
    150
+  ],
+  "fractal": [
+   325,
+   150
+  ],
+  "scatter": [
+   350,
+   150
+  ],
+  "rubble": [
+   375,
+   150
+  ],
+  "doom": [
+   0,
+   175
+  ],
+  "plague": [
+   25,
+   175
+  ],
+  "hoarfrost": [
+   50,
+   175
+  ],
+  "brimstone": [
+   75,
+   175
+  ],
+  "jinx": [
+   100,
+   175
+  ],
+  "whisper": [
+   125,
+   175
+  ],
+  "burden": [
+   150,
+   175
+  ],
+  "stasis": [
+   175,
+   175
+  ],
+  "stagnation": [
+   200,
+   175
+  ],
+  "frostlock": [
+   225,
+   175
+  ],
+  "slowburn": [
+   250,
+   175
+  ],
+  "stormglass": [
+   275,
+   175
+  ],
+  "timeslip": [
+   300,
+   175
+  ],
+  "standstill": [
+   325,
+   175
+  ],
+  "shackle": [
+   350,
+   175
+  ],
+  "strangler": [
+   375,
+   175
+  ],
+  "icebound": [
+   0,
+   200
+  ],
+  "firetrap": [
+   25,
+   200
+  ],
+  "tether": [
+   50,
+   200
+  ],
+  "lasso": [
+   75,
+   200
+  ],
+  "anchor": [
+   100,
+   200
+  ],
+  "confluence": [
+   125,
+   200
+  ],
+  "beckon": [
+   150,
+   200
+  ],
+  "horizon": [
+   175,
+   200
+  ],
+  "reel": [
+   200,
+   200
+  ],
+  "coven": [
+   225,
+   200
+  ],
+  "constellation": [
+   250,
+   200
+  ],
+  "web": [
+   275,
+   200
+  ],
+  "torpor": [
+   300,
+   200
+  ],
+  "witchknot": [
+   325,
+   200
+  ],
+  "amber": [
+   350,
+   200
+  ],
+  "twin2": [
+   375,
+   200
+  ],
+  "leech2": [
+   0,
+   225
+  ],
+  "volatile2": [
+   25,
+   225
+  ],
+  "precise2": [
+   50,
+   225
+  ],
+  "frenzied2": [
+   75,
+   225
+  ],
+  "guarding2": [
+   100,
+   225
+  ],
+  "lasting2": [
+   125,
+   225
+  ],
+  "fleeting2": [
+   150,
+   225
+  ],
+  "vast2": [
+   175,
+   225
+  ],
+  "swift2": [
+   200,
+   225
+  ],
+  "heavy2": [
+   225,
+   225
+  ],
+  "pulling2": [
+   250,
+   225
+  ],
+  "splitting2": [
+   275,
+   225
+  ],
+  "hexing2": [
+   300,
+   225
+  ],
+  "stilling2": [
+   325,
+   225
+  ],
+  "binding2": [
+   350,
+   225
   ]
  },
  "glyph": {
@@ -4865,6 +6695,411 @@
    ".....X.",
    "....o.X",
    "...ooo."
+  ],
+  "maw": [
+   "X.....X",
+   ".X...X.",
+   "..XoX..",
+   "...o...",
+   "..XoX..",
+   ".X...X.",
+   "X.....X"
+  ],
+  "sump": [
+   ".XXXXX.",
+   "X.ooo.X",
+   ".X.o.X.",
+   "..XoX..",
+   "...X...",
+   "..o.o..",
+   "...o..."
+  ],
+  "drift": [
+   "XX.....",
+   "..XX...",
+   "....XX.",
+   "......o",
+   "....XX.",
+   "..XX...",
+   "XX....."
+  ],
+  "firewhirl": [
+   "...o...",
+   "..XXX..",
+   ".X...X.",
+   "X..XX.X",
+   "X.X.o.X",
+   ".X..XX.",
+   "..XX..."
+  ],
+  "lodestone": [
+   "oo...oo",
+   "XX...XX",
+   "XX...XX",
+   "XX...XX",
+   ".XX.XX.",
+   "..XXX..",
+   "......."
+  ],
+  "riptide": [
+   "..XXX..",
+   ".X...X.",
+   "X..XX.X",
+   "X.Xo...",
+   "X..XXXX",
+   ".X.....",
+   "..XXXXX"
+  ],
+  "gravity": [
+   "..XXX..",
+   "..XXX..",
+   "...X...",
+   "X..o..X",
+   ".X...X.",
+   "..XXX..",
+   "......."
+  ],
+  "splinter": [
+   "X..X..X",
+   "X..X..X",
+   ".X.X.X.",
+   "..XXX..",
+   "...X...",
+   "...o...",
+   "...o..."
+  ],
+  "spore": [
+   "o..o..o",
+   ".o...o.",
+   "..XXX..",
+   ".XXXXX.",
+   ".XXXXX.",
+   "..XXX..",
+   "...X..."
+  ],
+  "sleet": [
+   "X..X..X",
+   ".......",
+   ".X..X..",
+   "o...o..",
+   "...X..X",
+   "..o...o",
+   "X......"
+  ],
+  "embers": [
+   "o.....o",
+   "...o...",
+   ".o...o.",
+   "...X...",
+   "..XXX..",
+   ".XXoXX.",
+   "..XXX.."
+  ],
+  "fractal": [
+   "...X...",
+   "...X...",
+   "..X.X..",
+   ".X...X.",
+   "X.X.X.X",
+   "o..o..o",
+   "......."
+  ],
+  "scatter": [
+   "......X",
+   "....XX.",
+   "XXXo...",
+   "XXXXXXX",
+   "XXXo...",
+   "....XX.",
+   "......X"
+  ],
+  "rubble": [
+   "..XX...",
+   ".XXX.X.",
+   "XXX.XXX",
+   "XX.o.XX",
+   ".XX.XX.",
+   "XX...XX",
+   "......."
+  ],
+  "doom": [
+   "XXXXXXX",
+   ".X...X.",
+   "X..o..X",
+   "X.ooo.X",
+   "X..o..X",
+   ".XXXXX.",
+   "......."
+  ],
+  "plague": [
+   "..XXX..",
+   ".X...X.",
+   "X..o..X",
+   ".X...X.",
+   "..XXX..",
+   "...o...",
+   "..ooo.."
+  ],
+  "hoarfrost": [
+   "X..X..X",
+   ".X.X.X.",
+   "..XXX..",
+   "XXXoXXX",
+   "..XXX..",
+   ".X.X.X.",
+   "X..X..X"
+  ],
+  "brimstone": [
+   ".o.o.o.",
+   "o.o.o.o",
+   "..XXX..",
+   ".X.o.X.",
+   "X.ooo.X",
+   ".X.o.X.",
+   "..XXX.."
+  ],
+  "jinx": [
+   "....X..",
+   "..XX...",
+   ".X.X.X.",
+   "X.oXo.X",
+   ".X.X.X.",
+   "...XX..",
+   "..X...."
+  ],
+  "whisper": [
+   ".......",
+   "XXXX...",
+   "....X..",
+   ".XXX.o.",
+   "X....oo",
+   ".XXXX..",
+   "......."
+  ],
+  "burden": [
+   "...X...",
+   "..X.X..",
+   ".XXXXX.",
+   "XXXoXXX",
+   "XXoooXX",
+   "XXXoXXX",
+   "XXXXXXX"
+  ],
+  "stasis": [
+   "X.....X",
+   "X.XXX.X",
+   "X.XoX.X",
+   "X.XXX.X",
+   "X..X..X",
+   "X.....X",
+   "X.....X"
+  ],
+  "stagnation": [
+   ".o...o.",
+   "...o...",
+   ".o...o.",
+   ".......",
+   "XXXXXXX",
+   ".......",
+   "XXXXXXX"
+  ],
+  "frostlock": [
+   "..XXX..",
+   ".X...X.",
+   "X.XXX.X",
+   "X..X..X",
+   "X..o..X",
+   ".X...X.",
+   "..XXX.."
+  ],
+  "slowburn": [
+   "...o...",
+   "..ooo..",
+   "...o...",
+   "..XXX..",
+   "..XXX..",
+   "..XXX..",
+   ".XXXXX."
+  ],
+  "stormglass": [
+   "XXXXXXX",
+   "X...X.X",
+   "X..X..X",
+   "X.XoX.X",
+   "X..X..X",
+   "X.X...X",
+   "XXXXXXX"
+  ],
+  "timeslip": [
+   "..XXX..",
+   ".X...X.",
+   "X.....X",
+   "XXXo..X",
+   "X.....X",
+   ".X...X.",
+   "..XXX.."
+  ],
+  "standstill": [
+   "XXXXX..",
+   "XXXXX..",
+   "..X....",
+   "..X..o.",
+   "..X.o.o",
+   "..X..o.",
+   "..X...."
+  ],
+  "shackle": [
+   "..XXX..",
+   ".X...X.",
+   ".X...X.",
+   "XXXXXXX",
+   "XX.o.XX",
+   "XXXXXXX",
+   "......."
+  ],
+  "strangler": [
+   "X.X....",
+   ".X.X...",
+   "X.X.o..",
+   "...X.X.",
+   "..o.X.X",
+   "....X.X",
+   ".....X."
+  ],
+  "icebound": [
+   "XXXX..o",
+   "X..X.o.",
+   "X.XXXX.",
+   "XXXX..X",
+   "..X...X",
+   "o.XXXXX",
+   ".o....."
+  ],
+  "firetrap": [
+   ".o.o.o.",
+   "o.o.o.o",
+   "X.....X",
+   "XX...XX",
+   "X.X.X.X",
+   "XXXXXXX",
+   "......."
+  ],
+  "tether": [
+   ".......",
+   ".XX.XX.",
+   "X..X..X",
+   "X..o..X",
+   "X..X..X",
+   ".XX.XX.",
+   "......."
+  ],
+  "lasso": [
+   ".XXX...",
+   "X...X..",
+   "X...X..",
+   ".XXX...",
+   "...X...",
+   "....X..",
+   ".....oo"
+  ],
+  "anchor": [
+   "...X...",
+   "..XoX..",
+   "...X...",
+   "XXXXXXX",
+   "...X...",
+   "X..X..X",
+   ".XXXXX."
+  ],
+  "confluence": [
+   "X.....X",
+   ".X.X.X.",
+   "..X.X..",
+   "...X...",
+   "..ooo..",
+   ".ooooo.",
+   "......."
+  ],
+  "beckon": [
+   ".XXXXX.",
+   "X.....X",
+   "X.XXX.X",
+   "X.XoX.X",
+   "X.X...X",
+   "X.XXXXX",
+   "X......"
+  ],
+  "horizon": [
+   "..ooo..",
+   ".o...o.",
+   "o.XXX.o",
+   "o.X.X.o",
+   "o.XXX.o",
+   ".o...o.",
+   "..ooo.."
+  ],
+  "reel": [
+   "....X..",
+   "....X..",
+   "....X..",
+   "....X..",
+   "X...X..",
+   "X..XX..",
+   ".XXo..."
+  ],
+  "coven": [
+   ".......",
+   "XXX.XXX",
+   "XoX.XoX",
+   "XXX.XXX",
+   ".......",
+   "..XXX..",
+   "..XoX.."
+  ],
+  "constellation": [
+   "o......",
+   ".X.....",
+   "..X..o.",
+   "...o.X.",
+   "....X..",
+   "...X...",
+   "..o...."
+  ],
+  "web": [
+   "X..X..X",
+   ".X.X.X.",
+   "XXXXXXX",
+   ".XXoXX.",
+   "XXXXXXX",
+   ".X.X.X.",
+   "X..X..X"
+  ],
+  "torpor": [
+   ".......",
+   ".......",
+   "XXXXXXX",
+   ".X.X.X.",
+   ".......",
+   ".o.o.o.",
+   "..o.o.."
+  ],
+  "witchknot": [
+   ".XX.XX.",
+   "X..X..X",
+   "X.XoX.X",
+   ".X.X.X.",
+   "X.X.X.X",
+   "X..X..X",
+   ".XX.XX."
+  ],
+  "amber": [
+   "..XXX..",
+   ".XXXXX.",
+   "XXoXoXX",
+   "XXXoXXX",
+   "XXoXoXX",
+   ".XXXXX.",
+   "..XXX.."
   ]
  },
  "tune": {
@@ -5471,6 +7706,308 @@
    "reach": 3.0,
    "share": 0.3,
    "foeWindup": 0.5
+  },
+  "maw": {
+   "crash": 0.3,
+   "meet": 0.9,
+   "collapse": 0.4,
+   "per": 0.25,
+   "most": 6,
+   "foeMore": 0.35
+  },
+  "sump": {
+   "near": 1.2,
+   "most": 3,
+   "every": 0.5,
+   "dose": 0.15,
+   "foeDose": 0.5
+  },
+  "drift": {
+   "chilled": 2.0,
+   "meet": 0.9,
+   "mid": 0.7,
+   "freeze": 1.0,
+   "foeK": 2.0
+  },
+  "firewhirl": {
+   "edge": 0.8,
+   "hotter": 1.5,
+   "every": 0.5,
+   "burn": 0.25
+  },
+  "lodestone": {
+   "tug": 1.0,
+   "foeK": 1.6
+  },
+  "riptide": {
+   "window": 1.0,
+   "each": 0.35,
+   "most": 3,
+   "wake": 2.5,
+   "tug": 1.2,
+   "foeRush": 1.8,
+   "foeRushSecs": 0.6
+  },
+  "gravity": {
+   "reach": 2.6,
+   "stun": 1.5,
+   "every": 0.8,
+   "foeMore": 0.3
+  },
+  "pulling2": {
+   "k": 1.5
+  },
+  "splinter": {
+   "k": 1.5,
+   "shove": 0.6,
+   "foeLife": 1.0
+  },
+  "spore": {
+   "dose": 0.25,
+   "cloud": 0.8,
+   "cloudSecs": 2.5,
+   "foeCloud": 1.0
+  },
+  "sleet": {
+   "again": 2,
+   "ice": 0.7,
+   "iceSecs": 3.0,
+   "foeTrail": 0.5
+  },
+  "embers": {
+   "blast": 0.9,
+   "share": 0.5,
+   "burnR": 0.6,
+   "burnSecs": 2.5
+  },
+  "fractal": {
+   "arc": 0.5,
+   "bolt": 0.4,
+   "foeSecs": 4.0,
+   "foeK": 0.3
+  },
+  "scatter": {
+   "window": 1.0,
+   "most": 5,
+   "foeFast": 1.3
+  },
+  "rubble": {
+   "stagger": 0.45,
+   "crack": 0.7,
+   "crackSecs": 3.0,
+   "foeShove": 1.2
+  },
+  "splitting2": {
+   "copies": 4,
+   "each": 1.1,
+   "shards": 1.5,
+   "reach": 1.2,
+   "foeHalves": 3
+  },
+  "doom": {
+   "deeper": 0.5,
+   "most": 3,
+   "might": 2.0,
+   "foeMore": 0.3
+  },
+  "plague": {
+   "near": 3.0,
+   "every": 0.6,
+   "dose": 0.15,
+   "foeFaster": 1.5
+  },
+  "hoarfrost": {
+   "frozen": 2.0,
+   "chill": 0.3,
+   "foeLonger": 2.0
+  },
+  "brimstone": {
+   "hotter": 1.5,
+   "every": 0.5,
+   "burn": 0.25,
+   "foeLonger": 1.5
+  },
+  "jinx": {
+   "foeReach": 1.5
+  },
+  "whisper": {
+   "cut": 0.06,
+   "pass": 0.9,
+   "foeFast": 1.25
+  },
+  "burden": {
+   "longer": 2.0,
+   "foeShove": 1.5
+  },
+  "hexing2": {
+   "k": 1.5
+  },
+  "stasis": {
+   "again": 0.25,
+   "foeMore": 0.4
+  },
+  "stagnation": {
+   "every": 0.6,
+   "dose": 0.15,
+   "foeLonger": 1.5
+  },
+  "frostlock": {
+   "longer": 1.5,
+   "stay": 1.5
+  },
+  "slowburn": {
+   "longer": 2.0,
+   "foeLonger": 1.5
+  },
+  "stormglass": {
+   "again": 0.5,
+   "every": 0.6,
+   "bolt": 0.35,
+   "foeLonger": 1.5
+  },
+  "timeslip": {
+   "near": 3.0,
+   "cut": 0.04,
+   "most": 5,
+   "haste": 0.25
+  },
+  "standstill": {
+   "longer": 1.5,
+   "every": 0.8
+  },
+  "stilling2": {
+   "k": 1.5
+  },
+  "shackle": {
+   "more": 0.25,
+   "bite": 0.5,
+   "foeMore": 0.3
+  },
+  "strangler": {
+   "faster": 2.0,
+   "dose": 0.2,
+   "foeFaster": 1.5
+  },
+  "icebound": {
+   "chill": 2.0,
+   "freezeAfter": 0.6,
+   "foeLonger": 1.5
+  },
+  "firetrap": {
+   "hotter": 1.5,
+   "blaze": 1.4,
+   "burn": 0.3,
+   "foeHotter": 1.5
+  },
+  "tether": {
+   "near": 3.0,
+   "every": 0.5,
+   "arc": 0.3,
+   "bolt": 2.5,
+   "boltK": 0.4,
+   "foeEvery": 0.6,
+   "foeK": 0.25
+  },
+  "lasso": {
+   "window": 1.0,
+   "each": 0.2,
+   "most": 3,
+   "pass": 0.9
+  },
+  "anchor": {
+   "stun": 2.0,
+   "foeMore": 0.3
+  },
+  "binding2": {
+   "catches": 2
+  },
+  "confluence": {
+   "again": 0.5,
+   "delay": 0.6
+  },
+  "beckon": {
+   "cursed": 2.0
+  },
+  "horizon": {
+   "more": 0.2
+  },
+  "reel": {
+   "longer": 1.25
+  },
+  "coven": {
+   "longer": 2.0,
+   "circle": 0.8,
+   "circleSecs": 3.0
+  },
+  "constellation": {
+   "hang": 0.4,
+   "stay": 3.0,
+   "touch": 0.5
+  },
+  "web": {
+   "longer": 2.0,
+   "snareSecs": 4.0
+  },
+  "torpor": {
+   "more": 0.15
+  },
+  "witchknot": {
+   "more": 0.15
+  },
+  "amber": {
+   "hold": 1.0
   }
- }
+ },
+ "city": [
+  "maw",
+  "sump",
+  "drift",
+  "firewhirl",
+  "lodestone",
+  "riptide",
+  "gravity",
+  "splinter",
+  "spore",
+  "sleet",
+  "embers",
+  "fractal",
+  "scatter",
+  "rubble",
+  "doom",
+  "plague",
+  "hoarfrost",
+  "brimstone",
+  "jinx",
+  "whisper",
+  "burden",
+  "stasis",
+  "stagnation",
+  "frostlock",
+  "slowburn",
+  "stormglass",
+  "timeslip",
+  "standstill",
+  "shackle",
+  "strangler",
+  "icebound",
+  "firetrap",
+  "tether",
+  "lasso",
+  "anchor",
+  "confluence",
+  "beckon",
+  "horizon",
+  "reel",
+  "coven",
+  "constellation",
+  "web",
+  "torpor",
+  "witchknot",
+  "amber",
+  "pulling2",
+  "splitting2",
+  "hexing2",
+  "stilling2",
+  "binding2"
+ ]
 }

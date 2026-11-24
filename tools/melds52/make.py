@@ -10,12 +10,19 @@ RUNES = json.load(open(ROOT + '/docs/mockups/meld_runes/runes.json'))
 # (the last floor 1-10 group: his doc The Last Floor 1-10 Melds and its runes, "Good" to both, 23 Nov 2026)
 RUNES2 = json.load(open(ROOT + '/docs/mockups/meld_runes2/runes.json'))
 RUNES.update(RUNES2)
+# (THE CITY'S MELDS: his doc Floor 11-15 Melds, its runes and their animations, "Good", "Yep good", "Good to go", 24 Nov 2026; their
+# text tools/meldscity/docs_city.txt; behind melds52.gd CITY_ON until his yes to the films)
+RUNES3 = json.load(open(ROOT + '/docs/mockups/meld_runes3/runes.json'))
+RUNES.update(RUNES3)
+CITY = ['pulling', 'splitting', 'hexing', 'stilling', 'binding']
 W = json.load(open(G + 'words/words.json'))['words']
 COLOR = json.load(open(G + 'loot/items.json'))['words']['color']
 NAME_ID = {'Power': 'power', 'Poison': 'poison', 'Frost': 'frost', 'Flame': 'fire', 'Lightning': 'lightning', 'Swift': 'swift',
            'Heavy': 'heavy', 'Twin': 'twin', 'Leech': 'leech', 'Volatile': 'volatile', 'Precise': 'precise', 'Frenzied': 'frenzied',
-           'Guarding': 'guarding', 'Lasting': 'lasting', 'Fleeting': 'fleeting', 'Vast': 'vast'}
-RANKS = ['twin', 'leech', 'volatile', 'precise', 'frenzied', 'guarding', 'lasting', 'fleeting', 'vast', 'swift', 'heavy']
+           'Guarding': 'guarding', 'Lasting': 'lasting', 'Fleeting': 'fleeting', 'Vast': 'vast',
+           'Pulling': 'pulling', 'Splitting': 'splitting', 'Hexing': 'hexing', 'Stilling': 'stilling', 'Binding': 'binding'}
+RANKS = ['twin', 'leech', 'volatile', 'precise', 'frenzied', 'guarding', 'lasting', 'fleeting', 'vast', 'swift', 'heavy',
+         'pulling', 'splitting', 'hexing', 'stilling', 'binding']
 BY_NAME = {v['name']: k for k, v in RUNES.items()}
 for w in RANKS:
     BY_NAME[W[w]['name'] + ' II'] = w + '2'
@@ -47,6 +54,7 @@ D = {}
 D.update(parse(ROOT + '/tools/melds52/docs_twin.txt'))
 D.update(parse(ROOT + '/tools/melds52/docs610.txt'))
 D.update(parse(ROOT + '/tools/melds52/docs_last110.txt'))
+D.update(parse(ROOT + '/tools/meldscity/docs_city.txt'))
 missing = [k for k in list(RUNES) + [w + '2' for w in RANKS] if k not in D or 'front' not in D[k] and 'both' not in D[k]]
 assert not missing, missing
 
@@ -59,6 +67,9 @@ GEAR = {  # (what each rune gives on gear: weapon, gloves, ring, amulet; and the
     'poison': ('Poison Damage or Poison Resistance', 'Poison Resistance'), 'frost': ('Frost Damage or Frost Resistance', 'Frost Resistance'),
     'fire': ('Fire Damage or Fire Resistance', 'Fire Resistance'), 'lightning': ('Lightning Damage or Lightning Resistance', 'Lightning Resistance'),
     'swift': ('Attack Speed or Dexterity (boots: Movement Speed)', 'Dodge or Dexterity'), 'heavy': ('Chance to Stun or Strength', 'Armour or Strength'),
+    # (the city's five: his Floor 11-15 doc's table)
+    'pulling': ('Pickup Reach', 'Pickup Reach'), 'splitting': ('Damage or Dexterity', 'Dexterity'), 'hexing': ('Damage or Intelligence', 'Intelligence'),
+    'stilling': ('Cooldown Recovery or Intelligence', 'Cooldown Recovery or Intelligence'), 'binding': ('Damage or Strength', 'Armour or Strength'),
 }
 
 def adj(s):  # "Onslaught Strike" -> "Onslaught"; "Duelist's Strike" -> "Duelist's"
@@ -114,6 +125,7 @@ src = open('render.py').read().split("if __name__=='__main__':")[0]
 env = {}
 exec(src, env)
 env['R'].update(RUNES2)
+env['R'].update(RUNES3)
 def rank_stone(w):
     im = env['base'](w).copy()
     c = env['hexc'](COLOR[w]); gl = tuple(int(c[i] + (255 - c[i]) * 0.55) for i in range(3)) + (255,)
@@ -133,6 +145,7 @@ sheet.save(G + 'words/melds52.png')
 
 TUNE = json.load(open(ROOT + '/tools/melds52/tune.json'))
 out = {'order': order, 'melds': list(RUNES), 'ranks': [w + '2' for w in RANKS], 'words': words, 'of': of, 'rankOf': rank_of,
-       'attr': attr, 'page': page, 'color': color, 'stones': stones_at, 'glyph': {k: RUNES[k]['glyph'] for k in RUNES}, 'tune': TUNE}
+       'attr': attr, 'page': page, 'color': color, 'stones': stones_at, 'glyph': {k: RUNES[k]['glyph'] for k in RUNES}, 'tune': TUNE,
+       'city': list(RUNES3) + [w + '2' for w in CITY]}
 json.dump(out, open(G + 'words/melds52.json', 'w'), indent=1)
 print(len(RUNES), 'melds,', len(RANKS), 'level 2;', 'sheet', sheet.size)

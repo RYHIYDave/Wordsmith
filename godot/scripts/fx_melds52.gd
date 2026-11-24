@@ -13,7 +13,7 @@ const M52 := preload("res://scripts/melds52.gd")
 const L := preload("res://scripts/fx_looks.gd")
 ## (those of the 52 painted as the game's own melds are: fx_m52paint.gd)
 const Paint := preload("res://scripts/fx_m52paint.gd")
-const PAINTERS := ["res://scripts/fx_m52p_leech.gd", "res://scripts/fx_m52p_precise.gd", "res://scripts/fx_m52p_guard.gd", "res://scripts/fx_m52p_last.gd", "res://scripts/fx_m52p_vast.gd", "res://scripts/fx_m52p_last110.gd"]
+const PAINTERS := ["res://scripts/fx_m52p_leech.gd", "res://scripts/fx_m52p_precise.gd", "res://scripts/fx_m52p_guard.gd", "res://scripts/fx_m52p_last.gd", "res://scripts/fx_m52p_vast.gd", "res://scripts/fx_m52p_last110.gd", "res://scripts/fx_m52p_city.gd"]
 
 var fx:
 	set(v):
@@ -57,7 +57,7 @@ var _carriers := {}
 func ramp(id: String) -> PackedColorArray:
 	if _ramps.has(id):
 		return _ramps[id]
-	var c := Color(str(M52.T()["color"].get(id, "#ffffff")))
+	var c := Color(str(M52.T()["color"].get(id, "#ffffff"))) if id != "~icy" else Color(preload("res://scripts/fx_m52kit.gd").FROST_DEEP)
 	var out := PackedColorArray([c.lerp(Color.WHITE, 0.65), c.lerp(Color.WHITE, 0.3), c, c.darkened(0.3), c.darkened(0.55)])
 	_ramps[id] = out
 	return out
@@ -78,7 +78,10 @@ const HOLDS := {"aftershock:burst": 0.1, "marrow:drink": 0.08, "concussion:boom"
 	"daze:thud": 0.1, "earthquake:wave": 0.12, "charge:ram": 0.1, "mire:mud": 0.08, "icebreaker:shatter": 0.1, "anvil:sparks": 0.1,
 	"fulgurite:stun": 0.08, "quickfuse:pop": 0.08, "cluster:pop": 0.08, "bloodbloom:bloom": 0.08, "detonator:burst": 0.1,
 	"detonator:boom": 0.12, "mayhem:burst": 0.08, "minefield:mine": 0.1, "timebomb:boom": 0.12, "hairtrigger:trigger": 0.1,
-	"blastwave:wave": 0.12}
+	"blastwave:wave": 0.12,
+	# (the city's melds: meldscity_rules.gd, fx_m52p_city.gd)
+	"maw:crash": 0.1, "maw:collapse": 0.12, "gravity:crater": 0.12, "stasis:snap": 0.08, "shackle:bite": 0.08, "anchor:sink": 0.12,
+	"firetrap:blaze": 0.08, "burden:weight": 0.1, "rubble:thud": 0.06}
 
 
 func handle(e: Dictionary) -> void:
@@ -287,7 +290,8 @@ func update(dt: float) -> void:
 			continue
 		var c52: String = _carrier(m)
 		if c52 != "" and randf() < 0.6:
-			fx.mote(m.world.x, m.world.y, ramp(c52))
+			# (FRIEND CYAN IS THE HERO'S ALONE: the icy ones smoulder in Frost's deep blue on a monster, fx_m52kit.gd ICY)
+			fx.mote(m.world.x, m.world.y, ramp("~icy") if preload("res://scripts/fx_m52kit.gd").ICY.has(c52) else ramp(c52))
 		if m.m52.has("brand") or (m.mark_t > 0.0 and str(m.m52.get("mark", "")) == "brand"):
 			fx.mote(m.world.x, m.world.y, ramp("brand"))
 	if h == null:

@@ -1502,7 +1502,10 @@ func time_of() -> float:
 ## coming on.
 func _split() -> void:
 	var S: Dictionary = Words.data().get("city", {}).get("split", {"life": 0.5, "look": 0.75})
-	for k in 2:
+	# (THE CITY'S MELDS: Splitting II's in three; each meld's own on its halves after: foe_meldscity.gd split)
+	var halves: Array = []
+	var n := 3 if word_share("splitting2") > 0.0 else 2
+	for k in n:
 		var at := world
 		for tries in 12:
 			var q := world + Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0))
@@ -1520,7 +1523,11 @@ func _split() -> void:
 		o.split = true
 		o.r *= float(S["look"])
 		o.look = float(S["look"])
+		halves.append(o)
 	_tell({"t": "split", "x": world.x, "y": world.y, "dx": face.x, "dy": face.y, "to": []})
+	var foe = mgr.main.get("_foe") if mgr != null and mgr.main != null else null
+	if foe != null and not halves.is_empty():
+		preload("res://scripts/foe_meldscity.gd").split(foe, self, halves)
 
 
 ## What it tells of itself (fx.gd: the game's own telling; the place may have none).

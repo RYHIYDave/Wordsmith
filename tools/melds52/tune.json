@@ -602,5 +602,255 @@
   "reach": 3.0,
   "share": 0.3,
   "foeWindup": 0.5
+ },
+ "maw": {
+  "crash": 0.3,
+  "meet": 0.9,
+  "collapse": 0.4,
+  "per": 0.25,
+  "most": 6,
+  "foeMore": 0.35
+ },
+ "sump": {
+  "near": 1.2,
+  "most": 3,
+  "every": 0.5,
+  "dose": 0.15,
+  "foeDose": 0.5
+ },
+ "drift": {
+  "chilled": 2.0,
+  "meet": 0.9,
+  "mid": 0.7,
+  "freeze": 1.0,
+  "foeK": 2.0
+ },
+ "firewhirl": {
+  "edge": 0.8,
+  "hotter": 1.5,
+  "every": 0.5,
+  "burn": 0.25
+ },
+ "lodestone": {
+  "tug": 1.0,
+  "foeK": 1.6
+ },
+ "riptide": {
+  "window": 1.0,
+  "each": 0.35,
+  "most": 3,
+  "wake": 2.5,
+  "tug": 1.2,
+  "foeRush": 1.8,
+  "foeRushSecs": 0.6
+ },
+ "gravity": {
+  "reach": 2.6,
+  "stun": 1.5,
+  "every": 0.8,
+  "foeMore": 0.3
+ },
+ "pulling2": {
+  "k": 1.5
+ },
+ "splinter": {
+  "k": 1.5,
+  "shove": 0.6,
+  "foeLife": 1.0
+ },
+ "spore": {
+  "dose": 0.25,
+  "cloud": 0.8,
+  "cloudSecs": 2.5,
+  "foeCloud": 1.0
+ },
+ "sleet": {
+  "again": 2,
+  "ice": 0.7,
+  "iceSecs": 3.0,
+  "foeTrail": 0.5
+ },
+ "embers": {
+  "blast": 0.9,
+  "share": 0.5,
+  "burnR": 0.6,
+  "burnSecs": 2.5
+ },
+ "fractal": {
+  "arc": 0.5,
+  "bolt": 0.4,
+  "foeSecs": 4.0,
+  "foeK": 0.3
+ },
+ "scatter": {
+  "window": 1.0,
+  "most": 5,
+  "foeFast": 1.3
+ },
+ "rubble": {
+  "stagger": 0.45,
+  "crack": 0.7,
+  "crackSecs": 3.0,
+  "foeShove": 1.2
+ },
+ "splitting2": {
+  "copies": 4,
+  "each": 1.1,
+  "shards": 1.5,
+  "reach": 1.2,
+  "foeHalves": 3
+ },
+ "doom": {
+  "deeper": 0.5,
+  "most": 3,
+  "might": 2.0,
+  "foeMore": 0.3
+ },
+ "plague": {
+  "near": 3.0,
+  "every": 0.6,
+  "dose": 0.15,
+  "foeFaster": 1.5
+ },
+ "hoarfrost": {
+  "frozen": 2.0,
+  "chill": 0.3,
+  "foeLonger": 2.0
+ },
+ "brimstone": {
+  "hotter": 1.5,
+  "every": 0.5,
+  "burn": 0.25,
+  "foeLonger": 1.5
+ },
+ "jinx": {
+  "foeReach": 1.5
+ },
+ "whisper": {
+  "cut": 0.06,
+  "pass": 0.9,
+  "foeFast": 1.25
+ },
+ "burden": {
+  "longer": 2.0,
+  "foeShove": 1.5
+ },
+ "hexing2": {
+  "k": 1.5
+ },
+ "stasis": {
+  "again": 0.25,
+  "foeMore": 0.4
+ },
+ "stagnation": {
+  "every": 0.6,
+  "dose": 0.15,
+  "foeLonger": 1.5
+ },
+ "frostlock": {
+  "longer": 1.5,
+  "stay": 1.5
+ },
+ "slowburn": {
+  "longer": 2.0,
+  "foeLonger": 1.5
+ },
+ "stormglass": {
+  "again": 0.5,
+  "every": 0.6,
+  "bolt": 0.35,
+  "foeLonger": 1.5
+ },
+ "timeslip": {
+  "near": 3.0,
+  "cut": 0.04,
+  "most": 5,
+  "haste": 0.25
+ },
+ "standstill": {
+  "longer": 1.5,
+  "every": 0.8
+ },
+ "stilling2": {
+  "k": 1.5
+ },
+ "shackle": {
+  "more": 0.25,
+  "bite": 0.5,
+  "foeMore": 0.3
+ },
+ "strangler": {
+  "faster": 2.0,
+  "dose": 0.2,
+  "foeFaster": 1.5
+ },
+ "icebound": {
+  "chill": 2.0,
+  "freezeAfter": 0.6,
+  "foeLonger": 1.5
+ },
+ "firetrap": {
+  "hotter": 1.5,
+  "blaze": 1.4,
+  "burn": 0.3,
+  "foeHotter": 1.5
+ },
+ "tether": {
+  "near": 3.0,
+  "every": 0.5,
+  "arc": 0.3,
+  "bolt": 2.5,
+  "boltK": 0.4,
+  "foeEvery": 0.6,
+  "foeK": 0.25
+ },
+ "lasso": {
+  "window": 1.0,
+  "each": 0.2,
+  "most": 3,
+  "pass": 0.9
+ },
+ "anchor": {
+  "stun": 2.0,
+  "foeMore": 0.3
+ },
+ "binding2": {
+  "catches": 2
+ },
+ "confluence": {
+  "again": 0.5,
+  "delay": 0.6
+ },
+ "beckon": {
+  "cursed": 2.0
+ },
+ "horizon": {
+  "more": 0.2
+ },
+ "reel": {
+  "longer": 1.25
+ },
+ "coven": {
+  "longer": 2.0,
+  "circle": 0.8,
+  "circleSecs": 3.0
+ },
+ "constellation": {
+  "hang": 0.4,
+  "stay": 3.0,
+  "touch": 0.5
+ },
+ "web": {
+  "longer": 2.0,
+  "snareSecs": 4.0
+ },
+ "torpor": {
+  "more": 0.15
+ },
+ "witchknot": {
+  "more": 0.15
+ },
+ "amber": {
+  "hold": 1.0
  }
 }
