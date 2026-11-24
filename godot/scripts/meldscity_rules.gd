@@ -629,6 +629,8 @@ func bind_secs(i: int, m, secs: float) -> float:
 		"lasso":
 			return secs * (1.0 + float(_t("lasso")["each"]) * quick_n(i))
 		"amber":
+			if m.still_t > secs:
+				_tell({"id": "amber", "what": "hold", "x": m.world.x, "y": m.world.y, "m": m})
 			return maxf(secs, m.still_t) * float(_t("amber")["hold"])
 	return secs
 
@@ -869,9 +871,12 @@ func step(dt: float) -> void:
 			m.shock_t = maxf(m.shock_t, 1.0)
 			m.damage(float(g["dmg"]), "lightning", false, false, [], false, false, int(g["i"]))
 			_tell({"id": "stormglass", "what": "crack", "x": m.world.x, "y": m.world.y, "x1": float(g["x"]), "y1": float(g["y"])})
-		# (Stagnation: the poison does not wear off while the slow holds)
+		# (Stagnation: the poison does not wear off while the slow holds: its time stands still as long as the slow does)
 		if mm.has("stagnation") and m.still_t > 0.0 and m.poison_t > 0.0:
-			m.poison_t = maxf(m.poison_t, 0.6)
+			m.poison_t += dt
+			if float(mm.get("stag_told", -99.0)) < p.time - 0.9:
+				mm["stag_told"] = p.time
+				_tell({"id": "stagnation", "what": "hold", "x": m.world.x, "y": m.world.y, "m": m})
 		# (Standstill, Anchor, Gravity: the stunned held, slowed or dragged in, stunned longer; Burden: the stunned cursed longer)
 		if m.stun_t > 0.0:
 			if not mm.get("stun_long", false):

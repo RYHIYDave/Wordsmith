@@ -452,7 +452,7 @@ func film(only := "") -> void:
 		m._t = 1e9
 		m._cd = 1e9
 		# (he strikes back: its shield struck and broken, it hurt and brought low, or killed, for what each waits on)
-		if FOE_DIES.has(id):
+		if FOE_DIES.has(id) or (M52.is_city(id) and not M52.is_new_rank(id) and (M52.T()["of"][id] as Array).has("splitting")):
 			m.life = 1.0
 		M._w_strike(h)
 		k = await _frames(k, 0.6)
@@ -474,7 +474,7 @@ func film(only := "") -> void:
 		DirAccess.remove_absolute(_dir)
 		print("MELDS52 FILM %s: %d frames, ffmpeg %d" % [id, k, code])
 		print("MELDS52 TOLD %s: %s" % [id, ", ".join(PackedStringArray(h.m52.told.keys()))])
-		print("MELDS52 FOE %s: %s" % [id, "shown" if h.m52.told.keys().any(func(t): return str(t).ends_with(":foe")) else "NOT SHOWN"])
+		print("MELDS52 FOE %s: %s" % [id, "shown" if h.m52.told.keys().any(func(t): return str(t).ends_with(":foe") or str(t).ends_with(":foeSplit")) else "NOT SHOWN"])
 	M52.ON = was
 
 

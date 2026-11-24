@@ -46,3 +46,13 @@ His words, after the rules check and the films of all 98: “Get those melds in�
 98 and the 11 level 2 runes. Checked with it on: `--only=words --cases=m52` 6 of 6, `--only=meld` (the meld page) 15 of 15 (two of
 its lines now expect the page to take every rune of the sixteen, Leech among them, and Volatile twice into its level 2 rune),
 `--only=doorrunes` 8 of 8.
+
+## The city's 45 (24 Nov 2026)
+
+The 45 city melds of his doc Floor 11–15 Melds (his “Good”), with the stones (his “Yep good”) and the animations doc (his “Good to
+go”), painted by godot/scripts/fx_m52p_city.gd, rules meldscity_rules.gd, on monsters foe_meldscity.gd. Filmed with
+`--cases=m52film:city` (`--fixed-fps 30`): each in front, behind, and on a monster; behind, the film waits for each vortex to
+collapse and walks a skeleton onto each snare; carriers of Splitting die so their split is seen. Looked at and made bolder where
+faint (flashes, sprays, thicker swirls, bigger thorns); Tether now links any held enemy near a marked one; Stagnation now keeps the
+poison from wearing off while the slow holds. Rules check `--cases=m52:<the 50>` 100 of 100. On one page for his yes:
+https://claude.ai/artifact/C6a3KHBrT98YMvi4YpKAD9 (`python3 page.py <films> <out> city`). Off (`Melds52.CITY_ON`) until he says yes.
