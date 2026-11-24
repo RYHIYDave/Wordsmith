@@ -1539,6 +1539,16 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   its name and its map mark in the prize's colour; a fountain of coins or gems as it dies. Behind prize_carry.gd ON (OFF until
   his yes to its pictures, docs/mockups/prize_carry, https://claude.ai/artifact/H7xU18nvFLDwxtDuaqyH2D). Check
   `--only=words --cases=prize` 9 of 9.
+- THE HIGH CITY'S RUNES MELDED, the last group (his words, 24 Nov 2026: “Then we gotta get back to these melds.  I'd like to
+  finish them today.”): Piercing, Bleeding, Reaping, Culling and Surging with every other rune and with each other, 110 melds, and
+  each one's level 2 (melds52.json `high`; text and stones from `python3 tools/meldshigh/design.py`, tools/meldshigh/docs_high.txt,
+  docs/mockups/meld_runes6). Plundering and Greed never meld; Mirroring is left out. Each does the work of both its runes, and one
+  twist for all: the High City rune's own act carries the other rune to what it strikes (meldshigh_rules.gd, hooked in
+  last_words.gd): Piercing's line and lance, Bleeding's fresh wounds and thorns, Reaping's soul and spirit, Culling's killing blow
+  and mark, Surging's shockwaves; Swift, Leech, Frenzied, Guarding and Fleeting give him something instead, once a moment. Numbers
+  tools/melds52/tune.json `_carry`; looks fx_m52p_high.gd. melds52.gd HIGH_ON: ON at his “Sure switch it on”, 24 Nov 2026.
+  Checks `--only=words --cases=high` (or `high:<id>,<id>`) 6 of 6 (all 220 cases carry); films `--fixed-fps 30 -- --only=words
+  --cases=m52film:high` (or `high:<from>-<to>`); the page `python3 docs/mockups/meld_films/page.py <films> <out> high`.
 - THE LEXICON IN THE STASH (his words, 24 Nov 2026: “I'd also like to get rid of the lexicon in the middle of town and add it to the
   stash chest.”): no Lexicon of its own in the town, the camp or the Rim (its station, prop, book, light and glow left out: town.gd,
   look.gd `_lexicon_out`); its shelf opened by the LEXICON button on the stash's half, and back by STASH (inventory.gd "svc_swap").
