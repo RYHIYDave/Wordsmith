@@ -12,3 +12,10 @@ Picture page: https://claude.ai/artifact/2G83AArSTRDzTR29T9Kr6y (meld_runes3.htm
   tools/melds52/make.py rank_stone draws Power II and the rest).
 
 The animations' plan: Floor 11–15 Meld Animations, https://claude.ai/artifact/BnhngFXn84WWNcRkKMnGDd. Waiting on his word.
+
+CHECKED AGAINST HIS ART RULEBOOK (his reminder, 24 Nov 2026: “Remember to follow the rules for art and animations”; the living
+doc https://claude.ai/artifact/Dq343Th9FFbpt9EiKfNyYe, rev 88): Implosion (#c42c3c, blood red) and Splinter (#e8705a, salmon red)
+off the enemy's pink, as Bloodbloom and Lamprey were; Icebound two frosted chain links, not nested squares (rule 9). The page
+republished with them. The animations doc the same: the hold and the screen's kick on every heavy landing and big burst
+(Movement 7, Animations), shapes for its rings (thorns, flame tongues, spikes, haze, a lump of amber), Frostlock and
+Constellation in Frost's deep blue on a monster (never cyan there), a curse a monster lays on him in the enemy's pink and gold.

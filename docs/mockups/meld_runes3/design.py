@@ -1,6 +1,8 @@
 # The 45 meld runes of Floor 11-15 Melds (his doc, https://claude.ai/artifact/CMMUpdDX2f9DwDPe8avGqQ; his word, 24 Nov 2026:
 # "Good"): each its own glyph ('X' its colour, 'o' its glow), its colour, its two runes (for the foot), and what the symbol shows.
-# Drawn by ../meld_runes/render.py's stone().
+# Drawn by ../meld_runes/render.py's stone(). By his Art Rulebook (his reminder, 24 Nov 2026: “Remember to follow the rules
+# for art and animations”): nothing on his side in the enemy's pink (Implosion blood red, Splinter salmon red, as Bloodbloom and
+# Lamprey were made), and no plain box (Icebound two chain links, not nested squares).
 R3 = {}
 SHOWS3 = {}
 def rune(id, name, a, b, color, shows, glyph):
@@ -11,7 +13,7 @@ def rune(id, name, a, b, color, shows, glyph):
     SHOWS3[id] = shows
 
 # --- PULLING ---
-rune("implosion", "Implosion", "pulling", "power", "#c0506a", "Four points driven into one",
+rune("implosion", "Implosion", "pulling", "power", "#c42c3c", "Four points driven into one",
      ["X.....X", ".X...X.", "..XoX..", "...o...", "..XoX..", ".X...X.", "X.....X"])
 rune("sump", "Sump", "pulling", "poison", "#6e8c4a", "Venom draining down a funnel",
      [".XXXXX.", "X.ooo.X", ".X.o.X.", "..XoX..", "...X...", "..o.o..", "...o..."])
@@ -26,7 +28,7 @@ rune("riptide", "Riptide", "pulling", "swift", "#6aa0c8", "A wave curling back o
 rune("gravity", "Gravity", "pulling", "heavy", "#8a6ab0", "A weight sinking into a hollow",
      ["..XXX..", "..XXX..", "...X...", "X..o..X", ".X...X.", "..XXX..", "......."])
 # --- SPLITTING ---
-rune("splinter", "Splinter", "splitting", "power", "#e07090", "One blow forking into three",
+rune("splinter", "Splinter", "splitting", "power", "#e8705a", "One blow forking into three",
      ["X..X..X", "X..X..X", ".X.X.X.", "..XXX..", "...X...", "...o...", "...o..."])
 rune("spore", "Spore", "splitting", "poison", "#c0c870", "A puffball scattering spores",
      ["o..o..o", ".o...o.", "..XXX..", ".XXXXX.", ".XXXXX.", "..XXX..", "...X..."])
@@ -75,8 +77,8 @@ rune("shackle", "Shackle", "binding", "power", "#c06050", "A padlock, shut",
      ["..XXX..", ".X...X.", ".X...X.", "XXXXXXX", "XX.o.XX", "XXXXXXX", "......."])
 rune("strangler", "Strangler", "binding", "poison", "#9aa848", "A thorned vine winding",
      ["X.X....", ".X.X...", "X.X.o..", "...X.X.", "..o.X.X", "....X.X", ".....X."])
-rune("icebound", "Icebound", "binding", "frost", "#a0c0d8", "A link frozen in a block of ice",
-     ["XXXXXXX", "X.....X", "X.XXX.X", "X.XoX.X", "X.XXX.X", "X.....X", "XXXXXXX"])
+rune("icebound", "Icebound", "binding", "frost", "#a0c0d8", "Two chain links, frosted",
+     ["XXXX..o", "X..X.o.", "X.XXXX.", "XXXX..X", "..X...X", "o.XXXXX", ".o....."])
 rune("firetrap", "Firetrap", "binding", "fire", "#e86a3a", "A snare's jaws, flames above",
      [".o.o.o.", "o.o.o.o", "X.....X", "XX...XX", "X.X.X.X", "XXXXXXX", "......."])
 rune("tether", "Tether", "binding", "lightning", "#e8d888", "Two rings, a spark between them",

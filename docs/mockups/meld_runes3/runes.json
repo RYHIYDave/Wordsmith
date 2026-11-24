@@ -5,7 +5,7 @@
    "pulling",
    "power"
   ],
-  "color": "#c0506a",
+  "color": "#c42c3c",
   "glyph": [
    "X.....X",
    ".X...X.",
@@ -124,7 +124,7 @@
    "splitting",
    "power"
   ],
-  "color": "#e07090",
+  "color": "#e8705a",
   "glyph": [
    "X..X..X",
    "X..X..X",
@@ -517,13 +517,13 @@
   ],
   "color": "#a0c0d8",
   "glyph": [
-   "XXXXXXX",
-   "X.....X",
-   "X.XXX.X",
-   "X.XoX.X",
-   "X.XXX.X",
-   "X.....X",
-   "XXXXXXX"
+   "XXXX..o",
+   "X..X.o.",
+   "X.XXXX.",
+   "XXXX..X",
+   "..X...X",
+   "o.XXXXX",
+   ".o....."
   ]
  },
  "firetrap": {
