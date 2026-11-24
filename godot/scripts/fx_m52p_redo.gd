@@ -61,16 +61,37 @@ const MOMENTS := {
 	"windward:whirl": ["", "windring"], "windward:gust": ["push", ""],
 	"amber:seal": ["", "amberblock"], "amber:stick": ["thread", ""], "amber:shatter": ["burst", "shards"], "amber:amber": ["", "amberblock"],
 	"amber:crack": ["burst", ""],
+	# --- ROUND 3
+	"beckon:hand": ["drag", "handup"], "beckon:pass": ["pass", ""], "beckon:hands": ["bind", "handup"],
+	"bedrock:ring": ["quake", "rockring"], "bedrock:stone": ["slam", "stone"], "bedrock:rock": ["stun", "stone"],
+	"blink:streak": ["rush", ""], "blink:cut": ["cut", ""], "blink:flash": ["burst", ""],
+	"bloodcurse:drops": ["drink", ""], "bloodcurse:thread": ["drain", ""],
+	"bloodlust:spray": ["spray", ""], "bloodlust:wave": ["slam", "roar"], "bloodlust:charge": ["dash", ""], "bloodlust:mist": ["frenzy", ""],
+	"bloodtide:tide": ["stream", ""], "bloodtide:wave": ["roll", ""], "bloodtide:stream": ["stream", ""],
+	"blur:blur": ["", "image"], "blur:pass": ["cut", ""], "blur:flicker": ["", "image"],
+	"brimstone:gout": ["pyre", ""], "brimstone:jet": ["pyre", ""], "brimstone:brimstone": ["ablaze", ""],
+	"bullseye:rings": ["push", "target"], "bullseye:target": ["", "target"], "bullseye:burst": ["burst", "target"],
+	"burden:weight": ["", "weighton"], "burden:chains": ["bind", ""], "burden:crash": ["slam", ""],
+	"cataclysm:split": ["quake", "rockring"], "cataclysm:rock": ["quake", ""],
+	"cauterize:sear": ["hurl", ""], "cauterize:embers": ["pyre", ""], "cauterize:flare": ["pyre", ""],
+	"coldblood:warmth": ["drink", ""], "coldblood:shatter": ["shatter", ""],
+	"daze:stars": ["hurl", ""], "daze:jolt": ["stun", ""],
+	"doubletap:double": ["slam", ""], "doubletap:link": ["", "chainline"], "doubletap:echo": ["flick", ""], "doubletap:down": ["stun", ""],
+	"feedingfrenzy:feed": ["stream", ""], "feedingfrenzy:orb": ["drink", ""], "feedingfrenzy:gorge": ["frenzy", ""],
+	"fetters:cuff": ["", "chainline"], "fetters:link": ["", "chainline"],
+	"flechette:dart": ["", "dagger"], "flechette:darts": ["", "dartring"],
+	"fortress:slab": ["slam", "weight"], "fortress:stone": ["hurl", ""], "fortress:wall": ["stun", "stone"],
+	"frostbite:burst": ["freeze", ""], "frostbite:creep": ["trail", ""], "frostbite:freeze": ["freeze", ""],
 }
 ## (how long a thing of its own stands, where its moment says not)
 const LASTS := {"hammer": 0.45, "shadow": 0.9, "blades": 0.9, "clock": 1.2, "roar": 0.6, "weight": 0.5, "spiral": 0.9, "sore": 0.6,
 	"redmark": 1.2, "dagger": 0.8, "tether": 1.5, "chainline": 0.5, "furyring": 0.5, "shieldring": 5.0,
 	"spike": 0.9, "plates": 0.8, "image": 1.0, "slashring": 0.5, "shards": 0.7, "orb": 0.8, "pool": 5.0, "windring": 0.5,
-	"amberblock": 1.5}
+	"amberblock": 1.5, "handup": 0.9, "rockring": 0.7, "stone": 0.8, "target": 0.9, "weighton": 1.0, "dartring": 4.0}
 ## (the redone ones whose moments are their blood's, fire's or ice's)
-const BLOOD_IDS := ["lamprey", "lancet", "transfusion"]
-const FIRE_IDS := ["fervor"]
-const ICE_IDS := ["glide"]
+const BLOOD_IDS := ["lamprey", "lancet", "transfusion", "bloodcurse", "bloodlust", "bloodtide", "feedingfrenzy"]
+const FIRE_IDS := ["fervor", "brimstone", "cauterize"]
+const ICE_IDS := ["glide", "frostbite"]
 
 
 ## (not found by its id: fx_melds52.gd hands it only the moments these add)
@@ -86,7 +107,8 @@ func _R(b: Dictionary) -> PackedColorArray:
 	if b.get("foe", false):
 		return ENEMY
 	var id := str(b["id"])
-	if id in BLOOD_IDS:
+	# (what is drawn out of a body, life or warmth, in blood's red, whatever the meld)
+	if id in BLOOD_IDS or str(b.get("told", "")) == "warmth":
 		return BLOOD
 	if id in FIRE_IDS:
 		return PackedColorArray(FIRE)
@@ -189,6 +211,27 @@ func paint_floor(b: Dictionary) -> void:
 			_ring(x, y, 1.1 * (0.3 + 0.7 * minf(1.0, u * 1.4)), 2, t * 3.0)
 		"hourstand":
 			_hourglass(_wx(x, y), _wy(x, y) - 20.0, 9.0, R, minf(1.0, fade * 4.0), u)
+		"rockring":
+			# (rock bursting up round it: stones rising in a ring and falling back)
+			for k in 8:
+				var a := k * TAU / 8.0
+				var p := Vector2(x, y) + Vector2(cos(a), sin(a)) * float(b["r"]) * (0.6 + 0.4 * u)
+				var hgt := 10.0 * sin(minf(1.0, u * 1.4) * PI)
+				_fs(PackedColorArray(STONE)[2 + k % 3])
+				_ga(minf(1.0, fade * 2.0))
+				_fill(_wx(p.x, p.y) - 3.0, _wy(p.x, p.y) - hgt - 3.0, 6.0, 5.0)
+		"dartring":
+			# (Flechette's darts stuck in the ground round where it ended)
+			for k in 6:
+				var a := k * TAU / 6.0
+				var p := Vector2(x, y) + Vector2(cos(a), sin(a)) * float(b["r"])
+				var px := _wx(p.x, p.y)
+				var py := _wy(p.x, p.y)
+				_ga(minf(1.0, fade * 4.0))
+				_fs(R[2])
+				_line(px, py, px + 2.0, py - 7.0, 1)
+				_fs(R[5])
+				_fill(px + 1.0, py - 8.0, 2.0, 2.0)
 		"pool":
 			# (Transfusion's pool of life where it fell: a red ring that pulses while it lasts)
 			_fs(R[3])
@@ -388,6 +431,32 @@ func paint_air(b: Dictionary) -> void:
 			_fs(R[5])
 			_ga(0.9 * minf(1.0, fade * 3.0))
 			_line(cx - 4.0, cy - 16.0, cx + 2.0, cy - 6.0 + u * 6.0, 1)
+		"handup":
+			_hand_up(cx, cy + 12.0, minf(1.0, fade * 3.0), u)
+		"stone":
+			# (a stone jutting up from the ground under it)
+			var hgt := 18.0 * sin(minf(1.0, u * 1.6) * PI * 0.5)
+			_ga(minf(1.0, fade * 3.0))
+			_fs(PackedColorArray(STONE)[2])
+			_fill(cx - 5.0, cy + 12.0 - hgt, 10.0, hgt)
+			_fs(PackedColorArray(STONE)[4])
+			_fill(cx - 5.0, cy + 12.0 - hgt, 10.0, 2.0)
+		"target":
+			# (target rings over it)
+			_ga(minf(1.0, fade * 3.0))
+			for k in 3:
+				_fs(R[5] if k == 0 else R[3])
+				_ring(b["x"], b["y"], 0.25 + k * 0.3 - (0.1 * u if b.get("foe", false) else 0.0), 0, 0.0, 16.0)
+		"weighton":
+			# (Burden: a dark weight settled on it)
+			var by := cy - 30.0 + sin(t * 3.0) * 1.5
+			_ga(minf(1.0, fade * 3.0))
+			_fs(Color(0.1, 0.05, 0.12))
+			_fill(cx - 8.0, by, 16.0, 9.0)
+			_fs(R[2])
+			_fill(cx - 8.0, by, 16.0, 2.0)
+			_fs(R[3])
+			_fill(cx - 2.0, by - 4.0, 4.0, 4.0)
 		"shieldring":
 			# (Bulwark's ward: raised shields standing round its edge)
 			var r: float = float(b["r"])

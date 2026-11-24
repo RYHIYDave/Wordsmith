@@ -1578,6 +1578,26 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   `--shots` (without it the game starts in town, with no pack to fight).
   Checks `--only=words --cases=high` (or `high:<id>,<id>`), each meld in front, behind and carried by a monster; films `--fixed-fps 30 -- --only=words
   --cases=m52film:high` (or `high:<from>-<to>`); the page `python3 docs/mockups/meld_films/page.py <films> <out> high`.
+- ALL MELDS: THE LEAST EXCITING REDONE (his words, 24 Nov 2026: “Next I want you to look at the larger pool of all melds, and redo
+  the 20 weakest.  Then do it again.  Then do it a third time.”; weakest read as least exciting, his pick the time before). All 325
+  melds (the game's own 23, the 98 of floors 1 to 10, the city's 45 and 44, the Reaping creatures' 5, the High City's 110) scored
+  as the High City's were (tools/meldsredo/scores_all.py: each twist 3 a new thing seen happen, 2 a change to something already
+  there, 1 numbers only; in front counted twice; ties by in front, then name), the 20 lowest redone, scored again, three rounds:
+  ROUND 1 Ambush, Berserk, Blight, Bulwark, Canker, Delirium, Doom, Duelist, Eternity, Evil Eye, Fervor, Fever, Fury, Glide,
+  Grudge, Haymaker, Hourglass, Lamprey, Lancet, Manacle; ROUND 2 Mauler, Momentum, Needle, Onrush, Pin, Quickdraw, Quickening,
+  Rapier, Reverb, Riposte, Siphon, Stillpoint, Sunder, Tailwind, Tempo, Timeslip, Transfusion, Vendetta, Windward, Amber; ROUND 3
+  Beckon, Bedrock, Blink, Bloodcurse, Bloodlust, Bloodtide, Blur, Brimstone, Bullseye, Burden, Cataclysm, Cauterize, Coldblood,
+  Daze, Doubletap, Feeding Frenzy, Fetters, Flechette, Fortress, Frostbite. Each keeps its name, idea, stone and all it did (its
+  own rules where they were) and gains on each side a moment seen happen: their texts tools/meldsredo/redo.txt (melds52.json
+  `redo`, `redoRounds`, by tools/melds52/make.py); on his moves meldsredo_rules.gd (round 1), meldsredo2.gd, meldsredo3.gd, called
+  from melds52_rules.gd's hooks (used, struck, killed, marked, wake, step, struck_him, more, crit, orb_taken); on a monster
+  foe_meldsredo.gd, from foe_melds52.gd's and foe_words.gd's; their looks fx_m52p_redo.gd (the High City painter's brushes, and
+  things of their own: Doom's hammer, Duelist's blades, Eternity's clock, the Hourglass, Manacle's chain, Pin's spike, Sunder's
+  plates, Amber's block, Bullseye's target...). melds52.gd REDO_ON: OFF until his yes to their films (their texts too).
+  Checks `--only=words --cases=redo` (or `redo:round=1`, `redo:<id>,<id>`; check_redo.gd), each in front, behind and on a monster,
+  passing only on its new moment (EXPECT); films `--fixed-fps 30 -- --only=words --cases=m52film:redo` (or `redo:round=1`); the page
+  `python3 docs/mockups/meld_films/page_redo.py <films> <out>`. Found on the way: the High City painter drew a monster's own
+  moment (a shade, a feed, a blink) at the monster for one frame only, then on him (fx_m52kit.gd `stay`).
 - THE LEXICON IN THE STASH (his words, 24 Nov 2026: “I'd also like to get rid of the lexicon in the middle of town and add it to the
   stash chest.”): no Lexicon of its own in the town, the camp or the Rim (its station, prop, book, light and glow left out: town.gd,
   look.gd `_lexicon_out`); its shelf opened by the LEXICON button on the stash's half, and back by STASH (inventory.gd "svc_swap").

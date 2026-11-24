@@ -28,14 +28,17 @@ var chains: Array = []
 var rings: Array = []
 var embers: Array = []
 var fervor_until := -99.0
-## (round 2's own: meldsredo2.gd)
+## (round 2's own: meldsredo2.gd; round 3's: meldsredo3.gd)
 var r2
+var r3
+var _zone_n := 0
 
 
 func _init(hero, r) -> void:
 	h = hero
 	rules = r
 	r2 = preload("res://scripts/meldsredo2.gd").new(self, hero)
+	r3 = preload("res://scripts/meldsredo3.gd").new(self, hero)
 
 
 func _H():
@@ -134,6 +137,7 @@ func used(i: int, echo: bool, at := Vector2.INF) -> void:
 	if not M52.REDO_ON or _H() == null:
 		return
 	r2.used(i, echo, at)
+	r3.used(i, echo, at)
 	if echo:
 		return
 	var fi := f(i)
@@ -167,8 +171,12 @@ func used(i: int, echo: bool, at := Vector2.INF) -> void:
 
 # --- a hit of his ---
 
-func struck(m, i: int, dmg: float, c: bool, at: Vector2) -> void:
+func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet := false) -> void:
 	if not M52.REDO_ON or _H() == null or not is_instance_valid(m):
+		return
+	# (a quiet hit, a copy's or a splash's: only what waits on one)
+	if quiet:
+		r3.quiet_struck(m, i)
 		return
 	var H = _H()
 	# (poisoned when struck: what its death leaves, Blight's and Fever's, knows it, though death clears it before they look)
@@ -332,6 +340,7 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2) -> void:
 			drains.append({"m": m, "until": clock() + 3.0, "i": i, "next": 0.0})
 			tell("lancet", "drive", m.world)
 	r2.struck(m, i, dmg, c, at)
+	r3.struck(m, i, dmg, c, at)
 
 
 ## How much harder his hit lands on `m`, of these.
@@ -390,6 +399,7 @@ func killed(m, i: int) -> void:
 					H.curse(q, 4.0, 0.15)
 					H.stun(q, 0.3)
 	r2.killed(m, i, was_poisoned)
+	r3.killed(m, i)
 
 
 # --- Precise behind's marks ---
@@ -412,23 +422,35 @@ func marked(m, i: int) -> void:
 			m.m52["rd_lancet"] = true
 			tell("lancet", "blade", m.world, {"secs": secs})
 	r2.marked(m, i)
+	r3.marked(m, i)
+
+
+## A life orb taken.
+func orb_taken() -> void:
+	if not M52.REDO_ON or _H() == null:
+		return
+	r3.orb_taken()
 
 
 # --- what a move behind left on the ground ---
 
 const ZONE_SECS := {"bulwark": 5.0, "canker": 10.0, "delirium": 5.0, "doom": 5.0, "eternity": 8.0, "grudge": 10.0, "hourglass": 3.0,
 	"glide": 5.0, "manacle": 10.0,
-	"mauler": 10.0, "pin": 10.0, "amber": 10.0, "riposte": 5.0, "timeslip": 6.0, "windward": 5.0, "quickening": 6.0}
+	"mauler": 10.0, "pin": 10.0, "amber": 10.0, "riposte": 5.0, "timeslip": 6.0, "windward": 5.0, "quickening": 6.0,
+	"beckon": 6.0, "bedrock": 10.0, "bloodcurse": 6.0, "brimstone": 6.0, "burden": 6.0, "daze": 6.0, "fetters": 10.0, "fortress": 5.0,
+	"coldblood": 6.0}
 
 
 func wake(i: int, at: Vector2, rad: float) -> void:
 	if not M52.REDO_ON or _H() == null:
 		return
+	r3.wake(i, at, rad)
 	var bi := b(i)
 	if not ZONE_SECS.has(bi):
 		return
 	var r: float = maxf(1.5, rad)
-	var z := {"id": bi, "at": at, "r": r, "until": clock() + float(ZONE_SECS[bi]), "i": i, "ang": 0.0, "snapped": false}
+	_zone_n += 1
+	var z := {"id": bi, "at": at, "r": r, "until": clock() + float(ZONE_SECS[bi]), "i": i, "ang": 0.0, "snapped": false, "n": _zone_n}
 	zones.append(z)
 	match bi:
 		"bulwark":
@@ -602,6 +624,7 @@ func step(dt: float) -> void:
 				tell("lamprey" if lst != drains else "lancet", what, m.world, {"x1": h.world.x, "y1": h.world.y, "minor": true})
 	# (Manacle's chains: no farther than the chain's length from where it was held)
 	r2.step(dt)
+	r3.step(dt)
 	for k in range(chains.size() - 1, -1, -1):
 		var ch: Dictionary = chains[k]
 		var m = ch["m"]
@@ -638,3 +661,4 @@ func fresh() -> void:
 	embers = []
 	fervor_until = -99.0
 	r2.fresh()
+	r3.fresh()

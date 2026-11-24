@@ -16158,6 +16158,106 @@
    "frontText": "Holds what it hits and slows it in time, the hold lasting as long as the slow; the held enemy is sealed in amber, and when the amber breaks it shatters, striking those near.",
    "behindText": "Leaves a snare inside a bubble; what it catches is sealed in amber, and the enemies near it stick to the amber's edge, slowed.",
    "monsterText": "Its blows root you and slow your cooldowns, sealing your feet in amber that cracks away when the hold ends."
+  },
+  "beckon": {
+   "frontText": "Curses what it hits and drags it toward where it struck, a cursed one twice as far: a hand of shadow reaches out and hauls it in, and the enemies it is hauled to are cursed too.",
+   "behindText": "Leaves a vortex inside a hex circle; what it draws in deals less damage, and hands of shadow rise from its middle to hold what reaches it for a moment.",
+   "monsterText": "Its blows drag you toward it and curse you; while you are cursed, a hand of shadow reaches out from it every few seconds and hauls you in again."
+  },
+  "bedrock": {
+   "frontText": "Slower, hits much harder, and its stun lasts half again as long; the blow drives what it stuns into the ground, and a ring of rock bursts up round it, throwing back those beside it.",
+   "behindText": "Leaves cracked ground that lasts until the fight is over, and every so often a stone juts up from it under an enemy, striking and staggering it.",
+   "monsterText": "Its blows knock you back and you stay staggered longer; every second blow, rock bursts up under your feet, staggering you again."
+  },
+  "blink": {
+   "frontText": "Faster to use again, and for a moment after each use you move very fast, a streak of light behind you, and the enemies you pass through are cut.",
+   "behindText": "Each use gives a burst of speed a third as long and much faster, and as it ends you flash, a burst of light that dazzles the enemies near you for a moment.",
+   "monsterText": "Moves and attacks faster; darts at you in short, very fast bursts, a streak of light that cuts you as it passes through you."
+  },
+  "bloodcurse": {
+   "frontText": "Curses what it hits; hitting a cursed enemy heals you twice as much, and the curse bleeds it: dark drops of its life fly from it to you.",
+   "behindText": "Leaves a hex circle; enemies that die in it drop life orbs, and the circle drinks: each enemy standing in it bleeds a dark thread of life to you.",
+   "monsterText": "Heals when it hits you, twice as much while you are cursed; its blows curse you, and while you are cursed your life drips from you to it in dark drops."
+  },
+  "bloodlust": {
+   "frontText": "More damage and a bigger hit that heals you for every enemy it hits; while you are at full life the healing becomes extra damage instead, and each blow sprays blood in an arc that cuts those beside what it hits.",
+   "behindText": "Enemies it kills drop life orbs; picking one up gives Power's damage bonus and lets out a red shockwave that throws back the enemies near you.",
+   "monsterText": "Heals when it hits you; hits harder and has more life. At full life it goes into a bloodlust, red mist rising off it, and charges you."
+  },
+  "bloodtide": {
+   "frontText": "A much bigger area, a little less damage; heals you for every enemy hit, allies near you too, and the life drawn flows to you as a red tide streaming in from all it hit.",
+   "behindText": "Each hit splashes onto the enemies near what it hits, and the splash heals you as well; every third hit, the splash rolls out as a red wave that throws back the enemies it reaches.",
+   "monsterText": "Heals when it hits you; its attacks reach wider, and its healing reaches the monsters near it in red streams, each it heals hitting harder for a few seconds."
+  },
+  "blur": {
+   "frontText": "Faster to use again; at a full frenzy of five you also move faster and dodge more, and you blur: afterimages trail you, striking the enemies they pass through.",
+   "behindText": "Kills keep the frenzy going and give you a burst of speed; while it lasts, enemies you pass close by are struck by your blur.",
+   "monsterText": "Speeds up as it is hurt; moves and attacks faster. Badly hurt, it becomes a blur for a few seconds, flickering round you and striking from every side."
+  },
+  "brimstone": {
+   "frontText": "Fire damage that explodes, sets enemies burning and curses them; a cursed enemy burns hotter, and one that dies burning bursts in a gout of sulphur fire that burns and curses those near.",
+   "behindText": "Leaves a burning hex circle; enemies inside deal less damage and are set burning, and a jet of fire spouts from it each second, burning what it catches.",
+   "monsterText": "Deals fire damage and sets you burning; its blows curse you, your burning lasts longer while you are cursed, and while you burn, brimstone falls round you: step from under it."
+  },
+  "bullseye": {
+   "frontText": "A much bigger area, a little less damage; the enemy nearest its middle takes a certain critical, and target rings flash on it as it lands, blowing the enemies round it back.",
+   "behindText": "Marks every enemy near what it hits, target rings over each; your certain critical on one bursts its rings, striking those round it.",
+   "monsterText": "Its attacks reach wider. Target rings close in round you as it winds up: stand at their heart when its blow lands and the hit is critical."
+  },
+  "burden": {
+   "frontText": "Slower, hits much harder and stuns, and curses; the curse lasts twice as long on a stunned enemy, and a dark weight settles on what it stuns and curses, falling away with a crash that staggers those beside it as the stun ends.",
+   "behindText": "Leaves cracked ground inside a hex circle; enemies inside deal less damage, those it staggers are cursed, and chains of the curse rise from the cracks to hold what it curses there for a moment.",
+   "monsterText": "Its blows knock you back and curse you; you are knocked farther while you are cursed, and a dark weight settles on you, slowing you."
+  },
+  "cataclysm": {
+   "frontText": "A much bigger area; the hit lands harder for every enemy it catches, and when it catches four or more the ground splits open under them in a burst of rock that throws them all back.",
+   "behindText": "Each hit splashes harder onto the enemies near what it hits, and the splash cracks the ground, rock bursting up round what it hit and staggering those there.",
+   "monsterText": "Hits harder and has more life; its attacks reach much wider, and every third blow splits the ground round you, rock bursting up under you."
+  },
+  "cauterize": {
+   "frontText": "Killing a burning enemy heals you a chunk, and its fire leaps into you as it dies, a lick of flame that sears your wounds.",
+   "behindText": "Killing a burning enemy heals you a little, and its embers scatter, setting the enemies near it burning.",
+   "monsterText": "Low on life it sears its wounds shut, once, in a flare of fire that burns you if you are close."
+  },
+  "coldblood": {
+   "frontText": "Frost damage that chills, then freezes; it heals you twice as much from chilled or frozen enemies, the warmth drawn out of them in red wisps to you.",
+   "behindText": "Leaves ice that slows; enemies that die on the ice drop life orbs more often, and shatter as they fall, chilling those near.",
+   "monsterText": "Heals when it hits you; deals frost damage and slows you, heals twice as much while you are chilled, and while you are chilled it draws your warmth to it in red wisps."
+  },
+  "daze": {
+   "frontText": "Slower, hits much harder; its stun is shorter, but every hit on a stunned enemy lands harder, knocking stars from it that fly to the enemies beside it and daze them too.",
+   "behindText": "Its cracked ground staggers in quick, short jolts, more often, each jolt throwing up dust that dazes what it catches.",
+   "monsterText": "Its blows knock you back; while you are staggered it hits you harder, and stars wheel round your head, slowing you."
+  },
+  "doubletap": {
+   "frontText": "Strikes twice, a smaller area; when the first blow is a critical hit the second is a certain critical too, and a double critical rings out in a crack that staggers the enemies round it.",
+   "behindText": "Marks two enemies at once: your next hit on each is a certain critical, and a thread of light links the two: striking one strikes the other too.",
+   "monsterText": "Attacks twice; its hits find the gaps in your armour, and when its first blow is critical, so is its second; its second blow knocks you down for a moment."
+  },
+  "feedingfrenzy": {
+   "frontText": "Each use makes the next faster, up to five times, and the higher the frenzy, the more each hit heals you; at a full frenzy it feeds, red streams pouring from each enemy you hit into you.",
+   "behindText": "Kills keep the frenzy going, and at a full frenzy enemies it kills give up their life in orbs that fly to you on their own, healing you.",
+   "monsterText": "Speeds up as it is hurt; heals when it hits you, more the faster it goes, and badly hurt it gorges, swelling red and healing a chunk."
+  },
+  "fetters": {
+   "frontText": "Strikes twice, each time weaker; an enemy held by the first strike is held again by the second, half as long again, and the cuff chains it to the nearest other enemy: neither can go far from the other.",
+   "behindText": "Leaves a snare, and a moment later a second one beside it; what one catches is chained to the nearest other enemy.",
+   "monsterText": "Attacks twice; its blows root you, and each leaves a cuff and chain on your feet that slows you once the root ends."
+  },
+  "flechette": {
+   "frontText": "Breaks into three copies that fly twice as fast and strike a third harder, each pinning what it hits to the ground for a moment with a quivering dart.",
+   "behindText": "Where it ends, shards fly out twice as fast and twice as far, and darts stick in the ground in a ring round where it ended, cutting what crosses them.",
+   "monsterText": "Its poison and burning hurt you faster; splits in two when it dies, its halves quicker, and as it splits it sprays darts at you."
+  },
+  "fortress": {
+   "frontText": "Slower, hits much harder and stuns; each use gives you a shield, while it holds nothing knocks you back or stuns you, and your blows behind it land like a falling wall: a slab of stone drops on what you hit, staggering those beside it.",
+   "behindText": "Leaves a ward circle; enemies stepping into it are staggered, and a stone tower rises at its heart that hurls a stone at each enemy that steps in.",
+   "monsterText": "Carries a shield that soaks damage; its blows knock you back; while its shield holds nothing staggers or stops it, and its blows slam you into a wall of stone it raises behind you, stunning you."
+  },
+  "frostbite": {
+   "frontText": "Chilled enemies lose life over time, and frozen ones twice as fast; frost creeps over a chilled one, and as the chill wears off the frost cracks away in a burst that chills those near.",
+   "behindText": "The ice on the ground poisons what crosses it, and black frost creeps out from it toward the nearest enemy.",
+   "monsterText": "While it has chilled you, you bleed cold, and blue frostbite spreads over you: stay chilled long and you freeze for a moment."
   }
  },
  "redoRounds": [
@@ -16204,6 +16304,28 @@
    "vendetta",
    "windward",
    "amber"
+  ],
+  [
+   "beckon",
+   "bedrock",
+   "blink",
+   "bloodcurse",
+   "bloodlust",
+   "bloodtide",
+   "blur",
+   "brimstone",
+   "bullseye",
+   "burden",
+   "cataclysm",
+   "cauterize",
+   "coldblood",
+   "daze",
+   "doubletap",
+   "feedingfrenzy",
+   "fetters",
+   "flechette",
+   "fortress",
+   "frostbite"
   ]
  ]
 }

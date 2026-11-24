@@ -352,8 +352,7 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
 	if h.last != null:
 		h.last.high.struck(m, i, dmg, c, at)
-	if not quiet:
-		rd.struck(m, i, dmg, c, at)
+	rd.struck(m, i, dmg, c, at, quiet)
 	y2.struck(m, i, dmg, c, at, quiet)
 	if f == "":
 		return
@@ -1169,6 +1168,7 @@ func haste_k(i: int) -> Array:
 ## A life orb taken: BLOODLUST behind, Power's might; SECOND WIND behind, a burst of speed.
 func orb_taken() -> void:
 	x.orb_taken()
+	rd.orb_taken()
 	for i in 3:
 		match bid(i):
 			"bloodlust":

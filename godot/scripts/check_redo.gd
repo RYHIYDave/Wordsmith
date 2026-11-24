@@ -52,13 +52,36 @@ const EXPECT := {
 	"vendetta": {"front": ["sigil"], "behind": ["slashes"], "foe": ["sigil"]},
 	"windward": {"front": ["whirl"], "behind": ["gust"], "foe": ["gust"]},
 	"amber": {"front": ["seal"], "behind": ["seal"], "foe": ["amber"]},
+	# --- ROUND 3
+	"beckon": {"front": ["hand"], "behind": ["hands"], "foe": ["hand"]},
+	"bedrock": {"front": ["ring"], "behind": ["stone"], "foe": ["rock"]},
+	"blink": {"front": ["streak"], "behind": ["flash"], "foe": ["streak"]},
+	"bloodcurse": {"front": ["drops"], "behind": ["thread"], "foe": ["drops"]},
+	"bloodlust": {"front": ["spray"], "behind": ["wave"], "foe": ["charge"]},
+	"bloodtide": {"front": ["tide"], "behind": ["wave"], "foe": ["stream"]},
+	"blur": {"front": ["blur"], "behind": ["pass"], "foe": ["flicker"]},
+	"brimstone": {"front": ["gout"], "behind": ["jet"], "foe": ["brimstone"]},
+	"bullseye": {"front": ["rings"], "behind": ["burst"], "foe": ["rings"]},
+	"burden": {"front": ["weight"], "behind": ["chains"], "foe": ["weight"]},
+	"cataclysm": {"front": ["split"], "behind": ["rock"], "foe": ["split"]},
+	"cauterize": {"front": ["sear"], "behind": ["embers"], "foe": ["flare"]},
+	"coldblood": {"front": ["warmth"], "behind": ["shatter"], "foe": ["warmth"]},
+	"daze": {"front": ["stars"], "behind": ["jolt"], "foe": ["stars"]},
+	"doubletap": {"front": ["double"], "behind": ["link"], "foe": ["down"]},
+	"feedingfrenzy": {"front": ["feed"], "behind": ["orb"], "foe": ["gorge"]},
+	"fetters": {"front": ["cuff"], "behind": ["cuff"], "foe": ["cuff"]},
+	"flechette": {"front": ["dart"], "behind": ["darts"], "foe": ["darts"]},
+	"fortress": {"front": ["slab"], "behind": ["stone"], "foe": ["wall"]},
+	"frostbite": {"front": ["burst"], "behind": ["creep"], "foe": ["freeze"]},
 }
+## (those that must die, carried by a monster, for their twist on him to show)
+const FOE_DIES := ["flechette"]
 ## (those whose front waits on a third blow: on what it curses, a count of blows)
 const THIRD := ["doom", "grudge", "tempo", "transfusion"]
 ## (those whose behind waits on a third blow on the same one)
-const THIRD_B := ["vendetta"]
+const THIRD_B := ["vendetta", "bloodtide"]
 ## (those whose behind waits on a death in what it left: one brought low once it is laid)
-const DIE_IN := ["canker", "delirium", "doom", "quickening"]
+const DIE_IN := ["canker", "delirium", "doom", "quickening", "coldblood"]
 ## (his first move struck at it first, on a monster: what it does when he does)
 const STRUCK_FIRST := ["grudge", "riposte"]
 
@@ -226,6 +249,35 @@ func setup(id: String, side: String) -> void:
 			m.poison_n = 2
 	if id in ["rapier", "siphon", "transfusion"] and side == "behind":
 		pack[0].life = 1.0
+	# --- ROUND 3
+	if id in ["bloodcurse", "burden", "beckon"]:
+		for m in pack:
+			m.hex_t = 6.0
+			m.hex_more = 0.2
+	if id == "blink" and side == "front":
+		pack[1].world = home + across * 0.7
+	if id == "blur" and side == "behind":
+		# (the nearest, struck and killed; one on his other side for his blur to pass)
+		pack[1].world = home + across * 0.7
+		pack[1].life = 1.0
+		pack[2].world = home - across * 0.8
+	if id in ["blur", "feedingfrenzy"] and side == "front" or id == "feedingfrenzy" and side == "behind":
+		fullf.call()
+	if id in ["blur", "brimstone", "cauterize", "feedingfrenzy"] and (side == "behind" or id in ["brimstone", "cauterize"]):
+		pack[0].life = 1.0
+	if id in ["brimstone", "cauterize"]:
+		for m in pack:
+			m.burn_t = 5.0
+			m.burn_dps = 4.0
+	if id in ["bullseye", "doubletap"]:
+		h.stats["crit_chance"] = 100.0
+	if id in ["daze", "bedrock"] and side == "front" or id == "burden":
+		for m in pack:
+			m.stun_t = 2.0
+	if id in ["coldblood", "frostbite"] and side == "front":
+		for m in pack:
+			m.chill_t = 1.5
+			m.chill = 0.3
 	if id in ["delirium", "doom", "evileye", "grudge"]:
 		for m in pack:
 			m.hex_t = 6.0
@@ -274,6 +326,9 @@ func _after(id: String, side: String) -> void:
 		h.might = h.m52.might_most(0)
 	if id == "momentum" and side == "behind":
 		h.might = h.m52.might_most(0)
+	if id == "bloodlust" and side == "behind":
+		# (a life orb dropped beside him, as a kill of his drops one now and then: he takes it)
+		M.loot.orb_at(h.world + M._w_face * 0.5)
 	if id == "riposte":
 		# (his shield up, and a blow on him)
 		h.shield = maxf(h.shield, 50.0)
@@ -350,6 +405,24 @@ func foe_setup(id: String, m) -> void:
 	if id == "siphon":
 		h.poison_t = 4.0
 		h.poison_dps = 2.0
+	# --- ROUND 3
+	if id in ["beckon", "blink", "bloodlust"]:
+		m.world = h.world + face * 2.6
+	if id in ["beckon", "bloodcurse"]:
+		h.hex_t = 5.0
+		h.hex_more = 0.15
+	if id in ["blur", "cauterize"]:
+		m.life = m.max_life * 0.3
+	if id == "feedingfrenzy":
+		m.life = m.max_life * 0.3
+	if id == "brimstone":
+		h.burn_t = 4.0
+		h.burn_dps = 2.0
+	if id in ["coldblood", "frostbite"]:
+		h.chill_t = 4.0
+		h.chill_k = 0.3
+	if id == "fortress":
+		m.shield = 50.0
 	if id == "duelist":
 		for k in range(1, M._w_pack.size()):
 			M._w_pack[k].world = h.world + Vector2(8.0, 8.0) + Vector2(k, 0)
@@ -398,6 +471,8 @@ func _foe(id: String, snap: bool) -> String:
 	if id == "fervor" and M._w_pack.size() > 1:
 		var kin = M._w_pack[1]
 		kin.damage(kin.life + kin.shield + 10.0, "phys", false, false, [], false, false, -1)
+	if id in FOE_DIES and not m.dead:
+		m.damage(m.life + m.shield + 10.0, "phys", false, false, [], false, false, -1)
 	var t := 0.0
 	var seen := ""
 	var want: Array = EXPECT.get(id, {}).get("foe", [])

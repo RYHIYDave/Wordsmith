@@ -5,7 +5,9 @@
 ## ("rd_..."), on him in `foe_hi` ("rd_...").
 ## ROUND 1: Ambush, Berserk, Blight, Bulwark, Canker, Delirium, Doom, Duelist, Eternity, Evil Eye, Fervor, Fever, Fury, Glide,
 ## Grudge, Haymaker, Hourglass, Lamprey, Lancet, Manacle. ROUND 2: Mauler, Momentum, Needle, Onrush, Pin, Quickdraw, Quickening,
-## Rapier, Reverb, Riposte, Siphon, Stillpoint, Sunder, Tailwind, Tempo, Timeslip, Transfusion, Vendetta, Windward, Amber.
+## Rapier, Reverb, Riposte, Siphon, Stillpoint, Sunder, Tailwind, Tempo, Timeslip, Transfusion, Vendetta, Windward, Amber. ROUND 3:
+## Beckon, Bedrock, Blink, Bloodcurse, Bloodlust, Bloodtide, Blur, Brimstone, Bullseye, Burden, Cataclysm, Cauterize, Coldblood,
+## Daze, Doubletap, Feeding Frenzy, Fetters, Flechette, Fortress, Frostbite.
 extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
@@ -42,6 +44,9 @@ static func harder(F, k: Callable, _parts: Array, by) -> float:
 		mult *= 1.2
 	if float(k.call("vendetta")) > 0.0 and F.clock < float(h.foe_hi.get("rd_vend", -1.0)):
 		mult *= 1.3
+	# (Bloodtide: one its healing reached hits harder a while)
+	if F.clock < float(by.m52.get("rd_tide", -1.0)):
+		mult *= 1.2
 	return mult
 
 
@@ -137,6 +142,34 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 		h.root_t = maxf(h.root_t, 0.8)
 		h.foe_hi["rd_amber"] = true
 		_tell(h, "amber", "amber", h.world, {"secs": h.root_t})
+	# --- ROUND 3
+	if s.call("bedrock") and n % 2 == 0:
+		h.held = maxf(h.held, 0.4)
+		_tell(h, "bedrock", "rock", h.world)
+	if s.call("bloodtide"):
+		for o in F.main._monsters.list:
+			if o != by and _alive(F, o) and o.world.distance_to(by.world) <= 3.0:
+				o.m52["rd_tide"] = F.clock + 3.0
+				_tell(h, "bloodtide", "stream", by.world, {"x1": o.world.x, "y1": o.world.y, "stay": true})
+	if s.call("burden") and F.clock - float(by.m52.get("rd_weight", -9.0)) > 1.5:
+		by.m52["rd_weight"] = F.clock
+		h.chill(1.5, 0.3)
+		_tell(h, "burden", "weight", h.world, {"secs": 1.5})
+	if s.call("cataclysm") and n % 3 == 0:
+		h.held = maxf(h.held, 0.3)
+		h.knock(away, 0.6)
+		_tell(h, "cataclysm", "split", h.world, {"r": 1.4})
+	if s.call("daze") and (h.held > 0.0 or h._knock_t > 0.0 or n >= 2):
+		h.chill(1.0, 0.3)
+		_tell(h, "daze", "stars", h.world)
+	if s.call("doubletap") and n % 2 == 0:
+		h.held = maxf(h.held, 0.35)
+		_tell(h, "doubletap", "down", h.world)
+	if s.call("fetters"):
+		h.foe_hi["rd_cuff"] = true
+	if s.call("fortress") and by.shield > 0.0:
+		h.held = maxf(h.held, 0.4)
+		_tell(h, "fortress", "wall", h.world)
 
 
 ## A monster's turn, awake and near him (`dist` from him).
@@ -239,6 +272,68 @@ static func tick(F, m, _dt: float, dist: float) -> void:
 				m.life = minf(m.max_life, m.life + 2.0)
 				_tell(h, "transfusion", "thread", o.world, {"stay": true, "x1": m.world.x, "y1": m.world.y})
 				break
+	# --- ROUND 3
+	if m.word_share("beckon") > 0.0 and h.hex_t > 0.0 and dist >= 1.4 and dist <= 6.0 and now - float(m.m52.get("rd_hand", -9.0)) > 2.5:
+		m.m52["rd_hand"] = now
+		var from: Vector2 = h.world
+		h.world = m.world + (h.world - m.world).normalized() * 1.2
+		_tell(h, "beckon", "hand", h.world, {"x1": m.world.x, "y1": m.world.y})
+	if m.word_share("blink") > 0.0 and dist >= 1.5 and dist <= 4.0 and now - float(m.m52.get("rd_streak", -9.0)) > 2.5:
+		m.m52["rd_streak"] = now
+		var was: Vector2 = m.world
+		m.world = h.world + (h.world - m.world).normalized() * 1.0
+		h.hurt_by(maxf(1.0, roundf(F._avg(m) * 0.2)), "phys", [], {}, null, Vector2.INF, true)
+		_tell(h, "blink", "streak", h.world, {"x1": was.x, "y1": was.y})
+	if m.word_share("bloodcurse") > 0.0 and h.hex_t > 0.0 and dist <= 5.0 and now - float(m.m52.get("rd_drops", -9.0)) > 0.8:
+		m.m52["rd_drops"] = now
+		h.hurt_by(1.0, "phys", [], {}, null, Vector2.INF, true)
+		m.life = minf(m.max_life, m.life + 2.0)
+		_tell(h, "bloodcurse", "drops", h.world, {"x1": m.world.x, "y1": m.world.y})
+	if m.word_share("bloodlust") > 0.0 and m.life >= m.max_life - 0.5 and dist >= 1.6 and dist <= 5.0 and now - float(m.m52.get("rd_lust", -9.0)) > 4.0:
+		m.m52["rd_lust"] = now
+		_tell(h, "bloodlust", "mist", m.world, {"stay": true})
+		var was: Vector2 = Rules.dash_at(m, h.world, 1.0)
+		_tell(h, "bloodlust", "charge", h.world, {"x1": was.x, "y1": was.y})
+	if m.word_share("blur") > 0.0 and m.life < m.max_life * 0.4:
+		if not m.m52.has("rd_blur"):
+			m.m52["rd_blur"] = now + 3.0
+		if now < float(m.m52["rd_blur"]) and now - float(m.m52.get("rd_flick", -9.0)) > 0.6:
+			m.m52["rd_flick"] = now
+			var a: float = (m.world - h.world).angle() + 2.1
+			m.world = h.world + Vector2(cos(a), sin(a)) * 1.1
+			h.hurt_by(maxf(1.0, roundf(F._avg(m) * 0.15)), "phys", [], {}, null, Vector2.INF, true)
+			_tell(h, "blur", "flicker", m.world, {"stay": true})
+	if m.word_share("brimstone") > 0.0 and h.burn_t > 0.0 and dist <= 6.0 and now - float(m.m52.get("rd_brim", -9.0)) > 2.5:
+		m.m52["rd_brim"] = now
+		var p: Vector2 = h.world + Vector2(randf_range(-0.6, 0.6), randf_range(-0.6, 0.6))
+		F.main._monsters.perils.warn(p.x, p.y, 0.8, 0.8, F._avg(m) * 0.5, m)
+		_tell(h, "brimstone", "brimstone", h.world, {"secs": 0.8})
+	if m.word_share("bullseye") > 0.0 and dist <= 2.5 and now - float(m.m52.get("rd_rings", -9.0)) > 3.0:
+		m.m52["rd_rings"] = now
+		_tell(h, "bullseye", "rings", h.world, {"secs": 0.8})
+	if m.word_share("cauterize") > 0.0 and m.life < m.max_life * 0.35 and not m.m52.get("rd_sear", false):
+		m.m52["rd_sear"] = true
+		m.life = minf(m.max_life, m.life + m.max_life * 0.15)
+		if dist <= 2.0:
+			h.burn_dps = maxf(h.burn_dps if h.burn_t > 0.0 else 0.0, maxf(1.0, F._avg(m) * 0.15))
+			h.burn_t = maxf(h.burn_t, 3.0)
+		_tell(h, "cauterize", "flare", m.world, {"stay": true})
+	if m.word_share("coldblood") > 0.0 and h.chill_t > 0.0 and dist <= 5.0 and now - float(m.m52.get("rd_warm", -9.0)) > 0.8:
+		m.m52["rd_warm"] = now
+		h.hurt_by(1.0, "phys", [], {}, null, Vector2.INF, true)
+		m.life = minf(m.max_life, m.life + 2.0)
+		_tell(h, "coldblood", "warmth", h.world, {"x1": m.world.x, "y1": m.world.y})
+	if m.word_share("feedingfrenzy") > 0.0 and m.life < m.max_life * 0.4 and not m.m52.get("rd_gorge", false):
+		m.m52["rd_gorge"] = true
+		m.life = minf(m.max_life, m.life + m.max_life * 0.2)
+		_tell(h, "feedingfrenzy", "gorge", m.world, {"stay": true})
+	if m.word_share("frostbite") > 0.0 and h.chill_t > 0.0 and dist <= 6.0:
+		var fb: float = float(h.foe_hi.get("rd_fb", 0.0)) + _dt
+		if fb >= 1.5:
+			fb = 0.0
+			h.held = maxf(h.held, 0.5)
+			_tell(h, "frostbite", "freeze", h.world)
+		h.foe_hi["rd_fb"] = fb
 	if m.word_share("windward") > 0.0 and m.shield > 0.0 and dist <= 1.6 and now - float(m.m52.get("rd_gust", -9.0)) > 1.5:
 		m.m52["rd_gust"] = now
 		var away: Vector2 = (h.world - m.world).normalized() if dist > 0.01 else Vector2(1, 0)
@@ -262,6 +357,9 @@ static func death(F, dead) -> void:
 	if not M52.REDO_ON or dead == null:
 		return
 	var h = F.main.hero
+	if dead.word_share("flechette") > 0.0:
+		h.hurt_by(maxf(1.0, roundf(F._avg(dead) * 0.2)), "phys", [], {}, null, Vector2.INF, true)
+		_tell(h, "flechette", "darts", h.world, {"x1": dead.world.x, "y1": dead.world.y})
 	for o in F.main._monsters.list:
 		if o != dead and _alive(F, o) and o.word_share("fervor") > 0.0 and o.world.distance_to(dead.world) <= 4.0:
 			o.m52["rd_fed"] = true
@@ -325,6 +423,10 @@ static func frame(F, _dt: float) -> void:
 				ec.remove_at(k)
 		if ec.is_empty():
 			h.foe_hi.erase("rd_echo")
+	if h.foe_hi.has("rd_cuff") and h.root_t <= 0.0:
+		h.foe_hi.erase("rd_cuff")
+		h.chill(2.0, 0.3)
+		_tell(h, "fetters", "cuff", h.world)
 	if h.foe_hi.has("rd_amber") and h.root_t <= 0.0:
 		h.foe_hi.erase("rd_amber")
 		_tell(h, "amber", "crack", h.world)
