@@ -249,10 +249,12 @@ func bend(i: int, front: Array, behind: Array) -> Dictionary:
 func after_resolve(i: int, r: Dictionary) -> void:
 	if wears("kindlingrod"):
 		r["element"] = "fire"
+		r["element2"] = ""
 		r["poison"] = 0.0
 	# (TWELVE LEVELING WEAPONS: the Icicle, every hit frost and no other kind of damage, as the Kindling Rod's are fire)
 	if wears("icicle"):
 		r["element"] = "frost"
+		r["element2"] = ""
 		r["poison"] = 0.0
 	if wears("lastword"):
 		r["cooldown"] = float(r["cooldown"]) * (1.0 + worn_roll("lastword", "cool") / 100.0)

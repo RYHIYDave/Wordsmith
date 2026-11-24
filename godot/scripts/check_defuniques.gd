@@ -611,6 +611,48 @@ func run(main, hero, d: String) -> void:
 	var said: String = ", ".join(L.lines_of(kr, "lines") + L.lines_of(pl, "lines"))
 	_line(not said.contains("Hits") and said.contains("Fire Damage") and said.contains("Poison Damage"), "the lines: %s" % said)
 
+	# ================= A MELD OF TWO KINDS OF DAMAGE DEALS BOTH (words.gd meld_second; hero.gd hit_monster) =================
+	_hero("warrior")
+	h.talents = []
+	h.arm()
+	foe.tracing = true
+	var kinds_of := func(word) -> Dictionary:
+		h.loadout.front[0] = [word, null]
+		h.loadout._r = [null, null, null]
+		var out := {}
+		for k in 30:
+			foe.life = foe.max_life
+			foe.chill_t = 0.0
+			foe.frozen_t = 0.0
+			foe.burn_t = 0.0
+			foe.shock_t = 0.0
+			foe.trace = {}
+			h.hit_monster(foe, 0, 1.0, true)
+			for key in foe.trace:
+				if str(key).begins_with("move 0 ") and not str(key).contains("over time"):
+					out[str(key).trim_prefix("move 0 ")] = float(out.get(str(key).trim_prefix("move 0 "), 0.0)) + float(foe.trace[key])
+		return out
+	var k_hail: Dictionary = kinds_of.call("hailstorm")
+	var k_erup: Dictionary = kinds_of.call("eruption")
+	var k_scald: Dictionary = kinds_of.call("scald")
+	var k_flame: Dictionary = kinds_of.call("fire")
+	var k_caut: Dictionary = kinds_of.call("cauterize")
+	var near := func(a: float, b: float) -> bool: return a > 0.0 and b > 0.0 and absf(a - b) / maxf(a, b) < 0.25
+	_line(k_hail.keys().size() == 2 and near.call(k_hail.get("frost", 0.0), k_hail.get("lightning", 0.0)) and k_erup.keys().size() == 2 and near.call(k_erup.get("phys", 0.0), k_erup.get("fire", 0.0)) and k_scald.keys().size() == 2 and near.call(k_scald.get("fire", 0.0), k_scald.get("frost", 0.0)),
+		"thirty Strikes each: Hailstorm %s; Eruption %s; Scald %s" % [str(k_hail), str(k_erup), str(k_scald)])
+	_line(k_flame.keys() == ["fire"] and k_caut.keys() == ["fire"], "Flame set alone: %s (all fire, as ever); Cauterize, Leech and Flame: %s" % [str(k_flame), str(k_caut)])
+	# (each half made more by its own bonus: lightning damage on his gear, and Hailstorm's lightning half)
+	_piece("ring1", "Ruby Ring", [["lightPct", 100]])
+	L.derive()
+	var k_hail2: Dictionary = kinds_of.call("hailstorm")
+	var line_h: String = str(h.loadout.r(0)["lines"].filter(func(l): return str(l).begins_with("Half its damage"))[0]) if h.loadout.r(0)["lines"].any(func(l): return str(l).begins_with("Half its damage")) else ""
+	_line(float(k_hail2.get("lightning", 0.0)) > 1.6 * float(k_hail2.get("frost", 0.0)) and line_h != "", "with +100%% Lightning Damage on his gear, Hailstorm: %s; its line: \"%s\"" % [str(k_hail2), line_h])
+	h.loadout.front[0] = [null, null]
+	h.loadout._r = [null, null, null]
+	foe.tracing = false
+	foe.trace = {}
+	foe.life = foe.max_life
+
 	# ================= THE CHANGED ONES' CARDS =================
 	await _card(sc, "du16_shortcut")
 	await _card(pr, "du17_prismheart")

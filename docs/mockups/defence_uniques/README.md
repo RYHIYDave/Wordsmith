@@ -115,3 +115,22 @@ otherwise: “Yes, of course make flat elemental damage add to every hit”.
 - THE LINES (`src/game/items.ts` FLAT_PAIRS, the tables made again): “Adds X-Y Fire Damage”, no “to Fire Hits”.
 - The TypeScript game, finished, adds them as it did.
 - Checked: `--only=defuniques` 40 of 40 (lines 37 to 40); `uniquesdo`, `defence` as before; tests/uniques_level passes.
+
+## A meld of two kinds of damage deals both (24 Nov 2026)
+
+His words, told an attack with Hailstorm (Frost and Lightning melded) dealt frost alone, and one with Eruption (Power and Flame)
+fire alone: “It should've never been one element that's that whole point of the meld”. Asked whether one element word set alone
+should change too: “No base elemental words convert damage fully” (read: no; a single element word still turns the whole hit).
+
+- THE RULE (`godot/scripts/words.gd` meld_second, a move's `element2`; `hero.gd` hit_monster, avg_hit): a melded word made of
+  two words that each have a kind of damage (an element's; Power's, plain) makes its attack two blows, half of each: SCALD,
+  WILDFIRE, HAILSTORM (two elements); ERUPTION, AVALANCHE, THUNDER (plain and an element). Each half is half his weapon's damage
+  and all his gear's flat damage of its own kind, made more by his bonus to its own kind, withstood as its own kind; the two
+  together are the hit, for all that is sized by it. The move's page says “Half its damage is frost, half lightning.”
+- AS BEFORE: a meld with one kind (Cauterize, Forking, Shiver, Fervor, Rimeward, Powderkeg, Shatter, Chain Reaction; Fumes,
+  Frostbite, Contagion with their poison) all its element; one with none, plain. A monster's blow with Scald, Wildfire or
+  Hailstorm was half and half already (foe_words.gd).
+- Checked: `--only=defuniques` 43 of 43 (lines 41 to 43: thirty Strikes each; Hailstorm frost 373 and lightning 373; with +100%
+  Lightning Damage 368 and 743; Flame alone all fire). `--only=words --cases=meld`: 3 wrong (09 Scald, 14 Fumes behind, 49 Flame
+  II), THE SAME THREE AS BEFORE ANY OF THIS (run with claude/sharp-lamport-ey7q0l's hero.gd): not of this change, not mended here.
+- The TypeScript game, finished, is as it was.

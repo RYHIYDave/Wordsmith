@@ -324,6 +324,26 @@ static func meld_problem(a: String, b: String) -> String:
 
 
 ## The melded word on a side, or null (words.ts meldIn).
+## A MELD OF TWO KINDS OF DAMAGE DEALS BOTH (his words, 24 Nov 2026, told an attack with Hailstorm, Frost and Lightning melded,
+## dealt frost alone: “It should've never been one element that's that whole point of the meld”; and of one element word set
+## alone, “No base elemental words convert damage fully”). A melded word made of two words that each have a kind of damage (an
+## element's; Power's, plain) makes its attack half of each: Scald, Wildfire and Hailstorm, two elements; Eruption, Avalanche and
+## Thunder, plain and an element. The other kind beside `element` (the word's own), or "" (a meld with one kind, or none: all
+## of its element as before; a word that is no meld).
+static func meld_second(D: Dictionary, w: String, element: String) -> String:
+	var of = D["words"][w].get("of")
+	if not (of is Array) or of.size() != 2:
+		return ""
+	var kinds: Array = []
+	for c in of:
+		var k = "phys" if str(c) == "power" else (D["words"].get(str(c), {}) as Dictionary).get("element")
+		if k != null and not kinds.has(str(k)):
+			kinds.append(str(k))
+	if kinds.size() != 2 or not kinds.has(element):
+		return ""
+	return kinds[0] if kinds[1] == element else kinds[1]
+
+
 static func meld_in(side: Array):
 	for x in side:
 		if x != null and is_meld(x):
@@ -455,10 +475,16 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	var lines: Array = [def["desc"]]
 	# (the damage's element: the element word in front decides; failing that, the one behind)
 	var element := "phys"
+	# (A MELD OF TWO KINDS OF DAMAGE DEALS BOTH, meld_second: the other half's kind, "" where the hit is all of one)
+	var element2 := ""
 	for w in front + behind:
 		if w != null and D["words"][w]["element"] != null:
 			element = D["words"][w]["element"]
+			element2 = meld_second(D, w, element)
 			break
+	if element2 != "":
+		var said_el := {"phys": "physical", "fire": "fire", "frost": "frost", "lightning": "lightning"}
+		lines.append("Half its damage is %s, half %s." % [said_el[element2] if element2 == "phys" else said_el[element], said_el[element] if element2 == "phys" else said_el[element2]])
 	# (what the move grows with: the class's own attribute (the Warrior's Strength, the Ranger's Dexterity, ...); a class of two, the
 	# Warlock, their sum less HYBRID_LESS)
 	# (`cls` may name an attribute in place of a class: what her tree picks for the Tinkerer's arms grows with it, game.ts refresh)
@@ -519,7 +545,7 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	var waits: bool = float(def["cooldown"]) > 0.0
 	var heavy: Dictionary = D["heavy"]
 	var r := {
-		"id": id, "name": skill_name(id, front, behind), "element": element, "dmg_mult": 0.0, "size": 1.0, "rate": 0.0, "cooldown": 0.0, "mana": 0,
+		"id": id, "name": skill_name(id, front, behind), "element": element, "element2": element2, "dmg_mult": 0.0, "size": 1.0, "rate": 0.0, "cooldown": 0.0, "mana": 0,
 		"splash": 0.0, "splash_dmg": 0.0, "pierce": false,
 		"ignite": 0.0, "chill": 0.0, "arcs": 0, "arc_dmg": 0.0, "poison": 0.0, "stun": 0.0,
 		"might": 0.0, "haste": 0.0, "zone": null, "cloud": 0.0, "cracks": 0.0, "lines": lines,
