@@ -55,6 +55,11 @@ const FPS := 30.0
 const TURN_TO := 1.45
 const TURN_BACK := 1.95
 ## THE TOWN'S SERVICES' NAMES (render.ts STATION_NAME, NAME_LIFT): over each, so a newcomer can see what is where
+## THE LEXICON IN THE STASH (his words, 24 Nov 2026: “I'd also like to get rid of the lexicon in the middle of town and add it to the
+## stash chest.  We have a new UI for the rune bag and lexicon in the inventory screen so information on runes is all right there.”):
+## the town, Vellum's camp and the Rim have no Lexicon of their own; its shelf of kept words opens from the stash (inventory.gd, the
+## LEXICON button on the stash's half). Off until his yes to its pictures.
+static var LEXICON_IN_STASH := false
 const STATION_NAME := {"gate": "GATE", "wordsmith": "WORDSMITH", "armourer": "ARMOURER", "mystic": "MYSTIC", "lexicon": "LEXICON", "stash": "STASH", "stranger": "STRANGER"}
 const NAME_LIFT := {"gate": 74.0, "stash": 26.0, "lexicon": 40.0, "mystic": 86.0, "wordsmith": 44.0, "armourer": 50.0, "stranger": 40.0}
 const PF := preload("res://scripts/pixel_font.gd")
@@ -141,6 +146,10 @@ var rim_node = null
 
 func _ready() -> void:
 	data = JSON.parse_string(FileAccess.get_file_as_string((RIM_DIR if rim else CAMP_DIR if camp else DIR) + "/layout.json"))
+	# (LEXICON_IN_STASH: no Lexicon of its own in the middle of the place, nor its book on its stand; it is the stash's now)
+	if LEXICON_IN_STASH:
+		data["stations"] = (data["stations"] as Array).filter(func(s): return str(s["kind"]) != "lexicon")
+		data["props"] = (data.get("props", []) as Array).filter(func(p): return str(p["kind"]) != "lexicon")
 	# (the services' names, over everything: render.ts, its labels drawn last)
 	_names = Node2D.new()
 	_names.z_index = 60

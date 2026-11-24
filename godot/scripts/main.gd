@@ -3302,6 +3302,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_quest1115.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	# (THE LEXICON IN THE STASH: check_lexicon_stash.gd)
+	if _arg("only") == "lexstash":
+		await preload("res://scripts/check_lexicon_stash.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE RARE RUNES: check_rare_runes.gd)
 	if _arg("only") == "rarerunes":
 		await preload("res://scripts/check_rare_runes.gd").new().run(self, hero, dir)
