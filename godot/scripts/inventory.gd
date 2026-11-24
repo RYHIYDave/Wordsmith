@@ -52,6 +52,7 @@ var _rb_on := ""
 const Words := preload("res://scripts/words.gd")
 const FoeWords := preload("res://scripts/foe_words.gd")
 const Melds52 := preload("res://scripts/melds52.gd")
+const DoorWords := preload("res://scripts/door_words.gd")
 ## THE GAME'S LETTERS (engine/font.ts: pixel_font.gd), its normal and its small
 const PF := preload("res://scripts/pixel_font.gd")
 
@@ -1767,7 +1768,10 @@ func _draw_reading(blink: bool, first: bool) -> void:
 					about = c["r"]
 			rows.append({"parts": [{"text": _form(_word, "name"), "color": loot.word_color(_word), "small": false}, {"text": _hud["words"][_word]["grows"], "color": DIM, "small": true}], "px": NORMAL})
 			_lines(rows, Words.word(_word)["about"], Color.WHITE, NORMAL, inner)
-			if first:
+			# (THE DOOR WORDS, door_words.gd: only the Rim's door takes one)
+			if DoorWords.is_door(_word):
+				_lines(rows, "Lay it in the Rim's door: it is burned into the next endless level. %s." % DoorWords.line(_word, true).trim_suffix("."), TEXT, SMALL, inner)
+			elif first:
 				_lines(rows, "Drag it onto an attack, or click a slot.", TEXT, SMALL, inner)
 			elif _page == "attacks":
 				_lines(rows, "Drag it onto an attack, or click a slot: it can be taken out again.", TEXT, SMALL, inner)
@@ -2883,6 +2887,9 @@ func _ws_trade(blink: bool, x0: float, w: float) -> void:
 ## (ui/lexicon.ts) A word's ON A DUNGEON, once known there: what it does to every monster there (a melded or ranked word's, its
 ## two words' and its twist: foe_words.gd page, and that it counts as two words).
 func _dungeon_line(w: String, k: Dictionary, unknown: String) -> String:
+	# (THE DOOR WORDS, door_words.gd: what each does there, known from the first)
+	if DoorWords.is_door(w):
+		return "%s; no monster in it carries it. %s" % [DoorWords.line(w), _burn_reward(1)]
 	if not k.get("dungeon", false):
 		return unknown
 	var FW := preload("res://scripts/foe_words.gd")
@@ -2914,11 +2921,19 @@ func _ws_page(w: String, x: float, y: float, pw: float, end: float) -> void:
 	var unknown := "Undiscovered."
 	var page: Dictionary = Words.data()["page"][w]
 	var gear: String = (" ".join(PackedStringArray(page["gearMana"] if loot.limit == "mana" and page.has("gearMana") else page["gear"])) + " " + str(page["note"])) if k["gear"] else unknown
+	# (THE DOOR WORDS, door_words.gd: no attack and no gear takes one, said from the first; what it does to a dungeon)
+	if DoorWords.is_door(w):
+		k = k.duplicate()
+		k["front"] = true
+		k["behind"] = true
+		k["gear"] = true
+		k["dungeon"] = true
+		gear = str(page["gear"][0])
 	var parts: Array = [
 		[0.0, [[str(wd["about"]), Color.WHITE, NORMAL, 0.0]]],
 		[4.0 * K, [["ON AN ATTACK", PICK, SMALL, 0.0],
-			["In front (%s ...): %s" % [str(wd["front"]).to_upper(), wd["frontText"]] if k["front"] else "In front: " + unknown, TEXT if k["front"] else FAINT, SMALL, 4.0 * K],
-			["Behind (... %s): %s" % [str(wd["behind"]).replace("of ", "OF ").to_upper(), wd["behindText"]] if k["behind"] else "Behind: " + unknown, TEXT if k["behind"] else FAINT, SMALL, 4.0 * K]]],
+			[str(wd["frontText"]) if DoorWords.is_door(w) else ("In front (%s ...): %s" % [str(wd["front"]).to_upper(), wd["frontText"]] if k["front"] else "In front: " + unknown), TEXT if k["front"] else FAINT, SMALL, 4.0 * K]]
+			+ ([] if DoorWords.is_door(w) else [["Behind (... %s): %s" % [str(wd["behind"]).replace("of ", "OF ").to_upper(), wd["behindText"]] if k["behind"] else "Behind: " + unknown, TEXT if k["behind"] else FAINT, SMALL, 4.0 * K]])],
 		[2.0 * K, [["ON GEAR", PICK, SMALL, 0.0], [gear, TEXT if k["gear"] else FAINT, SMALL, 4.0 * K]]],
 		[2.0 * K, [["ON A DUNGEON", PICK, SMALL, 0.0], [_dungeon_line(w, k, unknown), TEXT if k.get("dungeon", false) else FAINT, SMALL, 4.0 * K]]],
 	]
@@ -3116,7 +3131,9 @@ func _gate_side(blink: bool, x0: float, w: float) -> void:
 		if i < laid.size():
 			_tile(r, laid[i], "name", {"stone": true, "lit": row.has_point(_mouse)})
 			_text(Vector2(tx, r.position.y + 16), str(Words.word(laid[i])["name"]).to_upper(), 12, loot.word_color(laid[i]))
-			if DOOR_GOLD_LINE and loot.DOOR_GOLD_WORDS.has(str(laid[i])):
+			if DoorWords.is_door(laid[i]):
+				_text(Vector2(tx, r.position.y + 32), "%s No monster carries it." % DoorWords.line(str(laid[i]), true), 9, TEXT)
+			elif DOOR_GOLD_LINE and loot.DOOR_GOLD_WORDS.has(str(laid[i])):
 				_text(Vector2(tx, r.position.y + 32), "%d%% increased gold found on this level. No monster carries it." % roundi(loot.DOOR_GOLD), 9, TEXT)
 			elif DOOR_GOLD_LINE and loot.DOOR_MF_WORDS.has(str(laid[i])):
 				_text(Vector2(tx, r.position.y + 32), "%d%% increased magic find on this level. No monster carries it." % roundi(loot.DOOR_MF), 9, TEXT)

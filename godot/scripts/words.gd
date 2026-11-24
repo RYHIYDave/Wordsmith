@@ -66,6 +66,7 @@ extends RefCounted
 
 const FILE := "res://assets/words/words.json"
 const Melds52 := preload("res://scripts/melds52.gd")
+const DoorWords := preload("res://scripts/door_words.gd")
 
 ## HOW HARD ATTRIBUTES AND WORDS ADD UP (his words, 22 Nov 2026, after the damage check showed a min/max hero's quick attack at
 ## millions a second, a word in front and one behind three times the damage early on: “I like the additive bonus to words, but
@@ -286,7 +287,8 @@ static func rank_up(w: String) -> String:
 ## word of the ten, Volatile's five or the eight that is made of them.
 ## PLUNDERING NEVER MELDS (his words, 24 Nov 2026: “I think I want plundering to not meld, since it's a gold farming word and should
 ## have a drawback.”): the bench refuses it with any rune, itself too.
-const NO_MELD := ["plundering", "greed"]
+## (and the door words, door_words.gd: only for the Rim's door)
+const NO_MELD := ["plundering", "greed", "chains", "siege", "toll", "crown"]
 ## GREED, THE BETTER-LOOT WORD (his “Yes build greed”, 24 Nov 2026; his words of before: “I really want a QUALITY word where you get
 ## better loot”, “Yeah but make it GREED”): in front, what it kills drops better gear (`mf` increased magic find on its drops, more
 ## for each point of its attribute, `mfMost` at most); behind, what it kills sometimes drops an extra item (`item`, an elite, a
@@ -421,6 +423,9 @@ static func socket_count(level: int) -> Array:
 ## Why a word cannot go into a side's slots (`group`: its words, null where a slot is empty), or "" if it can (socketProblem):
 ## no free slot; there already; or a damage word where the side has its one (`most`: how many a side holds).
 static func socket_problem(group: Array, w: String, most := 1) -> String:
+	# (THE DOOR WORDS, door_words.gd: no move takes one)
+	if DoorWords.is_door(w):
+		return "Only for the Rim's door"
 	if not group.has(null):
 		return "No free socket"
 	if group.has(w):

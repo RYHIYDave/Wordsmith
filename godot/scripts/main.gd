@@ -13,6 +13,8 @@
 extends Node2D
 
 const FloorMap := preload("res://scripts/floor_map.gd")
+## (THE DOOR WORDS: Chains, Siege, Toll and Crown burned into the Rim's door, more of their encounters on that level)
+const DoorWords := preload("res://scripts/door_words.gd")
 const GroundArt := preload("res://scripts/ground_art.gd")
 const BakedHero := preload("res://scripts/baked_hero.gd")
 const Sfx := preload("res://scripts/sfx.gd")
@@ -203,15 +205,20 @@ const ROYAL_ENDLESS := {"on": true, "level": 2, "share": 0.25, "weights": {"prin
 var royal_seed := -1
 func royal_packs(data: Dictionary) -> int:
 	var d := int(map.depth)
-	if not bool(ROYAL_ENDLESS["on"]) or (d >= 16 and d <= 20):
+	# (THE DOOR WORDS: Crown burned in, the royals' packs for sure and twice as many; on the High City's floors, their own royals
+	# kept, a quarter more of its packs touched: door_words.gd)
+	var crown: bool = DoorWords.burned(self, "crown") > 0
+	var own: bool = d >= 16 and d <= 20
+	if not bool(ROYAL_ENDLESS["on"]) or (own and not crown):
 		return 0
 	var rng := RandomNumberGenerator.new()
 	if royal_seed >= 0:
 		rng.seed = royal_seed
 	else:
 		rng.randomize()
-	if royal_seed < 0 and rng.randi_range(1, int(ROYAL_ENDLESS["level"])) != 1:
+	if royal_seed < 0 and not crown and rng.randi_range(1, int(ROYAL_ENDLESS["level"])) != 1:
 		return 0
+	var share: float = DoorWords.CROWN_OWN if own else float(ROYAL_ENDLESS["share"]) * (DoorWords.MORE if crown else 1)
 	var packs := {}
 	for m in data.get("monsters", []):
 		if bool(m.get("boss", false)) or int(m.get("packId", -1)) < 0:
@@ -226,7 +233,10 @@ func royal_packs(data: Dictionary) -> int:
 		total += int(W[r])
 	var n := 0
 	for k in packs:
-		if rng.randf() >= float(ROYAL_ENDLESS["share"]):
+		# (a pack a royal touches already, the High City's own, kept as it is)
+		if (packs[k] as Array).any(func(o): return str(o.get("royal", "")) not in ["", "<null>"]):
+			continue
+		if rng.randf() >= share:
 			continue
 		var roll := rng.randi_range(1, total)
 		var r := ""
@@ -1237,6 +1247,9 @@ func _build(where: String, arrive: String) -> void:
 	# (words laid on a stronghold's altar and not burned go back to him as he leaves the floor: act1/holds.gd)
 	if holds != null and is_instance_valid(holds):
 		holds.give_back()
+	# (and the altar rooms Siege laid beside a floor's own strongholds: door_words.gd)
+	if quest610 != null and quest610.rooms != null and is_instance_valid(quest610.rooms):
+		quest610.rooms.give_back()
 	if hero.get_parent() != null:
 		hero.get_parent().remove_child(hero)
 	if _place != null:
@@ -1470,7 +1483,8 @@ func _build(where: String, arrive: String) -> void:
 				br.seed = bells_seed
 			else:
 				br.randomize()
-			if bells_seed >= 0 or br.randi_range(1, BellsAny.LEVEL) == 1:
+			# (THE DOOR WORDS: Toll burned in, the Bells for sure: door_words.gd)
+			if bells_seed >= 0 or DoorWords.burned(self, "toll") > 0 or br.randi_range(1, BellsAny.LEVEL) == 1:
 				monsters.bells = BellsAny.make(self, mdata, br)
 		# (THE BOTTOM OF THE SHAFT: its arena's rules, its round, its way back up: final_arena.gd)
 		arena = null
@@ -1625,6 +1639,9 @@ func _build(where: String, arrive: String) -> void:
 		else:
 			nr.randomize()
 		var count: int = ChainedRare.endless_n(nr) if in_endless else 1
+		# (THE DOOR WORDS: Chains burned in, twice as many: door_words.gd)
+		if DoorWords.burned(self, "chains") > 0:
+			count *= DoorWords.MORE
 		for i in count:
 			var cr := ChainedRare.new()
 			cr.main = self
@@ -3164,6 +3181,9 @@ func _shoot(hero: Hero, dir: String) -> void:
 		get_tree().quit()
 	if _arg("only") == "endlessany":
 		await preload("res://scripts/check_endless_any.gd").new().run(self, hero, dir)
+		get_tree().quit()
+	if _arg("only") == "doorwords":
+		await preload("res://scripts/check_door_words.gd").new().run(self, hero, dir)
 		get_tree().quit()
 	if _arg("only") == "noupright":
 		await preload("res://scripts/check_safe.gd").new().noupright(self, hero, dir)

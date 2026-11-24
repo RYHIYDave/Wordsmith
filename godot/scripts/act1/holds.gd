@@ -111,6 +111,9 @@ func problem(n: int, w: String) -> String:
 		return "The door is open"
 	if int(loot.words.get(w, 0)) <= 0:
 		return "No spare word"
+	# (THE DOOR WORDS, door_words.gd: no altar but the Rim's door takes one)
+	if preload("res://scripts/door_words.gd").is_door(w):
+		return "Only for the Rim's door"
 	if not FoeWords.on() and FoeWords.is_meld(w):
 		return "A melded word goes on attacks and gear only"
 	if not FoeWords.on() and FoeWords.is_rank(w):

@@ -10591,7 +10591,11 @@
   "reaping2": "#6c8a78",
   "culling2": "#787890",
   "surging2": "#2a4a9a",
-  "greed": "#a62a6e"
+  "greed": "#a62a6e",
+  "chains": "#6e8098",
+  "siege": "#a4472e",
+  "toll": "#c8873a",
+  "crown": "#6c3cb0"
  },
  "stones": {
   "onslaught": [
@@ -11888,6 +11892,22 @@
   ],
   "greed": [
    75,
+   500
+  ],
+  "chains": [
+   100,
+   500
+  ],
+  "siege": [
+   125,
+   500
+  ],
+  "toll": [
+   150,
+   500
+  ],
+  "crown": [
+   175,
    500
   ]
  },
@@ -15947,6 +15967,62 @@
    "frontText": "Kills drop better gear: 50% increased magic find on what they drop.",
    "behindText": "Kills sometimes drop an extra item.",
    "monsterText": "Carries better loot, and fights harder for it."
+  },
+  "chains": {
+   "id": "chains",
+   "kind": "shape",
+   "door": true,
+   "name": "Chains",
+   "front": "Chains",
+   "behind": "of Chains",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the shackle. More of them wait in chains.",
+   "frontText": "Goes on no attack: only for the Rim's door.",
+   "behindText": "Goes on no attack: only for the Rim's door.",
+   "monsterText": "No monster carries it."
+  },
+  "siege": {
+   "id": "siege",
+   "kind": "shape",
+   "door": true,
+   "name": "Siege",
+   "front": "Siege",
+   "behind": "of Siege",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the siege. The cult holds more of the ground.",
+   "frontText": "Goes on no attack: only for the Rim's door.",
+   "behindText": "Goes on no attack: only for the Rim's door.",
+   "monsterText": "No monster carries it."
+  },
+  "toll": {
+   "id": "toll",
+   "kind": "shape",
+   "door": true,
+   "name": "Toll",
+   "front": "Toll",
+   "behind": "of Toll",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the knell. The Muffled Bell will ring.",
+   "frontText": "Goes on no attack: only for the Rim's door.",
+   "behindText": "Goes on no attack: only for the Rim's door.",
+   "monsterText": "No monster carries it."
+  },
+  "crown": {
+   "id": "crown",
+   "kind": "shape",
+   "door": true,
+   "name": "Crown",
+   "front": "Crown",
+   "behind": "of Crown",
+   "attr": "int",
+   "element": null,
+   "about": "The word of the court. The royals come down among them.",
+   "frontText": "Goes on no attack: only for the Rim's door.",
+   "behindText": "Goes on no attack: only for the Rim's door.",
+   "monsterText": "No monster carries it."
   }
  },
  "extraPage": {
@@ -15954,6 +16030,30 @@
    "gear": [
     "Weapon, gloves, ring, amulet: Magic Find or Intelligence.",
     "Off hand, helm, chest, belt, boots: Magic Find or Intelligence."
+   ],
+   "note": "It never melds, and drops only on endless levels."
+  },
+  "chains": {
+   "gear": [
+    "Goes on no gear: only for the Rim's door."
+   ],
+   "note": "It never melds, and drops only on endless levels."
+  },
+  "siege": {
+   "gear": [
+    "Goes on no gear: only for the Rim's door."
+   ],
+   "note": "It never melds, and drops only on endless levels."
+  },
+  "toll": {
+   "gear": [
+    "Goes on no gear: only for the Rim's door."
+   ],
+   "note": "It never melds, and drops only on endless levels."
+  },
+  "crown": {
+   "gear": [
+    "Goes on no gear: only for the Rim's door."
    ],
    "note": "It never melds, and drops only on endless levels."
   }

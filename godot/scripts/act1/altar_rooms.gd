@@ -25,6 +25,8 @@ static var ON := false
 ## (altar rooms on a level; a room at least this many tiles each way; its middle this far from where he comes in; two rooms' middles
 ## this far apart; a room with more doorway tiles than this is open ground, not a room)
 const N := 2
+## (how many on this floor: N, or as the door words make it, act1/quest610.gd)
+var want := N
 const SIZE := 7
 const FAR := 14.0
 const APART := 14.0
@@ -67,12 +69,12 @@ func _ready() -> void:
 	else:
 		_rng.randomize()
 	for r in _rooms():
-		if data["holds"].size() >= N:
+		if data["holds"].size() >= want:
 			break
 		_keep(_plan(data["holds"].size(), r))
 	# (too few rooms that close: a ring of fire on open floor for the rest)
-	for k in 80:
-		if data["holds"].size() >= N:
+	for k in 80 * want:
+		if data["holds"].size() >= want:
 			break
 		var t := Vector2i(_rng.randi_range(0, map.w - 1), _rng.randi_range(0, map.h - 1))
 		_keep(_plan_ring(data["holds"].size(), Vector2(t.x + 0.5, t.y + 0.5)))

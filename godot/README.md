@@ -1514,6 +1514,20 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   endless.  Mirroring should be very, extremely rare.”): Plundering and Greed only on endless levels (loot.gd ENDLESS_DROPS), where
   a carrier is now and then made one of them (RARE_CARRY 0.05); Mirroring only from the Queen on an endless level, 1 in 100
   (QUEEN_ONLY, MIRROR_CHANCE). `--only=rarerunes` 12 of 12.
+- THE DOOR WORDS: CHAINS, SIEGE, TOLL AND CROWN (his idea, 24 Nov 2026: “If you put those words in the endless door, you get
+  more encounters of that type.”; asked whether to use words we had or new ones, his pick “Four new door-only words”):
+  door_words.gd. Each only for the Rim's door: no move (words.gd socket_problem), no piece of gear (loot.gd burn_problem), no
+  stronghold's altar (holds.gd problem) and no bench (NO_MELD) takes one. They drop only on an endless level, the four sharing
+  one rune's share (loot.gd drops_at). Burned in, no monster carries one and it drops no more often (loot.gd DOOR_WORDS), and the
+  level holds more of its encounter: CHAINS twice the chained rares (main.gd); SIEGE twice the strongholds, four altar rooms for
+  two, and on floors 6 to 10 two altar rooms beside the floor's own (act1/quest610.gd `rooms`; waits on the altar room's own
+  yes); TOLL the Muffled Bells for sure, and each bell rung calls its tough ones twice (act2/bells.gd _tough), on the city's
+  floors too; CROWN the royals' packs for sure and twice as many, and on the High City's floors a quarter more of its packs
+  (main.gd royal_packs). Stones (iron chain links, a brick gatehouse, a bronze bell, a purple crown) with Greed's in
+  melds52.json `extra` (`door`), docs/mockups/door_words/; listed, with the Lexicon's page THE DOOR, only while door_words.gd
+  ON is. ON: OFF until his yes to the pictures. Found on the way: Greed was missing from the words he holds (loot.gd held) and
+  from the drops' colours, now both kept. `--only=doorwords` 12 of 12 (with altarrooms 10 of 10, rarerunes 12 of 12,
+  doorrunes 11 of 11).
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/

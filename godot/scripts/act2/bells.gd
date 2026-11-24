@@ -269,6 +269,15 @@ func _tough(at: Vector2, k: int) -> void:
 	var list: Array = D["tough"]
 	if k - 1 >= list.size():
 		return
+	# (THE DOOR WORDS: Toll burned in, the tough ones twice over, the second beside the first: door_words.gd)
+	var DW := preload("res://scripts/door_words.gd")
+	var reps: int = DW.MORE if DW.burned(main, "toll") > 0 else 1
+	for rep in reps:
+		_tough_one(at + Vector2(1.5 * rep, 0.0), k)
+
+
+func _tough_one(at: Vector2, k: int) -> void:
+	var list: Array = D["tough"]
 	# (the leader first, and what comes with it where the game put it beside him: the Hushed Watch's sergeant his brace of hounds)
 	var spot: Vector2 = main.loot.floor_near(at + Vector2(0, 1))
 	for d in list[k - 1]:

@@ -16,6 +16,7 @@
 ## known, so a save that holds one always reads. ON at his yes to the films of all 98 at work, checked against his Art Rulebook,
 ## 23 Nov 2026: “Get those melds in”.
 extends RefCounted
+const DoorWords := preload("res://scripts/door_words.gd")
 
 const FILE := "res://assets/words/melds52.json"
 const SHEET := "res://assets/words/melds52.png"
@@ -151,6 +152,11 @@ static func add_to(D: Dictionary) -> void:
 		M["attr"][id] = t["extra"][id]["attr"]
 		if D.has("page") and t.get("extraPage", {}).has(id):
 			D["page"][id] = t["extraPage"][id]
+		# (THE DOOR WORDS, door_words.gd: known always, listed among the words to find only while it is ON)
+		if bool(t["extra"][id].get("door", false)):
+			if DoorWords.ON:
+				list_door(D, id)
+			continue
 		if D.has("ids") and not (D["ids"] as Array).has(id):
 			D["ids"].append(id)
 			# (one more word to find, on the Lexicon's SPOILS page beside Plundering)
@@ -170,6 +176,24 @@ static func add_to(D: Dictionary) -> void:
 			D["foe"]["rankBy"][t["rankOf"][id]["word"]] = id
 
 
+## A door word listed among the words to find (door_words.gd ON): the words' list, the count, the Lexicon's page THE DOOR.
+static func list_door(D: Dictionary, id: String) -> void:
+	if not D.has("ids") or (D["ids"] as Array).has(id):
+		return
+	D["ids"].append(id)
+	if D.has("allWords"):
+		D["allWords"] = int(D["allWords"]) + 1
+	if D.has("lexPages"):
+		var pg = null
+		for q in D["lexPages"]:
+			if str(q["name"]) == "THE DOOR":
+				pg = q
+		if pg == null:
+			pg = {"name": "THE DOOR", "words": []}
+			D["lexPages"].append(pg)
+		pg["words"].append(id)
+
+
 static func _attr_name(a: String) -> String:
 	return {"str": "Strength", "dex": "Dexterity", "int": "Intelligence"}.get(a, "")
 
@@ -181,7 +205,7 @@ static func add_hud(H: Dictionary) -> void:
 		var we: Dictionary = t["extra"][id]
 		H["word_color"][id] = t["color"][id]
 		H["words"][id] = {"front": str(we["front"]).to_upper(), "behind": str(we["behind"]).trim_prefix("of ").to_upper(),
-			"name": we["name"], "grows": "grows with " + _attr_name(str(we["attr"]))}
+			"name": we["name"], "grows": "for the Rim's door" if bool(we.get("door", false)) else "grows with " + _attr_name(str(we["attr"]))}
 	for id in t["order"]:
 		var wd: Dictionary = t["words"][id]
 		H["word_color"][id] = t["color"][id]

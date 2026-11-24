@@ -34,6 +34,7 @@ const Loot := preload("res://scripts/loot.gd")
 const Pillars := preload("res://scripts/act1/pillars.gd")
 const Holds := preload("res://scripts/act1/holds.gd")
 const AltarRooms := preload("res://scripts/act1/altar_rooms.gd")
+const DoorWords := preload("res://scripts/door_words.gd")
 const PF := preload("res://scripts/pixel_font.gd")
 
 const MSG_QUEST := Color("#7af8f0")
@@ -60,6 +61,8 @@ var scene := {}
 ## (floor 10's pillars: pillars.gd)
 var pillars
 var holds
+## (THE DOOR WORDS: Siege burned in on a floor with strongholds of its own, the cult's altar rooms beside them: door_words.gd)
+var rooms = null
 ## (what lies on this floor: {what ("dust", "piece", "roll"), at, node, age, n})
 var _things: Array = []
 var _marks: Node2D
@@ -102,6 +105,7 @@ func enter(where: String) -> void:
 	_scene_off()
 	pillars = null
 	holds = null
+	rooms = null
 	main.hero.pillars = null
 	var stands: Node2D = main.hero.get_parent()
 	var place: Node2D = main._place
@@ -132,26 +136,13 @@ func enter(where: String) -> void:
 		h.flats = main._place.get_child(3)
 		place.add_child(h)
 		holds = h
-	# (STRONGHOLDS ON ANY ENDLESS LEVEL: on a floor with none of its own, the cult's altar in its rooms: altar_rooms.gd)
+		# (THE DOOR WORDS: Siege burned in, the cult's altar rooms beside the floor's own strongholds: door_words.gd)
+		if AltarRooms.ON and main.in_endless and DoorWords.burned(main, "siege") > 0:
+			rooms = _altar_rooms(stands, place, DoorWords.SIEGE_OWN)
+	# (STRONGHOLDS ON ANY ENDLESS LEVEL: on a floor with none of its own, the cult's altar in its rooms: altar_rooms.gd; Siege burned
+	# in, twice as many: door_words.gd)
 	elif AltarRooms.wanted(main, where):
-		var ar = AltarRooms.new()
-		ar.main = main
-		ar.map = main.map
-		ar.hero = main.hero
-		ar.monsters = main._monsters
-		ar.loot = main.loot
-		ar.sfx = main.sfx
-		ar.look = main.look
-		ar.fx = main.fx
-		ar.stands = stands
-		ar.flats = main._place.get_child(3)
-		ar.mdata = main.floor_mdata
-		ar.seed = main.altar_seed
-		place.add_child(ar)
-		if ar.data["holds"].is_empty():
-			ar.queue_free()
-		else:
-			holds = ar
+		holds = _altar_rooms(stands, place, AltarRooms.N * (DoorWords.MORE if DoorWords.burned(main, "siege") > 0 else 1))
 	# (ENDLESS MODE, NO STORY: the Pinewood's pieces and the Fen's pillars not on an endless level; the strongholds stay: storyHere)
 	var story: bool = main.story_here()
 	if depth == 9 and story:
@@ -435,7 +426,32 @@ func _process(dt: float) -> void:
 func prompt() -> Array:
 	if holds != null and is_instance_valid(holds) and str(holds.prompt[0]) != "":
 		return [holds.prompt[0], "altar"]
+	if rooms != null and is_instance_valid(rooms) and str(rooms.prompt[0]) != "":
+		return [rooms.prompt[0], "altar"]
 	return _prompt
+
+
+## The cult's altar rooms on this floor, `want` of them at most (altar_rooms.gd), or null where none could be laid.
+func _altar_rooms(stands: Node2D, place: Node2D, want: int):
+	var ar = AltarRooms.new()
+	ar.main = main
+	ar.map = main.map
+	ar.hero = main.hero
+	ar.monsters = main._monsters
+	ar.loot = main.loot
+	ar.sfx = main.sfx
+	ar.look = main.look
+	ar.fx = main.fx
+	ar.stands = stands
+	ar.flats = main._place.get_child(3)
+	ar.mdata = main.floor_mdata
+	ar.seed = main.altar_seed
+	ar.want = want
+	place.add_child(ar)
+	if ar.data["holds"].is_empty():
+		ar.queue_free()
+		return null
+	return ar
 
 
 func _take_things(dt: float) -> void:

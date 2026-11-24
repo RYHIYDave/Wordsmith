@@ -148,6 +148,23 @@ EXTRA = {'greed': {'id': 'greed', 'kind': 'shape', 'name': 'Greed', 'front': 'Gr
 EXTRA_LOOK = {'greed': {'color': '#a62a6e', 'glyph': ['...o...', '..XXX..', '.XoXoX.', 'XXXXXXX', '.X.X.X.', '..X.X..', '...X...']}}
 EXTRA_PAGE = {'greed': {'gear': ['Weapon, gloves, ring, amulet: Magic Find or Intelligence.', 'Off hand, helm, chest, belt, boots: Magic Find or Intelligence.'],
                         'note': 'It never melds, and drops only on endless levels.'}}
+# THE DOOR WORDS (his idea, 24 Nov 2026: “If you put those words in the endless door, you get more encounters of that type.”; his
+# pick, “Four new door-only words”): Chains, Siege, Toll and Crown, each only for the Rim's door, kept here for their stones and pages
+# as Greed is (`door`: listed among the words only while door_words.gd ON is); their rules godot/scripts/door_words.gd.
+DOOR = {'chains': ('Chains', 'The word of the shackle. More of them wait in chains.', '#6e8098',
+                   ['.......', 'XXXX...', 'X..XXXX', 'X..o..X', 'XXXX..X', '...XXXX', '.......']),
+        'siege': ('Siege', 'The word of the siege. The cult holds more of the ground.', '#a4472e',
+                  ['X.X.X.X', 'XXXXXXX', '.XXXXX.', '.XX.XX.', '.X.o.X.', '.X.o.X.', 'XXXXXXX']),
+        'toll': ('Toll', 'The word of the knell. The Muffled Bell will ring.', '#c8873a',
+                 ['...X...', '..XXX..', '.XXXXX.', '.XXXXX.', '.XXXXX.', 'XXXXXXX', '...o...']),
+        'crown': ('Crown', 'The word of the court. The royals come down among them.', '#6c3cb0',
+                  ['o..o..o', 'X..X..X', 'XX.X.XX', 'XXXXXXX', 'XoXoXoX', 'XXXXXXX', '.......'])}
+for k, (name, about, col, glyph) in DOOR.items():
+    EXTRA[k] = {'id': k, 'kind': 'shape', 'door': True, 'name': name, 'front': name, 'behind': 'of ' + name, 'attr': 'int', 'element': None,
+                'about': about, 'frontText': "Goes on no attack: only for the Rim's door.", 'behindText': "Goes on no attack: only for the Rim's door.",
+                'monsterText': 'No monster carries it.'}
+    EXTRA_LOOK[k] = {'color': col, 'glyph': glyph}
+    EXTRA_PAGE[k] = {'gear': ["Goes on no gear: only for the Rim's door."], 'note': 'It never melds, and drops only on endless levels.'}
 
 color = {k: RUNES[k]['color'] for k in RUNES}
 for w in RANKS:
@@ -189,7 +206,8 @@ for j, k in enumerate(EXTRA):
     sheet.paste(im, (x, y), im)
     stones_at[k] = [x, y]
     color[k] = EXTRA_LOOK[k]['color']
-    env['stone'](k).save(ROOT + '/docs/mockups/greed/%s.png' % k)
+    os.makedirs(ROOT + '/docs/mockups/door_words', exist_ok=True)
+    env['stone'](k).save(ROOT + '/docs/mockups/%s/%s.png' % ('door_words' if k in DOOR else 'greed', k))
 sheet.save(G + 'words/melds52.png')
 
 TUNE = json.load(open(ROOT + '/tools/melds52/tune.json'))

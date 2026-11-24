@@ -51,6 +51,7 @@ const Hero := preload("res://scripts/hero.gd")
 const Words := preload("res://scripts/words.gd")
 const Melds52 := preload("res://scripts/melds52.gd")
 const FoeWords := preload("res://scripts/foe_words.gd")
+const DoorWords := preload("res://scripts/door_words.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
 const Perils := preload("res://scripts/perils.gd")
 
@@ -486,7 +487,8 @@ func _ready() -> void:
 	# (THE 52 DESIGNED MELDS AND THE 11 LEVEL 2 RUNES, melds52.gd: their stones under the sheet's own, and their colours)
 	var anchor52: Vector2 = pics["word:power"]["anchor"]
 	sheet = Melds52.stones(sheet, func(id, r): pics["word:" + id] = {"rect": r, "anchor": anchor52})
-	for id in Melds52.T()["order"]:
+	# (and the words kept beside them, Greed and the door words, melds52.json `extra`)
+	for id in Melds52.T()["order"] + Melds52.T().get("extra", {}).keys():
 		_words["color"][id] = Melds52.T()["color"][id]
 	for s in EQUIP:
 		gear[s] = null
@@ -627,7 +629,8 @@ func spare() -> int:
 func held() -> Array:
 	var out: Array = []
 	# (and after them the 52 designed melds and the 11 level 2 runes, melds52.gd)
-	for w in _words["order"] + Melds52.T()["order"]:
+	# (and the words kept beside them, Greed and the door words: melds52.json `extra`)
+	for w in _words["order"] + Melds52.T()["order"] + Melds52.T().get("extra", {}).keys():
 		if int(words.get(w, 0)) > 0:
 			out.append(w)
 	return out
@@ -915,7 +918,8 @@ const DOOR_GOLD := 50.0
 ## (GREED likewise: burned in, carried by none, no more often for it; the level's magic find DOOR_MF increased for each)
 const DOOR_MF_WORDS := ["greed"]
 const DOOR_MF := 50.0
-const DOOR_WORDS := ["plundering", "greed"]
+## (THE DOOR WORDS likewise, door_words.gd: burned in, carried by none, no more often for it; each brings more of its encounter)
+const DOOR_WORDS := ["plundering", "greed", "chains", "siege", "toll", "crown"]
 ## (GREED in front of the move that killed what is falling: the magic find its drops are made with, hero's kill to its drops)
 var kill_mf := 0.0
 
@@ -1075,7 +1079,7 @@ func words_found_at(d: int) -> Array:
 ## be very, extremely rare. Like most players will never see it. ... Drops only from the queen in endless. But again, extremely
 ## rare.”): Plundering drops only on an endless level; Mirroring only from the Glass Queen on one, MIRROR_CHANCE of her kills. What
 ## the monsters fight with is as it was (words_found_at); what they leave, and what lies about, is of these (drops_at, drop_ok).
-const ENDLESS_DROPS := ["plundering", "greed"]
+const ENDLESS_DROPS := ["plundering", "greed", "chains", "siege", "toll", "crown"]
 ## (on an endless level, now and then a carrier carries Plundering or Greed, and fights with it: the next level's prize: RARE_CARRY of them)
 const RARE_CARRY := 0.05
 const QUEEN_ONLY := ["mirroring"]
@@ -1097,6 +1101,9 @@ func drops_at(d: int) -> Array:
 	# (Greed, found in no floor's table: on an endless level, one of them)
 	if _endless_here() and not out.has("greed"):
 		out.append("greed")
+	# (THE DOOR WORDS, door_words.gd: on an endless level, the four sharing one rune's share, one of them at random each time)
+	if _endless_here() and DoorWords.ON:
+		out.append(DoorWords.IDS.pick_random())
 	return out if not out.is_empty() else [_words["first"]]
 
 
@@ -1917,6 +1924,9 @@ static func _scaled(o: Dictionary, k: float) -> Dictionary:
 
 ## Why a word cannot be burned into that piece, or "" if it can (game.ts imbueProblem; items.ts imbueProblem).
 func burn_problem(w: String, where) -> String:
+	# (THE DOOR WORDS, door_words.gd: no piece of gear takes one)
+	if DoorWords.is_door(w):
+		return "Only for the Rim's door"
 	if not ring_lit:
 		return _words["dark"]
 	var it = piece(where)
