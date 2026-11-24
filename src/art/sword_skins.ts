@@ -227,30 +227,31 @@ export const BARNDOOR_SWORD: SwordSkin = {
 // ---------------------------------------------------------------------------------------------
 // THE WHETTED EDGE (game/uniques.ts LEVEL3_DEFS `whettededge`, level 14: critical chance, life on hit).
 
-const HONED = ['#2e2e44', '#55557a', '#8a8ab4', '#c4c4e6', '#f4f4ff'] as const;
+/** Black steel. (First bright steel: too like Windcutter. His question, 24 Nov 2026: “Do any of these uniques resemble other unique weapons too closely to be able to distinguish them on the character?”; told which six and how each would be made its own, “rework the look a like weapons”.) */
+const HONED = ['#07070c', '#12121c', '#20202e', '#323246', '#4a4a62'] as const;
 const RED_GRIP = ['#3c0a0e', '#6c1418', '#a0222a'] as const;
 
-/** A lean blade of bright steel, narrower than his own, ground to a white edge all down its lit side; a plain steel guard, a red grip. Its light the friend's, faint. */
+/** A lean blade of black steel, narrower than his own, and only its ground edge white, all down its lit side; a black guard, a red grip. Its light the friend's, faint. */
 export const WHETTED_SWORD: SwordSkin = {
   id: 'whettededge',
-  name: 'The Whetted Edge',
+  name: 'Whetted Edge',
   blade(p, hx, hy, deg, len, bw, grip, guard) {
-    const w = bw * 0.8;
+    const w = bw * 0.85;
     const tip = 4 + len + 2;
     laySword(p, hx, hy, deg, len + grip + 14, ({ u, v }) => {
       if (u >= 4 && u <= tip) {
         const half = u > tip - 7 ? (tip - u) * (w / 7) : w;
         if (Math.abs(v) > half) return null;
-        if (v > half - 0.9) return '#ffffff';
-        return v < -w * 0.45 ? HONED[1] : v < 0 ? HONED[2] : HONED[3];
+        if (v > half - 1.0) return '#ffffff';
+        return v < -w * 0.45 ? HONED[0] : v < 0 ? HONED[1] : HONED[2];
       }
       if (u >= 2.4 && u < 4 && Math.abs(v) <= bw + guard) return v > 0.5 ? HONED[4] : v < -0.8 ? HONED[1] : HONED[3];
       if (u >= 2 - grip && u < 2.4 && Math.abs(v) <= 1.4) return Math.floor(u + 40) % 2 === 0 ? RED_GRIP[1] : RED_GRIP[2];
-      if (u >= -grip - 0.8 && u < 2 - grip && Math.abs(v) <= 2.0) return v > 0.4 ? POMMEL[2] : v < -0.9 ? POMMEL[0] : POMMEL[1];
+      if (u >= -grip - 0.8 && u < 2 - grip && Math.abs(v) <= 2.0) return v > 0.4 ? HONED[4] : v < -0.9 ? HONED[1] : HONED[3];
       return null;
     });
   },
-  lights: lightsAlong('#8af6f0', 0.12),
+  lights: lightsAlong('#8af6f0', 0.1),
 };
 
 /** His unique great swords, by their ids (art/heroes.ts WarriorSkinId). */

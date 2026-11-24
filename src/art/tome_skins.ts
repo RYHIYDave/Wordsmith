@@ -145,11 +145,11 @@ export const HORNBOOK_TOME: TomeSkin = {
 // TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”, and of a unique
 // weapon, “needs a skin to go on the Warrior if he equips it”): each drawn in its hero's hands as its picture in the bag is.
 
-const PULP: Ramp = ['#26222e', '#46404c', '#6e6670', '#9a9296', '#c8c2c0'];
-const LURID: Ramp = ['#34081a', '#661024', '#a81e2e', '#dc4234', '#ff8a66'];
+/** Cheap yellow paper covers. (First grey with a red block: too like the Bloodstained Primer. His question, 24 Nov 2026: “Do any of these uniques resemble other unique weapons too closely to be able to distinguish them on the character?”; told which six and how each would be made its own, “rework the look a like weapons”.) */
+const PULP: Ramp = ['#4a3204', '#8a6208', '#d0a214', '#f6d23c', '#fff29a'];
 const BLACK_INK: Ramp = ['#06050e', '#0a0816', '#120e22', '#1a1630', '#24203e'];
 
-/** THE PENNY DREADFUL (level 4: life on kill, fire). A cheap grey paper book, a lurid red block on its cover and a black title over it. */
+/** THE PENNY DREADFUL (level 4: life on kill, fire). A cheap book in bright yellow paper covers, a black block printed on its face and a black title over it. */
 export const PENNY_TOME: TomeSkin = {
   id: 'pennydreadful',
   name: 'The Penny Dreadful',
@@ -161,9 +161,9 @@ export const PENNY_TOME: TomeSkin = {
     if (pages(b)) return sh(IVORY, h.tone - 1);
     if (face(b)) {
       if (Math.abs(b[2] - 0.5) < 0.1 && Math.abs(b[0]) < 0.5) return sh(BLACK_INK, h.tone);
-      if (b[2] < 0.3 && b[2] > -0.6 && Math.abs(b[0]) < 0.55) return sh(LURID, h.tone);
+      if (b[2] < 0.25 && b[2] > -0.55 && Math.abs(b[0]) < 0.5) return sh(BLACK_INK, h.tone + 1);
     }
-    return null;
+    return sh(PULP, h.tone + 1);
   },
 };
 

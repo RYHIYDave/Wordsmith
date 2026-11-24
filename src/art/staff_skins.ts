@@ -412,25 +412,30 @@ export const ROD_STAFF: StaffSkin = {
 // TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”, and of a unique
 // weapon, “needs a skin to go on the Warrior if he equips it”): each drawn in its hero's hands as its picture in the bag is.
 
-const ICE_WOOD: Ramp = ['#0a2032', '#12405a', '#1c6a84', '#3aa2aa', '#aae8de'];
+/** A pole white with frost. (First a pole of deep-water blue and one long icicle, point up: too like her own staff. His question, 24 Nov 2026: “Do any of these uniques resemble other unique weapons too closely to be able to distinguish them on the character?”; told which six and how each would be made its own, “rework the look a like weapons”.) */
+const ICE_WOOD: Ramp = ['#5a7e9e', '#8eb2cc', '#c4def0', '#eaf6ff', '#ffffff'];
 const ICE: Ramp = ['#16304e', '#28588a', '#58a0d0', '#a6dcf4', '#effcff'];
 
 /**
- * THE ICICLE (level 3: frost, every hit frost). A pole the blue of deep water, rimed; at its head one long icicle, point up, two
- * small ones beside its foot.
+ * ICICLE (level 3: frost, every hit frost). A pole white with frost; for its head a thick block of blue ice, broad as her
+ * shoulders are narrow, and icicles hanging DOWN from it either side: nothing of a spear's point.
  */
 export const ICICLE_STAFF: StaffSkin = {
   id: 'icicle',
-  name: 'The Icicle',
+  name: 'Icicle',
   sculpt(sc, at) {
     const { s, p3, side3, foot, bar, tip3 } = at;
-    const wood = sc.mat({ ramp: ICE_WOOD, crease: 0.3, paint: (h) => (h.prim.tag === 'wrap' ? SK_BROWN[Math.max(0, Math.min(3, h.tone))] : hash(h.x, h.y, 31) < 0.08 ? ICE[4] : null) });
-    const ice = sc.mat({ ramp: ICE, crease: 0.25, paint: (h) => ICE[Math.max(1, Math.min(4, h.tone + 1))] });
+    const wood = sc.mat({ ramp: ICE_WOOD, crease: 0.3, paint: (h) => (h.prim.tag === 'wrap' ? SK_BROWN[Math.max(0, Math.min(3, h.tone))] : ICE_WOOD[Math.max(1, Math.min(4, h.tone + 1))]) });
+    const ice = sc.mat({ ramp: ICE, crease: 0.25, paint: (h) => ICE[Math.max(1, Math.min(4, h.tone + (h.prim.tag === 'block' ? 0 : 1)))] });
+    const out3 = norm(cross(p3, side3));
     sc.cone(wood, 'staff', foot, bar, 0.95, 1.1, 0.4, { tag: 'pole' });
     sc.cone(wood, 'staff', add(s.handR, mul(p3, -3.2)), add(s.handR, mul(p3, 3.2)), 1.25, 1.25, 0.2, { tag: 'wrap' });
-    sc.cone(ice, 'staffhead', add(bar, mul(p3, -0.6)), add(tip3, mul(p3, 3.4)), 2.0, 0.2, 0.3, { tag: 'icicle' });
-    for (const sg of [1, -1]) sc.cone(ice, 'staffhead', add(bar, mul(side3, sg * 1.5)), add(bar, add(mul(side3, sg * 2.3), mul(p3, 3.6))), 0.95, 0.15, 0.2, { tag: 'icicle' });
-    sc.cone(ice, 'staffhead', add(bar, mul(p3, -1.2)), add(bar, mul(p3, 0.2)), 2.3, 2.3, 0.3, { tag: 'rime' });
+    const mid = lerp3(bar, tip3, 0.5);
+    sc.box(ice, 'staffhead', mid, [mul(p3, 2.6), mul(side3, 3.4), mul(out3, 2.2)], 0.7, 0.4, { tag: 'block' });
+    for (const [sg, drop] of [[1, 4.4], [-1, 3.4], [0.35, 2.6], [-0.4, 3.8]] as const) {
+      const a = add(mid, add(mul(side3, sg * 2.6), mul(p3, -2.0)));
+      sc.cone(ice, 'staffhead', a, add(a, mul(p3, -drop)), 0.9, 0.12, 0.2, { tag: 'icicle' });
+    }
     return [wood, ice];
   },
 };

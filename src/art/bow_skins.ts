@@ -264,22 +264,23 @@ export const RUNNERS_BOW: BowSkin = {
   },
 };
 
-const EBONY_BOW: Ramp = ['#0c0810', '#1c141e', '#30242e', '#4a3842', '#6e5660'];
+/** Red lacquer. (First black wood: too like his own bow and the Poacher's. His question, 24 Nov 2026: “Do any of these uniques resemble other unique weapons too closely to be able to distinguish them on the character?”; told which six and how each would be made its own, “rework the look a like weapons”.) */
+const LACQUER: Ramp = ['#34081a', '#661024', '#a81e2e', '#dc4234', '#ff8a66'];
 const BRASS_BOW: Ramp = ['#3a2410', '#6a4620', '#a07436', '#d0a656', '#f2d892'];
 
-/** THE LONG SHOT (level 11: much more damage, slower). A heavy bow of black wood, thick-limbed and straight at its tips, a brass band on each limb. */
+/** LONG SHOT (level 11: much more damage, slower). A heavy bow lacquered red, thick-limbed and straight at its tips, two brass bands on each limb. */
 export const LONGSHOT_BOW: BowSkin = {
   id: 'longshot',
-  name: 'The Long Shot',
+  name: 'Long Shot',
   sculpt(sc, at, { glove }) {
-    const wood = sc.mat({ ramp: EBONY_BOW, crease: 0.3 });
-    const brass = sc.mat({ ramp: BRASS_BOW, crease: 0.2, paint: (h) => BRASS_BOW[Math.max(1, Math.min(4, h.tone + 1))] });
-    const { nocks, limb } = limbs(sc, at, wood, [1.6, 0.9], false);
-    gripOf(sc, at, glove, 1.7);
-    for (const l of limb) for (const k of [0.34, 0.8]) {
+    const wood = sc.mat({ ramp: LACQUER, crease: 0.3, paint: (h) => LACQUER[Math.max(1, Math.min(4, h.tone + 1))] });
+    const brass = sc.mat({ ramp: BRASS_BOW, crease: 0.2, paint: (h) => BRASS_BOW[Math.max(2, Math.min(4, h.tone + 1))] });
+    const { nocks, limb } = limbs(sc, at, wood, [1.7, 1.0], false);
+    gripOf(sc, at, glove, 1.8);
+    for (const l of limb) for (const k of [0.3, 0.62, 0.9]) {
       const c = l.at(k);
       const a = l.along(k);
-      sc.cone(brass, 'bow', add(c, mul(a, -0.45)), add(c, mul(a, 0.45)), 1.75 - k * 0.6, 1.75 - k * 0.6, 0.15, { tag: 'band' });
+      sc.cone(brass, 'bow', add(c, mul(a, -0.55)), add(c, mul(a, 0.55)), 1.95 - k * 0.7, 1.95 - k * 0.7, 0.15, { tag: 'band' });
     }
     return { nocks, mats: [wood, brass] };
   },

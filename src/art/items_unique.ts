@@ -2244,11 +2244,11 @@ function tenderizer(): Part[] {
 
 /** THE WHETTED EDGE (level 14, a greatsword, the Warrior's: critical chance, life on hit). A lean bright blade ground to a white edge, a red grip, a whetstone tied at its pommel. */
 function whettededge(): Part[] {
-  const parts = dye(PAINTERS.greatsword(0), { leather: 'red' });
+  const parts = dye(PAINTERS.greatsword(0), { steel: 'black', leather: 'red' });
   const G: V = [11.4, 20.6], T: V = [29.4, 2.6];
   const u = unit(sub(T, G));
   const L = len(sub(T, G));
-  parts.push({ s: poly(at(G, u, 2.6, -3.0), at(G, u, L - 3.0, -3.0), at(G, u, L - 0.2, 0), at(G, u, L - 3.0, -1.9), at(G, u, 2.6, -1.9)), m: 'feather', sh: { k: 'flat' }, flush: true, bias: 0.6 });
+  parts.push({ s: poly(at(G, u, 2.6, -3.2), at(G, u, L - 3.0, -3.2), at(G, u, L - 0.2, 0), at(G, u, L - 3.0, -1.7), at(G, u, 2.6, -1.7)), m: 'feather', sh: { k: 'flat' }, flush: true, bias: 0.6 });
   parts.push({ s: poly([2.0, 22.6], [6.4, 21.6], [7.2, 24.0], [2.8, 25.0]), m: R.stone, sh: { k: 'flat', bev: 0.7 }, shine: true });
   return parts;
 }
@@ -2262,22 +2262,22 @@ function runnersbow(): Part[] {
 
 /** THE LONG SHOT (level 11, a bow, the Ranger's: much more damage, slower). A heavy bow of black wood banded in brass, a long arrow on its string. */
 function longshot(): Part[] {
-  const parts = dye(PAINTERS.bow(0), { wood: 'ebony', ivory: 'brass' });
-  for (const c of [[13.6, 9.6], [9.4, 18.4]] as V[]) parts.push({ s: ell(c, 1.7, 1.3, -40), m: 'brass', sh: { k: 'dome', c, r: 1.7 }, shine: true });
+  const parts = dye(PAINTERS.bow(0), { wood: 'red', ivory: 'brass' });
+  for (const c of [[13.2, 9.8], [9.2, 18.6]] as V[]) parts.push({ s: ell(c, 1.2, 0.9, -40), m: 'brass', sh: { k: 'dome', c, r: 1.2 }, shine: true });
   const a: V = [6.0, 27.0], b: V = [28.6, 4.4];
   parts.push({ s: cap(a, b, 0.6), m: 'ivory', sh: { k: 'cyl', a, b, w: 0.6 } });
   const u = unit(sub(b, a));
   parts.push({ s: poly(at(b, u, -1.0, -2.2), at(b, u, 3.0, 0), at(b, u, -1.0, 2.2)), m: 'steel', sh: { k: 'ridge', a: b, b: at(b, u, 3.0, 0) }, shine: true });
-  parts.push({ s: poly(at(a, u, 0, 0), at(a, u, -0.4, -2.0), at(a, u, 3.4, -1.8), at(a, u, 4.4, 0), at(a, u, 3.4, 1.8), at(a, u, -0.4, 2.0)), m: 'red', sh: { k: 'flat', bev: 0.5 } });
   return parts;
 }
 
 /** THE ICICLE (level 3, a staff, the Mage's: frost, every hit frost). A pole the blue of deep water, and for its head one long icicle, two small beside it. */
 function icicle(): Part[] {
-  const parts = dye(PAINTERS.staff(0), { wood: R.sea, violet: LV.ice, steel: LV.ice });
-  parts.push({ s: poly([19.4, 12.6], [23.4, 16.2], [30.6, 1.4]), m: LV.ice, sh: { k: 'ridge', a: [21.4, 14.4], b: [30.6, 1.4] }, shine: true, bias: 0.15 });
-  parts.push({ s: poly([17.6, 9.6], [19.6, 11.6], [21.6, 3.4]), m: LV.ice, sh: { k: 'ridge', a: [18.6, 10.6], b: [21.6, 3.4] }, shine: true });
-  parts.push({ s: poly([23.4, 15.4], [25.2, 17.6], [30.4, 11.6]), m: LV.ice, sh: { k: 'ridge', a: [24.2, 16.4], b: [30.4, 11.6] }, shine: true });
+  const FROST: Ramp = ['#5a7e9e', '#8eb2cc', '#c4def0', '#eaf6ff', '#ffffff'];
+  const parts = dye(PAINTERS.staff(0), { wood: FROST, violet: LV.ice, steel: LV.ice });
+  // (its head: a thick block of ice across the top of the pole, and icicles hanging down from it)
+  parts.push({ s: poly([17.0, 4.6], [24.6, 1.6], [30.2, 7.4], [22.6, 10.6]), m: LV.ice, sh: { k: 'flat', bev: 1.2 }, shine: true, bias: 0.1 });
+  for (const [x, y, d] of [[18.6, 6.6, 6.4], [22.4, 9.4, 7.6], [26.6, 8.6, 5.4], [29.2, 7.2, 3.8]] as [number, number, number][]) parts.push({ s: poly([x - 1.3, y], [x + 1.3, y], [x, y + d]), m: LV.ice, sh: { k: 'ridge', a: [x, y], b: [x, y + d] }, shine: true });
   return parts;
 }
 
@@ -2294,8 +2294,8 @@ function walkingstick(): Part[] {
 
 /** THE PENNY DREADFUL (level 4, a tome, the Warlock's: life on kill, fire). A cheap grey paper book, a lurid red block on its cover. */
 function pennydreadful(): Part[] {
-  const parts = dye(PAINTERS.tome(0), { bookred: R.rag, red: R.rag, steel: R.rag, dsteel: R.rag });
-  parts.push({ s: poly([11.6, 12.0], [21.6, 11.2], [22.4, 21.4], [12.4, 22.2]), m: 'red', sh: { k: 'flat', bev: 0.6 }, bias: 0.1 });
+  const parts = dye(PAINTERS.tome(0), { bookred: 'topaz', red: 'topaz', steel: 'topaz', dsteel: 'topaz' });
+  parts.push({ s: poly([11.6, 12.0], [21.6, 11.2], [22.4, 21.4], [12.4, 22.2]), m: 'black', sh: { k: 'flat', bev: 0.6 }, bias: 0.1 });
   for (const y of [7.6, 9.2]) parts.push({ s: cap([12.2, y + 0.4], [20.6, y - 0.3], 0.45), m: 'shadow', sh: { k: 'flat' }, flush: true });
   return parts;
 }
@@ -2326,18 +2326,18 @@ function goldplatedwrench(): Part[] {
   return parts;
 }
 
-/** THE BUTCHER'S WRAPS (level 2, wraps, the Brawler's: life on hit, life). Strips of a butcher's apron: pale linen, stained dark red. */
+/** BUTCHER'S WRAPS (level 2, wraps, the Brawler's: life on hit, life). Strips of a butcher's apron soaked dark red all over (first pale, blotted red: too like Taped Knuckles). */
 function butcherswraps(): Part[] {
-  const parts = PAINTERS.wraps(0);
-  for (const [x, y, rx, ry] of [[10.6, 14.6, 3.0, 2.2], [17.6, 20.4, 2.6, 2.0], [22.4, 11.6, 2.0, 1.6], [12.6, 23.6, 1.8, 1.4]] as [number, number, number, number][]) parts.push({ s: ell([x, y], rx, ry), m: 'red', sh: { k: 'flat' }, flush: true, bias: -0.15 });
+  const SOAK: Ramp = ['#22050a', '#420a10', '#6c1218', '#961c22', '#bc3230'];
+  const parts = dye(PAINTERS.wraps(0), { linen: SOAK, dleather: 'black' });
+  for (const [x, y, rx, ry] of [[10.6, 14.6, 3.0, 2.2], [17.6, 20.4, 2.6, 2.0], [22.4, 11.6, 2.0, 1.6]] as [number, number, number, number][]) parts.push({ s: ell([x, y], rx, ry), m: SOAK, sh: { k: 'flat' }, flush: true, bias: -0.5 });
   return parts;
 }
 
 /** BRASS KNUCKLES (level 15, wraps, the Brawler's: physical damage, a chance to stun). Black straps, and across the knuckles a bar of brass, a ring for each finger. */
 function brassknuckles(): Part[] {
-  const parts = dye(PAINTERS.wraps(0), { linen: 'dleather', dleather: 'black' });
-  parts.push({ s: poly([4.6, 11.0], [18.6, 9.6], [19.0, 12.4], [5.0, 13.8]), m: 'brass', sh: { k: 'flat', bev: 0.8 }, shine: true, bias: 0.1 });
-  for (const x of [6.6, 10.0, 13.4, 16.8]) parts.push({ s: ell([x, 12.4 - (x - 6.6) * 0.1], 1.9, 2.3), cut: [ell([x, 12.4 - (x - 6.6) * 0.1], 0.8, 1.1)], m: 'brass', sh: { k: 'flat', bev: 0.6 }, shine: true });
+  const parts = dye(PAINTERS.wraps(0), { linen: 'brass', dleather: 'black' });
+  for (const x of [6.6, 10.0, 13.4, 16.8]) parts.push({ s: ell([x, 12.6 - (x - 6.6) * 0.1], 1.5, 1.9), m: 'gold', sh: { k: 'dome', c: [x - 0.3, 12.2 - (x - 6.6) * 0.1], r: 1.5, ry: 1.9 }, shine: true });
   return parts;
 }
 

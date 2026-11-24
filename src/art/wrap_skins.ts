@@ -162,28 +162,30 @@ export const TAPED_WRAPS: WrapSkin = {
 // TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”, and of a unique
 // weapon, “needs a skin to go on the Warrior if he equips it”): each drawn in its hero's hands as its picture in the bag is.
 
-/** Butcher's linen, and what is on it. */
-const APRON: Ramp = ['#463a38', '#7a6a62', '#ae9c8e', '#dccebe', '#f8f0e2'];
-const STAIN: Ramp = ['#2a060a', '#4e0c12', '#7a141c', '#a82228', '#cc4038'];
+/** A butcher's wraps, soaked through: dark red all over, darker where it has dried. (First pale linen blotted red: too like Taped Knuckles. His question, 24 Nov 2026: “Do any of these uniques resemble other unique weapons too closely to be able to distinguish them on the character?”; told which six and how each would be made its own, “rework the look a like weapons”.) */
+const SOAKED: Ramp = ['#22050a', '#420a10', '#6c1218', '#961c22', '#bc3230'];
 const blot = (x: number, y: number): boolean => Math.sin(x * 0.9) + Math.sin(y * 1.1 + 1.7) + Math.sin((x + y) * 0.5) > 1.15;
 
-/** THE BUTCHER'S WRAPS (level 2: life on hit, life). Strips of a butcher's apron: pale linen, stained dark red in blots. */
+/** BUTCHER'S WRAPS (level 2: life on hit, life). Strips of a butcher's apron soaked dark red, all of it, dried darker in blots. */
 export const BUTCHER_WRAPS: WrapSkin = {
   id: 'butcherswraps',
-  name: "The Butcher's Wraps",
-  strap: APRON,
-  strapPaint: (h, w) => (blot(h.x, h.y) ? sh(STAIN, h.tone - (w.far ? 1 : 0)) : null),
+  name: "Butcher's Wraps",
+  strap: SOAKED,
+  strapPaint: (h, w) => (blot(h.x, h.y) ? sh(SOAKED, h.tone - 1 - (w.far ? 1 : 0)) : null),
 };
 
 const BRASS_K: Ramp = ['#3a2410', '#6a4620', '#a07436', '#d0a656', '#f2d892'];
 const BLACK_STRAP: Ramp = ['#0a0816', '#16122a', '#262040', '#3a3258', '#5a5078'];
 
-/** BRASS KNUCKLES (level 15: physical damage, a chance to stun). Black straps, and across the knuckles of each fist a bar of brass. */
+/**
+ * BRASS KNUCKLES (level 15: physical damage, a chance to stun). Black straps at the wrist, and the whole front of each fist cased
+ * in brass, from above the knuckles down. (First a thin bar of brass across dark straps: too like his own wraps.)
+ */
 export const BRASS_WRAPS: WrapSkin = {
   id: 'brassknuckles',
   name: 'Brass Knuckles',
   strap: BLACK_STRAP,
-  strapPaint: (h, w) => (Math.abs(downHand(h.p, w) - 2.05) < 0.34 ? sh(BRASS_K, h.tone + 1 - (w.far ? 1 : 0)) : null),
+  strapPaint: (h, w) => (downHand(h.p, w) > 1.15 ? sh(BRASS_K, h.tone + 1 - (w.far ? 1 : 0)) : null),
 };
 
 /** THE FOUR, by their ids. */
