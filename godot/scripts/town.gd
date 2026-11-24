@@ -58,8 +58,8 @@ const TURN_BACK := 1.95
 ## THE LEXICON IN THE STASH (his words, 24 Nov 2026: “I'd also like to get rid of the lexicon in the middle of town and add it to the
 ## stash chest.  We have a new UI for the rune bag and lexicon in the inventory screen so information on runes is all right there.”):
 ## the town, Vellum's camp and the Rim have no Lexicon of their own; its shelf of kept words opens from the stash (inventory.gd, the
-## LEXICON button on the stash's half). Off until his yes to its pictures.
-static var LEXICON_IN_STASH := false
+## LEXICON button on the stash's half). ON at his “Yes” to its three pictures (24 Nov 2026).
+static var LEXICON_IN_STASH := true
 const STATION_NAME := {"gate": "GATE", "wordsmith": "WORDSMITH", "armourer": "ARMOURER", "mystic": "MYSTIC", "lexicon": "LEXICON", "stash": "STASH", "stranger": "STRANGER"}
 const NAME_LIFT := {"gate": 74.0, "stash": 26.0, "lexicon": 40.0, "mystic": 86.0, "wordsmith": 44.0, "armourer": 50.0, "stranger": 40.0}
 const PF := preload("res://scripts/pixel_font.gd")

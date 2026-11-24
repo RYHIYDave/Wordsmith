@@ -132,10 +132,22 @@ func run(main, hero, dir: String) -> void:
 	loot._know("fire")["found"] = true
 	loot._know("lasting")["found"] = true
 	loot.gold = 500
-	h.world = M._spot_near(at["lexicon"], 1.4, h.world)
-	await M._wait(0.5)
-	var p2: String = M.town.prompt[0]
-	await M._key(KEY_E)
+	# (THE LEXICON IN THE STASH, town.gd LEXICON_IN_STASH: the book opened from the stash's LEXICON button; else at its own place)
+	var p2 := ""
+	if preload("res://scripts/town.gd").LEXICON_IN_STASH:
+		if inv.visible:
+			inv.toggle()
+		h.world = M._spot_near(at["stash"], 1.4, h.world)
+		await M._wait(0.5)
+		await M._key(KEY_E)
+		await M._wait(0.3)
+		inv._press("svc_swap", "lexicon")
+		p2 = "E: Lexicon" if inv.svc == "lexicon" else "stash: %s" % inv.svc
+	else:
+		h.world = M._spot_near(at["lexicon"], 1.4, h.world)
+		await M._wait(0.5)
+		p2 = M.town.prompt[0]
+		await M._key(KEY_E)
 	await M._wait(0.3)
 	await M._snap(dir + "/s04_lexicon.png")
 	_line(p2 == "E: Lexicon" and inv.svc == "lexicon" and inv.lx_sel == "power" and inv.lx_tab == 0,
