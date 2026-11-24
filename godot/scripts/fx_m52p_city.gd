@@ -39,6 +39,16 @@ const LONG := {
 	"torpor:drowse": 0.8, "witchknot:knot": 0.5, "witchknot:tie": 0.8, "amber:set": 0.9, "binding2:caught": 0.5, "timeslip:quick": 0.4,
 	"burden:stun": 0.6,
 }
+## (the big moments: a flash and its sparks thrown wide, how big, tiles; the lesser: a flash on what it struck)
+const BIG := {"maw:crash": 1.4, "maw:collapse": 2.0, "gravity:crater": 2.0, "embers:burst": 1.2, "firetrap:blaze": 1.6, "stasis:snap": 1.2,
+	"anchor:sink": 1.6, "burden:weight": 1.2, "shackle:bite": 1.0, "firewhirl:whirl": 1.6, "drift:crust": 1.0, "tether:burst": 1.4,
+	"fractal:bolt": 0.9, "rubble:thud": 1.0, "icebound:seal": 1.0, "stormglass:crack": 0.9, "horizon:rim": 1.2, "sump:drain": 1.0,
+	"riptide:wave": 1.2, "plague:pass": 0.8, "standstill:pulse": 1.2, "gravity:pulse": 1.0}
+const MID := ["doom:thorn", "hoarfrost:frozen", "brimstone:flare", "jinx:mark", "coven:mark", "coven:twice", "witchknot:knot", "witchknot:tie",
+	"frostlock:lock", "frostlock:ice", "slowburn:slow", "icebound:climb", "icebound:jaw", "firetrap:tongues", "splinter:jolt", "spore:puff",
+	"sleet:sliver", "constellation:star", "web:wrap", "lasso:loop", "reel:hook", "amber:set", "strangler:thorns", "strangler:vines",
+	"shackle:clank", "torpor:drowse", "lodestone:tug", "beckon:wisp", "drift:pack", "stasis:hold", "anchor:stun", "standstill:stun",
+	"gravity:stun", "burden:stun", "binding2:caught"]
 ## (the heavy landings, which kick the screen)
 const KICKS := {"maw:crash": 2.5, "maw:collapse": 3.0, "gravity:crater": 3.0, "stasis:snap": 2.0, "shackle:bite": 2.0, "anchor:sink": 3.0,
 	"firetrap:blaze": 2.0, "rubble:thud": 1.5, "burden:weight": 2.5, "gravity:pulse": 1.0, "standstill:pulse": 1.0, "embers:burst": 1.5}
@@ -64,6 +74,16 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 		fx.kick(float(KICKS[key]))
 	var R := ramp(b["id"])
 	var mid := _mid(b["m"])
+	# (AS BIG AND WILD AS IT WILL GO, his Art Rulebook: the big moments flash in its colour and throw its sparks wide)
+	if BIG.has(key) and fx != null and not b.get("minor", false):
+		var big: float = float(BIG[key])
+		var flare := PackedColorArray([Color.WHITE, R[5], R[4], R[3]])
+		fx.flash(b["x"], b["y"], 10.0, big, 0.22, flare)
+		fx.spray(b["x"], b["y"], int(10 + big * 8.0), PackedColorArray([R[5], R[4], R[3]]), 3.0 + big * 2.0, 14.0)
+		fx.glow(b["x"], b["y"], 2.0 + big, 0.5)
+	elif MID.has(key) and fx != null and not b.get("minor", false):
+		fx.flash(b["x"], b["y"], mid, 0.7, 0.16, PackedColorArray([Color.WHITE, R[5], R[4]]))
+		fx.spray(b["x"], b["y"], 8, PackedColorArray([R[5], R[4], R[3]]), 2.5, 10.0, mid)
 	match key:
 		"spore:puff", "sump:drip":
 			for i in 7:
@@ -113,7 +133,7 @@ func _streak(ax: float, ay: float, bx: float, by: float, R: PackedColorArray, a:
 
 
 ## Arms swirling in to (x, y) on the floor, `rt` tiles: `arms` tapering streaks, turning with `spin`.
-func _swirl(x: float, y: float, rt: float, R: PackedColorArray, a: float, spin: float, arms := 4, w := 2) -> void:
+func _swirl(x: float, y: float, rt: float, R: PackedColorArray, a: float, spin: float, arms := 5, w := 3) -> void:
 	var cx := _wx(x, y)
 	var cy := _wy(x, y)
 	var rx := rt * 22.6
@@ -135,7 +155,8 @@ func _swirl(x: float, y: float, rt: float, R: PackedColorArray, a: float, spin: 
 			_line(px, py, qx, qy, ww)
 			px = qx
 			py = qy
-	_glow(cx, cy, rx * 0.4 + 4.0, R[4], 0.35 * a)
+	_glow(cx, cy, rx * 0.6 + 6.0, R[3], 0.55 * a)
+	_glow(cx, cy, rx * 0.25 + 3.0, R[5], 0.5 * a)
 	_ga(1.0)
 
 
@@ -197,14 +218,16 @@ func _chain(ax: float, ay: float, bx: float, by: float, R: PackedColorArray, a: 
 func _thorns(cx: float, cy: float, n: int, R: PackedColorArray, a: float, sd: int) -> void:
 	for i in n:
 		var ang := -PI * 0.5 + (float(i) - (n - 1) * 0.5) * 0.7 + (_rh(sd, i) - 0.5) * 0.2
-		var l := 7.0 + 2.0 * _rh(sd, i + 5)
+		var l := 10.0 + 3.0 * _rh(sd, i + 5)
 		var ox := cos(ang)
 		var oy := sin(ang)
 		_ga(a)
 		_fs(R[0])
-		_line(cx + ox * 2.0, cy + oy * 2.0 + 1.0, cx + ox * l, cy + oy * l + 1.0, 2)
+		_line(cx + ox * 2.0, cy + oy * 2.0 + 1.0, cx + ox * l, cy + oy * l + 1.0, 3)
 		_fs(R[3])
 		_line(cx + ox * 2.0, cy + oy * 2.0, cx + ox * l, cy + oy * l, 2)
+		_fs(R[4])
+		_line(cx + ox * (l * 0.5), cy + oy * (l * 0.5), cx + ox * l, cy + oy * l, 1)
 		_fs(R[5])
 		_fill(_ri(cx + ox * l), _ri(cy + oy * l), 1, 1)
 	_glow(cx, cy, 8.0 + n * 2.0, R[3], 0.4 * a)
@@ -663,7 +686,7 @@ func paint_floor_more() -> void:
 		match k:
 			"vortex":
 				var spin := t * (5.0 if id != "maw" else 7.0)
-				_swirl(x, y, rr * (1.0 - (float(z["t"]) / maxf(0.1, float(z["dur"]))) * (0.4 if id == "maw" else 0.0)), R, 0.7 * left, spin, 4, 2)
+				_swirl(x, y, rr * (1.0 - (float(z["t"]) / maxf(0.1, float(z["dur"]))) * (0.4 if id == "maw" else 0.0)), R, 0.9 * left, spin, 5, 3)
 				if id == "firewhirl":
 					_flame_round(x, y, rr * 0.5, PackedColorArray(FIRE), 0.8 * left, sd, 12.0)
 				elif id == "drift":

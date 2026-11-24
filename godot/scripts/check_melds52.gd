@@ -268,6 +268,27 @@ func _frames(k: int, secs: float) -> int:
 	return k
 
 
+## (the film: one of the pack not on his snare walks onto it, from a step beyond it, so it springs)
+func _snare_walk(k: int) -> int:
+	k = await _frames(k, 0.3)
+	if h.wakes == null:
+		return k
+	for z in h.wakes.list:
+		if str(z["kind"]) != "snare" or z.get("hostile", false):
+			continue
+		var at := Vector2(z["x"], z["y"])
+		for m in M._w_pack:
+			if m.dead or (z["on_it"] as Array).has(m.id) or m.world.distance_to(at) < 0.9:
+				continue
+			var away: Vector2 = (at - h.world).normalized() if at.distance_to(h.world) > 0.01 else Vector2(1, 0)
+			m.world = at + away * 1.3
+			m._place()
+			k = await _frames(k, 0.15)
+			h.melds._slide(m, at - m.world, 12)
+			return await _frames(k, 0.6)
+	return k
+
+
 func _fresh() -> void:
 	h.m52.forget()
 	for m in M._w_pack:
@@ -376,6 +397,13 @@ func film(only := "") -> void:
 			k = await _walk(k, 0.6, id, 1.0)
 			M._w_strike(h)
 			var rest := (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0))
+			# (THE CITY'S MELDS behind: a vortex's end is its own moment; a snare springs on one walked onto it)
+			if side == "behind" and M52.is_city(id) and not M52.is_new_rank(id):
+				var of: Array = M52.T()["of"][id]
+				if of.has("pulling"):
+					rest += 1.8
+				if of.has("binding"):
+					k = await _snare_walk(k)
 			# (so the film sees his shell go and his frenzy fade, which in a fight take their full time: cut short once the blow has landed)
 			if side == "front" and id in ["redoubt", "fury"]:
 				k = await _frames(k, 0.4)

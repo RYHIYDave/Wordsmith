@@ -1463,11 +1463,19 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   the Strike and behind it (its name, its line, the blow landing, its twist seen): 126 of 126. `--cases=m52film`, with
   `--fixed-fps 30`: a film of each meld, in front, behind and carried by a monster (ffmpeg makes each into an mp4).
 
-- THE NEXT GROUP (his “Let's get some more melds in”, 24 Nov 2026): Floor 11–15 Melds, his doc
+- THE CITY'S MELDS (his “Let's get some more melds in”, 24 Nov 2026): Floor 11–15 Melds, his doc
   https://claude.ai/artifact/CMMUpdDX2f9DwDPe8avGqQ: the city's five runes (Pulling, Splitting, Hexing, Stilling, Binding) with
-  the floor 1–5 runes and with each other, 45 melds and 5 level 2 runes (his “Good”). The stones: docs/mockups/meld_runes3 (his
-  “Yep good”). The animations' plan: https://claude.ai/artifact/BnhngFXn84WWNcRkKMnGDd, waiting on his word; then the build
-  behind a switch and films, as before.
+  the floor 1–5 runes and with each other, 45 melds and 5 level 2 runes (his “Good”; the first, Implosion, renamed Maw, as the
+  game has Implode). The stones: docs/mockups/meld_runes3 (his “Yep good”). The animations: Floor 11–15 Meld Animations,
+  https://claude.ai/artifact/BnhngFXn84WWNcRkKMnGDd, checked against his Art Rulebook at his “Remember to follow the rules for
+  art and animations” (his “Good to go”). Built behind a switch, `Melds52.CITY_ON` (off): in the same table, melds52.json
+  `city` (tools/melds52/make.py from tools/meldscity/docs_city.txt); the twists meldscity_rules.gd (the 52's `m52.y`), hooked
+  into the city's words' own moments (city_words.gd pull_in, split_first, _copy_hit, throw_shards; wakes.gd _snare; hero.gd
+  _wake and its hold); on monsters foe_meldscity.gd (from foe_melds52.gd, and a split's halves from monster.gd _split); the looks
+  fx_m52p_city.gd (its holds in fx_melds52.gd HOLDS; Frostlock and Constellation in Frost's blue on a monster, fx_m52kit.gd ICY).
+  `--only=words --cases=m52:<ids>`: the bench (off none of them, on all 143 and 16), stones, gear, and each of the 50 in front and
+  behind, 100 of 100; `--cases=m52film:city` (with `--fixed-fps 30`) films the 45 (their set-ups: cursed, slowed, held, chilled;
+  behind, a vortex's end waited for, a skeleton walked onto each snare).
 
 ## The other chats' hand-overs brought in (the cloud chat, 23 and 24 Nov 2026)
 

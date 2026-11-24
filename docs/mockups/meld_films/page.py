@@ -2,24 +2,28 @@
 # (godot: --only=words --cases=m52film, each <id>.mp4 and <id>.jpg) and the approved stones.
 #   python3 page.py <films dir> <out dir>        the first 52 (../meld_runes)
 #   python3 page.py <films dir> <out dir> 46     the last 46 of floors 1-10 (../meld_runes2)
+#   python3 page.py <films dir> <out dir> city   the city's 45 (../meld_runes3)
 import json, sys, os, shutil, html
 HERE = os.path.dirname(os.path.abspath(__file__))
 films, out = sys.argv[1], sys.argv[2]
 LAST = len(sys.argv) > 3 and sys.argv[3] == '46'
-RUNES = HERE + ('/../meld_runes2' if LAST else '/../meld_runes')
+CITY = len(sys.argv) > 3 and sys.argv[3] == 'city'
+RUNES = HERE + ('/../meld_runes3' if CITY else '/../meld_runes2' if LAST else '/../meld_runes')
 R = json.load(open(RUNES + '/runes.json'))
 os.makedirs(out + '/film', exist_ok=True)
 os.makedirs(out + '/stones', exist_ok=True)
 NAME = {'fire': 'Flame'}
 def nm(w): return NAME.get(w, w.capitalize())
 groups = {}
+CW = ['pulling', 'splitting', 'hexing', 'stilling', 'binding']
 for k, v in R.items():
-    groups.setdefault(v['of'][0], []).append(k)
+    groups.setdefault('each' if CITY and v['of'][1] in CW else v['of'][0], []).append(k)
 secs = []
 have = 0
 for a, ks in groups.items():
     cards = []
     for k in ks:
+        a0 = R[k]['of'][0]
         shutil.copy(RUNES + '/stones/%s.png' % k, out + '/stones/%s.png' % k)
         if os.path.exists(films + '/%s.mp4' % k):
             have += 1
@@ -29,8 +33,8 @@ for a, ks in groups.items():
         else:
             vid = '<div class="none">No film</div>'
         cards.append('<article class="card"><header><img src="stones/%s.png" width="48" height="48" alt=""><div><b>%s</b><span>%s + %s</span></div></header>%s</article>'
-                     % (k, html.escape(R[k]['name']), nm(a), nm(R[k]['of'][1]), vid))
-    secs.append('<section><h2>%s melds</h2><div class="cards">%s</div></section>' % (nm(a), ''.join(cards)))
+                     % (k, html.escape(R[k]['name']), nm(a0), nm(R[k]['of'][1]), vid))
+    secs.append('<section><h2>%s</h2><div class="cards">%s</div></section>' % ("The city's runes with each other" if a == 'each' else nm(a) + ' melds', ''.join(cards)))
 page = '''<title>@@TITLE@@</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -82,20 +86,29 @@ a { color: var(--accent); }
       <li>A skeleton carrying the meld comes for the hero.</li>
     </ol>
     @@NOTES@@
-    <p class="lead">Checked against your Art Rulebook and fixed (shapes, size, the hero kept clear, the freeze on big blows, the colours you said yes to, and every film now shows the meld on a monster): <a href="https://claude.ai/artifact/QNsqwTYmHsxKbx4E9GHBzY">the rules check</a>.</p>
+    @@RULES@@
   </header>
   @@SECS@@
   <div class="ask"><b>Your call</b><p>Tell me in the chat to switch them on, or which ones to change. They stay switched off until you say yes.</p></div>
 </div>
 '''.replace('@@SECS@@', ''.join(secs))
-if LAST:
-    page = page.replace('@@TITLE@@', 'Last Meld Films').replace('@@H1@@', 'The last 46 melds of floors 1 to 10 at work').replace('@@NOTES@@',
+RULES_98 = '<p class="lead">Checked against your Art Rulebook and fixed (shapes, size, the hero kept clear, the freeze on big blows, the colours you said yes to, and every film now shows the meld on a monster): <a href="https://claude.ai/artifact/QNsqwTYmHsxKbx4E9GHBzY">the rules check</a>.</p>'
+if CITY:
+    page = page.replace('@@TITLE@@', 'City Meld Films').replace('@@H1@@', "The city's 45 melds at work").replace('@@RULES@@',
+        '<p class="lead">Made by your Art Rulebook: as big and wild as they go, the heavy ones kick the screen and hold a tenth of a second, '
+        'every shape the thing it is (thorns, chains, spikes, tongues of flame, swirling arms, a lump of amber), nothing on a monster in a friend\'s cyan '
+        '(Frostlock and Constellation smoulder in Frost\'s deep blue there), and a curse a monster lays on you in the enemy\'s pink and gold.</p>').replace('@@NOTES@@',
+        '<p class="lead">Some melds wait on something, so their films set it up: the skeletons start cursed for Doom, Plague, Hoarfrost, Brimstone, Whisper, Beckon, '
+        'Torpor and Witchknot, slowed for Stasis, Frostlock, Slow Burn, Stormglass, Timeslip and Torpor, held for Shackle, Icebound, Firetrap, Tether and Witchknot, '
+        'chilled for Drift and Icebound. Behind, the film waits for each vortex to collapse, and walks a skeleton onto each snare so it springs.</p>')
+elif LAST:
+    page = page.replace('@@RULES@@', RULES_98).replace('@@TITLE@@', 'Last Meld Films').replace('@@H1@@', 'The last 46 melds of floors 1 to 10 at work').replace('@@NOTES@@',
         '<p class="lead">Some melds only show in certain moments, so their films set those up: Glide, Firewalk, Quicksilver and Charge show while he moves, '
         'so he darts aside after each swing; Onrush, Hornet and the movers get a burst of speed; Lifeline runs at low life; Hair Trigger\'s skeletons are '
         'left nearly dead; Double Tap, Lancet, Detonator and Vendetta strike certain criticals; the frenzy melds start with a frenzy built up; for the Guarding melds his shield is up as the skeleton comes. Hourglass behind '
         'works on what a blow leaves on the ground, so in its film Guarding sits beside it and leaves a ward.</p>')
 else:
-    page = page.replace('@@TITLE@@', 'Meld Films').replace('@@H1@@', 'The 52 melds at work').replace('@@NOTES@@',
+    page = page.replace('@@RULES@@', RULES_98).replace('@@TITLE@@', 'Meld Films').replace('@@H1@@', 'The 52 melds at work').replace('@@NOTES@@',
         '<p class="lead">Blink and Tailwind show only while he moves, so in their films he darts aside after each swing. For the Guarding melds his shield is up as the skeleton comes.</p>')
 open(out + '/meld_films.html', 'w').write(page)
 print('films', have, 'of', len(R))
