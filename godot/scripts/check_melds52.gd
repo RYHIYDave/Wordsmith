@@ -61,7 +61,8 @@ const FRENZY := ["berserk", "fever", "whiteout", "overcharge", "blur", "juggerna
 const KILL_BEHIND := ["bloodlust", "coldblood", "secondwind", "berserk", "fever", "whiteout", "overcharge", "blur", "spree", "fury", "bloodbloom", "feedingfrenzy", "mayhem", "lifeline", "transfusion", "detonator", "rapier", "shieldwall", "minefield", "tempo"]
 ## (whose moment comes later than the others': a burn going out and lighting again)
 const LONGER := {"rekindle:front": 2.6, "rekindle:behind": 2.0, "bloat:front": 1.6, "jolt:behind": 1.2, "smoulder:front": 1.0,
-	"timebomb:front": 1.2, "timebomb:behind": 2.0, "detonator:front": 1.0, "cluster:front": 0.6, "fury:front": 1.5, "redoubt:front": 1.0, "transfusion:front": 1.0}
+	"timebomb:front": 1.2, "timebomb:behind": 2.0, "detonator:front": 1.0, "cluster:front": 0.6, "fury:front": 1.5, "redoubt:front": 1.0, "transfusion:front": 1.0,
+	"hourglass:behind": 1.6, "frostbite:front": 2.4}
 const STUNNED := ["pressurepoint", "daze", "charge", "mire", "anvil"]
 ## THE CITY'S MELDS (meldscity_rules.gd): what one Strike shows of each, in front (behind: its shards flying, or what it left), and
 ## what its twist waits on made so on the pack before the Strike: cursed, slowed in time, held, chilled, frozen. "" in front: seen
@@ -427,6 +428,9 @@ func film(only := "") -> void:
 		for k in rounds.size():
 			if span == "" or span == "round=%d" % (k + 1):
 				ids.append_array(rounds[k])
+		# (`redo:ids=a,b`: those of them named)
+		if span.begins_with("ids="):
+			ids = Array(span.trim_prefix("ids=").split(","))
 		only = ""
 	if only.begins_with("high"):
 		var hi: Array = T["high"].filter(func(w): return not M52.is_new_rank(w))
@@ -524,8 +528,8 @@ func film(only := "") -> void:
 				await CR._after(id, side)
 			if not whirl:
 				M._w_strike(h)
-			# (Doom and Grudge in front wait on a third blow on what they curse)
-			if CR != null and side == "front" and CR.THIRD.has(id):
+			# (Doom and Grudge in front wait on a third blow on what they curse; Vendetta and Bloodtide behind on a third)
+			if CR != null and (side == "front" and CR.THIRD.has(id) or side == "behind" and CR.THIRD_B.has(id)):
 				k = await _walk(k, 0.5, id, 1.0)
 				M._w_strike(h)
 			if M52.is_high(id) and (M52.T()["of"][id] as Array).has("surging") and side == "behind":
@@ -601,6 +605,18 @@ func film(only := "") -> void:
 		m._cd = 0.0
 		m.speed = 1.2
 		k = await _frames(k, 2.6)
+		# (ALL MELDS REDONE: a moment on him that waits on its third blow, or on its shield holding as it strikes, made sure of as its
+		# check makes it: blows on him, up to three, until it is seen)
+		if CRF != null and not m.dead:
+			var want: Array = CRF.EXPECT.get(id, {}).get("foe", [])
+			var by: Dictionary = m.blow()
+			for _j in 3:
+				if m.dead or want.any(func(w): return h.m52.told.has(id + ":" + str(w))):
+					break
+				h.blow_by = m
+				h.hurt_by(20.0, str(by.get("el", "phys")), m.words, {}, m, m.world)
+				h.blow_by = null
+				k = await _frames(k, 0.35)
 		# (Fervor redone, on a monster: a kin dies near it, and feeds it)
 		if CRF != null and id == "fervor" and M._w_pack.size() > 1 and not M._w_pack[1].dead:
 			var kin = M._w_pack[1]
