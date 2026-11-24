@@ -86,8 +86,8 @@ func run(main, hero, dir: String) -> void:
 	M.dungeon_words = ["plundering", "twin"]
 	var laid: Array = FoeWords.foe_words_of(M.dungeon_words.filter(func(w): return not M.loot.DOOR_GOLD_WORDS.has(str(w))))
 	_line(dg == 50.0 and M.loot.door_gold() == 50.0 and not laid.has("plundering") and laid.has("twin"), "burned in: the level's gold +%d%%; what its monsters carry: %s (no Plundering)" % [dg, laid])
-	var whys := [Words.meld_problem("plundering", "twin"), Words.meld_problem("power", "plundering"), Words.meld_problem("plundering", "plundering")]
-	_line(whys.all(func(x): return x != "") and Words.meld_of("plundering", "twin") == "" and Words.meld_of("plundering", "plundering") == "", "Plundering never melds: with Twin '%s', with Power '%s', with itself '%s'" % whys)
+	var nos := [Words.meld_problem("plundering", "twin"), Words.meld_problem("power", "plundering"), Words.meld_problem("plundering", "plundering")]
+	_line(nos.all(func(x): return x != "") and Words.meld_of("plundering", "twin") == "" and Words.meld_of("plundering", "plundering") == "", "Plundering never melds: with Twin '%s', with Power '%s', with itself '%s'" % nos)
 	# AT THE RIM: the three laid on the gate as he would lay them, its page pictured with the line naming them
 	M.dungeon_words = []
 	M.go_to(M.home_place(), "start")
