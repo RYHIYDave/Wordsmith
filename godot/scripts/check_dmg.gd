@@ -72,6 +72,9 @@ func run(main, hero, d: String) -> void:
 		Words.POISON_ADD = OS.get_environment("WS_POISON_ADD") == "1"
 	if OS.has_environment("WS_BURN_ALL"):
 		Words.BURN_MORE_ALL = float(OS.get_environment("WS_BURN_ALL"))
+	# (WS_TWIN_AIM=1: Twin's waves aimed, heroes/mage.gd TWIN_AIM, for weighing it)
+	if OS.has_environment("WS_TWIN_AIM"):
+		preload("res://scripts/heroes/mage.gd").TWIN_AIM = OS.get_environment("WS_TWIN_AIM") == "1"
 	h.unhurt = true
 	M.go_to("floor20", "start")
 	await M._wait(2.0)

@@ -2,7 +2,8 @@
 ## --shots=<dir>`. Frostbite redone on monsters: four carrying it freeze him no more often than one does; Cauterize redone on a
 ## monster: it sears its wounds once, its own way, not also the old way; the evasive move's long name kept off the slow attack's
 ## plate (pictured); floor 5's cage walked into once it is down. And from the damage test: Brand in front makes a burn twice as hot
-## once, not again on each crit (it grew to millions); a monster's meld makes his burn or poison worse once a burn, not each blow.
+## once, not again on each crit (it grew to millions); a monster's meld makes his burn or poison worse once a burn, not each blow;
+## Twin's two waves aimed so the nearer crosses the spot she aims at (heroes/mage.gd TWIN_AIM).
 extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
@@ -183,4 +184,31 @@ func run(main, hero, dir: String) -> void:
 		h.auto_dir = Vector2.ZERO
 		went = M._going or M.place != here
 	_line(went and walk == 1, "floor 5's cage down (way %s): its tile walked (%d), and walked into from before it, it takes him up (%s)" % [W.state if W != null else "none", walk, went])
+	# TWIN'S WAVES (the damage test: the Frost Mage's Shivering Twin Wave struck nothing 4.5 tiles before her): as they now fly, and
+	# aimed (heroes/mage.gd TWIN_AIM), how far each passes from the spot she aims at, against its own reach and an enemy's
+	var Mage := preload("res://scripts/heroes/mage.gd")
+	var was: bool = Mage.TWIN_AIM
+	M.set_class("mage", true)
+	h = M.hero
+	h.loadout.front[0] = ["shiver", "twin"]
+	h.loadout._r = [null, null, null]
+	await _wait(0.3)
+	var miss := {}
+	for on in [false, true]:
+		Mage.TWIN_AIM = on
+		h.kit.shots.clear()
+		var from: Vector2 = h.world
+		var to: Vector2 = from + Vector2(4.5, 0.0)
+		h.kit._deliver(0, from, to, 1.0, false)
+		var near := INF
+		for sh in h.kit.shots:
+			var p0 := Vector2(sh["x"], sh["y"])
+			var v := Vector2(sh["vx"], sh["vy"]).normalized()
+			# (where it is as it comes level with the aimed spot: its distance from it)
+			var along: float = (to - p0).dot(v)
+			near = minf(near, (p0 + v * along).distance_to(to) - float(sh["r"]))
+		miss[on] = near
+		h.kit.shots.clear()
+	Mage.TWIN_AIM = was
+	_line(miss[true] < 0.0, "Twin's waves 4.5 tiles out, the nearer's edge from the aimed spot: as now %.2f tiles (an enemy's middle 0.42 in misses past 0.42), aimed %.2f (over it)" % [miss[false], miss[true]])
 	print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

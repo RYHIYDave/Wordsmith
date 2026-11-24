@@ -18,6 +18,11 @@ extends "res://scripts/heroes/kit.gd"
 ## (her orbs: game.ts orbs, {id, x, y, t, life, next, waves, skill, frac, element})
 var orbs: Array = []
 var _next_id := 0
+## TWIN'S WAVES AIMED (the bug hunt, 24 Nov 2026): a Twin pair of waves fans 0.3 of a radian each way (game.ts TUNE.waveFan), so
+## that past four tiles or so both pass either side of the one she aims at and neither strikes it (with Shiver's smaller waves, none
+## of her blows landed on an elite before her). With this on, the fan narrows with the aimed spot's distance, just so far that each
+## wave's inner edge still crosses where she aims: as wide as ever near her, nearer together far off. Pictures first: off.
+static var TWIN_AIM := false
 
 
 func _init(hero) -> void:
@@ -49,8 +54,13 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 		var base := atan2(way.y, way.x)
 		var hit: Array = []
 		var n: int = r["count"]
+		var fan: float = float(T["tune"]["waveFan"])
+		if TWIN_AIM and n > 1:
+			# (each wave's inner edge, four fifths of its half-width in, over the spot she aims at)
+			var w: float = float(def["radius"]) * float(r["size"])
+			fan = minf(fan, atan2(0.8 * w, maxf(1.0, from.distance_to(to))))
 		for k in n:
-			var a := base + (0.0 if n == 1 else (k - (n - 1) / 2.0) * 2.0 * float(T["tune"]["waveFan"]))
+			var a := base + (0.0 if n == 1 else (k - (n - 1) / 2.0) * 2.0 * fan)
 			var u := Vector2(cos(a), sin(a))
 			shots.append({"x": from.x + u.x * 0.5, "y": from.y + u.y * 0.5, "vx": u.x * float(r["proj_speed"]), "vy": u.y * float(r["proj_speed"]),
 				"r": float(def["radius"]) * float(r["size"]), "dist": float(def["range"]), "dmg": each, "element": r["element"], "look": "wave",

@@ -3193,6 +3193,7 @@ func _shoot(hero: Hero, dir: String) -> void:
 	if _arg("only") == "bughunt":
 		await preload("res://scripts/check_bughunt.gd").new().run(self, hero, dir)
 		get_tree().quit()
+		return
 	if _arg("only") == "noupright":
 		await preload("res://scripts/check_safe.gd").new().noupright(self, hero, dir)
 		get_tree().quit()
