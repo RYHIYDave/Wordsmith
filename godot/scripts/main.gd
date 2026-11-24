@@ -3276,6 +3276,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_quest1115.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	# (TWO KINDS IN ONE HIT: check_twokinds.gd)
+	if _arg("only") == "twokinds":
+		await preload("res://scripts/check_twokinds.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE CITY'S FIVE WORDS: check_citywords.gd)
 	if _arg("only") == "citywords":
 		await preload("res://scripts/check_citywords.gd").new().run(self, hero, dir)
@@ -3903,7 +3908,11 @@ func _w_set(h: Hero, i: int, side: String, words: Array) -> Dictionary:
 ## the move's share with its words x `frac` x (1 + (his damage bonus, the bonus of the blow's element, his might) / 100).
 func _w_avg(h: Hero, i: int, frac := 1.0, might := 0.0) -> float:
 	var r: Dictionary = h.loadout.r(i)
-	var el: float = h.stats.get({"fire": "fire_pct", "frost": "frost_pct", "lightning": "light_pct"}.get(r["element"], "phys_pct"), 0.0)
+	var key := {"fire": "fire_pct", "frost": "frost_pct", "lightning": "light_pct"}
+	var el: float = h.stats.get(key.get(r["element"], "phys_pct"), 0.0)
+	# (a hit of two kinds, words.gd BOTH_KINDS: half of each, so with no flat damage the two kinds' bonuses halved)
+	if str(r.get("element2", "")) != "":
+		el = (el + float(h.stats.get(key.get(r["element2"], "phys_pct"), 0.0))) / 2.0
 	return W_ROLL * float(r["dmg_mult"]) * frac * (1.0 + (h.stats["dmg_pct"] + el + might) / 100.0)
 
 

@@ -613,12 +613,29 @@ func base_for(el: String) -> Array:
 	return [lo, hi]
 
 
+## A hit of move result `r` before its share: his roll, `t` of the way from its least to its most (0.5 the middle), with what his
+## gear adds flat to hits of its kind, made more by his damage bonus, its kind's bonus and `more` (game.ts hitMonster, baseFor;
+## `fervor`: Fervor's, melds.gd). BOTH_KINDS (words.gd, his find of 24 Nov 2026): a hit of two kinds (`element2`, a melded word
+## of two damage words) is half of each: half the weapon's roll each, what his gear adds flat to one kind's hits all to its own
+## half, each half made more by its own kind's bonus. Of one kind, the same as ever.
+func kinds_hit(r: Dictionary, t: float, more := 0.0, fervor := false) -> float:
+	var els: Array = [str(r["element"])]
+	if str(r.get("element2", "")) != "":
+		els.append(str(r["element2"]))
+	var weapon: float = lerpf(float(stats["dmg_min"]), float(stats["dmg_max"]), t) / float(els.size())
+	var sum := 0.0
+	for el in els:
+		var b := base_for(el)
+		var flat: float = lerpf(float(b[0]) - float(stats["dmg_min"]), float(b[1]) - float(stats["dmg_max"]), t)
+		sum += (weapon + flat) * (1.0 + (float(stats["dmg_pct"]) + _el_pct(el) + (melds.fervor_pct(el) if fervor else 0.0) + more) / 100.0)
+	return sum
+
+
 ## The average of one hit of move `i`, `frac` of it, as his numbers and his might stand, before a critical (game.ts avgHit):
 ## what the ground a move leaves is sized by.
 func avg_hit(i: int, frac: float) -> float:
 	var r: Dictionary = loadout.r(i)
-	var base := base_for(r["element"])
-	return (base[0] + base[1]) / 2.0 * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(r["element"]) + might) / 100.0)
+	return kinds_hit(r, 0.5, might) * float(r["dmg_mult"]) * frac
 
 
 ## ONE HIT OF MOVE `i` ON A MONSTER, `frac` of it, with everything a word in front adds (game.ts hitMonster, in its order).
@@ -638,11 +655,10 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 		return
 	var r: Dictionary = loadout.r(i)
 	var el: String = r["element"]
-	var base := base_for(el)
 	var was_frozen_t: float = m.frozen_t
 	var was_shocked: bool = m.shock_t > 0.0
-	# (FERVOR, melds.gd: its kills burning hotter a while)
-	var dmg: float = randf_range(base[0], base[1]) * float(r["dmg_mult"]) * frac * (1.0 + (stats["dmg_pct"] + _el_pct(el) + melds.fervor_pct(el) + might) / 100.0)
+	# (FERVOR, melds.gd: its kills burning hotter a while; BOTH_KINDS: a hit of two kinds half of each, kinds_hit)
+	var dmg: float = kinds_hit(r, randf(), might, true) * float(r["dmg_mult"]) * frac
 	# (THE SKILL TREES: what the talents make of a hit: game.ts talentHitMult)
 	dmg *= _talent_hit_mult(m)
 	# (UNIQUE ITEMS: what the uniques worn make of it: uniques.gd hit_mult)

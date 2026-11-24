@@ -1163,15 +1163,10 @@ func _coach() -> String:
 ## One hit of a move, lowest to highest, as the ATTACKS page gives it (game.ts hitRange, baseFor): with all that his gear
 ## and attributes add, without what comes and goes in a fight and before a critical hit.
 func hit_range(i: int) -> Array:
+	# (hero.gd kinds_hit: a hit of two kinds, words.gd BOTH_KINDS, half of each)
 	var r: Dictionary = hero.loadout.r(i)
-	var st: Dictionary = hero.stats
-	var el: String = r["element"]
-	var pct: float = st["fire_pct"] if el == "fire" else (st["frost_pct"] if el == "frost" else (st["light_pct"] if el == "lightning" else st["phys_pct"]))
-	var k: float = float(r["dmg_mult"]) * (1.0 + (float(st["dmg_pct"]) + pct) / 100.0)
-	var key: String = "fire" if el == "fire" else ("frost" if el == "frost" else ("light" if el == "lightning" else ""))
-	var lo: float = float(st["dmg_min"]) + (float(st.get(key + "_min", 0.0)) if key != "" else 0.0)
-	var hi: float = float(st["dmg_max"]) + (float(st.get(key + "_max", 0.0)) if key != "" else 0.0)
-	return [maxi(1, roundi(lo * k)), maxi(1, roundi(hi * k))]
+	var k: float = float(r["dmg_mult"])
+	return [maxi(1, roundi(hero.kinds_hit(r, 0.0) * k)), maxi(1, roundi(hero.kinds_hit(r, 1.0) * k))]
 
 
 ## How a move is limited, said short ("1.09/S", "3.5 S") and long (ui/inventory.ts paceText).

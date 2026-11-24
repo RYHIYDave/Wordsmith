@@ -155,6 +155,14 @@ static var MELD_RANK2 := true
 ##               to about level 3, so the game's 5 left floor 1 played without it). 0: the game's. OFF at his word the same
 ##               evening: “I don't want the dodge in the first dungeon.  I like it unlocking later.”
 static var EVADE_AT := 0
+##   BOTH_KINDS  a melded word of two damage words (Scald, Wildfire, Hailstorm) deals both kinds, half of each, not all of its first
+##               word's kind. His find, 24 Nov 2026: “two damage types on a meld just picked one of those damage types and made the
+##               entire attack deal 1 kind of damage instead of 2 while still allowing a craft on an item to add both damage types,
+##               leaving part of the craft completely worthless”. So: half the weapon's roll is of each kind; what his gear adds flat
+##               to one kind's hits all goes to its own half; each half made more by its own kind's bonus (hero.gd kinds_hit). Its
+##               looks and all else that goes by the hit's kind are its first word's, as before (`element`; the second, `element2`).
+##               Off: all of the first word's kind, as the game has it.
+static var BOTH_KINDS := true
 const MELD_PART := 0.75
 const POISON_MOST := 4
 
@@ -455,9 +463,17 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	var lines: Array = [def["desc"]]
 	# (the damage's element: the element word in front decides; failing that, the one behind)
 	var element := "phys"
+	# (BOTH_KINDS: a melded word of two damage words, the second kind too)
+	var element2 := ""
 	for w in front + behind:
 		if w != null and D["words"][w]["element"] != null:
 			element = D["words"][w]["element"]
+			if BOTH_KINDS:
+				for p in parts_of(w):
+					var e = D["words"][p]["element"] if D["words"].has(p) else null
+					if e != null and e != element:
+						element2 = str(e)
+						break
 			break
 	# (what the move grows with: the class's own attribute (the Warrior's Strength, the Ranger's Dexterity, ...); a class of two, the
 	# Warlock, their sum less HYBRID_LESS)
@@ -519,7 +535,7 @@ static func resolve(id: String, front: Array, behind: Array, d: Dictionary, cls 
 	var waits: bool = float(def["cooldown"]) > 0.0
 	var heavy: Dictionary = D["heavy"]
 	var r := {
-		"id": id, "name": skill_name(id, front, behind), "element": element, "dmg_mult": 0.0, "size": 1.0, "rate": 0.0, "cooldown": 0.0, "mana": 0,
+		"id": id, "name": skill_name(id, front, behind), "element": element, "element2": element2, "dmg_mult": 0.0, "size": 1.0, "rate": 0.0, "cooldown": 0.0, "mana": 0,
 		"splash": 0.0, "splash_dmg": 0.0, "pierce": false,
 		"ignite": 0.0, "chill": 0.0, "arcs": 0, "arc_dmg": 0.0, "poison": 0.0, "stun": 0.0,
 		"might": 0.0, "haste": 0.0, "zone": null, "cloud": 0.0, "cracks": 0.0, "lines": lines,
