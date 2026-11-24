@@ -438,16 +438,6 @@ func film(only := "") -> void:
 					m.stun_t = 3.0
 				# (REAPING WITH A DAMAGE RUNE: the first it strikes falls, burning, frozen or poisoned for the twist in front; behind,
 				# the rest stand for its creature to fight)
-				# (THE HIGH CITY'S RUNES MELDED: what its act waits on: a kill for Reaping, one brought low for Culling)
-				if M52.is_high(id):
-					var hof: Array = M52.T()["of"][id]
-					if hof.has("reaping") and m == M._w_pack[0]:
-						m.max_life = FOE_LIFE
-						m.life = 1.0
-					if hof.has("culling"):
-						var hit: float = float(M._w_hit(h, 0))
-						m.max_life = 4000.0
-						m.life = hit * (1.05 if side == "front" else 2.2) + m.max_life * (0.06 if side == "front" else 0.1)
 				if M52.is_reap(id) and (m == M._w_pack[0] or side == "front" and M._w_pack.find(m) < 3):
 					m.max_life = FOE_LIFE
 					m.life = 1.0
@@ -487,15 +477,23 @@ func film(only := "") -> void:
 				for m in M._w_pack:
 					m.max_life = 2500.0
 					m.life = 320.0
-			# (Surging's: a third use in front; behind, his dodge)
-			if M52.is_high(id) and (M52.T()["of"][id] as Array).has("surging") and side == "front":
-				h.uses[0] = 1
+			# (THE HIGH CITY'S RUNES MELDED: the pack stood and what each one's own twist waits on made so, as its check makes it:
+			# check_high.gd setup: a kill, one nearly dead, a third use, his frenzy, a mark, burning, poison, a curse...)
+			if M52.is_high(id):
+				preload("res://scripts/check_high.gd").new(M, h).setup(id, side)
 			k = await _frames(k, 0.25)
 			M._w_strike(h)
 			k = await _walk(k, 0.6, id, 1.0)
 			M._w_strike(h)
 			if M52.is_high(id) and (M52.T()["of"][id] as Array).has("surging") and side == "behind":
 				h.last.dodge_surge(h.world)
+				k = await _frames(k, 0.3)
+				h.last.high.surge.landed(h.world)
+			# (a spirit's end is its own moment for these: brought on, for the film)
+			if M52.is_high(id) and side == "behind" and id in ["undying", "soulburst"]:
+				k = await _frames(k, 0.8)
+				for sp in h.last.spirits:
+					sp["t"] = maxf(float(sp["t"]), float(sp["life"]) - 0.2)
 			var rest := (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0)) + (2.2 if M52.is_reap(id) and side == "behind" else 0.0)
 			# (THE CITY'S MELDS behind: a vortex's end is its own moment; a snare springs on one walked onto it)
 			if side == "behind" and (M52.is_city(id) or M52.is_city2(id)) and not M52.is_new_rank(id):

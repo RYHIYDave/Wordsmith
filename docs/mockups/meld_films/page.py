@@ -119,13 +119,15 @@ a { color: var(--accent); }
 RULES_98 = '<p class="lead">Checked against your Art Rulebook and fixed (shapes, size, the hero kept clear, the freeze on big blows, the colours you said yes to, and every film now shows the meld on a monster): <a href="https://claude.ai/artifact/QNsqwTYmHsxKbx4E9GHBzY">the rules check</a>.</p>'
 if HIGHG:
     page = page.replace('@@TITLE@@', 'High City Melds').replace('@@H1@@', "The High City's runes melded: 110 melds and 5 level 2 runes").replace('@@RULES@@',
-        '<p class="lead">The last group: Piercing, Bleeding, Reaping, Culling and Surging with every other rune and with each other. Plundering and Greed never meld, '
-        'as you said; Mirroring, now the rare copier of items, is left out. One twist for all of them: the High City rune\'s own act carries the other rune. '
-        'Piercing\'s line and its lance, Bleeding\'s wounds and thorns, Reaping\'s soul and spirit, Culling\'s killing blow and its mark, Surging\'s shockwaves '
-        'set what they strike burning, chill it, poison it, stun it, curse it, drag it, split to the next; or quicken, heal, shield you. '
-        'Each stone shows its two runes: the High City rune\'s mark glowing on the left, the other\'s on the right.</p>').replace('@@NOTES@@',
+        '<p class="lead">Redone from the start, each meld on its own, as you asked: its own idea, its own stone, its own rules in front of a move, behind it and on '
+        'a monster, and its own look. No stone is half of one rune and half of the other: each is a new symbol, checked against every stone before it so none repeats. '
+        'Plundering and Greed never meld, as you said; Mirroring, now the rare copier of items, is left out. '
+        'The looks follow your Art Rulebook: the big moments flash, throw their sparks wide, kick the screen and hold a tenth of a second; every shape is the thing it is '
+        '(a lance, a hook, thorns, a gravestone, a guillotine\'s blade, a noose, a bell, a wave); nothing on a monster glows a friend\'s cyan, and what a monster lays on you is in the enemy\'s pink and gold.</p>'
+        '@@CHECKED@@').replace('@@NOTES@@',
         '<p class="lead">Each film shows the meld in front of the Strike, then behind it, then carried by a skeleton that comes for you. '
-        'What each High City rune waits on is set up: a kill for Reaping, skeletons brought low for Culling, a third use and a dodge for Surging.</p>')
+        'What each one waits on is set up: a kill for Reaping, skeletons brought low for Culling, a third use and a dodge for Surging, '
+        'and for some their own moment (skeletons bleeding, burning, poisoned, cursed, chilled or slowed; his frenzy full; a critical; his shield up).</p>')
 elif CITY2:
     page = page.replace('@@TITLE@@', 'City and Wilds Melds').replace('@@H1@@', "The city's runes with the floor 6–10 runes: 44 melds").replace('@@RULES@@',
         '<p class="lead">Each card is the whole meld for your yes in one place: its stone, its idea, what it does in front, behind and on enemies, and its film. '

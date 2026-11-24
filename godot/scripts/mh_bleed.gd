@@ -86,7 +86,12 @@ func on(m, i: int, dmg: float, fresh: bool) -> void:
 		"bramble":
 			m.m52["bramble"] = true
 		"fishhook":
+			# (hooked: hauled in toward where it struck, and the haul tears it: the bite above, x3 while thrown)
 			m.m52["fish"] = true
+			var to: Vector2 = H.hero.world + (m.world - H.hero.world).limit_length(H.n("fishhook", "stop", 0.7))
+			if H.once("hook%d" % m.get_instance_id(), 0.4) and m.world.distance_to(to) > 0.2:
+				H.drag(m, to, 0.0)
+				H.tell(id, "hook", m.world, {"x1": to.x, "y1": to.y})
 		"bloodhex":
 			m.m52["bloodhex"] = true
 		"clot":

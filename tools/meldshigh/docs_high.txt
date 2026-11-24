@@ -41,7 +41,7 @@ Dart
 Piercing and Swift. Quick, thin and through. On a move: Dart Strike, Strike of the Dart.
 In front: faster to use again; each enemy it goes through takes a little more time off its wait.
 Behind: each use gives you a burst of speed, and a moment later the lance of light strikes down the path you ran in it.
-On enemies: moves and attacks faster; it shoots through walls as it runs, without stopping.
+On enemies: moves and attacks faster still; its shots fly through walls.
 Battering Ram
 Piercing and Heavy. One great blow that bowls through them all. On a move: Battering Ram Strike, Strike of the Battering Ram.
 In front: slower, hits much harder and stuns; it goes on through everything in its line, knocking each enemy aside out of its path, stunned.
@@ -84,7 +84,7 @@ Behind: the lance of light stays standing for a second and a half, striking what
 On enemies: its poison, burning and chill last longer on you; its shots fly through walls, and what they leave on you lasts longer still.
 Flicker
 Piercing and Fleeting. There and gone before they see it. On a move: Flicker Strike, Strike of the Flicker.
-In front: everything it makes and gives is a third shorter and does as much in that time; its whole line is struck at the same instant, as one flash.
+In front: everything it makes and gives is a third shorter and does as much in that time; its whole line flashes twice, a blink apart, the second flash striking it again.
 Behind: the lance of light strikes at once, with no moment's wait, and is ready to strike again sooner.
 On enemies: its poison and burning hurt you faster; its shots fly through walls, a third faster.
 Broadspear
@@ -191,7 +191,7 @@ Behind: its thorns last half as long again, and cut deeper the longer they stand
 On enemies: its bleeding on you lasts longer, and grows the longer it runs.
 Papercut
 Bleeding and Fleeting. Many small, quick cuts. On a move: Papercut Strike, Strike of Papercuts.
-In front: everything it makes and gives is a third shorter and does as much in that time; each new hit starts the bleeding again at full.
+In front: everything it makes and gives is a third shorter and does as much in that time; each hit on an enemy already bleeding cuts it again at once.
 Behind: its thorns spring up and are gone a third sooner, cutting twice as often while they stand.
 On enemies: its poison, burning and bleeding hurt you faster.
 Bramble
@@ -270,7 +270,7 @@ Undying
 Reaping and Lasting. Death does not keep them down. On a move: Undying Strike, Strike of the Undying.
 In front: each soul takes half as much time again off your waits.
 Behind: kills raise a spirit that fights half as long again, and when its time is up it rises once more.
-On enemies: its poison, burning and chill last longer on you; when it dies it rises once, and stays risen longer.
+On enemies: its poison, burning and chill last longer on you; when it dies it rises once, with half as much life again.
 Fetch
 Reaping and Fleeting. The soul is yours the moment they fall. On a move: Fetch Strike, Strike of the Fetch.
 In front: each soul comes to you the instant its enemy falls, and takes a little more off for every other kill in the second before.
@@ -288,7 +288,7 @@ Behind: leaves a vortex; any enemy that dies in it, by anyone's hand, rises as y
 On enemies: its blows drag you toward it; when it dies it rises once, and drags you in.
 Poltergeist
 Reaping and Splitting. Restless spirits that throw things. On a move: Poltergeist Strike, Strike of the Poltergeist.
-In front: breaks into three smaller copies that fly on to other enemies; each copy that kills leaves a soul of its own, so one use can gather three.
+In front: breaks into three smaller copies that fly on to other enemies; each soul a kill leaves hurls a shard at the nearest enemy on its way to you.
 Behind: where it ends, shards fly out in every direction; kills raise a spirit that hurls shards at what it fights.
 On enemies: splits in two when it dies, and each half rises once.
 Haunting
@@ -332,7 +332,7 @@ Smite
 Culling and Lightning. A bolt that seeks the weak. On a move: Smiting Strike, Strike of the Smiter.
 In front: lightning damage that arcs to nearby enemies; each arc culls what it strikes, and an arc that culls jumps on again.
 Behind: leaves a storm that strikes; each strike culls the weak enemy it hits.
-On enemies: deals lightning damage and shocks you; while you are low, its shocks jump to you from farther off.
+On enemies: deals lightning damage and shocks you; while you are low, each of its blows brings a bolt down on you too.
 Coup
 Culling and Swift. Strike, and strike again at once. On a move: Coup Strike, Strike of the Coup.
 In front: faster to use again; a cull takes this move's whole wait away.
@@ -387,7 +387,7 @@ Purge
 Culling and Vast. The more it strikes, the more it takes. On a move: Purging Strike, Strike of the Purge.
 In front: a much bigger area, a little less damage; it culls from higher up the more enemies it hits at once.
 Behind: each hit splashes onto the enemies near what it hits; its reaper's mark is three times as wide.
-On enemies: its attacks reach wider; while you are low, they reach all the way round it.
+On enemies: its attacks reach wider; while you are low, each of its blows sends a ring out all the way round it.
 Gallows
 Culling and Pulling. Hauled up to the rope. On a move: Gallows Strike, Strike of the Gallows.
 In front: drags the enemies it hits toward where it struck; the weak ones dragged there are culled where they meet.

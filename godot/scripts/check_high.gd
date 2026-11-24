@@ -1,13 +1,20 @@
-## THE HIGH CITY'S RUNES MELDED (meldshigh_rules.gd; behind melds52.gd HIGH_ON): `--only=words --cases=high --shots=<dir>` (or
-## `--cases=high:<id>,<id>`), on floor 2's pack the words check gathers (main.gd _words_shots), the switch on for the check. Off, the
-## bench makes none of them; on, each from its two runes, and each level 2 from two of one; each its stone and its gear. Then each of
-## the 110 in front of the Strike and behind it, what its High City rune's act waits on made so (a kill, one brought low, a third use,
-## a dodge): its name on the move, the blow landing, and its twist seen: the act carrying the other rune (its telling, "id:carry",
-## or "id:self" where it gives him something). Each level 2 rune: its rune half as strong again on the move.
+## THE HIGH CITY'S RUNES MELDED (meldshigh_rules.gd and its parts; behind melds52.gd HIGH_ON): `--only=words --cases=high --shots=<dir>`
+## (or `--cases=high:<id>,<id>`), on floor 2's pack the words check gathers (main.gd _words_shots), the switch on for the check. Off,
+## the bench makes none of them; on, each from its two runes, and each level 2 from two of one; each its stone and its gear; each
+## level 2 rune its rune half as strong again. Then EACH OF THE 110 ON ITS OWN, as his doc has it (his words of the first try: “I
+## don't need this done quick, I need it done right”): in front of the Strike, behind it, and carried by a monster, what its twist
+## waits on made so (`_setup`: a kill, one nearly dead, a third use, a dodge, burning, poison, a curse, a mark, his frenzy...), and
+## its OWN moment seen: a telling of it that only its twist sends (not the line, the lance, the thorns, the spirit, the cull, the
+## mark, the wave or the dodge every one of a rune's melds sends: GENERIC).
 extends RefCounted
 
 const Words := preload("res://scripts/words.gd")
 const M52 := preload("res://scripts/melds52.gd")
+
+const HC := ["piercing", "bleeding", "reaping", "culling", "surging"]
+## (tellings every meld of a rune sends: not the twist's own)
+const GENERIC := ["line", "lance", "thorns", "spirit", "blow", "cull", "mark", "take", "wave", "dodge", "foe"]
+## (those the films wait on, as they need it: their front's twist on a kill, a cull, a third use; their behind's, a dodge)
 
 var M
 var h
@@ -34,11 +41,16 @@ func _fresh() -> void:
 	h.m52.told = {}
 	h.last.spirits = []
 	h.last.zones = []
+	h.last._lances = []
 	h.last.reap.fresh_place()
+	h.last.high.fresh_place()
 	h.might = 0.0
 	h.frenzy = 0
+	h.frenzy_t = 0.0
 	h.shield = 0.0
 	h.barrier = 0.0
+	h.uses = [0, 0, 0]
+	h.stats["crit_chance"] = 0.0
 	for m in M._w_pack:
 		m.m52 = {}
 		m.dead = false
@@ -46,10 +58,14 @@ func _fresh() -> void:
 		m.modulate.a = 1.0
 		m.visible = true
 		m.risen = false
-		for f in ["shock_t", "chill_t", "frozen_t", "freeze_immune", "stun_t", "burn_t", "poison_t", "bleed_t", "hex_t", "still_t", "bind_t"]:
+		for f in ["shock_t", "chill_t", "frozen_t", "freeze_immune", "stun_t", "burn_t", "poison_t", "bleed_t", "hex_t", "still_t", "bind_t", "bind_again", "mark_t"]:
 			m.set(f, 0.0)
+		m.thrown = {}
 		m.words = []
 	M._w_reset(h)
+	for f in ["bleed_t", "poison_t", "burn_t", "chill_t", "hex_t", "still_t", "root_t", "held", "frozen_t", "shock_t"]:
+		h.set(f, 0.0)
+	h.foe_hi = {}
 
 
 func run(only := "") -> void:
@@ -79,91 +95,245 @@ func run(only := "") -> void:
 	var no_stone: Array = all.filter(func(id): return not L.pics.has("word:" + id))
 	var no_gear: Array = all.filter(func(id): return L.imbue_options(id, it).is_empty())
 	_line(no_stone.is_empty() and no_gear.is_empty(), "each its stone (%d of %d) and its gear (%d of %d)" % [all.size() - no_stone.size(), all.size(), all.size() - no_gear.size(), all.size()])
+	var names := {}
+	for id in all:
+		names[str(T["words"][id]["name"])] = true
+	_line(names.size() == all.size(), "each its own name (%d names for %d)" % [names.size(), all.size()])
 	# --- LEVEL 2: its rune half as strong again on the move
 	var FIELDS := {"piercing2": ["through", "lance"], "bleeding2": ["bleed", "thorns"], "reaping2": ["reap", "spirit"], "culling2": ["cull", "cull_mark"], "surging2": ["surge", "dodge_surge"]}
 	var lv: Array = []
 	for id in ranks:
 		var w: String = T["rankOf"][id]["word"]
 		var f: Array = FIELDS[id]
-		var a: Dictionary = M._w_set(h, 0, "front", [w])
-		var a0: float = float(a[f[0]])
-		var b: Dictionary = M._w_set(h, 0, "front", [id])
-		var b0: float = float(b[f[0]])
-		var c: Dictionary = M._w_set(h, 0, "behind", [w])
-		var c1: float = float(c[f[1]])
-		var d: Dictionary = M._w_set(h, 0, "behind", [id])
-		var d1: float = float(d[f[1]])
+		var a0: float = float(M._w_set(h, 0, "front", [w])[f[0]])
+		var b0: float = float(M._w_set(h, 0, "front", [id])[f[0]])
+		var c1: float = float(M._w_set(h, 0, "behind", [w])[f[1]])
+		var d1: float = float(M._w_set(h, 0, "behind", [id])[f[1]])
 		if b0 <= a0 * 1.2 or d1 <= c1 * 1.2:
 			lv.append("%s (%.2f/%.2f, %.2f/%.2f)" % [id, a0, b0, c1, d1])
 	_line(lv.is_empty(), "each level 2 rune its rune half as strong again, in front and behind%s" % ("" if lv.is_empty() else ": " + ", ".join(PackedStringArray(lv))))
-	# --- AT WORK
+	# --- AT WORK: each on its own
 	var ids: Array = melds
 	if only != "":
 		var some := only.split(",")
 		ids = ids.filter(func(i): return some.has(i))
 	var regen: float = h.stats["life_regen"]
 	h.stats["life_regen"] = 0.0
-	var fine := 0
-	var cases := 0
-	var missed: Array = []
+	var res := {"front": [0, []], "behind": [0, []], "foe": [0, []]}
 	var shot := 0
 	for id in ids:
-		for side in ["front", "behind"]:
-			cases += 1
-			var ok := await _case(id, side, shot < 6)
-			if ok:
-				fine += 1
+		for side in ["front", "behind", "foe"]:
+			var seen := ""
+			if side == "foe":
+				seen = await _foe(id, shot < 4)
 			else:
-				missed.append("%s %s" % [id, side])
+				seen = await _case(id, side, shot < 8)
+			if seen != "":
+				res[side][0] += 1
+			else:
+				res[side][1].append(id)
 			shot += 1
 	h.stats["life_regen"] = regen
-	_line(fine == cases, "each in front of the Strike and behind it, %d cases: its act carried the other rune in %d%s" % [cases, fine, "" if missed.is_empty() else " (not: %s)" % ", ".join(PackedStringArray(missed))])
+	for side in ["front", "behind", "foe"]:
+		var miss: Array = res[side][1]
+		_line(miss.is_empty(), "each %s, its own twist seen: %d of %d%s" % ["in front of the Strike" if side == "front" else ("behind it" if side == "behind" else "carried by a monster"), res[side][0], ids.size(), "" if miss.is_empty() else " (not: %s)" % ", ".join(PackedStringArray(miss))])
 	M52.HIGH_ON = was
 	_fresh()
 	print("HIGH: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
 
-## One meld on one side of the Strike: what its High City act waits on made so, then the Strike (and what follows) watched for its
-## carrying.
-func _case(id: String, side: String, snap: bool) -> bool:
-	_fresh()
+## The pack stood for meld `id` (its line, its near ones), and what its twist waits on made so; `side` front or behind. Also used by
+## the films (check_melds52.gd film).
+func setup(id: String, side: String) -> void:
 	var of: Array = M52.T()["of"][id]
-	var r: Dictionary = M._w_set(h, 0, side, [id])
-	var hcs: Array = of.filter(func(w): return w in ["piercing", "bleeding", "reaping", "culling", "surging"])
 	var pack: Array = M._w_pack
-	for m in pack:
-		m.max_life = 600.0
-		m.life = 600.0
-	# (what each act waits on)
-	if hcs.has("reaping"):
+	var face: Vector2 = M._w_face
+	var across := Vector2(-face.y, face.x)
+	var home: Vector2 = M._w_home
+	# (a line behind the first, one beside it, two near: what a line, an arc, a splash and a soul's flight need)
+	var spots := [[1.2, 0.0], [1.3, 1.0], [2.2, 0.05], [3.1, -0.1], [3.0, 1.7], [2.0, -1.6]]
+	for k in pack.size():
+		var p: Array = spots[k] if k < spots.size() else [8.0, 0.0]
+		pack[k].world = home + face * float(p[0]) + across * float(p[1])
+		pack[k].max_life = 600.0
+		pack[k].life = 600.0
+	var hcs: Array = of.filter(func(w): return w in HC)
+	var other: String = of[1] if hcs.has(of[0]) else of[0]
+	# (a kill for Reaping: the first struck dies; its others nearby still to act on)
+	if hcs.has("reaping") or id in ["bloodburst", "deathburst", "sunspear", "massacre"]:
 		pack[0].life = 1.0
+	# (one nearly dead for Culling: left just over one Strike's worth, so the Strike leaves it low; or low already behind)
 	if hcs.has("culling"):
-		# (in front: left just over one Strike's worth, so that the Strike leaves it low and alive, and the cull takes it; behind:
-		# low already, for the mark to take)
 		var hit: float = float(M._w_hit(h, 0))
 		for m in pack:
-			if side == "front":
-				m.max_life = 4000.0
-				m.life = hit * 1.05 + m.max_life * 0.06
-			else:
-				# (enough to live through the Strike and what it leaves behind, Twin's echo, Volatile's runes, and be low still)
-				m.max_life = 4000.0
-				m.life = hit * 2.2 + m.max_life * 0.1
+			m.max_life = 4000.0
+			m.life = hit * 1.05 + m.max_life * 0.06 if side == "front" else m.max_life * 0.12
+	# (Surging in front: this use its shockwave's; behind, his dodge after it)
 	if hcs.has("surging") and side == "front":
-		h.uses[0] = 2
+		h.uses[0] = 1 if id in ["spark", "crescendo", "soulstorm"] else 2
+	# (what its other rune's twist waits on)
+	if id in ["impaler", "gore", "upheaval"]:
+		h.might = 30.0
+	if id in ["barrage", "bloodrage", "macabre", "massacre", "crescendo"]:
+		h.frenzy = int(Words.data()["frenzy"]["max"])
+		h.frenzy_t = 9.0
+	if id in ["bodkin", "deadeye", "lens", "artery", "mercy"] and side == "behind":
+		pack[1].mark_t = 6.0
+		pack[2].mark_t = 6.0
+	if id in ["deadeye", "artery", "mercy"] and side == "front":
+		h.stats["crit_chance"] = 100.0
+	if id in ["nova", "bloodboil", "cremate"]:
+		for m in pack:
+			m.burn_t = 4.0
+			m.burn_dps = 2.0
+	if id in ["gangrene", "pestilence", "nightshade"]:
+		for m in pack:
+			m.poison_t = 4.0
+			m.poison_dps = 40.0 if id == "nightshade" else 2.0
+			m.poison_n = 3
+	if id in ["haunting", "hexwave", "condemn", "bloodhex"]:
+		for m in pack:
+			m.hex_t = 4.0
+			m.hex_more = 0.2
+	if id in ["coldcut"]:
+		for m in pack:
+			m.chill_t = 2.0
+			m.chill = 0.3
+	if id in ["bloodwave", "bloodburst", "bloodharvest", "thornspray", "bloodrage", "lacerate", "papercut", "fangs"] or other == "bleeding" and side == "front":
+		for m in pack:
+			m.bleed_t = 4.0
+			m.bleed_dps = 6.0
+			m.bleed_move = 2.0
+
+
+## One meld on one side of the Strike: its setup, the Strike (twice), what it waits on after, and its own moment watched for.
+func _case(id: String, side: String, snap: bool) -> String:
+	_fresh()
+	var r: Dictionary = M._w_set(h, 0, side, [id])
+	setup(id, side)
+	var of: Array = M52.T()["of"][id]
 	await M._w_strike(h)
-	if hcs.has("surging") and side == "behind":
+	await _after(id, side)
+	await M._wait(0.35)
+	if not (of.has("surging") and side == "front"):
+		await M._w_strike(h)
+	if of.has("surging") and side == "behind":
 		h.last.dodge_surge(h.world)
+		await M._wait(0.3)
+		h.last.high.surge.landed(h.world)
 	var t := 0.0
-	var seen := false
-	while t < 2.6 and not seen:
+	var seen := ""
+	while t < 3.2 and seen == "":
 		await M._wait(0.1)
 		t += 0.1
 		h.world = M._w_home
-		var told: Dictionary = h.m52.told
-		seen = int(told.get(id + ":carry", 0)) + int(told.get(id + ":self", 0)) + int(told.get(id + ":burst", 0)) > 0
+		_nudge()
+		seen = _own(id)
+		if id in ["undying", "soulburst"] and side == "behind":
+			for sp in h.last.spirits:
+				sp["t"] = maxf(float(sp["t"]), float(sp["life"]) - 0.15)
+		if id == "deathwatch" and side == "front":
+			for m in M._w_pack:
+				if not m.dead and m.m52.is_empty() == false:
+					m.life = minf(m.life, m.max_life * 0.05)
 	if snap and dir != "":
 		await M._snap("%s/high_%s_%s.png" % [dir, id, side])
-	if not seen:
-		print("HIGH   %s %s: named '%s', told %s" % [id, side, r["name"], str(h.m52.told)])
+	if seen == "":
+		print("HIGH   %s %s: named '%s', told %s" % [id, side, r["name"], str(h.m52.told.keys())])
+	return seen
+
+
+## What its twist waits on, after the first Strike: a blow on him behind his shield (Thornshield).
+func _after(id: String, side: String) -> void:
+	if id == "thornshield" and side == "front":
+		h.hurt_by(5.0, "phys", [], {}, M._w_pack[1], h.world)
+
+
+## The pack moves a little each moment (what bleeds while it moves, Bloodboil's spatter, needs it).
+func _nudge() -> void:
+	for m in M._w_pack:
+		if not m.dead:
+			m.world += Vector2(randf_range(-0.12, 0.12), randf_range(-0.12, 0.12))
+
+
+## Its own moment, if seen ("id:what" not one every meld of its rune sends), or "".
+func _own(id: String) -> String:
+	for k in h.m52.told.keys():
+		var s := str(k)
+		if not s.begins_with(id + ":"):
+			continue
+		var what := s.trim_prefix(id + ":")
+		if not GENERIC.has(what):
+			return s
+	return ""
+
+
+## Carried by a monster: the moment its twist on him waits on (a blow of it, its shot, its death, its rising, its shockwave),
+## and its telling as a monster's (foe).
+func _foe(id: String, snap: bool) -> String:
+	_fresh()
+	var of: Array = M52.T()["of"][id]
+	var m = M._w_pack[0]
+	m.words = [id, of[0], of[1]]
+	m.max_life = 600.0
+	m.life = 600.0
+	m.world = h.world + M._w_face * 1.2
+	# (what it waits on, on him)
+	h.bleed_t = 4.0
+	h.bleed_dps = 3.0
+	if of.has("culling"):
+		h.life = h.max_life * 0.2
+	if id in ["gangrene", "nightshade", "quietus", "deathwatch", "longspear"]:
+		h.poison_t = 4.0
+		h.poison_dps = 2.0
+	if id in ["cremate", "bloodboil", "quietus"]:
+		h.burn_t = 4.0
+		h.burn_dps = 2.0
+	if id in ["icelance", "rimeblood"]:
+		h.chill_t = 2.0
+	if id in ["witchpin", "condemn"]:
+		h.hex_t = 4.0
+		h.hex_more = 0.15
+	if id in ["finalhour"]:
+		h.still_t = 2.0
+		h.still_k = 0.2
+	if id in ["galvanic"]:
+		h.shock_t = 3.0
+	if id in ["briar", "noose"]:
+		h.root_t = 0.5
+	var k := func(w: String) -> float: return 1.0 if m.words.has(w) else 0.0
+	var by: Dictionary = m.blow()
+	# (its blow, twice; its shot; its shield struck)
+	for _j in 2:
+		h.blow_by = m
+		h.hurt_by(20.0, str(by.get("el", "phys")), m.words, {}, m, m.world)
+		h.blow_by = null
+	if of.has("piercing"):
+		M._monsters.shoot(m, (h.world - m.world).normalized(), 7.0, 6.0, 15.0)
+	if id == "thornshield":
+		m.shield = 50.0
+		M._foe.shield(m, 10.0)
+	# (its shockwave)
+	if of.has("surging"):
+		m.surge_t = 0.01
+		m._surge(0.05)
+	await M._wait(0.6)
+	# (its death, and its rising)
+	if of.has("reaping") or id in ["bloodburst", "fuse", "deathburst"]:
+		m.damage(m.life + m.shield + 10.0, "phys", false, false, [], false, false, -1)
+	var t := 0.0
+	var seen := ""
+	var wait: float = 4.5 if of.has("reaping") else 2.2
+	while t < wait and seen == "":
+		await M._wait(0.1)
+		t += 0.1
+		h.world = M._w_home
+		for kk in h.m52.told.keys():
+			if str(kk).begins_with(id + ":"):
+				seen = str(kk)
+	if snap and dir != "":
+		await M._snap("%s/high_%s_foe.png" % [dir, id])
+	if seen == "":
+		print("HIGH   %s foe: told %s" % [id, str(h.m52.told.keys())])
+	h.life = h.max_life
 	return seen
