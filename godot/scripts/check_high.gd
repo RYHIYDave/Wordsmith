@@ -58,6 +58,13 @@ const EXPECT := {
 	"spark": {"front": ["zap"], "behind": ["trail"], "foe": ["spark"]},
 	"purge": {"front": ["flood"], "behind": ["wide"]},
 	"stinger": {"front": ["burst"], "behind": ["trail"], "foe": ["cloud"]},
+	# (the others whose own moment was told by a common name, now told as their own)
+	"wraithspear": {"behind": ["javelin"]},
+	"deathblow": {"behind": ["finish"]},
+	"breakthrough": {"front": ["breach"], "behind": ["thrust"]},
+	"bloodwave": {"behind": ["thornring"]},
+	"soulstorm": {"front": ["soul"], "behind": ["rise"]},
+	"deathknell": {"front": ["toll"]},
 }
 ## (those the films wait on, as they need it: their front's twist on a kill, a cull, a third use; their behind's, a dodge)
 
@@ -108,6 +115,13 @@ func _fresh() -> void:
 		m.thrown = {}
 		m.words = []
 	M._w_reset(h)
+	# (nothing of the last case's monster still on its way: a shockwave warned, a shot in the air)
+	M._monsters.perils.list.clear()
+	M._monsters.perils._echoes.clear()
+	for a in M._monsters._arrows:
+		if is_instance_valid(a["node"]):
+			a["node"].queue_free()
+	M._monsters._arrows.clear()
 	for f in ["bleed_t", "poison_t", "burn_t", "chill_t", "hex_t", "still_t", "root_t", "held", "frozen_t", "shock_t"]:
 		h.set(f, 0.0)
 	h.foe_hi = {}
@@ -220,6 +234,9 @@ func setup(id: String, side: String) -> void:
 	# (Surging in front: this use its shockwave's; behind, his dodge after it)
 	if hcs.has("surging") and side == "front":
 		h.uses[0] = 1 if id in ["spark", "crescendo", "soulstorm"] else 2
+	# (Soulstorm behind: one near him for his dodge's surge to kill, after the Strikes have killed the first)
+	if id == "soulstorm" and side == "behind":
+		pack[1].world = home + across * 1.2
 	# (what its other rune's twist waits on)
 	if id in ["impaler", "gore", "upheaval"]:
 		h.might = 30.0
@@ -292,12 +309,15 @@ func _case(id: String, side: String, snap: bool) -> String:
 		await M._w_strike(h)
 	await _after(id, side)
 	await M._wait(0.35)
-	if not (of.has("surging") and side == "front") and not whirl:
+	# (Soulstorm in front: the first Strike's kill a soul gathered, the second its third use, whose wave carries it out)
+	if not (of.has("surging") and side == "front" and id != "soulstorm") and not whirl:
 		await M._w_strike(h)
 	if of.has("surging") and side == "behind":
 		if id == "heartbeat":
 			h.last.high.orb(h.world + Vector2(1.6, 0.4))
 			await M._wait(0.1)
+		if id == "soulstorm" and not M._w_pack[1].dead:
+			M._w_pack[1].life = 1.0
 		h.last.dodge_surge(h.world)
 		await M._wait(0.3)
 		h.last.high.surge.landed(h.world)

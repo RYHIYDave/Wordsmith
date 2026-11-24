@@ -340,6 +340,13 @@ func _fresh() -> void:
 	h.shield = 0.0
 	h.shield_t = 0.0
 	h.m52.forget()
+	# (nothing of the last film's monster still on its way: a shockwave warned, a shot in the air)
+	M._monsters.perils.list.clear()
+	M._monsters.perils._echoes.clear()
+	for a in M._monsters._arrows:
+		if is_instance_valid(a["node"]):
+			a["node"].queue_free()
+	M._monsters._arrows.clear()
 	for m in M._w_pack:
 		m.m52 = {}
 		m.dead = false
@@ -501,6 +508,8 @@ func film(only := "") -> void:
 				if id == "heartbeat":
 					h.last.high.orb(h.world + Vector2(1.6, 0.4))
 					k = await _frames(k, 0.2)
+				if id == "soulstorm" and not M._w_pack[1].dead:
+					M._w_pack[1].life = 1.0
 				h.last.dodge_surge(h.world)
 				k = await _frames(k, 0.3)
 				h.last.high.surge.landed(h.world)

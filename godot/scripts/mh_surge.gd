@@ -116,7 +116,7 @@ func cast(i: int, at: Vector2, share: float) -> void:
 		"breakthrough":
 			var w: Vector2 = H.hero.face
 			var len: float = H.n("breakthrough", "len", 10.0)
-			H.tell(id, "line", at, {"x1": at.x + w.x * len, "y1": at.y + w.y * len})
+			H.tell(id, "breach", at, {"x1": at.x + w.x * len, "y1": at.y + w.y * len})
 			H.lw.rec("surge_wave")
 			for o in H.on_line(at, w, len, H.n("breakthrough", "w", 0.9)):
 				var d: float = o.world.distance_to(at)
@@ -251,6 +251,8 @@ func cast(i: int, at: Vector2, share: float) -> void:
 				if not on.is_empty():
 					H.hit(on[0], i, H.n("soulstorm", "soul", 0.35))
 		"deathknell":
+			# (the wave tolls: its bell's ring rolls out with it)
+			H.tell(id, "toll", at, {"r": R})
 			for o in struck:
 				if H.ok(o) and H.lw.cull_monster(o, maxf(float(H.hero.loadout.r(i)["cull"]), H.n("deathknell", "under", 0.2)), i):
 					H.tell(id, "toll", o.world)
@@ -318,8 +320,8 @@ func dodge(i: int, at: Vector2, share: float) -> void:
 		return
 	H.tell(id, "dodge", where, {"r": R})
 	var OWN := {"pestilence": "cloud", "blizzard": "ring", "nova": "fire", "thunderclap": "storm", "overload": "rune", "spark": "sooner",
-		"tsunami": "wide", "undertow": "vortex", "hexwave": "circle", "lull": "bubble", "tangle": "hold", "bloodwave": "thorns",
-		"deathknell": "bell", "breakthrough": "lance"}
+		"tsunami": "wide", "undertow": "vortex", "hexwave": "circle", "lull": "bubble", "tangle": "hold", "bloodwave": "thornring",
+		"deathknell": "bell"}
 	if OWN.has(id):
 		H.tell(id, OWN[id], at, {"r": R})
 	match id:
@@ -385,7 +387,9 @@ func dodge(i: int, at: Vector2, share: float) -> void:
 			_bells.append({"at": at, "t": 0.0, "dur": H.n("deathknell", "bell", 4.0), "next": 1.0, "i": i})
 		"breakthrough":
 			var w: Vector2 = H.hero.face
-			H.pierce.lance_from(i, at, at + w * H.n("breakthrough", "lance", 6.0), float(H.hero.loadout.r(i)["dodge_surge"]) + 0.5)
+			var to: Vector2 = at + w * H.n("breakthrough", "lance", 6.0)
+			H.tell(id, "thrust", at, {"x1": to.x, "y1": to.y})
+			H.pierce.lance_from(i, at, to, float(H.hero.loadout.r(i)["dodge_surge"]) + 0.5)
 
 
 ## How much farther his dodge goes (Rush behind: twice as far).

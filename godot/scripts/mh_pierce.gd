@@ -460,7 +460,9 @@ func lance_hit(i: int, o, q: Dictionary) -> void:
 		"gaff":
 			H.drag(o, q["from"] + q["way"] * float(q["len"]), 0.5)
 		"deathblow":
-			H.lw.cull_monster(o, maxf(float(H.hero.loadout.r(i)["cull_mark"]), H.n("deathblow", "under", 0.2)), i, true)
+			var at: Vector2 = o.world
+			if H.lw.cull_monster(o, maxf(float(H.hero.loadout.r(i)["cull_mark"]), H.n("deathblow", "under", 0.2)), i, true):
+				H.tell("deathblow", "finish", at)
 
 
 ## The lance of move `i` has landed, striking `hits`: what its meld leaves down its line.

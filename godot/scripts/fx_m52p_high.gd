@@ -21,7 +21,7 @@ const LINES := ["fork", "arc", "jump", "soul", "fly", "hurl", "copy", "snip", "t
 	"road", "runes", "hex", "band", "row", "wall", "stand", "linger", "flash", "three", "wide", "reach", "path", "rush", "line", "lance",
 	"shard", "spread", "drag", "pass", "jolt", "haul", "aside", "back", "twice", "draw", "run", "fly",
 	"carry", "stitch", "thread", "jet", "blade", "stream", "drain", "lash", "sight", "shot", "leap", "dart", "thrown", "push", "drink",
-	"return", "volley", "flick", "blink", "spears", "lunge", "ghost", "dash", "spark", "zap", "javelin"]
+	"return", "volley", "flick", "blink", "spears", "lunge", "ghost", "dash", "spark", "zap", "javelin", "breach", "thrust"]
 const BURSTS := {"go": 1.2, "burst": 1.3, "spikes": 1.0, "spray": 1.0, "fling": 1.0, "land": 1.1, "shatter": 1.2, "pyre": 1.3, "quake": 1.5,
 	"end": 1.2, "echo": 0.9, "again": 1.1, "slam": 1.5, "landed": 1.0, "toll": 1.0, "bolt": 0.9, "crack": 1.0, "blade": 1.4, "split": 0.9,
 	"tear": 1.0, "pour": 1.1, "counted": 0.9, "hang": 0.8, "hour": 0.7, "coup": 0.8, "thud": 1.4, "second": 0.7, "bright": 0.9, "red": 0.8,
@@ -35,6 +35,7 @@ const BURSTS := {"go": 1.2, "burst": 1.3, "spikes": 1.0, "spray": 1.0, "fling": 
 	"heap": 1.5, "stake": 1.4, "needle": 0.8, "seek": 0.7, "rupture": 1.0, "cuts": 0.5, "rot": 1.0, "seep": 0.5, "harden": 0.8,
 	"drip": 0.6, "sigil": 0.7, "eye": 0.9, "shade": 0.6, "circle": 0.3, "blink": 0.7, "price": 1.2, "taken": 1.0,
 	"rites": 0.9, "maw": 1.0, "blood": 0.8, "fed": 0.6, "sight": 0.8, "jet": 0.8, "pass": 0.8, "push": 0.6, "thrown": 0.6,
+	"finish": 1.1, "thornring": 0.9,
 	"impale": 0.7, "barb": 0.9, "root": 0.6, "image": 0.8, "hand": 1.1, "wail": 0.9, "shroud": 0.5, "slash": 0.5, "whirl": 0.8,
 	"watch": 0.7, "scythe": 1.0, "creep": 0.4, "flood": 1.3, "sweep": 1.0, "blur": 0.5, "rage": 0.7, "gape": 0.8, "shadow": 0.8,
 	"stagger": 0.8, "rake": 0.6, "trail2": 0.4}
@@ -56,7 +57,7 @@ const SIGN := {"guillotine:blade": "guillotine", "tombstone:thud": "tomb", "gall
 	"spearwall:impale": "stake", "stinger:barb": "barb", "harrow:spikes": "spikes", "thornspray:root": "spikes", "lacerate:deeper": "cuts",
 	"wraithstep:image": "image", "undying:hand": "hand", "haunting:wail": "wail", "coup:slash": "cuts", "massacre:whirl": "whirl",
 	"deathwatch:watch": "hood", "deathwatch:shadow": "hood", "deathwatch:scythe": "scythe", "harvest:sweep": "scythe",
-	"deathwatch:creep": "creep", "purge:flood": "flood", "spearwall:spears": "spears"}
+	"deathwatch:creep": "creep", "purge:flood": "flood", "spearwall:spears": "spears", "bloodwave:thornring": "spikes"}
 ## (the redone melds whose moments are their blood's, in blood's red)
 const BLOODY := ["artery", "hemorrhage", "papercut", "bloodfeast", "bloodprice", "bloodharvest", "ghoul", "heartbeat", "thornshield",
 	"bloodlance", "lacerate", "bloodrage", "harrow"]
@@ -82,11 +83,11 @@ func _R(b: Dictionary) -> PackedColorArray:
 	var w: String = b["what"]
 	if w in ["fork", "arc", "jump", "bolt", "jolt", "charged", "storm", "spark", "zap"]:
 		return LIGHT
-	if w in ["freeze", "shatter", "spikes", "crack", "rime", "ice", "hail"]:
+	if w in ["freeze", "shatter", "spikes", "crack", "rime", "ice", "hail"] and not (w == "spikes" and str(b["id"]) in BLOODY):
 		return PackedColorArray(ICE)
 	if w in ["ablaze", "pyre", "run", "fire", "burning", "ground"] and str(b["id"]) in ["sunspear", "bloodboil", "cremate", "nova"]:
 		return PackedColorArray(FIRE)
-	if w in ["wound", "bite", "gore", "open", "tear", "pour", "spray", "bleed", "deeper", "unending", "grows", "fester", "prick", "wider", "red", "hook", "drag"]:
+	if w in ["wound", "bite", "gore", "open", "tear", "pour", "spray", "bleed", "deeper", "unending", "grows", "fester", "prick", "wider", "red", "hook", "drag", "thornring"]:
 		return BLOOD
 	if str(b["id"]) in BLOODY and w in BLOODY_WHAT:
 		return BLOOD
@@ -137,7 +138,7 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 	var kind := "spark"
 	if what in ["quake", "slam", "thud", "land", "cracked", "crack", "landed"]:
 		kind = "stone"
-	elif what in ["shatter", "spikes", "freeze", "rime", "ice", "hail"]:
+	elif what in ["shatter", "spikes", "freeze", "rime", "ice", "hail"] and not (what == "spikes" and str(b["id"]) in BLOODY):
 		kind = "stone"
 		R = PackedColorArray(ICE)
 	elif what in ["spray", "gore", "tear", "pour", "bite", "open", "fling", "spring", "bleed"]:
@@ -211,7 +212,7 @@ func paint_air(b: Dictionary) -> void:
 			_shard(px - 2.0, py - 3.0, 5.0, 7.0, R, sd, fade)
 		else:
 			# (a spear's line flashing: white heart, its colour round it, thinning as it goes)
-			var w := 5 if what in ["beam", "rush", "road", "wide", "lance", "line", "carry", "javelin"] else (1 if what == "sight" else 3)
+			var w := 5 if what in ["beam", "rush", "road", "wide", "lance", "line", "carry", "javelin", "breach", "thrust"] else (1 if what == "sight" else 3)
 			_ga(0.35 * fade)
 			_fs(R[2])
 			_line(cx, cy, x1, y1, w + 4)
