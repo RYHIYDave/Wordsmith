@@ -269,6 +269,9 @@ func tick(m, dt: float, dist: float) -> void:
 			m.fervor_n = 0
 	var C: Dictionary = U["cauterize"]
 	var ck: float = m.word_share("cauterize")
+	# (Cauterize redone, ALL MELDS REDONE: its own sear, once, foe_meldsredo.gd; not this one as well)
+	if preload("res://scripts/melds52.gd").is_redo("cauterize"):
+		ck = 0.0
 	if ck > 0.0 and not m.seared and m.life > 0.0 and m.life < m.max_life * float(C["below"]):
 		# (a flash of its fire first, then its wounds seared shut: some of its life back)
 		m.seared = true

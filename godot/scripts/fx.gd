@@ -1060,7 +1060,8 @@ func _monster_of(e: Dictionary):
 	var id = e.get("id")
 	if id is Object and is_instance_valid(id):
 		return id
-	if id is int or id is float:
+	# (a monster's own number in its floor's table is not a living thing's: only a living thing's is looked for)
+	if (id is int or id is float) and is_instance_id_valid(int(id)):
 		var o = instance_from_id(int(id))
 		if o != null and is_instance_valid(o) and o.get("world") != null:
 			return o

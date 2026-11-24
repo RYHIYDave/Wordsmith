@@ -327,7 +327,10 @@ static func tick(F, m, _dt: float, dist: float) -> void:
 		m.m52["rd_gorge"] = true
 		m.life = minf(m.max_life, m.life + m.max_life * 0.2)
 		_tell(h, "feedingfrenzy", "gorge", m.world, {"stay": true})
-	if m.word_share("frostbite") > 0.0 and h.chill_t > 0.0 and dist <= 6.0:
+	# (its frost's count on him kept once a moment, however many carry it: THE BUG HUNT, 24 Nov 2026, four of them froze him all
+	# but four tenths of every six seconds)
+	if m.word_share("frostbite") > 0.0 and h.chill_t > 0.0 and dist <= 6.0 and float(h.foe_hi.get("rd_fb_at", -1.0)) != now:
+		h.foe_hi["rd_fb_at"] = now
 		var fb: float = float(h.foe_hi.get("rd_fb", 0.0)) + _dt
 		if fb >= 1.5:
 			fb = 0.0

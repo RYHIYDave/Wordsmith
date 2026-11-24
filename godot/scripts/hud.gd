@@ -893,21 +893,48 @@ func _draw_dodge(ex: float, py: float, ps: float, ready: Dictionary, skills: Arr
 	_text("A" if _pad() else ("SWIPE" if _touching() else "SPACE"), ex + floorf(ps / 2.0), py - 7, T["accent"] if point == 2 else T["dim"], {"align": "center", "font": "small", "shadow": ink})
 	# (its name with its words, in the small letters over its button, once it has any)
 	var lunge_named: bool = (not hero.loadout.fronts(2).is_empty() or not hero.loadout.behinds(2).is_empty()) and not _stacked
+	var lunge_lines := 1
 	if lunge_named:
 		var parts := _name_parts(2)
-		var nw := 0.0
-		for i in parts.size():
-			nw += _width(parts[i][0], "small") + (3.0 if i > 0 else 0.0)
-		var nx := W - 3 - nw
-		for p in parts:
-			nx += _text(p[0], nx, py - 14, p[1], {"font": "small", "shadow": ink}) + 3
+		# (THE BUG HUNT, 24 Nov 2026: a long name, melds in front and behind, ran left over the slow attack's key ("HOLD RIGHT CLICK"):
+		# the name kept right of that key, wrapped onto as many lines as it needs, each ending at the screen's edge)
+		var left: float = 0.0
+		if not _plates.is_empty():
+			var sp: Rect2 = _plates[_plates.size() - 1]
+			left = sp.position.x + _width("HOLD RIGHT CLICK", "small") + 8.0
+		var room: float = maxf(60.0, W - 3 - left)
+		var lines: Array = []
+		var row_now: Array = []
+		var row_w := 0.0
+		for i in range(parts.size() - 1, -1, -1):
+			var pw := _width(parts[i][0], "small")
+			var add: float = pw + (3.0 if not row_now.is_empty() else 0.0)
+			if not row_now.is_empty() and row_w + add > room:
+				lines.push_front(row_now)
+				row_now = []
+				row_w = 0.0
+				add = pw
+			row_now.push_front(parts[i])
+			row_w += add
+		if not row_now.is_empty():
+			lines.push_front(row_now)
+		lunge_lines = lines.size()
+		for li in lines.size():
+			var row: Array = lines[li]
+			var rw := 0.0
+			for i in row.size():
+				rw += _width(row[i][0], "small") + (3.0 if i > 0 else 0.0)
+			var nx := W - 3 - rw
+			var ny: float = py - 14 - 8 * (lines.size() - 1 - li)
+			for p in row:
+				nx += _text(p[0], nx, ny, p[1], {"font": "small", "shadow": ink}) + 3
 	if point == 2:
 		if pulse:
 			_rect(ex, py, ps, 1, T["accent"])
 			_rect(ex, py + ps - 1, ps, 1, T["accent"])
 			_rect(ex, py, 1, ps, T["accent"])
 			_rect(ex + ps - 1, py, 1, ps, T["accent"])
-		_arrow(ex + floorf(ps / 2.0), py - (17 if lunge_named else 9), T["accent"])
+		_arrow(ex + floorf(ps / 2.0), py - ((17 + 8 * (lunge_lines - 1)) if lunge_named else 9), T["accent"])
 
 
 ## AN ATTACK'S PLATE (hud.ts): its picture rimmed in its element's colour, its wait, its charges, its name with its word sockets,
