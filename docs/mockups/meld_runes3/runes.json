@@ -1,0 +1,767 @@
+{
+ "implosion": {
+  "name": "Implosion",
+  "of": [
+   "pulling",
+   "power"
+  ],
+  "color": "#c0506a",
+  "glyph": [
+   "X.....X",
+   ".X...X.",
+   "..XoX..",
+   "...o...",
+   "..XoX..",
+   ".X...X.",
+   "X.....X"
+  ]
+ },
+ "sump": {
+  "name": "Sump",
+  "of": [
+   "pulling",
+   "poison"
+  ],
+  "color": "#6e8c4a",
+  "glyph": [
+   ".XXXXX.",
+   "X.ooo.X",
+   ".X.o.X.",
+   "..XoX..",
+   "...X...",
+   "..o.o..",
+   "...o..."
+  ]
+ },
+ "drift": {
+  "name": "Drift",
+  "of": [
+   "pulling",
+   "frost"
+  ],
+  "color": "#94a8f4",
+  "glyph": [
+   "XX.....",
+   "..XX...",
+   "....XX.",
+   "......o",
+   "....XX.",
+   "..XX...",
+   "XX....."
+  ]
+ },
+ "firewhirl": {
+  "name": "Firewhirl",
+  "of": [
+   "pulling",
+   "fire"
+  ],
+  "color": "#f08860",
+  "glyph": [
+   "...o...",
+   "..XXX..",
+   ".X...X.",
+   "X..XX.X",
+   "X.X.o.X",
+   ".X..XX.",
+   "..XX..."
+  ]
+ },
+ "lodestone": {
+  "name": "Lodestone",
+  "of": [
+   "pulling",
+   "lightning"
+  ],
+  "color": "#b8b0f8",
+  "glyph": [
+   "oo...oo",
+   "XX...XX",
+   "XX...XX",
+   "XX...XX",
+   ".XX.XX.",
+   "..XXX..",
+   "......."
+  ]
+ },
+ "riptide": {
+  "name": "Riptide",
+  "of": [
+   "pulling",
+   "swift"
+  ],
+  "color": "#6aa0c8",
+  "glyph": [
+   "..XXX..",
+   ".X...X.",
+   "X..XX.X",
+   "X.Xo...",
+   "X..XXXX",
+   ".X.....",
+   "..XXXXX"
+  ]
+ },
+ "gravity": {
+  "name": "Gravity",
+  "of": [
+   "pulling",
+   "heavy"
+  ],
+  "color": "#8a6ab0",
+  "glyph": [
+   "..XXX..",
+   "..XXX..",
+   "...X...",
+   "X..o..X",
+   ".X...X.",
+   "..XXX..",
+   "......."
+  ]
+ },
+ "splinter": {
+  "name": "Splinter",
+  "of": [
+   "splitting",
+   "power"
+  ],
+  "color": "#e07090",
+  "glyph": [
+   "X..X..X",
+   "X..X..X",
+   ".X.X.X.",
+   "..XXX..",
+   "...X...",
+   "...o...",
+   "...o..."
+  ]
+ },
+ "spore": {
+  "name": "Spore",
+  "of": [
+   "splitting",
+   "poison"
+  ],
+  "color": "#c0c870",
+  "glyph": [
+   "o..o..o",
+   ".o...o.",
+   "..XXX..",
+   ".XXXXX.",
+   ".XXXXX.",
+   "..XXX..",
+   "...X..."
+  ]
+ },
+ "sleet": {
+  "name": "Sleet",
+  "of": [
+   "splitting",
+   "frost"
+  ],
+  "color": "#a8c0f8",
+  "glyph": [
+   "X..X..X",
+   ".......",
+   ".X..X..",
+   "o...o..",
+   "...X..X",
+   "..o...o",
+   "X......"
+  ]
+ },
+ "embers": {
+  "name": "Embers",
+  "of": [
+   "splitting",
+   "fire"
+  ],
+  "color": "#f8b080",
+  "glyph": [
+   "o.....o",
+   "...o...",
+   ".o...o.",
+   "...X...",
+   "..XXX..",
+   ".XXoXX.",
+   "..XXX.."
+  ]
+ },
+ "fractal": {
+  "name": "Fractal",
+  "of": [
+   "splitting",
+   "lightning"
+  ],
+  "color": "#f0e8a0",
+  "glyph": [
+   "...X...",
+   "...X...",
+   "..X.X..",
+   ".X...X.",
+   "X.X.X.X",
+   "o..o..o",
+   "......."
+  ]
+ },
+ "scatter": {
+  "name": "Scatter",
+  "of": [
+   "splitting",
+   "swift"
+  ],
+  "color": "#b8d090",
+  "glyph": [
+   "......X",
+   "....XX.",
+   "XXXo...",
+   "XXXXXXX",
+   "XXXo...",
+   "....XX.",
+   "......X"
+  ]
+ },
+ "rubble": {
+  "name": "Rubble",
+  "of": [
+   "splitting",
+   "heavy"
+  ],
+  "color": "#b09080",
+  "glyph": [
+   "..XX...",
+   ".XXX.X.",
+   "XXX.XXX",
+   "XX.o.XX",
+   ".XX.XX.",
+   "XX...XX",
+   "......."
+  ]
+ },
+ "doom": {
+  "name": "Doom",
+  "of": [
+   "hexing",
+   "power"
+  ],
+  "color": "#a03850",
+  "glyph": [
+   "XXXXXXX",
+   ".X...X.",
+   "X..o..X",
+   "X.ooo.X",
+   "X..o..X",
+   ".XXXXX.",
+   "......."
+  ]
+ },
+ "plague": {
+  "name": "Plague",
+  "of": [
+   "hexing",
+   "poison"
+  ],
+  "color": "#8a9a60",
+  "glyph": [
+   "..XXX..",
+   ".X...X.",
+   "X..o..X",
+   ".X...X.",
+   "..XXX..",
+   "...o...",
+   "..ooo.."
+  ]
+ },
+ "hoarfrost": {
+  "name": "Hoarfrost",
+  "of": [
+   "hexing",
+   "frost"
+  ],
+  "color": "#b8c8e8",
+  "glyph": [
+   "X..X..X",
+   ".X.X.X.",
+   "..XXX..",
+   "XXXoXXX",
+   "..XXX..",
+   ".X.X.X.",
+   "X..X..X"
+  ]
+ },
+ "brimstone": {
+  "name": "Brimstone",
+  "of": [
+   "hexing",
+   "fire"
+  ],
+  "color": "#d06040",
+  "glyph": [
+   ".o.o.o.",
+   "o.o.o.o",
+   "..XXX..",
+   ".X.o.X.",
+   "X.ooo.X",
+   ".X.o.X.",
+   "..XXX.."
+  ]
+ },
+ "jinx": {
+  "name": "Jinx",
+  "of": [
+   "hexing",
+   "lightning"
+  ],
+  "color": "#d8d090",
+  "glyph": [
+   "....X..",
+   "..XX...",
+   ".X.X.X.",
+   "X.oXo.X",
+   ".X.X.X.",
+   "...XX..",
+   "..X...."
+  ]
+ },
+ "whisper": {
+  "name": "Whisper",
+  "of": [
+   "hexing",
+   "swift"
+  ],
+  "color": "#c0d0b0",
+  "glyph": [
+   ".......",
+   "XXXX...",
+   "....X..",
+   ".XXX.o.",
+   "X....oo",
+   ".XXXX..",
+   "......."
+  ]
+ },
+ "burden": {
+  "name": "Burden",
+  "of": [
+   "hexing",
+   "heavy"
+  ],
+  "color": "#c8a8d0",
+  "glyph": [
+   "...X...",
+   "..X.X..",
+   ".XXXXX.",
+   "XXXoXXX",
+   "XXoooXX",
+   "XXXoXXX",
+   "XXXXXXX"
+  ]
+ },
+ "stasis": {
+  "name": "Stasis",
+  "of": [
+   "stilling",
+   "power"
+  ],
+  "color": "#b4a070",
+  "glyph": [
+   "X.....X",
+   "X.XXX.X",
+   "X.XoX.X",
+   "X.XXX.X",
+   "X..X..X",
+   "X.....X",
+   "X.....X"
+  ]
+ },
+ "stagnation": {
+  "name": "Stagnation",
+  "of": [
+   "stilling",
+   "poison"
+  ],
+  "color": "#9ed46a",
+  "glyph": [
+   ".o...o.",
+   "...o...",
+   ".o...o.",
+   ".......",
+   "XXXXXXX",
+   ".......",
+   "XXXXXXX"
+  ]
+ },
+ "frostlock": {
+  "name": "Frostlock",
+  "of": [
+   "stilling",
+   "frost"
+  ],
+  "color": "#90d8e0",
+  "glyph": [
+   "..XXX..",
+   ".X...X.",
+   "X.XXX.X",
+   "X..X..X",
+   "X..o..X",
+   ".X...X.",
+   "..XXX.."
+  ]
+ },
+ "slowburn": {
+  "name": "Slow Burn",
+  "of": [
+   "stilling",
+   "fire"
+  ],
+  "color": "#d8b060",
+  "glyph": [
+   "...o...",
+   "..ooo..",
+   "...o...",
+   "..XXX..",
+   "..XXX..",
+   "..XXX..",
+   ".XXXXX."
+  ]
+ },
+ "stormglass": {
+  "name": "Stormglass",
+  "of": [
+   "stilling",
+   "lightning"
+  ],
+  "color": "#c8f0c0",
+  "glyph": [
+   "XXXXXXX",
+   "X...X.X",
+   "X..X..X",
+   "X.XoX.X",
+   "X..X..X",
+   "X.X...X",
+   "XXXXXXX"
+  ]
+ },
+ "timeslip": {
+  "name": "Timeslip",
+  "of": [
+   "stilling",
+   "swift"
+  ],
+  "color": "#a8e090",
+  "glyph": [
+   "..XXX..",
+   ".X...X.",
+   "X.....X",
+   "XXXo..X",
+   "X.....X",
+   ".X...X.",
+   "..XXX.."
+  ]
+ },
+ "standstill": {
+  "name": "Standstill",
+  "of": [
+   "stilling",
+   "heavy"
+  ],
+  "color": "#a8b880",
+  "glyph": [
+   "XXXXX..",
+   "XXXXX..",
+   "..X....",
+   "..X..o.",
+   "..X.o.o",
+   "..X..o.",
+   "..X...."
+  ]
+ },
+ "shackle": {
+  "name": "Shackle",
+  "of": [
+   "binding",
+   "power"
+  ],
+  "color": "#c06050",
+  "glyph": [
+   "..XXX..",
+   ".X...X.",
+   ".X...X.",
+   "XXXXXXX",
+   "XX.o.XX",
+   "XXXXXXX",
+   "......."
+  ]
+ },
+ "strangler": {
+  "name": "Strangler",
+  "of": [
+   "binding",
+   "poison"
+  ],
+  "color": "#9aa848",
+  "glyph": [
+   "X.X....",
+   ".X.X...",
+   "X.X.o..",
+   "...X.X.",
+   "..o.X.X",
+   "....X.X",
+   ".....X."
+  ]
+ },
+ "icebound": {
+  "name": "Icebound",
+  "of": [
+   "binding",
+   "frost"
+  ],
+  "color": "#a0c0d8",
+  "glyph": [
+   "XXXXXXX",
+   "X.....X",
+   "X.XXX.X",
+   "X.XoX.X",
+   "X.XXX.X",
+   "X.....X",
+   "XXXXXXX"
+  ]
+ },
+ "firetrap": {
+  "name": "Firetrap",
+  "of": [
+   "binding",
+   "fire"
+  ],
+  "color": "#e86a3a",
+  "glyph": [
+   ".o.o.o.",
+   "o.o.o.o",
+   "X.....X",
+   "XX...XX",
+   "X.X.X.X",
+   "XXXXXXX",
+   "......."
+  ]
+ },
+ "tether": {
+  "name": "Tether",
+  "of": [
+   "binding",
+   "lightning"
+  ],
+  "color": "#e8d888",
+  "glyph": [
+   ".......",
+   ".XX.XX.",
+   "X..X..X",
+   "X..o..X",
+   "X..X..X",
+   ".XX.XX.",
+   "......."
+  ]
+ },
+ "lasso": {
+  "name": "Lasso",
+  "of": [
+   "binding",
+   "swift"
+  ],
+  "color": "#b8c070",
+  "glyph": [
+   ".XXX...",
+   "X...X..",
+   "X...X..",
+   ".XXX...",
+   "...X...",
+   "....X..",
+   ".....oo"
+  ]
+ },
+ "anchor": {
+  "name": "Anchor",
+  "of": [
+   "binding",
+   "heavy"
+  ],
+  "color": "#9a8060",
+  "glyph": [
+   "...X...",
+   "..XoX..",
+   "...X...",
+   "XXXXXXX",
+   "...X...",
+   "X..X..X",
+   ".XXXXX."
+  ]
+ },
+ "confluence": {
+  "name": "Confluence",
+  "of": [
+   "pulling",
+   "splitting"
+  ],
+  "color": "#a890f0",
+  "glyph": [
+   "X.....X",
+   ".X.X.X.",
+   "..X.X..",
+   "...X...",
+   "..ooo..",
+   ".ooooo.",
+   "......."
+  ]
+ },
+ "beckon": {
+  "name": "Beckon",
+  "of": [
+   "pulling",
+   "hexing"
+  ],
+  "color": "#9894d8",
+  "glyph": [
+   ".XXXXX.",
+   "X.....X",
+   "X.XXX.X",
+   "X.XoX.X",
+   "X.X...X",
+   "X.XXXXX",
+   "X......"
+  ]
+ },
+ "horizon": {
+  "name": "Horizon",
+  "of": [
+   "pulling",
+   "stilling"
+  ],
+  "color": "#80b0d0",
+  "glyph": [
+   "..ooo..",
+   ".o...o.",
+   "o.XXX.o",
+   "o.X.X.o",
+   "o.XXX.o",
+   ".o...o.",
+   "..ooo.."
+  ]
+ },
+ "reel": {
+  "name": "Reel",
+  "of": [
+   "pulling",
+   "binding"
+  ],
+  "color": "#c4b4e8",
+  "glyph": [
+   "....X..",
+   "....X..",
+   "....X..",
+   "....X..",
+   "X...X..",
+   "X..XX..",
+   ".XXo..."
+  ]
+ },
+ "coven": {
+  "name": "Coven",
+  "of": [
+   "splitting",
+   "hexing"
+  ],
+  "color": "#c8b0e0",
+  "glyph": [
+   ".......",
+   "XXX.XXX",
+   "XoX.XoX",
+   "XXX.XXX",
+   ".......",
+   "..XXX..",
+   "..XoX.."
+  ]
+ },
+ "constellation": {
+  "name": "Constellation",
+  "of": [
+   "splitting",
+   "stilling"
+  ],
+  "color": "#b0e0d8",
+  "glyph": [
+   "o......",
+   ".X.....",
+   "..X..o.",
+   "...o.X.",
+   "....X..",
+   "...X...",
+   "..o...."
+  ]
+ },
+ "web": {
+  "name": "Web",
+  "of": [
+   "splitting",
+   "binding"
+  ],
+  "color": "#d0c0b0",
+  "glyph": [
+   "X..X..X",
+   ".X.X.X.",
+   "XXXXXXX",
+   ".XXoXX.",
+   "XXXXXXX",
+   ".X.X.X.",
+   "X..X..X"
+  ]
+ },
+ "torpor": {
+  "name": "Torpor",
+  "of": [
+   "hexing",
+   "stilling"
+  ],
+  "color": "#98c8b0",
+  "glyph": [
+   ".......",
+   ".......",
+   "XXXXXXX",
+   ".X.X.X.",
+   ".......",
+   ".o.o.o.",
+   "..o.o.."
+  ]
+ },
+ "witchknot": {
+  "name": "Witchknot",
+  "of": [
+   "hexing",
+   "binding"
+  ],
+  "color": "#b0a0a8",
+  "glyph": [
+   ".XX.XX.",
+   "X..X..X",
+   "X.XoX.X",
+   ".X.X.X.",
+   "X.X.X.X",
+   "X..X..X",
+   ".XX.XX."
+  ]
+ },
+ "amber": {
+  "name": "Amber",
+  "of": [
+   "stilling",
+   "binding"
+  ],
+  "color": "#e0a040",
+  "glyph": [
+   "..XXX..",
+   ".XXXXX.",
+   "XXoXoXX",
+   "XXXoXXX",
+   "XXoXoXX",
+   ".XXXXX.",
+   "..XXX.."
+  ]
+ }
+}
