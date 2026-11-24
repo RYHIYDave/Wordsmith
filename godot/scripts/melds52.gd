@@ -24,8 +24,9 @@ static var ON := true
 ## THE CITY'S MELDS (his doc Floor 11–15 Melds, their runes and their animations: “Good”, “Yep good”, “Good to go”, 24 Nov 2026): the
 ## city's five runes (Pulling, Splitting, Hexing, Stilling, Binding) with the floor 1–5 runes and with each other, 45, and their five
 ## level 2 runes, in the same table (`city`); their twists meldscity_rules.gd, on monsters foe_meldscity.gd, their looks
-## fx_m52p_city.gd. OFF until his yes to their films: the wordsmith does not make them (`makes`); known, as all words are.
-static var CITY_ON := false
+## fx_m52p_city.gd. ON at his yes to their films (City Meld Films, https://claude.ai/artifact/C6a3KHBrT98YMvi4YpKAD9), asked
+## “Want me to switch them on?”: “Yes”, 24 Nov 2026. Off, the wordsmith does not make them (`makes`); known, as all words are.
+static var CITY_ON := true
 ## (what each rune is worth inside one on gear: items.ts MELD_GEAR_STRENGTH; a level 2 rune's: RANK2's half again)
 const GEAR := 0.75
 const GEAR_RANK := 1.5
