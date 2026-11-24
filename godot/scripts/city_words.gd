@@ -123,6 +123,9 @@ func split_first(m, i: int, frac: float, at: Vector2) -> void:
 func _copy_hit(o, i: int, f: float, kind := "copy") -> void:
 	if not is_instance_valid(o) or o.dead:
 		return
+	# (THE HIGH CITY'S RUNES MELDED: known to be a copy's before it lands, for one it culls: Decimate)
+	if hero.last != null:
+		o.m52["copy_at"] = hero.last.high.clock()
 	copying = true
 	hero.hit_monster(o, i, f, true)
 	copying = false
