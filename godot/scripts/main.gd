@@ -3094,6 +3094,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_defence.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	# (EVERY UNIQUE WEAPON ON ITS HERO, PICTURED: --only=skinsheet: check_skinsheet.gd)
+	if _arg("only") == "skinsheet":
+		await preload("res://scripts/check_skinsheet.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE UNIQUES' DEFENCES AND THE FIFTEEN OF THE THREE DEFENCES: --only=defuniques: check_defuniques.gd)
 	if _arg("only") == "defuniques":
 		await preload("res://scripts/check_defuniques.gd").new().run(self, hero, dir)
