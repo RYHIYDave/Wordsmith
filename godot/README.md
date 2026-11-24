@@ -1465,8 +1465,9 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
 
 - THE NEXT GROUP (his “Let's get some more melds in”, 24 Nov 2026): Floor 11–15 Melds, his doc
   https://claude.ai/artifact/CMMUpdDX2f9DwDPe8avGqQ: the city's five runes (Pulling, Splitting, Hexing, Stilling, Binding) with
-  the floor 1–5 runes and with each other, 45 melds and 5 level 2 runes. Waiting on his word; then the stones, the animations,
-  the build behind a switch and films, as before.
+  the floor 1–5 runes and with each other, 45 melds and 5 level 2 runes (his “Good”). The stones: docs/mockups/meld_runes3 (his
+  “Yep good”). The animations' plan: https://claude.ai/artifact/BnhngFXn84WWNcRkKMnGDd, waiting on his word; then the build
+  behind a switch and films, as before.
 
 ## The other chats' hand-overs brought in (the cloud chat, 23 and 24 Nov 2026)
 
