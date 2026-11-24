@@ -19,12 +19,18 @@ CITY = ['pulling', 'splitting', 'hexing', 'stilling', 'binding']
 # their text tools/meldscity/docs_city2.txt, their stones docs/mockups/meld_runes4; behind melds52.gd CITY2_ON until his yes)
 RUNES4 = json.load(open(ROOT + '/docs/mockups/meld_runes4/runes.json'))
 RUNES.update(RUNES4)
+# (REAPING WITH THE DAMAGE RUNES: his "Yes and work on reaping", 24 Nov 2026, after his “Like reaping and fire makes little imps
+# that throw fireballs instead of the shades.  What would the others be?”; their text tools/meldsreap/docs_reap.txt, their stones
+# docs/mockups/meld_runes5, their creatures tools/reap5; behind melds52.gd REAP_ON until his yes)
+RUNES5 = json.load(open(ROOT + '/docs/mockups/meld_runes5/runes.json'))
+RUNES.update(RUNES5)
 W = json.load(open(G + 'words/words.json'))['words']
 COLOR = json.load(open(G + 'loot/items.json'))['words']['color']
 NAME_ID = {'Power': 'power', 'Poison': 'poison', 'Frost': 'frost', 'Flame': 'fire', 'Lightning': 'lightning', 'Swift': 'swift',
            'Heavy': 'heavy', 'Twin': 'twin', 'Leech': 'leech', 'Volatile': 'volatile', 'Precise': 'precise', 'Frenzied': 'frenzied',
            'Guarding': 'guarding', 'Lasting': 'lasting', 'Fleeting': 'fleeting', 'Vast': 'vast',
-           'Pulling': 'pulling', 'Splitting': 'splitting', 'Hexing': 'hexing', 'Stilling': 'stilling', 'Binding': 'binding'}
+           'Pulling': 'pulling', 'Splitting': 'splitting', 'Hexing': 'hexing', 'Stilling': 'stilling', 'Binding': 'binding',
+           'Reaping': 'reaping'}
 RANKS = ['twin', 'leech', 'volatile', 'precise', 'frenzied', 'guarding', 'lasting', 'fleeting', 'vast', 'swift', 'heavy',
          'pulling', 'splitting', 'hexing', 'stilling', 'binding']
 BY_NAME = {v['name']: k for k, v in RUNES.items()}
@@ -60,6 +66,7 @@ D.update(parse(ROOT + '/tools/melds52/docs610.txt'))
 D.update(parse(ROOT + '/tools/melds52/docs_last110.txt'))
 D.update(parse(ROOT + '/tools/meldscity/docs_city.txt'))
 D.update(parse(ROOT + '/tools/meldscity/docs_city2.txt'))
+D.update(parse(ROOT + '/tools/meldsreap/docs_reap.txt'))
 missing = [k for k in list(RUNES) + [w + '2' for w in RANKS] if k not in D or 'front' not in D[k] and 'both' not in D[k]]
 assert not missing, missing
 
@@ -75,6 +82,8 @@ GEAR = {  # (what each rune gives on gear: weapon, gloves, ring, amulet; and the
     # (the city's five: his Floor 11-15 doc's table)
     'pulling': ('Pickup Reach', 'Pickup Reach'), 'splitting': ('Damage or Dexterity', 'Dexterity'), 'hexing': ('Damage or Intelligence', 'Intelligence'),
     'stilling': ('Cooldown Recovery or Intelligence', 'Cooldown Recovery or Intelligence'), 'binding': ('Damage or Strength', 'Armour or Strength'),
+    # (Reaping's: its Lexicon page)
+    'reaping': ('Life on Kill or Intelligence', 'Cooldown Recovery or Intelligence'),
 }
 
 def adj(s):  # "Onslaught Strike" -> "Onslaught"; "Duelist's Strike" -> "Duelist's"
@@ -144,6 +153,7 @@ exec(src, env)
 env['R'].update(RUNES2)
 env['R'].update(RUNES3)
 env['R'].update(RUNES4)
+env['R'].update(RUNES5)
 def rank_stone(w):
     im = env['base'](w).copy()
     c = env['hexc'](COLOR[w]); gl = tuple(int(c[i] + (255 - c[i]) * 0.55) for i in range(3)) + (255,)
@@ -174,6 +184,6 @@ sheet.save(G + 'words/melds52.png')
 TUNE = json.load(open(ROOT + '/tools/melds52/tune.json'))
 out = {'order': order, 'melds': list(RUNES), 'ranks': [w + '2' for w in RANKS], 'words': words, 'of': of, 'rankOf': rank_of,
        'attr': attr, 'page': page, 'color': color, 'stones': stones_at, 'glyph': {k: RUNES[k]['glyph'] for k in RUNES}, 'tune': TUNE,
-       'city': list(RUNES3) + [w + '2' for w in CITY], 'city2': list(RUNES4), 'extra': EXTRA, 'extraPage': EXTRA_PAGE}
+       'city': list(RUNES3) + [w + '2' for w in CITY], 'city2': list(RUNES4), 'reap': list(RUNES5), 'extra': EXTRA, 'extraPage': EXTRA_PAGE}
 json.dump(out, open(G + 'words/melds52.json', 'w'), indent=1)
 print(len(RUNES), 'melds,', len(RANKS), 'level 2;', 'sheet', sheet.size)

@@ -47,6 +47,7 @@ const BakedFigure := preload("res://scripts/baked_figure.gd")
 const NEAR_SHOW := 30.0
 const MM := preload("res://scripts/monster_moves.gd")
 const Words := preload("res://scripts/words.gd")
+const ReapRules := preload("res://scripts/meldsreap_rules.gd")
 const Headsman := preload("res://scripts/headsman.gd")
 const Amalgam := preload("res://scripts/amalgam.gd")
 const Chained := preload("res://scripts/chained.gd")
@@ -1991,7 +1992,11 @@ func _die() -> void:
 	if word_share("splitting") > 0.0 and not split and not boss:
 		_split()
 	# THE LAST WORDS, on it: one carrying Reaping rises once; one carrying Plundering drops all it stole
-	if word_share("reaping") > 0.0 and not risen and not boss:
+	# (REAPING WITH A DAMAGE RUNE, on it: in place of rising once, it rises as that rune's creature against him: meldsreap_rules.gd)
+	var reap_id: String = ReapRules.carried(self) if not boss and not risen else ""
+	if reap_id != "" and mgr.hero != null and is_instance_valid(mgr.hero) and mgr.hero.last != null:
+		mgr.hero.last.reap.rise_foe(self, reap_id)
+	elif word_share("reaping") > 0.0 and not risen and not boss:
 		_rise_again()
 	if stolen > 0 and mgr.loot != null:
 		mgr.loot._gold(world, stolen)

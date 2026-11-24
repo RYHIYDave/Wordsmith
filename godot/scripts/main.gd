@@ -3792,6 +3792,10 @@ func _words_shots(h: Hero, dir: String) -> void:
 	if _arg("cases").begins_with("m52"):
 		await preload("res://scripts/check_melds52.gd").new(self, h).run(_arg("cases").trim_prefix("m52").trim_prefix(":"))
 		return
+	# (REAPING WITH THE DAMAGE RUNES: `--cases=reap5`, check_reap5.gd)
+	if _arg("cases").begins_with("reap5"):
+		await preload("res://scripts/check_reap5.gd").new(self, h).run()
+		return
 	# (the first seven's cases; floors 6 to 10's nine have their own, at the end: check_words610.gd. `--cases=610`: theirs alone;
 	# `--cases=610:<word>`, one word's)
 	var words: Array = Hero.Words.ids().filter(func(w): return not Hero.Words.data()["wilds"].has(w) and not Hero.Words.data().get("city", {}).get("ids", []).has(w))

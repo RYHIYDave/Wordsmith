@@ -187,6 +187,11 @@
   "manacle",
   "snag",
   "dragnet",
+  "cinderbrood",
+  "wintergrave",
+  "stormwake",
+  "bogborn",
+  "charnel",
   "twin2",
   "leech2",
   "volatile2",
@@ -391,7 +396,12 @@
   "stockade",
   "manacle",
   "snag",
-  "dragnet"
+  "dragnet",
+  "cinderbrood",
+  "wintergrave",
+  "stormwake",
+  "bogborn",
+  "charnel"
  ],
  "ranks": [
   "twin2",
@@ -3778,6 +3788,96 @@
     "vast"
    ]
   },
+  "cinderbrood": {
+   "id": "cinderbrood",
+   "kind": "meld",
+   "name": "Cinderbrood",
+   "front": "Cinderbrood",
+   "behind": "of the Cinderbrood",
+   "attr": "int",
+   "element": "fire",
+   "about": "Reaping and Flame, melded. What burns, rises burning.",
+   "frontText": "Sets enemies burning; kills leave a soul that takes time off your cooldowns, and an enemy that dies burning passes its fire to those near it.",
+   "behindText": "Kills raise an imp in place of a spirit: it keeps its distance and hurls fireballs that set enemies burning.",
+   "monsterText": "Its blows burn you; when it dies, it rises as an imp that hurls fireballs at you for a few seconds.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "fire"
+   ]
+  },
+  "wintergrave": {
+   "id": "wintergrave",
+   "kind": "meld",
+   "name": "Wintergrave",
+   "front": "Wintergrave",
+   "behind": "of the Wintergrave",
+   "attr": "int",
+   "element": "frost",
+   "about": "Reaping and Frost, melded. The cold keeps what it kills.",
+   "frontText": "Chills, then freezes; kills leave a soul that takes time off your cooldowns, and an enemy that dies frozen shatters, chilling those near it.",
+   "behindText": "Kills raise a rimeling in place of a spirit: it flings icicles that chill, then freeze.",
+   "monsterText": "Its blows slow you; when it dies, it rises as a rimeling that flings icicles at you for a few seconds.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "frost"
+   ]
+  },
+  "stormwake": {
+   "id": "stormwake",
+   "kind": "meld",
+   "name": "Stormwake",
+   "front": "Stormwake",
+   "behind": "of the Stormwake",
+   "attr": "int",
+   "element": "lightning",
+   "about": "Reaping and Lightning, melded. Every death a thunderclap.",
+   "frontText": "Arcs to nearby enemies; kills leave a soul that takes time off your cooldowns, and each soul looses a bolt at the nearest enemy.",
+   "behindText": "Kills raise a stormwisp in place of a spirit: it darts in and zaps, each zap jumping on to a second enemy.",
+   "monsterText": "Its blows shock you; when it dies, it rises as a stormwisp that darts at you and zaps you for a few seconds.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "lightning"
+   ]
+  },
+  "bogborn": {
+   "id": "bogborn",
+   "kind": "meld",
+   "name": "Bogborn",
+   "front": "Bogborn",
+   "behind": "of the Bogborn",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Poison, melded. What rots, breeds.",
+   "frontText": "Poisons; kills leave a soul that takes time off your cooldowns, and an enemy that dies poisoned bursts, poisoning those near it.",
+   "behindText": "Kills raise a blight toad in place of a spirit: it hops after enemies and spits venom, and when its time is up it bursts in a cloud of poison.",
+   "monsterText": "Its blows poison you; when it dies, it rises as a blight toad that spits venom at you and bursts in a cloud of poison.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "poison"
+   ]
+  },
+  "charnel": {
+   "id": "charnel",
+   "kind": "meld",
+   "name": "Charnel",
+   "front": "Charnel",
+   "behind": "of the Charnel",
+   "attr": "int",
+   "element": null,
+   "about": "Reaping and Power, melded. The dead, made strong.",
+   "frontText": "More damage and a bigger hit; kills leave a soul that takes time off your cooldowns, and each soul gathered adds to your damage for a few seconds.",
+   "behindText": "Kills raise a bonebrute in place of a spirit: slow and huge, it slams the ground, striking everything near it and throwing it back.",
+   "monsterText": "It hits harder and has more life; when it dies, it rises as a bonebrute that stomps after you and slams the ground.",
+   "melds52": true,
+   "of": [
+    "reaping",
+    "power"
+   ]
+  },
   "twin2": {
    "id": "twin2",
    "kind": "rank",
@@ -4751,6 +4851,26 @@
   "dragnet": [
    "binding",
    "vast"
+  ],
+  "cinderbrood": [
+   "reaping",
+   "fire"
+  ],
+  "wintergrave": [
+   "reaping",
+   "frost"
+  ],
+  "stormwake": [
+   "reaping",
+   "lightning"
+  ],
+  "bogborn": [
+   "reaping",
+   "poison"
+  ],
+  "charnel": [
+   "reaping",
+   "power"
   ]
  },
  "rankOf": {
@@ -5007,6 +5127,11 @@
   "manacle": "str",
   "snag": "str",
   "dragnet": "str",
+  "cinderbrood": "int",
+  "wintergrave": "int",
+  "stormwake": "int",
+  "bogborn": "int",
+  "charnel": "int",
   "twin2": "dex",
   "leech2": "str",
   "volatile2": "int",
@@ -6334,6 +6459,41 @@
    ],
    "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
   },
+  "cinderbrood": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Fire Damage or Fire Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Fire Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "wintergrave": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Frost Damage or Frost Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Frost Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "stormwake": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Lightning Damage or Lightning Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Lightning Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "bogborn": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Poison Damage or Poison Resistance.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Poison Resistance."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
+  "charnel": {
+   "gear": [
+    "Weapon, gloves, ring, amulet: Life on Kill or Intelligence, with Physical Damage, Added Damage or Strength.",
+    "Off hand, helm, chest, belt, boots: Cooldown Recovery or Intelligence, with Armour or Strength."
+   ],
+   "note": "One property of each, each a quarter weaker than alone. Two of a kind never pair."
+  },
   "twin2": {
    "gear": [
     "Weapon, gloves, ring, amulet: Critical Chance or Dexterity.",
@@ -6635,6 +6795,11 @@
   "manacle": "#a89c88",
   "snag": "#e0d0e0",
   "dragnet": "#8a7a58",
+  "cinderbrood": "#d0582a",
+  "wintergrave": "#6aa0d8",
+  "stormwake": "#d8c860",
+  "bogborn": "#8aa83a",
+  "charnel": "#b8b098",
   "twin2": "#58c0b0",
   "leech2": "#ff8a80",
   "volatile2": "#9858d0",
@@ -7402,73 +7567,93 @@
    250,
    275
   ],
-  "twin2": [
+  "cinderbrood": [
    275,
    275
   ],
-  "leech2": [
+  "wintergrave": [
    300,
    275
   ],
-  "volatile2": [
+  "stormwake": [
    325,
    275
   ],
-  "precise2": [
+  "bogborn": [
    350,
    275
   ],
-  "frenzied2": [
+  "charnel": [
    375,
    275
   ],
-  "guarding2": [
+  "twin2": [
    0,
    300
   ],
-  "lasting2": [
+  "leech2": [
    25,
    300
   ],
-  "fleeting2": [
+  "volatile2": [
    50,
    300
   ],
-  "vast2": [
+  "precise2": [
    75,
    300
   ],
-  "swift2": [
+  "frenzied2": [
    100,
    300
   ],
-  "heavy2": [
+  "guarding2": [
    125,
    300
   ],
-  "pulling2": [
+  "lasting2": [
    150,
    300
   ],
-  "splitting2": [
+  "fleeting2": [
    175,
    300
   ],
-  "hexing2": [
+  "vast2": [
    200,
    300
   ],
-  "stilling2": [
+  "swift2": [
    225,
    300
   ],
-  "binding2": [
+  "heavy2": [
    250,
    300
   ],
-  "greed": [
+  "pulling2": [
    275,
    300
+  ],
+  "splitting2": [
+   300,
+   300
+  ],
+  "hexing2": [
+   325,
+   300
+  ],
+  "stilling2": [
+   350,
+   300
+  ],
+  "binding2": [
+   375,
+   300
+  ],
+  "greed": [
+   0,
+   325
   ]
  },
  "glyph": {
@@ -9129,6 +9314,51 @@
    "X.X.X.X",
    ".X.X.X.",
    "X.X.X.X"
+  ],
+  "cinderbrood": [
+   "X.....X",
+   "XX...XX",
+   ".XXXXX.",
+   ".XoXoX.",
+   "..XXX..",
+   ".X.X.X.",
+   "XX.X.XX"
+  ],
+  "wintergrave": [
+   "...X...",
+   "..XXX..",
+   ".XX.XX.",
+   ".XoXoX.",
+   ".XXXXX.",
+   "X.X.X.X",
+   "X.X.X.."
+  ],
+  "stormwake": [
+   "X.X.X.X",
+   ".XXXXX.",
+   ".XoXoX.",
+   "..XXX..",
+   "...X...",
+   "..X....",
+   ".X....."
+  ],
+  "bogborn": [
+   ".......",
+   ".oX.Xo.",
+   "XXXXXXX",
+   "X.XXX.X",
+   "XXXXXXX",
+   ".X...X.",
+   "XX...XX"
+  ],
+  "charnel": [
+   "..XXX..",
+   ".XoXoX.",
+   ".XXXXX.",
+   "..X.X..",
+   "XX...XX",
+   "XX...XX",
+   "......."
   ]
  },
  "tune": {
@@ -10170,6 +10400,91 @@
    "near": 1.5,
    "wide": 2.0,
    "catches": 3
+  },
+  "cinderbrood": {
+   "spreadR": 2.0,
+   "spreadK": 0.6,
+   "spreadSecs": 3.0,
+   "dmg": 1.1,
+   "every": 1.3,
+   "reach": 4.0,
+   "keep": 2.6,
+   "speed": 5.5,
+   "shot": 8.0,
+   "burn": 0.35,
+   "foeDmg": 0.6,
+   "foeEvery": 1.5,
+   "foeSecs": 5.0,
+   "foeR": 0.8,
+   "foeFly": 0.7
+  },
+  "wintergrave": {
+   "shatterR": 2.0,
+   "shatterChill": 0.5,
+   "dmg": 0.9,
+   "every": 1.1,
+   "reach": 3.6,
+   "keep": 2.4,
+   "speed": 4.5,
+   "shot": 9.0,
+   "chill": 0.35,
+   "freezeOn": 3,
+   "foeDmg": 0.5,
+   "foeEvery": 1.4,
+   "foeSecs": 5.0,
+   "foeR": 0.8,
+   "foeFly": 0.6
+  },
+  "stormwake": {
+   "boltDmg": 0.6,
+   "boltR": 5.0,
+   "dmg": 0.7,
+   "every": 0.9,
+   "reach": 1.6,
+   "speed": 7.5,
+   "jump": 0.5,
+   "jumpR": 3.0,
+   "foeDmg": 0.45,
+   "foeEvery": 1.2,
+   "foeSecs": 5.0,
+   "foeR": 0.7,
+   "foeWait": 0.5
+  },
+  "bogborn": {
+   "burstR": 2.0,
+   "burstK": 0.5,
+   "dmg": 0.8,
+   "every": 1.2,
+   "reach": 3.0,
+   "keep": 1.6,
+   "speed": 4.5,
+   "dose": 0.3,
+   "cloudR": 1.6,
+   "cloudSecs": 3.0,
+   "cloudDps": 0.4,
+   "foeDmg": 0.4,
+   "foeEvery": 1.5,
+   "foeSecs": 5.0,
+   "foeR": 0.8,
+   "foeFly": 0.7,
+   "foeCloud": 0.6
+  },
+  "charnel": {
+   "might": 8.0,
+   "mightSecs": 4.0,
+   "mightMost": 5,
+   "dmg": 1.8,
+   "every": 1.8,
+   "reach": 1.2,
+   "r": 1.5,
+   "speed": 3.5,
+   "throw": 1.2,
+   "foeDmg": 1.0,
+   "foeEvery": 2.0,
+   "foeSecs": 6.0,
+   "foeR": 1.5,
+   "foeWait": 0.8,
+   "foeSpeed": 2.6
   }
  },
  "city": [
@@ -10269,6 +10584,13 @@
   "manacle",
   "snag",
   "dragnet"
+ ],
+ "reap": [
+  "cinderbrood",
+  "wintergrave",
+  "stormwake",
+  "bogborn",
+  "charnel"
  ],
  "extra": {
   "greed": {

@@ -1,0 +1,87 @@
+{
+ "cinderbrood": {
+  "name": "Cinderbrood",
+  "of": [
+   "reaping",
+   "fire"
+  ],
+  "color": "#d0582a",
+  "glyph": [
+   "X.....X",
+   "XX...XX",
+   ".XXXXX.",
+   ".XoXoX.",
+   "..XXX..",
+   ".X.X.X.",
+   "XX.X.XX"
+  ]
+ },
+ "wintergrave": {
+  "name": "Wintergrave",
+  "of": [
+   "reaping",
+   "frost"
+  ],
+  "color": "#6aa0d8",
+  "glyph": [
+   "...X...",
+   "..XXX..",
+   ".XX.XX.",
+   ".XoXoX.",
+   ".XXXXX.",
+   "X.X.X.X",
+   "X.X.X.."
+  ]
+ },
+ "stormwake": {
+  "name": "Stormwake",
+  "of": [
+   "reaping",
+   "lightning"
+  ],
+  "color": "#d8c860",
+  "glyph": [
+   "X.X.X.X",
+   ".XXXXX.",
+   ".XoXoX.",
+   "..XXX..",
+   "...X...",
+   "..X....",
+   ".X....."
+  ]
+ },
+ "bogborn": {
+  "name": "Bogborn",
+  "of": [
+   "reaping",
+   "poison"
+  ],
+  "color": "#8aa83a",
+  "glyph": [
+   ".......",
+   ".oX.Xo.",
+   "XXXXXXX",
+   "X.XXX.X",
+   "XXXXXXX",
+   ".X...X.",
+   "XX...XX"
+  ]
+ },
+ "charnel": {
+  "name": "Charnel",
+  "of": [
+   "reaping",
+   "power"
+  ],
+  "color": "#b8b098",
+  "glyph": [
+   "..XXX..",
+   ".XoXoX.",
+   ".XXXXX.",
+   "..X.X..",
+   "XX...XX",
+   "XX...XX",
+   "......."
+  ]
+ }
+}

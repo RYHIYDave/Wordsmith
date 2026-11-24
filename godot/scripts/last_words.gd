@@ -43,12 +43,16 @@ var zones: Array = []
 var spirits: Array = []
 var _lances: Array = []
 var _next_id := 1
+## REAPING WITH THE DAMAGE RUNES (meldsreap_rules.gd, behind melds52.gd REAP_ON): their twists, his creatures, and the ones risen
+## against him
+var reap
 ## (CULLING on a monster: its fire kindling as he comes low, heard once each time)
 var _kindled := false
 
 
 func _init(h) -> void:
 	hero = h
+	reap = preload("res://scripts/meldsreap_rules.gd").new(self)
 
 
 static func L() -> Dictionary:
@@ -76,6 +80,8 @@ func fresh_place() -> void:
 	zones = []
 	spirits = []
 	_lances = []
+	if reap != null:
+		reap.fresh_place()
 
 
 func _open(at: Vector2) -> bool:
@@ -310,6 +316,8 @@ func killed(m, i: int) -> void:
 		hero.cool_by(float(r["reap"]))
 		hero._tell({"t": "reapSoul", "x": m.world.x, "y": m.world.y})
 		rec("reap_soul")
+		if reap.on() and reap.is_reap(r.get("meld")):
+			reap.front_kill(m, i, str(r["meld"]))
 	if float(r["spirit"]) > 0.0 and not m.boss:
 		_raise_spirit(m, i, r["spirit"])
 	if float(r["plunder"]) > 0.0 or float(r["plunder_burst"]) > 0.0:
@@ -347,8 +355,12 @@ func _raise_spirit(m, i: int, share: float) -> void:
 		spirits.pop_front()
 	var sp := {"id": _next_id, "x": m.world.x, "y": m.world.y, "t": 0.0, "life": R["spiritSecs"], "next": 0.3, "skill": i, "share": share}
 	_next_id += 1
+	# (REAPING WITH A DAMAGE RUNE behind: its own creature in place of the grey spirit, meldsreap_rules.gd)
+	var mb = hero.loadout.r(i).get("meld_behind")
+	if reap.on() and reap.is_reap(mb):
+		reap.make_creature(sp, str(mb))
 	spirits.append(sp)
-	hero._tell({"t": "spirit", "id": sp["id"], "x": sp["x"], "y": sp["y"], "life": sp["life"]})
+	hero._tell({"t": "spirit", "id": sp["id"], "x": sp["x"], "y": sp["y"], "life": sp["life"], "kind": sp.get("kind", "")})
 	rec("reap_spirit")
 
 
@@ -365,6 +377,7 @@ func step(dt: float) -> void:
 			_lance_lands(q)
 	_step_zones(dt)
 	_step_spirits(dt)
+	reap.step(dt)
 	# (CULLING on a monster: its fire kindles as he comes low with one of them awake and near: heard once each time)
 	var low: bool = hero.life > 0.0 and hero.life < hero.max_life * float(L().get("cull", {"low": 0.35})["low"])
 	var lit := false
@@ -421,6 +434,11 @@ func _step_spirits(dt: float) -> void:
 		if float(sp["t"]) >= float(sp["life"]):
 			spirits.remove_at(k)
 			rec("reap_spirit", float(SOFT["spiritAway"]))
+			if sp.has("kind"):
+				reap.friend_gone(sp)
+			continue
+		if sp.has("kind"):
+			reap.step_friend(sp, dt)
 			continue
 		var at := Vector2(sp["x"], sp["y"])
 		var best = null

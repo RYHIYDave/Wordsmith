@@ -3264,7 +3264,13 @@ func read() -> void:
 	var spirits: Array = []
 	if last != null:
 		for s: Dictionary in last.spirits:
-			spirits.append({"id": s["id"], "x": s["x"], "y": s["y"], "t": s["t"], "life": s["life"], "next": s["next"]})
+			spirits.append({"id": s["id"], "x": s["x"], "y": s["y"], "t": s["t"], "life": s["life"], "next": s["next"],
+				"kind": s.get("kind", ""), "atk": s.get("atk", -1.0), "fx": s.get("fx", 1.0), "fy": s.get("fy", 0.0), "foe": false})
+		# (REAPING WITH A DAMAGE RUNE: the creatures risen out of his enemies against him, drawn as his are, in the enemy's pink)
+		if last.reap != null:
+			for s: Dictionary in last.reap.foes:
+				spirits.append({"id": s["id"], "x": s["x"], "y": s["y"], "t": s["t"], "life": s["life"], "next": s["next"],
+					"kind": s["kind"], "atk": s["atk"], "fx": s["fx"], "fy": s["fy"], "foe": true})
 	var shots: Array = []
 	if fx.monsters != null and is_instance_valid(fx.monsters):
 		var map = fx.monsters.get("map")
@@ -3520,16 +3526,55 @@ func follow() -> void:
 			if sp == null:
 				continue
 			_spirit_sprites[sid] = sp
-		var pic := _spirit_frame(s)
+		var pic := _reap_frame(s) if str(s.get("kind", "")) != "" else _spirit_frame(s)
 		var build := _c01(float(s["t"]) / T_SPIRIT_BUILD)
 		var going := _c01((float(s["life"]) - float(s["t"])) / T_SPIRIT_FADE)
 		var lift := _ri(2.0 * build + 8.0 * (1.0 - going))
-		_stand(sp, pic["tex"], pic["anchor"], pic["dn"], pic["flip"], _ri(_sx(s["x"], s["y"])), _ri(_sy(s["x"], s["y"])) - lift, float(s["x"]) + float(s["y"]), 0.92 * build * going)
+		_stand(sp, pic["tex"], pic["anchor"], pic["dn"], pic["flip"], _ri(_sx(s["x"], s["y"])), _ri(_sy(s["x"], s["y"])) - lift, float(s["x"]) + float(s["y"]), (1.0 if str(s.get("kind", "")) != "" else 0.92) * build * going)
 	for sid in _spirit_sprites.keys():
 		if not seen.has(sid):
 			if is_instance_valid(_spirit_sprites[sid]):
 				_spirit_sprites[sid].queue_free()
 			_spirit_sprites.erase(sid)
+
+
+## REAPING WITH A DAMAGE RUNE (meldsreap_rules.gd): the picture its creature shows now, his (its edge his cyan) or risen against him
+## (the enemy's pink): its stand, its walk, or its attack played from the rules' own clock of it (`atk`, seconds into it); facing
+## the one it strikes as it strikes, else the way it goes (tools/reap5, assets/words/reap5_<kind>.png): {tex, anchor, dn, flip}.
+static var _reap_tex := {}
+static var _reap_info := {}
+
+
+func _reap_frame(s: Dictionary) -> Dictionary:
+	var kind: String = s["kind"]
+	if not _reap_tex.has(kind):
+		_reap_tex[kind] = load("res://assets/words/reap5_%s.png" % kind)
+		_reap_info[kind] = JSON.parse_string(FileAccess.get_file_as_string("res://assets/words/reap5_%s.json" % kind))
+	var info: Dictionary = _reap_info[kind]
+	var was = spirit_was.get(int(s["id"]))
+	var atk: float = float(s["atk"])
+	var mfx: float = float(s["fx"]) if atk >= 0.0 or was == null else float(was["fx"])
+	var mfy: float = float(s["fy"]) if atk >= 0.0 or was == null else float(was["fy"])
+	var sides: Array = info["foe" if s.get("foe", false) else "friend"]
+	var side: Dictionary = sides[1 if mfx + mfy < -0.2 else 0]
+	var pick: int
+	if atk >= 0.0:
+		var clip: Array = side["attack"]
+		pick = int(clip[mini(clip.size() - 1, int(floorf(atk * float(side["attackFps"]) + 1e-6)))])
+	elif was != null and was["moving"]:
+		var wl: Array = side["walk"]
+		pick = int(wl[int(floorf(float(was["walkT"]) * float(side["walkFps"]))) % wl.size()])
+	else:
+		var il: Array = side["idle"]
+		pick = int(il[(int(floorf(clock * float(side["idleFps"]))) + int(s["id"]) * 3) % il.size()])
+	var p: Dictionary = info["pics"][pick]
+	var key := "reap5:%s:%d" % [kind, pick]
+	if not _glass.has(key):
+		var at := AtlasTexture.new()
+		at.atlas = _reap_tex[kind]
+		at.region = Rect2(p["x"], p["y"], p["w"], p["h"])
+		_glass[key] = at
+	return {"tex": _glass[key], "anchor": Vector2(p["ax"], p["ay"]), "dn": int(p["dn"]), "flip": mfx - mfy < 0.0}
 
 
 ## The grey Shade's picture a rules' spirit shows now (spiritsW7, shadeFrameOf, spiritPicture): {tex, anchor, dn, flip}.

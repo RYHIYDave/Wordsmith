@@ -154,6 +154,11 @@ func run(only := "") -> void:
 	M52.CITY2_ON = false
 	_line(Words.meld_of("pulling", "twin") == "" and Words.meld_of("binding", "vast") == "" and Words.meld_of("pulling", "volatile") == "implode", "the city's runes with the floor 6–10 runes switched off, the bench makes none of them (Pulling + Twin: '%s'), Implode as before" % Words.meld_of("pulling", "twin"))
 	M52.CITY2_ON = true
+	# (REAPING WITH THE DAMAGE RUNES: likewise; its own check check_reap5.gd)
+	var was_reap: bool = M52.REAP_ON
+	M52.REAP_ON = false
+	_line(Words.meld_of("reaping", "fire") == "", "Reaping with the damage runes switched off, the bench makes none of them (Reaping + Flame: '%s')" % Words.meld_of("reaping", "fire"))
+	M52.REAP_ON = true
 	# --- THE BENCH
 	M52.ON = false
 	_line(Words.meld_of("twin", "power") == "" and Words.meld_of("swift", "swift") == "" and Words.meld_problem("twin", "power") != "", "switched off, the bench makes none of them (Twin + Power: '%s')" % Words.meld_of("twin", "power"))
@@ -223,7 +228,7 @@ func run(only := "") -> void:
 			h.shield = 0.0
 			h.shield_t = 0.0
 			for m in M._w_pack:
-				if KILL.has(id) or (side == "behind" and KILL_BEHIND.has(id) and BEHIND.has(id)):
+				if KILL.has(id) or (side == "behind" and KILL_BEHIND.has(id) and BEHIND.has(id)) or M52.is_reap(id):
 					m.life = 1.0
 				if STUNNED.has(id):
 					m.stun_t = 3.0
@@ -253,6 +258,8 @@ func run(only := "") -> void:
 				want = CITY_FRONT.get(id, "") if side == "front" else _city_behind(id)
 			if M52.is_city2(id):
 				want = CITY2_FRONT.get(id, "") if side == "front" else id + ":leave"
+			if M52.is_reap(id):
+				want = id + (":soul" if side == "front" else ":rise")
 			var seen: bool = want == "" or int(h.m52.told.get(want, 0)) > 0
 			if not seen:
 				not_seen.append("%s %s" % [id, side])
@@ -266,6 +273,7 @@ func run(only := "") -> void:
 	M52.ON = was
 	M52.CITY_ON = was_city
 	M52.CITY2_ON = was_city2
+	M52.REAP_ON = was_reap
 	print("MELDS52: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
 
@@ -323,7 +331,10 @@ func _snare_walk(k: int) -> int:
 
 
 func _fresh() -> void:
-	# (nothing of his last film's frenzy or shield left on him)
+	# (nothing of his last film's frenzy or shield left on him; nor its spirits and creatures, nor what they threw)
+	h.last.spirits = []
+	if h.last.reap != null:
+		h.last.reap.fresh_place()
 	h.frenzy = 0
 	h.frenzy_t = 0.0
 	h.shield = 0.0
@@ -369,6 +380,8 @@ func _fresh() -> void:
 func film(only := "") -> void:
 	var was: bool = M52.ON
 	M52.ON = true
+	var was_reap: bool = M52.REAP_ON
+	M52.REAP_ON = true
 	var T: Dictionary = M52.T()
 	var root: String = M._arg("shots") + "/film"
 	DirAccess.make_dir_recursive_absolute(root)
@@ -386,6 +399,10 @@ func film(only := "") -> void:
 	# (`city2`: the city's runes with the floor 6–10 runes, 44)
 	if only == "city2":
 		ids = T["city2"]
+		only = ""
+	# (`reap`: Reaping with the damage runes, 5)
+	if only == "reap":
+		ids = T["reap"]
 		only = ""
 	# (any words named: the game's own melds too, filmed the same way to set beside these)
 	if only != "":
@@ -409,6 +426,19 @@ func film(only := "") -> void:
 					m.life = 1.0
 				if STUNNED.has(id) and side == "front":
 					m.stun_t = 3.0
+				# (REAPING WITH A DAMAGE RUNE: the first it strikes falls, burning, frozen or poisoned for the twist in front; behind,
+				# the rest stand for its creature to fight)
+				if M52.is_reap(id) and (m == M._w_pack[0] or side == "front" and M._w_pack.find(m) < 3):
+					m.max_life = FOE_LIFE
+					m.life = 1.0
+					if side == "front":
+						match id:
+							"cinderbrood":
+								m.set_alight(20.0, 4.0)
+							"wintergrave":
+								m.frozen_t = 2.0
+							"bogborn":
+								m.dose(20.0)
 				if side == "front":
 					_pre(id, m)
 					if CITY_KILL.has(id) or CITY2_KILL.has(id):
@@ -441,7 +471,7 @@ func film(only := "") -> void:
 			M._w_strike(h)
 			k = await _walk(k, 0.6, id, 1.0)
 			M._w_strike(h)
-			var rest := (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0))
+			var rest := (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0)) + (2.2 if M52.is_reap(id) and side == "behind" else 0.0)
 			# (THE CITY'S MELDS behind: a vortex's end is its own moment; a snare springs on one walked onto it)
 			if side == "behind" and (M52.is_city(id) or M52.is_city2(id)) and not M52.is_new_rank(id):
 				var of: Array = M52.T()["of"][id]
@@ -497,13 +527,13 @@ func film(only := "") -> void:
 		m._t = 1e9
 		m._cd = 1e9
 		# (he strikes back: its shield struck and broken, it hurt and brought low, or killed, for what each waits on)
-		if FOE_DIES.has(id) or ((M52.is_city(id) or M52.is_city2(id)) and not M52.is_new_rank(id) and (M52.T()["of"][id] as Array).has("splitting")) or id in ["hexblast", "slowfuse", "tripwire"]:
+		if FOE_DIES.has(id) or M52.is_reap(id) or ((M52.is_city(id) or M52.is_city2(id)) and not M52.is_new_rank(id) and (M52.T()["of"][id] as Array).has("splitting")) or id in ["hexblast", "slowfuse", "tripwire"]:
 			m.life = 1.0
 		M._w_strike(h)
 		k = await _frames(k, 0.6)
 		if not m.dead:
 			M._w_strike(h)
-		k = await _frames(k, float(FOE_TAIL.get(id, 1.4)))
+		k = await _frames(k, float(FOE_TAIL.get(id, 4.0 if M52.is_reap(id) else 1.4)))
 		for w in kept:
 			if kept[w] == null:
 				tune[id].erase(w)
@@ -519,8 +549,9 @@ func film(only := "") -> void:
 		DirAccess.remove_absolute(_dir)
 		print("MELDS52 FILM %s: %d frames, ffmpeg %d" % [id, k, code])
 		print("MELDS52 TOLD %s: %s" % [id, ", ".join(PackedStringArray(h.m52.told.keys()))])
-		print("MELDS52 FOE %s: %s" % [id, "shown" if h.m52.told.keys().any(func(t): return str(t).ends_with(":foe") or str(t).ends_with(":foeSplit")) else "NOT SHOWN"])
+		print("MELDS52 FOE %s: %s" % [id, "shown" if h.m52.told.keys().any(func(t): return str(t).ends_with(":foe") or str(t).ends_with(":foeSplit") or (M52.is_reap(id) and str(t).ends_with(":rise"))) else "NOT SHOWN"])
 	M52.ON = was
+	M52.REAP_ON = was_reap
 
 
 ## The words one carrying meld `id` has on it, as an altar lays them (foe_words.gd foe_words_of).

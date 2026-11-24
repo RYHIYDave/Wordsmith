@@ -1,0 +1,30 @@
+Reaping with the Damage Runes
+·
+Five new melds bring Reaping together with Flame, Frost, Lightning, Poison and Power. Each raises its own creature from what it kills, in place of the grey spirit: an imp, a rimeling, a stormwisp, a blight toad, a bonebrute. His words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the shades.”
+Burned into gear, a meld gives one property of each of its two runes, each a quarter weaker than alone, as now. Two properties of the same kind never pair.
+Each meld below has its idea in a line, its names on a move, and what it does in front, behind and on enemies, as before.
+Cinderbrood
+Reaping and Flame. What burns, rises burning. On a move: Cinderbrood Strike, Strike of the Cinderbrood.
+In front: sets enemies burning; kills leave a soul that takes time off your cooldowns, and an enemy that dies burning passes its fire to those near it.
+Behind: kills raise an imp in place of a spirit: it keeps its distance and hurls fireballs that set enemies burning.
+On enemies: its blows burn you; when it dies, it rises as an imp that hurls fireballs at you for a few seconds.
+Wintergrave
+Reaping and Frost. The cold keeps what it kills. On a move: Wintergrave Strike, Strike of the Wintergrave.
+In front: chills, then freezes; kills leave a soul that takes time off your cooldowns, and an enemy that dies frozen shatters, chilling those near it.
+Behind: kills raise a rimeling in place of a spirit: it flings icicles that chill, then freeze.
+On enemies: its blows slow you; when it dies, it rises as a rimeling that flings icicles at you for a few seconds.
+Stormwake
+Reaping and Lightning. Every death a thunderclap. On a move: Stormwake Strike, Strike of the Stormwake.
+In front: arcs to nearby enemies; kills leave a soul that takes time off your cooldowns, and each soul looses a bolt at the nearest enemy.
+Behind: kills raise a stormwisp in place of a spirit: it darts in and zaps, each zap jumping on to a second enemy.
+On enemies: its blows shock you; when it dies, it rises as a stormwisp that darts at you and zaps you for a few seconds.
+Bogborn
+Reaping and Poison. What rots, breeds. On a move: Bogborn Strike, Strike of the Bogborn.
+In front: poisons; kills leave a soul that takes time off your cooldowns, and an enemy that dies poisoned bursts, poisoning those near it.
+Behind: kills raise a blight toad in place of a spirit: it hops after enemies and spits venom, and when its time is up it bursts in a cloud of poison.
+On enemies: its blows poison you; when it dies, it rises as a blight toad that spits venom at you and bursts in a cloud of poison.
+Charnel
+Reaping and Power. The dead, made strong. On a move: Charnel Strike, Strike of the Charnel.
+In front: more damage and a bigger hit; kills leave a soul that takes time off your cooldowns, and each soul gathered adds to your damage for a few seconds.
+Behind: kills raise a bonebrute in place of a spirit: slow and huge, it slams the ground, striking everything near it and throwing it back.
+On enemies: it hits harder and has more life; when it dies, it rises as a bonebrute that stomps after you and slams the ground.

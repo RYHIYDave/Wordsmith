@@ -33,6 +33,13 @@ static var CITY_ON := true
 ## Melds, https://claude.ai/artifact/9u1bUEVM4YdrjRZq5SHHeG), asked “Want me to switch these 44 on?”: “Switch them on.”, 24 Nov 2026.
 ## Off, the wordsmith does not make them (`makes`); known, as all words are.
 static var CITY2_ON := true
+## REAPING WITH THE DAMAGE RUNES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of
+## the shades.  What would the others be?”; offered the five, “Yes and work on reaping”): Cinderbrood, Wintergrave, Stormwake,
+## Bogborn and Charnel, Reaping with Flame, Frost, Lightning, Poison and Power, in the same table (`reap`); their text
+## tools/meldsreap/docs_reap.txt, their stones docs/mockups/meld_runes5, their creatures' pictures tools/reap5 (assets/words/
+## reap5_*.png), their rules meldsreap_rules.gd, their looks fx_m52p_reap.gd. OFF until his yes to their pictures and films: the
+## wordsmith does not make them (`makes`); known, as all words are.
+static var REAP_ON := false
 ## (what each rune is worth inside one on gear: items.ts MELD_GEAR_STRENGTH; a level 2 rune's: RANK2's half again)
 const GEAR := 0.75
 const GEAR_RANK := 1.5
@@ -71,6 +78,8 @@ static func makes(a: String, b: String) -> String:
 		if (of[0] == a and of[1] == b) or (of[0] == b and of[1] == a):
 			if is_city2(m):
 				return m if CITY2_ON else ""
+			if is_reap(m):
+				return m if REAP_ON else ""
 			return m if CITY_ON or not is_city(m) else ""
 	return ""
 
@@ -83,6 +92,11 @@ static func is_city(w) -> bool:
 ## Is it one of the city's runes with the floor 6–10 runes?
 static func is_city2(w) -> bool:
 	return w is String and T().get("city2", []).has(w)
+
+
+## Is it one of Reaping's melds with the damage runes?
+static func is_reap(w) -> bool:
+	return w is String and T().get("reap", []).has(w)
 
 
 ## Into the words' tables (words.json): each one as a melded or ranked word, its parts, its attribute, its Lexicon page; and the
