@@ -112,7 +112,7 @@ test('4. what its card says: the four resistances as one line, a price in its st
     const axe = makeUnique('rotaxe', 1, new RNG(3))!;
     const said = uniqueLines(uniqueDef('rotaxe')!, 'warrior', axe).map((l) => l.text).join(' | ');
     assert.ok(said.includes(`${Math.round(axe.uroll!.rot)}% of their damage`), said);
-    assert.ok(axe.affixes.flatMap((a) => modLines(a.mods, 'cooldown')).some((l) => /^Adds \d+-\d+ Poison Damage to Poison Hits$/.test(l)));
+    assert.ok(axe.affixes.flatMap((a) => modLines(a.mods, 'cooldown')).some((l) => /^Adds \d+-\d+ Poison Damage$/.test(l)));
     const word = makeUnique('lastword', 1, new RNG(4))!;
     const w = uniqueLines(uniqueDef('lastword')!, 'mage', word);
     assert.ok(w.some((l) => l.kind === 'price' && l.text.includes(`${Math.round(word.uroll!.cool)}% longer`)), w.map((l) => l.text).join(' | '));

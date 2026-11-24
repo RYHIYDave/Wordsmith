@@ -622,8 +622,9 @@ export const LEVEL2_DEFS: readonly UniqueDef[] = [
 // “Yes, rename as listed (Recommended)”. A NEW UNIQUE'S NAME DOES NOT BEGIN WITH “The” unless it has to.
 // THE RUSTY WRENCH (his words, the same day, of “Adds X-Y Poison Damage to Poison Hits”, flat poison that only a poison hit
 // carries: “If it doesn't work to add x damage then why is it on a weapon?”; asked how to mend it: “Just plain damage, and make
-// it look actually like a rusty metal wrench.  It looks like bronze or wood”): plain added damage. A LEVELING WEAPON'S STATS
-// WORK BY THEMSELVES: no flat damage of an element unless the weapon makes its hits that element (the Icicle, the Kindling Rod).
+// it look actually like a rusty metal wrench.  It looks like bronze or wood”): plain added damage. And then, of all flat damage
+// of an element: “Yes, of course make flat elemental damage add to every hit” (hero.gd hit_monster, _flat_extras; items.ts
+// FLAT_PAIRS' lines). A UNIQUE'S STATS WORK BY THEMSELVES.
 export const LEVEL3_DEFS: readonly UniqueDef[] = [
   // ---- THE WARRIOR ----
   { id: 'tenderizer', name: 'The Tenderizer', stem: 'warhammer', from: 'level', level: 3, cls: 'warrior', bends: 'hero', powers: 0, stats: ['stunChance', 'dmgMin'], rolls: [R('stunChance', 10, 15), PAIR('dmgMin', 'dmgMax', 3, 5, 7, 9)], does: () => [] },

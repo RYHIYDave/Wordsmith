@@ -586,6 +586,12 @@ func sure_thing() -> bool:
 	return wears("surething")
 
 
+## A weapon that can deal no other type of damage (the Kindling Rod's fire, the Icicle's frost): no flat damage of another element
+## rides its hits (hero.gd _flat_extras).
+func one_element() -> bool:
+	return wears("kindlingrod") or wears("icicle")
+
+
 ## (game.ts hitMonster) THE ROT AXE: a physical hit does no harm of its own: it poisons instead, this share of it.
 func rot(el: String) -> float:
 	return worn_roll("rotaxe", "rot") / 100.0 if el == "phys" and wears("rotaxe") else 0.0

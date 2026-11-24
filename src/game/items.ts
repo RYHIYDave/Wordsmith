@@ -1131,10 +1131,13 @@ export function statGroup(stat: StatKey): string {
  */
 export const FLAT_PAIRS: readonly { min: StatKey; max: StatKey; label: string }[] = [
   { min: 'dmgMin', max: 'dmgMax', label: 'Damage' },
-  { min: 'fireMin', max: 'fireMax', label: 'Fire Damage to Fire Hits' },
-  { min: 'frostMin', max: 'frostMax', label: 'Frost Damage to Frost Hits' },
-  { min: 'lightMin', max: 'lightMax', label: 'Lightning Damage to Lightning Hits' },
-  { min: 'poisonMin', max: 'poisonMax', label: 'Poison Damage to Poison Hits' },
+  // (FLAT DAMAGE OF AN ELEMENT ADDS TO EVERY HIT, the Godot game's rule, hero.gd hit_monster: his words, 24 Nov 2026, told the four
+  // added only to hits already of their element, “Yes, of course make flat elemental damage add to every hit”. So each line says
+  // only what it adds; until then, “... Damage to Fire Hits”. This TypeScript game, finished, still adds them as it did.)
+  { min: 'fireMin', max: 'fireMax', label: 'Fire Damage' },
+  { min: 'frostMin', max: 'frostMax', label: 'Frost Damage' },
+  { min: 'lightMin', max: 'lightMax', label: 'Lightning Damage' },
+  { min: 'poisonMin', max: 'poisonMax', label: 'Poison Damage' },
 ];
 /** The flat pair whose least is `stat`, if it is one (a crafting outcome names its pair by its least). */
 export function flatPair(stat: StatKey): { min: StatKey; max: StatKey; label: string } | undefined {

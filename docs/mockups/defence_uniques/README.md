@@ -100,3 +100,18 @@ again (130 uniques); Godot must import again.
   repainted was told him; no yes yet.
 
 Checked after: `--only=defuniques` 36 of 36, `skins` 50 of 50; tsc clean.
+
+## Flat damage of an element adds to every hit (24 Nov 2026)
+
+His words, told that “Adds X-Y Fire (Frost, Lightning, Poison) Damage” added only to a hit already of that element and nothing
+otherwise: “Yes, of course make flat elemental damage add to every hit”.
+
+- THE GODOT GAME (`godot/scripts/hero.gd` hit_monster, `_flat_extras`, avg_hit): a hit of another element, or a plain one,
+  carries his gear's flat fire, frost and lightning beside it, each a blow of its own element (withstood as that element, made
+  more by his bonus to that element), sized as the hit was (the move's share, a critical, his talents' and uniques'). The hit's
+  own element's is in the hit, as before. Flat poison poisons on every hit. It leaves no burning, chill or shock of itself (those
+  are the words'). Not with a weapon that can deal no other type of damage (the Kindling Rod, the Icicle: `uniques.gd
+  one_element`).
+- THE LINES (`src/game/items.ts` FLAT_PAIRS, the tables made again): “Adds X-Y Fire Damage”, no “to Fire Hits”.
+- The TypeScript game, finished, adds them as it did.
+- Checked: `--only=defuniques` 40 of 40 (lines 37 to 40); `uniquesdo`, `defence` as before; tests/uniques_level passes.

@@ -561,6 +561,56 @@ func run(main, hero, d: String) -> void:
 			_hero(defs[id]["cls"])
 			await _card(L.unique_piece(id), "lw%02d_%s" % [k3, id])
 
+	# ================= FLAT DAMAGE OF AN ELEMENT ON EVERY HIT (hero.gd hit_monster, _flat_extras) =================
+	# (a Warrior with no words, a ring of flat fire, frost and lightning: his plain Strike carries each beside itself)
+	_hero("warrior")
+	h.talents = []
+	h.arm()
+	foe.tracing = true
+	foe.trace = {}
+	h.hit_monster(foe, 0, 1.0, false)
+	var bare_keys: Array = foe.trace.keys().filter(func(k): return str(k).begins_with("move 0"))
+	_piece("ring1", "Ruby Ring", [["fireMin", 10], ["fireMax", 10], ["frostMin", 6], ["frostMax", 6], ["lightMin", 4], ["lightMax", 4]])
+	L.derive()
+	foe.life = foe.max_life
+	foe.trace = {}
+	h.hit_monster(foe, 0, 1.0, false)
+	var tr: Dictionary = foe.trace.duplicate()
+	var fl_fire: float = float(tr.get("move 0 fire", 0.0))
+	var fl_frost: float = float(tr.get("move 0 frost", 0.0))
+	var fl_light: float = float(tr.get("move 0 lightning", 0.0))
+	_line(bare_keys == ["move 0 phys"] and str(h.loadout.r(0)["element"]) == "phys" and fl_fire > 0.0 and fl_frost > 0.0 and fl_light > 0.0 and fl_fire > fl_frost and fl_frost > fl_light and float(tr.get("move 0 phys", 0.0)) > 0.0,
+		"a Warrior with no words: his Strike alone is %s; with a ring of 10 fire, 6 frost and 4 lightning it is %d plain and beside it %d fire, %d frost, %d lightning" % [str(bare_keys), tr.get("move 0 phys", 0.0), fl_fire, fl_frost, fl_light])
+	# (flat poison: poison on a hit that does not poison of itself)
+	_hero("warrior")
+	_piece("ring1", "Ruby Ring", [["poisonMin", 8], ["poisonMax", 8]])
+	L.derive()
+	foe.poison_t = 0.0
+	foe.poison_dps = 0.0
+	foe.poison_n = 0
+	h.hit_monster(foe, 0, 1.0, false)
+	_line(float(h.loadout.r(0)["poison"]) == 0.0 and foe.poison_dps > 0.0 and foe.poison_t > 0.0, "the same Strike with a ring of 8 flat poison and no Poison word: it is poisoned, %.1f a second for %.0f s" % [foe.poison_dps, foe.poison_t])
+	foe.poison_t = 0.0
+	foe.poison_dps = 0.0
+	foe.poison_n = 0
+	# (a weapon that can deal no other type: the Kindling Rod's hits carry none of the others)
+	_hero("mage")
+	L.gear["mainhand"] = L.unique_piece("kindlingrod")
+	_piece("ring1", "Ruby Ring", [["frostMin", 6], ["frostMax", 6], ["poisonMin", 8], ["poisonMax", 8]])
+	L.derive()
+	foe.life = foe.max_life
+	foe.trace = {}
+	h.hit_monster(foe, 0, 1.0, false)
+	var rod_keys: Array = foe.trace.keys().filter(func(k): return str(k).begins_with("move 0"))
+	_line(rod_keys == ["move 0 fire"] and foe.poison_dps == 0.0, "the Kindling Rod (can deal no other type of damage) with a ring of flat frost and poison: its hit is %s, no poison" % str(rod_keys))
+	foe.tracing = false
+	foe.trace = {}
+	# (the lines say what they add)
+	var kr: Dictionary = L.unique_piece("kindlingrod")
+	var pl: Dictionary = L.unique_piece("poisonerslocket")
+	var said: String = ", ".join(L.lines_of(kr, "lines") + L.lines_of(pl, "lines"))
+	_line(not said.contains("Hits") and said.contains("Fire Damage") and said.contains("Poison Damage"), "the lines: %s" % said)
+
 	# ================= THE CHANGED ONES' CARDS =================
 	await _card(sc, "du16_shortcut")
 	await _card(pr, "du17_prismheart")
