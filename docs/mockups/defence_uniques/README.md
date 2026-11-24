@@ -62,3 +62,24 @@ WARRIOR_KIND; `barn_door_on_the_warrior.png`. The other fourteen are armour and 
 Checked: `--only=defuniques` 31 of 31 (lines 28 to 31 are theirs); `skins` 38 of 38 (its line 29 the Barn Door); `uniques` 11 of 11; tsc clean;
 tests/items_unique, uniques, uniques_level pass. Tables made again (`npx tsx tools/godot_loot.ts`: 118 uniques); Godot must
 import `icons.png` again.
+
+## Twelve leveling weapons (24 Nov 2026)
+
+His words: “So things that will make the next run easier.  Low level gear with a twist or a stronger roll than you could get
+early on”; “Can you tell me what they are before they get art and are pushed into the game?”; “How many unique weapons do we
+have for leveling?  Cause we should have 3-4 for each class”. There were seven (the Warrior two, the others one each). Told
+these twelve by name, level and numbers before any art: “Yes good to go”. FROM NOW ON: a unique is told him first, and painted
+and built only after his yes.
+
+`src/game/uniques.ts` LEVEL3_DEFS (two for each hero; three each now, the Warrior four); bag pictures `src/art/items_unique.ts`
+LEVEL3_PAINTERS; a skin on its hero for each (`src/art/sword_skins.ts`, `heavy_skins.ts`, `bow_skins.ts`, `staff_skins.ts`,
+`tome_skins.ts`, `wrench_skins.ts`, `wrap_skins.ts`; `src/art/heroes.ts`), baked with `node tools/bake_one_group.mjs <groups>`
+into `godot/assets/heroes` (twelve groups, about an hour and a half), `godot/scripts/skins.gd`. The Icicle's every hit is frost
+(`uniques.gd after_resolve`, as the Kindling Rod's are fire). The Rusty Wrench's poison is added to poison hits, as the game's
+flat poison is.
+
+BUILT AND CHECKED; OFF UNTIL HIS YES TO THEIR PICTURES: `godot/scripts/loot.gd LEVEL3_UNIQUES` (`--level3=1`).
+`twelve_weapons_cards.png`, `twelve_weapons_pictures.png`, `twelve_weapons_on_the_heroes.png`.
+
+Checked: `--only=defuniques` 36 of 36 (lines 32 to 36 theirs); `skins` 50 of 50; `uniques` 11 of 11; tsc clean. Tables made
+again (130 uniques); Godot must import again.
