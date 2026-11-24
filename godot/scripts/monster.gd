@@ -48,6 +48,7 @@ const NEAR_SHOW := 30.0
 const MM := preload("res://scripts/monster_moves.gd")
 const Words := preload("res://scripts/words.gd")
 const ReapRules := preload("res://scripts/meldsreap_rules.gd")
+const PrizeCarry := preload("res://scripts/prize_carry.gd")
 const Headsman := preload("res://scripts/headsman.gd")
 const Amalgam := preload("res://scripts/amalgam.gd")
 const Chained := preload("res://scripts/chained.gd")
@@ -1998,6 +1999,8 @@ func _die() -> void:
 		mgr.hero.last.reap.rise_foe(self, reap_id)
 	elif word_share("reaping") > 0.0 and not risen and not boss:
 		_rise_again()
+	# (THE PRIZE CARRIERS: one carrying Plundering or Greed dies in a fountain of coins or gems: prize_carry.gd)
+	PrizeCarry.burst(self)
 	if stolen > 0 and mgr.loot != null:
 		mgr.loot._gold(world, stolen)
 		stolen = 0
@@ -2260,6 +2263,9 @@ func _draw_over(c: CanvasItem) -> void:
 				hue = YELLOW_NAME
 			elif not words.is_empty():
 				hue = Looks.WORD.get(str(words[0]), FR4)
+			# (THE PRIZE CARRIERS: its name in the prize's colour)
+			if PrizeCarry.ON and PrizeCarry.prize_of(self) != "":
+				hue = PrizeCarry.color_of(self)
 			PF.draw(c, title, 0.0, y - 8.0, hue, {"align": "center", "font": "small", "shadow": INK})
 	if (elite or boss) and not carries.is_empty() and mgr.loot != null and mgr.loot.sheet != null:
 		var top := roundf(-_head() - (6.0 if boss else 15.0) - lift)

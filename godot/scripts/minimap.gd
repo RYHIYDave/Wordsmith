@@ -13,6 +13,7 @@
 extends Control
 
 const PF := preload("res://scripts/pixel_font.gd")
+const PrizeCarry := preload("res://scripts/prize_carry.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
 
 ## (hud.ts minimap: how far round him the small map looks, in tiles; its height)
@@ -304,6 +305,10 @@ func _marks() -> Array:
 				continue
 			var tx := floori(m.world.x)
 			var ty := floori(m.world.y)
+			# (THE PRIZE CARRIERS: one carrying Plundering or Greed, a larger mark in the prize's colour: prize_carry.gd)
+			if PrizeCarry.ON and PrizeCarry.prize_of(m) != "":
+				out.append([tx, ty, PrizeCarry.color_of(m), 3, 4, false])
+				continue
 			if m.boss:
 				out.append([tx, ty, P["bl4"], 3, 4, false])
 			elif m.champion:

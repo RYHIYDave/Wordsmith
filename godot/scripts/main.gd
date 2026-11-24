@@ -43,6 +43,7 @@ const Town := preload("res://scripts/town.gd")
 const Save := preload("res://scripts/save.gd")
 const Words := preload("res://scripts/words.gd")
 const FoeWords := preload("res://scripts/foe_words.gd")
+const PrizeCarry := preload("res://scripts/prize_carry.gd")
 const Guide := preload("res://scripts/guide.gd")
 const Look := preload("res://scripts/look.gd")
 const Doors := preload("res://scripts/doors.gd")
@@ -1450,6 +1451,18 @@ func _build(where: String, arrive: String) -> void:
 		monsters.load_floor(dir + "/monsters.json", MONSTER_DIR, mdata)
 		_chained_mdata = mdata
 		floor_mdata = mdata
+		# (THE PRIZE CARRIERS: one carrying Plundering or Greed stands out, its pillar of light, its finding told: prize_carry.gd)
+		if monsters.stands != null and monsters.stands.get_node_or_null("PrizeCarry") == null:
+			var pc = PrizeCarry.new()
+			pc.name = "PrizeCarry"
+			pc.mgr = monsters
+			monsters.stands.add_child(pc)
+		if PrizeCarry.ON:
+			for m in monsters.list:
+				var pz: String = PrizeCarry.prize_of(m)
+				if pz != "":
+					loot.say("Something on this level carries %s." % PrizeCarry.NAME[pz], PrizeCarry.COL[pz][2])
+					break
 		# (ENDLESS ANY LEVEL: the Bells on an endless level of a floor that has none of its own, by the level's luck: bells_any.gd)
 		if in_endless and where != "final" and monsters.bells.is_empty() and BellsAny.ON:
 			var br := RandomNumberGenerator.new()
@@ -3791,6 +3804,10 @@ func _words_shots(h: Hero, dir: String) -> void:
 		return
 	if _arg("cases").begins_with("m52"):
 		await preload("res://scripts/check_melds52.gd").new(self, h).run(_arg("cases").trim_prefix("m52").trim_prefix(":"))
+		return
+	# (THE PRIZE CARRIERS: `--cases=prize`, check_prize.gd)
+	if _arg("cases").begins_with("prize"):
+		await preload("res://scripts/check_prize.gd").new(self, h).run()
 		return
 	# (REAPING WITH THE DAMAGE RUNES: `--cases=reap5`, check_reap5.gd)
 	if _arg("cases").begins_with("reap5"):

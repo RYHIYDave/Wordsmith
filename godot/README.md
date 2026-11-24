@@ -1531,6 +1531,14 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   (https://claude.ai/artifact/KjN5NDpT3Ck2y8Ezp9cDuS). Checks:
   `--only=words --cases=reap5` 20 of 20; films `--fixed-fps 30 -- --only=words --cases=m52film:reap`; the page
   `python3 docs/mockups/reap5/page.py <films> <lineup png> <out>`.
+- THE TREASURE CARRIERS (his words, 24 Nov 2026: “I want finding a monster with quality or plundering to be pretty cool, like
+  that's going to make your next floor super exciting to run”; offered a glow of its own and a sound as it comes into view,
+  “Yeah that's cool”): a monster carrying Plundering or Greed (an endless level's RARE_CARRY) stands out (prize_carry.gd): a
+  pillar of the prize's light (gold, magenta) rising from over its head above the walls, seen from anywhere on the level; a line
+  as the level is entered; the rare find's chime, its rune named and a line at the top as it comes into sight near him, once;
+  its name and its map mark in the prize's colour; a fountain of coins or gems as it dies. Behind prize_carry.gd ON (OFF until
+  his yes to its pictures, docs/mockups/prize_carry, https://claude.ai/artifact/H7xU18nvFLDwxtDuaqyH2D). Check
+  `--only=words --cases=prize` 9 of 9.
 - THE LEXICON IN THE STASH (his words, 24 Nov 2026: “I'd also like to get rid of the lexicon in the middle of town and add it to the
   stash chest.”): no Lexicon of its own in the town, the camp or the Rim (its station, prop, book, light and glow left out: town.gd,
   look.gd `_lexicon_out`); its shelf opened by the LEXICON button on the stash's half, and back by STASH (inventory.gd "svc_swap").
