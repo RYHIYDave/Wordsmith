@@ -84,3 +84,19 @@ ON AT HIS YES, 24 Nov 2026, shown the three sheets: “Yes, switch them on (Reco
 
 Checked: `--only=defuniques` 36 of 36 (lines 32 to 36 theirs); `skins` 50 of 50; `uniques` 11 of 11; tsc clean. Tables made
 again (130 uniques); Godot must import again.
+
+## Names, and the Rusty Wrench mended (24 Nov 2026)
+
+- NAMES. His words: “Also all these uniques have "The" in the title which we specifically pushed back against.  Some can but
+  certainly not all.  Not even half.” 26 of the 42 added on 23 and 24 Nov began with “The”; told which four keep it (The Unbowed,
+  The Tenderizer, The Penny Dreadful, The Jack of All): “Yes, rename as listed (Recommended)”. The other 22 have lost it. A NEW
+  UNIQUE'S NAME DOES NOT BEGIN WITH “The” unless it has to.
+- THE RUSTY WRENCH. His words, of “Adds X-Y Poison Damage to Poison Hits” (the game's line for flat damage of an element, which
+  only a hit of that element carries): “If it doesn't work to add x damage then why is it on a weapon?”; asked how to mend it:
+  “Just plain damage, and make it look actually like a rusty metal wrench.  It looks like bronze or wood”. Now “Adds 2-4 to 6-8
+  Damage” and its area; repainted grey iron eaten with orange rust, in the bag and in her hand (`rusty_wrench_redone.png`;
+  `tinkerer-rustywrench` baked again). The Poisoner's Locket (level 16, of the twenty) has the same line and is as it was.
+- STILL OPEN, HIS: six of the twelve weapons look too like another on their hero (`on_hero/README.md`); how each would be
+  repainted was told him; no yes yet.
+
+Checked after: `--only=defuniques` 36 of 36, `skins` 50 of 50; tsc clean.

@@ -175,16 +175,23 @@ export const BORROWED_WRENCH: WrenchSkin = {
 // TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”, and of a unique
 // weapon, “needs a skin to go on the Warrior if he equips it”): each drawn in its hero's hands as its picture in the bag is.
 
-const RUST: Ramp = ['#1c1018', '#3e2422', '#6e3e2c', '#a0623a', '#d09a66'];
-const OLD_IRON: Ramp = ['#16142a', '#2a2848', '#46446e', '#6e6c9a', '#b0aed8'];
+/** Old iron, grey, and the orange-red of rust on it. */
+const OLD_IRON: Ramp = ['#14161c', '#262a34', '#424854', '#6a7180', '#9aa2b0'];
+const RUST: Ramp = ['#3a1608', '#74280c', '#b04a16', '#d87430', '#eca468'];
+/** Where the rust lies: broad blotches, the same from every side of her. */
+const rusted = (x: number, y: number): boolean => Math.sin(x * 0.55 + 0.4) + Math.sin(y * 0.7 + 2.1) + Math.sin((x - y) * 0.33) > 0.15;
 
-/** THE RUSTY WRENCH (level 3: poison, a wider burst). Her wrench left out in the rain: rust all over it, the iron showing through in patches. */
+/**
+ * THE RUSTY WRENCH (level 3: added damage, a wider burst). Her wrench left out in the rain: grey iron, eaten with orange rust in
+ * great blotches, pitted. His word, 24 Nov 2026, of it first painted brown all over: “make it look actually like a rusty metal
+ * wrench.  It looks like bronze or wood”.
+ */
 export const RUSTY_WRENCH: WrenchSkin = {
   id: 'rustywrench',
-  name: 'The Rusty Wrench',
+  name: 'Rusty Wrench',
   sculpt(sc, at) {
-    const rust = sc.mat({ ramp: RUST, crease: 0.3, paint: (h) => (hash(Math.floor(h.x / 2), Math.floor(h.y / 2), 41) < 0.2 ? OLD_IRON[Math.max(1, Math.min(4, h.tone))] : hash(h.x, h.y, 43) < 0.12 ? RUST[Math.max(0, h.tone - 1)] : null) });
-    wrenchOf(sc, at, rust, rust);
+    const iron = sc.mat({ ramp: OLD_IRON, crease: 0.3, paint: (h) => (rusted(h.x, h.y) ? RUST[Math.max(0, Math.min(4, h.tone + (hash(h.x, h.y, 43) < 0.25 ? -1 : 0)))] : hash(h.x, h.y, 47) < 0.1 ? OLD_IRON[Math.max(0, h.tone - 1)] : null) });
+    wrenchOf(sc, at, iron, iron);
   },
 };
 

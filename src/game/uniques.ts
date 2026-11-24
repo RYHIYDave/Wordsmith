@@ -557,16 +557,16 @@ const DT = UNIQUE_TUNE;
 export const DEFENCE_DEFS: readonly UniqueDef[] = [
   // ---- ARMOUR ----
   { id: 'anvilheart', name: 'Anvilheart', stem: 'plate', from: 'pool', bends: 'hero', stats: ['maxLife', 'str'], rolled: ['anvil.share'], does: (it) => [`Your armour works against Flame, Frost and Lightning too, at ${pc(tuned(it, 'anvil.share'))} of its strength.`] },
-  { id: 'theburr', name: 'The Burr', stem: 'gauntlets', from: 'pool', bends: 'hero', stats: ['str', 'lifeOnHit'], rolled: ['burr.share'], does: (it) => [`An enemy that strikes you takes ${pc(tuned(it, 'burr.share'))} of your armour as damage.`] },
+  { id: 'theburr', name: 'Burr', stem: 'gauntlets', from: 'pool', bends: 'hero', stats: ['str', 'lifeOnHit'], rolled: ['burr.share'], does: (it) => [`An enemy that strikes you takes ${pc(tuned(it, 'burr.share'))} of your armour as damage.`] },
   { id: 'ballast', name: 'Ballast', stem: 'heavybelt', from: 'pool', bends: 'hero', stats: ['maxLife'], rolled: ['ballast.more'], does: (it) => [`You hit ${pc(tuned(it, 'ballast.more'))} harder for every ${DT.ballast.per} armour, up to ${pc(DT.ballast.most)}.`], price: () => `-${DT.ballast.slow}% Movement Speed.` },
   { id: 'unbowed', name: 'The Unbowed', stem: 'helm', from: 'pool', bends: 'hero', stats: ['str', 'maxLife'], rolled: ['unbowed.most'], does: (it) => [`No blow takes more than ${pc(tuned(it, 'unbowed.most'))} of your life.`], price: () => 'You cannot dodge.' },
   { id: 'workhardened', name: 'Workhardened', stem: 'greaves', from: 'pool', bends: 'hero', stats: ['moveSpeed', 'maxLife'], rolled: ['temper.each'], does: (it) => [`Each blow you take hardens you: +${pc(tuned(it, 'temper.each'))} armour for ${secs(DT.temper.secs)} seconds, up to ${DT.temper.most} times.`] },
   // ---- BARRIER ----
   { id: 'quickglass', name: 'Quickglass', stem: 'robe', from: 'pool', bends: 'hero', stats: ['int', 'maxLife'], rolled: ['quick.wait'], does: (it) => [`Your barrier begins to fill ${secs(tuned(it, 'quick.wait'))} seconds after a hit, not 3.`] },
-  { id: 'decanter', name: 'The Decanter', stem: 'sash', from: 'pool', bends: 'hero', stats: ['maxLife', 'cdr'], does: () => ['Drinking a flask fills your barrier.'] },
+  { id: 'decanter', name: 'Decanter', stem: 'sash', from: 'pool', bends: 'hero', stats: ['maxLife', 'cdr'], does: () => ['Drinking a flask fills your barrier.'] },
   { id: 'shatterglass', name: 'Shatterglass', stem: 'silkgloves', from: 'pool', bends: 'hero', stats: ['int', 'critChance'], rolled: ['shatter.share'], does: (it) => [`When your barrier breaks it bursts, striking everything near you for ${pc(tuned(it, 'shatter.share'))} of your full barrier.`] },
   { id: 'halo', name: 'Halo', stem: 'intamulet', from: 'pool', bends: 'hero', defence: 'barrier', stats: ['dmgPct'], rolled: ['halo.more'], does: (it) => [`While your barrier is full you hit ${pc(tuned(it, 'halo.more'))} harder.`] },
-  { id: 'glaziersring', name: "The Glazier's Ring", stem: 'manaring', from: 'pool', bends: 'hero', stats: ['int'], rolled: ['glazier.per'], does: (it) => [`All the armour on your gear is barrier instead: ${tuned(it, 'glazier.per').toFixed(1)} barrier for each point.`] },
+  { id: 'glaziersring', name: "Glazier's Ring", stem: 'manaring', from: 'pool', bends: 'hero', stats: ['int'], rolled: ['glazier.per'], does: (it) => [`All the armour on your gear is barrier instead: ${tuned(it, 'glazier.per').toFixed(1)} barrier for each point.`] },
   // ---- DODGE ----
   { id: 'feint', name: 'Feint', stem: 'leathergloves', from: 'pool', bends: 'hero', stats: ['dex', 'critChance'], rolled: ['feint.more'], does: (it) => [`After you dodge a blow you hit ${pc(tuned(it, 'feint.more'))} harder for ${secs(DT.feint.secs)} seconds.`] },
   { id: 'afterimage', name: 'Afterimage', stem: 'hood', from: 'pool', bends: 'hero', stats: ['cdr'], rolled: ['after.secs'], does: (it) => [`After you dodge a blow you are ${DT.after.haste}% faster for ${secs(tuned(it, 'after.secs'))} seconds.`] },
@@ -587,21 +587,21 @@ export const DEFENCE_DEFS: readonly UniqueDef[] = [
 // every name and number a proposal, his to change.
 export const LEVEL2_DEFS: readonly UniqueDef[] = [
   // ---- ON THE WAY: LEVELS 2 TO 20 ----
-  { id: 'papercharm', name: 'The Paper Charm', stem: 'intamulet', from: 'level', level: 2, bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor'], rolls: [R('armor', 20, 30)], does: () => [] },
-  { id: 'tinpot', name: 'The Tin Pot', stem: 'helm', from: 'level', level: 3, bends: 'hero', powers: 0, stats: ['armor', 'maxLife'], rolls: [R('armor', 20, 30), R('maxLife', 16, 24)], does: () => [] },
+  { id: 'papercharm', name: 'Paper Charm', stem: 'intamulet', from: 'level', level: 2, bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor'], rolls: [R('armor', 20, 30)], does: () => [] },
+  { id: 'tinpot', name: 'Tin Pot', stem: 'helm', from: 'level', level: 3, bends: 'hero', powers: 0, stats: ['armor', 'maxLife'], rolls: [R('armor', 20, 30), R('maxLife', 16, 24)], does: () => [] },
   { id: 'cutpursegloves', name: "Cutpurse's Gloves", stem: 'leathergloves', from: 'level', level: 4, bends: 'hero', defence: 'dodge', powers: 0, stats: ['armor', 'goldFind'], rolls: [R('armor', 10, 15), R('goldFind', 24, 36)], does: () => [] },
-  { id: 'barndoor', name: 'The Barn Door', stem: 'greatsword', from: 'level', level: 5, cls: 'warrior', bends: 'hero', powers: 0, stats: ['areaPct', 'atkSpeed'], rolls: [R('areaPct', 30, 45), R('atkSpeed', -12, -8)], does: () => [] },
-  { id: 'wishbone', name: 'The Wishbone', stem: 'lifering', from: 'level', level: 6, bends: 'hero', powers: 0, stats: ['critChance', 'magicFind'], rolls: [R('critChance', 6, 10), R('magicFind', 16, 24)], does: () => [] },
-  { id: 'starchedrobe', name: 'The Starched Robe', stem: 'robe', from: 'level', level: 9, bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor', 'cdr'], rolls: [R('armor', 60, 90), R('cdr', 8, 12)], does: () => [] },
+  { id: 'barndoor', name: 'Barn Door', stem: 'greatsword', from: 'level', level: 5, cls: 'warrior', bends: 'hero', powers: 0, stats: ['areaPct', 'atkSpeed'], rolls: [R('areaPct', 30, 45), R('atkSpeed', -12, -8)], does: () => [] },
+  { id: 'wishbone', name: 'Wishbone', stem: 'lifering', from: 'level', level: 6, bends: 'hero', powers: 0, stats: ['critChance', 'magicFind'], rolls: [R('critChance', 6, 10), R('magicFind', 16, 24)], does: () => [] },
+  { id: 'starchedrobe', name: 'Starched Robe', stem: 'robe', from: 'level', level: 9, bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor', 'cdr'], rolls: [R('armor', 60, 90), R('cdr', 8, 12)], does: () => [] },
   { id: 'leadfoot', name: 'Leadfoot', stem: 'greaves', from: 'level', level: 9, bends: 'hero', powers: 0, stats: ['armor', 'maxLife', 'moveSpeed'], rolls: [R('armor', 40, 60), R('maxLife', 48, 72), R('moveSpeed', -12, -8)], does: () => [] },
-  { id: 'knucklebone', name: 'The Knucklebone', stem: 'stramulet', from: 'level', level: 12, bends: 'hero', powers: 0, stats: ['physPct', 'stunChance'], rolls: [R('physPct', 24, 36), R('stunChance', 6, 9)], does: () => [] },
-  { id: 'windsock', name: 'The Windsock', stem: 'sash', from: 'level', level: 15, bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor', 'moveSpeed'], rolls: [R('armor', 50, 75), R('moveSpeed', 8, 12)], does: () => [] },
+  { id: 'knucklebone', name: 'Knucklebone', stem: 'stramulet', from: 'level', level: 12, bends: 'hero', powers: 0, stats: ['physPct', 'stunChance'], rolls: [R('physPct', 24, 36), R('stunChance', 6, 9)], does: () => [] },
+  { id: 'windsock', name: 'Windsock', stem: 'sash', from: 'level', level: 15, bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor', 'moveSpeed'], rolls: [R('armor', 50, 75), R('moveSpeed', 8, 12)], does: () => [] },
   { id: 'smokedglass', name: 'Smoked Glass', stem: 'hood', from: 'level', level: 19, bends: 'hero', defence: 'dodge', powers: 0, stats: ['armor', 'critChance'], rolls: [R('armor', 90, 135), R('critChance', 4, 6)], does: () => [] },
-  { id: 'thickskull', name: 'The Thick Skull', stem: 'helm', from: 'level', level: 20, bends: 'hero', powers: 0, stats: ['armor', 'int'], rolls: [R('armor', 120, 180), R('int', -20, -14)], does: () => [] },
+  { id: 'thickskull', name: 'Thick Skull', stem: 'helm', from: 'level', level: 20, bends: 'hero', powers: 0, stats: ['armor', 'int'], rolls: [R('armor', 120, 180), R('int', -20, -14)], does: () => [] },
   // ---- ENDGAME: LEVELS 22 TO 28, each past a rare's best with its price ----
-  { id: 'glassjaw', name: 'The Glass Jaw', stem: 'intamulet', from: 'level', level: 22, bends: 'hero', powers: 0, stats: ['dmgPct', 'maxLifePct'], rolls: [R('dmgPct', 40, 60), R('maxLifePct', -24, -16)], does: () => [] },
+  { id: 'glassjaw', name: 'Glass Jaw', stem: 'intamulet', from: 'level', level: 22, bends: 'hero', powers: 0, stats: ['dmgPct', 'maxLifePct'], rolls: [R('dmgPct', 40, 60), R('maxLifePct', -24, -16)], does: () => [] },
   { id: 'houseofcards', name: 'House of Cards', stem: 'robe', from: 'level', level: 24, bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor', 'maxLifePct'], rolls: [R('armor', 400, 600), R('maxLifePct', -30, -20)], does: () => [] },
-  { id: 'greasedcoat', name: 'The Greased Coat', stem: 'jerkin', from: 'level', level: 26, bends: 'hero', defence: 'dodge', powers: 0, stats: ['armor', 'fireRes'], rolls: [R('armor', 300, 450), R(ALL_RES, -30, -20)], does: () => [] },
+  { id: 'greasedcoat', name: 'Greased Coat', stem: 'jerkin', from: 'level', level: 26, bends: 'hero', defence: 'dodge', powers: 0, stats: ['armor', 'fireRes'], rolls: [R('armor', 300, 450), R(ALL_RES, -30, -20)], does: () => [] },
   { id: 'jackofall', name: 'The Jack of All', stem: 'manaring', from: 'level', level: 28, bends: 'hero', powers: 0, stats: ['str', 'dmgPct'], rolls: [R(['str', 'dex', 'int'], 24, 36), R('dmgPct', -16, -10)], does: () => [] },
 ];
 
@@ -615,24 +615,33 @@ export const LEVEL2_DEFS: readonly UniqueDef[] = [
 // each hero: three each, the Warrior four with a warhammer among them): “Yes good to go”. Made as the twenty are: each its
 // level's own, its base's damage and nothing else of it, every number rolled about a fifth either way; its hero's alone. Each
 // has a skin on its hero (art/*_skins.ts). ON at his yes to their pictures, 24 Nov 2026 (loot.gd LEVEL3_UNIQUES).
+//
+// THEIR NAMES (his words, 24 Nov 2026, of the forty-two added on 23 and 24 Nov, 26 of which began with “The”): “Also all these
+// uniques have "The" in the title which we specifically pushed back against.  Some can but certainly not all.  Not even half.”
+// Told which four would keep it (The Unbowed, The Tenderizer, The Penny Dreadful, The Jack of All) and the 22 that would lose it:
+// “Yes, rename as listed (Recommended)”. A NEW UNIQUE'S NAME DOES NOT BEGIN WITH “The” unless it has to.
+// THE RUSTY WRENCH (his words, the same day, of “Adds X-Y Poison Damage to Poison Hits”, flat poison that only a poison hit
+// carries: “If it doesn't work to add x damage then why is it on a weapon?”; asked how to mend it: “Just plain damage, and make
+// it look actually like a rusty metal wrench.  It looks like bronze or wood”): plain added damage. A LEVELING WEAPON'S STATS
+// WORK BY THEMSELVES: no flat damage of an element unless the weapon makes its hits that element (the Icicle, the Kindling Rod).
 export const LEVEL3_DEFS: readonly UniqueDef[] = [
   // ---- THE WARRIOR ----
   { id: 'tenderizer', name: 'The Tenderizer', stem: 'warhammer', from: 'level', level: 3, cls: 'warrior', bends: 'hero', powers: 0, stats: ['stunChance', 'dmgMin'], rolls: [R('stunChance', 10, 15), PAIR('dmgMin', 'dmgMax', 3, 5, 7, 9)], does: () => [] },
-  { id: 'whettededge', name: 'The Whetted Edge', stem: 'greatsword', from: 'level', level: 14, cls: 'warrior', bends: 'hero', powers: 0, stats: ['critChance', 'lifeOnHit'], rolls: [R('critChance', 8, 12), R('lifeOnHit', 3, 5)], does: () => [] },
+  { id: 'whettededge', name: 'Whetted Edge', stem: 'greatsword', from: 'level', level: 14, cls: 'warrior', bends: 'hero', powers: 0, stats: ['critChance', 'lifeOnHit'], rolls: [R('critChance', 8, 12), R('lifeOnHit', 3, 5)], does: () => [] },
   // ---- THE RANGER ----
-  { id: 'runnersbow', name: "The Runner's Bow", stem: 'bow', from: 'level', level: 2, cls: 'ranger', bends: 'hero', defence: 'dodge', powers: 0, stats: ['moveSpeed', 'armor'], rolls: [R('moveSpeed', 12, 18), R('armor', 8, 12)], does: () => [] },
-  { id: 'longshot', name: 'The Long Shot', stem: 'bow', from: 'level', level: 11, cls: 'ranger', bends: 'hero', powers: 0, stats: ['dmgPct', 'atkSpeed'], rolls: [R('dmgPct', 30, 45), R('atkSpeed', -15, -10)], does: () => [] },
+  { id: 'runnersbow', name: "Runner's Bow", stem: 'bow', from: 'level', level: 2, cls: 'ranger', bends: 'hero', defence: 'dodge', powers: 0, stats: ['moveSpeed', 'armor'], rolls: [R('moveSpeed', 12, 18), R('armor', 8, 12)], does: () => [] },
+  { id: 'longshot', name: 'Long Shot', stem: 'bow', from: 'level', level: 11, cls: 'ranger', bends: 'hero', powers: 0, stats: ['dmgPct', 'atkSpeed'], rolls: [R('dmgPct', 30, 45), R('atkSpeed', -15, -10)], does: () => [] },
   // ---- THE MAGE ----
-  { id: 'icicle', name: 'The Icicle', stem: 'staff', from: 'level', level: 3, cls: 'mage', bends: 'hero', stats: ['frostMin', 'frostPct'], rolls: [PAIR('frostMin', 'frostMax', 3, 5, 7, 11), R('frostPct', 25, 35)], does: () => ['Every hit is frost. Can deal no other type of damage.'] },
-  { id: 'walkingstick', name: 'The Walking Stick', stem: 'staff', from: 'level', level: 14, cls: 'mage', bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor', 'cdr'], rolls: [R('armor', 60, 90), R('cdr', 10, 15)], does: () => [] },
+  { id: 'icicle', name: 'Icicle', stem: 'staff', from: 'level', level: 3, cls: 'mage', bends: 'hero', stats: ['frostMin', 'frostPct'], rolls: [PAIR('frostMin', 'frostMax', 3, 5, 7, 11), R('frostPct', 25, 35)], does: () => ['Every hit is frost. Can deal no other type of damage.'] },
+  { id: 'walkingstick', name: 'Walking Stick', stem: 'staff', from: 'level', level: 14, cls: 'mage', bends: 'hero', defence: 'barrier', powers: 0, stats: ['armor', 'cdr'], rolls: [R('armor', 60, 90), R('cdr', 10, 15)], does: () => [] },
   // ---- THE WARLOCK ----
   { id: 'pennydreadful', name: 'The Penny Dreadful', stem: 'tome', from: 'level', level: 4, cls: 'warlock', bends: 'hero', powers: 0, stats: ['lifeOnKill', 'firePct'], rolls: [R('lifeOnKill', 6, 10), R('firePct', 20, 30)], does: () => [] },
-  { id: 'bloodstainedprimer', name: 'The Bloodstained Primer', stem: 'tome', from: 'level', level: 16, cls: 'warlock', bends: 'hero', powers: 0, stats: ['dmgPct', 'maxLifePct'], rolls: [R('dmgPct', 35, 50), R('maxLifePct', -10, -6)], does: () => [] },
+  { id: 'bloodstainedprimer', name: 'Bloodstained Primer', stem: 'tome', from: 'level', level: 16, cls: 'warlock', bends: 'hero', powers: 0, stats: ['dmgPct', 'maxLifePct'], rolls: [R('dmgPct', 35, 50), R('maxLifePct', -10, -6)], does: () => [] },
   // ---- THE TINKERER ----
-  { id: 'rustywrench', name: 'The Rusty Wrench', stem: 'wrench', from: 'level', level: 3, cls: 'tinkerer', bends: 'hero', powers: 0, stats: ['poisonMin', 'areaPct'], rolls: [PAIR('poisonMin', 'poisonMax', 2, 4, 6, 8), R('areaPct', 20, 30)], does: () => [] },
-  { id: 'goldplatedwrench', name: 'The Gold-Plated Wrench', stem: 'wrench', from: 'level', level: 9, cls: 'tinkerer', bends: 'hero', powers: 0, stats: ['goldFind', 'magicFind'], rolls: [R('goldFind', 40, 60), R('magicFind', 20, 30)], does: () => [] },
+  { id: 'rustywrench', name: 'Rusty Wrench', stem: 'wrench', from: 'level', level: 3, cls: 'tinkerer', bends: 'hero', powers: 0, stats: ['dmgMin', 'areaPct'], rolls: [PAIR('dmgMin', 'dmgMax', 2, 4, 6, 8), R('areaPct', 20, 30)], does: () => [] },
+  { id: 'goldplatedwrench', name: 'Gold-Plated Wrench', stem: 'wrench', from: 'level', level: 9, cls: 'tinkerer', bends: 'hero', powers: 0, stats: ['goldFind', 'magicFind'], rolls: [R('goldFind', 40, 60), R('magicFind', 20, 30)], does: () => [] },
   // ---- THE BRAWLER ----
-  { id: 'butcherswraps', name: "The Butcher's Wraps", stem: 'wraps', from: 'level', level: 2, cls: 'brawler', bends: 'hero', powers: 0, stats: ['lifeOnHit', 'maxLife'], rolls: [R('lifeOnHit', 2, 3), R('maxLife', 20, 30)], does: () => [] },
+  { id: 'butcherswraps', name: "Butcher's Wraps", stem: 'wraps', from: 'level', level: 2, cls: 'brawler', bends: 'hero', powers: 0, stats: ['lifeOnHit', 'maxLife'], rolls: [R('lifeOnHit', 2, 3), R('maxLife', 20, 30)], does: () => [] },
   { id: 'brassknuckles', name: 'Brass Knuckles', stem: 'wraps', from: 'level', level: 15, cls: 'brawler', bends: 'hero', powers: 0, stats: ['physPct', 'stunChance'], rolls: [R('physPct', 40, 60), R('stunChance', 8, 12)], does: () => [] },
 ];
 

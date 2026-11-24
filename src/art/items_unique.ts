@@ -2308,11 +2308,14 @@ function bloodstainedprimer(): Part[] {
   return parts;
 }
 
-/** THE RUSTY WRENCH (level 3, a wrench, the Tinkerer's: poison, a wider burst). Her wrench left out in the rain: rust all over it, the iron showing in patches. */
+/** RUSTY WRENCH (level 3, a wrench, the Tinkerer's: added damage, a wider burst). Her wrench left out in the rain: grey iron, eaten with orange rust in blotches. */
 function rustywrench(): Part[] {
-  const parts: Part[] = dye(PAINTERS.wrench(0), { steel: R.rust, leather: 'dleather' }).map((q) => ({ ...q, shine: false }));
-  for (const [x, y, r] of [[16.8, 15.4, 1.0], [13.4, 18.8, 0.8], [19.6, 12.6, 0.7]] as [number, number, number][]) parts.push({ s: ell([x, y], r, r * 0.8), m: 'dsteel', sh: { k: 'flat' }, flush: true, bias: 0.1 });
-  parts.push({ s: ell([18.6, 19.4], 0.9, 1.3), m: 'green', sh: { k: 'dome', c: [18.4, 19.0], r: 0.9, ry: 1.3 }, shine: true });
+  const RUSTO: Ramp = ['#3a1608', '#74280c', '#b04a16', '#d87430', '#eca468'];
+  const parts: Part[] = dye(PAINTERS.wrench(0), { steel: 'dsteel', leather: 'dleather' });
+  for (const [x, y, rx, ry] of [[21.4, 5.8, 1.5, 1.2], [20.8, 9.8, 1.7, 2.1], [27.2, 10.2, 1.3, 1.1], [17.2, 14.6, 2.0, 1.4], [13.6, 18.6, 1.5, 1.2]] as [number, number, number, number][]) {
+    parts.push({ s: ell([x, y], rx, ry, -40), m: RUSTO, sh: { k: 'flat' }, flush: true, bias: 0.1 });
+  }
+  for (const p of [[20.4, 10.4], [17.8, 14.2]] as V[]) parts.push({ s: ell(p, 0.6), m: RUSTO, sh: { k: 'flat' }, flush: true, bias: 0.6 });
   return parts;
 }
 
