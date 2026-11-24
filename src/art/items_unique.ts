@@ -1510,14 +1510,16 @@ function fourthglobe(): Part[] {
  * champion's wraps: linen, gilt at the knuckles, and pinned to the wrist a winner's blue rosette, its ribbons hanging.
  */
 function winningstreak(): Part[] {
-  const parts = PAINTERS.wraps(2);
+  // (since 24 Nov 2026: blue silk, a white band at the knuckles, a white rosette, so that the brass is Brass Knuckles' alone)
+  const parts = dye(PAINTERS.wraps(0), { linen: 'blue', dleather: 'black' });
+  parts.push({ s: poly([4.6, 11.0], [18.6, 9.6], [19.0, 12.6], [5.0, 14.0]), m: 'feather', sh: { k: 'flat', bev: 0.8 }, bias: 0.1 });
   // the rosette's two ribbons, then the rosette
-  parts.push({ s: poly([9.6, 23.6], [12.2, 23.2], [12.6, 30.6], [11.0, 29.2], [9.4, 30.8]), m: 'blue', sh: { k: 'flat', bev: 0.8 }, bias: -0.05 });
-  parts.push({ s: poly([12.6, 23.2], [15.2, 23.8], [16.6, 30.2], [14.6, 29.2], [13.4, 30.6]), m: 'blue', sh: { k: 'flat', bev: 0.8 }, bias: 0.12 });
+  parts.push({ s: poly([9.6, 23.6], [12.2, 23.2], [12.6, 30.6], [11.0, 29.2], [9.4, 30.8]), m: 'feather', sh: { k: 'flat', bev: 0.8 }, bias: -0.05 });
+  parts.push({ s: poly([12.6, 23.2], [15.2, 23.8], [16.6, 30.2], [14.6, 29.2], [13.4, 30.6]), m: 'feather', sh: { k: 'flat', bev: 0.8 }, bias: 0.12 });
   const c: V = [12.4, 22.4];
   const petals: V[] = [];
   for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; const rr = i % 2 ? 3.0 : 3.9; petals.push([c[0] + Math.cos(a) * rr, c[1] + Math.sin(a) * rr]); }
-  parts.push({ s: poly(...petals), m: 'blue', sh: { k: 'dome', c, r: 3.9 }, bias: 0.12 });
+  parts.push({ s: poly(...petals), m: 'feather', sh: { k: 'dome', c, r: 3.9 }, bias: 0.12 });
   parts.push({ s: ell(c, 2.0), m: 'gold', sh: { k: 'dome', c, r: 2.0 }, shine: true, flush: true });
   return parts;
 }
@@ -2336,8 +2338,14 @@ function butcherswraps(): Part[] {
 
 /** BRASS KNUCKLES (level 15, wraps, the Brawler's: physical damage, a chance to stun). Black straps, and across the knuckles a bar of brass, a ring for each finger. */
 function brassknuckles(): Part[] {
-  const parts = dye(PAINTERS.wraps(0), { linen: 'brass', dleather: 'black' });
-  for (const x of [6.6, 10.0, 13.4, 16.8]) parts.push({ s: ell([x, 12.6 - (x - 6.6) * 0.1], 1.5, 1.9), m: 'gold', sh: { k: 'dome', c: [x - 0.3, 12.2 - (x - 6.6) * 0.1], r: 1.5, ry: 1.9 }, shine: true });
+  const parts = dye(PAINTERS.wraps(0), { linen: 'black', dleather: 'dsteel' });
+  // (the bar across the knuckles, a finger ring under each knob, the knobs standing off it)
+  parts.push({ s: poly([3.8, 10.4], [19.4, 8.8], [19.8, 13.4], [4.2, 15.0]), m: 'brass', sh: { k: 'flat', bev: 1.0 }, shine: true, bias: 0.05 });
+  for (const x of [6.4, 10.0, 13.6, 17.2]) {
+    const y = 12.0 - (x - 6.4) * 0.1;
+    parts.push({ s: ell([x, y - 2.6], 1.7, 1.6), m: 'gold', sh: { k: 'dome', c: [x - 0.3, y - 3.0], r: 1.7 }, shine: true });
+    parts.push({ s: ell([x, y + 0.6], 1.0, 1.2), m: 'shadow', sh: { k: 'flat' }, flush: true });
+  }
   return parts;
 }
 

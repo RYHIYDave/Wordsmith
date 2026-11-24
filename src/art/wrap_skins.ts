@@ -103,37 +103,44 @@ export const FOURTH_GLOBE_WRAPS: WrapSkin = {
 // ---------------------------------------------------------------------------------------------
 // HOT STREAK (game/uniques.ts `winningstreak`: “Every combo you finish makes your blows hit harder.”)
 
-/** White linen, a champion's, clean. */
+/** White linen, a champion's, clean (the band at his knuckles, the rosette). */
 const WHITE_LINEN: Ramp = ['#4a4652', '#86818c', '#bcb6b8', '#e2dcd6', '#fbf7f0'];
-/** Gilt: metal, not light. */
+/** Gilt: metal, not light (the rosette's heart). */
 const GILT: Ramp = ['#3e2a0c', '#6c4c14', '#a47c26', '#d8b04a', '#f6e296'];
+/** A champion's blue silk. */
 const ROSETTE: Ramp = ['#0e1638', '#1a2a66', '#2a449c', '#4a68c6', '#7c98e2'];
 
+/**
+ * HOT STREAK: a champion's wraps of blue silk, a white band at the knuckles, and pinned to the lead wrist a winner's white
+ * rosette, gilt at its heart, its ribbons hanging. (Until 24 Nov 2026 white linen with gilt round the knuckles and a blue rosette:
+ * told Brass Knuckles sat too near it, his words: “we all know what brass knuckles look like so if it's similar to another unique
+ * I feel like the other one needs to be changed”. So the brass is Brass Knuckles' alone, and this one is blue.)
+ */
 export const HOT_STREAK_WRAPS: WrapSkin = {
   id: 'winningstreak',
   name: 'Hot Streak',
-  strap: WHITE_LINEN,
-  // (gilt round the knuckles)
-  strapPaint: (h, w) => (downHand(h.p, w) > 1.5 ? sh(GILT, h.tone - (w.far ? 1 : 0)) : null),
+  strap: ROSETTE,
+  // (a white band round the knuckles)
+  strapPaint: (h, w) => (Math.abs(downHand(h.p, w) - 2.05) < 0.3 ? sh(WHITE_LINEN, h.tone + 1 - (w.far ? 1 : 0)) : sh(ROSETTE, h.tone + 1 - (w.far ? 1 : 0))),
   extras(sc, w, t) {
     // the rosette on his lead wrist only, its two ribbons hanging
     if (w.side !== 'L') return;
-    const blue = sc.mat({ ramp: ROSETTE, crease: 0.35, paint: (h) => (w.far ? sh(ROSETTE, h.tone - 1) : null) });
+    const white = sc.mat({ ramp: WHITE_LINEN, crease: 0.35, paint: (h) => sh(WHITE_LINEN, h.tone + 1 - (w.far ? 1 : 0)) });
     const gold = sc.mat({ ramp: GILT, crease: 0.2 });
     const back = norm(mul(w.inw, -1));
     const across = norm(cross(back, w.d));
     const c = add(w.ha, add(mul(w.d, 0.1 * w.F), mul(back, 2.45 * w.F)));
     // its ribbons, from under it, hanging down whichever way his arm is
     const hang = norm(add(mul(UP, -1), mul(back, 0.25)));
-    [-1, 1].forEach((s, i) => {
-      const a = add(c, mul(across, s * 0.7));
-      const sway = Math.sin(t * 2.2 + i * 1.7) * 0.5;
-      const b = add(a, add(mul(hang, 4.2), mul(across, s * 0.9 + sway)));
+    [-1, 1].forEach((s2, i2) => {
+      const a = add(c, mul(across, s2 * 0.7));
+      const sway = Math.sin(t * 2.2 + i2 * 1.7) * 0.5;
+      const b = add(a, add(mul(hang, 4.2), mul(across, s2 * 0.9 + sway)));
       const wd = mul(norm(cross(sub(b, a), back)), 0.75);
-      sc.tri(blue, w.piece, add(a, wd), sub(a, wd), add(b, wd), 0.32, 0.2, { tag: 'ribbon' });
-      sc.tri(blue, w.piece, sub(a, wd), sub(b, wd), add(b, wd), 0.32, 0.2, { tag: 'ribbon' });
+      sc.tri(white, w.piece, add(a, wd), sub(a, wd), add(b, wd), 0.32, 0.2, { tag: 'ribbon' });
+      sc.tri(white, w.piece, sub(a, wd), sub(b, wd), add(b, wd), 0.32, 0.2, { tag: 'ribbon' });
     });
-    sc.ell(blue, w.piece, c, [mul(back, 0.6), mul(w.d, 2.0), mul(across, 2.0)], 0.2, { tag: 'rosette' });
+    sc.ell(white, w.piece, c, [mul(back, 0.6), mul(w.d, 2.0), mul(across, 2.0)], 0.2, { tag: 'rosette' });
     sc.ell(gold, w.piece, add(c, mul(back, 0.45)), [mul(back, 0.5), mul(w.d, 0.95), mul(across, 0.95)], 0, { tag: 'rosette' });
   },
 };
@@ -178,18 +185,25 @@ const BRASS_K: Ramp = ['#3a2410', '#6a4620', '#a07436', '#d0a656', '#f2d892'];
 const BLACK_STRAP: Ramp = ['#0a0816', '#16122a', '#262040', '#3a3258', '#5a5078'];
 
 /**
- * BRASS KNUCKLES (level 15: physical damage, a chance to stun). Each fist and forearm cased in brass, all of it, a black band at
- * the wrist. (First a thin bar of brass across dark straps, then brass from the knuckles down: both too like his own wraps and
- * Hot Streak's gilt.)
+ * BRASS KNUCKLES (level 15: physical damage, a chance to stun). As brass knuckles are: black straps, and over the knuckles of each
+ * fist a thick bar of brass with a knob standing off it on every knuckle. (His words, 24 Nov 2026: “we all know what brass
+ * knuckles look like”. Before that a thin bar, then brass from the knuckles down, then the whole fist cased: none read as the
+ * thing itself.)
  */
 export const BRASS_WRAPS: WrapSkin = {
   id: 'brassknuckles',
   name: 'Brass Knuckles',
-  strap: BRASS_K,
-  strapPaint: (h, w) => {
-    const k = downHand(h.p, w);
-    if (Math.abs(k - 0.1) < 0.22) return sh(BLACK_STRAP, h.tone - (w.far ? 1 : 0));
-    return sh(BRASS_K, h.tone + 1 - (w.far ? 1 : 0));
+  strap: BLACK_STRAP,
+  strapPaint: (h, w) => (Math.abs(downHand(h.p, w) - 2.05) < 0.42 ? sh(BRASS_K, h.tone + 1 - (w.far ? 1 : 0)) : null),
+  extras(sc, w) {
+    const brass = sc.mat({ ramp: BRASS_K, crease: 0.2, paint: (h) => sh(BRASS_K, h.tone + 1 - (w.far ? 1 : 0)) });
+    // (on the knuckles' ridge itself, the striking face, standing out of it, as the Fourth Globe's settings are laid)
+    const n = norm(add(w.d, mul(w.inw, -0.7)));
+    const m = norm(cross(n, w.top));
+    for (const k of KNUCKLES) {
+      const c = add(w.ha, add(mul(w.d, 3.35 * w.F), add(mul(w.inw, -0.75 * w.F), mul(w.top, k * 0.95 * w.F))));
+      sc.ell(brass, w.piece, add(c, mul(n, 0.35)), [mul(n, 1.15), mul(w.top, 1.25), mul(m, 1.25)], 0.1, { tag: 'knob' });
+    }
   },
 };
 
