@@ -78,7 +78,8 @@ into `godot/assets/heroes` (twelve groups, about an hour and a half), `godot/scr
 (`uniques.gd after_resolve`, as the Kindling Rod's are fire). The Rusty Wrench's poison is added to poison hits, as the game's
 flat poison is.
 
-BUILT AND CHECKED; OFF UNTIL HIS YES TO THEIR PICTURES: `godot/scripts/loot.gd LEVEL3_UNIQUES` (`--level3=1`).
+ON AT HIS YES, 24 Nov 2026, shown the three sheets: “Yes, switch them on (Recommended)” (`godot/scripts/loot.gd LEVEL3_UNIQUES`;
+`--level3=0` to run without them).
 `twelve_weapons_cards.png`, `twelve_weapons_pictures.png`, `twelve_weapons_on_the_heroes.png`.
 
 Checked: `--only=defuniques` 36 of 36 (lines 32 to 36 theirs); `skins` 50 of 50; `uniques` 11 of 11; tsc clean. Tables made

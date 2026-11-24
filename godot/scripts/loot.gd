@@ -1147,9 +1147,9 @@ static var LEVEL2_UNIQUES := true
 
 
 ## TWELVE LEVELING WEAPONS (game/uniques.ts LEVEL3_DEFS; his words, 24 Nov 2026: “we should have 3-4 for each class”; told them
-## before any art, “Yes good to go”): two more for each hero, each with a skin on him (skins.gd). OFF until his yes to their
-## pictures: none drops.
-static var LEVEL3_UNIQUES := false
+## before any art, “Yes good to go”): two more for each hero, each with a skin on him (skins.gd). ON at his yes, 24 Nov 2026,
+## shown their cards, their pictures and each hero holding his two: “Yes, switch them on (Recommended)”. With it off none drops.
+static var LEVEL3_UNIQUES := true
 
 
 ## game.ts makePoolUnique: one of the pool's for him (of that slot, of that weapon, where asked), made for this floor; null if none.

@@ -614,7 +614,7 @@ export const LEVEL2_DEFS: readonly UniqueDef[] = [
 // Warrior two, the others one each). Told these twelve by name, level and numbers before anything was painted or built (two for
 // each hero: three each, the Warrior four with a warhammer among them): “Yes good to go”. Made as the twenty are: each its
 // level's own, its base's damage and nothing else of it, every number rolled about a fifth either way; its hero's alone. Each
-// has a skin on its hero (art/*_skins.ts). OFF until his yes to their pictures (loot.gd LEVEL3_UNIQUES).
+// has a skin on its hero (art/*_skins.ts). ON at his yes to their pictures, 24 Nov 2026 (loot.gd LEVEL3_UNIQUES).
 export const LEVEL3_DEFS: readonly UniqueDef[] = [
   // ---- THE WARRIOR ----
   { id: 'tenderizer', name: 'The Tenderizer', stem: 'warhammer', from: 'level', level: 3, cls: 'warrior', bends: 'hero', powers: 0, stats: ['stunChance', 'dmgMin'], rolls: [R('stunChance', 10, 15), PAIR('dmgMin', 'dmgMax', 3, 5, 7, 9)], does: () => [] },
