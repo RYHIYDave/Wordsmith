@@ -221,8 +221,9 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2) -> void:
 				H.bind(m, 1.0)
 				tell("duelist", "challenge", m.world)
 		"eternity":
-			if m.still_t > 0.0 and not m.m52.has("rd_etern"):
-				m.m52["rd_etern"] = clock()
+			# (its slow, laid by this hit: as it runs out, time stops for it)
+			if not m.dead and not m.boss:
+				m.m52["rd_etern"] = true
 		"evileye":
 			if c and m.hex_t > 0.0 and not m.dead:
 				var e = eyes.filter(func(x): return x["m"] == m)
@@ -527,17 +528,17 @@ func step(dt: float) -> void:
 			for q in near(m.world, 2.0, 6, [m]):
 				H.curse(q, 3.0, 0.15)
 				tell("evileye", "stare", m.world, {"x1": q.world.x, "y1": q.world.y, "minor": true})
-	# (Eternity in front: held three seconds, time stops for it)
-	if any_f("eternity") >= 0:
-		for m in H.list():
-			if not ok(m) or not m.m52.has("rd_etern"):
-				continue
-			if m.still_t <= 0.0:
-				m.m52.erase("rd_etern")
-			elif now - float(m.m52["rd_etern"]) >= 3.0 and not m.m52.get("rd_stopped", false):
-				m.m52["rd_stopped"] = true
-				H.stun(m, 1.2)
-				tell("eternity", "stop", m.world, {"secs": 1.2})
+	# (Eternity in front: as the slow it laid runs out, time stops for it a moment)
+	for m in H.list():
+		if not ok(m) or not m.m52.has("rd_etern"):
+			continue
+		if m.still_t > 0.0:
+			m.m52["rd_slowed"] = true
+		elif m.m52.get("rd_slowed", false):
+			m.m52.erase("rd_etern")
+			m.m52.erase("rd_slowed")
+			H.stun(m, 1.2)
+			tell("eternity", "stop", m.world, {"secs": 1.2})
 	# (Fury in front, at a full frenzy: a red fury round him)
 	var fu := any_f("fury")
 	if fu >= 0 and H.frenzy_full() and once("fury", 0.5):

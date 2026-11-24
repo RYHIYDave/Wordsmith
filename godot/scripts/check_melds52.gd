@@ -414,6 +414,17 @@ func film(only := "") -> void:
 	# (`high`: the High City's runes melded, 110; `high:<from>-<to>`, a run of them by their order)
 	var was_high: bool = M52.HIGH_ON
 	M52.HIGH_ON = true
+	# (`redo`: ALL MELDS, THE LEAST EXCITING REDONE, every round's; `redo:round=1`, one round's: their new moments with them)
+	var was_redo: bool = M52.REDO_ON
+	if only.begins_with("redo"):
+		M52.REDO_ON = true
+		var rounds: Array = T.get("redoRounds", [])
+		var span := only.trim_prefix("redo").trim_prefix(":")
+		ids = []
+		for k in rounds.size():
+			if span == "" or span == "round=%d" % (k + 1):
+				ids.append_array(rounds[k])
+		only = ""
 	if only.begins_with("high"):
 		var hi: Array = T["high"].filter(func(w): return not M52.is_new_rank(w))
 		var span := only.trim_prefix("high").trim_prefix(":")
@@ -491,6 +502,10 @@ func film(only := "") -> void:
 			var CH = preload("res://scripts/check_high.gd").new(M, h) if M52.is_high(id) else null
 			if CH != null:
 				CH.setup(id, side)
+			# (ALL MELDS REDONE: the pack stood and what its new moment waits on made so, as its check makes it: check_redo.gd)
+			var CR = preload("res://scripts/check_redo.gd").new(M, h) if M52.is_redo(id) else null
+			if CR != null:
+				CR.setup(id, side)
 			k = await _frames(k, 0.25)
 			if whirl:
 				M._w_whirl_begin(h)
@@ -502,7 +517,13 @@ func film(only := "") -> void:
 			# (what its new moment waits on after the first blow, as its check makes it: a blow on him, one dying in its circle)
 			if CH != null:
 				await CH._after(id, side)
+			if CR != null:
+				await CR._after(id, side)
 			if not whirl:
+				M._w_strike(h)
+			# (Doom and Grudge in front wait on a third blow on what they curse)
+			if CR != null and side == "front" and CR.THIRD.has(id):
+				k = await _walk(k, 0.5, id, 1.0)
 				M._w_strike(h)
 			if M52.is_high(id) and (M52.T()["of"][id] as Array).has("surging") and side == "behind":
 				if id == "heartbeat":
@@ -558,6 +579,9 @@ func film(only := "") -> void:
 		var CHF = preload("res://scripts/check_high.gd") if M52.is_high(id) else null
 		if CHF != null:
 			CHF.new(M, h).foe_setup(id, m)
+		var CRF = preload("res://scripts/check_redo.gd") if M52.is_redo(id) else null
+		if CRF != null:
+			CRF.new(M, h).foe_setup(id, m)
 		# (what its twist waits on, made so for the film: him poisoned or shocked, its criticals certain)
 		var tune: Dictionary = M52.T()["tune"]
 		var kept := {}
@@ -574,6 +598,11 @@ func film(only := "") -> void:
 		m._cd = 0.0
 		m.speed = 1.2
 		k = await _frames(k, 2.6)
+		# (Fervor redone, on a monster: a kin dies near it, and feeds it)
+		if CRF != null and id == "fervor" and M._w_pack.size() > 1 and not M._w_pack[1].dead:
+			var kin = M._w_pack[1]
+			kin.damage(kin.life + kin.shield + 10.0, "phys", false, false, [], false, false, -1)
+			k = await _frames(k, 0.6)
 		# (a Piercing carrier's shot, flying through walls at him)
 		if CHF != null and (M52.T()["of"][id] as Array).has("piercing") and not m.dead:
 			M._monsters.shoot(m, (h.world - m.world).normalized(), 7.0, 6.0, 15.0)
@@ -610,11 +639,12 @@ func film(only := "") -> void:
 		DirAccess.remove_absolute(_dir)
 		print("MELDS52 FILM %s: %d frames, ffmpeg %d" % [id, k, code])
 		print("MELDS52 TOLD %s: %s" % [id, ", ".join(PackedStringArray(h.m52.told.keys()))])
-		var want: Array = preload("res://scripts/check_high.gd").EXPECT.get(id, {}).get("foe", [])
+		var want: Array = preload("res://scripts/check_high.gd").EXPECT.get(id, {}).get("foe", []) + (preload("res://scripts/check_redo.gd").EXPECT.get(id, {}).get("foe", []) if M52.is_redo(id) else [])
 		print("MELDS52 FOE %s: %s" % [id, "shown" if h.m52.told.keys().any(func(t): return str(t).ends_with(":foe") or str(t).ends_with(":foeSplit") or (M52.is_reap(id) and str(t).ends_with(":rise")) or want.any(func(w): return str(t) == id + ":" + w)) else "NOT SHOWN"])
 	M52.ON = was
 	M52.REAP_ON = was_reap
 	M52.HIGH_ON = was_high
+	M52.REDO_ON = was_redo
 
 
 ## The words one carrying meld `id` has on it, as an altar lays them (foe_words.gd foe_words_of).

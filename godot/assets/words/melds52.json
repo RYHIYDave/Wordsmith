@@ -16000,7 +16000,7 @@
    "monsterText": "Hits harder and has more life; its hits find the gaps in your armour. When you are alone with it, it salutes, blades crossed over it, then lunges at you from afar, every hit critical."
   },
   "eternity": {
-   "frontText": "Slows in time what it hits for twice as long, and the slow deepens each second it holds; once it has held three seconds, time stops for it: it stands still, a clock's face over it, for a moment (never a boss).",
+   "frontText": "Slows in time what it hits for twice as long, and the slow deepens each second it holds; as the slow runs out, time stops for it: it stands still a moment, a clock's face over it (never a boss).",
    "behindText": "Leaves a bubble that lasts twice as long; a clock's hand sweeps round inside it, and whatever the hand passes over is stopped for a moment.",
    "monsterText": "Its poison, burning and chill last longer on you; its slow on your cooldowns lasts twice as long, and its blows stop you dead for a moment, a clock's face over you."
   },
