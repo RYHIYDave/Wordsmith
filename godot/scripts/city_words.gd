@@ -104,10 +104,13 @@ func split_first(m, i: int, frac: float, at: Vector2) -> void:
 	# (THE CITY'S MELDS: Scatter's and Splitting II's more copies, Splinter's stronger, Constellation's hanging first)
 	var Y = hero.m52.y
 	near = near.slice(0, Y.split_n(i, int(S["copies"])))
+	# (the city's runes with the floor 6–10 runes: Pinpoint's all at the toughest; Flechette's twice as fast)
+	near = Y.split_to(i, near)
+	var speed: float = float(S["speed"]) * float(Y.split_speed(i))
 	var hang: float = Y.split_delay(i)
 	var to: Array = []
 	for o in near:
-		to.append({"x": o.world.x, "y": o.world.y, "secs": hang + maxf(0.06, o.world.distance_to(at) / float(S["speed"]))})
+		to.append({"x": o.world.x, "y": o.world.y, "secs": hang + maxf(0.06, o.world.distance_to(at) / speed)})
 	hero._tell({"t": "split", "x": at.x, "y": at.y, "dx": at.x - hero.world.x, "dy": at.y - hero.world.y, "to": to, "fly": to.is_empty()})
 	Y.split_begun(i, at, to)
 	var f: float = frac * float(r["split"]) * float(Y.split_k(i))
@@ -140,6 +143,7 @@ func throw_shards(i: int, at: Vector2, frac: float) -> void:
 	var Y = hero.m52.y
 	var n: int = Y.shard_n(i, int(S["shards"]))
 	var far: float = float(S["shardReach"]) * Y.shard_reach(i)
+	var speed: float = float(S["speed"]) * float(Y.shard_speed(i))
 	var lands: Array = []
 	for k in n:
 		var a := a0 + (float(k) / n) * TAU
@@ -165,12 +169,12 @@ func throw_shards(i: int, at: Vector2, frac: float) -> void:
 		if best != null:
 			var o = best
 			var land: Vector2 = at + u * along
-			hero._after(maxf(0.05, along / float(S["speed"])), func() -> void:
+			hero._after(maxf(0.05, along / speed), func() -> void:
 				_copy_hit(o, i, share, "shard")
 				Y.shard_land(i, land))
 		else:
 			var land: Vector2 = lands[k]
-			hero._after(maxf(0.05, far / float(S["speed"])), func() -> void: Y.shard_land(i, land))
+			hero._after(maxf(0.05, far / speed), func() -> void: Y.shard_land(i, land))
 
 
 ## BINDING: holds `m` where it stands for `secs` (an elite half as long; a boss never; nor one held not long since); how long (0: not).

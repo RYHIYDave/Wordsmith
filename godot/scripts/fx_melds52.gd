@@ -13,7 +13,7 @@ const M52 := preload("res://scripts/melds52.gd")
 const L := preload("res://scripts/fx_looks.gd")
 ## (those of the 52 painted as the game's own melds are: fx_m52paint.gd)
 const Paint := preload("res://scripts/fx_m52paint.gd")
-const PAINTERS := ["res://scripts/fx_m52p_leech.gd", "res://scripts/fx_m52p_precise.gd", "res://scripts/fx_m52p_guard.gd", "res://scripts/fx_m52p_last.gd", "res://scripts/fx_m52p_vast.gd", "res://scripts/fx_m52p_last110.gd", "res://scripts/fx_m52p_city.gd"]
+const PAINTERS := ["res://scripts/fx_m52p_leech.gd", "res://scripts/fx_m52p_precise.gd", "res://scripts/fx_m52p_guard.gd", "res://scripts/fx_m52p_last.gd", "res://scripts/fx_m52p_vast.gd", "res://scripts/fx_m52p_last110.gd", "res://scripts/fx_m52p_city.gd", "res://scripts/fx_m52p_city2.gd"]
 
 var fx:
 	set(v):
@@ -81,7 +81,9 @@ const HOLDS := {"aftershock:burst": 0.1, "marrow:drink": 0.08, "concussion:boom"
 	"blastwave:wave": 0.12,
 	# (the city's melds: meldscity_rules.gd, fx_m52p_city.gd)
 	"maw:crash": 0.1, "maw:collapse": 0.12, "gravity:crater": 0.12, "stasis:snap": 0.08, "shackle:bite": 0.08, "anchor:sink": 0.12,
-	"firetrap:blaze": 0.08, "burden:weight": 0.1, "rubble:thud": 0.06}
+	"firetrap:blaze": 0.08, "burden:weight": 0.1, "rubble:thud": 0.06,
+	# (the city's runes with the floor 6–10 runes: meldscity2_rules.gd, fx_m52p_city2.gd)
+	"tripwire:boom": 0.1, "slowfuse:boom": 0.1, "hexblast:burst": 0.08, "whiplash:snap": 0.08, "stutter:went": 0.06, "omen:went": 0.06}
 
 
 func handle(e: Dictionary) -> void:

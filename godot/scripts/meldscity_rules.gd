@@ -53,6 +53,8 @@ var _stars: Array = []
 var _pass_t := 0.0
 var _tug_t := 0.0
 var _tether_t := 0.0
+## (the city's runes with the floor 6–10 runes, their rules, handed on to from each moment of the city's words: meldscity2_rules.gd)
+var z2
 
 
 func _init(hero, rules) -> void:
@@ -330,6 +332,8 @@ func arc_struck(o, i: int, from: Vector2) -> void:
 
 ## How far to reach for what to drag (Gravity drags in all near; Firewhirl its blast's edge).
 func pull_reach(i: int, reach: float, single: bool) -> float:
+	if z2 != null and z2.f(i) != "":
+		return z2.pull_reach(i, reach)
 	match f(i):
 		"gravity":
 			return maxf(reach, float(_t("gravity")["reach"]))
@@ -340,6 +344,8 @@ func pull_reach(i: int, reach: float, single: bool) -> float:
 
 ## How many times as far `o` is dragged.
 func pull_k(i: int, o) -> float:
+	if z2 != null and z2.f(i) != "":
+		return z2.pull_k(i, o)
 	match f(i):
 		"drift":
 			return float(_t("drift")["chilled"]) if o.chill_t > 0.0 else 1.0
@@ -352,6 +358,8 @@ func pull_k(i: int, o) -> float:
 
 ## What was dragged (`moved`) toward `at` by move `i`.
 func pulled(i: int, at: Vector2, moved: Array) -> void:
+	if z2 != null:
+		z2.pulled(i, at, moved)
 	var id := f(i)
 	if id == "" or moved.is_empty():
 		return
@@ -441,6 +449,8 @@ func pulled(i: int, at: Vector2, moved: Array) -> void:
 
 ## How many copies a split of move `i` breaks into.
 func split_n(i: int, n: int) -> int:
+	if z2 != null and z2.f(i) != "":
+		return z2.split_n(i, n)
 	if f(i) == "scatter":
 		return mini(int(_t("scatter")["most"]), n + quick_n(i))
 	if _front_has(i, "splitting2"):
@@ -450,11 +460,26 @@ func split_n(i: int, n: int) -> int:
 
 ## How many times as strong each copy is.
 func split_k(i: int) -> float:
+	if z2 != null and z2.f(i) != "":
+		return z2.split_k(i)
 	if f(i) == "splinter":
 		return float(_t("splinter")["k"])
 	if _front_has(i, "splitting2"):
 		return float(_t("splitting2")["each"])
 	return 1.0
+
+
+## (the city's runes with the floor 6–10 runes: whom the copies fly at, how fast they and the shards fly: meldscity2_rules.gd)
+func split_to(i: int, near: Array) -> Array:
+	return z2.split_to(i, near) if z2 != null else near
+
+
+func split_speed(i: int) -> float:
+	return z2.split_speed(i) if z2 != null else 1.0
+
+
+func shard_speed(i: int) -> float:
+	return z2.shard_speed(i) if z2 != null else 1.0
 
 
 ## How long the copies hang still before they fly (Constellation).
@@ -472,6 +497,8 @@ func split_begun(i: int, at: Vector2, to: Array) -> void:
 
 ## A copy (`kind` "copy") or a shard ("shard") of move `i` has struck `o`.
 func copy_hit(o, i: int, kind: String) -> void:
+	if z2 != null:
+		z2.copy_hit(o, i, kind)
 	if o == null or not is_instance_valid(o) or o.dead and kind != "copy":
 		return
 	var id := f(i) if kind == "copy" else b(i)
@@ -561,15 +588,21 @@ func copy_hit(o, i: int, kind: String) -> void:
 # --- Splitting behind (city_words.gd throw_shards) ---
 
 func shard_n(i: int, n: int) -> int:
+	if z2 != null and z2.b(i) != "":
+		return z2.shard_n(i, n)
 	return roundi(n * float(_t("splitting2")["shards"])) if _behind_has(i, "splitting2") else n
 
 
 func shard_reach(i: int) -> float:
+	if z2 != null and z2.b(i) != "":
+		return z2.shard_reach(i)
 	return float(_t("splitting2")["reach"]) if _behind_has(i, "splitting2") else 1.0
 
 
 ## The shards of move `i` fly out from `at`, landing at `lands`.
 func shards_begun(i: int, at: Vector2, lands: Array) -> void:
+	if z2 != null:
+		z2.shards_begun(i, at, lands)
 	var cp: Dictionary = _copied.get(i, {"use": -1, "ids": {}, "at": at})
 	cp["shards_at"] = at
 	_copied[i] = cp
@@ -580,6 +613,8 @@ func shards_begun(i: int, at: Vector2, lands: Array) -> void:
 
 ## A shard of move `i` has come down at `pos`.
 func shard_land(i: int, pos: Vector2) -> void:
+	if z2 != null:
+		z2.shard_land(i, pos)
 	var id := b(i)
 	if id == "" or h.wakes == null:
 		return
@@ -625,6 +660,8 @@ func shard_land(i: int, pos: Vector2) -> void:
 
 ## How long a hold of move `i` on `m` lasts, given Binding's own `secs`.
 func bind_secs(i: int, m, secs: float) -> float:
+	if z2 != null and z2.f(i) != "":
+		return z2.bind_secs(i, m, secs)
 	match f(i):
 		"lasso":
 			return secs * (1.0 + float(_t("lasso")["each"]) * quick_n(i))
@@ -637,6 +674,10 @@ func bind_secs(i: int, m, secs: float) -> float:
 
 ## His snare `z` has sprung on `o` (wakes.gd _snare): whether the snare is spent.
 func snared(z: Dictionary, o) -> bool:
+	if z2 != null:
+		var spent = z2.snared(z, o)
+		if spent != null:
+			return bool(spent)
 	var i: int = int(z.get("skill", -1))
 	var id: String = str(z.get("m52", ""))
 	if i < 0 or i > 2:
@@ -702,6 +743,8 @@ func wake(_i: int, _laid: Array, _id: String) -> void:
 ## What move `i` left, the city's words' patches and the others alike (hero.gd _wake, after the city's own are laid: wakes.list from
 ## `from` on): each marked as its meld's, followed (melds52_rules.gd _grounds), and what its meld adds to them.
 func wake_city(i: int, from: int) -> void:
+	if z2 != null:
+		z2.wake_city(i, from)
 	var id := b(i)
 	if id == "" or h.wakes == null:
 		return

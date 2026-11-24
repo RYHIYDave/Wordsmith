@@ -73,12 +73,16 @@ var _him_poison := 0.0
 var x
 ## (THE CITY'S MELDS, the 45 after those, and their five level 2 runes: meldscity_rules.gd; the city's words call it too)
 var y
+## (the city's runes with the floor 6–10 runes: meldscity2_rules.gd)
+var y2
 
 
 func _init(hero) -> void:
 	h = hero
 	x = preload("res://scripts/melds46_rules.gd").new(hero, self)
 	y = preload("res://scripts/meldscity_rules.gd").new(hero, self)
+	y2 = preload("res://scripts/meldscity2_rules.gd").new(hero, self, y)
+	y.z2 = y2
 
 
 static func on() -> bool:
@@ -224,12 +228,13 @@ func used(i: int, echo: bool, at := Vector2.INF) -> void:
 			_tell({"id": "flurry", "what": "gust", "x": h.world.x, "y": h.world.y})
 	x.used(i, echo, at)
 	y.used(i, echo, at)
+	y2.used(i, echo, at)
 
 
 # --- a hit ---
 
 func crit(m, i: int, c: bool, quiet: bool) -> bool:
-	return x.crit(m, i, _crit52(m, i, c, quiet), quiet)
+	return y2.crit(m, i, x.crit(m, i, _crit52(m, i, c, quiet), quiet), quiet)
 
 
 func _crit52(m, i: int, c: bool, quiet: bool) -> bool:
@@ -302,7 +307,7 @@ func more(m, i: int, quiet: bool) -> float:
 	# DUELIST behind: the one it marked takes more from everything until the mark is spent
 	if m.mark_t > 0.0 and str(m.m52.get("mark", "")) == "duelist":
 		k *= 1.0 + float(_tune("duelist")["more"])
-	return k * x.more(m, i, quiet) * y.more(m, i, quiet)
+	return k * x.more(m, i, quiet) * y.more(m, i, quiet) * y2.more(m, i, quiet)
 
 
 func heal_k(m, i: int) -> float:
@@ -323,7 +328,7 @@ func heal_k(m, i: int) -> float:
 			_tell({"id": "secondwind", "what": "wind", "x": h.world.x, "y": h.world.y, "i": i})
 		"leech2":
 			k *= float(_tune("leech2")["k"])
-	return k * x.heal_k(m, i)
+	return k * x.heal_k(m, i) * y2.heal_k(m, i)
 
 
 ## After hit `dmg` of move `i` has landed on `m` (`was_*`: what it was before this hit).
@@ -332,6 +337,7 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 	var r: Dictionary = h.loadout.r(i)
 	x.struck(m, i, dmg, c, at, quiet, was_frozen)
 	y.struck(m, i, dmg, c, at, quiet, was_frozen)
+	y2.struck(m, i, dmg, c, at, quiet)
 	if f == "":
 		return
 	if f == "haymaker" and not quiet and time - float(_throttle.get("haymaker", -9.0)) > 0.2:
@@ -521,6 +527,7 @@ func killed(m, i: int) -> void:
 		return
 	x.killed(m, i)
 	y.killed(m, i)
+	y2.killed(m, i)
 	var f := fid(i)
 	var b := bid(i)
 	var r: Dictionary = h.loadout.r(i)
@@ -593,6 +600,7 @@ func marked(m, i: int) -> void:
 		_tag(m)
 		m.m52["mark2"] = 1
 	x.marked(m, i)
+	y2.marked(m, i)
 
 
 func mark_spent(m) -> void:
@@ -843,6 +851,7 @@ func step(dt: float) -> void:
 	_on_him()
 	x.step(dt)
 	y.step(dt)
+	y2.step(dt)
 
 
 ## (ON HIM, a monster's melds: Rekindle's burn lights again once as it goes out; Flashfire's flares round him; Bloat's poison
@@ -969,6 +978,7 @@ func _grounds(dt: float) -> void:
 			_:
 				x.ground(z, id, at, rad, tick, dt)
 				y.ground(z, id, at, rad, tick, dt)
+				y2.ground(z, id, at, rad, tick, dt)
 	for z in gone:
 		_wards.erase(z)
 
@@ -1042,6 +1052,7 @@ func status_end(m, what: String) -> void:
 ## A blow on him while his shield holds (hero.gd hurt_by): HEMLOCK poisons its maker; STATIC strikes it with an arc.
 func struck_him(src) -> void:
 	x.struck_him(src)
+	y2.struck_him(src)
 	if src == null or not is_instance_valid(src) or src.dead or not _shielded():
 		return
 	if any_has("hemlock"):
@@ -1175,6 +1186,7 @@ func parried(at: Vector2) -> bool:
 func forget() -> void:
 	x.forget()
 	y.forget()
+	y2.forget()
 	_later.clear()
 	webs.clear()
 	links.clear()

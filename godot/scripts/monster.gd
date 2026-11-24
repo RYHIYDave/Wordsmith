@@ -1505,6 +1505,8 @@ func _split() -> void:
 	# (THE CITY'S MELDS: Splitting II's in three; each meld's own on its halves after: foe_meldscity.gd split)
 	var halves: Array = []
 	var n := 3 if word_share("splitting2") > 0.0 else 2
+	# (Starburst's in three: foe_meldscity2.gd)
+	n = preload("res://scripts/foe_meldscity2.gd").halves_n(self, n)
 	for k in n:
 		var at := world
 		for tries in 12:
@@ -1528,6 +1530,7 @@ func _split() -> void:
 	var foe = mgr.main.get("_foe") if mgr != null and mgr.main != null else null
 	if foe != null and not halves.is_empty():
 		preload("res://scripts/foe_meldscity.gd").split(foe, self, halves)
+		preload("res://scripts/foe_meldscity2.gd").split(foe, self, halves)
 
 
 ## What it tells of itself (fx.gd: the game's own telling; the place may have none).

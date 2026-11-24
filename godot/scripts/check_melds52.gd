@@ -80,11 +80,29 @@ const CITY_PRE := {"tether": ["bind"], "doom": ["hex"], "plague": ["hex"], "hoar
 	"shackle": ["bind"], "icebound": ["bind", "chill"], "firetrap": ["bind"], "drift": ["chill"], "torpor": ["hex", "still"], "witchknot": ["hex", "bind"]}
 ## (whose moment in front is a kill's)
 const CITY_KILL := ["plague"]
+## THE CITY'S RUNES WITH THE FLOOR 6–10 RUNES (meldscity2_rules.gd): what one Strike shows of each in front (behind: what it left,
+## "id:leave"), what its twist waits on made so on the pack first, whose moment is a kill's, whose wants his frenzy full, whose a
+## certain critical. "": nothing told of it in one Strike (its copies faster, five copies; a chance; a blow on his shield).
+const CITY2_FRONT := {"backwash": "backwash:stagger", "gullet": "gullet:drink", "harpoon": "", "whirlpool": "whirlpool:spin", "haven": "haven:shield",
+	"eddy": "eddy:eddy", "whiplash": "whiplash:yank", "maelstrom": "maelstrom:maw", "hydra": "hydra:heads", "swarm": "swarm:drink",
+	"shellburst": "shellburst:pop", "pinpoint": "pinpoint:aim", "riot": "riot:step", "phalanx": "phalanx:shield", "rebound": "rebound:bounce",
+	"flechette": "", "starburst": "", "refrain": "refrain:deeper", "bloodcurse": "bloodcurse:drink", "hexblast": "hexblast:burst",
+	"evileye": "evileye:glare", "delirium": "delirium:step", "talisman": "", "grudge": "grudge:brand", "omen": "omen:fall", "pall": "pall:veil",
+	"rewind": "rewind:turn", "sap": "sap:drink", "slowfuse": "slowfuse:fuse", "stillpoint": "", "quickening": "quickening:deep", "respite": "",
+	"eternity": "eternity:loop", "stutter": "stutter:catch", "doldrums": "doldrums:spread", "fetters": "fetters:cuff", "thrall": "thrall:drink",
+	"tripwire": "tripwire:boom", "pin": "pin:pierce", "mauler": "mauler:step", "stockade": "stockade:shield", "manacle": "manacle:lock",
+	"snag": "snag:hook", "dragnet": "dragnet:net"}
+const CITY2_PRE := {"refrain": ["hex"], "bloodcurse": ["hex"], "hexblast": ["hex"], "evileye": ["hex"], "delirium": ["hex"], "grudge": ["hex"],
+	"omen": ["hex"], "pall": ["hex"], "rewind": ["still"], "sap": ["still"], "slowfuse": ["still"], "quickening": ["still"], "eternity": ["still"],
+	"stutter": ["still"], "fetters": ["bind"], "thrall": ["bind"], "tripwire": ["bind"], "pin": ["bind"], "mauler": ["bind"], "snag": ["bind"]}
+const CITY2_KILL := ["hexblast", "slowfuse", "tripwire"]
+const CITY2_FRENZY := ["riot", "quickening", "whirlpool"]
+const CITY2_CRITS := ["evileye"]
 
 
 ## What a city meld's twist waits on, made so on `m`.
 func _pre(id: String, m) -> void:
-	for w in CITY_PRE.get(id, []):
+	for w in CITY_PRE.get(id, CITY2_PRE.get(id, [])):
 		match w:
 			"hex":
 				m.hex_t = 4.0
@@ -131,6 +149,11 @@ func run(only := "") -> void:
 	M52.CITY_ON = false
 	_line(Words.meld_of("pulling", "power") == "" and Words.meld_of("binding", "binding") == "" and Words.meld_of("twin", "power") == "onslaught", "the city's melds switched off, the bench makes none of them (Pulling + Power: '%s'), the 98 as before" % Words.meld_of("pulling", "power"))
 	M52.CITY_ON = true
+	# (THE CITY'S RUNES WITH THE FLOOR 6–10 RUNES: likewise)
+	var was_city2: bool = M52.CITY2_ON
+	M52.CITY2_ON = false
+	_line(Words.meld_of("pulling", "twin") == "" and Words.meld_of("binding", "vast") == "" and Words.meld_of("pulling", "volatile") == "implode", "the city's runes with the floor 6–10 runes switched off, the bench makes none of them (Pulling + Twin: '%s'), Implode as before" % Words.meld_of("pulling", "twin"))
+	M52.CITY2_ON = true
 	# --- THE BENCH
 	M52.ON = false
 	_line(Words.meld_of("twin", "power") == "" and Words.meld_of("swift", "swift") == "" and Words.meld_problem("twin", "power") != "", "switched off, the bench makes none of them (Twin + Power: '%s')" % Words.meld_of("twin", "power"))
@@ -195,6 +218,10 @@ func run(only := "") -> void:
 			var r: Dictionary = M._w_set(h, 0, side, [id])
 			# (what its twist waits on, made so for the one Strike: a kill, a stunned one)
 			h.haste_t = 0.0
+			h.frenzy = 0
+			h.frenzy_t = 0.0
+			h.shield = 0.0
+			h.shield_t = 0.0
 			for m in M._w_pack:
 				if KILL.has(id) or (side == "behind" and KILL_BEHIND.has(id) and BEHIND.has(id)):
 					m.life = 1.0
@@ -202,12 +229,15 @@ func run(only := "") -> void:
 					m.stun_t = 3.0
 				if side == "front":
 					_pre(id, m)
-					if CITY_KILL.has(id):
+					if CITY_KILL.has(id) or CITY2_KILL.has(id):
 						m.life = 1.0
+			if CITY2_FRENZY.has(id) and side == "front":
+				h.frenzy = int(Words.data()["frenzy"]["max"])
+				h.frenzy_t = 6.0
 			if HASTE.has(id):
 				h.haste = 30.0
 				h.haste_t = 6.0
-			if CRITS.has(id):
+			if CRITS.has(id) or (CITY2_CRITS.has(id) and side == "front"):
 				h.stats["crit_chance"] = 100.0
 			var wd: Dictionary = T["words"][id]
 			var named: bool = str(r["name"]).contains(str(wd["front"]) if side == "front" else str(wd["behind"]).trim_prefix("of "))
@@ -221,6 +251,8 @@ func run(only := "") -> void:
 			var want: String = (FRONT if side == "front" else BEHIND).get(id, "")
 			if M52.is_city(id):
 				want = CITY_FRONT.get(id, "") if side == "front" else _city_behind(id)
+			if M52.is_city2(id):
+				want = CITY2_FRONT.get(id, "") if side == "front" else id + ":leave"
 			var seen: bool = want == "" or int(h.m52.told.get(want, 0)) > 0
 			if not seen:
 				not_seen.append("%s %s" % [id, side])
@@ -233,6 +265,7 @@ func run(only := "") -> void:
 	_line(fine == cases, "each one in front of the Strike and behind it, %d cases: its name, its line, the blow landing, its twist seen: %d%s" % [cases, fine, "" if not_seen.is_empty() else " (twist not seen: %s)" % ", ".join(PackedStringArray(not_seen))])
 	M52.ON = was
 	M52.CITY_ON = was_city
+	M52.CITY2_ON = was_city2
 	print("MELDS52: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
 
