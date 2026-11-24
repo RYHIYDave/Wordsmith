@@ -54,7 +54,7 @@ const HASTE := ["onrush", "hornet", "firewalk", "quicksilver", "charge", "glide"
 const LOW := ["lifeline"]
 ## (seen only on one brought low but not killed: the pack made tough and low)
 const TOUGH := ["hairtrigger"]
-const SHIELD := ["bulwark", "hemlock", "cinderward", "static", "windward", "fortress", "redoubt", "carapace", "minefield", "riposte", "shieldwall", "sanctuary", "parry", "aegis"]
+const SHIELD := ["talisman", "respite", "bulwark", "hemlock", "cinderward", "static", "windward", "fortress", "redoubt", "carapace", "minefield", "riposte", "shieldwall", "sanctuary", "parry", "aegis"]
 const CRITS := ["needle", "brand", "seeker", "doubletap", "lancet", "detonator", "vendetta"]
 const FRENZY := ["berserk", "fever", "whiteout", "overcharge", "blur", "juggernaut", "feedingfrenzy", "mayhem", "rapier", "shieldwall", "fury", "spree", "rampage", "tempo"]
 ## (whose moment behind is a kill's: its orb, its frenzy's)
@@ -323,6 +323,11 @@ func _snare_walk(k: int) -> int:
 
 
 func _fresh() -> void:
+	# (nothing of his last film's frenzy or shield left on him)
+	h.frenzy = 0
+	h.frenzy_t = 0.0
+	h.shield = 0.0
+	h.shield_t = 0.0
 	h.m52.forget()
 	for m in M._w_pack:
 		m.m52 = {}
@@ -378,6 +383,10 @@ func film(only := "") -> void:
 	if only == "city":
 		ids = T["city"].filter(func(w): return not M52.is_new_rank(w))
 		only = ""
+	# (`city2`: the city's runes with the floor 6–10 runes, 44)
+	if only == "city2":
+		ids = T["city2"]
+		only = ""
 	# (any words named: the game's own melds too, filmed the same way to set beside these)
 	if only != "":
 		ids = Array(only.split(","))
@@ -402,14 +411,17 @@ func film(only := "") -> void:
 					m.stun_t = 3.0
 				if side == "front":
 					_pre(id, m)
-					if CITY_KILL.has(id):
+					if CITY_KILL.has(id) or CITY2_KILL.has(id):
 						m.max_life = FOE_LIFE
 						m.life = 1.0
 			# (what a twist waits on, made so for the film: one alone, certain criticals, a frenzy built up)
 			if SOLO.has(id) and side == "front":
 				for j in range(1, M._w_pack.size()):
 					M._w_pack[j].world += Vector2(6.0, 6.0)
-			h.stats["crit_chance"] = 100.0 if CRITS.has(id) else 0.0
+			h.stats["crit_chance"] = 100.0 if CRITS.has(id) or (CITY2_CRITS.has(id) and side == "front") else 0.0
+			if CITY2_FRENZY.has(id) and side == "front":
+				h.frenzy = int(preload("res://scripts/words.gd").data()["frenzy"]["max"])
+				h.frenzy_t = 6.0
 			if FRENZY.has(id):
 				h.frenzy = int(preload("res://scripts/words.gd").data()["frenzy"]["max"]) - 1
 				h.frenzy_t = 1.2 if id == "fury" else 5.0
@@ -431,7 +443,7 @@ func film(only := "") -> void:
 			M._w_strike(h)
 			var rest := (1.4 if side == "front" else 2.2) + float(LONGER.get(id + ":" + side, 0.0))
 			# (THE CITY'S MELDS behind: a vortex's end is its own moment; a snare springs on one walked onto it)
-			if side == "behind" and M52.is_city(id) and not M52.is_new_rank(id):
+			if side == "behind" and (M52.is_city(id) or M52.is_city2(id)) and not M52.is_new_rank(id):
 				var of: Array = M52.T()["of"][id]
 				if of.has("pulling"):
 					rest += 1.8
@@ -485,7 +497,7 @@ func film(only := "") -> void:
 		m._t = 1e9
 		m._cd = 1e9
 		# (he strikes back: its shield struck and broken, it hurt and brought low, or killed, for what each waits on)
-		if FOE_DIES.has(id) or (M52.is_city(id) and not M52.is_new_rank(id) and (M52.T()["of"][id] as Array).has("splitting")):
+		if FOE_DIES.has(id) or ((M52.is_city(id) or M52.is_city2(id)) and not M52.is_new_rank(id) and (M52.T()["of"][id] as Array).has("splitting")) or id in ["hexblast", "slowfuse", "tripwire"]:
 			m.life = 1.0
 		M._w_strike(h)
 		k = await _frames(k, 0.6)
