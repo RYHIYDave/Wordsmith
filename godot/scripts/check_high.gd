@@ -424,6 +424,8 @@ func _foe(id: String, snap: bool) -> String:
 		h.hurt_by(20.0, str(by.get("el", "phys")), m.words, {}, m, m.world)
 		h.blow_by = null
 	if of.has("piercing"):
+		if id == "bodkin":
+			h.shield = maxf(h.shield, 20.0)
 		M._monsters.shoot(m, (h.world - m.world).normalized(), 7.0, 6.0, 15.0)
 	if id in ["thornshield", "spearwall"]:
 		m.shield = 50.0
