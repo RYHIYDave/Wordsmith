@@ -127,6 +127,8 @@ func _copy_hit(o, i: int, f: float, kind := "copy") -> void:
 	hero.hit_monster(o, i, f, true)
 	copying = false
 	hero.m52.y.copy_hit(o, i, kind)
+	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
+	hero.last.high.copy_hit(o, i, kind)
 
 
 ## SPLITTING behind: where move `i` ends, at `at`, shards fly out in every direction, each striking the first enemy on its line.

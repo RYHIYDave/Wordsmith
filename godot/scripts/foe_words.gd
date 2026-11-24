@@ -37,6 +37,8 @@ var told: Array = []
 
 func _process(dt: float) -> void:
 	clock += dt
+	# (THE HIGH CITY'S RUNES MELDED on a monster: what goes on each frame, of these)
+	Foe52.FH.frame(self, dt)
 
 
 static func D() -> Dictionary:

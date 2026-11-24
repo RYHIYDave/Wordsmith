@@ -13,6 +13,8 @@ const F46 := preload("res://scripts/foe_melds46.gd")
 const FC := preload("res://scripts/foe_meldscity.gd")
 ## (the city's runes with the floor 6–10 runes)
 const FC2 := preload("res://scripts/foe_meldscity2.gd")
+## (THE HIGH CITY'S RUNES MELDED on a monster: foe_meldshigh.gd)
+const FH := preload("res://scripts/foe_meldshigh.gd")
 
 
 static func _t(id: String) -> Dictionary:
@@ -69,7 +71,7 @@ static func harder(F, k: Callable, parts: Array, by) -> float:
 		mult *= 1.0 + float(_t("momentum")["foeEach"]) * int(by.m52.get("foe_mom", 0))
 	if float(k.call("daze")) > 0.0 and (h.held > 0.0 or h._knock_t > 0.0):
 		mult *= 1.0 + float(_t("daze")["foeMore"])
-	return mult * F46.harder(F, k, by) * FC.harder(F, k, by)
+	return mult * F46.harder(F, k, by) * FC.harder(F, k, by) * FH.harder(F, k, parts, by)
 
 
 ## What a blow from `by` that hurt him `dmg` leaves, of these.
@@ -166,6 +168,7 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 	F46.after_blow(F, k, by, dmg)
 	FC.after_blow(F, k, by, dmg)
 	FC2.after_blow(F, k, by, dmg)
+	FH.after_blow(F, k, by, dmg, parts)
 
 
 ## Its turn: Permafrost deepening his chill near it; Tempest's arcs at him while he is shocked; Cinderward's shield bursting;
@@ -176,6 +179,7 @@ static func tick(F, m, dt: float, dist: float) -> void:
 	F46.tick(F, m, dt, dist)
 	FC.tick(F, m, dt, dist)
 	FC2.tick(F, m, dt, dist)
+	FH.tick(F, m, dt, dist)
 	var h = F.main.hero
 	if m.word_share("permafrost") > 0.0 and dist <= 2.5 and h.chill_t > 0.0:
 		h.chill_k = minf(float(_t("permafrost")["foeMost"]), h.chill_k + float(_t("permafrost")["foeDeeper"]) * dt)
@@ -221,7 +225,7 @@ static func rage(F, m) -> float:
 		var B := _t("blink")
 		if fmod(F.clock + float(m.id % 7), float(B["foeEvery"])) < float(B["foeSecs"]):
 			k *= float(B["foeDart"])
-	return k * F46.rage(F, m) * FC.rage(F, m) * FC2.rage(F, m)
+	return k * F46.rage(F, m) * FC.rage(F, m) * FC2.rage(F, m) * FH.rage(F, m)
 
 
 ## A blow of his on its shield: Hemlock poisons him, Static shocks him.
@@ -230,6 +234,7 @@ static func shield(F, m, soaked: float) -> void:
 		return
 	F46.shield(F, m, soaked)
 	FC2.shield(F, m, soaked)
+	FH.shield(F, m, soaked)
 	var h = F.main.hero
 	if m.word_share("hemlock") > 0.0 and F.clock - float(m.m52.get("foe_hem", -99.0)) > 0.8:
 		m.m52["foe_hem"] = F.clock
@@ -256,11 +261,15 @@ static func death(F, m) -> void:
 		F._say(h.world, "Stunned", "#ff8a80")
 	F46.death(F, m)
 	FC2.death(F, m)
+	FH.death(F, m)
 
 
 ## Its dying blast, of these: Quickfuse's at once.
 static func blast(m) -> Dictionary:
 	if m.word_share("quickfuse") > 0.0:
 		return {"r": 1.8, "wait": 0.08, "k": 1.5}
+	var bh: Dictionary = FH.blast(m)
+	if not bh.is_empty():
+		return bh
 	var b2: Dictionary = FC2.blast(m)
 	return b2 if not b2.is_empty() else F46.blast(m)

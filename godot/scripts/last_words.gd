@@ -19,6 +19,7 @@
 extends RefCounted
 
 const Words := preload("res://scripts/words.gd")
+const MhBleed := preload("res://scripts/mh_bleed.gd")
 
 ## (game/word_sounds.ts WORD_SOUND: how loud each is, and no oftener than)
 const SOUND := {"pierce_shot": [0.8, 0.12], "pierce_lance": [0.9, 0.3], "bleed_open": [0.7, 0.15], "bleed_thorns": [0.8, 0.25],
@@ -46,7 +47,7 @@ var _next_id := 1
 ## REAPING WITH THE DAMAGE RUNES (meldsreap_rules.gd, behind melds52.gd REAP_ON): their twists, his creatures, and the ones risen
 ## against him
 var reap
-## THE HIGH CITY'S RUNES MELDED (meldshigh_rules.gd, behind melds52.gd HIGH_ON): what each one's act carries
+## THE HIGH CITY'S RUNES MELDED (meldshigh_rules.gd and its parts mh_*.gd, behind melds52.gd HIGH_ON): each one's own twist
 var high
 ## (CULLING on a monster: its fire kindling as he comes low, heard once each time)
 var _kindled := false
@@ -85,6 +86,8 @@ func fresh_place() -> void:
 	_lances = []
 	if reap != null:
 		reap.fresh_place()
+	if high != null:
+		high.fresh_place()
 
 
 func _open(at: Vector2) -> bool:
@@ -96,19 +99,27 @@ func _open(at: Vector2) -> bool:
 ## PIERCING in front: a blow of move `i` that has struck `first` at `at` goes on through it along `way`, striking every enemy in
 ## a line PIERCE.line tiles on, for `frac`.
 func pierce_on(i: int, first, at: Vector2, way: Vector2, frac: float) -> void:
-	var line: float = L()["pierce"]["line"]
+	# (THE HIGH CITY'S RUNES MELDED: each meld's own line: mh_pierce.gd)
+	var P = high.pierce
+	way = P.way(i, way)
+	var line0: float = L()["pierce"]["line"]
+	var line: float = line0 * P.line_k(i, line0)
+	var wide: float = 0.45 * P.wide_k(i)
 	hero._tell({"t": "pierceLine", "x0": at.x, "y0": at.y, "x1": at.x + way.x * line, "y1": at.y + way.y * line})
 	rec("pierce_shot")
-	for o in _list().duplicate():
-		if not is_instance_valid(o) or o.dead or o == first or _shut(o):
-			continue
-		var p: Vector2 = o.world - at
-		var along := p.dot(way)
-		if along < 0.0 or along > line + o.r:
-			continue
-		if absf(p.y * way.x - p.x * way.y) <= 0.45 + o.r:
-			hero.hit_monster(o, i, frac, true)
-			high.carry("piercing", i, "front", o, at)
+	var ways: Array = P.ways(i, way)
+	var hits: Array = []
+	for w in ways:
+		for o in high.on_line(at, w, line, wide, [first] + hits):
+			if (o.world - at).dot(w) >= 0.0:
+				hits.append(o)
+	var f2: float = frac * P.copy_k(i)
+	var count := hits.size()
+	for k in count:
+		var o = hits[k]
+		hero.hit_monster(o, i, f2 * P.each_k(i, k + 1), true, P.sure(i, k + 1, count))
+		P.each(i, o, k + 1, count, at, way)
+	P.end(i, first, hits, at, way, line, frac)
 
 
 ## BLEEDING: `m` bleeds for `secs`, `dps` a second (the stronger of this and what it bled already), more while it walks.
@@ -130,6 +141,8 @@ func cull_monster(m, under: float, i: int, mark := false) -> bool:
 	if not is_instance_valid(m) or m.dead or m.boss or m.life <= 0.0 or _shut(m):
 		return false
 	var C: Dictionary = L()["cull"]
+	# (THE HIGH CITY'S RUNES MELDED: how near death each meld culls from: mh_cull.gd)
+	under = high.cull.under(m, i, under, mark)
 	if m.life > m.max_life * under * (float(C["elite"]) if m.elite or m.champion else 1.0):
 		return false
 	var e := {"t": "culled", "id": m.id, "m": m, "x": m.world.x, "y": m.world.y}
@@ -141,8 +154,9 @@ func cull_monster(m, under: float, i: int, mark := false) -> bool:
 	hero._tell(e)
 	rec("cull_mark" if mark else "cull_kill")
 	var at: Vector2 = m.world
+	var was: float = m.life
 	m.damage(maxf(1.0, ceilf(m.life + m.shield)), "phys", false, false, [], false, false, i)
-	high.carry_round("culling", i, "behind" if mark else "front", at, float(high.C()["burstR"]), m)
+	high.cull.culled(m, i, mark, at, was)
 	return true
 
 
@@ -152,8 +166,8 @@ func struck(m, i: int, dmg: float) -> void:
 	if float(r["bleed"]) > 0.0:
 		var fresh: bool = m.bleed_t < 0.5
 		bleed_monster(m, dmg * float(r["bleed"]) * float(r["pace"]), float(L()["bleed"]["secs"]) * float(r["last"]))
-		if fresh:
-			high.carry("bleeding", i, "front", m)
+		# (THE HIGH CITY'S RUNES MELDED: each meld's own wound: mh_bleed.gd)
+		high.bleed.on(m, i, dmg, fresh)
 	if float(r["cull"]) > 0.0:
 		cull_monster(m, float(r["cull"]), i)
 
@@ -164,7 +178,7 @@ func struck(m, i: int, dmg: float) -> void:
 ## tiles at the least), landing PIERCE.lanceDelay later on every enemy in it; one a move each lanceEvery seconds.
 func throw_lance(i: int, at: Vector2, frac: float) -> void:
 	var P: Dictionary = L()["pierce"]
-	if _clock - float(_lance_at[i]) < float(P["lanceEvery"]):
+	if _clock - float(_lance_at[i]) < float(P["lanceEvery"]) * high.pierce.lance_every(i):
 		return
 	_lance_at[i] = _clock
 	var from: Vector2 = hero.world
@@ -173,17 +187,23 @@ func throw_lance(i: int, at: Vector2, frac: float) -> void:
 	var long := maxf(len, float(P["line"]))
 	var share := frac * float(hero.loadout.r(i)["lance"])
 	# (its look from a step in front of him; what it strikes, the whole line from where he stands)
+	var q := {"from": from, "way": way, "len": long, "at": _clock + float(P["lanceDelay"]), "skill": i, "share": share, "id": hero.loadout.r(i)["id"]}
+	# (THE HIGH CITY'S RUNES MELDED: each meld's own lance: mh_pierce.gd)
+	high.pierce.lance(i, q)
+	way = q["way"]
+	long = q["len"]
 	var lead := minf(float(P["lanceLead"]), long - 0.5)
-	hero._tell({"t": "lance", "x0": from.x + way.x * lead, "y0": from.y + way.y * lead, "x1": from.x + way.x * long, "y1": from.y + way.y * long, "w": P["lanceW"], "delay": P["lanceDelay"]})
+	hero._tell({"t": "lance", "x0": from.x + way.x * lead, "y0": from.y + way.y * lead, "x1": from.x + way.x * long, "y1": from.y + way.y * long, "w": q.get("w", P["lanceW"]), "delay": maxf(0.0, float(q["at"]) - _clock)})
 	rec("pierce_lance")
-	_lances.append({"from": from, "way": way, "len": long, "at": _clock + float(P["lanceDelay"]), "skill": i, "share": share, "id": hero.loadout.r(i)["id"]})
+	_lances.append(q)
 
 
 func _lance_lands(q: Dictionary) -> void:
 	var i: int = q["skill"]
 	if str(hero.loadout.r(i)["id"]) != str(q["id"]):
 		return
-	var w: float = L()["pierce"]["lanceW"]
+	var w: float = q.get("w", L()["pierce"]["lanceW"])
+	var hits: Array = []
 	for m in _list().duplicate():
 		if not is_instance_valid(m) or m.dead or _shut(m):
 			continue
@@ -193,8 +213,10 @@ func _lance_lands(q: Dictionary) -> void:
 			continue
 		var way: Vector2 = q["way"]
 		if absf(p.y * way.x - p.x * way.y) <= w + m.r:
-			hero.hit_monster(m, i, q["share"], true)
-			high.carry("piercing", i, "behind", m, q["from"])
+			hero.hit_monster(m, i, q["share"], true, high.pierce.lance_sure(q, m))
+			high.pierce.lance_hit(i, m, q)
+			hits.append(m)
+	high.pierce.lance_end(i, q, hits)
 
 
 ## BLEEDING behind: thorns at `at`, cutting whatever walks in them; one a move each BLEED.thornEvery seconds.
@@ -208,8 +230,11 @@ func add_thorns(i: int, at: Vector2, rad: float, frac: float) -> void:
 	var r: Dictionary = hero.loadout.r(i)
 	var dmg: float = hero.avg_hit(i, frac) * float(r["thorns"]) * float(r["pace"])
 	var dur: float = float(B["thornLife"]) * float(r["last"])
-	zones.append({"kind": "thorns", "x": at.x, "y": at.y, "r": rad, "t": 0.0, "dur": dur, "dmg": dmg, "tick": 0.0, "skill": i})
-	hero._tell({"t": "zone", "kind": "thorns", "x": at.x, "y": at.y, "r": rad, "el": "phys", "dur": dur})
+	var z := {"kind": "thorns", "x": at.x, "y": at.y, "r": rad, "t": 0.0, "dur": dur, "dmg": dmg, "tick": 0.0, "skill": i}
+	# (THE HIGH CITY'S RUNES MELDED: each meld's own thorns: mh_bleed.gd)
+	high.bleed.thorns(i, z)
+	zones.append(z)
+	hero._tell({"t": "zone", "kind": "thorns", "x": at.x, "y": at.y, "r": z["r"], "el": "phys", "dur": z["dur"]})
 	rec("bleed_thorns")
 
 
@@ -222,8 +247,11 @@ func add_reaper(i: int, at: Vector2, under: float) -> void:
 	if not _open(at):
 		return
 	var dur: float = float(C["markLife"]) * float(hero.loadout.r(i)["last"])
-	zones.append({"kind": "reaper", "x": at.x, "y": at.y, "r": C["markR"], "t": 0.0, "dur": dur, "dmg": under, "tick": 0.0, "skill": i})
-	hero._tell({"t": "zone", "kind": "reaper", "x": at.x, "y": at.y, "r": C["markR"], "el": "phys", "dur": dur})
+	var z := {"kind": "reaper", "x": at.x, "y": at.y, "r": C["markR"], "t": 0.0, "dur": dur, "dmg": under, "tick": 0.0, "skill": i}
+	# (THE HIGH CITY'S RUNES MELDED: each meld's own reaper's mark: mh_cull.gd)
+	high.cull.reaper(i, z)
+	zones.append(z)
+	hero._tell({"t": "zone", "kind": "reaper", "x": at.x, "y": at.y, "r": z["r"], "el": "phys", "dur": z["dur"]})
 
 
 ## What move `i` leaves of the last words where it ends (game.ts leavePatches): the lance, the thorns, the reaper's mark.
@@ -235,6 +263,8 @@ func leaves(i: int, at: Vector2, rad: float, frac: float) -> void:
 		add_thorns(i, at, maxf(float(L()["bleed"]["thornR"]), rad), frac)
 	if float(r["cull_mark"]) > 0.0:
 		add_reaper(i, at, r["cull_mark"])
+	# (THE HIGH CITY'S RUNES MELDED: what else each leaves: Gravewell's vortex, Haunting's circle)
+	high.leaves(i, at, rad)
 
 
 # --- a use, a dodge, a kill ---
@@ -258,11 +288,10 @@ static func mirror_side(f: Vector2) -> Vector2:
 func cast(i: int, from: Vector2, way: Vector2, frac: float, again: Callable) -> void:
 	var r: Dictionary = hero.loadout.r(i)
 	var S: Dictionary = L()["surge"]
-	if float(r["surge"]) > 0.0 and hero.uses[i] > 0 and hero.uses[i] % int(S["every"]) == 0:
-		hero._tell({"t": "surge", "x": hero.world.x, "y": hero.world.y, "r": S["radius"]})
-		rec("surge_wave")
-		hero._blast(i, hero.world, float(S["radius"]), frac * float(r["surge"]), "nova", false, -6.0)
-		high.carry_round("surging", i, "front", hero.world, float(S["radius"]))
+	# (THE HIGH CITY'S RUNES MELDED: when it comes, and each meld's own shockwave: mh_surge.gd)
+	var due: int = high.surge.due(i, hero.uses[i])
+	if float(r["surge"]) > 0.0 and hero.uses[i] > 0 and (due == 1 or due == -1 and hero.uses[i] % int(S["every"]) == 0):
+		high.surge.cast(i, hero.world, frac * float(r["surge"]))
 	if float(r["mirror"]) > 0.0:
 		var side := mirror_side(hero.face)
 		var at: Vector2 = from + side * float(L()["mirroring"]["side"])
@@ -302,11 +331,8 @@ func dodge_surge(at: Vector2) -> void:
 			best = k
 	if best < 0:
 		return
-	var S: Dictionary = L()["surge"]
-	hero._tell({"t": "surge", "x": at.x, "y": at.y, "r": S["dodgeRadius"], "dodge": true})
-	rec("surge_wave")
-	hero._blast(best, at, float(S["dodgeRadius"]), float(hero.loadout.r(best)["dodge_surge"]), "nova", false, -6.0)
-	high.carry_round("surging", best, "behind", at, float(S["dodgeRadius"]))
+	# (THE HIGH CITY'S RUNES MELDED: each meld's own surge: mh_surge.gd; Surging's own where none)
+	high.surge.dodge(best, at, float(hero.loadout.r(best)["dodge_surge"]))
 
 
 ## (game.ts plunderGold) What the gold an enemy drops is worth, for Plundering: an ordinary one's, more for an elite, a guardian, a
@@ -321,10 +347,10 @@ func _plunder_gold(m) -> float:
 ## What the last words of the move that killed `m` make of the kill (game.ts lastWordsKill): Reaping's soul and spirit, Plundering's
 ## gold.
 func killed(m, i: int) -> void:
-	# (THE HIGH CITY'S RUNES MELDED: one in death's hold rises as his spirit, whatever killed it)
-	high.reap_hold(m)
 	if i < 0 or i > 2:
 		return
+	# (THE HIGH CITY'S RUNES MELDED: what a kill of each meld does: meldshigh_rules.gd)
+	high.killed(m, i)
 	var r: Dictionary = hero.loadout.r(i)
 	if float(r["reap"]) > 0.0:
 		hero.cool_by(float(r["reap"]))
@@ -332,17 +358,8 @@ func killed(m, i: int) -> void:
 		rec("reap_soul")
 		if reap.on() and reap.is_reap(r.get("meld")):
 			reap.front_kill(m, i, str(r["meld"]))
-		# (THE HIGH CITY'S RUNES MELDED: the soul flies at the nearest enemy, carrying the other rune)
-		var soul_to = null
-		var sd: float = float(high.C()["soulR"])
-		for o in _list():
-			if is_instance_valid(o) and not o.dead and o != m and not _shut(o) and o.world.distance_to(m.world) < sd:
-				sd = o.world.distance_to(m.world)
-				soul_to = o
-		if soul_to != null:
-			high.carry("reaping", i, "front", soul_to, m.world)
-		elif high.SELF.size() > 0:
-			high.carry_round("reaping", i, "front", m.world, 0.0)
+		# (THE HIGH CITY'S RUNES MELDED: each meld's own soul: mh_reap.gd)
+		high.reap.soul(m, i)
 	if float(r["spirit"]) > 0.0 and not m.boss:
 		_raise_spirit(m, i, r["spirit"])
 	if float(r["plunder"]) > 0.0 or float(r["plunder_burst"]) > 0.0:
@@ -384,6 +401,10 @@ func _raise_spirit(m, i: int, share: float) -> void:
 	var mb = hero.loadout.r(i).get("meld_behind")
 	if reap.on() and reap.is_reap(mb):
 		reap.make_creature(sp, str(mb))
+	else:
+		# (THE HIGH CITY'S RUNES MELDED: each meld's own spirit: mh_reap.gd)
+		high.reap.spirit_new(sp, i)
+	m.m52["raised"] = true
 	spirits.append(sp)
 	hero._tell({"t": "spirit", "id": sp["id"], "x": sp["x"], "y": sp["y"], "life": sp["life"], "kind": sp.get("kind", "")})
 	rec("reap_spirit")
@@ -403,6 +424,7 @@ func step(dt: float) -> void:
 	_step_zones(dt)
 	_step_spirits(dt)
 	reap.step(dt)
+	high.step(dt)
 	# (CULLING on a monster: its fire kindles as he comes low with one of them awake and near: heard once each time)
 	var low: bool = hero.life > 0.0 and hero.life < hero.max_life * float(L().get("cull", {"low": 0.35})["low"])
 	var lit := false
@@ -426,18 +448,21 @@ func _step_zones(dt: float) -> void:
 		if z["kind"] == "thorns":
 			z["tick"] = float(z["tick"]) - dt
 			if float(z["tick"]) <= 0.0:
-				z["tick"] = 0.5
+				z["tick"] = float(z.get("every", 0.5))
 				for o in _list().duplicate():
-					if not is_instance_valid(o) or o.dead or o.kind == "bat" or _shut(o) or o.world.distance_to(at) > float(z["r"]) + o.r * 0.5:
+					if not is_instance_valid(o) or o.dead or o.kind == "bat" or _shut(o) or not MhBleed.inside(z, o.world.distance_to(at), o.r):
 						continue
 					o.damage(hero.side(o, maxf(1.0, roundf(float(z["dmg"]) * 0.5)), int(z["skill"])), "phys", false, false, [], false, true, int(z["skill"]))
 					bleed_monster(o, float(z["dmg"]) * 0.5, float(L()["bleed"]["secs"]))
 					rec("bleed_cut")
-					# (THE HIGH CITY'S RUNES MELDED: a cut of the thorns carries the other rune, again on one no sooner than thornAgain)
-					if _clock - float(o.m52.get("high_thorn", -9.0)) >= float(high.C()["thornAgain"]):
-						o.m52["high_thorn"] = _clock
-						high.carry("bleeding", int(z["skill"]), "behind", o, at)
+					# (THE HIGH CITY'S RUNES MELDED: each meld's own cut: mh_bleed.gd)
+					high.bleed.cut(o, z)
 		elif z["kind"] == "reaper":
+			# (THE HIGH CITY'S RUNES MELDED: each meld's own way of taking: mh_cull.gd)
+			if high.cull.reaper_step(z, dt):
+				if z.get("gone", false) or float(z["t"]) >= float(z["dur"]):
+					zones.remove_at(k)
+				continue
 			var took := false
 			for o in _list().duplicate():
 				if not is_instance_valid(o) or o.dead or o.state == "sleep" or o.world.distance_to(at) > float(z["r"]) + o.r * 0.5:
@@ -465,10 +490,14 @@ func _step_spirits(dt: float) -> void:
 			rec("reap_spirit", float(SOFT["spiritAway"]))
 			if sp.has("kind"):
 				reap.friend_gone(sp)
+			else:
+				high.reap.spirit_end(sp)
 			continue
 		if sp.has("kind"):
 			reap.step_friend(sp, dt)
 			continue
+		# (THE HIGH CITY'S RUNES MELDED: each meld's own spirit: mh_reap.gd)
+		high.reap.spirit_tick(sp, dt)
 		var at := Vector2(sp["x"], sp["y"])
 		var best = null
 		var bd := 8.0
@@ -479,11 +508,12 @@ func _step_spirits(dt: float) -> void:
 			if d < bd:
 				bd = d
 				best = o
+		best = high.reap.spirit_pick(sp, best)
 		var to: Vector2 = best.world if best != null else hero.world
 		var d := at.distance_to(to)
 		var stop: float = float(R["spiritReach"]) * 0.8 if best != null else 1.2
 		if d > stop:
-			at += (to - at) / d * minf(d - stop, float(R["spiritSpeed"]) * dt)
+			at += (to - at) / d * minf(d - stop, float(R["spiritSpeed"]) * float(sp.get("speed_k", 1.0)) * dt)
 			sp["x"] = at.x
 			sp["y"] = at.y
 		if best != null and d <= float(R["spiritReach"]) + best.r and float(sp["next"]) <= 0.0:
@@ -491,5 +521,4 @@ func _step_spirits(dt: float) -> void:
 			hero._tell({"t": "spiritHit", "id": sp["id"], "x0": at.x, "y0": at.y, "x1": best.world.x, "y1": best.world.y})
 			rec("reap_rake")
 			best.damage(hero.side(best, maxf(1.0, roundf(hero.avg_hit(int(sp["skill"]), float(sp["share"])))), int(sp["skill"])), hero.loadout.r(int(sp["skill"]))["element"], false, false, [], false, false, -1)
-			# (THE HIGH CITY'S RUNES MELDED: the spirit's blow carries the other rune)
-			high.carry("reaping", int(sp["skill"]), "behind", best, at)
+			high.reap.spirit_hit(sp, best, at)

@@ -177,6 +177,9 @@ func blow(i: int, k: int) -> float:
 # --- a use ---
 
 func used(i: int, echo: bool, at := Vector2.INF) -> void:
+	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
+	if not echo and h.last != null:
+		h.last.high.used(i)
 	var f := fid(i)
 	var b := bid(i)
 	var r: Dictionary = h.loadout.r(i)
@@ -338,6 +341,9 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 	var r: Dictionary = h.loadout.r(i)
 	x.struck(m, i, dmg, c, at, quiet, was_frozen)
 	y.struck(m, i, dmg, c, at, quiet, was_frozen)
+	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
+	if h.last != null:
+		h.last.high.struck(m, i, dmg, c, at)
 	y2.struck(m, i, dmg, c, at, quiet)
 	if f == "":
 		return
@@ -592,6 +598,9 @@ func killed(m, i: int) -> void:
 # --- Precise behind's marks ---
 
 func marked(m, i: int) -> void:
+	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
+	if h.last != null:
+		h.last.high.marked(m, i)
 	var b := bid(i)
 	if b in ["duelist", "needle", "brand", "seeker", "quickdraw"]:
 		_tag(m)
@@ -648,6 +657,9 @@ func arc_pick(near: Array, i: int) -> Array:
 func arc_struck(o, i: int, from := Vector2.INF) -> void:
 	x.arc_struck(o, i)
 	y.arc_struck(o, i, from)
+	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
+	if h.last != null:
+		h.last.high.arc(o, i, from if from != Vector2.INF else h.world)
 	if fid(i) == "seeker":
 		_tell({"id": "seeker", "what": "seek", "x": o.world.x, "y": o.world.y, "m": o})
 	if fid(i) == "conduit":
@@ -1054,6 +1066,9 @@ func status_end(m, what: String) -> void:
 func struck_him(src) -> void:
 	x.struck_him(src)
 	y2.struck_him(src)
+	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
+	if h.last != null:
+		h.last.high.struck_him(src)
 	if src == null or not is_instance_valid(src) or src.dead or not _shielded():
 		return
 	if any_has("hemlock"):

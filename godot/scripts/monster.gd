@@ -38,6 +38,7 @@ extends Node2D
 
 const Melds52T := preload("res://scripts/melds52.gd")
 const Glow := preload("res://scripts/figure_glow.gd")
+const FoeHigh := preload("res://scripts/foe_meldshigh.gd")
 const HideClip := preload("res://scripts/hide_clip.gd")
 const Iso := preload("res://scripts/iso.gd")
 const BakedFigure := preload("res://scripts/baked_figure.gd")
@@ -1814,7 +1815,9 @@ func _surge(dt: float) -> void:
 	surge_t -= dt
 	if surge_t > 0.0:
 		return
-	surge_t = S["monsterEvery"]
+	# (THE HIGH CITY'S RUNES MELDED: how often, how wide, how hard each meld's shockwave: foe_meldshigh.gd)
+	var hk: Dictionary = FoeHigh.surge_k(self)
+	surge_t = float(S["monsterEvery"]) * float(hk["every"])
 	var h = mgr.hero
 	if h == null or not is_instance_valid(h) or h.world.distance_to(world) > float(S["monsterNear"]) or mgr.shut_in(self):
 		return
@@ -1822,8 +1825,9 @@ func _surge(dt: float) -> void:
 	by["sound"] = "surge_foe"
 	# (whose surge it is: its wave is drawn from it, render/words7.ts tickW7's `src`)
 	by["src"] = id
-	mgr.perils.warn(world.x, world.y, S["monsterRadius"], S["monsterWarn"], (dmg_min + dmg_max) / 2.0 * float(S["monsterDmg"]) * sk, null, by)
+	mgr.perils.warn(world.x, world.y, float(S["monsterRadius"]) * float(hk["r"]), S["monsterWarn"], (dmg_min + dmg_max) / 2.0 * float(S["monsterDmg"]) * sk * float(hk["dmg"]), null, by)
 	h.last.rec("surge_warn")
+	FoeHigh.surged(self, world, float(S["monsterRadius"]) * float(hk["r"]), float(S["monsterWarn"]))
 
 
 ## REAPING, on it (game.ts riseAgain): it rises once, REAP.riseAfter seconds after it died, where it fell, with REAP.riseLife of its
@@ -1837,10 +1841,13 @@ func _rise_again() -> void:
 	var f := face
 	_tell({"t": "rise", "id": id, "x": at.x, "y": at.y})
 	var M = mgr
-	M.after(maxf(0.0, float(R["riseAfter"]) - 1.0), func() -> void:
+	# (THE HIGH CITY'S RUNES MELDED: Limbo lies longer; what each rises with: foe_meldshigh.gd)
+	var hw: Array = words.duplicate()
+	var after_k: float = FoeHigh.rise_k(self)
+	M.after(maxf(0.0, float(R["riseAfter"]) * after_k - 1.0), func() -> void:
 		if M.hero != null and is_instance_valid(M.hero) and M.hero.alive:
 			M.hero.last.rec("reap_rise"))
-	M.after(float(R["riseAfter"]), func() -> void:
+	M.after(float(R["riseAfter"]) * after_k, func() -> void:
 		if M.hero == null or not is_instance_valid(M.hero) or not M.hero.alive:
 			return
 		var o = M.call_up(k, at, pack, f)
@@ -1849,7 +1856,8 @@ func _rise_again() -> void:
 		o.max_life = maxf(1.0, roundf(whole * float(R["riseLife"])))
 		o.life = o.max_life
 		o.words = []
-		o.risen = true)
+		o.risen = true
+		FoeHigh.rise(hw, M, o))
 
 
 func clear_afflictions() -> void:
@@ -1989,6 +1997,9 @@ func _die() -> void:
 		mgr.perils.warn(world.x, world.y, float(B["r"]), float(B["wait"]), (dmg_min + dmg_max) / 2.0 * float(B["k"]) * blast, null, {"el": element(), "words": [], "half": half_of()})
 	if foe != null and foe.on():
 		foe.death(self)
+	# (THE HIGH CITY'S RUNES MELDED: any death, by whatever hand: meldshigh_rules.gd)
+	if mgr.hero != null and is_instance_valid(mgr.hero) and mgr.hero.last != null:
+		mgr.hero.last.high.died(self)
 	# (THE CITY'S WORDS, Version 23.8: one carrying Splitting splits in two at half its life, a minion, of its leader's, too)
 	if word_share("splitting") > 0.0 and not split and not boss:
 		_split()

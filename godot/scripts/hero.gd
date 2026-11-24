@@ -86,6 +86,7 @@
 extends Node2D
 
 const Iso := preload("res://scripts/iso.gd")
+const FoeHigh := preload("res://scripts/foe_meldshigh.gd")
 const HideClip := preload("res://scripts/hide_clip.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
 const BakedHero := preload("res://scripts/baked_hero.gd")
@@ -279,6 +280,8 @@ var hex_more := 0.0
 var still_t := 0.0
 var still_k := 0.0
 var root_t := 0.0
+## (THE HIGH CITY'S RUNES MELDED on a monster: whose bleeding is on him, and Briar's root: foe_meldshigh.gd)
+var foe_hi := {}
 var root_again := 0.0
 var poison_t := 0.0
 var poison_dps := 0.0
@@ -1734,7 +1737,9 @@ func _pointer(way: Vector2, reach: float) -> Vector2:
 ## sight of him; less than half a tile and there is no room.
 func _begin_lunge(target: Vector2) -> void:
 	var to := target - world
-	var dist := minf(to.length(), LUNGE["range"])
+	# (THE HIGH CITY'S RUNES MELDED: Rush behind, his dodge twice as far: mh_surge.gd)
+	var far: float = last.high.surge.dodge_far()
+	var dist := minf(to.length() * far, LUNGE["range"] * far)
 	if dist < 0.01:
 		return
 	var dir := to / to.length()
@@ -1759,7 +1764,8 @@ func _begin_lunge(target: Vector2) -> void:
 	if uniques != null:
 		uniques.uq["strikes"] = 0
 	_turn(dir)
-	_lunge_cd = float(loadout.r(2)["cooldown"])
+	# (THE HIGH CITY'S RUNES MELDED: Spark behind, his dodge back a third sooner: mh_surge.gd)
+	_lunge_cd = float(loadout.r(2)["cooldown"]) * last.high.surge.dodge_cd_k()
 	_lunge_full = _lunge_cd
 	mana -= float(loadout.r(2)["mana"])
 	_lunge = {"from": world, "to": land, "dur": 0.26 + dist * 0.03}
@@ -1807,6 +1813,8 @@ func _fly(dt: float) -> void:
 		_landing = true
 		_list = LAND_LIST
 		_t = 0.0
+		# (THE HIGH CITY'S RUNES MELDED: Rush, Tremor, Seismic and Bastion behind, his landing: mh_surge.gd)
+		last.high.surge.landed(world)
 		# (UNIQUE ITEMS: the Pivot, Lunge ends in a free turn of Whirlwind where he lands)
 		if uniques != null and uniques.wears("pivot") and Words.move_open(1, int(stats["level"])) and str(Words.skill(loadout.id(1)).get("kind", "")) == "whirl":
 			var P: Dictionary = uniques.ut["pivot"]
@@ -2021,6 +2029,8 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	# (UNIQUE ITEMS: The Moth's Wing, less from every hit; the Standing Stone, less while he stands still)
 	if uniques != null:
 		dmg *= uniques.hurt_k()
+	# (THE HIGH CITY'S RUNES MELDED: Gravewarden's spirit standing guard by him: mh_reap.gd)
+	dmg *= last.high.hurt_k()
 	# (EVERY WORD ON A DUNGEON: Avalanche on him chilled, Blight's poison on him, Scald's crack, Shiver, Sunder, Fervor: foe_words.gd)
 	var foe = _foe()
 	if foe != null:
@@ -2233,6 +2243,10 @@ func dots() -> void:
 		var moved: bool = bleed_at != Vector2.INF and world.distance_to(bleed_at) > 0.15
 		bleed_at = world
 		var b := maxf(1.0, roundf(bleed_dps * 0.5 * (float(Words.data()["last"]["bleed"]["moving"]) if moved else 1.0)))
+		# (THE HIGH CITY'S RUNES MELDED on a monster: whose bleeding it is: foe_meldshigh.gd)
+		var hf = _foe()
+		if hf != null:
+			b = maxf(1.0, roundf(FoeHigh.bleed_k(hf, self, b, moved)))
 		if not unhurt:
 			life -= _through_barrier(b)
 		_tell({"t": "hit", "x": world.x, "y": world.y, "amount": b, "crit": false, "el": "phys", "onHero": true})

@@ -10,6 +10,7 @@
 extends Node
 
 const Iso := preload("res://scripts/iso.gd")
+const FoeHigh := preload("res://scripts/foe_meldshigh.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
 const BakedFigure := preload("res://scripts/baked_figure.gd")
 const Monster := preload("res://scripts/monster.gd")
@@ -362,7 +363,12 @@ func _dots(dt: float) -> void:
 		if not m.dead and m.bleed_t > 0.0 and m.bleed_dps > 0.0:
 			var moved: bool = m.bleed_at != Vector2.INF and m.world.distance_to(m.bleed_at) > 0.15
 			m.bleed_at = m.world
-			m.damage(maxf(1.0, roundf(m.bleed_dps * 0.5 * ((m.bleed_move if m.bleed_move > 0.0 else 1.0) if moved else 1.0))), "phys", false, false, [], false, true, m.last_skill)
+			# (THE HIGH CITY'S RUNES MELDED: each meld's own wound: mh_bleed.gd)
+			var bite: float = m.bleed_dps * 0.5 * ((m.bleed_move if m.bleed_move > 0.0 else 1.0) if moved else 1.0)
+			if hero != null and is_instance_valid(hero):
+				bite = hero.last.high.bleed.tick(m, bite, moved)
+			if bite > 0.0:
+				m.damage(maxf(1.0, roundf(bite)), "phys", false, false, [], false, true, m.last_skill)
 		# (THE WARLOCK: his hellfire, and the curse's smoulder)
 		if not m.dead and m.hell_t > 0.0 and m.hell_dps > 0.0:
 			m.damage(maxf(1.0, roundf(m.hell_dps * 0.5)), "fire", false, false, [], false, true, m.last_skill)
@@ -674,6 +680,29 @@ func shoot(from: Monster, dir: Vector2, speed: float, reach: float, dmg: float, 
 	stands.add_child(node)
 	# (THE LAST WORDS: PIERCING, on it, its shots fly on through walls, to the map's edge)
 	_arrows.append({"pos": from.world + dir * (from.r + 0.1), "dir": dir, "speed": speed, "left": reach, "dmg": dmg, "node": node, "r": r, "pierce": pierce, "hit": false, "by": by, "walls": from.words.has("piercing"), "src": from})
+	# (THE HIGH CITY'S RUNES MELDED: each meld's own shots: foe_meldshigh.gd)
+	FoeHigh.shot(self, from, _arrows.back())
+
+
+## (THE HIGH CITY'S RUNES MELDED: Pitchfork's second shot beside its first; Barrage's and Trident's turned a little)
+func _shot_beside(m, a: Dictionary, side: Vector2) -> void:
+	if not is_instance_valid(m) or m.dead:
+		return
+	shoot(m, a["dir"], float(a["speed"]), float(a["left"]), float(a["dmg"]), "arrow", float(a["r"]))
+	var b: Dictionary = _arrows.back()
+	b["pos"] = a["pos"] + side
+	b["copy"] = true
+	b["walls"] = a.get("walls", false)
+
+
+func _shot_turned(m, a: Dictionary, t: float) -> void:
+	if m == null or not is_instance_valid(m) or m.dead:
+		return
+	shoot(m, (a["dir"] as Vector2).rotated(t), float(a["speed"]), maxf(1.0, float(a["left"])), float(a["dmg"]), "arrow", float(a["r"]))
+	var b: Dictionary = _arrows.back()
+	b["pos"] = a["pos"]
+	b["copy"] = true
+	b["walls"] = a.get("walls", false)
 
 
 ## THE BONEWARD'S SPEAR (game.ts throwSpear): from its hand `at`, the way `dir`, as far as `reach` (where the hero stood); where
@@ -841,20 +870,26 @@ func _fly(dt: float) -> void:
 			var z = hero.wakes.patch_at("bubble", a["pos"])
 			if z != null:
 				step *= 1.0 - float(z["dmg"])
+		var p0: Vector2 = a["pos"]
 		a["pos"] += a["dir"] * step
 		a["left"] -= step
 		var p: Vector2 = a["pos"]
+		# (THE HIGH CITY'S RUNES MELDED: Spearwall's wall of light stops it: mh_pierce.gd)
+		if hero != null and hero.last != null and not hero.last.high.pierce.walls.is_empty() and hero.last.high.pierce.blocks(p0, p):
+			a["left"] = 0.0
+		FoeHigh.fly(self, a, p0, p)
 		var walls: bool = a.get("walls", false) and p.x >= 0.0 and p.y >= 0.0 and p.x < map.w and p.y < map.h
 		var gone: bool = a["left"] <= 0.0 or (not map.open_at(floori(p.x), floori(p.y)) and not walls)
 		if not gone and not a["hit"] and hero.alive and p.distance_to(hero.world) <= a["r"] + HERO_R:
 			# (with its monster's words, from a second back along its flight: game.ts updateProjectiles, hurtHero's (ox, oy))
 			var by: Dictionary = a["by"]
 			hero.blow_by = a.get("src")
-			hero.hurt_by(a["dmg"], by["el"], by["words"], by["half"], null, p - a["dir"] * float(a["speed"]))
+			hero.hurt_by(float(a["dmg"]) * FoeHigh.hit_k(self, a), by["el"], by["words"], by["half"], null, p - a["dir"] * float(a["speed"]), FoeHigh.bare(a))
 			hero.blow_by = null
 			a["hit"] = true
 			gone = not a["pierce"]
 		if gone:
+			FoeHigh.gone(self, a, p)
 			if a.has("spear"):
 				# (a spear that met a wall lies before it: back to the last open ground it flew over)
 				if not map.open_at(floori(p.x), floori(p.y)):
