@@ -24,6 +24,8 @@ var paint := Paint.new()
 ## (every painter: Twin's, then each group's)
 var painters: Array = [paint]
 var _by_id := {}
+## (ALL MELDS REDONE: the moments the redone ones add, their own painter: fx_m52p_redo.gd, behind melds52.gd REDO_ON)
+var redo
 
 
 func _init() -> void:
@@ -34,6 +36,8 @@ func _init() -> void:
 	for p in painters.slice(1):
 		for id in p.ids():
 			_by_id[id] = p
+	redo = load("res://scripts/fx_m52p_redo.gd").new()
+	painters.append(redo)
 
 
 func draw_floor(c: CanvasItem) -> void:
@@ -91,6 +95,9 @@ func handle(e: Dictionary) -> void:
 	var held := id + ":" + str(e.get("what", ""))
 	if HOLDS.has(held) and fx != null:
 		fx.hold(float(HOLDS[held]))
+	if redo.knows(id, str(e.get("what", ""))):
+		redo.handle(e)
+		return
 	if _by_id.has(id):
 		_by_id[id].handle(e)
 		return

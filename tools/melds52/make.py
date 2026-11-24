@@ -193,9 +193,32 @@ for j, k in enumerate(EXTRA):
 sheet.save(G + 'words/melds52.png')
 
 TUNE = json.load(open(ROOT + '/tools/melds52/tune.json'))
+# (ALL MELDS: THE LEAST EXCITING REDONE, his "Next I want you to look at the larger pool of all melds, and redo the 20 weakest.  Then
+# do it again.  Then do it a third time.", 24 Nov 2026: each redone's new texts, by round, tools/meldsredo/redo.txt; the game's own
+# melds among them by their names in words.json; shown only with melds52.gd REDO_ON)
+REDO, ROUNDS = {}, []
+NAMES = {v['name']: k for k, v in RUNES.items()}
+NAMES.update({v['name']: k for k, v in W.items() if v.get('kind') == 'meld'})
+cur = None
+for line in open(ROOT + '/tools/meldsredo/redo.txt'):
+    line = line.strip()
+    if line.startswith('ROUND '):
+        ROUNDS.append([])
+    elif line in NAMES and ROUNDS:
+        cur = NAMES[line]
+        REDO[cur] = {}
+        ROUNDS[-1].append(cur)
+    elif cur and line.startswith('In front: '):
+        REDO[cur]['frontText'] = line[len('In front: '):]
+    elif cur and line.startswith('Behind: '):
+        REDO[cur]['behindText'] = line[len('Behind: '):]
+    elif cur and line.startswith('On enemies: '):
+        REDO[cur]['monsterText'] = line[len('On enemies: '):]
+for k, v in REDO.items():
+    assert len(v) == 3, (k, v)
 out = {'order': order, 'melds': list(RUNES), 'ranks': [w + '2' for w in RANKS], 'words': words, 'of': of, 'rankOf': rank_of,
        'attr': attr, 'page': page, 'color': color, 'stones': stones_at, 'glyph': {k: RUNES[k]['glyph'] for k in RUNES}, 'tune': TUNE,
        'city': list(RUNES3) + [w + '2' for w in CITY], 'city2': list(RUNES4), 'reap': list(RUNES5),
-       'high': list(RUNES6) + [w + '2' for w in HIGH], 'extra': EXTRA, 'extraPage': EXTRA_PAGE}
+       'high': list(RUNES6) + [w + '2' for w in HIGH], 'extra': EXTRA, 'extraPage': EXTRA_PAGE, 'redo': REDO, 'redoRounds': ROUNDS}
 json.dump(out, open(G + 'words/melds52.json', 'w'), indent=1)
 print(len(RUNES), 'melds,', len(RANKS), 'level 2;', 'sheet', sheet.size)

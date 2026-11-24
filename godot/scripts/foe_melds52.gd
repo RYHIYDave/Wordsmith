@@ -15,6 +15,8 @@ const FC := preload("res://scripts/foe_meldscity.gd")
 const FC2 := preload("res://scripts/foe_meldscity2.gd")
 ## (THE HIGH CITY'S RUNES MELDED on a monster: foe_meldshigh.gd)
 const FH := preload("res://scripts/foe_meldshigh.gd")
+## (ALL MELDS: THE LEAST EXCITING REDONE, on a monster: foe_meldsredo.gd, behind melds52.gd REDO_ON)
+const FR := preload("res://scripts/foe_meldsredo.gd")
 
 
 static func _t(id: String) -> Dictionary:
@@ -71,7 +73,7 @@ static func harder(F, k: Callable, parts: Array, by) -> float:
 		mult *= 1.0 + float(_t("momentum")["foeEach"]) * int(by.m52.get("foe_mom", 0))
 	if float(k.call("daze")) > 0.0 and (h.held > 0.0 or h._knock_t > 0.0):
 		mult *= 1.0 + float(_t("daze")["foeMore"])
-	return mult * F46.harder(F, k, by) * FC.harder(F, k, by) * FH.harder(F, k, parts, by)
+	return mult * F46.harder(F, k, by) * FC.harder(F, k, by) * FH.harder(F, k, parts, by) * FR.harder(F, k, parts, by)
 
 
 ## What a blow from `by` that hurt him `dmg` leaves, of these.
@@ -169,6 +171,7 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 	FC.after_blow(F, k, by, dmg)
 	FC2.after_blow(F, k, by, dmg)
 	FH.after_blow(F, k, by, dmg, parts)
+	FR.after_blow(F, k, by, dmg, parts)
 
 
 ## Its turn: Permafrost deepening his chill near it; Tempest's arcs at him while he is shocked; Cinderward's shield bursting;
@@ -180,6 +183,7 @@ static func tick(F, m, dt: float, dist: float) -> void:
 	FC.tick(F, m, dt, dist)
 	FC2.tick(F, m, dt, dist)
 	FH.tick(F, m, dt, dist)
+	FR.tick(F, m, dt, dist)
 	var h = F.main.hero
 	if m.word_share("permafrost") > 0.0 and dist <= 2.5 and h.chill_t > 0.0:
 		h.chill_k = minf(float(_t("permafrost")["foeMost"]), h.chill_k + float(_t("permafrost")["foeDeeper"]) * dt)
@@ -262,6 +266,7 @@ static func death(F, m) -> void:
 	F46.death(F, m)
 	FC2.death(F, m)
 	FH.death(F, m)
+	FR.death(F, m)
 
 
 ## Its dying blast, of these: Quickfuse's at once.

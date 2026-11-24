@@ -107,6 +107,7 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 			"blur", "rage", "dash", "stagger", "spray", "soul"] and b.has("x1"):
 		b["x"] = b["x1"]
 		b["y"] = b["y1"]
+		b["stay"] = true
 		line = false
 	b["line"] = line
 	b["end"] = 0.55 if line else float(BURSTS.get(what, GROUNDS.get(what, 0.7)))

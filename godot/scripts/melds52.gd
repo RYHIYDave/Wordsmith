@@ -47,11 +47,23 @@ static var REAP_ON := true
 ## tools/meldshigh/design.py), their twists meldshigh_rules.gd, their looks fx_m52p_high.gd. OFF until his yes to their films (his
 ## pick, 24 Nov 2026: "Carriers on, melds off (Recommended)"): the wordsmith does not make them (`makes`); known, as all words are.
 static var HIGH_ON := false
+## ALL MELDS: THE LEAST EXCITING REDONE (his words, 24 Nov 2026: “Next I want you to look at the larger pool of all melds, and redo
+## the 20 weakest.  Then do it again.  Then do it a third time.”; weakest read as least exciting, his pick the time before). All 325
+## scored (tools/meldsredo/scores_all.py), the 20 lowest redone each round, each keeping its name, idea, stone and what it did, and
+## gaining on each side a moment seen happen: their texts tools/meldsredo/redo.txt (melds52.json `redo`, `redoRounds`), their
+## twists meldsredo_rules.gd, on a monster foe_meldsredo.gd, their looks fx_m52p_redo.gd. OFF until his yes to their films: the
+## melds do as before, their texts as before.
+static var REDO_ON := false
 ## (what each rune is worth inside one on gear: items.ts MELD_GEAR_STRENGTH; a level 2 rune's: RANK2's half again)
 const GEAR := 0.75
 const GEAR_RANK := 1.5
 
 static var _t := {}
+
+
+## Is `w` one of the melds redone, and the redone ones on (REDO_ON)?
+static func is_redo(w) -> bool:
+	return REDO_ON and w != null and T().get("redo", {}).has(str(w))
 
 
 ## The table (melds52.json).
@@ -127,6 +139,12 @@ static func add_to(D: Dictionary) -> void:
 		M["of"][id] = t["of"][id]
 	for id in t["rankOf"]:
 		M["rankOf"][id] = t["rankOf"][id]
+	# (ALL MELDS REDONE, ON: each redone one's own texts, the game's own melds among them)
+	if REDO_ON:
+		for id in t.get("redo", {}):
+			if D["words"].has(id):
+				D["words"][id] = (D["words"][id] as Dictionary).duplicate()
+				D["words"][id].merge(t["redo"][id], true)
 	# (GREED, the better-loot word: a plain word kept in this table for its stone and page, words.gd GREED)
 	for id in t.get("extra", {}):
 		D["words"][id] = t["extra"][id]

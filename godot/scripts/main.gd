@@ -3805,6 +3805,10 @@ func _words_shots(h: Hero, dir: String) -> void:
 	if _arg("cases").begins_with("m52"):
 		await preload("res://scripts/check_melds52.gd").new(self, h).run(_arg("cases").trim_prefix("m52").trim_prefix(":"))
 		return
+	# (ALL MELDS: THE LEAST EXCITING REDONE: `--cases=redo`, `--cases=redo:<id>,<id>` or `--cases=redo:round=1`: check_redo.gd)
+	if _arg("cases").begins_with("redo"):
+		await preload("res://scripts/check_redo.gd").new(self, h).run(_arg("cases").trim_prefix("redo").trim_prefix(":"))
+		return
 	# (THE HIGH CITY'S RUNES MELDED: `--cases=high`, or `--cases=high:<id>,<id>`: check_high.gd)
 	if _arg("cases").begins_with("high"):
 		await preload("res://scripts/check_high.gd").new(self, h).run(_arg("cases").trim_prefix("high").trim_prefix(":"))

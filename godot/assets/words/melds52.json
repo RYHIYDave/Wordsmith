@@ -15957,5 +15957,131 @@
    ],
    "note": "It never melds, and drops only on endless levels."
   }
- }
+ },
+ "redo": {
+  "ambush": {
+   "frontText": "More damage, a smaller area; the first hit on an enemy that hasn't been hurt yet is a certain critical and catches it off guard: it reels, stunned for a moment, and those beside it flinch back a step.",
+   "behindText": "Marks an enemy for only a moment, a ring of light closing in round it; strike it before the ring closes and the certain critical does double damage, and the ring bursts outward, striking those near it.",
+   "monsterText": "Its hits find the gaps in your armour. Until it first strikes you it lurks, half faded from sight, and its first blow comes in a sudden lunge from out of reach, always critical."
+  },
+  "berserk": {
+   "frontText": "More damage and a bigger hit; each use makes the next faster and harder, up to five times, and at a full frenzy each blow lands in a red shockwave that throws back everything near where it hits.",
+   "behindText": "Kills keep the frenzy going, and each kill adds to Power's damage bonus and lets out a roar that drives the enemies near you back.",
+   "monsterText": "Speeds up as it is hurt; hits harder and has more life. Badly hurt, it swells red with rage, and its blows throw you back."
+  },
+  "blight": {
+   "frontText": "The hit is not weakened, and poison bites harder the lower the enemy's life; an enemy that dies poisoned withers away into a patch of black blight that poisons whatever crosses it.",
+   "behindText": "Poisoned enemies take more damage from everything, and each hit on a poisoned one throws off a puff of rot that poisons those beside it.",
+   "monsterText": "While its poison is on you, every blow from it is harder, and the poison boils up round you in a black cloud that hurts you while you stand in it."
+  },
+  "bulwark": {
+   "frontText": "More damage and a bigger hit; each use gives you a brief shield, and while it holds each use drives the shield's face forward in a wave of force that throws back the enemies before you.",
+   "behindText": "Leaves a ward circle; inside it Power's damage bonus builds twice as fast, and raised shields ring its edge: enemies that walk into them are knocked back out.",
+   "monsterText": "Carries a shield that soaks damage; hits harder and has more life. While its shield holds, it charges at you behind it and shoves you back as it reaches you."
+  },
+  "canker": {
+   "frontText": "A weaker hit that poisons; its poison lasts twice as long and doesn't wear off while you keep hitting, and sores break out on what it poisons: every few seconds one bursts, splashing poison on those beside it.",
+   "behindText": "Leaves a poison cloud that lasts twice as long; whatever dies in it rots where it fell into a fresh cloud of its own.",
+   "monsterText": "Its poison lasts longer on you and doesn't wear off while it keeps hitting you; each blow lays a sore on you that bursts a few seconds later, poisoning you again."
+  },
+  "delirium": {
+   "frontText": "Each use makes the next faster, up to five times; hitting a cursed enemy adds a step, and at a full frenzy a cursed enemy you strike goes mad, flailing at the enemies beside it.",
+   "behindText": "Leaves a hex circle; while you fight inside it your frenzy does not fade, and each kill inside it lets out a shriek that curses every enemy near.",
+   "monsterText": "Speeds up as it is hurt, faster while you are cursed; its blows curse you, and while you are cursed it raves, darting at you in sudden wild dashes."
+  },
+  "doom": {
+   "frontText": "More damage and a bigger hit that curses; each hit on a cursed enemy deepens its curse, up to three times, and at the third, doom falls: a great dark hammer drops on it from above, striking it and those beside it hard.",
+   "behindText": "Leaves a hex circle where enemies deal less damage; each hit you land on an enemy inside builds Power's damage bonus twice as fast, and an enemy that dies inside is crushed into the ground by a falling weight that staggers and curses those beside it.",
+   "monsterText": "Hits harder and has more life; its blows curse you, and at its third blow a shadow of doom gathers over you and falls a moment later: step out from under it."
+  },
+  "duelist": {
+   "frontText": "More damage, a smaller area; an enemy with no other enemy near it always takes a critical hit, and is challenged: crossed blades flash over it, and it is held to the spot.",
+   "behindText": "Marks an enemy; the marked one takes more damage from everything until the mark is spent, and a ring of light stands round it: other enemies that step inside are thrown out.",
+   "monsterText": "Hits harder and has more life; its hits find the gaps in your armour. When you are alone with it, it salutes, blades crossed over it, then lunges at you from afar, every hit critical."
+  },
+  "eternity": {
+   "frontText": "Slows in time what it hits for twice as long, and the slow deepens each second it holds; once it has held three seconds, time stops for it: it stands still, a clock's face over it, for a moment (never a boss).",
+   "behindText": "Leaves a bubble that lasts twice as long; a clock's hand sweeps round inside it, and whatever the hand passes over is stopped for a moment.",
+   "monsterText": "Its poison, burning and chill last longer on you; its slow on your cooldowns lasts twice as long, and its blows stop you dead for a moment, a clock's face over you."
+  },
+  "evileye": {
+   "frontText": "More damage, a smaller area; curses what it hits, your critical hits on a cursed enemy hit harder, and a critical on a cursed one opens an evil eye over it: while the eye stares, every enemy near it is cursed.",
+   "behindText": "Marks an enemy with an eye that follows it: your next hit on it is a certain critical and curses it, and as the critical lands the eye bursts, cursing everything near.",
+   "monsterText": "Its hits find the gaps in your armour; its blows curse you, and it stares: while you are near it, a dark beam runs from its eye to you, cursing you."
+  },
+  "fervor": {
+   "frontText": "Each kill makes you attack faster and burn hotter for a few seconds, and flares up where it fell, setting the enemies near it burning.",
+   "behindText": "Each kill quickens you and your fire a little; while quickened, each use throws off sparks that set the nearest enemies burning.",
+   "monsterText": "Each monster that dies near it feeds it: it flares up in fire, its fire hotter, and its next blow leaves the ground round you burning."
+  },
+  "fever": {
+   "frontText": "A weaker hit that poisons; each use while frenzied adds one more dose, up to five, and at a full frenzy the poison boils over: what you hit sweats a green haze that poisons those beside it.",
+   "behindText": "Kills keep the frenzy going, and a poisoned enemy dying holds it twice as long; its fever runs into you as it dies, a green pulse that lifts your frenzy a step.",
+   "monsterText": "Speeds up as it is hurt; poisons you. Hurt, it sweats poison, a haze left where it stands that poisons you as you cross it."
+  },
+  "fury": {
+   "frontText": "Each use makes the next faster, up to five times, and the frenzy fades one step at a time instead of all at once; at a full frenzy a red fury burns round you, striking the enemies that stand close.",
+   "behindText": "Kills keep the frenzy going twice as long, and each kill leaves an ember of fury where it fell: walk over it and your frenzy climbs a step.",
+   "monsterText": "Speeds up as it is hurt, and once fast it stays fast; badly hurt, it roars, red steam rising off it, and charges you."
+  },
+  "glide": {
+   "frontText": "Faster to use again; frost damage that chills, each chilled enemy it hits gives you a little speed, and after each use you skate, leaving a trail of ice that chills what crosses it.",
+   "behindText": "Leaves ice that slows enemies but speeds you while you stand on it; while on it you slide, and enemies you slide past are chilled and knocked aside.",
+   "monsterText": "Moves and attacks faster; deals frost damage and slows you. It lays a strip of ice where it goes, which chills you as you cross it."
+  },
+  "grudge": {
+   "frontText": "Curses what it hits for twice as long, and the curse deepens each second it holds; after three of your blows on a cursed enemy the grudge is sealed: a dark sigil burns on it, and each blow you land on it strikes it again a moment later.",
+   "behindText": "Leaves a hex circle that lasts twice as long; an enemy that leaves it stays cursed, and a black chain follows it back to the circle, dragging at it.",
+   "monsterText": "Its poison, burning and chill last longer on you; its curse on you lasts twice as long. It holds a grudge: strike it and a red mark burns over you, and its next blow on you lands twice as hard."
+  },
+  "haymaker": {
+   "frontText": "More damage and a bigger hit that lands sooner, with less wind-up; what it hits is knocked flying, thrown far back into what stands behind it, which is struck too.",
+   "behindText": "Power's damage bonus builds twice as fast and fades in half the time; at its full, your blow lands with a thunderous crack, a ring of dust that staggers everything near.",
+   "monsterText": "Hits harder and has more life; its blows come with less warning, and every third is a haymaker that knocks you down, stunned for a moment."
+  },
+  "hourglass": {
+   "frontText": "Everything it puts on enemies lasts half again as long, and every poison, burn or chill on you wears off a third sooner; an hourglass turns over each enemy it hits, and when its sand runs out all that is left of its poison and burning strikes at once.",
+   "behindText": "What it leaves on the ground lasts half again as long and works a third faster; an hourglass stands in it, and as its sand runs out the ground flares up once more, striking everything inside.",
+   "monsterText": "Its poison, burning and chill last longer on you and hurt you faster too; an hourglass hangs over you while they last, and when its sand runs out all that is left of them strikes you at once."
+  },
+  "lamprey": {
+   "frontText": "Strikes twice; both blows heal you, the second twice as much, and the second bite latches on: a red line from it to you drains it into you for a moment after.",
+   "behindText": "Repeats itself a moment later, and what it hits is left bitten: for a few seconds drops of its life fly back to you.",
+   "monsterText": "Attacks twice; heals when it hits you, its second blow twice as much, and its second bite latches on: a red line drains your life into it until you get away from it."
+  },
+  "lancet": {
+   "frontText": "More damage, a smaller area; heals you for every enemy hit, and a critical hit lances it: a thin beam of red light runs from it to you, healing you three times as much, and the cut bleeds.",
+   "behindText": "Marks an enemy, a small blade hanging over it; your certain critical on it drives the blade in, and for a few seconds the blade drains the enemy into you.",
+   "monsterText": "Heals when it hits you; its hits find the gaps in your armour, and every third blow lances you: a thin red beam runs from you to it, and you bleed."
+  },
+  "manacle": {
+   "frontText": "Holds what it hits for twice as long, and the manacle stays on: when the hold ends, a chain still runs from it to the floor where it was held, and it can't go farther than the chain's length.",
+   "behindText": "Leaves a snare that lasts twice as long and holds what it catches twice as long; when it catches, manacles snap shut on every enemy near it, chained to it.",
+   "monsterText": "Its poison, burning and chill last longer on you; its blows root you twice as long, and clap a manacle on you: a chain runs from you to it, and you can't go farther from it than the chain's length."
+  }
+ },
+ "redoRounds": [
+  [
+   "ambush",
+   "berserk",
+   "blight",
+   "bulwark",
+   "canker",
+   "delirium",
+   "doom",
+   "duelist",
+   "eternity",
+   "evileye",
+   "fervor",
+   "fever",
+   "fury",
+   "glide",
+   "grudge",
+   "haymaker",
+   "hourglass",
+   "lamprey",
+   "lancet",
+   "manacle"
+  ]
+ ]
 }

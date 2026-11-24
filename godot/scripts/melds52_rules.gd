@@ -75,6 +75,8 @@ var x
 var y
 ## (the city's runes with the floor 6–10 runes: meldscity2_rules.gd)
 var y2
+## (ALL MELDS: THE LEAST EXCITING REDONE, each's new moments: meldsredo_rules.gd, behind melds52.gd REDO_ON)
+var rd
 
 
 func _init(hero) -> void:
@@ -83,6 +85,7 @@ func _init(hero) -> void:
 	y = preload("res://scripts/meldscity_rules.gd").new(hero, self)
 	y2 = preload("res://scripts/meldscity2_rules.gd").new(hero, self, y)
 	y.z2 = y2
+	rd = preload("res://scripts/meldsredo_rules.gd").new(hero, self)
 
 
 static func on() -> bool:
@@ -180,6 +183,7 @@ func used(i: int, echo: bool, at := Vector2.INF) -> void:
 	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
 	if not echo and h.last != null:
 		h.last.high.used(i)
+	rd.used(i, echo)
 	var f := fid(i)
 	var b := bid(i)
 	var r: Dictionary = h.loadout.r(i)
@@ -344,6 +348,8 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
 	if h.last != null:
 		h.last.high.struck(m, i, dmg, c, at)
+	if not quiet:
+		rd.struck(m, i, dmg, c, at)
 	y2.struck(m, i, dmg, c, at, quiet)
 	if f == "":
 		return
@@ -535,6 +541,7 @@ func killed(m, i: int) -> void:
 	x.killed(m, i)
 	y.killed(m, i)
 	y2.killed(m, i)
+	rd.killed(m, i)
 	var f := fid(i)
 	var b := bid(i)
 	var r: Dictionary = h.loadout.r(i)
@@ -601,6 +608,7 @@ func marked(m, i: int) -> void:
 	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
 	if h.last != null:
 		h.last.high.marked(m, i)
+	rd.marked(m, i)
 	var b := bid(i)
 	if b in ["duelist", "needle", "brand", "seeker", "quickdraw"]:
 		_tag(m)
@@ -672,6 +680,7 @@ func arc_struck(o, i: int, from := Vector2.INF) -> void:
 
 ## What move `i` left at `at` (hero.gd _wake), the patches it laid being wakes.list from `from` on: each the meld's own.
 func wake(i: int, at: Vector2, rad: float, from: int) -> void:
+	rd.wake(i, at, rad)
 	var b := bid(i)
 	if b == "" or h.wakes == null:
 		return
@@ -788,6 +797,7 @@ func wake(i: int, at: Vector2, rad: float, from: int) -> void:
 
 func step(dt: float) -> void:
 	time += dt
+	rd.step(dt)
 	# (what is to come)
 	if not _later.is_empty():
 		var due: Array = []
@@ -1069,6 +1079,7 @@ func struck_him(src) -> void:
 	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
 	if h.last != null:
 		h.last.high.struck_him(src)
+	rd.struck_him(src)
 	if src == null or not is_instance_valid(src) or src.dead or not _shielded():
 		return
 	if any_has("hemlock"):
@@ -1203,6 +1214,7 @@ func forget() -> void:
 	x.forget()
 	y.forget()
 	y2.forget()
+	rd.fresh()
 	_later.clear()
 	webs.clear()
 	links.clear()

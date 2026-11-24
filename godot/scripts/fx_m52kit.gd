@@ -266,7 +266,8 @@ func update(dt: float) -> void:
 		if m != null and is_instance_valid(m) and not m.dead:
 			b["x"] = m.world.x
 			b["y"] = m.world.y
-		if b["foe"] and h != null:
+		# (a monster's beat follows him, as it lies on him; but not one drawn where the monster is: `stay`)
+		if b["foe"] and h != null and not b.get("stay", false):
 			b["x"] = h.world.x
 			b["y"] = h.world.y
 		_foe_now = _foe_beat(b)
