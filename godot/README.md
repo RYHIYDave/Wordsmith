@@ -1491,6 +1491,36 @@ His word, 23 Nov 2026: “You can bring anything in we do here.  I'm not really 
   size as before. `checks/demon_eight_check.gd` (eight sides, every list as long on each, every frame inside its sheet, 443 held and 6349 in its packs,
   and a sheet of it from all eight: its stand, run, slash, Damning and burning out); `--only=heroes --cls=warlock` 11 of 11.
 
+## The rune bag and the melding stone (a cloud chat, 24 Nov 2026)
+
+His words, the evening of 23 Nov 2026 (Eastern): “I have a UI issue.  I'm getting to the point where I have too many word runes
+for just a bag that pops out of the side of the inventory screen.  It needs groups, searchability, intuitive design for
+navigating to the exact rune you are looking for.  And probably info about each word if you press and hold on the rune.” and
+“They melt into cyan light pour down two tracks to a single empty slot where the new rune forms.” Shown the mock-up
+(docs/mockups/rune_bag, https://claude.ai/artifact/J555pKppZBjxdhpCy9gMBH), his picks: “Change the melding”; “The stone looks
+off, Too slow, Layout”; “Straight down”; then “Build both in the game (Recommended)”. ON (inventory.gd RUNE_BAG).
+- **The rune bag** (`scripts/rune_bag.gd`): the LEXICON panel over the game's half is now the RUNE BAG, opened by RUNES under
+  the gold and the level. A rail of groups (ALL, the Lexicon's five pages, MELDS, each with how many; a ranked rune in its
+  rune's group); a search (a see-through LineEdit over the drawn box, so the phone's keyboard comes up) by name, by a rune a
+  meld is made of (MADE WITH ...) and by what it does; SORT GROUP, A-Z, MOST, NEW; over the melds, MADE WITH, the base runes
+  to narrow them by; a scroll bar to hold and draw through the whole bag, its bubble saying where; every rune a tile (its
+  stone twice its size, its name, how many, II, a spark on one come by since). Pressed: in hand, as from the line over the
+  bag; carried sideways: dragged out to a slot. Pressed and held: a ring fills, then its card (its stone large, name, kind,
+  what it grows with, how many, what it is made of, each part opening its own card, and what it does in front, behind and
+  on a monster), SHOW ITS MELDS on a base rune.
+- **The melding stone** (`scripts/meld_stone.gd`; its picture `assets/ui/meld_stone.png` and where its things lie
+  `assets/ui/meld_stone.json`, both taken from the mock-up's own drawing): at the wordsmith, MELD, his half is one block of
+  his standing stones' slate, two hollows side by side, channels straight down, the hollow beneath in the ring's six
+  standing stones; the bag stands on the gear screen's half beside it (DONE in its head), a rune pressed laid in his next
+  hollow, and with one laid in the bag lights what melds with it (? for a meld not found, the rest dimmed). MELD: the rules
+  at once as before (loot.gd meld_words); the stone plays it out in about 1.8 s (the two crack with light, melt, run down
+  the channels, wheel round the hollow beneath, the flash, the new rune's pixels gathering, its name; the rare chime now as
+  it forms), the new rune shown in the bag only once formed; pressed, it flies into its place there. Anything pressed
+  mid-meld finishes it at once.
+- `--only=runebag` (`scripts/check_rune_bag.gd`): 18 checks and 27 pictures (the bag, a search, MADE WITH, a card held, the
+  scroll bar, a rune pressed then a slot, a rune carried to a slot; the stone, the hints, a meld frame by frame, taken, a
+  rank up). `--only=meld` (its 15) and `--only=menus` (the LEXICON line now the bag's) pass on it.
+
 ## Not in it yet
 
 Nothing of the game's own: every talent of every tree is in.
@@ -1528,6 +1558,7 @@ Nothing of the game's own: every talent of every tree is in.
 | `assets/heroes/warlock_fx.*` | the Warlock's effects' pieces (render/warlock_fx.ts): `npx tsx tools/godot_warlock_fx.ts` |
 | `assets/heroes/golem*`, `tinkerer_fx*` | the Tinkerer's Golem (its moves, run, rocket jump and everything at it) and her effects' pieces, with her tune: `npx tsx tools/godot_tinkerer.ts` (about half a minute) |
 | `assets/heroes/veteran*` | the Brawler's moves' numbers and the art's places frame by frame, his bursts, rings and stars: `npx tsx tools/godot_veteran.ts` |
+| `assets/ui/meld_stone.*` | the wordsmith's melding stone's picture and where its things lie, from the mock-up's own drawing: `node docs/mockups/rune_bag/build.mjs`, then in the page `mock.slabURL()` and `mock.geo()` (docs/mockups/rune_bag/README.md) |
 | `assets/font`, `assets/hud` | the game's two pixel fonts, `npx tsx tools/godot_font.ts`; the HUD's pictures, colours and names, `npx tsx tools/godot_hud.ts` |
 | `scripts/` | GDScript, each file saying which TypeScript it follows |
 

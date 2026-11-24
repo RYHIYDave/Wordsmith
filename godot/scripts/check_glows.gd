@@ -213,7 +213,11 @@ func menus(main, hero, dir: String) -> void:
 	inv._press("lex", null)
 	await M._wait(0.3)
 	await M._snap(dir + "/u05_lexicon.png")
-	_line(inv._lex and inv._lex_panel.has_area() and inv._pouch.filter(func(c): return c.get("lex", false)).size() == lt.held().size(), "LEXICON: every word he holds (%d) on a panel over the game's half" % lt.held().size())
+	# (THE RUNE BAG in its place, inventory.gd RUNE_BAG, at his yes of 23 Nov 2026: check_rune_bag.gd has the rest of it)
+	if inv.RUNE_BAG.on:
+		_line(inv._lex and inv._rb_on == "game" and inv._rb.held_ids().size() == lt.held().size(), "RUNES: the rune bag over the game's half, every rune he holds (%d) in it" % lt.held().size())
+	else:
+		_line(inv._lex and inv._lex_panel.has_area() and inv._pouch.filter(func(c): return c.get("lex", false)).size() == lt.held().size(), "LEXICON: every word he holds (%d) on a panel over the game's half" % lt.held().size())
 	inv._press("lex", null)
 	inv.toggle()
 	await M._wait(0.3)

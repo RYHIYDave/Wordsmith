@@ -1495,6 +1495,9 @@ const startScene = location.hash === '#melding' ? 'smith' : 'bag';
 (window as unknown as { mock: unknown }).mock = {
   libBag, libSmith, hin, held, R, layIn, startMeld, openCard, takeMeld, libReset,
   get meld() { return meld; }, set scene(s: 'bag' | 'smith') { scene = s; }, get now() { return now; },
+  // (for the Godot game: the stone's picture and where its things are)
+  slabURL: () => { if (!slab) slab = makeSlab(); return slab.toDataURL('image/png'); },
+  geo: () => ({ HA, HB, OUT, HS, OS, SLAB, RS, NS, pathA, pathB, MARKS, STANDING, CORNERS, GLYPHS, times: { M_CHARGE, M_MELT, M_POUR, M_SWIRL, M_FLASH, M_GATHER, M_FORM, M_NAME } }),
 };
 sheet.onload = () => { readStones(); };
 fit();
