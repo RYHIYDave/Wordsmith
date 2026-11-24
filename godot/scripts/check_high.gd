@@ -238,7 +238,7 @@ func setup(id: String, side: String) -> void:
 	if id in ["gangrene", "pestilence", "nightshade"]:
 		for m in pack:
 			m.poison_t = 4.0
-			m.poison_dps = 40.0 if id == "nightshade" else 2.0
+			m.poison_dps = 150.0 if id == "nightshade" else 2.0
 			m.poison_n = 3
 	if id in ["haunting", "hexwave", "condemn", "bloodhex"]:
 		for m in pack:
