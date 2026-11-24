@@ -1493,6 +1493,13 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   his yes, each card its stone, idea, what it does and its film: City and Wilds Melds, https://claude.ai/artifact/9u1bUEVM4YdrjRZq5SHHeG
   (`python3 docs/mockups/meld_films/page.py <films> <out> city2`; the films are not kept in the repository). ON at his “Switch them
   on.” (24 Nov 2026): `Melds52.CITY2_ON` true.
+- PLUNDERING, THE GOLD WORD (his words, 24 Nov 2026: “I think I want plundering to not meld, since it's a gold farming word and should
+  have a drawback”; and of the Rim's door, “adding them to the endless door shouldn't give all enemies that word, it should just
+  increase either the gold dropped or magic find of the floor as a whole”): it never melds (words.gd NO_MELD: the bench refuses it,
+  itself too; the High City's melds to come leave it out). Burned in at the door, no monster there carries it and it drops no more
+  often for it, and the level's gold is worth +50% for each (loot.gd DOOR_GOLD_WORDS, DOOR_GOLD, door_gold; main.gd; the rewards
+  every burned rune gives, as before). The door's page says so on its card behind inventory.gd DOOR_GOLD_LINE (off until his yes
+  to its picture). `--only=doorrunes` 11 of 11.
 - TWO KINDS IN ONE HIT (his find, 24 Nov 2026): built here, then taken out at his word, “It's already fixed, or another chat
   pushed the fix”: the fix is the other chat's, on its branch claude/adoring-davinci-q6wn9n (9ed64ffb: Scald, Wildfire, Hailstorm,
   Eruption, Avalanche and Thunder deal both kinds, half of each; 7db84722: flat damage of an element adds to every hit). That
