@@ -1103,7 +1103,7 @@ func drops_at(d: int) -> Array:
 		out.append("greed")
 	# (THE DOOR WORDS, door_words.gd: on an endless level, the four sharing one rune's share, one of them at random each time)
 	if _endless_here() and DoorWords.ON:
-		out.append(DoorWords.IDS.pick_random())
+		out.append(DoorWords.live().pick_random())
 	return out if not out.is_empty() else [_words["first"]]
 
 

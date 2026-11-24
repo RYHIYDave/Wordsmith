@@ -30,6 +30,13 @@ static func is_door(w) -> bool:
 	return w != null and IDS.has(str(w))
 
 
+## The door words that can do anything now: Siege only while the altar rooms are laid (act1/altar_rooms.gd ON, pictures first):
+## until then it neither drops nor is listed among the words to find, so none is found that does nothing.
+static func live() -> Array:
+	var rooms_on: bool = bool(load("res://scripts/act1/altar_rooms.gd").ON)
+	return IDS.filter(func(w): return w != "siege" or rooms_on)
+
+
 ## How many times `w` is burned into the level he is on (main.gd dungeon_words): 0 or 1, as the door takes a word only once.
 static func burned(main, w: String) -> int:
 	if main == null or not bool(main.get("in_endless")):

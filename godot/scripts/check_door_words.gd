@@ -68,7 +68,8 @@ func run(main, hero, dir: String) -> void:
 	M.loot.taught = true
 	DoorWords.ON = true
 	var D: Dictionary = Words.data()
-	for w in DoorWords.IDS:
+	var live: Array = DoorWords.live()
+	for w in live:
 		Melds52.list_door(D, w)
 	# THE FOUR, KNOWN
 	var page = null
@@ -77,8 +78,8 @@ func run(main, hero, dir: String) -> void:
 			page = pg
 	var named: Array = DoorWords.IDS.map(func(w): return str(Words.word(w)["name"]))
 	var stones: Array = DoorWords.IDS.filter(func(w): return Melds52.T()["stones"].has(w))
-	_line(named == ["Chains", "Siege", "Toll", "Crown"] and stones.size() == 4 and DoorWords.IDS.all(func(w): return Words.ids().has(w)) and page != null and page["words"] == DoorWords.IDS,
-		"known: %s, each its stone (%d), among the words to find, the Lexicon's page DOOR: %s" % [named, stones.size(), page["words"] if page != null else null])
+	_line(named == ["Chains", "Siege", "Toll", "Crown"] and stones.size() == 4 and live.all(func(w): return Words.ids().has(w)) and page != null and page["words"] == live and live.has("siege") == AltarRooms.ON,
+		"known: %s, each its stone (%d), among the words to find those that do anything now (Siege only with the altar rooms on: %s), the Lexicon's page DOOR: %s" % [named, stones.size(), AltarRooms.ON, page["words"] if page != null else null])
 	# NOTHING BUT THE DOOR TAKES ONE
 	for w in DoorWords.IDS:
 		M.loot.words[w] = 2
@@ -109,7 +110,7 @@ func run(main, hero, dir: String) -> void:
 			each_one = false
 		for w in doors:
 			seen[w] = true
-	_line(story_ok and each_one and seen.size() == 4, "the story's floor 8 drops none (%s); an endless level's pool holds one of the four each time (%s), all four seen (%s)" % [story_ok, each_one, seen.keys()])
+	_line(story_ok and each_one and seen.size() == live.size() and seen.keys().all(func(w): return live.has(w)), "the story's floor 8 drops none (%s); an endless level's pool holds one of them each time (%s), all %d seen (%s)" % [story_ok, each_one, live.size(), seen.keys()])
 	# BURNED IN: NO MONSTER CARRIES IT, IT DROPS NO MORE OFTEN
 	M.dungeon_words = ["chains", "twin"]
 	var laid: Array = FoeWords.foe_words_of(M.dungeon_words.filter(func(w): return not M.loot.DOOR_WORDS.has(str(w))))
@@ -170,6 +171,63 @@ func run(main, hero, dir: String) -> void:
 		if not M._monsters.bells.is_empty():
 			sure[1] += 1
 	_line(sure == [4, 4], "with no luck fixed, Crown and Toll burned in: royals' packs on %d of 4 levels, the Bells on %d of 4" % sure)
+	# (THE BUG HUNT, 24 Nov 2026: Toll for sure on the floors where the usual plan found no room; what the Bells call up carries no
+	# royal's crest and no rune; no bell on a monster or a chained rare; a rung bell shoves no chained rare off his stakes)
+	var missed: Array = []
+	var crowned: Array = []
+	var on_bell: Array = []
+	for d in [7, 10, 18, 20, 16, 4]:
+		for k in 2:
+			M.dungeon_words = ["toll", "crown", "chains"]
+			M.endless_floor = d
+			M.chained_seed = -1
+			await _go("floor%d" % d)
+			var BD: Dictionary = M._monsters.bells if M._monsters.bells is Dictionary else {}
+			if BD.is_empty():
+				missed.append(d)
+				continue
+			for t in BD.get("tough", []):
+				for o in t:
+					if str(o.get("royal", "")) not in ["", "<null>"] or not (o.get("carries", []) as Array).is_empty():
+						crowned.append(d)
+			for kk in BD.get("rise", {}):
+				var o: Dictionary = BD["rise"][kk]
+				if str(o.get("royal", "")) not in ["", "<null>"] or not (o.get("carries", []) as Array).is_empty():
+					crowned.append(d)
+			var spots: Array = [BD["plan"]["muffled"]] + BD["plan"]["bells"]
+			for q in spots:
+				var at := Vector2(float(q["x"]), float(q["y"]))
+				for o in M._monsters.list:
+					if is_instance_valid(o) and not o.dead and o.world.distance_to(at) < 0.8:
+						on_bell.append("%d:%s" % [d, o.kind])
+	_line(missed.is_empty(), "Toll on floors 7, 10, 18, 20, 16 and 4, two levels each: the Bells on every one (none on: %s)" % [missed])
+	_line(crowned.is_empty(), "what the Bells call up (its tough ones, what the Hush raises) wears no royal's crest and carries no rune (wrong on: %s)" % [crowned])
+	_line(on_bell.is_empty(), "no monster nor chained rare stands on a bell's tile (on one: %s)" % [on_bell])
+	# (a chained rare beside a bell as it rings: not shoved)
+	M.dungeon_words = ["toll", "chains"]
+	M.endless_floor = 8
+	await _go("floor8")
+	var B2 = M.hero.bells
+	var moved := -1.0
+	if B2 != null and is_instance_valid(B2) and not M.chained_rares.is_empty():
+		var cr = M.chained_rares[0]
+		# (the first bell's ring heard beside him: its place in the plan moved to a step from him)
+		B2.D["plan"]["bells"][0] = {"x": cr.m.world.x + 1.2, "y": cr.m.world.y}
+		var was_at: Vector2 = cr.m.world
+		B2.phase = "on"
+		B2.ring(0)
+		await _wait(0.6)
+		moved = cr.m.world.distance_to(was_at)
+	_line(moved >= 0.0 and moved < 0.2, "a bell rung beside a chained rare: he moved %.2f tiles (held by his stakes)" % moved)
+	# (Chains on floor 12, where the chained rares stand far apart: more of them all the same)
+	var c12 := []
+	for words in [[], ["chains"]]:
+		M.dungeon_words = words
+		M.endless_floor = 12
+		M.chained_seed = 5
+		await _go("floor12")
+		c12.append(M.chained_rares.size())
+	_line(c12[1] > c12[0], "Chains on floor 12: %d chained rares where there were %d" % [c12[1], c12[0]])
 	# SIEGE: the altar room switched on for the check
 	var was: bool = AltarRooms.ON
 	AltarRooms.ON = true

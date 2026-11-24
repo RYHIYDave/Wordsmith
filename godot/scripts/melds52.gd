@@ -156,7 +156,7 @@ static func add_to(D: Dictionary) -> void:
 			D["page"][id] = t["extraPage"][id]
 		# (THE DOOR WORDS, door_words.gd: known always, listed among the words to find only while it is ON)
 		if bool(t["extra"][id].get("door", false)):
-			if DoorWords.ON:
+			if DoorWords.ON and DoorWords.live().has(id):
 				list_door(D, id)
 			continue
 		if D.has("ids") and not (D["ids"] as Array).has(id):

@@ -231,7 +231,8 @@ func ring(i: int) -> void:
 	var k := rung_n()
 	var n := rung.size()
 	for m in main._monsters.list:
-		if not is_instance_valid(m) or m.dead or m.boss:
+		# (a chained rare held by his stakes is not shoved off them: chained_rare.gd)
+		if not is_instance_valid(m) or m.dead or m.boss or int(m.get("chained")) != 0:
 			continue
 		var d: Vector2 = m.world - at
 		if d.length() > float(U["knockR"]):

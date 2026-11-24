@@ -1485,7 +1485,7 @@ func _build(where: String, arrive: String) -> void:
 				br.randomize()
 			# (THE DOOR WORDS: Toll burned in, the Bells for sure: door_words.gd)
 			if bells_seed >= 0 or DoorWords.burned(self, "toll") > 0 or br.randi_range(1, BellsAny.LEVEL) == 1:
-				monsters.bells = BellsAny.make(self, mdata, br)
+				monsters.bells = BellsAny.make(self, mdata, br, DoorWords.burned(self, "toll") > 0)
 		# (THE BOTTOM OF THE SHAFT: its arena's rules, its round, its way back up: final_arena.gd)
 		arena = null
 		if where == "final":
@@ -1650,6 +1650,9 @@ func _build(where: String, arrive: String) -> void:
 			cr.hero = hero
 			cr.loot = loot
 			cr.sfx = sfx
+			# (Chains burned in: twice as many, standing nearer each other on a floor no bigger: chained_rare.gd APART_CHAINS)
+			if DoorWords.burned(self, "chains") > 0:
+				cr.apart = ChainedRare.APART_CHAINS
 			_place.add_child(cr)
 			if cr.lay(_chained_mdata, chained_seed + i if chained_seed >= 0 else -1):
 				chained_rares.append(cr)
@@ -3348,6 +3351,8 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (THE CITY'S FIVE WORDS: check_citywords.gd)
 	if _arg("only") == "citywords":
 		await preload("res://scripts/check_citywords.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE ROYAL CARDS AND THE QUEST LINE OF FLOORS 16 TO 20: check_quest1620.gd)
 	if _arg("only") == "quests1620":
 		await preload("res://scripts/check_quest1620.gd").new().run(self, hero, dir)

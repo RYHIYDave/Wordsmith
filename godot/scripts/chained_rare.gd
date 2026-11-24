@@ -48,6 +48,10 @@ static var ENDLESS_ANY := true
 static var ANY_FLOOR := true
 const ENDLESS_N := [2, 3]
 const APART := 10.0
+## (how far apart this one stands from the others: APART, or nearer as the door words make it: Chains burned in, twice as many on a
+## floor no bigger, at APART_CHAINS: main.gd, door_words.gd)
+const APART_CHAINS := 6.0
+var apart := APART
 
 
 ## How many to lay on this endless level (ENDLESS_N), by the floor's own luck or `rng`.
@@ -251,7 +255,9 @@ func _rare(t: Dictionary, his: Array, at: Vector2) -> Dictionary:
 ## floor's own luck), at the tile nearest its middle that a body of radius `r` fits on, clear of the floor's things, its traps, its
 ## other monsters and where the hero comes in, with floor for his three stakes about him in the same room. Null where none will do.
 func _spot(r: float):
-	var rooms: Array = map.rooms.filter(func(q): return str(q.get("kind", "")) == "normal" and int(q["w"]) >= 6 and int(q["h"]) >= 6)
+	# (Chains burned in, `apart` nearer: an elite's room too, and anywhere in a room's middle half, not only by its middle)
+	var kinds: Array = ["normal"] if apart >= APART else ["normal", "elite"]
+	var rooms: Array = map.rooms.filter(func(q): return kinds.has(str(q.get("kind", ""))) and int(q["w"]) >= 6 and int(q["h"]) >= 6)
 	var side: Array = rooms.filter(func(q): return int(q.get("path", 0)) < 0)
 	var way: Array = rooms.filter(func(q): return int(q.get("path", 0)) >= 0)
 	_shuffle(side)
@@ -282,8 +288,9 @@ func _in_room(q: Dictionary, r: float):
 		for tx in range(int(rx) + 2, int(rx + rw) - 2):
 			tries.append(Vector2(tx + 0.5, ty + 0.5))
 	tries.sort_custom(func(a, b): return a.distance_to(c) < b.distance_to(c))
+	var most: float = 3.0 if apart >= APART else maxf(3.0, minf(rw, rh) / 2.0 - 2.0)
 	for p in tries:
-		if p.distance_to(c) > 3.0:
+		if p.distance_to(c) > most:
 			break
 		if not _clear_at(p, r, 1.6):
 			continue
@@ -322,7 +329,13 @@ func _clear_at(p: Vector2, r: float, keep: float) -> bool:
 		if is_instance_valid(o) and not o.dead and o.world.distance_to(p) < 1.2:
 			return false
 		# (another chained rare on the level: well apart from him)
-		if is_instance_valid(o) and int(o.get("chained")) != 0 and o.world.distance_to(p) < APART:
+		if is_instance_valid(o) and int(o.get("chained")) != 0 and o.world.distance_to(p) < apart:
+			return false
+	# (THE BELLS on this level: none of him on a bell or the Muffled Bell, whose tiles are walked through by none)
+	var B = monsters.bells if monsters.bells is Dictionary else {}
+	var plan: Dictionary = B.get("D", B).get("plan", {}) if not B.is_empty() else {}
+	for q in ([plan.get("muffled")] + plan.get("bells", [])):
+		if q is Dictionary and q.has("x") and Vector2(float(q["x"]), float(q["y"])).distance_to(p) < 2.5:
 			return false
 	return true
 
