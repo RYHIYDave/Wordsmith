@@ -74,7 +74,9 @@ func run(main, hero, d: String) -> void:
 		Words.BURN_MORE_ALL = float(OS.get_environment("WS_BURN_ALL"))
 	# (WS_TWIN_AIM=1: Twin's waves aimed, heroes/mage.gd TWIN_AIM, for weighing it)
 	if OS.has_environment("WS_TWIN_AIM"):
-		preload("res://scripts/heroes/mage.gd").TWIN_AIM = OS.get_environment("WS_TWIN_AIM") == "1"
+		var MageK := preload("res://scripts/heroes/mage.gd")
+		MageK.TWIN_AIM = OS.get_environment("WS_TWIN_AIM") == "1"
+		_say("Twin's waves aimed (heroes/mage.gd TWIN_AIM): %s" % str(MageK.TWIN_AIM))
 	h.unhurt = true
 	M.go_to("floor20", "start")
 	await M._wait(2.0)
@@ -664,6 +666,11 @@ func _fight_one(reach: float, hold := false) -> float:
 		if is_instance_valid(dummy):
 			dummy.world = spot + way * reach
 			_hold(dummy)
+		# (WS_DMG_SHOTS: his shots' first moment and the elite's life, its first two seconds, to see where they go)
+		if OS.has_environment("WS_DMG_SHOTS") and t < 2.0 and h.kit != null:
+			for sh in h.kit.shots:
+				if float(sh.get("age", 1.0)) <= M.get_process_delta_time() + 0.001:
+					_say("SHOT t %.2f at (%.2f, %.2f) going (%.2f, %.2f) r %.2f dist %.1f look %s; the elite at (%.2f, %.2f) r %.2f life %d dead %s state %s" % [t, sh["x"], sh["y"], sh["vx"], sh["vy"], sh["r"], sh["dist"], str(sh.get("look", "")), dummy.world.x, dummy.world.y, dummy.r, int(dummy.life), str(dummy.dead), str(dummy.state)])
 		if at2 < 0.0 and t >= 2.0:
 			at2 = dummy.life
 	return (at2 - dummy.life) / 8.0
