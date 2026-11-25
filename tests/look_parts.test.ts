@@ -37,6 +37,7 @@ import { campPieceCount, campPieces, campPiecesHeld } from '../src/art/act1_camp
 import { redoubtPieceCount, redoubtPieces, redoubtPiecesHeld } from '../src/art/redoubt';
 import { quarryPieceCount, quarryPieceSteps, quarryPieces, quarryPiecesHeld } from '../src/art/floor6';
 import { OWN_FRONTS } from '../src/game/act1_dress';
+import { holdFrontSteps } from '../src/art/hold_fronts';
 import { WHEEL_STEPS, millracePieceCount, millracePieces, millracePiecesHeld, wheelFramesHeld } from '../src/art/floor13';
 import { FLOW } from '../src/art/flowing';
 import { cryptGround, cryptGroundSteps } from '../src/art/crypt';
@@ -218,8 +219,10 @@ test('6. Act 1\'s and Act 2\'s floors: each list a piece a step, then the list; 
   for (const p of [...campPieces(), ...redoubtPieces(), ...quarryPieces()]) assert.ok(names6.includes(p.name), `floor 6 has ${p.name}`);
   // (floor 13: the Hush's set and the Millrace's own)
   const thirteen = act1PieceSteps(13);
+  // (OWN_FRONTS: the sluice-house a frame a step and its list's step; the cult's things the Quarry's, made above, the list's step)
+  const fronts13 = OWN_FRONTS.on ? holdFrontSteps(13).length + 1 + quarryPieceSteps().length + 1 : 0;
   // (the Millrace's water wheel: its frames a step each, before its pieces)
-  assert.equal(thirteen.length, hushSetPieceCount() + 2 + 2 * 2 * WHEEL_STEPS + millracePieceCount() + 2 + 1, 'floor 13: a step a piece, and the wheel a frame a step');
+  assert.equal(thirteen.length, hushSetPieceCount() + 2 + 2 * 2 * WHEEL_STEPS + millracePieceCount() + 2 + fronts13 + 1, 'floor 13: a step a piece, and the wheel a frame a step');
   runAll(thirteen);
   assert.deepEqual([hushSetPiecesHeld(), millracePiecesHeld(), wheelFramesHeld()], [0, 0, 0]);
   const names13 = [...act1Pieces(13).keys()];
