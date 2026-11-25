@@ -3299,6 +3299,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_glows.gd").new().voices(self, hero, dir)
 		get_tree().quit()
 		return
+	# (THE STORE'S PICTURES: check_store.gd, one scene a run)
+	if _arg("only") == "store":
+		await preload("res://scripts/check_store.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "lairfetch":
 		await preload("res://scripts/check_glows.gd").new().lairfetch(self, hero, dir)
 		get_tree().quit()
