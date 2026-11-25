@@ -125,6 +125,11 @@ func start(m, a: Dictionary, _hero) -> void:
 		m.face = axis_of(m.face)
 
 
+
+## (broken off: what its end puts right, put right: act1.gd broken)
+func broken(m, a: Dictionary, hero) -> void:
+	end(m, a, hero)
+
 func end(_m, a: Dictionary, _hero) -> void:
 	if a["id"] == "drowned:rise":
 		a1["under"] = 0

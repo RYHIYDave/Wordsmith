@@ -52,6 +52,11 @@ func start(m, a: Dictionary, _hero) -> void:
 		peril(m, "carter:warn", m.world, {"dur": float(LASHES["cracks"][2]) + float(LASHES["floor"])})
 
 
+
+## (broken off: what its end puts right, put right: act1.gd broken)
+func broken(m, a: Dictionary, hero) -> void:
+	end(m, a, hero)
+
 func end(_m, _a: Dictionary, hero) -> void:
 	if int(a1.get("grab", 0)) != 0:
 		a1["grab"] = 0

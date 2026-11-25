@@ -98,7 +98,7 @@ func _open(at: Vector2) -> bool:
 
 ## PIERCING in front: a blow of move `i` that has struck `first` at `at` goes on through it along `way`, striking every enemy in
 ## a line PIERCE.line tiles on, for `frac`.
-func pierce_on(i: int, first, at: Vector2, way: Vector2, frac: float) -> void:
+func pierce_on(i: int, first, at: Vector2, way: Vector2, frac: float) -> Array:
 	# (THE HIGH CITY'S RUNES MELDED: each meld's own line: mh_pierce.gd)
 	var P = high.pierce
 	way = P.way(i, way)
@@ -120,6 +120,7 @@ func pierce_on(i: int, first, at: Vector2, way: Vector2, frac: float) -> void:
 		hero.hit_monster(o, i, f2 * P.each_k(i, k + 1), true, P.sure(i, k + 1, count))
 		P.each(i, o, k + 1, count, at, way)
 	P.end(i, first, hits, at, way, line, frac)
+	return hits
 
 
 ## BLEEDING: `m` bleeds for `secs`, `dps` a second (the stronger of this and what it bled already), more while it walks.

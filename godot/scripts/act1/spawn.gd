@@ -86,6 +86,11 @@ func start(m, a: Dictionary, _hero) -> void:
 		act["hand"] = hand_of(false, m.face)
 
 
+
+## (broken off: what its end puts right, put right: act1.gd broken)
+func broken(m, a: Dictionary, hero) -> void:
+	end(m, a, hero)
+
 func end(_m, a: Dictionary, _hero) -> void:
 	if a["id"] == "spawn:hatch":
 		a1["hatch"] = 0

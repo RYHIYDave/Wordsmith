@@ -180,6 +180,9 @@ func blow(i: int, k: int) -> float:
 # --- a use ---
 
 func used(i: int, echo: bool, at := Vector2.INF) -> void:
+	# (a use begins at its first blow: left at the last one's, every hit of another class's move counted as a second blow (a
+	# Warrior's or a Brawler's before it); the bug hunt's sixth round, 25 Nov 2026)
+	blow_n = 0
 	# (THE HIGH CITY'S RUNES MELDED: meldshigh_rules.gd)
 	if not echo and h.last != null:
 		h.last.high.used(i)

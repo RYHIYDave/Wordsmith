@@ -194,7 +194,7 @@ func _toss_vial(i: int, from: Vector2, to: Vector2, frac: float, n: int, echo: b
 	var side := 0.0 if n == 0 else (1.0 if n % 2 == 1 else -1.0) * ceilf(n / 2.0) * float(T["twin"])
 	var x1 := p.x - ((p.y - from.y) / far) * side
 	var y1 := p.y + ((p.x - from.x) / far) * side
-	var v := {"x0": from.x, "y0": from.y, "x1": x1, "y1": y1, "t": 0.0, "flight": float(T["flight"]), "skill": i, "frac": frac, "wake": n == 0 and not echo}
+	var v := {"x0": from.x, "y0": from.y, "x1": x1, "y1": y1, "t": 0.0, "flight": float(T["flight"]), "skill": i, "frac": frac, "wake": n == 0 and not echo, "n": n}
 	_brew(v)
 	vials.append(v)
 	_say({"t": "vial", "id": -1, "x0": from.x, "y0": from.y, "x1": x1, "y1": y1, "flight": float(T["flight"]), "n": n, "echo": echo, "big": v.get("big", false)})
@@ -243,7 +243,9 @@ func _vial_bursts(v: Dictionary) -> void:
 				caught.append(m)
 	# (ALCHEMY: what it kills drops gold)
 	brewing = true
-	h._blast(i, at, rad, float(v["frac"]), "vial", bool(v["wake"]), linear_to_db(0.8))
+	# (TWIN: the how-manyth vial of its use, as hard as the melds of Twin make it: melds52_rules.gd blow)
+	var bk: float = h.m52.blow(i, int(v.get("n", 0))) if h.m52 != null else 1.0
+	h._blast(i, at, rad, float(v["frac"]) * bk, "vial", bool(v["wake"]), linear_to_db(0.8))
 	brewing = false
 	# (MAD MIXTURE: its brew on top of its own words, on what it burst on)
 	if brew != "":

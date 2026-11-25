@@ -105,6 +105,13 @@ func end(_m, _a: Dictionary, _hero) -> void:
 	pass
 
 
+## An act broken off before its end (stunned, staggered, run from, drawn off by a decoy): what its end puts right that must not be
+## left so (hidden on the climb, under the water, in bed, holding him), and nothing more of its end. (A crawler stunned on its
+## climb stayed hidden for good and could not be struck: the bug hunt's sixth round, 25 Nov 2026.)
+func broken(_m, _a: Dictionary, _hero) -> void:
+	pass
+
+
 ## As it comes into the world.
 func spawned(_m) -> void:
 	pass
@@ -153,7 +160,11 @@ func step(m, dt: float, hero) -> void:
 	m._cd -= dt * rage
 	# (put to sleep in the middle of an act, as the hero fell, or stopped in it, and woken again: it is broken off)
 	if act != null and m.state != "act":
+		var was: Dictionary = act
 		act = null
+		var A0 := acts()
+		if int(was.get("i", -1)) >= 0 and int(was["i"]) < A0.size():
+			broken(m, A0[int(was["i"])], hero)
 		_to("stand")
 	if tick(m, dt, dist, hero):
 		_show(m)

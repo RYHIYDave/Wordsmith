@@ -262,7 +262,8 @@ func _use_basic(at: Vector2) -> void:
 	swing_t = 1.0 / rate
 	_face(at)
 	# (a fast weapon's wind-up is never more than two fifths of the time between its blows)
-	var wind := minf(float(_def(0)["windup"]), 0.4 / rate)
+	# (Haymaker's and Whipcrack's shorter wind-up, as the Strike's (hero.gd): the bug hunt's sixth round)
+	var wind: float = minf(float(_def(0)["windup"]), 0.4 / rate) * (float(h.m52.windup_k(0)) if h.m52 != null else 1.0)
 	# (A TWO-HIT COMBO, defs.ts COMBO: a melee quick attack's second swing if this one comes soon enough after a first, else the first;
 	# and a small step forward with either: game.ts useBasic)
 	if str(_def(0)["kind"]) == "melee":
@@ -653,9 +654,23 @@ func _shot_hit(p: Dictionary, m) -> void:
 		h.sfx.play("arrowHit", linear_to_db(0.5))
 	# (THE RANGER'S TREE REMADE: Far Sight, an arrow flown past eight tiles a certain critical)
 	var far: bool = arrow and float(p.get("flown", 0.0)) > float(Talents.D["tune"]["farSight2"]["at"]) and h.has("farsight")
+	# (TWIN: the how-manyth of its use's shots this is, and as hard as the melds of Twin make it (melds52_rules.gd blow: Onslaught's
+	# full second, Flurry's, Twin II's, and the second-blow twists): only the Strike and the Brawler's blows read it)
+	var bk: float = h.m52.blow(i, int(p.get("n", 0))) if h.m52 != null else 1.0
 	striking = p
-	h.hit_monster(m, i, float(p["dmg"]), false, far)
+	h.hit_monster(m, i, float(p["dmg"]) * bk, false, far)
 	striking = {}
+	# (THE LAST WORDS: PIERCING in front, its line on through the first a shot strikes, as a blow's (hero.gd _strike), its melds'
+	# twists with it; what the line struck, the shot passes by. A shot never reached it, and the 25 Piercing melds did nothing on the
+	# Ranger's, the Mage's, the Warlock's and the Tinkerer's: the bug hunt's sixth round, 25 Nov 2026)
+	var thr: float = float(r.get("through", 0.0))
+	if thr > 0.0 and not p.get("pierced", false) and h.last != null:
+		p["pierced"] = true
+		var way := Vector2(p["vx"], p["vy"])
+		way = way.normalized() if way.length() > 0.001 else h.face
+		for o in h.last.pierce_on(i, m, at, way, float(p["dmg"]) * thr):
+			if not (p["hit"] as Array).has(o):
+				(p["hit"] as Array).append(o)
 	# (THE MAGE'S BALL: it stops on what it hits and bursts there, hurting all round it: game.ts ballBurst)
 	if p.get("look", "") == "ball":
 		_ball_burst(p, m)

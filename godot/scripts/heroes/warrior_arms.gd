@@ -124,10 +124,11 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 				var at: Vector2 = from + way * (float(sp["at"]) if sp is Dictionary else reach * 0.8)
 				h.uniques.weight_quake(i, at, way, frac)
 			for k in int(r["count"]):
+				# (TWIN: each blow as hard as the melds of Twin make it, and Staccato's no pause between them, as the Strike's (hero.gd))
 				if k == 0:
-					h._strike(i, from, way, each, 0, echo, reach)
+					h._strike(i, from, way, each * h.m52.blow(i, 0), 0, echo, reach)
 				else:
-					_after(0.13 * k, func() -> void: h._strike(i, from if echo else h.world, way, each, k, echo, reach))
+					_after(0.13 * k * h.m52.gap_k(i), func() -> void: h._strike(i, from if echo else h.world, way, each * h.m52.blow(i, k), k, echo, reach))
 		"burst":
 			_quake(i, from, way, len, each, echo)
 		"projectile":

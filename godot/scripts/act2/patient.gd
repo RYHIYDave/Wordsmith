@@ -84,6 +84,11 @@ func start(m, a: Dictionary, _hero) -> void:
 	a1["bed"] = 2
 
 
+
+## (broken off: what its end puts right, put right: act1.gd broken)
+func broken(m, a: Dictionary, hero) -> void:
+	end(m, a, hero)
+
 func end(_m, a: Dictionary, _hero) -> void:
 	if a["id"] == "patient:rise":
 		a1["bed"] = 0

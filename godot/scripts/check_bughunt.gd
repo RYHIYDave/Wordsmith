@@ -1224,3 +1224,53 @@ func _round6(dir: String) -> void:
 	M.fall_endless = fe
 	M.fall_lost = fl
 	_line(rows.size() > 1 and str(rows[1]) == "Fell in Endless 44", "the death screen, fallen on Endless 44: %s (was Fell in dungeon 12)" % (str(rows[1]) if rows.size() > 1 else "-"))
+	# (A CRAWLER stunned on its climb up: up after it, not hidden for good)
+	await _hero4("warrior", [])
+	await _go4("floor7")
+	var cr = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and "crawler" in str(o.kind) and o.h2 != null and int(o.h2.a1.get("hid", 0)) == 1:
+			cr = o
+			break
+	var hid_after := -1
+	var climbed := false
+	if cr != null:
+		h.unhurt = true
+		h.world = M._spot_near(cr.world, 3.0, h.world)
+		M._monsters.wake(cr)
+		var tc := 0.0
+		while tc < 6.0 and int(cr.h2.a1.get("hid", 0)) != 2:
+			await M.get_tree().process_frame
+			tc += M.get_process_delta_time()
+			cr.h2.a1["wait"] = 0.0
+		climbed = int(cr.h2.a1.get("hid", 0)) == 2
+		if climbed:
+			cr.stun_for(0.4)
+			await _wait(3.0)
+			hid_after = int(cr.h2.a1.get("hid", 0))
+	_line(cr != null and climbed and hid_after == 0, "a crawler stunned on its climb up: hidden %d three seconds after (it stayed hidden, unkillable; climbing %s)" % [hid_after, str(climbed)])
+	# (PIERCING'S MELDS on the Ranger's shot: its line on through the first it strikes)
+	await _hero4("ranger", [])
+	await _go4("floor11")
+	var tgt: Array = _near(2)
+	h.loadout.front[0] = ["bodkin", null]
+	h.loadout._r = [null, null, null]
+	var thr: float = float(h.loadout.r(0).get("through", 0.0))
+	h.last._heard.clear()
+	if not tgt.is_empty():
+		var o0 = tgt[0]
+		o0.max_life = 1.0e8
+		o0.life = 1.0e8
+		o0.world = M._free_near(h.world + h.face * 3.0)
+		M._monsters.wake(o0)
+		var tp := 0.0
+		while tp < 2.5 and not h.last._heard.has("pierce_shot"):
+			await M.get_tree().process_frame
+			tp += M.get_process_delta_time()
+			h.touch_aim = {0: o0.world}
+			h.auto_attack = true
+		h.touch_aim = {}
+		h.auto_attack = false
+	h.loadout.front[0] = [null, null]
+	h.loadout._r = [null, null, null]
+	_line(thr > 0.0 and h.last._heard.has("pierce_shot"), "Bodkin (a Piercing meld) on the Ranger's shot: its line on through the first it strikes %s (through %.2f; a shot never reached it)" % [str(h.last._heard.has("pierce_shot")), thr])

@@ -115,6 +115,11 @@ func start(m, a: Dictionary, _hero) -> void:
 	a1["grab"] = 0
 
 
+
+## (broken off: what its end puts right, put right: act1.gd broken)
+func broken(m, a: Dictionary, hero) -> void:
+	end(m, a, hero)
+
 func end(_m, a: Dictionary, hero) -> void:
 	if a["id"] == "crawler:climb":
 		a1["hid"] = 0

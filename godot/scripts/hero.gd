@@ -1073,7 +1073,8 @@ func _time_word_sound(i: int) -> void:
 ## TWIN behind ("of Echoes") on move `i` (game.ts echoOf): it is told now, and `again` is done a moment later, its words told as
 ## the phantom lets go; `kind` the game's name for the move.
 func _echo_of(i: int, kind: String, at: Vector2, way: Vector2, again: Callable) -> void:
-	var delay: float = Words.data()["echo"]["delay"]
+	# (Flurry's and Staccato's quicker repeat behind, as the Strike's: the bug hunt's sixth round)
+	var delay: float = float(Words.data()["echo"]["delay"]) * (m52.echo_k(i) if m52 != null else 1.0)
 	_tell({"t": "echo", "x": at.x, "y": at.y, "dx": way.x, "dy": way.y, "kind": kind, "delay": delay})
 	_after(delay, func() -> void:
 		_cast(i, kind, at, way, true)

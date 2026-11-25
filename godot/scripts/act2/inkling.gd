@@ -72,6 +72,12 @@ func start(_m, a: Dictionary, _hero) -> void:
 		a1["sunk"] = 3
 
 
+
+## (broken off on its rise: up, as its end has it: act1.gd broken)
+func broken(m, a: Dictionary, hero) -> void:
+	if a["id"] == "inkling:rise":
+		end(m, a, hero)
+
 func end(m, a: Dictionary, _hero) -> void:
 	if a["id"] == "inkling:melt":
 		# (only the pool left: it goes about as one)
