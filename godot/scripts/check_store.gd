@@ -4,7 +4,7 @@
 ## going; one scene a run, its picture <dir>/store_<scene>.png (1920x1080).
 ##   chained  floor 3, the Chained One calls out his hook as the hero whirls (Warrior, Flame and Power in his moves)
 ##   queen    floor 18, the Glass Queen's pier glasses shatter across the hall (any hero)
-##   wilds    floor 7, a pack of the Wilds and the hero's big move among them (any hero)
+##   wilds    floor 8 (Echo Canyon), a pack of the Wilds coming at the hero, his shots flying into it (any hero; --floor= another)
 ##   king     floor 19, the King charges down his throne room at the hero
 ##   town     the town by night, the hero by the wordsmith's ring
 ##   gear     the gear screen, his words set in his moves
@@ -28,7 +28,7 @@ func run(main, hero, dir: String) -> void:
 	var scene: String = M._arg("scene")
 	match scene:
 		"chained":
-			await _ready_hero(9, ["fire"], ["power"])
+			await _ready_hero(9, ["fire"], ["power"], [[["swift"], ["frost"]], [["heavy"], ["lightning"]]], ["swift", "heavy", "twin", "frost", "lightning", "precise"])
 			await _go("floor3")
 			var b = M._d_boss()
 			_alone(b, 0.0)
@@ -45,7 +45,7 @@ func run(main, hero, dir: String) -> void:
 			await M._snap("%s/store_chained.png" % M._arg("shots"))
 			h.auto_whirl = false
 		"queen":
-			await _ready_hero(18, ["frost"], ["lightning"])
+			await _ready_hero(18, ["frost", "piercing"], ["lightning", "vast"], [[["fire", "lasting"], ["swift", "power"]], [["swift", "twin"], ["lasting", "heavy"]]], ["piercing", "vast", "swift", "fire", "lasting", "volatile"])
 			await _go("floor18")
 			var q = null
 			for o in M._monsters.list:
@@ -66,8 +66,8 @@ func run(main, hero, dir: String) -> void:
 			await M._wait(0.05)
 			await M._snap("%s/store_queen.png" % M._arg("shots"))
 		"wilds":
-			await _ready_hero(20 if h.cls == "ranger" else 12, ["poison"], ["lightning"])
-			await _go("floor7")
+			await _ready_hero(20 if h.cls == "ranger" else 12, ["poison", "swift"], ["lightning", "vast"], [[["frost", "lasting"], ["twin", "power"]], [["swift", "heavy"], ["lasting", "precise"]]], ["swift", "vast", "lasting", "frost", "twin", "precise"])
+			await _go(M._arg("floor") if M._arg("floor") != "" else "floor8")
 			var near = _nearest_pack()
 			if near != null:
 				# (the Ranger stands off from the pack, the pack coming at him, his arrows flying into it: him clear of them; no
@@ -87,10 +87,18 @@ func run(main, hero, dir: String) -> void:
 			await M._wait(0.05)
 			await M._snap("%s/store_wilds.png" % M._arg("shots"))
 		"king":
-			await _ready_hero(20 if h.cls == "ranger" else 19, ["piercing"], ["lightning"])
+			await _ready_hero(20 if h.cls == "ranger" else 19, ["piercing", "swift"], ["lightning", "precise"], [[["frost", "lasting"], ["twin", "power"]], [["swift", "heavy"], ["lasting", "twin"]]], ["swift", "precise", "vast", "frost", "bleeding", "twin"])
 			await _go("floor19")
 			var k = M._d_boss()
 			_alone(k, 0.0)
+			# (his wait over, as if the hero had come in under his gate and his meeting were done: no "Not yet" over him as the
+			# arrows strike)
+			for d in M._doors.map.doors:
+				if d["kind"] == "bossgate" and int(d["want"]) == 1:
+					M._doors._drop(d)
+			M._doors._met = true
+			M._doors.intro_t = 0.0
+			k.waits = false
 			h.world = M._spot_near(k.world + Vector2(2.0, 2.0), 6.0, h.world)
 			await M._wait(1.0)
 			# (the Ranger rolls aside, his trap left where he stood; the King charges; the Ranger looses arrows at him)
@@ -107,11 +115,14 @@ func run(main, hero, dir: String) -> void:
 			M._hud.floor_card = {}
 			M.guide._speak = {}
 			await M._wait(0.05)
+			k._not_yet = 0.0
 			await M._snap("%s/store_king.png" % M._arg("shots"))
 		"town":
-			await _ready_hero(14, ["fire"], ["frost"])
+			await _ready_hero(14, ["fire"], ["frost"], [[["lasting"], ["lightning"]], [["swift"], ["heavy"]]], ["vast", "swift", "lasting", "lightning", "splitting", "volatile"])
 			await M.go_to("town", "start")
 			await M._wait(2.0)
+			# (turned to face us, down the screen: his word, 25 Nov 2026, “I don't like the mage facing backwards in town”)
+			h._turn(Vector2(1.0, 1.0).normalized())
 			M._hud.floor_card = {}
 			await M._wait(0.4)
 			M._hud.card = {}
@@ -120,7 +131,7 @@ func run(main, hero, dir: String) -> void:
 			await M._wait(0.05)
 			await M._snap("%s/store_town.png" % M._arg("shots"))
 		"gear":
-			await _ready_hero(16, ["fire", "lightning"], ["power"])
+			await _ready_hero(16, ["fire", "swift"], ["power", "vast"], [[["frost", "heavy"], ["swift", "lightning"]], [["vast", "twin"], ["lasting", "heavy"]]], ["swift", "heavy", "vast", "frost", "twin", "leech"])
 			# (words won and not yet set, in his bag of words)
 			for w in ["frost", "poison", "swift", "heavy", "vast"]:
 				M.loot.give_word(w)
@@ -157,7 +168,7 @@ func _steps_to(goal: String) -> Dictionary:
 	return far
 
 
-func _ready_hero(lv: int, front: Array, behind: Array) -> void:
+func _ready_hero(lv: int, front: Array, behind: Array, more: Array = [], fill: Array = []) -> void:
 	var L = M.loot
 	L.level = lv
 	L.ring_lit = true
@@ -186,6 +197,18 @@ func _ready_hero(lv: int, front: Array, behind: Array) -> void:
 		h.loadout.put(0, "front", w)
 	for w in behind:
 		h.loadout.put(0, "behind", w)
+	# (his hold's and his swipe's words, chosen so each name reads well and the swipe's stays short)
+	for j in more.size():
+		for w in more[j][0]:
+			h.loadout.put(j + 1, "front", w)
+		for w in more[j][1]:
+			h.loadout.put(j + 1, "behind", w)
+	# (every other slot of his three moves filled too, none left empty: his word, 25 Nov 2026, “I don't like that some of the
+	# word slots are empty”; the list turned for each move, so no two moves read alike)
+	for i in 3:
+		for side in ["front", "behind"]:
+			for k in fill.size():
+				h.loadout.put(i, side, fill[(k + i * 2 + (1 if side == "behind" else 0)) % fill.size()])
 	h.loadout.refresh()
 	await M._wait(0.2)
 
