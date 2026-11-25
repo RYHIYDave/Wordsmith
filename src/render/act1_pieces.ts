@@ -77,7 +77,7 @@ import type { LoadStep } from '../engine/steps';
 import { FRONT_NAMES, HALL_LOOK, OWN_FRONTS, SANCTUM } from '../game/act1_dress';
 import { sanctumPieces } from '../art/cult_sanctum';
 // (OWN_FRONTS: the strongholds' fronts, a floor's own each: art/hold_fronts.ts)
-import { holdCourtOf, holdFrontOf } from '../art/hold_fronts';
+import { holdCourtOf, holdFrontOf, holdFrontSteps } from '../art/hold_fronts';
 
 /** (OWN_FRONTS) The names of the strongholds' fronts, each a gate's: four frames of its mark's flicker sealed, the fifth open. */
 const FRONT_SET = new Set(Object.values(FRONT_NAMES).filter((n) => n !== "the waystation's gate"));
@@ -156,6 +156,8 @@ function listPieceSteps(n: number, key: string): LoadStep[] {
     case 'redoubt': return redoubtPieceSteps();
     case 'shared': return n === 6 ? [] : quarryPieceSteps();
     case 'cultYard': return quarryPieceSteps();
+    // (OWN_FRONTS: the floor's own front a frame a step, art/hold_fronts.ts)
+    case 'front': return holdFrontSteps(n);
     case 'hush': return hushSetPieceSteps();
     case 'gateWard': return gateWardPieceSteps();
     case 'hub': return hubPieceSteps();

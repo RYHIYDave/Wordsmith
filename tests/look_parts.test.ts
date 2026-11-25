@@ -35,7 +35,8 @@ import { FLOOR_SETS } from '../src/game/first5';
 import { act1PieceSteps, act1Pieces, forgetAct1 } from '../src/render/act1_pieces';
 import { campPieceCount, campPieces, campPiecesHeld } from '../src/art/act1_camp';
 import { redoubtPieceCount, redoubtPieces, redoubtPiecesHeld } from '../src/art/redoubt';
-import { quarryPieceCount, quarryPieces, quarryPiecesHeld } from '../src/art/floor6';
+import { quarryPieceCount, quarryPieceSteps, quarryPieces, quarryPiecesHeld } from '../src/art/floor6';
+import { OWN_FRONTS } from '../src/game/act1_dress';
 import { WHEEL_STEPS, millracePieceCount, millracePieces, millracePiecesHeld, wheelFramesHeld } from '../src/art/floor13';
 import { FLOW } from '../src/art/flowing';
 import { cryptGround, cryptGroundSteps } from '../src/art/crypt';
@@ -204,9 +205,13 @@ test('5. floors 6 to 20: the traps\' art takes floor 4\'s pieces only when a hol
 test('6. Act 1\'s and Act 2\'s floors: each list a piece a step, then the list; nothing left put by; the floor\'s pieces those lists\'', () => {
   forgetAct1(-1);
   // (floor 6: the camp's, the redoubt's, nothing shared, the Quarry's own: each list's pieces a step each, then the list; then the floor)
+  // (the Quarry's list made already where the floors before took the cult's things from it, OWN_FRONTS: then not stepped again)
+  const quarrySteps = quarryPieceSteps().length;
+  assert.ok(quarrySteps === 0 || quarrySteps === quarryPieceCount() + 1);
   const six = act1PieceSteps(6);
-  // (each list: a step a piece, the list's own step that takes them, the floor's step for the list; then the floor's pieces)
-  assert.equal(six.length, campPieceCount() + 2 + redoubtPieceCount() + 2 + 1 + quarryPieceCount() + 2 + 1, 'floor 6: a step a piece');
+  // (each list: a step a piece, the list's own step that takes them, the floor's step for the list; then the floor's pieces;
+  // OWN_FRONTS: the fronts' list's own step, the Quarry having none of its own)
+  assert.equal(six.length, campPieceCount() + 2 + redoubtPieceCount() + 2 + 1 + quarrySteps + 1 + (OWN_FRONTS.on ? 1 : 0) + 1, 'floor 6: a step a piece');
   runAll(six);
   assert.deepEqual([campPiecesHeld(), redoubtPiecesHeld(), quarryPiecesHeld()], [0, 0, 0], 'nothing left put by');
   const names6 = [...act1Pieces(6).keys()];

@@ -94,8 +94,8 @@ import { LAIR } from './lair';
 import { prisonStoryPieces } from './prison_story';
 import { STORIES } from '../game/stories';
 import { FRONT_NAMES, OWN_FRONTS } from '../game/act1_dress';
-import { holdFrontOf } from './hold_fronts';
-import { quarryPieces } from './floor6';
+import { holdFrontOf, holdFrontSteps } from './hold_fronts';
+import { quarryPieceSteps, quarryPieces } from './floor6';
 
 const PIECES = new Map<number, Map<string, Piece>>();
 /** The pieces of look `k` (1 to 5) by name, made the first time they are asked for (a quarter to half a second), and kept until `forgetPieces`. */
@@ -129,7 +129,9 @@ export function lookPieceSteps(k: number): LoadStep[] {
   // loading screen, measured in Chrome by the Loading-frames chat); the queue's make-floors-look-builders-in-parts: art/tomb.ts
   // tombSteps, art/chapel.ts chapelSteps. The others as one step, as before)
   const parts = k === 1 && TOMB.on ? tombSteps() : k === 4 && CHAPEL.on ? chapelSteps() : [];
-  return [...parts, () => void lookPieces(k)];
+  // (OWN_FRONTS: the floor's stronghold front a frame a step, and the Quarry's list a piece a step, the cult's things being its)
+  const fronts = OWN_FRONTS.on && holdFrontSteps(k).length ? [...holdFrontSteps(k), ...quarryPieceSteps()] : [];
+  return [...parts, ...fronts, () => void lookPieces(k)];
 }
 /** Let go of every floor's pieces but this one's (they are made again if they are wanted). */
 export function forgetPieces(keep: number): void {

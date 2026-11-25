@@ -16,10 +16,10 @@ import nodeTest from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
 import { FRONT_NAMES, HOLD, OWN_FRONTS } from '../src/game/act1_dress';
-import { HOLD_FRONTS, holdFrontOf } from '../src/art/hold_fronts';
+import { HOLD_FRONTS, holdFrontFramesHeld, holdFrontOf, holdFrontSteps } from '../src/art/hold_fronts';
 import { FLAME } from '../src/art/mkit';
-import { act1Pieces, forgetAct1 } from '../src/render/act1_pieces';
-import { lookPieces } from '../src/art/floors';
+import { act1PieceSteps, act1Pieces, forgetAct1 } from '../src/render/act1_pieces';
+import { forgetPieces, lookPieceSteps, lookPieces } from '../src/art/floors';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from './helpers';
 
@@ -118,6 +118,34 @@ test('4. on, the floors\' pieces hold their front and the cult\'s yard; off, as 
     assert.ok(lookPieces(2).has('the altar of the words'), "on: and the cult's altar");
     const f = holdFrontOf(2);
     assert.ok(f && f.kind === 'gate' && f.frames.length === 5, 'a gate of five frames');
+  });
+  forgetAct1(-1);
+});
+
+test('5. under the loading screen a front is made a frame a step, the same frames as made at once; nothing left put by', () => {
+  // (a front made at once took 0.15 to 0.86 s under node: too long for one step; each frame its own)
+  assert.equal(holdFrontSteps(6).length, 0, "the Quarry's: none of its own");
+  const steps = holdFrontSteps(13);
+  assert.equal(steps.length, 5, 'a step a frame');
+  for (const s of steps) s();
+  assert.equal(holdFrontFramesHeld(), 5);
+  const ahead = holdFrontOf(13)!;
+  assert.equal(holdFrontFramesHeld(), 0, 'taken, not held after');
+  const now = holdFrontOf(13)!;
+  for (let i = 0; i < 5; i++) assert.deepEqual([...paintingOf(ahead.frames[i]).d], [...paintingOf(now.frames[i]).d], `frame ${i} the same`);
+  with_(true, () => {
+    // (the floors' steps hold them: the Ledge Road's, and floor 2's look, with the Quarry's list the cult's things are taken from)
+    forgetAct1(-1);
+    const seven = act1PieceSteps(7);
+    for (const s of seven) s();
+    assert.equal(holdFrontFramesHeld(), 0, "floor 7's taken");
+    assert.ok(act1Pieces(7).has('the cliff watch-fort'));
+    forgetPieces(-1);
+    const two = lookPieceSteps(2);
+    assert.ok(two.length >= 6, `floor 2's look: its front a frame a step (${two.length} steps)`);
+    for (const s of two) s();
+    assert.equal(holdFrontFramesHeld(), 0, "floor 2's taken");
+    assert.ok(lookPieces(2).has("the condemned's block"));
   });
   forgetAct1(-1);
 });

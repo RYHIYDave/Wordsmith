@@ -12,13 +12,15 @@
 // foot at its anchor, so that any of them stands where the gatehouse stands. docs/mockups/hold_fronts/README.md.
 
 import type { Sprite } from '../engine/px';
+import { Ahead } from '../engine/steps';
+import type { LoadStep } from '../engine/steps';
 import { COURT_NAMES, FRONT_NAMES } from '../game/act1_dress';
 import { PAINT as CULT_PAINT } from './act1_cult';
 import { crownAt } from './floor1';
 import type { V3 } from './floor4';
 import { shriekAt } from './floor5';
 import { TIMBER as Q_TIMBER, courtTiles, fr } from './floor6';
-import { Front, along, ashlar, banner, bars, boneWall, books, brick, creeping, door, frames, inArch, leaves, lit, logs, panes, plain, planks, plaster, plates, roofing, rubble, sconce, sigil, tower, voussoirs, wheel, where, window } from './hold_fronts_kit';
+import { Front, along, ashlar, banner, bars, boneWall, books, brick, creeping, door, inArch, leaves, lit, logs, panes, plain, planks, plaster, plates, roofing, rubble, sconce, sigil, tower, voussoirs, wheel, where, window } from './hold_fronts_kit';
 import type { Arch, Paint } from './hold_fronts_kit';
 import { hash } from './kit';
 import type { Ramp } from './kit';
@@ -1128,9 +1130,25 @@ export function holdCourtOf(n: number): { name: string; kind: 'floor tile'; fram
   return r && COURT_NAMES[n] ? { name: COURT_NAMES[n], kind: 'floor tile', frames: courtTiles(r, 3100 + n * 7) } : null;
 }
 
-/** Floor `n`'s front as a piece (its five frames), or null where it has none of its own. */
+/** A front's five frames (art/hold_fronts_kit.ts frames): sealed, its mark's four frames of flicker; then open. */
+const FRAME_OF: ReadonlyArray<readonly [boolean, number]> = [[false, 0], [false, 1], [false, 2], [false, 3], [true, 0]];
+/**
+ * (THE LOADING SCREEN'S WORK IN SLICES, main.ts LOAD_SLICE) A front's frames made ahead A FRAME A STEP (holdFrontSteps): a front
+ * made at once took 0.15 to 0.86 s (measured under node, 25 Nov 2026), too long for one of the loading screen's steps.
+ */
+const FRONT_AHEAD = new Ahead();
+/** Floor `n`'s front as a piece (its five frames, any made ahead taken), or null where it has none of its own. */
 export function holdFrontOf(n: number): { name: string; kind: 'gate'; frames: Sprite[]; shadow: number } | null {
   const h = HOLD_FRONTS.find((q) => q.floor === n);
-  return h ? { name: h.name, kind: 'gate', frames: frames(h.make), shadow: 1.2 } : null;
+  return h ? { name: h.name, kind: 'gate', frames: FRAME_OF.map(([open, f], i) => FRONT_AHEAD.take(`${n}:${i}`, () => h.make(open, f))), shadow: 1.2 } : null;
+}
+/** (LOAD_SLICE) Floor `n`'s front as the loading screen's steps, a frame a step (none where it has none of its own). */
+export function holdFrontSteps(n: number): LoadStep[] {
+  const h = HOLD_FRONTS.find((q) => q.floor === n);
+  return h ? FRAME_OF.map(([open, f], i) => FRONT_AHEAD.step(`${n}:${i}`, () => h.make(open, f))) : [];
+}
+/** How many fronts' frames are put by, made ahead and not yet taken (for the tests). */
+export function holdFrontFramesHeld(): number {
+  return FRONT_AHEAD.size;
 }
 

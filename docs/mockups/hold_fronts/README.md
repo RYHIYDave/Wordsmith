@@ -58,6 +58,8 @@ grey rock, the Pinewood's granite, the Fen's ruin-stone).
 - The floors' pieces hold their front: 6 to 20 in `src/render/act1_pieces.ts` (and on 11 to 20, which have no stronghold of the
   story's, the cult's altar, braziers and banners with it), 1 to 5 in `src/art/floors.ts` `lookPieces` (with the same). A front's
   frame: its mark's flicker while sealed, the fifth open (`src/render/act1_pieces.ts`, `src/render/pieces.ts`).
+- Under the loading screen a front is made a frame a step (`holdFrontSteps`; a front at once took 0.15 to 0.86 s under node,
+  a frame at most 0.25 s), and on 1 to 5 the Quarry's list a piece a step with it, the cult's things being its.
 - Off, all as it was.
 
 ## For the Godot chat, which puts strongholds on every endless level
@@ -87,7 +89,9 @@ floor 1's roots thickened; the indoor fronts' tops darkened.
 CHECKED: `tests/hold_fronts.test.ts` (new): 1. every floor a front by its own name, each once, painted for all but the Quarry and
 Echo Canyon; 2. each on the gatehouse's canvas and anchor, sealed with the mark burning and its light, open with the way in dark,
 the cult's fire on it either way; 3. off, the gate as it was; on, a floor's own, 6 and 8 unchanged; 4. on, the floors' pieces hold
-their front and courts and the cult's yard; off, as they were. `tsc --noEmit -p tsconfig.json`: clean but for
+their front and courts and the cult's yard; off, as they were; 5. under the loading screen a front made a frame a step, the same
+frames as at once, nothing left put by, the floors' steps holding them. `tests/look_parts.test.ts` 6 allows for the Quarry's
+list made already by floors 1 to 5 (the cult's things are taken from it), and counts the fronts' list's step. `tsc --noEmit -p tsconfig.json`: clean but for
 `tests/relief.test.ts` line 378, which is on `main` as it is.
 
 SHOWN HIM, 25 Nov 2026, after 10:51 (Eastern): the two sheets in the game; asked by pop-up whether they match their levels well enough to switch
