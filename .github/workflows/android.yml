@@ -1,0 +1,107 @@
+# THE ANDROID APP, for Google Play, built on one of GitHub's Linux machines (the Godot copy, godot/). His word, 25 Nov 2026, asked
+# what to start next: “How about the app for google play store?”. Godot 4.7.2 builds the Play bundle (.aab) with Gradle
+# (godot/export_presets.cfg, "Android": arm64, target Android 16, API 36, as Google Play asks of new apps; the game's data in an
+# install-time asset pack, so the bundle's base stays under Play's 200 MB). Signed for now with a key made here and thrown away:
+# this run only shows the bundle builds and how big it is. The upload key Play will know the app by comes once he has his
+# Google Play developer account.
+# Runs when this file or .github/android_build.txt changes on the branch, or by hand.
+name: Android build
+
+on:
+  push:
+    branches: [claude/sharp-lamport-ey7q0l]
+    paths: ['.github/workflows/android.yml', '.github/android_build.txt']
+  workflow_dispatch:
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Room on the disk
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/share/swift /usr/local/share/boost || true
+          df -h /
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: godot
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: The Android SDK's pieces for Android 16
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SM" --licenses > /dev/null || true
+          "$SM" --install "platforms;android-36" "build-tools;36.0.0" "platform-tools" > /dev/null
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"
+
+      - name: Godot 4.7.2 and its Android templates
+        run: |
+          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.7.2-stable_linux.x86_64 godot-bin
+          curl -sSL -o templates.tpz https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz
+          T="$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          mkdir -p "$T"
+          unzip -q -j templates.tpz templates/android_source.zip templates/android_debug.apk templates/android_release.apk templates/version.txt -d "$T"
+          rm templates.tpz godot.zip
+          ls -la "$T"
+          # (where the SDK and Java are, for Godot)
+          C="$HOME/.config/godot"
+          mkdir -p "$C"
+          for f in editor_settings-4.tres editor_settings-4.7.tres; do
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' "$ANDROID_HOME" "$JAVA_HOME" > "$C/$f"
+          done
+          cat "$C/editor_settings-4.7.tres"
+
+      - name: A key for this run only
+        run: |
+          keytool -genkeypair -v -keystore "$RUNNER_TEMP/run.keystore" -alias wordsmith -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass runonly -keypass runonly -dname "CN=Wordsmith test build" > /dev/null 2>&1
+          ls -la "$RUNNER_TEMP/run.keystore"
+
+      - name: The game's data brought in
+        run: |
+          ./godot-bin --headless --path godot --import > import.log 2>&1 || true
+          tail -5 import.log
+          df -h /
+
+      - name: The Play bundle
+        env:
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: ${{ runner.temp }}/run.keystore
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: wordsmith
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: runonly
+        run: |
+          mkdir -p build
+          set +e
+          ./godot-bin --headless --path godot --install-android-build-template --export-release "Android" "$PWD/build/Wordsmith.aab" > export.log 2>&1
+          code=$?
+          set -e
+          grep -nE "ERROR|error:|FAILED|failed|BUILD" export.log | head -60 || true
+          tail -40 export.log
+          grep -nE "compileSdk|targetSdk|minSdk|versions" godot/android/build/config.gradle | head -20 || true
+          ls -la build
+          exit $code
+
+      - name: How big, and what is in it
+        run: |
+          ls -la build/Wordsmith.aab
+          du -h build/Wordsmith.aab
+          # (each part of the bundle: the base, the asset pack; Play's 200 MB is for the base)
+          python3 - <<'EOF'
+          import zipfile, collections
+          z = zipfile.ZipFile("build/Wordsmith.aab")
+          parts = collections.Counter(); raw = collections.Counter()
+          for i in z.infolist():
+              top = i.filename.split("/")[0]
+              parts[top] += i.compress_size; raw[top] += i.file_size
+          for k in parts:
+              print("%-28s %8.1f MB packed  %8.1f MB unpacked" % (k, parts[k] / 1e6, raw[k] / 1e6))
+          EOF
+          df -h /
