@@ -14,7 +14,7 @@ export default async function (page, snap) {
   }, [seed, process.env.LEAN || -60]);
   await page.waitForTimeout(600);
   for (const n of depths) {
-    const info = await page.evaluate((n) => {
+    const info = await page.evaluate(([n, opts]) => {
       const d = window.__dbg;
       const g = d.game();
       // (as an endless level of that floor: no story on it, as endless mode has its strongholds)
@@ -33,14 +33,20 @@ export default async function (page, snap) {
         // (a wall's foot near where he comes in: the court's six by four floor, the wall behind it along x, nothing standing there)
         let best = null;
         const DEEP = 5;
+        // (WALL: how much of the wall behind it; PICK: which of the places found, nearest first)
+        const WALL = Number(opts.wall);
+        const PICK = Number(opts.pick);
+        const spots = [];
         for (let y = 2; y < F.h - 5; y++) for (let x = 4; x < W - 4; x++) {
           let ok = true;
           for (let ty = y; ty < y + DEEP && ok; ty++) for (let tx = x - 3; tx < x + 3 && ok; tx++) if (!floorAt(tx, ty)) ok = false;
-          for (let tx = x - 2; tx < x + 2 && ok; tx++) if (!wallAt(tx, y - 1)) ok = false;
+          for (let tx = x - WALL; tx < x + WALL && ok; tx++) if (!wallAt(tx, y - 1)) ok = false;
           if (!ok) continue;
           const dd = Math.hypot(x - g.hero.x, y - g.hero.y);
-          if (dd > 4 && (!best || dd < best.d)) best = { x, y, d: dd };
+          if (dd > 4) spots.push({ x, y, d: dd });
         }
+        spots.sort((a, b) => a.d - b.d);
+        best = spots[PICK] ?? null;
         if (!best) return { n, none: true };
         gx = best.x; gy = best.y;
         // (what stood there taken away: the court clear)
@@ -57,7 +63,7 @@ export default async function (page, snap) {
       g.hero.x = gx + 2.3; g.hero.y = gy + 2.8; g.hero.fx = -0.7; g.hero.fy = -0.7;
       const gate = L.props.find((p) => p.tx === gx && p.ty === gy && p.kind === 'piece');
       return { n, own, at: [gx, gy], gate: gate?.name };
-    }, n);
+    }, [n, { wall: process.env.WALL || 2, pick: process.env.PICK || 0 }]);
     log('front', JSON.stringify(info));
     if (info.none) continue;
     await page.waitForTimeout(13000);

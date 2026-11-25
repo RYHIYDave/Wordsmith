@@ -931,43 +931,57 @@ function stageFront(open: boolean, f: number): Sprite {
 // =================================================================================================
 // FLOOR 18, THE GLASS GALLERY: THE MIRROR HALL (art/floor18.ts)
 //
-// THE MIRROR DOOR taken by the cult: a wall of the gallery's violet silk between pilasters of grey stone, a great mirror in a gilt
-// frame either side, a glazed fanlight over the door, the door itself of mirror-glass in a gilt frame (the cult's mark burning in
-// it), a gilt cornice; the cult's banners, its pink fire.
-
+// THE MIRROR DOOR taken by the cult, BUILT AS A RUN OF THE GALLERY'S OWN WALL (his word on its first try, 25 Nov 2026, of the
+// pictures in the game: “I like them except level 18 cause that is just in the middle of the flooor”; read as, and told him so: it
+// stood out on the floor like a cabinet, where it should be part of the gallery's wall): the gallery's wall either side at the
+// gallery's own height, its violet damask over a skirting of grey stone and a gilt rail, a great mirror in gilt on each; between
+// them the door's bay rising higher, grey stone pilasters, a glazed fanlight, the door itself of mirror-glass in a gilt frame (the
+// cult's mark burning in it), a gilt cornice with a broken pediment; shallow, its top the wall's dark cap; the cult's banners on
+// the bay, its pink fire.
 
 function mirrorFront(open: boolean, f: number): Sprite {
   const F = new Front();
-  const silk: Paint = (w, n) => lit(n, GALLERY.SILK, fr(along(w, n) / 8) < 0.12 ? -1 : 0);
-  const stone = plain(GALLERY.CSTONE, 0, 0.05);
+  const damask: Paint = (w, n) => {
+    const a = along(w, n);
+    const u = fr(a / 9) - 0.5;
+    const v = fr(w[2] / 12) - 0.5;
+    const d = Math.abs(u) * 1.3 + Math.abs(v);
+    return lit(n, GALLERY.VIOLET, d < 0.2 ? 1 : d < 0.27 ? -1 : 0);
+  };
+  const wallOf: Paint = (w, n) => (w[2] < 12 ? lit(n, GALLERY.CSTONE, fr(along(w, n) / 14) < 0.07 ? -1 : 0) : w[2] < 14 ? lit(n, GALLERY.GILT, 1) : damask(w, n));
+  const cap: Paint = (_w, n) => lit(n, GALLERY.VIOLET, -2);
+  const stone = ashlar(GALLERY.CSTONE, GALLERY.CSTONE[0], 1801, 8, 14);
+  // THE GALLERY'S WALL either side, at its own height, its cap dark; a great mirror in gilt on each
+  for (const [x0, x1] of [[-72, -22], [22, 72]] as const) {
+    F.box(x0, -14, x1, -6, 0, 74, { front: wallOf, side: wallOf, top: cap });
+    const x = (x0 + x1) / 2;
+    F.box(x - 11, -7, x + 11, -5, 18, 66, plain(GALLERY.GILT, 1), (w, n) => n[1] > 0.5 && Math.abs(w[0] - x) < 8.5 && w[2] > 21 && w[2] < 63);
+    F.face([[x - 8.5, -6, 21], [x + 8.5, -6, 21], [x + 8.5, -6, 63], [x - 8.5, -6, 63]], (w, n) => {
+      const d = (w[0] - x) * 0.7 - (w[2] - 42) * 0.3;
+      return lit(n, GALLERY.MIRROR, Math.abs(d - 3) < 1.6 || Math.abs(d + 5) < 0.8 ? 2 : w[2] > 52 ? 1 : 0);
+    });
+    F.egg([x, -5, 69], [4.4, 1.6, 3.4], (n) => lit(n as V3, GALLERY.GILT, 1));
+  }
+  // THE DOOR'S BAY, higher, of grey stone; its pilasters; the gilt frame, the fanlight, the door of mirror-glass
   const DOOR: Arch = { half: 14, spring: 60, shape: 'flat' };
-  F.box(-70, -44, 70, -8, 0, 126, (w, n) => (w[2] < 18 ? stone(w, n) : silk(w, n)), (w, n) => n[1] > 0.5 && (inArch(DOOR, w[0], w[2]) || (Math.abs(w[0]) < 14 && w[2] > 64 && w[2] < 82)));
-  F.box(-70, -44, 70, -7, 17, 19, plain(GALLERY.GILT, 1));
-  // the door's frame of gilt, the door of mirror-glass
-  F.box(-18, -9, 18, -5, 0, 86, plain(GALLERY.GILT, 0), (w, n) => n[1] > 0.5 && (inArch(DOOR, w[0], w[2]) || (Math.abs(w[0]) < 14 && w[2] > 64 && w[2] < 82)));
+  const fan = (w: V3): boolean => Math.abs(w[0]) < 14 && w[2] > 64 && w[2] < 82;
+  F.box(-22, -16, 22, -6, 0, 112, { front: stone, side: stone, top: cap }, (w, n) => n[1] > 0.5 && (inArch(DOOR, w[0], w[2]) || fan(w)));
+  for (const x of [-22, 16]) F.box(x, -8, x + 6, -4, 0, 108, plain(GALLERY.CSTONE, 1, 0.05));
+  F.box(-18, -7, 18, -5, 0, 86, plain(GALLERY.GILT, 0), (w, n) => n[1] > 0.5 && (inArch(DOOR, w[0], w[2]) || fan(w)));
   door(F, DOOR, -5, 5, open, f, { slab: (x, z, n) => {
     const sheen = (x * 0.6 - z * 0.35) % 18;
     return lit(n, GALLERY.MIRROR, Math.abs(sheen) < 2 ? 2 : Math.abs(x) < 0.6 ? -1 : 0);
   } }, plain(GALLERY.GILT, -1));
-  // the fanlight over it, glazed, the gallery's dark beyond
   F.face([[-14, -6, 64], [14, -6, 64], [14, -6, 82], [-14, -6, 82]], panes(GALLERY.PANE, GALLERY.GILT[1], 5, 6));
-  // THE PILASTERS and the two great mirrors in their frames
-  for (const x of [-62, -30, 26, 58]) F.box(x - 2, -10, x + 4, -6, 0, 118, stone);
-  for (const x of [-46, 42]) {
-    F.box(x - 11, -10, x + 11, -6, 26, 104, plain(GALLERY.GILT, 1), (w, n) => n[1] > 0.5 && Math.abs(w[0] - x) < 8 && w[2] > 30 && w[2] < 100);
-    F.face([[x - 8, -8, 30], [x + 8, -8, 30], [x + 8, -8, 100], [x - 8, -8, 100]], (w, n) => {
-      const d = (w[0] - x) * 0.7 - (w[2] - 65) * 0.3;
-      return lit(n, GALLERY.MIRROR, Math.abs(d - 3) < 1.6 || Math.abs(d + 5) < 0.8 ? 2 : (w[2] > 80 ? 1 : 0));
-    });
-    F.egg([x, -6, 108], [5, 2, 4], (n) => lit(n as V3, GALLERY.GILT, 1));
-  }
-  // THE CORNICE, gilt
-  F.box(-74, -48, 74, -4, 118, 126, { front: (w, n) => (fr(w[0] / 4) < 0.3 ? lit(n, GALLERY.GILT, 1) : lit(n, GALLERY.GILT, 0)), side: plain(GALLERY.GILT, -1), top: plain(GALLERY.VIOLET, 0) });
-  // the cult's banners, its pink fire
-  banner(F, -26, -18, 40, 112, -6, IRON_Q);
-  banner(F, 18, 26, 40, 112, -6, IRON_Q);
-  sconce(F, -23, -8, 52, f, IRON_Q);
-  sconce(F, 23, -8, 52, f, IRON_Q);
+  // its cornice of gilt, and a broken pediment over it
+  F.box(-26, -18, 26, -3, 108, 114, { front: (w, n) => (fr(w[0] / 4) < 0.3 ? lit(n, GALLERY.GILT, 1) : lit(n, GALLERY.GILT, 0)), side: plain(GALLERY.GILT, -1), top: cap });
+  for (const s of [-1, 1]) F.face([[s * 24, -3.5, 114], [s * 9, -3.5, 114], [s * 9, -3.5, 124], [s * 9, -3.5, 124]], (w, n) => (Math.abs(w[2] - 114 - (24 - Math.abs(w[0])) * (10 / 15)) < 1.6 ? lit(n, GALLERY.GILT, 1) : null));
+  F.egg([0, -4, 119], [3.4, 1.6, 4.6], (n) => lit(n as V3, GALLERY.GILT, 1));
+  // the cult's banners on the bay's pilasters, its pink fire
+  banner(F, -21.5, -16.5, 40, 104, -4, IRON_Q);
+  banner(F, 16.5, 21.5, 40, 104, -4, IRON_Q);
+  sconce(F, -26, -6, 52, f, IRON_Q);
+  sconce(F, 26, -6, 52, f, IRON_Q);
   return F.finish();
 }
 

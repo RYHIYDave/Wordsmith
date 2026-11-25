@@ -43,7 +43,7 @@ cult's banners and its pink fire in sconces, in the floor's own colours otherwis
 | 15 The Great Library | the library's great door: shelves of books to the cornice, walnut pilasters, gilt, tall walnut doors, an open book carved over them with the cult's mark across its pages, a ladder |
 | 16 The Swan Gardens | the garden folly: an arch of pale limestone in a clipped yew hedge, swans carved on its piers, a balustrade with lead urns, clipped box, roses |
 | 17 The Masque | the stage door: ebony and gilt over the masque's dark wine damask, velvet curtains drawn back and tied, a gilt mask over the door |
-| 18 The Glass Gallery | the mirror door: violet silk between grey stone pilasters, two great mirrors in gilt, a glazed fanlight, the door itself of mirror-glass |
+| 18 The Glass Gallery | the mirror door, built as a run of the gallery's own wall (his word on its first try, below): the wall either side at the gallery's height, violet damask over grey stone and a gilt rail, a great mirror in gilt on each; the door's bay higher, grey stone pilasters, a glazed fanlight, the door of mirror-glass, a gilt cornice with a broken pediment |
 | 19 The Keep | the inner gatehouse: two square towers of the keep's cold stone with battlements, the portcullis drawn up, the king's arms in gold with the cult's skull painted across them |
 | 20 The Quiet Tower | the tower's bell-door: a round tower of the tower's grey stone under a cone of oak shingles, a porch with a pointed door, buttresses, a little bell in an arch of grey oak, loose pages |
 
@@ -90,4 +90,10 @@ the cult's fire on it either way; 3. off, the gate as it was; on, a floor's own,
 their front and courts and the cult's yard; off, as they were. `tsc --noEmit -p tsconfig.json`: clean but for
 `tests/relief.test.ts` line 378, which is on `main` as it is.
 
-WAITING FOR HIS WORD.
+SHOWN HIM, 25 Nov 2026, by 10:55: the two sheets in the game; asked by pop-up whether they match their levels well enough to switch
+on. HIS WORD: **“I like them except level 18 cause that is just in the middle of the flooor”**. Read as, and told him so: on 18
+the mirror door stood out on the open floor like a cabinet, where it should be part of the gallery's wall. So 18 is rebuilt as a
+run of the gallery's own wall (above), and pictured against the gallery's back wall (`WALL=4`, a place with four tiles of wall
+behind it either way); the rest as they were.
+
+WAITING FOR HIS WORD ON 18.
