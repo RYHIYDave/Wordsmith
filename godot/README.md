@@ -1442,6 +1442,18 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   `.github/ios_build.txt`; macos-26, Xcode 26, which Godot 4.7.2's template needs: Xcode 16.4 could not link it): Godot makes
   the Xcode project there and Xcode builds it, not signed yet: run 2, 22 Nov 2026, BUILD SUCCEEDED, Wordsmith.app 690 MB, in
   about 10 minutes. Signing and TestFlight to his phone wait on his account.
+- **The Android app, for Google Play** (his word, 25 Nov 2026, asked what to start next: “How about the app for google play
+  store?”; then, asked about the account, “Not yet, I'll make one (Recommended)”, and for testers, “Friends have them”).
+  `export_presets.cfg` "Android": the Play bundle (.aab) built with Gradle, arm64, target Android 16 (API 36, as Play asks of new
+  apps from 31 Aug 2026), from Android 7 (API 24), held sideways, the wordsmith icon (plain and adaptive), package
+  `com.wordsmithgame.wordsmith` (as the iPhone's). ON ONE OF GITHUB'S LINUX MACHINES (`.github/workflows/android.yml`, run by
+  a change to it or to `.github/android_build.txt`): Godot 4.7.2 and its Android templates, the SDK's Android 16 platform, the
+  Gradle build; run 1, 25 Nov 2026: built in about 8 minutes, 601 MB: the app's base 26 MB, the game's data in an install-time
+  asset pack (Godot 4.7's own `assetPackInstallTime`) 599 MB, under Play's 200 MB a base, 1.5 GB a pack, 4 GB in all. Signed with
+  a key made for the run and thrown away: the upload key waits on his Google Play account (the repository is public, so the
+  key never goes into it). His steps, the store text and the road to going public: the doc “Wordsmith on Google Play”
+  (https://claude.ai/artifact/H6PTRKJ7E5VFjDDj8rU58e). `--touch=1` (`main.gd`): any check's pictures as a phone shows them (TAP,
+  HOLD, SWIPE), for the store's screenshots; `docs/mockups/play_store/`: the 512 icon and two banners for his pick.
 - **The chained rare** (new to the Godot game, not in the browser game; `scripts/chained_rare.gd`). His words, 22 Nov 2026:
   “Adding a new mechanic for the first five levels of wordsmith.  2-5 in the campaign, in all relevant levels in endless.  A
   chained immobile rare enemy.  He has his words plus a bonus word above him.  He will drop the guaranteed word above him if you
