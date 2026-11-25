@@ -49,6 +49,10 @@ func run(main, hero, dir: String) -> void:
 	h.unhurt = true
 	M.loot.ring_lit = true
 	M.loot.taught = true
+	if OS.get_environment("WS_BH_FROM") == "4":
+		await _round4(dir)
+		print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+		return
 	await M.go_to("floor8", "start")
 	await _wait(1.0)
 	# FROSTBITE: one carrier, then four, him chilled all the while; how long he is held of six seconds
@@ -514,6 +518,45 @@ func run(main, hero, dir: String) -> void:
 			break
 	var landed: Vector2 = h.kit._reach_point(aim6, 9.0, o6) if aim6 != Vector2.INF else o6
 	_line(aim6 != Vector2.INF and M._monsters.sees(o6, landed), "the Warlock's Curse echoed at a spot behind a wall from where he threw it: lands at %s, in his sight from there (%s); it went through" % [str(landed), str(M._monsters.sees(o6, landed))])
+	await _round4(dir)
+	h = M.hero
+	# (the demon: come into town as it, then fallen as it)
+	h.kit._become("demon")
+	h.kit.pact = 30.0
+	tg = 0.0
+	while M._going and tg < 15.0:
+		await M.get_tree().process_frame
+		tg += M.get_process_delta_time()
+	await M.go_to("town", "start")
+	await _wait(0.5)
+	var town_form: String = h.kit.form
+	await M.go_to("floor2", "start")
+	await _wait(0.5)
+	h.kit._become("demon")
+	h.kit.pact = 30.0
+	h.unhurt = false
+	h._fall()
+	var fall_form: String = h.kit.form
+	var fall_pact: float = h.kit.pact
+	_line(town_form == "man" and fall_form == "man" and fall_pact == 0.0, "the Warlock as the demon: come into town, %s; fallen, %s, his pact %d" % [town_form, fall_form, int(fall_pact)])
+	print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+
+
+## THE FOURTH ROUND'S, THE WARLOCK'S (alone: WS_BH_FROM=4): on floor 6, the Warlock at level 30.
+func _round4(dir: String) -> void:
+	if str(h.cls) != "warlock" or not str(M.place).begins_with("floor"):
+		var tg0 := 0.0
+		while M._going and tg0 < 15.0:
+			await M.get_tree().process_frame
+			tg0 += M.get_process_delta_time()
+		await M.go_to("floor6", "start")
+		await _wait(1.0)
+		M.set_class("warlock", true)
+		h = M.hero
+		M.loot.level = 30
+		M.loot.derive()
+		await _wait(0.3)
+	var tg := 0.0
 	# THE FOURTH ROUND'S, THE WARLOCK'S: undoing a talent kept on reload; the Unsigned Pact lets him go with life regen; the Burning
 	# Verse's mark goes with its burns; a tap on him on a touch screen changes him; no change in town, the Bound Demon left behind
 	var Tal := preload("res://scripts/talents.gd")
@@ -565,7 +608,9 @@ func run(main, hero, dir: String) -> void:
 	var verse_off := false
 	var later_t := -1.0
 	if vm != null:
-		vm.waits = true
+		vm.waits = false
+		if vm.state == "sleep":
+			vm.wake_up()
 		vm.curse_t = 2.0
 		vm.burn_t = 2.0
 		vm.burn_dps = 1.0
@@ -639,23 +684,3 @@ func run(main, hero, dir: String) -> void:
 	h.kit.turn_man()
 	h.talents = tal0
 	h.talents_changed()
-	# (the demon: come into town as it, then fallen as it)
-	h.kit._become("demon")
-	h.kit.pact = 30.0
-	tg = 0.0
-	while M._going and tg < 15.0:
-		await M.get_tree().process_frame
-		tg += M.get_process_delta_time()
-	await M.go_to("town", "start")
-	await _wait(0.5)
-	var town_form: String = h.kit.form
-	await M.go_to("floor2", "start")
-	await _wait(0.5)
-	h.kit._become("demon")
-	h.kit.pact = 30.0
-	h.unhurt = false
-	h._fall()
-	var fall_form: String = h.kit.form
-	var fall_pact: float = h.kit.pact
-	_line(town_form == "man" and fall_form == "man" and fall_pact == 0.0, "the Warlock as the demon: come into town, %s; fallen, %s, his pact %d" % [town_form, fall_form, int(fall_pact)])
-	print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

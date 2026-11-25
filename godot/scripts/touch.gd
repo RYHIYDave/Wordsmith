@@ -322,8 +322,9 @@ func _monster_at(p: Vector2):
 
 
 ## (main.ts onHim) Whether a touch at `p` (game pixels) is on the hero, and he has a use for it there: the box of him, 12 either
-## side and from 44 over his feet to 6 under; the Brawler's globes over his head too.
-func _self_touch(h, p: Vector2) -> bool:
+## side and from 44 over his feet to 6 under (`body`: to 8 over them, his feet left to a way he stands on); the Brawler's globes
+## over his head too.
+func _self_touch(h, p: Vector2, body := false) -> bool:
 	var kit = h.kit
 	if kit == null:
 		return false
@@ -331,7 +332,7 @@ func _self_touch(h, p: Vector2) -> bool:
 	var tl: Vector2 = cam.get_screen_center_position() - get_viewport_rect().size / 2.0 if cam != null else Vector2.ZERO
 	var at := tl / 2.0 + p
 	var s: Vector2 = Iso.to_screen(h.world.x, h.world.y) / 2.0
-	var on_him: bool = absf(at.x - s.x) <= 12.0 and at.y >= s.y - 44.0 and at.y <= s.y + 6.0
+	var on_him: bool = absf(at.x - s.x) <= 12.0 and at.y >= s.y - 44.0 and at.y <= s.y + (-8.0 if body else 6.0)
 	match str(h.cls):
 		"warlock":
 			if not on_him or h.in_town or not kit.change.is_empty():
@@ -430,19 +431,20 @@ func _process(dt: float) -> void:
 	var spot := {}
 	if _poke != null and _monster_at(_poke) == null:
 		spot = _spot_at(_poke)
+	# A TOUCH ON HIM HIMSELF (main.ts): the Warlock's pact full, it changes him (his words, “then you tap on the warlock and he
+	# transforms”), the demon fed by the Unsigned Pact, it lets him go; the Mage's Aura, “a tap on the hero ability called Aura”; the
+	# Brawler's combo going, on him or his globes, it is cancelled. No attack. On his body it is his, though he stand on a way; at
+	# his feet a way there is used. (Nothing on a touch screen pressed R: the bug hunt's fourth round, 25 Nov 2026.)
+	if _poke != null and _monster_at(_poke) == null and _self_touch(h, _poke, not spot.is_empty()):
+		_press("change")
+		_tap = null
+		_poke = null
+		spot = {}
 	if not spot.is_empty():
 		errand = {"at": spot["at"], "kind": spot["kind"], "t": 0.0, "path": _path_to(spot["at"]), "i": 0}
 		asked = ["errand", spot["kind"]]
 	elif _poke != null:
 		errand = {}
-	# A TOUCH ON HIM HIMSELF (main.ts): the Warlock's pact full, it changes him (his words, “then you tap on the warlock and he
-	# transforms”), the demon fed by the Unsigned Pact, it lets him go; the Mage's Aura, “a tap on the hero ability called Aura”; the
-	# Brawler's combo going, on him or his globes, it is cancelled. No attack. (Nothing on a touch screen pressed R: the bug hunt's
-	# fourth round, 25 Nov 2026.)
-	if _poke != null and spot.is_empty() and _monster_at(_poke) == null and _self_touch(h, _poke):
-		_press("change")
-		_tap = null
-		_poke = null
 	if mode == "auto" or mode == "one":
 		var locked = _lock_update(dt)
 		var blade = _awake_near(h.world, float(quick["range"]) * 0.9) if quick["kind"] == "melee" else null
