@@ -1968,9 +1968,10 @@ func _say_slip() -> void:
 ## `fallen`: said as he falls, and shown over him fallen (the Princess's whisper).
 ## (THE BOSSES CALL OUT THEIR BIG MOVES, game/boss_calls.ts; main.ts bossSay with his voice) A line called out: over him, and
 ## heard in his own voice (monsters.gd speak).
+## (his line stays up while it is heard: the real voices' takes run up to 4 s)
 func call_line(text: String, secs: float) -> void:
-	say(text, secs)
-	mgr.speak(kind, text)
+	var heard: float = mgr.speak(kind, text)
+	say(text, maxf(secs, heard))
 
 
 ## bossCall: the line a boss calls out as he begins `move` (by its name in his rules; `basic`: it is his basic blow), if his kind has

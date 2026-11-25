@@ -1,0 +1,204 @@
+{
+ "warden": {
+  "On your knees!": [
+   "real/warden_0_1.ogg",
+   "real/warden_0_2.ogg"
+  ],
+  "Back to your cell!": [
+   "real/warden_1_1.ogg",
+   "real/warden_1_2.ogg"
+  ]
+ },
+ "headsman": {
+  "Hold still.": [
+   "real/headsman_0_1.ogg",
+   "real/headsman_0_2.ogg"
+  ],
+  "Heads will roll.": [
+   "real/headsman_1_1.ogg",
+   "real/headsman_1_2.ogg"
+  ],
+  "The block awaits.": [
+   "real/headsman_2_1.ogg",
+   "real/headsman_2_2.ogg"
+  ]
+ },
+ "chained": {
+  "Mine! MINE!": [
+   "real/chained_0_1.ogg",
+   "real/chained_0_2.ogg"
+  ],
+  "Round... round... ROUND!": [
+   "real/chained_1_1.ogg",
+   "real/chained_1_2.ogg"
+  ],
+  "Mmmph... FREE!": [
+   "real/chained_2_1.ogg",
+   "real/chained_2_2.ogg"
+  ]
+ },
+ "amalgam": {
+  "All our hands.": [
+   "real/amalgam_0_1.ogg",
+   "real/amalgam_0_2.ogg"
+  ],
+  "Fly, brothers.": [
+   "real/amalgam_1_1.ogg",
+   "real/amalgam_1_2.ogg"
+  ],
+  "Be one of us.": [
+   "real/amalgam_2_1.ogg",
+   "real/amalgam_2_2.ogg"
+  ],
+  "We break. We mend.": [
+   "real/amalgam_3_1.ogg",
+   "real/amalgam_3_2.ogg"
+  ]
+ },
+ "fleshmancer": {
+  "Bone remembers how to cut.": [
+   "real/fleshmancer_0_1.ogg",
+   "real/fleshmancer_0_2.ogg"
+  ],
+  "Stay in the circle.": [
+   "real/fleshmancer_1_1.ogg",
+   "real/fleshmancer_1_2.ogg"
+  ],
+  "Rise. Serve.": [
+   "real/fleshmancer_2_1.ogg",
+   "real/fleshmancer_2_2.ogg"
+  ],
+  "Burn, and be useful.": [
+   "real/fleshmancer_3_1.ogg",
+   "real/fleshmancer_3_2.ogg"
+  ]
+ },
+ "unfinished": {
+  "Catch.": [
+   "real/unfinished_0_1.ogg",
+   "real/unfinished_0_2.ogg"
+  ],
+  "Be still. Be stone.": [
+   "real/unfinished_1_1.ogg",
+   "real/unfinished_1_2.ogg"
+  ],
+  "The mountain falls with me.": [
+   "real/unfinished_2_1.ogg",
+   "real/unfinished_2_2.ogg"
+  ],
+  "Tear me free!": [
+   "real/unfinished_3_1.ogg",
+   "real/unfinished_3_2.ogg"
+  ]
+ },
+ "cantor": {
+  "LISTEN!": [
+   "real/cantor_0_1.ogg",
+   "real/cantor_0_2.ogg"
+  ],
+  "My choir, sing!": [
+   "real/cantor_1_1.ogg",
+   "real/cantor_1_2.ogg"
+  ],
+  "Let the stones sing.": [
+   "real/cantor_2_1.ogg",
+   "real/cantor_2_2.ogg"
+  ]
+ },
+ "eye": {
+  "I see you.": [
+   "real/eye_0_1.ogg",
+   "real/eye_0_2.ogg"
+  ],
+  "Rise, my drowned.": [
+   "real/eye_1_1.ogg",
+   "real/eye_1_2.ogg"
+  ],
+  "Come up for air.": [
+   "real/eye_2_1.ogg",
+   "real/eye_2_2.ogg"
+  ],
+  "Drink deep.": [
+   "real/eye_3_1.ogg",
+   "real/eye_3_2.ogg"
+  ]
+ },
+ "ratking": {
+  "Hear ye! Hear ye!": [
+   "real/ratking_0_1.ogg",
+   "real/ratking_0_2.ogg"
+  ],
+  "Who's there? Who's there?": [
+   "real/ratking_1_1.ogg",
+   "real/ratking_1_2.ogg"
+  ],
+  "A hundred teeth!": [
+   "real/ratking_2_1.ogg",
+   "real/ratking_2_2.ogg"
+  ]
+ },
+ "physician": {
+  "A little blood, for the tests.": [
+   "real/physician_0_1.ogg",
+   "real/physician_0_2.ogg"
+  ],
+  "Take your medicine.": [
+   "real/physician_1_1.ogg",
+   "real/physician_1_2.ogg"
+  ],
+  "Rounds, everyone!": [
+   "real/physician_2_1.ogg",
+   "real/physician_2_2.ogg"
+  ]
+ },
+ "prince": {
+  "Who am I tonight?": [
+   "real/prince_0_1.ogg",
+   "real/prince_0_2.ogg"
+  ],
+  "May I have this dance?": [
+   "real/prince_1_1.ogg",
+   "real/prince_1_2.ogg"
+  ],
+  "The clock strikes twelve!": [
+   "real/prince_2_1.ogg",
+   "real/prince_2_2.ogg"
+  ]
+ },
+ "gqueen": {
+  "Where am I now?": [
+   "real/gqueen_0_1.ogg",
+   "real/gqueen_0_2.ogg"
+  ],
+  "So many of you. One fairest.": [
+   "real/gqueen_1_1.ogg",
+   "real/gqueen_1_2.ogg"
+  ],
+  "Break!": [
+   "real/gqueen_2_1.ogg",
+   "real/gqueen_2_2.ogg"
+  ],
+  "Look at me. All of me.": [
+   "real/gqueen_3_1.ogg",
+   "real/gqueen_3_2.ogg"
+  ]
+ },
+ "gking": {
+  "Make way for the King!": [
+   "real/gking_0_1.ogg",
+   "real/gking_0_2.ogg"
+  ],
+  "By royal decree!": [
+   "real/gking_1_1.ogg",
+   "real/gking_1_2.ogg"
+  ],
+  "Heavy is the crown.": [
+   "real/gking_2_1.ogg",
+   "real/gking_2_2.ogg"
+  ],
+  "See what I have done.": [
+   "real/gking_3_1.ogg",
+   "real/gking_3_2.ogg"
+  ]
+ }
+}

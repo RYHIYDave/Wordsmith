@@ -632,7 +632,18 @@ func voices(main, hero, dir: String) -> void:
 				var st = load("res://assets/voices/" + str(f))
 				if not (st is AudioStream) or st.get_length() <= 0.2:
 					bad_files.append(f)
-	_line(files == 88 and bad_files.is_empty(), "%d bosses, %d takes of their lines, each a sound to play (%s)" % [V["voices"].size(), files, "all" if bad_files.is_empty() else str(bad_files)])
+	_line(files == 88 + 36 and bad_files.is_empty(), "%d bosses, %d takes of their lines, each a sound to play (%s)" % [V["voices"].size(), files, "all" if bad_files.is_empty() else str(bad_files)])
+	# (THE TALKING BOSSES IN REAL VOICES, his word: every line of the thirteen a real voice's two takes, tools/godot_boss_voices.sh;
+	# the Warped Wordsmith's his own, wsboss/)
+	var mumbled: Array = []
+	for kind in V["voices"]:
+		if kind == "wsboss":
+			continue
+		for line in V["voices"][kind]:
+			var takes: Array = V["voices"][kind][line]
+			if takes.size() != 2 or not takes.all(func(f): return str(f).begins_with("real/")):
+				mumbled.append("%s: %s" % [kind, line])
+	_line(V["voices"].size() == 14 and mumbled.is_empty(), "the thirteen talking bosses' 44 lines in real voices, two takes each (%s)" % ["all" if mumbled.is_empty() else str(mumbled)])
 	var said := func() -> Array:
 		return M._monsters.said_aloud.back() if not M._monsters.said_aloud.is_empty() else []
 	for place in ["floor1", "floor3", "floor12", "floor19"]:

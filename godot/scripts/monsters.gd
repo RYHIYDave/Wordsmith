@@ -449,6 +449,12 @@ static func voices() -> Dictionary:
 		# (THE WARPED WORDSMITH SPEAKS, in a real voice, his pick: his lines' takes, tools/godot_wsboss_voice.sh)
 		if FileAccess.file_exists(VOICES_DIR + "wsboss/voices.json"):
 			_voices["voices"]["wsboss"] = JSON.parse_string(FileAccess.get_file_as_string(VOICES_DIR + "wsboss/voices.json"))
+		# (THE OTHER TALKING BOSSES IN REAL VOICES, his word: “Go ahead and do the voices for the other speaking bosses as well”; each
+		# boss's lines' two takes, tools/godot_boss_voices.sh, in place of the game's mumble)
+		if FileAccess.file_exists(VOICES_DIR + "real/voices.json"):
+			var real: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(VOICES_DIR + "real/voices.json"))
+			for kind in real:
+				_voices["voices"][kind] = real[kind]
 	return _voices
 
 
