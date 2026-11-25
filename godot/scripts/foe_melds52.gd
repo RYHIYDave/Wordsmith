@@ -124,7 +124,8 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 			F._say(h.world, "Branded", "#ff8a80")
 		if s.call("pressurepoint") > 0.0 and h._knock_t > 0.0:
 			by.m52["foe_point"] = true
-		by.m52["foe_mom"] = int(by.m52.get("foe_mom", 0)) + 1
+		# (as his own Momentum, so many at most: one carried it on and on, the bug hunt's third round)
+		by.m52["foe_mom"] = mini(int(_t("momentum").get("most", 10)), int(by.m52.get("foe_mom", 0)) + 1)
 		by.m52["foe_last"] = F.clock
 		if s.call("flurry") > 0.0:
 			by.m52["foe_flurry"] = minf(float(_t("flurry")["foeMost"]), float(by.m52.get("foe_flurry", 0.0)) + float(_t("flurry")["foeFaster"]))

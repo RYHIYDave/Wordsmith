@@ -1184,3 +1184,9 @@ func _step_tome(dt: float) -> void:
 			hero.monsters.wake(m)
 		hero._tell({"t": "unique", "id": "restlesstome", "what": "touch", "x": m.world.x, "y": m.world.y, "mid": m.id})
 		_say({"id": "restlesstome", "what": "touch"})
+
+
+## The place he was in left (hero.gd fresh_place): Gyre's axes spinning there and the Windcutter's blades in flight go with it.
+func fresh_place() -> void:
+	gyres.clear()
+	blades.clear()

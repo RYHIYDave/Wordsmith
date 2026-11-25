@@ -1576,6 +1576,11 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   melds' heat on it, and its poison with its doses (monsters.gd spread_burns: down a line Brand's double was passed and doubled
   again, 200 a second to 6,400, and each poison passed took eight doses more); Cinderbrood's fire passed on the same.
   `--only=bughunt` 14 of 14; the reaping check's line on Reaping with itself and Twin brought to the High City's melds being on.
+  The Warrior's (axe and hammer): what the melds and the uniques leave or have yet to do goes with the place he leaves (hero.gd
+  fresh_place: melds52_rules.gd forget, uniques.gd fresh_place): a blow due a moment on (Concussion, Viper: a script error on the
+  next floor), the redone melds' patches of ground (Bedrock struck floor 9's monsters where it lay on floor 7), Gyre's axe spinning;
+  a monster's Momentum stops at ten, as his own (foe_melds52.gd). His own checks: whirl1 asks `--whirl1=1`, uniqueswar's Windcutter
+  times by the frame on a slow machine (both stale, not the game's).
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/

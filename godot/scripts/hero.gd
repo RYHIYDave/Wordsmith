@@ -2327,6 +2327,13 @@ func cool_by(secs: float) -> void:
 
 func fresh_place() -> void:
 	last.fresh_place()
+	# (THE MELDS' and THE UNIQUES' what they leave and what they have yet to do, the floor left: a blow a moment from now, a patch of
+	# ground, an axe spinning where it fell, all of the place he left; they went on on the next floor at the same spot, and some
+	# struck at a floor no longer there (a script error): the bug hunt's third round, 25 Nov 2026)
+	if m52 != null:
+		m52.forget()
+	if uniques != null:
+		uniques.fresh_place()
 	might = 0.0
 	might_t = 0.0
 	haste = 0.0
