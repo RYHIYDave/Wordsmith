@@ -1007,12 +1007,13 @@ func _round5(dir: String) -> void:
 	var near_ok: bool = bad_spot != Vector2.INF and K._stands(K._stand_near(bad_spot))
 	_line(not gl.is_empty() and bad_spot != Vector2.INF and stood and near_ok, "the golem put down on open ground with no room for it (%s, floor 8): out again where it may stand %s (it stood in walls and props and fired)" % [str(bad_spot), str(stood)])
 	# (A CONTRAPTION REFUSED: three standing, none past its first shot: no use, no boons)
-	await _hero4("tinkerer", ["contraption"])
+	await _hero4("tinkerer", ["contraptions"])
 	var ci := -1
 	for k in 3:
 		if h.loadout.id(k) == "contraption":
 			ci = k
 	var refused_ok := false
+	var why_c := ""
 	if ci >= 0:
 		h.loadout.front[ci] = ["guarding", null]
 		h.loadout._r = [null, null, null]
@@ -1022,10 +1023,12 @@ func _round5(dir: String) -> void:
 		var u0: int = h.uses[ci]
 		h.uses[ci] += 1
 		h.kit._deliver(ci, h.world, h.world + h.face * 2.0, 1.0, true)
-		refused_ok = h.uses[ci] == u0 and h.shield == 0.0 and h.kit.contraptions.filter(func(q): return float(q["broke"]) < 0.0).size() == 3
+		var standing_n: int = h.kit.contraptions.filter(func(q): return float(q["broke"]) < 0.0).size()
+		refused_ok = h.uses[ci] == u0 and h.shield == 0.0 and standing_n == 3
+		why_c = "move %d, uses %d to %d, shield %d, standing %d" % [ci, u0, h.uses[ci], int(h.shield), standing_n]
 		h.loadout.front[ci] = [null, null]
 		h.loadout._r = [null, null, null]
-	_line(ci >= 0 and refused_ok, "a Contraption refused (three standing, none past its first shot): no use counted, no Guarding shield (it was a use)")
+	_line(ci >= 0 and refused_ok, "a Contraption refused (three standing, none past its first shot): no use counted, no Guarding shield (it was a use): %s" % why_c)
 	# (THE WARRIOR: Mirroring in front of his Whirl and of his Lunge: a reflection of each)
 	await _hero4("warrior", [])
 	await _go4("floor11")
@@ -1078,6 +1081,9 @@ func _round5(dir: String) -> void:
 		e.life = 1.0e8
 		e.freeze_immune = 0.0
 		e.waits = false
+		if e.state == "sleep":
+			e.wake_up()
+		e.speed = 0.0
 		h.loadout.front[0] = ["shiver", null]
 		h.loadout._r = [null, null, null]
 		var ts := 0.0
