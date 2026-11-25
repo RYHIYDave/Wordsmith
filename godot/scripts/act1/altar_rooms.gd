@@ -17,13 +17,14 @@
 ##     (HOLD_WAVES) rise out of rifts in its floor as a hall's do: of the floor's own packs (QUEST610 hold.make: plain, two plain,
 ##     blue and plain, two blue, a yellow and a blue), each with the words burned, harder for each word past the first and each wave on.
 ##   THE REWARD, the last dead: a hall's (holds.gd _won: runedust, gear, gold, a page of the muster roll).
-## ON: pictures first (docs/mockups/edge_gate/); until his yes, no gate is laid.
+## ON at his yes to the pictures (docs/mockups/edge_gate/), 25 Nov 2026: “I have art chat making new stronghold entrances for all levels,
+## but yes switch them on” (the art chat's entrances to take the gatehouse's place as they come in).
 extends "res://scripts/act1/holds.gd"
 
 const AR_DIR := "res://assets/altar_room/"
 const FloorMap := preload("res://scripts/floor_map.gd")
 const DoorWords := preload("res://scripts/door_words.gd")
-static var ON := false
+static var ON := true
 ## (gates on a level; at most, Siege burned in; how far the altar from where he comes in; two altars this far apart)
 const N := 2
 const MOST := 4
