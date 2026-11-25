@@ -1640,6 +1640,21 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   card on the ATTACKS page under "Wordsmith (E)" and LEVEL UP (scratchpad picture). Checks written for the Warrior, not the game's:
   wordsui, uniques 08, touch 2-4, pad 5, practice 91, save_read 06 as the Brawler. Round 5's checks, `--only=bughunt` WS_BH_FROM=5,
   9 of 9.
+- THE BUG HUNT, ROUND 6, the last (mixed heroes in the modes, deaths and saves; deep endless with the door words; all six with
+  random builds). The modes': home by the waypoint leaves the floor behind as every way does (main.gd _arrived, from go_to and
+  go_warp: burns, poisons, roots, the demon, the melds' bursts to come went home with him, and a normal hero dying of them in town
+  lost his run); nothing is saved while the start screen or the hero cards are up (with no hero saved, the one standing in for him
+  was written as a run, a Warrior never picked offered to CONTINUE); the Brawler's kick and jump wait for their levels as every hero's
+  moves (heroes/brawler.gd _press, move_open); the Warlock levelling as the demon is told his own new move (loadout.gd own_id; loot.gd,
+  hud.gd); the gear screen does not open over the death screen. Deep endless's: his armour and dodge are reckoned by the level's
+  depth on an endless level (hero.gd _power_depth, loot.gd power, as game.ts power: by the floor's, Endless 50 of floor 2 cut 75%
+  where the game cuts 20%, the final arena 15% at any level), and the Bells', a floor 6-10 stronghold's and Plundering's gold too
+  (act2/bells.gd, act1/holds.gd, hero.gd); the death screen names the endless level (main.gd fall_endless: "Fell in dungeon 12" on
+  Endless 44); monsters stood off an altar room's pieces (act1/altar_rooms.gd, off for now); a unique's search past any gap (loot.gd:
+  a script error past Endless 983). Left for his word: past Endless 30 a level-50 hero dies in seconds and past 50 a monster takes
+  minutes to kill (10% more a level, compounded, against gear that stops at floor 20's: as the browser game); Siege's extra rooms
+  fewer with the other door words. Round 6's checks, `--only=bughunt` WS_BH_FROM=6, 5 of 5; talents 86 of 86 (its Tremors line
+  failed only on a busy machine).
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/
