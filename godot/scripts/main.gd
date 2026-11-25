@@ -183,10 +183,11 @@ var best_endless := 0
 ## (Recommended)”). On, an endless level is no harder than the one before it: how hard is the hero's DEPTH (`delve`, from 1), raised
 ## only at the Shaft's Rim's record stone (town.gd "delve", asked twice: it is for good). Each step: its monsters a third stronger,
 ## life and damage (`tough`, on each step before), its finds as good as three endless levels deeper (`power`) and 15 more magic find
-## (`mf`); the experience as its finds. Any endless level's boss leaves a Tablet Shard the account lacks one time in three
-## (shards.gd, `shard`), so the Warped Wordsmith may be fought again and again at the depth the hero can bear. `best_delve` (the
-## account's): the deepest any of his heroes has gone. PICTURES FIRST: off until his yes to how the record stone shows it.
-const DELVE := {"on": false, "tough": 4.0 / 3.0, "power": 3, "mf": 15.0, "shard": 1.0 / 3.0, "confirm": 5.0}
+## (`mf`); the experience as its finds. The Tablet Shards stay the bosses' of floors 5, 10, 15 and 20 (his word, after picking “Any
+## boss, 1 in 3”: “Wait no I want that to stay on just the 5,10,15, and 20 bosses”); the Warped Wordsmith may be fought again and
+## again at the depth the hero can bear. `best_delve` (the account's): the deepest any of his heroes has gone. PICTURES FIRST: off
+## until his yes to how it is shown (his word on the first pictures, the record stone used: “I think we can do better than that”).
+const DELVE := {"on": false, "tough": 4.0 / 3.0, "power": 3, "mf": 15.0, "confirm": 5.0}
 var delve := 1
 var best_delve := 1
 ## (the record stone asked once, waiting for the second press that delves: seconds left)

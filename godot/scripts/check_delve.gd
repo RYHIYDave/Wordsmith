@@ -2,7 +2,7 @@
 ## step (OK or WRONG):
 ##   an endless level no harder than the one before it (Endless 12 and Endless 40 the same, at a depth); each depth a third stronger,
 ##   its finds three levels deeper and 15 more magic find; the Shaft's Rim's record stone naming the depth, used once (asked), let
-##   go (nothing), used twice (a depth deeper, for good, kept in the save); any endless boss leaving a shard one time in three.
+##   go (nothing), used twice (a depth deeper, for good, kept in the save); the shards still only the bosses' of floors 5, 10, 15, 20.
 extends RefCounted
 
 const Save := preload("res://scripts/save.gd")
@@ -97,29 +97,26 @@ func run(main, hero, dir: String) -> void:
 	M.delve = 1
 	Save.restore_run(M, run)
 	_line(M.delve == 2, "the save read back: Depth %d" % M.delve)
-	# ANY ENDLESS BOSS: A SHARD ONE TIME IN THREE
+	# THE SHARDS: STILL ONLY THE BOSSES OF FLOORS 5, 10, 15 AND 20 (his word)
 	var S = M.shards
-	var got := 0
-	var tries := 3000
 	var was_q: int = M.quarters
+	var was_depth: int = int(M.map.depth)
 	M.in_endless = true
-	for i in tries:
+	var drops := {}
+	for d in [7, 5, 12, 10]:
+		M.map.depth = d
 		M.quarters = 0
 		S._things = []
 		S.boss_down(_Boss.new(h.world))
-		if not S._things.is_empty():
-			got += 1
+		drops[d] = not S._things.is_empty()
 		for t in S._things:
 			if is_instance_valid(t["node"]):
 				t["node"].queue_free()
 	S._things = []
-	M.quarters = 15
-	S.boss_down(_Boss.new(h.world))
-	var none_when_held: bool = S._things.is_empty()
+	M.map.depth = was_depth
 	M.quarters = was_q
 	M.in_endless = false
-	var share := float(got) / tries
-	_line(absf(share - 1.0 / 3.0) < 0.04 and none_when_held, "any endless boss (here on %s): a shard %.0f%% of %d falls (one time in three); none when all four are held" % [M.place, share * 100.0, tries])
+	_line(drops == {7: false, 5: true, 12: false, 10: true}, "a shard falls only from the bosses of floors 5, 10, 15 and 20 (floors 7, 5, 12, 10: %s)" % [drops])
 	print("DELVE: %d checks, %s" % [n, "all OK" if bad.is_empty() else "WRONG: %s" % [bad]])
 
 

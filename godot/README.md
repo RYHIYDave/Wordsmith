@@ -1468,8 +1468,9 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   2"; used once it says what it does and that it can't be undone, used again within 5 s the hero goes a depth deeper, for good;
   its name "DEPTH 2, ENDLESS 14"). Each depth: monsters a third stronger (life and damage, `endless_tough` = (4/3)^(depth-1), the
   final boss too), finds as three endless levels deeper (`endless_power`), 15 more magic find on an endless level (`delve_mf`),
-  experience by the finds' depth. Any endless boss leaves a Tablet Shard the account lacks one time in three (`shards.gd`), so the
-  Warped Wordsmith comes about every twelve levels. Off, endless is as it was (10% a level). Check and pictures: `--only=delve
+  experience by the finds' depth. The Tablet Shards stay the bosses' of floors 5, 10, 15 and 20 (his word: “Wait no I want that
+  to stay on just the 5,10,15, and 20 bosses”). Off, endless is as it was (10% a level). How it is shown is being redone (his
+  word on the record stone's first pictures: “I think we can do better than that”). Check and pictures: `--only=delve
   --delve=1` (`check_delve.gd`, 10 checks); `docs/mockups/delve/`.
 - **The human enemies' voices** (the queue's "Make voices for the human enemies"; `monster.gd VOICE`). The cult of the first
   floors (the Cultist, the Dagger Cultist, the High Priest, the Chanter, the Firepot Thrower) share one real voice, his pick,
