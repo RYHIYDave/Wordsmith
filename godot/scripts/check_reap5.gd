@@ -108,7 +108,13 @@ func run(_only := "") -> void:
 	M52.REAP_ON = true
 	var made: Array = ids.filter(func(id): return Words.meld_of("reaping", RUNE[id]) == id and Words.meld_of(RUNE[id], "reaping") == id and Words.meld_problem("reaping", RUNE[id]) == "")
 	_line(made.size() == 5, "switched on, it makes all five from Reaping and its rune: %s" % ", ".join(PackedStringArray(made.map(func(id): return T["words"][id]["name"]))))
-	_line(Words.meld_of("reaping", "reaping") == "" and Words.meld_of("reaping", "twin") == "", "and nothing else of Reaping's (with itself: '%s', with Twin: '%s')" % [Words.meld_of("reaping", "reaping"), Words.meld_of("reaping", "twin")])
+	# (with itself and with Twin, Reaping's own level 2 and the High City's Revenants, now the High City's melds are on (melds52.gd
+	# HIGH_ON, his “Switch them on (Recommended)”, 24 Nov 2026); none of the five's: the bug hunt's third round found this line from
+	# before)
+	var hi: bool = M52.HIGH_ON
+	var with_self: String = Words.meld_of("reaping", "reaping")
+	var with_twin: String = Words.meld_of("reaping", "twin")
+	_line(not ids.has(with_self) and not ids.has(with_twin) and (with_self != "" if hi else with_self == "") and (with_twin != "" if hi else with_twin == ""), "and none of the five else of Reaping's (with itself: '%s', with Twin: '%s'%s)" % [with_self, with_twin, ", the High City's" if hi else ""])
 	var L = M.loot
 	var stones: Array = ids.filter(func(id): return L.pics.has("word:" + id))
 	var it := {"slot": "mainhand", "ilvl": 10}

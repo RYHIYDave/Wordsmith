@@ -1572,7 +1572,10 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   and jump are uses of their moves as every hero's are (hero.gd _cast): Flurry, Tailwind, Quickdraw and the melds that answer a use
   work on him, his jump gives its words (Swiftness, Guarding, the frenzy) and Surging's surge, and Twin behind echoes his blows (the
   browser game's Brawler had neither: carried over). The King's songbird after his fall asks nothing of him once gone (act3/gking.gd:
-  a script error, leaving floor 19 as he fell). `--only=bughunt` 13 of 13.
+  a script error, leaving floor 19 as he fell). The Warlock's: a cursed one's death passes its burn on as its own fire, without the
+  melds' heat on it, and its poison with its doses (monsters.gd spread_burns: down a line Brand's double was passed and doubled
+  again, 200 a second to 6,400, and each poison passed took eight doses more); Cinderbrood's fire passed on the same.
+  `--only=bughunt` 14 of 14; the reaping check's line on Reaping with itself and Twin brought to the High City's melds being on.
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/

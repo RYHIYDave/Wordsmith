@@ -399,9 +399,22 @@ func spread_burns(d) -> void:
 				continue
 			var have: float = m.get(pair[0])
 			var have_dps: float = m.get(pair[1])
+			# (its burn passed on as its own fire, without the melds' heat on it, and its poison with its doses, so that neither grows from
+			# one to the next without end: a line of them passed Brand's double on and doubled it again, 200 a second to 6,400 in six;
+			# a poison passed on took eight more doses on top. The bug hunt's third round, 25 Nov 2026: monster.gd burn_base)
+			if pair[0] == "burn_t":
+				m.burn_t = maxf(t, have)
+				if have <= 0.0:
+					m._burn_out()
+					m.burn_dps = d.burn_base()
+				elif d.burn_base() > m.burn_base():
+					m.burn_dps = d.burn_base() * m.burn_k
+				continue
 			m.set(pair[0], maxf(t, have))
 			if have <= 0.0 or dps > have_dps:
 				m.set(pair[1], dps)
+				if pair[0] == "poison_t":
+					m.poison_n = maxi(int(m.poison_n), int(d.poison_n))
 		if m.last_skill < 0:
 			m.last_skill = d.last_skill
 	if not to.is_empty():

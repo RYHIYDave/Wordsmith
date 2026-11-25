@@ -95,7 +95,7 @@ func front_kill(m, i: int, id: String) -> void:
 	match id:
 		"cinderbrood":
 			if float(m.burn_t) > 0.0:
-				var dps: float = maxf(1.0, float(m.burn_dps) * float(t["spreadK"]))
+				var dps: float = maxf(1.0, float(m.burn_base()) * float(t["spreadK"]))
 				var hit: Array = near.call(float(t["spreadR"]))
 				for o in hit:
 					o.set_alight(dps, float(t["spreadSecs"]))

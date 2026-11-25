@@ -7,7 +7,8 @@
 ## deepens his curse, lengthens his root or shock once while it lasts (Omen, Manacle, Stormglass); Miasma worsens a poison once;
 ## Brand's heat on a burn not passed on by Searing nor lit again by Rekindle; no royal's crest on a kind's called-up, split or risen;
 ## Strangler doubles a poison once however often it is held; floor 10's name and the quest banner pictured (hud.gd BANNER_CLEAR).
-## The third round's: the Brawler's blows hold no boss; his moves are uses for their words, his jump gives its own, Twin echoes.
+## The third round's: the Brawler's blows hold no boss; his moves are uses for their words, his jump gives its own, Twin echoes;
+## a cursed one's burn and poison passed on at its death neither heated again nor dosed past their most.
 extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
@@ -204,6 +205,45 @@ func run(main, hero, dir: String) -> void:
 	h.loadout.front[0] = [null, null]
 	h.loadout._r = [null, null, null]
 	_line(sm.m52.has("strangler") and g1 > g0 * 1.5 and g1 <= g0 * 2.01 + 1.0, "Strangler: a poison of %d a second on one held and let go three times: %d (twice, once; as it was, %d)" % [int(g0), int(g1), int(g0 * 8.0)])
+	# A CURSED ONE'S BURN AND POISON PASSED ON AT ITS DEATH (the Warlock's round, monsters.gd spread_burns): a line of six, each struck
+	# by a crit of Brand and dosed eight times, then passing its burn and poison to the next: twice as hot once, eight doses deep, each
+	var line6: Array = _near(6)
+	var at6: Vector2 = h.world + Vector2(30.0, 0.0)
+	for o in line6:
+		o.words = []
+		o.max_life = 1.0e9
+		o.life = 1.0e9
+		o.world = at6
+		o.stun_for(60.0)
+	h.loadout.front[0] = ["brand", null]
+	h.loadout._r = [null, null, null]
+	line6[0].set_alight(100.0, 30.0)
+	for j in 8:
+		line6[0].dose(10.0, 30.0)
+	var burns6: Array = []
+	var pois6: Array = []
+	for k in line6.size():
+		var o = line6[k]
+		h.m52.struck(o, 0, 100.0, true, o.world, true, true, false, false, false)
+		if k > 0:
+			for j in 8:
+				o.dose(10.0, 30.0)
+		burns6.append(int(o.burn_dps))
+		pois6.append(int(o.poison_dps))
+		if k + 1 < line6.size():
+			var nx = line6[k + 1]
+			nx.world = o.world + Vector2(1.0, 0.0)
+			nx.burn_t = 0.0
+			nx.poison_t = 0.0
+			nx.poison_dps = 0.0
+			nx.poison_n = 0
+			for o2 in line6.slice(k + 2):
+				o2.world = at6 + Vector2(0.0, 20.0)
+			M._monsters.spread_burns(o)
+			o.world = at6 + Vector2(0.0, -20.0)
+	h.loadout.front[0] = [null, null]
+	h.loadout._r = [null, null, null]
+	_line(burns6[-1] <= burns6[0] + 1 and pois6[-1] <= pois6[0] * 1.5 + 1, "a cursed one's burn and poison passed on, hop by hop: burns %s, poisons %s (as it was, 200 to 6,400; 40 to 240)" % [str(burns6), str(pois6)])
 	# THE EVASIVE MOVE'S LONG NAME: the longest melds on it in front and behind; pictured
 	M.loot.level = 20
 	h.loadout.front[2] = ["pressurepoint", "flashfreeze"]
