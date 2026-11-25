@@ -1459,6 +1459,18 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   the Mage and the Ranger only (his words: “I want the sell the warlock, tinkerer and brawler for $0.99 so I'd like to keep the
   pictures to the first three classes”); every word slot filled; the Mage facing us in town; the Wilds in Echo Canyon; the Ranger
   not using his Volley in either of his. His yes, 25 Nov 2026: “Looks good”.
+- **Delve Deeper** (`main.gd DELVE`, switch; his words, 25 Nov 2026: “I think I want endless to have a button that says delve
+  deeper that makes the content harder and more rewarding.  It can't be reverted, so going to a harder difficulty is permanent.
+  You can stay on one difficulty as long as you want, but the deeper you go, the better the loot.  I want players to be able to
+  fight the end end boss multiple times”; his picks: “At the Shaft's Rim (Recommended)”, “Medium (Recommended)”, “Any boss, 1 in 3
+  (Recommended)”). On, an endless level is no harder than the one before it; how hard is the hero's DEPTH (`delve`, from 1, saved
+  with the run; `best_delve` the account's), raised only at the Shaft's Rim's record stone ("E: Record stone: delve deeper to Depth
+  2"; used once it says what it does and that it can't be undone, used again within 5 s the hero goes a depth deeper, for good;
+  its name "DEPTH 2, ENDLESS 14"). Each depth: monsters a third stronger (life and damage, `endless_tough` = (4/3)^(depth-1), the
+  final boss too), finds as three endless levels deeper (`endless_power`), 15 more magic find on an endless level (`delve_mf`),
+  experience by the finds' depth. Any endless boss leaves a Tablet Shard the account lacks one time in three (`shards.gd`), so the
+  Warped Wordsmith comes about every twelve levels. Off, endless is as it was (10% a level). Check and pictures: `--only=delve
+  --delve=1` (`check_delve.gd`, 10 checks); `docs/mockups/delve/`.
 - **The human enemies' voices** (the queue's "Make voices for the human enemies"; `monster.gd VOICE`). The cult of the first
   floors (the Cultist, the Dagger Cultist, the High Priest, the Chanter, the Firepot Thrower) share one real voice, his pick,
   25 Nov 2026, “Yes, two takes each (Recommended)”: its shout as it first sees the hero ("Heretic!"), its grunt on a big hit, its

@@ -41,9 +41,17 @@ func boss_down(m) -> void:
 		return
 	var k := -1
 	var floors: Array = P["key"]["floors"]
-	for i in floors.size():
-		if int(floors[i]) == int(main.map.depth):
-			k = i
+	if main.delve_on():
+		# (DELVE DEEPER: any endless level's boss, one time in three, leaves one the account lacks, any of them: his pick, “Any
+		# boss, 1 in 3 (Recommended)”, so the Warped Wordsmith is met about every twelve levels, not every forty)
+		var lack: Array = range(floors.size()).filter(func(i): return (int(main.quarters) & (1 << i)) == 0)
+		if lack.is_empty() or not _things.is_empty() or randf() >= float(main.DELVE["shard"]):
+			return
+		k = lack.pick_random()
+	else:
+		for i in floors.size():
+			if int(floors[i]) == int(main.map.depth):
+				k = i
 	if k < 0 or (int(main.quarters) & (1 << k)) != 0 or not _things.is_empty():
 		return
 	var at: Vector2 = main._free_near(m.world + Vector2(0.8, 0.8))

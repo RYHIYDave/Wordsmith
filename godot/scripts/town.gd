@@ -150,6 +150,10 @@ func _ready() -> void:
 	if LEXICON_IN_STASH:
 		data["stations"] = (data["stations"] as Array).filter(func(s): return str(s["kind"]) != "lexicon")
 		data["props"] = (data.get("props", []) as Array).filter(func(p): return str(p["kind"]) != "lexicon")
+	# (DELVE DEEPER: the Shaft's Rim's record stone is used, the way deeper: main.gd delve_deeper)
+	if rim and main != null and main.delve_on() and data.get("at", {}).has("record"):
+		var r: Dictionary = data["at"]["record"]
+		(data["stations"] as Array).append({"kind": "record", "x": float(r["x"]) + 0.3, "y": float(r["y"]) + 0.3})
 	# (the services' names, over everything: render.ts, its labels drawn last)
 	_names = Node2D.new()
 	_names.z_index = 60
@@ -569,6 +573,9 @@ func _use() -> void:
 		"gate":
 			# (THE SHAFT'S RIM: game.ts interactHint, "Gate: words for Endless N")
 			prompt = ["E: Gate: words for %s" % main.endless_name(main.endless), "gate"]
+		"record":
+			# (DELVE DEEPER: the record stone, the way deeper; asked once, its ask waiting: main.gd delve_deeper)
+			prompt = ["E: Use again to delve to Depth %d" % (main.delve + 1) if main.delve_ask > 0.0 else "E: Record stone: delve deeper to Depth %d" % (main.delve + 1), "delve"]
 		"stash", "lexicon", "stranger":
 			# (his half beside the gear screen: the stranger's gamble, the stash, the Lexicon: inventory.gd)
 			# (QUESTS1620: the stranger's whole court, asked for or brought, before his half: game.ts handInNear)
@@ -605,6 +612,8 @@ func _do(what: String) -> void:
 			main._inv.open_service("gate")
 		"tablet":
 			main.set_tablet()
+		"delve":
+			main.delve_deeper()
 		"talk":
 			if loot.ring_lit:
 				loot.say("The wordsmith: \"The ring burns. Go, and use what it gives you.\"", Color(0.35, 0.9, 1.0))

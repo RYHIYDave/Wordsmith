@@ -7,6 +7,8 @@
 ##   THE RECORD STONE  a notch for each endless level this hero has reached (his pick, “Every endless level (Recommended)”), at most
 ##                     seventy; the newest glowing on the visit it is cut; its name the level reached, and his best where a hero
 ##                     before went deeper ("ENDLESS 4, BEST 9"). Cut as he comes in: "A notch is cut in the record stone: Endless N."
+##                     DELVE DEEPER (main.gd DELVE): the stone is used ("E: Record stone: delve deeper"), asked twice, and names
+##                     the hero's depth first ("DEPTH 2, ENDLESS 14").
 ##   THE TROPHIES WALL four mounts, the bosses of floors 5, 10, 15 and 20: filled while he holds that boss's shard of the tablet
 ##                     (the account's, kept with the stash: main.gd quarters).
 ##   THE GATE          its three sockets holding the words laid on it (main.gd plan), each a small round of the word's own colour.
@@ -34,6 +36,8 @@ var notches := 0
 var fresh := false
 var reached := 0
 var best := 0
+## (DELVE DEEPER: the hero's depth, written on the stone; 0 while it is off: main.gd delve)
+var depth := 0
 var held: Array = [false, false, false, false]
 var _shown := ""
 ## (ENDLESS_KEY, game/endless_key.ts) The tablet set in the bench: seconds since it was set (a large number if set on an earlier
@@ -225,6 +229,9 @@ func _gem(w: String) -> Texture2D:
 
 ## (game/rim.ts recordLine) What is written over the record stone.
 func record_line() -> String:
+	# (DELVE DEEPER: the stone is where he delves; it names his depth first: "DEPTH 2, ENDLESS 14")
+	if depth > 0:
+		return "DEPTH %d, ENDLESS %d" % [depth, maxi(1, reached)]
 	if reached <= 0:
 		return "RECORD"
 	var here := ("Endless %d" % reached).to_upper()

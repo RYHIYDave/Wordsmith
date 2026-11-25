@@ -171,10 +171,64 @@ const ENDLESS_GROW_PAST := 0.03
 const ENDLESS_WARN := "Hardcore"
 const ENDLESS_CARD_MORE := 1.5
 const ENDLESS_OPENS := "Endless mode is open: the waypoint leads on, each level harder. Hardcore."
+const ENDLESS_OPENS_DELVE := "Endless mode is open: the waypoint leads on. For harder levels and better finds, delve deeper at the record stone in the Shaft's Rim. Hardcore."
 var endless := 0
 var endless_floor := 0
 var in_endless := false
 var best_endless := 0
+## DELVE DEEPER (his words, 25 Nov 2026: “I think I want endless to have a button that says delve deeper that makes the content
+## harder and more rewarding.  It can't be reverted, so going to a harder difficulty is permanent.  You can stay on one difficulty
+## as long as you want, but the deeper you go, the better the loot.  I want players to be able to fight the end end boss multiple
+## times”; his picks: the button “At the Shaft's Rim (Recommended)”, the step “Medium (Recommended)”, the shards “Any boss, 1 in 3
+## (Recommended)”). On, an endless level is no harder than the one before it: how hard is the hero's DEPTH (`delve`, from 1), raised
+## only at the Shaft's Rim's record stone (town.gd "delve", asked twice: it is for good). Each step: its monsters a third stronger,
+## life and damage (`tough`, on each step before), its finds as good as three endless levels deeper (`power`) and 15 more magic find
+## (`mf`); the experience as its finds. Any endless level's boss leaves a Tablet Shard the account lacks one time in three
+## (shards.gd, `shard`), so the Warped Wordsmith may be fought again and again at the depth the hero can bear. `best_delve` (the
+## account's): the deepest any of his heroes has gone. PICTURES FIRST: off until his yes to how the record stone shows it.
+const DELVE := {"on": false, "tough": 4.0 / 3.0, "power": 3, "mf": 15.0, "shard": 1.0 / 3.0, "confirm": 5.0}
+var delve := 1
+var best_delve := 1
+## (the record stone asked once, waiting for the second press that delves: seconds left)
+var delve_ask := 0.0
+
+
+## Whether Delve Deeper is on (the switch, or `--delve=1` for its check and pictures).
+func delve_on() -> bool:
+	return bool(DELVE["on"]) or _arg("delve") == "1"
+
+
+## (DELVE DEEPER) The record stone used: once, what it does and that it is for good; again within DELVE.confirm seconds, the hero
+## goes a depth deeper. Returns the line said.
+func delve_deeper() -> String:
+	if not delve_on() or endless <= 0:
+		return ""
+	if delve_ask <= 0.0:
+		delve_ask = float(DELVE["confirm"])
+		var line := "Delve deeper, to Depth %d? Monsters a third stronger, better finds. It can't be undone. Use the stone again to delve." % (delve + 1)
+		loot.say(line, Color("#7af8f0"))
+		sfx.play("click")
+		return line
+	delve_ask = 0.0
+	delve += 1
+	best_delve = maxi(best_delve, delve)
+	var said := "Depth %d. The levels below are harder now, and richer." % delve
+	loot.say(said, Color("#7af8f0"))
+	sfx.play("power", linear_to_db(0.9))
+	if hero != null:
+		hero.kick(2.0)
+		fx.float_text(hero.world.x, hero.world.y, "DEPTH %d" % delve, Color("#7fe8ff"))
+	if town != null and town.rim_node != null:
+		town.rim_node.depth = delve
+		town.rim_node.show_state()
+	if saving:
+		Save.write(self)
+	return said
+
+
+## (DELVE DEEPER) The magic find a depth gives, on an endless level.
+func delve_mf() -> float:
+	return float(DELVE["mf"]) * (delve - 1) if delve_on() and in_endless else 0.0
 ## (the run's own number, game.ts `seed`: which floor each endless level is, the same for the same hero and level)
 var run_seed: int = randi()
 
@@ -189,6 +243,9 @@ static func last_built() -> int:
 
 ## (endless.ts endlessPower) The depth an endless level's strength and finds are of.
 func endless_power() -> int:
+	# (DELVE DEEPER: by the hero's depth, not the level: each depth as three levels deeper)
+	if delve_on():
+		return last_built() + 1 + int(DELVE["power"]) * (maxi(1, delve) - 1)
 	return last_built() + maxi(1, endless)
 
 
@@ -306,6 +363,9 @@ func grow_packs(data: Dictionary, level: int) -> int:
 ## a level-50 hero died in seconds and past 50 a monster took minutes to kill, gear stopping at floor 20's; at 3%, Endless 30's
 ## monsters are about half as strong as they were, Endless 50's a seventh).
 func endless_tough() -> float:
+	# (DELVE DEEPER: a third more on each depth before, whatever the level)
+	if delve_on():
+		return pow(float(DELVE["tough"]), maxi(1, delve) - 1)
 	var e := maxi(1, endless)
 	return pow(1.0 + ENDLESS_GROW, mini(e, ENDLESS_SOFT_FROM) - 1) * pow(1.0 + ENDLESS_GROW_PAST, maxi(0, e - ENDLESS_SOFT_FROM))
 
@@ -366,7 +426,7 @@ func open_endless(from: int) -> bool:
 		return false
 	endless = 1
 	endless_floor = endless_floor_for(1, from)
-	loot.say(ENDLESS_OPENS, Color("#7af8f0"))
+	loot.say(ENDLESS_OPENS_DELVE if delve_on() else ENDLESS_OPENS, Color("#7af8f0"))
 	return true
 
 
@@ -484,6 +544,7 @@ func come_to_rim(R) -> void:
 	R.fresh = endless > rim_seen
 	R.reached = endless
 	R.best = best_endless + 1 if best_endless > 0 else 0
+	R.depth = delve if delve_on() else 0
 	R.held = quarters_held()
 	if R.fresh:
 		sfx.play("notch", linear_to_db(0.9))
@@ -543,11 +604,13 @@ func endless_strength(depth: int) -> Dictionary:
 	var P := float(endless_power())
 	var D := float(maxi(1, depth))
 	var T := endless_tough()
+	# (DELVE DEEPER: life and damage as at the first endless level, times its depth's `tough`; experience by its finds' depth)
+	var S := float(last_built() + 1) if delve_on() else P
 	var L: Dictionary = Words.data().get("depthScale", {"life": 0.35, "dmg": 0.22})
 	var life := func(d: float) -> float: return 1.0 + float(L["life"]) * (d - 1.0)
 	var dmg := func(d: float) -> float: return 1.0 + float(L["dmg"]) * (d - 1.0)
-	return {"life": life.call(P) / life.call(D) * T, "boss": (1.0 + 0.4 * (P - 1.0)) / (1.0 + 0.4 * (D - 1.0)) * T,
-		"dmg": dmg.call(P) / dmg.call(D) * T, "xp": (1.0 + 0.25 * (P - 1.0)) / (1.0 + 0.25 * (D - 1.0)),
+	return {"life": life.call(S) / life.call(D) * T, "boss": (1.0 + 0.4 * (S - 1.0)) / (1.0 + 0.4 * (D - 1.0)) * T,
+		"dmg": dmg.call(S) / dmg.call(D) * T, "xp": (1.0 + 0.25 * (P - 1.0)) / (1.0 + 0.25 * (D - 1.0)),
 		"words": loot.words_found_at(20)}
 static var wake_note := ""
 ## (he has just woken in town from a fall: no start screen)
@@ -1455,7 +1518,7 @@ func _build(where: String, arrive: String) -> void:
 	if not is_home(where):
 		# (ENDLESS MODE: an endless level's monsters as strong as its level: endless_strength)
 		# (the arena's boss was made for Endless 1, at its depth: monsters.json `power`)
-		monsters.strength = endless_strength(endless_power_at(1) if where == "final" else map.depth) if in_endless else {}
+		monsters.strength = endless_strength(last_built() + 1 if where == "final" else map.depth) if in_endless else {}
 		# (FOE_WORDS: the words burned in at the gate, every monster's, a melded word its two words and itself: foe_melds.ts)
 		if not dungeon_words.is_empty():
 			if monsters.strength.is_empty():
@@ -1838,6 +1901,9 @@ func _notification(what: int) -> void:
 func _process(dt: float) -> void:
 	if hero != null and not hero.alive and hero.stays_down:
 		_fallen(dt)
+	# (DELVE DEEPER: the record stone's ask, waiting for its second press)
+	if delve_ask > 0.0:
+		delve_ask = maxf(0.0, delve_ask - dt)
 	# (THE UNIQUE WEAPON IN HIS HAND drawn as itself: hero.gd dress)
 	if hero != null and loot != null and not hero.arts.is_empty():
 		hero.dress(loot.gear["mainhand"])
@@ -3301,6 +3367,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "voices":
 		await preload("res://scripts/check_glows.gd").new().voices(self, hero, dir)
+		get_tree().quit()
+		return
+	# (DELVE DEEPER: check_delve.gd, with --delve=1)
+	if _arg("only") == "delve":
+		await preload("res://scripts/check_delve.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (THE HEROES FOR SALE: check_paid.gd, the cards with the shop's stand-in)

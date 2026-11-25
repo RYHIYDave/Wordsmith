@@ -49,6 +49,9 @@ static func run_of(main) -> Dictionary:
 	if int(main.endless) > 0:
 		run["endless"] = main.endless
 		run["endlessFloor"] = main.endless_floor
+		# (DELVE DEEPER: the hero's depth, for good)
+		if int(main.delve) > 1:
+			run["delve"] = main.delve
 	# (THE SHAFT'S RIM: the endless level its record stone was last cut to, the words laid on its gate: game.ts save `rimSeen`, `plan`)
 	if int(main.rim_seen) > 0:
 		run["rimSeen"] = main.rim_seen
@@ -98,6 +101,8 @@ static func meta_of(main) -> Dictionary:
 		"limit": loot.limit,
 		# (ENDLESS MODE: the deepest endless level any of his heroes has cleared: game.ts meta.bestEndless)
 		"bestEndless": main.best_endless,
+		# (DELVE DEEPER: the deepest any of his heroes has gone)
+		"bestDelve": main.best_delve,
 		# (ENDLESS_KEY: the shards of the tablet held, the account's, kept with the stash: game.ts meta.quarters)
 		"quarters": main.quarters}
 
@@ -145,6 +150,7 @@ static func restore_meta(main, m: Dictionary) -> void:
 	loot.taught = m.get("taught", false) == true
 	main.deaths = maxi(0, int(_num(m.get("deaths"), 0)))
 	main.best_endless = maxi(0, int(_num(m.get("bestEndless"), 0)))
+	main.best_delve = maxi(1, int(_num(m.get("bestDelve"), 1)))
 	main.quarters = int(_num(m.get("quarters"), 0)) & 15
 	main.next_mode = "hardcore" if m.get("mode") == "hardcore" else "normal"
 	# (the mana option gone: always cooldowns, loot.gd set_limit)
@@ -189,6 +195,7 @@ static func restore_run(main, s: Dictionary) -> void:
 	if main.run_seed == 0:
 		main.run_seed = randi()
 	main.endless = maxi(0, int(_num(s.get("endless"), 0)))
+	main.delve = maxi(1, int(_num(s.get("delve"), 1)))
 	var ef := int(_num(s.get("endlessFloor"), 0))
 	main.endless_floor = (ef if ef >= 1 and ef <= main.last_built() else main.endless_floor_for(main.endless, 0)) if main.endless > 0 else 0
 	main.rim_seen = clampi(int(_num(s.get("rimSeen"), 0)), 0, main.endless)

@@ -1125,7 +1125,9 @@ func magic_find() -> float:
 	# (and 25 for each word burned into the dungeon at the Rim's gate: game.ts rollGear, wordsWeight(dungeonWords))
 	var burned: float = main.burned_weight() if main != null else 0.0
 	# (and GREED: its kill's drops, and the level's for each burned in at the door)
-	return float(hero.stats.get("magic_find", 0.0)) + 25.0 * burned + kill_mf + door_mf() if hero != null else 0.0
+	# (DELVE DEEPER: 15 more for each depth past the first, on an endless level: main.gd delve_mf)
+	var deep_mf: float = float(main.delve_mf()) if main != null and main.has_method("delve_mf") else 0.0
+	return float(hero.stats.get("magic_find", 0.0)) + 25.0 * burned + kill_mf + door_mf() + deep_mf if hero != null else 0.0
 
 
 ## A piece of gear for this floor, of quality `quality` (game.ts rollGear: 0 an ordinary monster's, 1 a better one's, 2 a
