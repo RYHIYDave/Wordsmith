@@ -387,8 +387,18 @@ func _start() -> void:
 				if is_instance_valid(o) and not o.dead and o.world.distance_to(at) < 0.05:
 					mv["tid"] = o
 					break
-		# (the attack's words: what a use gives him, Swiftness, the frenzy, a shield)
-		h._boons(0 if is_punch(id) else 1)
+		# (the attack's words: what a use gives him, Swiftness, the frenzy, a shield; and a use of it as every hero's (hero.gd _cast):
+		# Flurry, Tailwind, Quickdraw, the High City's and the city's melds that answer a use, the words' flash; his never were)
+		var skill := 0 if is_punch(id) else 1
+		h._boons(skill)
+		h._cast(skill, "vblow", h.world, a)
+		h._time_word_sound(skill)
+	else:
+		# (his jump, as every hero's evasive move: its words told, what a use gives him, Surging's surge where it begins: hero.gd lunge)
+		h._cast(2, "vjump", h.world, a)
+		h._boons(2)
+		h._time_word_sound(2)
+		h.last.dodge_surge(h.world)
 
 
 ## (game.ts vetPace) How fast his move is played: his attack speed against his weapon's, as any attack of his quickens.
@@ -573,6 +583,18 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	if twice > 1:
 		share *= float(tw["count_dmg"])
 	h.hit_monster(o, i, share, n >= 3)
+	# (TWIN behind, of Echoes: each blow of the move landing again a moment later, weaker, as every hero's move is made again
+	# (hero.gd _echo_of); his never were: the bug hunt's third round)
+	var ek: float = float(tw.get("echo", 0.0))
+	if ek > 0.0:
+		var e_share := share * ek
+		var again2 := func() -> void:
+			if is_instance_valid(o) and not o.dead:
+				h.hit_monster(o, i, e_share, true)
+		if first:
+			h._echo_of(i, "vblow", o.world, Vector2(mv["ax"], mv["ay"]), again2)
+		else:
+			_after(float(Words.data()["echo"]["delay"]), again2)
 	for k2 in range(1, twice):
 		var again := share
 		_after(0.1 * k2, func() -> void:
@@ -606,7 +628,7 @@ func _hit(o, m: Dictionary, n: int) -> void:
 		var hit: float = (float(h.stats["dmg_min"]) + float(h.stats["dmg_max"])) / 2.0 * float(h.loadout.r(0)["dmg_mult"]) * share
 		var secs: float = Words.data()["poison"]["time"]
 		o.dose(hit * float(T["viperJab"]["dose"]) / secs, secs)
-	if id == "jab" and _has("vstiffjab"):
+	if id == "jab" and _has("vstiffjab") and not o.boss:
 		o.break_off()
 	# (Aftershock: every kick that lands knocks down everything near the one it hit)
 	if kicked and _has("vaftershock"):
@@ -617,12 +639,14 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	var from := Vector2(float(mv["x0"]) + float(mv["wx"]), float(mv["y0"]) + float(mv["wy"]))
 	if rc.has("back") and not finisher:
 		# (Wall Slam: one his kick drives into a wall or into another enemy is stunned)
-		if kicked and _has("vwallslam") and _slams(o, from, float(rc["back"])):
+		if kicked and _has("vwallslam") and _slams(o, from, float(rc["back"])) and not o.boss:
 			o.stun_t = maxf(o.stun_t, float(T["wallSlam"]["stun"]))
 		o.throw_from(from, float(rc["back"]), float(TUNE["driveSecs"]))
-	if rc.has("stagger"):
+	# (no boss is staggered nor stunned by his blows, as by no one's (monster.gd stun_for, stagger_from): every punch held one, and the
+	# Warped Wordsmith stood held half his fight: the bug hunt's third round, 25 Nov 2026)
+	if rc.has("stagger") and not o.boss:
 		o.stagger_t = maxf(o.stagger_t, float(rc["stagger"]))
-	if rc.has("stun"):
+	if rc.has("stun") and not o.boss:
 		o.stun_t = maxf(o.stun_t, float(rc["stun"]))
 	# (Knockdown: the third punch of a combo knocks it off its feet)
 	if int(mv["globe"]) == 2 and is_punch(id) and _has("vknockdown") and not o.boss:

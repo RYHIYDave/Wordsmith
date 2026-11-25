@@ -7,6 +7,7 @@
 ## deepens his curse, lengthens his root or shock once while it lasts (Omen, Manacle, Stormglass); Miasma worsens a poison once;
 ## Brand's heat on a burn not passed on by Searing nor lit again by Rekindle; no royal's crest on a kind's called-up, split or risen;
 ## Strangler doubles a poison once however often it is held; floor 10's name and the quest banner pictured (hud.gd BANNER_CLEAR).
+## The third round's: the Brawler's blows hold no boss; his moves are uses for their words, his jump gives its own, Twin echoes.
 extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
@@ -320,4 +321,116 @@ func run(main, hero, dir: String) -> void:
 		await M._snap(dir + "/bughunt_banner_%s.png" % ("clear" if on else "now"))
 	Hud.BANNER_CLEAR = hud_was
 	_line(FileAccess.file_exists(dir + "/bughunt_banner_now.png") and FileAccess.file_exists(dir + "/bughunt_banner_clear.png"), "floor 10's name and the quest's banner pictured, as now and clear of it")
+	# THE BRAWLER (the third round): his blows hold no boss; his moves are uses (Flurry grows); his jump gives its words (Swiftness,
+	# Guarding); Twin behind echoes his blows
+	M.set_class("brawler", true)
+	h = M.hero
+	M.loot.level = 40
+	M.loot.derive()
+	h.talents = ["vstiffjab", "vknockdown", "vlauncher", "vfullset", "vswitchkick", "vwallslam", "vaftershock", "vthunderknee"]
+	h.talents_changed()
+	tg = 0.0
+	while M._going and tg < 15.0:
+		await M.get_tree().process_frame
+		tg += M.get_process_delta_time()
+	await M.go_to("floor8", "start")
+	await _wait(1.0)
+	# (one free to be struck: not a chained rare on his stakes, nor shut in a room)
+	var free: Array = _near(12).filter(func(o): return not M._monsters.shut_in(o))
+	var bo = free[0] if not free.is_empty() else _near(1)[0]
+	var spot2: Vector2 = h.world
+	var mx := {"stun": 0.0, "stagger": 0.0}
+	var rounds := {}
+	for as_boss in [true, false]:
+		bo.boss = as_boss
+		bo.max_life = 1.0e8
+		bo.life = 1.0e8
+		bo.stun_t = 0.0
+		bo.stagger_t = 0.0
+		var ms2 := {"stun": 0.0, "stagger": 0.0}
+		var t6 := 0.0
+		var k6 := 0
+		while t6 < 3.0:
+			await M.get_tree().process_frame
+			t6 += M.get_process_delta_time()
+			h.world = spot2
+			bo.world = spot2 + Vector2(1.2, 0.0)
+			h.life = h.max_life
+			ms2["stun"] = maxf(ms2["stun"], bo.stun_t)
+			ms2["stagger"] = maxf(ms2["stagger"], bo.stagger_t)
+			if k6 % 5 == 0:
+				if (k6 / 5) % 3 == 2:
+					h.auto_whirl = true
+				else:
+					h.auto_attack = true
+			k6 += 1
+		rounds[as_boss] = ms2
+	bo.boss = false
+	_line(float(rounds[true]["stun"]) == 0.0 and float(rounds[true]["stagger"]) == 0.0 and float(rounds[false]["stun"]) + float(rounds[false]["stagger"]) > 0.0, "the Brawler's punches and kicks, 3 s: on a boss stun %.1f s, stagger %.1f s at most; on one not a boss %.1f, %.1f" % [rounds[true]["stun"], rounds[true]["stagger"], rounds[false]["stun"], rounds[false]["stagger"]])
+	# (Flurry in front of his punch; Twin behind it, of Echoes: the blows on it with and without)
+	# (the rest near him gone, so that it is the one his blows go to)
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead and o != bo and not o.boss and o.world.distance_to(spot2) < 14.0:
+			o.damage(o.life + o.shield + 10.0, "phys", false, false, [], false, false, -1)
+	await _wait(0.5)
+	var blows_by: Array = []
+	var fl := 0
+	# (bare-handed his blows do nothing to count: a weapon's worth of harm)
+	h.stats["dmg_min"] = 40.0
+	h.stats["dmg_max"] = 50.0
+	for w in [[null, null], ["flurry", null], [null, "twin"]]:
+		h.loadout.front[0] = [w[0], null]
+		h.loadout.behind[0] = [w[1], null]
+		h.loadout._r = [null, null, null]
+		await _wait(0.5)
+		var nb := 0
+		var lst7: float = bo.life
+		var t7 := 0.0
+		var k7 := 0
+		while t7 < 3.0:
+			await M.get_tree().process_frame
+			t7 += M.get_process_delta_time()
+			h.world = spot2
+			bo.world = spot2 + Vector2(1.2, 0.0)
+			bo.waits = false
+			bo.speed = 0.0
+			bo.state = "recover"
+			bo._t = 1e9
+			bo._cd = 1e9
+			bo.life = maxf(bo.life, 1.0e7)
+			h.life = h.max_life
+			if bo.life < lst7 - 0.5:
+				nb += 1
+			lst7 = bo.life
+			if k7 % 5 == 0:
+				h.auto_attack = true
+			k7 += 1
+		blows_by.append(nb)
+		if w[0] == "flurry":
+			fl = h.m52.flurry_n
+	h.loadout.front[0] = [null, null]
+	h.loadout.behind[0] = [null, null]
+	# (his jump: Guarding in front of it, Swiftness behind)
+	h.loadout.front[2] = ["guarding", null]
+	h.loadout.behind[2] = ["swift", null]
+	h.loadout._r = [null, null, null]
+	await _wait(0.5)
+	h.haste = 0.0
+	h.shield = 0.0
+	h.kit.charges[2] = maxi(1, h.kit.charges[2])
+	h.mana = h.max_mana
+	var u2: int = h.uses[2]
+	h.auto_lunge = h.world + Vector2(-2.0, 0.0)
+	var hs := 0.0
+	var sh2 := 0.0
+	var t8 := 0.0
+	while t8 < 2.0:
+		await M.get_tree().process_frame
+		t8 += M.get_process_delta_time()
+		hs = maxf(hs, h.haste)
+		sh2 = maxf(sh2, h.shield)
+	h.loadout.front[2] = [null, null]
+	h.loadout.behind[2] = [null, null]
+	h.loadout._r = [null, null, null]
+	_line(h.uses[2] > u2 and hs > 0.0 and sh2 > 0.0 and fl > 2 and blows_by[2] > blows_by[0], "the Brawler's moves as uses: his jump with Guarding and Swiftness, haste %.1f, shield %d; Flurry's blows %d after his punches (2 at first); blows landed in 3 s with nothing %d, Flurry %d, Twin behind %d" % [hs, int(sh2), fl, blows_by[0], blows_by[1], blows_by[2]])
 	print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

@@ -1566,6 +1566,13 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   once a poisoning, not again each time it is held anew (meldscity_rules.gd: 117,829 a second in half a minute); the Snare holds no
   boss, as no stun does (heroes/ranger.gd: it held the Headsman fourteen seconds of fifteen); the quest's banner over a long place
   name (floor 10's) drops below its line (hud.gd BANNER_CLEAR, off, pictures first). `--only=bughunt` 11 of 11.
+- THE BUG HUNT, ROUND 3 (the Warlock on the story floors, the Brawler in the city, the High City and endless, the Warrior with axe
+  and hammer on the words, melds and screens). The Brawler's: his blows stagger, stun and break off no boss, as no one's do
+  (heroes/brawler.gd: the Warped Wordsmith stood held 21.5 s of a 41 s fight, the Moth's acts cut by every jab); his punches, kicks
+  and jump are uses of their moves as every hero's are (hero.gd _cast): Flurry, Tailwind, Quickdraw and the melds that answer a use
+  work on him, his jump gives its words (Swiftness, Guarding, the frenzy) and Surging's surge, and Twin behind echoes his blows (the
+  browser game's Brawler had neither: carried over). The King's songbird after his fall asks nothing of him once gone (act3/gking.gd:
+  a script error, leaving floor 19 as he fell). `--only=bughunt` 13 of 13.
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/

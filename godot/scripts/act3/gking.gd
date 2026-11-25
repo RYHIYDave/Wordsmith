@@ -350,7 +350,13 @@ func died(m) -> void:
 			main.look.show_variant("bird", 1.0)
 		peril(m, "gking:bird", Vector2(b["x"], b["y"]), {"dur": 1e9, "fx": 1.0, "fy": 0.0})
 		# (THE FLOORS' SCENE SOUNDS: its song, as it has wound itself up and begins to sing, running down)
-		m.mgr.get_tree().create_timer(float(BIRD["wind"])).timeout.connect(func() -> void: m.mgr.sfx.play("songbird", 0.0))
+		# (held by a weak hold: the King gone, and the floor with him, before it sings, nothing is asked of what is gone: the bug hunt's
+		# third round found a script error so, leaving floor 19 as he fell)
+		var mw: WeakRef = weakref(m.mgr)
+		m.mgr.get_tree().create_timer(float(BIRD["wind"])).timeout.connect(func() -> void:
+			var g = mw.get_ref()
+			if g != null and is_instance_valid(g):
+				g.sfx.play("songbird", 0.0))
 
 
 func acting(m, a: Dictionary, t0: float, t1: float, _dt: float, hero) -> void:
