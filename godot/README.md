@@ -1459,6 +1459,13 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   the Mage and the Ranger only (his words: “I want the sell the warlock, tinkerer and brawler for $0.99 so I'd like to keep the
   pictures to the first three classes”); every word slot filled; the Mage facing us in town; the Wilds in Echo Canyon; the Ranger
   not using his Volley in either of his. His yes, 25 Nov 2026: “Looks good”.
+- **The human enemies' voices** (the queue's "Make voices for the human enemies"; `monster.gd VOICE`). The cult of the first
+  floors (the Cultist, the Dagger Cultist, the High Priest, the Chanter, the Firepot Thrower) share one real voice, his pick,
+  25 Nov 2026, “Yes, two takes each (Recommended)”: its shout as it first sees the hero ("Heretic!"), its grunt on a big hit, its
+  death cry, two takes each (`assets/sound/cult_*.mp3`, made by ElevenLabs with the voice Malakor, eleven_v4, 122 credits;
+  trimmed and levelled to the other families by `tools/godot_enemy_voice.sh`; to hear: `docs/mockups/enemy_voice/cult_voice.mp3`).
+  The High City's soldiers (the Footman, the Crossbowman, the palace guard, the queen's guard, the king's knights) are Hushed:
+  the city watch's wordless sounds, breath, cloth and armour, his pick, “Watch's sounds (Recommended)”.
 - **The heroes for sale** (`scripts/shop.gd`, `scripts/play_shop.gd`; his words, 25 Nov 2026: “I want the sell the warlock,
   tinkerer and brawler for $0.99”; asked, “Yes, start them (Recommended)”, then to the pictures, “Yes, that's good
   (Recommended)”, and to the price, “$0.99 each (Recommended)”). The Warlock, the Tinkerer and the Brawler, each bought once

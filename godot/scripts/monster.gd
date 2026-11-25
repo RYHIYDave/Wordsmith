@@ -144,6 +144,13 @@ const VOICE := {
 	# (the High City's)
 	"swan": "swan", "moth": "moth", "rshadow": "spirit", "reflection": "spirit", "order": "order", "hshape": "hshape", "gardener": "hushed",
 	"groom": "hushed", "rshade": "rshade",
+	# (THE HUMAN ENEMIES, the queue's "Make voices for the human enemies". The High City's soldiers are Hushed: the city watch's
+	# wordless sounds, breath, cloth and armour; his pick, 25 Nov 2026, “Watch's sounds (Recommended)”)
+	"footman": "watch", "xbow": "watch", "pguard": "watch", "qguard": "watch", "kknight": "watch",
+	# (the cult of the first floors, one voice for the five, a real voice, its shout as it sees him ("Heretic!"), its grunt on a big
+	# hit, its death cry, two takes each; his pick, “Yes, two takes each (Recommended)”: assets/sound/cult_*, made by ElevenLabs,
+	# the voice Malakor, tools/godot_enemy_voice.sh)
+	"cultist": "cult", "dagger": "cult", "priest": "cult", "chanter": "cult", "firepot": "cult",
 }
 const ATK := {
 	"skeleton": "atkBones", "champion": "atkBones", "beast": "atkBones", "mite": "atkBones", "brute": "atkTroll", "bat": "atkBat",
