@@ -970,6 +970,16 @@ lights over the dark (town.gd `_ring_moments`):
   his ten melds' (`act3/wsboss.gd` WORD_LINES, say_aloud), the boar's line from the moment it is killed (a third again as fast, to
   be done by his slam), the slam's once it is done (say_later), and at his death a scream cut short as he implodes. `--only=final`
   (`check_glows.gd`): his voice heard, every kind of line.
+- **The other talking bosses in real voices too** (the cloud chat, 25 Nov 2026). His word: “Go ahead and do the voices for the
+  other speaking bosses as well”; asked how many takes, “Two takes each (Recommended)”. The 13 bosses' 44 lines spoken by
+  ElevenLabs (eleven_v4, a library voice for each boss, each line played its own way), two takes each, the silence at either end
+  trimmed, as loud as the roars, and some with a touch of their own: the Amalgamation three voices at once (one lower, one higher),
+  the Drowned Eye as under water, the Unfinished lower in a stone hall, the Cantor under a cathedral's echo, the Glass Queen a
+  glassy shimmer (`tools/godot_boss_voices.sh` -> `assets/voices/real`, 88 takes, 2.0 MB; which voice is whose, in its head). They
+  take the place of the mumble's takes (`monsters.gd` voices(): `real/voices.json` over `voices.json`), and a line called out stays
+  up over him while it is heard (`monster.gd` call_line). To listen: `docs/mockups/boss_voice/all_bosses_lines.mp3` (every boss in
+  turn, the first take of each line) and `<boss>_lines.mp3`. `--only=voices` (`check_glows.gd`): 11 checks, the thirteen's lines
+  all real takes.
 
 ## The walls seen through for the monsters behind them (the cloud chat, 21 Nov 2026)
 
