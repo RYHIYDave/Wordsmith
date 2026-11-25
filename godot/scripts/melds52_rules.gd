@@ -401,9 +401,7 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 				_tag(m)
 				m.m52["brand"] = float(_tune("brand")["secs"])
 				# (twice as hot once a burning: a crit on one branded already does not double it again, which made it grow without end)
-				if m.burn_t > 0.0 and not m.m52.has("brand_hot"):
-					m.m52["brand_hot"] = true
-					m.burn_dps *= float(_tune("brand")["hot"])
+				m.hotter("brand", float(_tune("brand")["hot"]))
 				_tell({"id": "brand", "what": "brand", "x": at.x, "y": at.y, "m": m})
 		"fever":
 			if h.frenzy > 0 and float(r["poison"]) > 0.0:
@@ -504,7 +502,9 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 					if _alive(o) and o.poison_t > 0.0 and o.world.distance_to(at) <= 4.0:
 						n += 1
 				var extra := minf(float(M["most"]), float(M["each"]) * maxi(0, n - 1))
-				if extra > 0.0:
+				# (once a poisoning, as Needle: on every hit it made the poison worse again, to millions: the bug hunt, 25 Nov 2026)
+				if extra > 0.0 and not m.m52.has("miasma_hot"):
+					m.m52["miasma_hot"] = true
 					m.poison_dps *= 1.0 + extra / maxf(1.0, float(m.poison_n))
 	# QUICKDRAW: the drawn shot spent once it lands
 	if f == "quickdraw" and qd_ready[i] and c:
@@ -1056,7 +1056,6 @@ func status_end(m, what: String) -> void:
 	if m.dead:
 		return
 	if what == "burn":
-		m.m52.erase("brand_hot")
 		if int(m.m52.get("rekindle", 0)) > 0:
 			_tag(m)
 			m.m52["rekindle"] = int(m.m52["rekindle"]) - 1
@@ -1071,6 +1070,7 @@ func status_end(m, what: String) -> void:
 			_tell({"id": "flashfire", "what": "flare", "x": m.world.x, "y": m.world.y, "r": float(_tune("flashfire")["r"])})
 	elif what == "poison":
 		m.m52.erase("needle_hot")
+		m.m52.erase("miasma_hot")
 		if m.m52.has("bloat"):
 			var B: Dictionary = m.m52["bloat"]
 			m.m52.erase("bloat")

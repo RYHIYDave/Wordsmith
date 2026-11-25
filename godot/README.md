@@ -1543,6 +1543,26 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   thirteen of the monsters' melds that make his burn or poison worse (Cremate, Flashfire, Brand, Needle, Viper, Fever, Hornet,
   Mire, Hourglass, Plague, Strangler, Firetrap, Nightshade) did so again with every blow: now once a burn or a poison each
   (hero.gd `worse`). `--only=bughunt` 5 of 5.
+- THE BUG HUNT, ROUND 2 (his words, 24 Nov 2026: “When they're done, run them again.  Do it 5 more times.  Have them use different
+  classes.  Try different builds.”): the Ranger with poison on the story floors, the fire Mage in the city, the High City and
+  endless, the Tinkerer with lightning and volatile on the words, melds, gear and screens. Fixed: THE MONSTERS' MELDS ON HIM: what
+  makes an ill on him worse does so once while it lasts (hero.gd `worse_f`): Omen's and Condemn's and Refrain's curse (it reached
+  three hundred times the harm), Manacle's, Noose's, Icebound's and Snag's root (eight minutes), Stormglass's shock (over an hour),
+  Grudge's, Eternity's, Stutter's, Hoarfrost's, Brimstone's, Stagnation's, Slowburn's, Gangrene's, Longspear's and Deathwatch's
+  lengthenings, and the Bleeding melds' bleeds (Gore, Bloodboil, Galvanic, Lacerate a fifth a cut to three, Mangle, Fangs,
+  Bloodrage, Fishhook, Butcher). A Hemorrhage bleed opens again only while the one that cut him lives, and his bleed goes with the
+  place. HIS MELDS ON THEM: a burn knows the melds' heat on it (monster.gd `burn_k`, hotter(), burn_base()): Brand, Brimstone,
+  Firetrap, Firewhirl, Anvil and Sunspear each once a burn, and what Searing passes on, Rekindle lights again and Bloodboil spreads
+  is the burn's own fire without their heat (Searing and Brand ran to 177,857 a second, Rekindle and Brand to 50,506); Miasma's
+  poison and Thornspray's bleed worse once each (48.6 million a second, 7,426 and growing). TWIN'S WAVES AIMED (heroes/mage.gd
+  TWIN_AIM, off, pictures first): the Mage's Twin pair fans so wide that past four tiles both miss what she aims at (her Shivering
+  Twin Wave struck nothing at 4.5 tiles); aimed, the fan narrows with distance (60,093 a second into the elite, a pack dead in
+  0.7 s). AND: no royal's crest nor rune on a kind's called-up, split or risen ones (monsters.gd `_plain`: floor 16's groom,
+  gardener and swan wore a Princess's and dropped her cards); the Sticky Wrench's freed-body error (heroes/tinkerer.gd); a monster
+  looked up by its own number before the engine's (fx.gd: some 125 engine errors a fight); the Mage's aura's fill not asked over
+  a ledge (heroes/mage_look.gd); a masked dancer stepped only where its whole body fits (act3/dancer.gd). Asked and answered: the
+  old monster-side rules of the 60 redone melds still run beside the new, as their design says (“Each keeps what it did on a
+  monster ... and gains a moment”); only Cauterize did the same twice. `--only=bughunt` 9 of 9.
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/

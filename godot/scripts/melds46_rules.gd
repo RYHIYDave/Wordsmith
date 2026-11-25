@@ -322,10 +322,9 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_frozen
 				_tell({"id": "icebreaker", "what": "shatter", "x": at.x, "y": at.y, "m": m, "r": float(I["r"])})
 		"anvil":
 			if m.stun_t > 0.0 and not m.dead:
-				if m.burn_t > 0.0 and not bool(m.m52.get("anviled", false)):
+				if m.burn_t > 0.0 and not m.m52.has("hot_anvil"):
 					p._tag(m)
-					m.m52["anviled"] = true
-					m.burn_dps *= float(_t("anvil")["hot"])
+					m.hotter("anvil", float(_t("anvil")["hot"]))
 				if not quiet:
 					_tell({"id": "anvil", "what": "sparks", "x": at.x, "y": at.y, "m": m, "dx": h.face.x, "dy": h.face.y})
 		"tempo":

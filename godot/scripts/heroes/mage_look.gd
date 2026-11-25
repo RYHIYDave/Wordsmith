@@ -458,7 +458,10 @@ func _aura(a: Dictionary) -> void:
 	var floor_pts := PackedVector2Array()
 	for k in 48:
 		floor_pts.append((at.call(float(k) / 48.0 * TAU, r) as Vector2) * 2.0)
-	draw_colored_polygon(floor_pts, Color(T[1], 0.16 + 0.06 * sin(t * 4.0)))
+	# (over a ledge the ground's lift bends the ring across itself and the engine cannot fill it, an error each frame: then its rings
+	# alone, as it already showed there: the bug hunt, 25 Nov 2026)
+	if not Geometry2D.triangulate_polygon(floor_pts).is_empty():
+		draw_colored_polygon(floor_pts, Color(T[1], 0.16 + 0.06 * sin(t * 4.0)))
 	if float(a["t"]) < 0.35:
 		_floor_ring(hp, r * 1.05, Color(T[3], 1.0 - float(a["t"]) / 0.35), 1, 0.0)
 	_floor_ring(hp, r + 0.05, T[0], 1, 0.0)

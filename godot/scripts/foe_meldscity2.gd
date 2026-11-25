@@ -45,32 +45,32 @@ static func after_blow(F, k: Callable, by, _dmg: float) -> void:
 	if s.call("refrain") and alive_by and h.hex_t > 0.0:
 		by.m52["foe_refrain"] = int(by.m52.get("foe_refrain", 0)) + 1
 		if int(by.m52["foe_refrain"]) % 2 == 0:
-			h.hex_more *= 1.0 + float(_t("refrain")["foeDeeper"])
+			h.worse_f("hex", "refrain", "hex_more", 1.0 + float(_t("refrain")["foeDeeper"]))
 			tell.call("refrain")
 	if s.call("grudge") and h.hex_t > 0.0:
-		h.hex_t *= float(_t("grudge")["foeLonger"])
+		h.worse_f("hex", "grudge", "hex_t", float(_t("grudge")["foeLonger"]))
 		tell.call("grudge")
 	if s.call("omen") and h.hex_t > 0.0:
-		h.hex_t *= float(_t("omen")["foeShort"])
-		h.hex_more *= float(_t("omen")["foeDeeper"])
+		h.worse_f("hex", "omen", "hex_t", float(_t("omen")["foeShort"]))
+		h.worse_f("hex", "omen", "hex_more", float(_t("omen")["foeDeeper"]))
 		tell.call("omen")
 	if s.call("bloodcurse") and alive_by and h.hex_t > 0.0:
 		by.life = minf(by.max_life, by.life + by.max_life * 0.02 * float(_t("bloodcurse")["foeHeal"]))
 		tell.call("bloodcurse")
 	# (STILLING'S: Eternity's slow twice as long, Stutter's short but deep)
 	if s.call("eternity") and h.still_t > 0.0:
-		h.still_t *= float(_t("eternity")["foeLonger"])
+		h.worse_f("still", "eternity", "still_t", float(_t("eternity")["foeLonger"]))
 		tell.call("eternity")
 	if s.call("stutter") and h.still_t > 0.0:
-		h.still_t *= float(_t("stutter")["foeShort"])
+		h.worse_f("still", "stutter", "still_t", float(_t("stutter")["foeShort"]))
 		h.still_k = minf(0.75, h.still_k * float(_t("stutter")["foeDeeper"]))
 		tell.call("stutter")
 	# (BINDING'S: Manacle roots him twice as long, Snag briefly)
 	if s.call("manacle") and h.root_t > 0.0:
-		h.root_t *= float(_t("manacle")["foeLonger"])
+		h.worse_f("root", "manacle", "root_t", float(_t("manacle")["foeLonger"]))
 		tell.call("manacle")
 	if s.call("snag") and h.root_t > 0.0:
-		h.root_t *= float(_t("snag")["foeShort"])
+		h.worse_f("root", "snag", "root_t", float(_t("snag")["foeShort"]))
 		tell.call("snag")
 	# (any whose twist on him is its two runes at once: its moment as its blow lands, in its colour)
 	for id in M52.T().get("city2", []):

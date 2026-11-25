@@ -1060,11 +1060,19 @@ func _monster_of(e: Dictionary):
 	var id = e.get("id")
 	if id is Object and is_instance_valid(id):
 		return id
-	# (a monster's own number in its floor's table is not a living thing's: only a living thing's is looked for)
-	if (id is int or id is float) and is_instance_id_valid(int(id)):
-		var o = instance_from_id(int(id))
-		if o != null and is_instance_valid(o) and o.get("world") != null:
-			return o
+	# (a monster's own number, its floor table's or one called up's (100000 and on, monsters.gd call_up_as), is looked for among the
+	# monsters; a living thing's number (its validator above the engine's 24 bits of slot) is asked of the engine: a small number asked
+	# of it is an engine error, "slot >= slot_max", the bug hunt's second round found over a hundred to a fight)
+	if id is int or id is float:
+		var n := int(id)
+		if monsters != null and is_instance_valid(monsters):
+			for m in monsters.list:
+				if is_instance_valid(m) and int(m.get("id") if m.get("id") != null else -1) == n:
+					return m
+		if (n >= (1 << 24) or n < 0) and is_instance_id_valid(n):
+			var o = instance_from_id(n)
+			if o != null and is_instance_valid(o) and o.get("world") != null:
+				return o
 	if monsters == null or not is_instance_valid(monsters) or not e.has("x"):
 		return null
 	var best = null

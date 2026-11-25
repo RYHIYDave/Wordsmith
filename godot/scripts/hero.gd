@@ -285,7 +285,7 @@ var foe_hi := {}
 var root_again := 0.0
 var poison_t := 0.0
 var poison_dps := 0.0
-## (which monsters' melds have made his burn or poison worse, "burn:<id>", each once a burn or a poison: worse())
+## (which monsters' melds have made an ill on him worse, "<ill>:<id>:<field>", each once while the ill lasts: worse_f())
 var _worse := {}
 ## (the last blow that reached him, as hurt_by weighed it: for a check to read)
 var last_blow := {}
@@ -1392,12 +1392,9 @@ func _process(dt: float) -> void:
 		shock_t -= dt
 	if burn_t > 0.0:
 		burn_t -= dt
-		if burn_t <= 0.0:
-			_worse_end("burn")
 	if poison_t > 0.0:
 		poison_t -= dt
-		if poison_t <= 0.0:
-			_worse_end("poison")
+	_worse_sweep()
 	_t += dt
 	var d := (Vector2.ZERO if scene_pace > 0.0 else Input.get_vector("move_left", "move_right", "move_up", "move_down")) + auto_dir
 	var way := Iso.screen_dir_to_world(d)
@@ -2346,6 +2343,11 @@ func fresh_place() -> void:
 	shock_t = 0.0
 	poison_t = 0.0
 	poison_dps = 0.0
+	# (a monster's bleed on him, and whose it was, left behind with the place: foe_meldshigh.gd)
+	bleed_t = 0.0
+	bleed_dps = 0.0
+	for k in ["bleed_by", "bleed_src", "bleed_from"]:
+		foe_hi.erase(k)
 	_worse = {}
 	# (ACT 2, THE HUSH: none carries off the place; his words are his again: game.ts clearLevel)
 	hush_t = 0.0
@@ -3046,23 +3048,30 @@ func smashed(m, way: Vector2) -> void:
 ## `faster`, run out `k` times sooner (the same in all, sooner). Once a burn (or poison) for each meld: a blow after a blow
 ## made it worse each time, without end (found as the damage test showed the hero's own Brand doing so, 24 Nov 2026).
 func worse(what: String, id: String, k: float, faster := false) -> bool:
-	var key := what + ":" + id
-	if _worse.has(key) or (burn_t if what == "burn" else poison_t) <= 0.0:
+	if not worse_f(what, id, what + "_dps", k):
 		return false
-	_worse[key] = true
-	if what == "burn":
-		burn_dps *= k
-		if faster:
-			burn_t /= k
-	else:
-		poison_dps *= k
-		if faster:
-			poison_t /= k
+	if faster:
+		set(what + "_t", float(get(what + "_t")) / k)
 	return true
 
 
-## His burn (or poison) out: the melds that made it worse may again on the next.
-func _worse_end(what: String) -> void:
+## THE SAME FOR ANY ILL ON HIM (the bug hunt's second round, 25 Nov 2026: Omen's curse deepened blow by blow to three hundred times
+## the harm, Manacle's root to eight minutes, Stormglass's shock to over an hour, the Bleeding melds' bleeds to many times his life):
+## his `field` (bleed_dps, hex_more, root_t, ...) `k` times, once while the ill `what` lasts (its time, `what`_t, above nothing);
+## its end lets the meld do it again to the next. Returns whether it did.
+func worse_f(what: String, id: String, field: String, k: float) -> bool:
+	var key := what + ":" + id + ":" + field
+	if _worse.has(key) or float(get(what + "_t")) <= 0.0:
+		return false
+	_worse[key] = true
+	set(field, float(get(field)) * k)
+	return true
+
+
+## (each frame: the ills that have run out let their melds go)
+func _worse_sweep() -> void:
+	if _worse.is_empty():
+		return
 	for key in _worse.keys():
-		if str(key).begins_with(what + ":"):
+		if float(get(str(key).get_slice(":", 0) + "_t")) <= 0.0:
 			_worse.erase(key)

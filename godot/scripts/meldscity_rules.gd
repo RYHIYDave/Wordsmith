@@ -236,9 +236,7 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_frozen
 					if not quiet:
 						_tell({"id": "doom", "what": "thorn", "n": n, "x": at.x, "y": at.y, "m": m})
 			"brimstone":
-				if m.hex_t > 0.0 and m.burn_t > 0.0 and not bool(m.m52.get("brim", false)):
-					m.m52["brim"] = true
-					m.burn_dps *= float(_t("brimstone")["hotter"])
+				if m.hex_t > 0.0 and m.hotter("brimstone", float(_t("brimstone")["hotter"])):
 					_tell({"id": "brimstone", "what": "flare", "x": at.x, "y": at.y, "m": m})
 			"whisper":
 				if m.hex_t > 0.0 and not quiet:
@@ -269,9 +267,7 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_frozen
 					if not quiet:
 						_tell({"id": "icebound", "what": "climb", "x": at.x, "y": at.y, "m": m})
 			"firetrap":
-				if m.bind_t > 0.0 and m.burn_t > 0.0 and not bool(m.m52.get("firetrap", false)):
-					m.m52["firetrap"] = true
-					m.burn_dps *= float(_t("firetrap")["hotter"])
+				if m.bind_t > 0.0 and m.hotter("firetrap", float(_t("firetrap")["hotter"])):
 					_tell({"id": "firetrap", "what": "tongues", "x": at.x, "y": at.y, "m": m})
 			"plague", "burden", "stagnation", "standstill", "strangler", "tether", "anchor":
 				m.m52[id] = i
@@ -412,10 +408,9 @@ func pulled(i: int, at: Vector2, moved: Array) -> void:
 					_tell({"id": "drift", "what": "slide", "x": o.world.x, "y": o.world.y, "x1": at.x, "y1": at.y, "m": o})
 		"firewhirl":
 			for o in moved:
-				if is_instance_valid(o) and not o.dead and o.burn_t > 0.0 and not bool(o.m52.get("whirl", false)):
+				if is_instance_valid(o) and not o.dead and o.burn_t > 0.0 and not o.m52.has("hot_firewhirl"):
 					p._tag(o)
-					o.m52["whirl"] = true
-					o.burn_dps *= float(_t("firewhirl")["hotter"])
+					o.hotter("firewhirl", float(_t("firewhirl")["hotter"]))
 			_tell({"id": "firewhirl", "what": "whirl", "x": at.x, "y": at.y, "r": pull_reach(i, 1.0, false)})
 		"gravity":
 			for o in moved:

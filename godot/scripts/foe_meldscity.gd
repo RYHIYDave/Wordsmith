@@ -89,10 +89,10 @@ static func after_blow(F, k: Callable, by, dmg: float) -> void:
 		h.worse("poison", "plague", float(_t("plague")["foeFaster"]), true)
 		tell.call("plague")
 	if s.call("hoarfrost") and h.chill_t > 0.0 and h.hex_t > 0.0:
-		h.hex_t *= float(_t("hoarfrost")["foeLonger"])
+		h.worse_f("hex", "hoarfrost", "hex_t", float(_t("hoarfrost")["foeLonger"]))
 		tell.call("hoarfrost")
 	if s.call("brimstone") and h.hex_t > 0.0 and h.burn_t > 0.0:
-		h.burn_t *= float(_t("brimstone")["foeLonger"])
+		h.worse_f("burn", "brimstone", "burn_t", float(_t("brimstone")["foeLonger"]))
 		tell.call("brimstone")
 	if s.call("burden") and alive_by and h.hex_t > 0.0:
 		var away: Vector2 = (h.world - by.world).normalized() if h.world.distance_to(by.world) > 0.01 else Vector2(1, 0)
@@ -100,20 +100,20 @@ static func after_blow(F, k: Callable, by, dmg: float) -> void:
 		tell.call("burden", {"dx": away.x, "dy": away.y})
 	# (STILLING'S MELDS: what lingers on him lingers longer)
 	if s.call("stagnation") and h.poison_t > 0.0:
-		h.poison_t *= float(_t("stagnation")["foeLonger"])
+		h.worse_f("poison", "stagnation", "poison_t", float(_t("stagnation")["foeLonger"]))
 		tell.call("stagnation")
 	if s.call("slowburn") and h.burn_t > 0.0:
-		h.burn_t *= float(_t("slowburn")["foeLonger"])
+		h.worse_f("burn", "slowburn", "burn_t", float(_t("slowburn")["foeLonger"]))
 		tell.call("slowburn")
 	if s.call("stormglass") and h.shock_t > 0.0:
-		h.shock_t *= float(_t("stormglass")["foeLonger"])
+		h.worse_f("shock", "stormglass", "shock_t", float(_t("stormglass")["foeLonger"]))
 		tell.call("stormglass")
 	# (BINDING'S MELDS, on a rooted him)
 	if s.call("strangler") and h.root_t > 0.0 and h.poison_t > 0.0:
 		h.worse("poison", "strangler", float(_t("strangler")["foeFaster"]), true)
 		tell.call("strangler")
 	if s.call("icebound") and h.root_t > 0.0 and h.chill_t > 0.0:
-		h.root_t *= float(_t("icebound")["foeLonger"])
+		h.worse_f("root", "icebound", "root_t", float(_t("icebound")["foeLonger"]))
 		tell.call("icebound")
 	if s.call("firetrap") and h.root_t > 0.0 and h.burn_t > 0.0:
 		h.worse("burn", "firetrap", float(_t("firetrap")["foeHotter"]))

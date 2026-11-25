@@ -172,7 +172,12 @@ func load_floor(path: String, figures_dir: String, given := {}) -> void:
 			_figures[figure] = BakedFigure.new(figures_dir, figure, info, FETCH_AT.has(figure), not FETCH_AT.has(figure))
 		# (the first plain one of each kind, wordless, of no pack's rank: what a boss calls up of it is made as it is: call_up)
 		if not _plain.has(m["kind"]) and not m["boss"] and not m["elite"] and not m["champion"] and (m["words"] as Array).is_empty() and m.get("rarity") == null:
-			_plain[m["kind"]] = m
+			# (a copy without a royal's crest or a carried rune: one a royal touched made every split, risen and called-up one of its kind
+			# a royal's too, each with its card: the bug hunt's second round, 25 Nov 2026)
+			var t: Dictionary = m.duplicate(true)
+			t.erase("royal")
+			t["carries"] = []
+			_plain[m["kind"]] = t
 		var mon := Monster.new()
 		mon.mgr = self
 		mon.setup(m, data["defs"][m["kind"]], _figures[figure])

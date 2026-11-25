@@ -90,7 +90,8 @@ func _split_out(m) -> void:
 	var s: Vector2 = SPLIT["gent"] if int(m.form) % 2 == 1 else SPLIT["lady"]
 	var f: Vector2 = m.face
 	var p: Vector2 = m.world + f * s.x + Vector2(f.y, -f.x) * s.y
-	if m.mgr.map.walkable(floori(p.x), floori(p.y)):
+	# (its whole body clear of the walls, as any monster's step is, not the tile under its middle only: the bug hunt, 25 Nov 2026)
+	if m.mgr.map.fits(p.x, p.y, m.r):
 		m.world = p
 
 
@@ -99,7 +100,7 @@ static func carry(m, d: float) -> void:
 	var n := maxi(1, ceili(absf(d) / 0.1))
 	for i in n:
 		var p: Vector2 = m.world + m.face * (d / n)
-		if not m.mgr.map.walkable(floori(p.x), floori(p.y)):
+		if not m.mgr.map.fits(p.x, p.y, m.r):
 			return
 		m.world = p
 

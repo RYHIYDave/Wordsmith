@@ -101,24 +101,26 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 				h.foe_hi["bleed_from"] = F.clock
 	if bled:
 		if s.call("gore"):
-			h.bleed_dps *= 1.0 + minf(1.0, dmg / maxf(1.0, h.max_life) * _n("gore", "foeHard", 4.0))
+			h.worse_f("bleed", "gore", "bleed_dps", 1.0 + minf(1.0, dmg / maxf(1.0, h.max_life) * _n("gore", "foeHard", 4.0)))
 			tell.call("gore")
 		if s.call("gangrene") and h.poison_t > 0.0:
-			h.poison_t *= _n("gangrene", "foeLonger", 1.5)
+			h.worse_f("poison", "gangrene", "poison_t", _n("gangrene", "foeLonger", 1.5))
 			tell.call("gangrene")
 		if s.call("rimeblood"):
 			h.chill_t = maxf(h.chill_t, 2.0)
 			h.chill_k = maxf(h.chill_k, _n("rimeblood", "foeChill", 0.35))
 			tell.call("rimeblood")
 		if s.call("bloodboil") and h.burn_t > 0.0:
-			h.bleed_dps *= _n("bloodboil", "foeBoil", 1.5)
+			h.worse_f("bleed", "bloodboil", "bleed_dps", _n("bloodboil", "foeBoil", 1.5))
 			tell.call("bloodboil")
 		if s.call("galvanic") and h.shock_t > 0.0:
-			h.bleed_dps *= _n("galvanic", "foeTear", 1.3)
+			h.worse_f("bleed", "galvanic", "bleed_dps", _n("galvanic", "foeTear", 1.3))
 			tell.call("galvanic")
 		if s.call("lacerate") and alive_by:
 			by.m52["foe_lac"] = mini(3, int(by.m52.get("foe_lac", 0)) + 1)
-			h.bleed_dps *= 1.0 + 0.2 * int(by.m52["foe_lac"])
+			# (its cuts deepen it a fifth more each, three at most: each step once a bleed, so 1.6 times at most)
+			var lac: int = int(by.m52["foe_lac"])
+			h.worse_f("bleed", "lacerate%d" % lac, "bleed_dps", (1.0 + 0.2 * lac) / (1.0 + 0.2 * (lac - 1)))
 			if int(by.m52["foe_lac"]) >= 3:
 				# (his wound gapes and sprays: every monster near comes for him faster)
 				h.foe_hi["gape_t"] = F.clock + _n("lacerate", "foeGapeSecs", 4.0)
@@ -127,21 +129,21 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 			else:
 				tell.call("lacerate")
 		if s.call("mangle"):
-			h.bleed_dps *= _n("mangle", "foeThrown", 1.5)
+			h.worse_f("bleed", "mangle", "bleed_dps", _n("mangle", "foeThrown", 1.5))
 			tell.call("mangle")
 		if s.call("fangs") and alive_by:
 			by.m52["foe_fang"] = int(by.m52.get("foe_fang", 0)) + 1
 			if int(by.m52["foe_fang"]) % 2 == 0:
-				h.bleed_dps *= 2.0
+				h.worse_f("bleed", "fangs", "bleed_dps", 2.0)
 				tell.call("fangs")
 		if s.call("bloodrage") and alive_by:
-			h.bleed_dps *= 1.0 + clampf(1.0 - by.life / maxf(1.0, by.max_life), 0.0, 1.0)
+			h.worse_f("bleed", "bloodrage", "bleed_dps", 1.0 + clampf(1.0 - by.life / maxf(1.0, by.max_life), 0.0, 1.0))
 			tell.call("bloodrage")
 		if s.call("fishhook"):
-			h.bleed_dps *= _n("fishhook", "foeDrag", 1.5)
+			h.worse_f("bleed", "fishhook", "bleed_dps", _n("fishhook", "foeDrag", 1.5))
 			tell.call("fishhook")
 		if s.call("butcher") and low:
-			h.bleed_dps *= _n("butcher", "foeLow", 1.5)
+			h.worse_f("bleed", "butcher", "bleed_dps", _n("butcher", "foeLow", 1.5))
 			tell.call("butcher")
 	if s.call("artery") and alive_by:
 		by.m52["foe_art"] = int(by.m52.get("foe_art", 0)) + 1
@@ -183,7 +185,7 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 	if s.call("longspear"):
 		for f in ["poison_t", "burn_t", "chill_t"]:
 			if float(h.get(f)) > 0.0:
-				h.set(f, float(h.get(f)) * _n("longspear", "foeLonger", 1.3))
+				h.worse_f(f.trim_suffix("_t"), "longspear", f, _n("longspear", "foeLonger", 1.3))
 		tell.call("longspear")
 	# (REAPING'S: a risen one's own)
 	if alive_by and by.risen:
@@ -224,7 +226,7 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 		if s.call("deathwatch"):
 			for f in ["poison_t", "burn_t", "chill_t"]:
 				if float(h.get(f)) > 0.0:
-					h.set(f, float(h.get(f)) * 2.0)
+					h.worse_f(f.trim_suffix("_t"), "deathwatch", f, 2.0)
 			done["deathwatch"] = true
 			_tell(h, "deathwatch", by, "shadow")
 		if s.call("quietus") and (h.poison_t > 0.0 or h.burn_t > 0.0):
@@ -240,13 +242,13 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 			h.knock(-away, _n("gallows", "foeDrag", 0.8))
 			tell.call("gallows")
 		if s.call("condemn") and h.hex_t > 0.0:
-			h.hex_more *= _n("condemn", "foeLow", 1.5)
+			h.worse_f("hex", "condemn", "hex_more", _n("condemn", "foeLow", 1.5))
 			tell.call("condemn")
 		if s.call("finalhour") and h.still_t > 0.0:
 			h.still_k = minf(0.75, h.still_k * _n("finalhour", "foeLow", 1.5))
 			tell.call("finalhour")
 		if s.call("noose") and h.root_t > 0.0:
-			h.root_t *= 2.0
+			h.worse_f("root", "noose", "root_t", 2.0)
 			tell.call("noose")
 	# (any whose twist on him is its two runes at once: its moment as its blow lands)
 	for id in M52.T().get("high", []):
@@ -747,8 +749,9 @@ static func bleed_k(F, h, b: float, moved: bool) -> float:
 		"hemorrhage":
 			var grown: float = 1.0 + 0.5 * (F.clock - float(h.foe_hi.get("bleed_from", F.clock)))
 			b *= minf(3.0, grown)
-			if grown >= 2.0:
-				# (grown full, it ruptures and opens again, fresh)
+			# (grown full, it ruptures and opens again, fresh: while the one that cut him lives; gone, his bleed runs out as any does: the
+			# bug hunt, 25 Nov 2026, found it bleeding him on and on after it was gone)
+			if grown >= 2.0 and _ok(h.foe_hi.get("bleed_src")):
 				h.foe_hi["bleed_from"] = F.clock
 				h.bleed_t = maxf(h.bleed_t, 4.0)
 				_tell(h, "hemorrhage", null, "rupture")

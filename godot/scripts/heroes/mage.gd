@@ -461,8 +461,8 @@ func _step_tree(dt: float) -> void:
 				if o.world.distance_to(b.world) > b.r + o.r + touch:
 					continue
 				h._tell({"t": "ignite", "x": o.world.x, "y": o.world.y})
-				o.burn_dps = b.burn_dps
-				o.burn_t = 3.0
+				# (its own fire, without the melds' heat on the burning one's: passed on with it, it doubled again on each)
+				o.set_alight(b.burn_base(), 3.0)
 				o.last_skill = b.last_skill
 	# (Hearth: standing in fire she made, nothing burns her; her mana's part is the mana mode's, which this port has not)
 	if h.has("fuel") and h.wakes != null and h.burn_t > 0.0:

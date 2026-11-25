@@ -759,8 +759,11 @@ func _step_own(dt: float) -> void:
 			var bd: float = float(S["grab"])
 			if h.monsters != null:
 				for m in h.monsters.list:
+					# (a body freed this frame is still in the list: asked first whether it is there, as the rest are)
+					if not is_instance_valid(m) or m.dead:
+						continue
 					var dd: float = m.world.distance_to(Vector2(v["x1"], v["y1"])) - m.r
-					if is_instance_valid(m) and not m.dead and not h.monsters.shut_in(m) and dd < bd:
+					if not h.monsters.shut_in(m) and dd < bd:
 						bd = dd
 						v["stuck"] = m
 			var sm = v.get("stuck")

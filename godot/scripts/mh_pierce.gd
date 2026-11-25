@@ -362,7 +362,12 @@ func killed(m, i: int) -> void:
 		var line = m.m52["sunspear"]
 		for o in _sun.get(line, []):
 			if H.ok(o) and o != m:
-				o.set_alight(maxf(o.burn_dps, 1.0) * H.n("sunspear", "harder", 1.6), H.n("sunspear", "secs", 3.0))
+				# (burning, its burn hotter once a burn; not, lit with the fallen one's own fire: the bug hunt, 25 Nov 2026)
+				if o.burn_t > 0.0:
+					o.hotter("sunspear", H.n("sunspear", "harder", 1.6))
+					o.burn_t = maxf(o.burn_t, H.n("sunspear", "secs", 3.0))
+				else:
+					o.set_alight(maxf(m.burn_base(), 1.0), H.n("sunspear", "secs", 3.0))
 				H.tell("sunspear", "run", m.world, {"x1": o.world.x, "y1": o.world.y})
 		_sun.erase(line)
 	if H.f(i) == "wraithspear" and float(H.hero.loadout.r(i)["reap"]) > 0.0:

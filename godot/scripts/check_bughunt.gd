@@ -3,7 +3,9 @@
 ## monster: it sears its wounds once, its own way, not also the old way; the evasive move's long name kept off the slow attack's
 ## plate (pictured); floor 5's cage walked into once it is down. And from the damage test: Brand in front makes a burn twice as hot
 ## once, not again on each crit (it grew to millions); a monster's meld makes his burn or poison worse once a burn, not each blow;
-## Twin's two waves aimed so the nearer crosses the spot she aims at (heroes/mage.gd TWIN_AIM).
+## Twin's two waves aimed so the nearer crosses the spot she aims at (heroes/mage.gd TWIN_AIM). The second round's: a monster's meld
+## deepens his curse, lengthens his root or shock once while it lasts (Omen, Manacle, Stormglass); Miasma worsens a poison once;
+## Brand's heat on a burn not passed on by Searing nor lit again by Rekindle; no royal's crest on a kind's called-up, split or risen.
 extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
@@ -111,7 +113,15 @@ func run(main, hero, dir: String) -> void:
 	for k in 5:
 		h.m52.struck(m, 0, 100.0, true, m.world, true, true, false, false, false)
 	var d2: float = m.burn_dps
-	_line(is_equal_approx(d1, d0 * 2.0) and is_equal_approx(d2, 200.0), "Brand: ten crits on a burning one, its burn %d a second to %d (twice, once); burned out and lit again, five crits, %d" % [int(d0), int(d1), int(d2)])
+	# (Rekindle lights it again as it goes out: its own fire, not Brand's double of it; a crit then twice that, once)
+	m.m52["rekindle"] = 1
+	m.burn_t = 0.02
+	await _wait(0.15)
+	var d3: float = m.burn_dps
+	for k in 5:
+		h.m52.struck(m, 0, 100.0, true, m.world, true, true, false, false, false)
+	var d4: float = m.burn_dps
+	_line(is_equal_approx(d1, d0 * 2.0) and is_equal_approx(d2, 200.0) and m.burn_t > 0.0 and d3 <= 100.5 and d4 <= 200.5, "Brand: ten crits on a burning one, its burn %d a second to %d (twice, once); burned out and lit again, five crits, %d; lit again by Rekindle %d, five crits, %d" % [int(d0), int(d1), int(d2), int(d3), int(d4)])
 	h.loadout.front[0] = [null, null]
 	h.loadout._r = [null, null, null]
 	m.burn_t = 0.0
@@ -137,6 +147,43 @@ func run(main, hero, dir: String) -> void:
 	_line(is_equal_approx(hb1, 150.0) and is_equal_approx(hp1, 200.0) and is_equal_approx(ht1, 5.0) and is_equal_approx(h.burn_dps, 150.0), "his burn after five blows of Cremate %d (from 100), his poison after five of Strangler %d over %.1f s (from 100 over 10); a new burn, worse again: %d" % [int(hb1), int(hp1), ht1, int(h.burn_dps)])
 	h.burn_t = 0.0
 	h.poison_t = 0.0
+	# THE BUG HUNT'S SECOND ROUND: a monster's meld on his curse, his root, his shock: ten blows, worse once while it lasts
+	var mo = _near(1)[0]
+	var rows: Array = []
+	for c in [["omen", "hex_t", "hex_more", 0.2, 1.5], ["manacle", "root_t", "root_t", 1.0, 2.0], ["stormglass", "shock_t", "shock_t", 1.0, 1.5]]:
+		mo.words = [c[0]] + FoeWords.parts_of(c[0])
+		h.set(c[1], 3.0 if c[1] != c[2] else float(c[3]))
+		if c[1] != c[2]:
+			h.set(c[2], float(c[3]))
+		for k in 10:
+			h._invuln = 0.0
+			h.hurt_by(1.0, "phys", mo.words, {}, mo)
+			# (his root and shock held as they were, all but what the meld does, as the blows' own may set them again)
+			if c[1] == c[2]:
+				h.set(c[1], maxf(float(h.get(c[1])), 0.01))
+		rows.append([c[0], float(h.get(c[2])), float(c[3]) * float(c[4])])
+		h.set(c[1], 0.0)
+		await _wait(0.1)
+	mo.words = []
+	h.hex_more = 0.0
+	_line(rows.all(func(r): return float(r[1]) <= float(r[2]) + 0.25), "ten blows of a monster carrying each: " + ", ".join(rows.map(func(r): return "%s %.2f (once: %.2f)" % [r[0], r[1], r[2]])))
+	# MIASMA IN FRONT: ten hits on a poisoned one among the poisoned, its poison worse once
+	var two: Array = _near(3)
+	var mm = two[0]
+	mm.max_life = 1.0e9
+	mm.life = 1.0e9
+	for o in two:
+		o.world = mm.world + Vector2(0.5, 0.0) * two.find(o)
+		o.dose(50.0, 30.0)
+	h.loadout.front[0] = ["miasma", null]
+	h.loadout._r = [null, null, null]
+	var q0: float = mm.poison_dps
+	for k in 10:
+		h.m52.struck(mm, 0, 100.0, false, mm.world, true, false, false, false, false)
+	var q1: float = mm.poison_dps
+	h.loadout.front[0] = [null, null]
+	h.loadout._r = [null, null, null]
+	_line(q1 <= q0 * 1.81 and q1 > 0.0, "Miasma: ten hits on a poisoned one beside two more, its poison %d a second to %d (once, %d at most)" % [int(q0), int(q1), int(q0 * 1.8)])
 	# THE EVASIVE MOVE'S LONG NAME: the longest melds on it in front and behind; pictured
 	M.loot.level = 20
 	h.loadout.front[2] = ["pressurepoint", "flashfreeze"]
@@ -211,4 +258,27 @@ func run(main, hero, dir: String) -> void:
 		h.kit.shots.clear()
 	Mage.TWIN_AIM = was
 	_line(miss[true] < 0.0, "Twin's waves 4.5 tiles out, the nearer's edge from the aimed spot: as now %.2f tiles (an enemy's middle 0.42 in misses past 0.42), aimed %.2f (over it)" % [miss[false], miss[true]])
+	# THE ROYALS' CRESTS (the second round): floor 16, whose packs royals touch; what its kinds are made as when one is called up, split
+	# or risen carries no royal's crest nor rune
+	# (the cage's ride up, above, may still be going: a way taken while one is going is not taken)
+	var tg := 0.0
+	while M._going and tg < 15.0:
+		await M.get_tree().process_frame
+		tg += M.get_process_delta_time()
+	await M.go_to("floor16", "start")
+	var tw := 0.0
+	while tw < 15.0 and (M._monsters == null or M._monsters.list.is_empty() or M.place != "floor16"):
+		await M.get_tree().process_frame
+		tw += M.get_process_delta_time()
+	await _wait(0.5)
+	var crowned: Array = []
+	var touched := 0
+	for o in M._monsters.list:
+		if is_instance_valid(o) and o.get("royal") != null and str(o.get("royal")) != "":
+			touched += 1
+	for kind in M._monsters._plain:
+		var t: Dictionary = M._monsters._plain[kind]
+		if t.has("royal") or not (t.get("carries", []) as Array).is_empty():
+			crowned.append(kind)
+	_line(crowned.is_empty() and touched > 0 and M._monsters._plain.size() > 0, "floor 16 (%d of its monsters a royal's): the kinds as called up, split or risen, a royal's crest or rune on none of %d %s" % [touched, M._monsters._plain.size(), str(crowned)])
 	print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

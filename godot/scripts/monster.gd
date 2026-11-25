@@ -292,6 +292,10 @@ var mark_t := 0.0
 ## (THE 52 DESIGNED MELDS: what the hero's melds keep on it: melds52_rules.gd; and its burning a moment ago, for Rekindle)
 var m52 := {}
 var burn_dps_was := 0.0
+## (THE MELDS' HEAT ON ITS BURN: Brand, Brimstone, Firetrap, Firewhirl, Anvil, Sunspear make it hotter, each once a burn, `burn_k`
+## all of theirs together, "hot_<id>" in `m52` each that has; a burn copied or lit again from it takes its own heat without theirs,
+## burn_base(): the bug hunt's second round found a burn passed from one to another, or lit again, doubled again without end)
+var burn_k := 1.0
 var shield := 0.0
 ## EVERY WORD ON A DUNGEON (foe_words.gd): Sunder, when a blow of its last knocked him back; Fervor, the deaths it has been fed and
 ## how long still; Cauterize, its wounds seared shut, once; Rime Ward, when its shield last chilled him; Hailstorm's wait; Eruption's
@@ -1572,6 +1576,8 @@ func _afflicted(dt: float) -> bool:
 		bleed_t = maxf(0.0, bleed_t - dt)
 		if bleed_t <= 0.0:
 			bleed_move = 0.0
+			# (Thornspray may open the next one wider: mh_bleed.gd copy_hit)
+			m52.erase("thorn_wide")
 	if mirror_t > 0.0:
 		mirror_t = maxf(0.0, mirror_t - dt)
 	# (UNIQUE ITEMS: the Burning Verse, a burn of his on a cursed enemy never goes out: it lasts until it dies)
@@ -1591,7 +1597,9 @@ func _afflicted(dt: float) -> bool:
 	if burn_t > 0.0 and not lasts:
 		burn_t -= dt
 		if burn_dps > 0.0:
-			burn_dps_was = burn_dps
+			burn_dps_was = burn_base()
+		if burn_t <= 0.0:
+			_burn_out()
 		if burn_t <= 0.0 and not m52.is_empty() and mgr.hero != null and is_instance_valid(mgr.hero):
 			mgr.hero.m52.status_end(self, "burn")
 	if chill_t > 0.0:
@@ -1702,9 +1710,35 @@ func _fly(dt: float) -> void:
 func set_alight(dps: float, secs := 3.0) -> void:
 	if burn_t <= 0.0:
 		_tell({"t": "ignite", "x": world.x, "y": world.y})
-	if burn_t <= 0.0 or dps > burn_dps:
+		_burn_out()
 		burn_dps = dps
+	elif dps > burn_base():
+		# (a fiercer fire on it: the melds' heat already on its burn on this one too)
+		burn_dps = dps * burn_k
 	burn_t = secs
+
+
+## A meld making its burn hotter, `k` times, once a burn (`id` the meld's); whether it did.
+func hotter(id: String, k: float) -> bool:
+	if burn_t <= 0.0 or m52.has("hot_" + id):
+		return false
+	m52["hot_" + id] = true
+	burn_dps *= k
+	burn_k *= k
+	return true
+
+
+## Its burn as it would be without the melds' heat (what Searing passes on, Rekindle lights again).
+func burn_base() -> float:
+	return burn_dps / maxf(1.0, burn_k)
+
+
+## (its burn out: the melds' heat goes with it)
+func _burn_out() -> void:
+	burn_k = 1.0
+	for key in m52.keys():
+		if str(key).begins_with("hot_"):
+			m52.erase(key)
 
 
 ## FROST in front, a chilling hit that slows it by `by` (game.ts chillMonster): a second one on a chilled one freezes it,
@@ -1871,6 +1905,7 @@ func clear_afflictions() -> void:
 	bleed_move = 0.0
 	burn_t = 0.0
 	burn_dps = 0.0
+	_burn_out()
 	chill_t = 0.0
 	chill = 0.0
 	frozen_t = 0.0

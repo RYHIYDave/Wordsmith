@@ -199,7 +199,7 @@ func tick(m, dmg: float, moved: bool) -> float:
 			if moved and m.burn_t > 0.0 and H.once("boil%d" % m.get_instance_id(), 0.5):
 				H.tell(id, "spatter", m.world)
 				for q in H.near(m.world, H.n("bloodboil", "r", 1.3), 4, [m]):
-					q.set_alight(maxf(1.0, m.burn_dps * H.n("bloodboil", "fire", 0.6)), 2.0)
+					q.set_alight(maxf(1.0, m.burn_base() * H.n("bloodboil", "fire", 0.6)), 2.0)
 		"bramble":
 			if H.once("bram%d" % m.get_instance_id(), 0.5):
 				for q in H.near(m.world, m.r + 0.9, 4, [m]):
@@ -288,7 +288,9 @@ func arc(o, i: int, from: Vector2) -> void:
 func copy_hit(o, i: int) -> void:
 	if H.f(i) != "thornspray" or not H.ok(o):
 		return
-	if o.bleed_t > 0.0:
+	# (once a bleeding: every copy of a Splitting shot opened it wider again, without end: the bug hunt, 25 Nov 2026)
+	if o.bleed_t > 0.0 and not o.m52.has("thorn_wide"):
+		o.m52["thorn_wide"] = true
 		o.bleed_dps *= H.n("thornspray", "wider", 1.3)
 		H.tell("thornspray", "wider", o.world)
 	# (thorns take root under it)
