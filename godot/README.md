@@ -1664,6 +1664,14 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   Tap, Tempo), each use from its first blow (it was left at the last class's); Staccato's no pause on the Cleave; Haymaker's shorter
   wind-up and Flurry's quicker repeat on every hero's moves (heroes/kit.gd, hero.gd _echo_of). Left: Twin II behind's second repeat on
   the Strike alone; on the Brawler's punch Aftershock, Backwash and Hydra told nothing (not traced). Round 6's checks 7 of 7.
+- HIS PICKS AFTER THE BUG HUNT (25 Nov 2026, one pop-up with the picture docs/mockups/bughunt_fixes/for_your_yes.png): the three
+  looks on, "1. Banner clear (Recommended)", "2. Twin waves aimed (Recommended)", "3. Marker clear (Recommended)" (hud.gd
+  BANNER_CLEAR, heroes/mage.gd TWIN_AIM, act1/quest610.gd MARK_CLEAR with heroes/warlock.gd HINT_TOWN_OFF, all on); the Brawler's
+  kicks, "Raise them (Recommended)" (words.gd EVEN vkick, as hard as his punches); his jump, "Land with a blow (Recommended)" (heroes/
+  brawler.gd _jump_lands: as the Warrior's Lunge comes down, all round him at the jump's own weight, its words, Twin, Echoes and the
+  last words with it); deep endless, "Soften it" (main.gd endless_tough: 10% a level to Endless 20, ENDLESS_GROW_PAST 3% a level
+  after: Endless 30's monsters about half as strong as they were, Endless 50's a seventh, Endless 100's a hundred-and-ninetieth).
+  Round 6's checks 10 of 10.
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/
