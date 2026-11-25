@@ -758,6 +758,9 @@ func _ready() -> void:
 		_touch = preload("res://scripts/touch.gd").new()
 		_touch.main = self
 		add_child(_touch)
+		# (`--touch=1`, for pictures, the store's among them: as if a finger had touched the game, the HUD as a phone shows it)
+		if _arg("touch") == "1":
+			_touch.on = true
 	if _pad == null:
 		_pad = preload("res://scripts/pad.gd").new()
 		_pad.main = self
