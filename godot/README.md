@@ -1432,7 +1432,8 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   with `--fixed-fps 30`, a film of it frame by frame (both run under `xvfb-run -a ... --rendering-driver opengl3`).
 
 - **Strongholds on any endless level: the cult's gate at the map's edge** (`scripts/act1/altar_rooms.gd`, the floors 6 to 10
-  strongholds' own rules, `act1/holds.gd`; AltarRooms.ON, OFF until his yes to the pictures, docs/mockups/edge_gate/). His words,
+  strongholds' own rules, `act1/holds.gd`; AltarRooms.ON, on at his yes to the pictures, docs/mockups/edge_gate/, 25 Nov 2026:
+  “I have art chat making new stronghold entrances for all levels, but yes switch them on”). His words,
   23 Nov 2026: “In endless mode I want multiple chained and stronghold encounters per level”. Shown the altar sealed in one of a
   floor's rooms (docs/mockups/altar_room/), his “Why wouldn’t you just put the door on the edge of the map?  Why is it in the
   middle of the area?”; asked whether to do it as floors 6 to 10 do, his pick, 25 Nov 2026: “Gate at the edge (Recommended)”.
@@ -1528,8 +1529,8 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   stronghold's altar (holds.gd problem) and no bench (NO_MELD) takes one. They drop only on an endless level, the four sharing
   one rune's share (loot.gd drops_at). Burned in, no monster carries one and it drops no more often (loot.gd DOOR_WORDS), and the
   level holds more of its encounter: CHAINS twice the chained rares (main.gd); SIEGE twice the strongholds, four of the cult's gates
-  at the map's edge for two, and on floors 6 to 10 up to two beside the floor's own (act1/quest610.gd `rooms`; waits on the
-  gates' own yes); TOLL the Muffled Bells for sure, and each bell rung calls its tough ones twice (act2/bells.gd _tough), on the city's
+  at the map's edge for two, and on floors 6 to 10 up to two beside the floor's own (act1/quest610.gd `rooms`);
+  TOLL the Muffled Bells for sure, and each bell rung calls its tough ones twice (act2/bells.gd _tough), on the city's
   floors too; CROWN the royals' packs for sure and twice as many, and on the High City's floors a quarter more of its packs
   (main.gd royal_packs). Stones (iron chain links, a brick gatehouse, a bronze bell, a purple crown) with Greed's in
   melds52.json `extra` (`door`), docs/mockups/door_words/; listed, with the Lexicon's page and the rune bag's group DOOR, only while door_words.gd
