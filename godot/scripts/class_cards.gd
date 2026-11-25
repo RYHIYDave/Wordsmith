@@ -20,6 +20,10 @@
 ## screen's own, alive (title_ring.gd), put back into the dark; a check of the cards alone has its still. A hero saved, CONFIRM
 ## asks first (`gate`, main.ts pickClass: "Press CONFIRM again to start over. Your saved <class> will be lost.", `note`, said
 ## above the foot in the colour of what is lost, in place of what the mode means).
+##   THE HEROES FOR SALE (shop.gd, PAID_HEROES): a hero for sale and not bought has a padlock and the price in its card's top
+## left corner (the padlock alone where the card is too narrow, held upright); chosen, CONFIRM is BUY and the price, and a line over the foot says what it is (in place of what the mode means).
+## BUY brings up Google Play's own purchase sheet; bought, the padlock goes, UNLOCKED shines on the card a moment, and CONFIRM
+## comes back.
 extends Control
 
 signal picked(cls: String, mode: String)
@@ -64,6 +68,8 @@ var note := ""
 var gate := Callable()
 ## (a test hero's cards, the level select's: no mode, a test hero is Normal; main.ts `mode: ... !titleUi.practice`)
 var no_mode := false
+## (a hero just bought: class -> seconds since, for UNLOCKED on its card)
+var _unlocked := {}
 
 
 func _ready() -> void:
@@ -110,6 +116,34 @@ func _ready() -> void:
 	_front.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_front.draw.connect(_draw_front)
 	add_child(_front)
+	var sh = _shop()
+	if sh != null:
+		sh.bought.connect(_on_bought)
+
+
+## The heroes for sale (shop.gd), or null.
+func _shop():
+	return main.get("shop") if main != null else null
+
+
+## Whether a class is for sale and not yet bought.
+func _locked(cls: String) -> bool:
+	var sh = _shop()
+	return sh != null and sh.locked(cls)
+
+
+## BUY and the price ("BUY $0.99").
+func _buy_label(cls: String) -> String:
+	var sh = _shop()
+	if sh != null and sh.busy == cls:
+		return "WAIT..."
+	return "BUY %s" % (sh.price(cls) if sh != null else "")
+
+
+func _on_bought(cls: String) -> void:
+	_unlocked[cls] = 0.0
+	if sfx != null:
+		sfx.play("rare")
 
 
 ## render/figure.ts Figure, as much of it as a card's hero uses: standing, running on the spot, coming to a stand out of the run,
@@ -241,6 +275,9 @@ func _layout() -> Dictionary:
 	var back := Rect2(4, Hh - 22, back_w, 18)
 	var mode_w := maxf(_width("MODE: HARDCORE"), _width("MODE: NORMAL")) + 16.0
 	var confirm_w := _width("CONFIRM") + 28.0
+	for c in ids:
+		if _locked(c):
+			confirm_w = maxf(confirm_w, _width(_buy_label(c)) + 28.0)
 	var voice_x := W - 4.0  # (VOICE_TOGGLE off: no voice button; its place the screen's edge)
 	var beside := back_w + mode_w + 0.0 + 24.0 + confirm_w + 12.0 <= W
 	var mode_r := Rect2(back.position.x + back_w + 6.0, Hh - 22, mode_w, 18) if beside else Rect2(floorf((W - mode_w) / 2.0), Hh - 44, mode_w, 18)
@@ -305,6 +342,13 @@ func _click() -> void:
 
 ## main.ts pickClass: the warp, where the art has a picture of the hero making ready; else the run begins at once.
 func _pick(cls: String) -> void:
+	# (a hero for sale and not bought: BUY, Google Play's purchase sheet)
+	if _locked(cls):
+		var sh = _shop()
+		if sh.busy == "":
+			_click()
+			sh.buy(cls)
+		return
 	if gate.is_valid() and not gate.call(cls):
 		return
 	_click()
@@ -317,6 +361,10 @@ func _pick(cls: String) -> void:
 
 func _process(dt: float) -> void:
 	t += dt
+	for c in _unlocked.keys():
+		_unlocked[c] += dt
+		if _unlocked[c] > 2.0:
+			_unlocked.erase(c)
 	var L := _layout()
 	var ids: Array = K["order"]
 	# (the cards just come on screen: none chosen yet, each hero's figure from the start)
@@ -518,16 +566,37 @@ func _draw_front() -> void:
 			ix += slot + 4.0
 		var A: Dictionary = cl["attrs"]
 		_text(ci, "STR %d DEX %d INT %d" % [int(A["str"]), int(A["dex"]), int(A["int"])], tx, attrs_y, T["dim"], {"align": "center", "font": "small"})
+		if _locked(c):
+			_price_tag(ci, r, c, tx - floorf(_width(str(cl["name"])) / 2.0))
+		elif _unlocked.has(c):
+			# (just bought: UNLOCKED a moment where the price was, in the friend's cyan, then gone)
+			var k: float = _unlocked[c]
+			var a := clampf(minf(k / 0.15, (2.0 - k) / 0.5), 0.0, 1.0)
+			var uw := _width("UNLOCKED", "small") + 8.0
+			_box(ci, x + 3.0, cy + 3.0, uw, 12.0, Color(T["ink"], a), Color(T["accent"], a))
+			_text(ci, "UNLOCKED", x + 7.0, cy + 6.0, Color(T["accent"], a), {"font": "small"})
 		if not entering.is_empty() and entering["cls"] != c:
 			# (they stand back in the dark while the one picked makes ready)
 			_rect(ci, x, cy, cw, ch, Color(P["black"], 0.62))
 	# the foot: CONFIRM, lit once a card is chosen; the MODE, and what it means under the cards
 	var hy: float = L["end"] + 5.0
 	_button(ci, L["back"], "BACK")
-	_button(ci, L["confirm"], "CONFIRM", {"primary": true, "lit": true} if chosen != "" and entering.is_empty() else {"disabled": true})
+	if chosen != "" and _locked(chosen):
+		_button(ci, L["confirm"], _buy_label(chosen), {"primary": true, "lit": true} if _shop().busy == "" else {"disabled": true})
+	else:
+		_button(ci, L["confirm"], "CONFIRM", {"primary": true, "lit": true} if chosen != "" and entering.is_empty() else {"disabled": true})
 	var mr: Rect2 = L["mode"]
 	if not no_mode:
 		_button(ci, mr, "MODE: HARDCORE" if mode == "hardcore" else "MODE: NORMAL", {"color": T["bad"]} if mode == "hardcore" else {})
+	# (a hero for sale chosen: what it is, in place of what the mode means)
+	if chosen != "" and _locked(chosen) and note == "":
+		var nm := str(K["classes"][chosen]["name"])
+		for part in PF.wrap("Unlock the %s. Yours to keep, on every save." % nm, W - 16.0, "small"):
+			if hy + 6.0 > mr.position.y - 2.0 and not no_mode:
+				break
+			_text(ci, part, floorf(W / 2.0), hy, T["accent"], {"align": "center", "font": "small"})
+			hy += 6.0
+		return
 	for part in ([] if note != "" or no_mode else PF.wrap(str(K["modeLine"][mode]), W - 16.0, "small")):
 		if hy + 6.0 > mr.position.y - 2.0:
 			break
@@ -537,6 +606,34 @@ func _draw_front() -> void:
 	for part in (PF.wrap(note, W - 16.0, "small") if note != "" else []):
 		_text(ci, part, floorf(W / 2.0), hy + 2.0, T["bad"], {"align": "center", "font": "small"})
 		hy += 6.0
+
+
+## A hero for sale and not bought: in its card's top left corner, over the hero's head, a small dark tab, a padlock painted in it
+## and the price beside (in the larger letters: the small have no "$").
+func _price_tag(ci: CanvasItem, r: Rect2, cls: String, name_left: float) -> void:
+	var label: String = _shop().price(cls)
+	var tw := _width(label)
+	var w := 4.0 + 5.0 + 3.0 + tw + 4.0
+	# (a card too narrow for the price beside the name, as held upright: the padlock alone; the price is on BUY)
+	if r.position.x + 3.0 + w + 3.0 > name_left:
+		label = ""
+		w = 4.0 + 5.0 + 4.0
+	var h := 12.0
+	var x := r.position.x + 3.0
+	var y := r.position.y + 3.0
+	_box(ci, x, y, w, h, T["ink"], T["edgeHi"])
+	# (the padlock: its shackle, then its body, a keyhole in it)
+	var lx := x + 4.0
+	var ly := y + 2.0
+	var steel: Color = P["sl3"]
+	_rect(ci, lx + 1, ly, 3, 1, steel)
+	_rect(ci, lx + 1, ly + 1, 1, 2, steel)
+	_rect(ci, lx + 3, ly + 1, 1, 2, steel)
+	_rect(ci, lx, ly + 3, 5, 5, P["sl5"])
+	_rect(ci, lx, ly + 7, 5, 1, P["sl4"])
+	_rect(ci, lx + 2, ly + 4, 1, 2, T["ink"])
+	if label != "":
+		_text(ci, label, lx + 5.0 + 3.0, y + 2.0, T["text"])
 
 
 ## A card's hero (render/figure.ts draw, lights, drawPhased), in its card's clip, in picture pixels (two to a game pixel of the

@@ -102,6 +102,8 @@ var place := ""
 var hero: Hero
 var loot: Loot
 var sfx: Sfx
+## THE HEROES FOR SALE (shop.gd: the Warlock, the Tinkerer and the Brawler, bought in the app; PAID_HEROES off until his yes)
+var shop: Node
 var music: Music
 var guide: Guide
 var town: Town
@@ -700,6 +702,8 @@ func _ready() -> void:
 	_inputs()
 	sfx = Sfx.new()
 	add_child(sfx)
+	shop = preload("res://scripts/shop.gd").new()
+	add_child(shop)
 	music = Music.new()
 	add_child(music)
 	hero = Hero.new()
@@ -3297,6 +3301,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "voices":
 		await preload("res://scripts/check_glows.gd").new().voices(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE HEROES FOR SALE: check_paid.gd, the cards with the shop's stand-in)
+	if _arg("only") == "paid":
+		await preload("res://scripts/check_paid.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (THE STORE'S PICTURES: check_store.gd, one scene a run)
