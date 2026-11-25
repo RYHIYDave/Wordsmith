@@ -1,8 +1,9 @@
 ## THE HEROES FOR SALE (the app's in-app purchases): the Warlock, the Tinkerer and the Brawler, each bought once for $0.99 and
 ## kept for good, on every save. His words, 25 Nov 2026: “I want the sell the warlock, tinkerer and brawler for $0.99”; asked
 ## whether to start on them, his pick: “Yes, start them (Recommended)”.
-##   PAID_HEROES: PICTURES FIRST, off until his yes to how the locked heroes look on the class cards (class_cards.gd). On, a hero
-## for sale and not bought is locked there: a padlock and the price on its card, and, chosen, BUY in place of CONFIRM.
+##   PAID_HEROES: on at his yes to the pictures (docs/mockups/paid_heroes/), 25 Nov 2026: “Yes, that's good (Recommended)”, and
+## to the price, “$0.99 each (Recommended)”. A hero for sale and not bought is locked on the class cards (class_cards.gd): a
+## padlock and the price on its card, and, chosen, BUY in place of CONFIRM.
 ##   WHERE THEY ARE SOLD: in the Android app, through Google Play (Google's own purchase sheet; Google takes the payment, the game
 ## never sees it). Where there is no shop to buy them from (a build with no Google Play: the computer, the checks), nothing is
 ## locked, unless the stand-in shop is asked for (`--shop=fake`, for the checks and pictures: a purchase goes through at once).
@@ -15,7 +16,7 @@ signal changed
 ## (a purchase went through: the class bought)
 signal bought(cls: String)
 
-const PAID_HEROES := false
+const PAID_HEROES := true
 const FOR_SALE := ["warlock", "tinkerer", "brawler"]
 ## (the price shown until Google Play gives its own, in the player's money)
 const PRICE := "$0.99"

@@ -60,6 +60,36 @@ jobs:
           done
           cat "$C/editor_settings-4.7.tres"
 
+      - name: Google Play's purchase plugin (the heroes for sale, godot/scripts/shop.gd)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # (Godot's own plugin for Google Play Billing, its latest release; its files go into godot/addons/ and it is switched on
+          # for the export, which puts Google's billing library into the app)
+          API=https://api.github.com/repos/godot-sdk-integrations/godot-google-play-billing/releases
+          curl -sSL -H "Authorization: Bearer $GH_TOKEN" "$API" > releases.json
+          python3 - <<'EOF'
+          import json
+          R = json.load(open("releases.json"))
+          for r in R[:6]:
+              print(r["tag_name"], r["published_at"][:10], [a["name"] for a in r["assets"]])
+          EOF
+          URL=$(python3 -c "import json; R=json.load(open('releases.json')); r=[r for r in R if not r['prerelease'] and any(a['name'].endswith('.zip') for a in r['assets'])][0]; print([a for a in r['assets'] if a['name'].endswith('.zip')][0]['browser_download_url'])")
+          echo "PLUGIN: $URL"
+          curl -sSL -o billing.zip "$URL"
+          mkdir -p billing
+          unzip -q billing.zip -d billing
+          find billing | head -60
+          ADDONS=$(dirname "$(find billing -name plugin.cfg | head -1)")
+          ADDONS=$(dirname "$ADDONS")
+          mkdir -p godot/addons
+          cp -r "$ADDONS"/. godot/addons/
+          CFG=$(cd godot && find addons -name plugin.cfg | head -1)
+          echo "PLUGIN CFG: $CFG"
+          printf '\n[editor_plugins]\n\nenabled=PackedStringArray("res://%s")\n' "$CFG" >> godot/project.godot
+          tail -5 godot/project.godot
+          for f in $(find godot/addons -name "*.gd" -o -name "plugin.cfg"); do echo "===== $f"; cat "$f"; done
+
       - name: A key for this run only
         run: |
           keytool -genkeypair -v -keystore "$RUNNER_TEMP/run.keystore" -alias wordsmith -keyalg RSA -keysize 2048 -validity 10000 \
