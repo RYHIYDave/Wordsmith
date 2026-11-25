@@ -690,6 +690,7 @@ export function boulder(size: number, seed: number): Sprite {
 export const DRESSED: Ramp = ['#655c74', '#837a8f', '#a39a9f', '#c4bbb4', '#d9d0c6'];
 /** The court's flagstones: the same stone, laid. */
 export const FLAG: Ramp = ['#5f5868', '#8a8290', '#9c94a1', '#aea6b1', '#c4bcc4'];
+const FLAG_Q = FLAG;
 
 /**
  * COURSED ASHLAR: the colour of a dressed wall at the world's point `w`, its face turned `n`: courses
@@ -840,12 +841,17 @@ function gatehouse(open: boolean, f: number): Sprite {
   return sp;
 }
 
+/** (OWN_FRONTS, art/hold_fronts.ts) A stronghold's court of flagstones in another floor's stone, `r`, as the Quarry's are laid: its three tiles, the last worn down the middle. */
+export function courtTiles(r: Ramp, seed: number): Sprite[] {
+  return [flagstones(false, seed + 1, r), flagstones(false, seed + 2, r), flagstones(true, seed + 3, r)];
+}
+
 /**
  * THE COURT'S FLAGSTONES, a floor tile: two great slabs of the quarry's dressed stone to a tile, laid
  * in rows, their joints dark, each stone's edge worn pale; worn paler down the middle of the way to the
  * door (`worn`). 64 x 33 at (32, 0).
  */
-function flagstones(worn: boolean, seed: number): Sprite {
+function flagstones(worn: boolean, seed: number, FLAG: Ramp = FLAG_Q): Sprite {
   const p = new Px(64, 33);
   for (let py = 0; py < 33; py++) {
     for (let px = 0; px < 64; px++) {

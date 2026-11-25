@@ -36,6 +36,12 @@ import { forgetMade as forget_lair_temple } from '../art/lair_temple';
 import { forgetMade as forget_lair_gate } from '../art/lair_gate';
 import { GRAIN, HEAVY, LEFT_TO_PAINTER } from '../art/kit';
 import { deathOf, isPainted } from './left_to_painter';
+/**
+ * THE PICTURE LEANED (for the playtests' pictures alone, never moved by the game): the world drawn this many game pixels to the left
+ * (x) and up (y) of where it would be (less than none: right, down), so that a tall thing before the hero is all in sight (the
+ * strongholds' fronts, tools/scenarios/hold_fronts.mjs).
+ */
+export const PICTURE_LEAN = { x: 0, y: 0 };
 /** HEAVY FRAMES (art/kit.ts HEAVY) left to the side painter while the world is drawn: on in the game; off, every frame painted when first shown. */
 export const PAINT_DEFER = { on: true };
 import type { ActorArt } from '../art/actor_types';
@@ -3386,8 +3392,8 @@ export class Renderer {
     const heroLift = this.heroLift(game);
     // (FLOOR 20, THE MOTH: the picture leans toward it, so that its body, high over the top, is in sight with him: mothLean)
     const lean = this.mothLean(game, W, H, vdt);
-    cam.ox = Math.round(va.x - (h.x - h.y) * 16 - lean.x) + fx.shakeX;
-    cam.oy = Math.round(va.y + 12 - (h.x + h.y) * 8 + heroLift - lean.y) + fx.shakeY;
+    cam.ox = Math.round(va.x - (h.x - h.y) * 16 - lean.x - PICTURE_LEAN.x) + fx.shakeX;
+    cam.oy = Math.round(va.y + 12 - (h.x + h.y) * 8 + heroLift - lean.y - PICTURE_LEAN.y) + fx.shakeY;
     const stands = this.stands;
     stands.length = 0;
     this.labels.length = 0;

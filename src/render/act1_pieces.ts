@@ -74,8 +74,21 @@ import { bridgeOf, doorOf, forgetMade as forgetF8F9Made } from '../art/f8f9';
 import type { Painter } from './painter';
 import { Ahead } from '../engine/steps';
 import type { LoadStep } from '../engine/steps';
-import { HALL_LOOK, SANCTUM } from '../game/act1_dress';
+import { FRONT_NAMES, HALL_LOOK, OWN_FRONTS, SANCTUM } from '../game/act1_dress';
 import { sanctumPieces } from '../art/cult_sanctum';
+// (OWN_FRONTS: the strongholds' fronts, a floor's own each: art/hold_fronts.ts)
+import { holdCourtOf, holdFrontOf } from '../art/hold_fronts';
+
+/** (OWN_FRONTS) The names of the strongholds' fronts, each a gate's: four frames of its mark's flicker sealed, the fifth open. */
+const FRONT_SET = new Set(Object.values(FRONT_NAMES).filter((n) => n !== "the waystation's gate"));
+/** (OWN_FRONTS) Floor `n`'s own front, as a list of one (none where it has none of its own: the Quarry's and Echo Canyon's are theirs already). */
+const frontList = (n: number): Piece[] => {
+  const f = holdFrontOf(n);
+  const c = holdCourtOf(n);
+  return [...(f ? [f as unknown as Piece] : []), ...(c ? [c as unknown as Piece] : [])];
+};
+/** (OWN_FRONTS) The cult's things in a stronghold's yard, the Quarry's (art/floor6.ts), for floors that hold no stronghold of the story's (11 to 20). */
+const cultYard = (): Piece[] => quarryPieces().filter((p) => p.name === 'the altar of the words' || p.name === "the cult's brazier" || p.name === "the cult's banner");
 
 const MAPS = new Map<number, Map<string, Piece>>();
 /** The pieces of floor `n` of the descent (6 to 10) by name, with the set's camp and the strongholds' (made the first time they are asked for, and kept until `forgetAct1`). */
@@ -83,6 +96,8 @@ export function act1Pieces(n: number): Map<string, Piece> {
   let m = MAPS.get(n);
   // (HALL_LOOK: the sanctum's own pieces wanted where they were not made, its switch put on since: made again with them)
   if (m && HALL_LOOK.on && n >= 6 && n <= 10 && !m.has(SANCTUM.pillar)) m = undefined;
+  // (OWN_FRONTS: likewise the floor's own front)
+  if (m && OWN_FRONTS.on && FRONT_SET.has(FRONT_NAMES[n] ?? '') && !m.has(FRONT_NAMES[n])) m = undefined;
   if (m) return m;
   m = new Map(act1ListsOf(n, (key, make) => LISTS_AHEAD.take(`${n}:${key}`, make)).map((p) => [p.name, p]));
   LISTS_AHEAD.clear();
@@ -100,21 +115,23 @@ function act1ListsOf(n: number, part: ListPart): Piece[] {
   // (THE CAMP INSIDE VELLUM'S GATE, game/camp.ts: the Gate Ward's pieces, the Hush's set and the hub's own, art/hub2.ts)
   if (n === CAMP_DRESS) return [...part('hush', hushSetPieces), ...part('gateWard', gateWardPieces), ...part('hub', () => hubPieces() as unknown as Piece[])];
   // (ACT 2, PART TWO, THE HIGH CITY: each floor's own 25 and the High City's 25, the art chat's; floor 16 her vines in its gardens too)
+  // (OWN_FRONTS: the floor's own stronghold front, and on 11 to 20 the cult's altar, braziers and banners with it)
+  const fronts = OWN_FRONTS.on ? [...part('front', () => frontList(n)), ...(n >= 11 ? part('cultYard', cultYard) : [])] : [];
   if (n >= 16) {
     const own3 = (): Piece[] => (n === 20 ? withEmptyLectern(quietTowerPieces()) : n === 19 ? keepPieces() : n === 18 ? glassGalleryPieces() : n === 17 ? masquePieces() : [...swanGardensPieces(), ...herVinesPieces()]);
-    return [...part('highCity', highCitySetPieces), ...part('own', own3)];
+    return [...part('highCity', highCitySetPieces), ...part('own', own3), ...fronts];
   }
   // (ACT 2, THE HUSH: each floor's own 25 and the set's 25 of the Hush, the art chat's; nothing of the descent's camp or strongholds)
   if (n >= 11) {
     const own2 = (): Piece[] => (n === 11 ? gateWardPieces() : n === 12 ? undercityPieces() : n === 13 ? millracePieces() : n === 14 ? houseOfQuietPieces() : greatLibraryPieces());
-    return [...part('hush', hushSetPieces), ...part('own', own2)];
+    return [...part('hush', hushSetPieces), ...part('own', own2), ...fronts];
   }
   const own = (): Piece[] => (n === 6 ? quarryPieces() : n === 7 ? ledgePieces() : n === 8 ? canyonPieces() : n === 9 ? (F9_LAIRS.on ? [...pinewoodPieces(), ...f9LairPieces()] : pinewoodPieces()) : fenPieces());
   // (the strongholds' gatehouse, court, altar, braziers and banners are the Quarry's: art/floor6.ts; the hall's, the redoubt's)
   const shared = (): Piece[] => (n === 6 ? [] : quarryPieces().filter((p) => p.name.startsWith("the redoubt's") || p.name.startsWith("the court's") || p.name === 'the altar of the words' || p.name === "the cult's brazier" || p.name === "the cult's banner" || p.name === 'pine' || p.name === 'boulder'));
   // (HALL_LOOK: the strongholds' halls made new, the cult's sanctum: art/cult_sanctum.ts)
   const sanctum = HALL_LOOK.on ? part('sanctum', sanctumPieces) : [];
-  return [...part('camp', campPieces), ...part('redoubt', redoubtPieces), ...sanctum, ...part('shared', shared), ...part('own', own)];
+  return [...part('camp', campPieces), ...part('redoubt', redoubtPieces), ...sanctum, ...part('shared', shared), ...part('own', own), ...fronts];
 }
 /**
  * The steps that make floor `n`'s pieces a list at a time (none where they are made), then its pieces. EACH LIST A PIECE A STEP
@@ -138,6 +155,7 @@ function listPieceSteps(n: number, key: string): LoadStep[] {
     case 'camp': return campPieceSteps();
     case 'redoubt': return redoubtPieceSteps();
     case 'shared': return n === 6 ? [] : quarryPieceSteps();
+    case 'cultYard': return quarryPieceSteps();
     case 'hush': return hushSetPieceSteps();
     case 'gateWard': return gateWardPieceSteps();
     case 'hub': return hubPieceSteps();
@@ -353,7 +371,7 @@ export class Act1Pieces {
       return side[(bell ?? p.variant >> 1) % side.length] ?? null;
     }
     if (bell !== null) return fr[bell % fr.length] ?? fr[0];
-    if (p.name === "the redoubt's gatehouse") return p.state === 1 ? fr[4] ?? fr[0] : fr[Math.floor(t * 6) % 4];
+    if (p.name === "the redoubt's gatehouse" || FRONT_SET.has(p.name)) return p.state === 1 ? fr[4] ?? fr[0] : fr[Math.floor(t * 6) % 4];
     // (F8F9_FIX: Echo Canyon's way in, carved into its wall: art/f8f9.ts)
     if (F8F9_FIX.on && p.name === "the waystation's gate" && this.dress.floor === 8 && !(p.variant & 1)) return doorOf(p.state === 1);
     if (p.name === "the waystation's gate") return fr[(p.state === 1 ? 1 : 0) + (p.variant & 1 ? 2 : 0)] ?? fr[0];
