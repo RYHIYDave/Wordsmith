@@ -2886,6 +2886,12 @@ func final(main, hero, dir: String) -> void:
 			break
 	await M._wait(0.3)
 	_line(not is_instance_valid(b) or b.dead, "the last of his runes gone out: he is dead")
+	# (HIS VOICE, his pick: each line said aloud in his own voice, the scream cut short at his death)
+	var heard: Array = M._monsters.said_aloud.filter(func(e): return str(e[0]) == "wsboss").map(func(e): return str(e[1]))
+	var words_heard: Array = WS.WORD_LINES.values().filter(func(t): return heard.has(t))
+	var melds_heard: Array = (WS.D()["lines"]["melds"] as Dictionary).values().filter(func(t): return heard.has(t))
+	_line(not words_heard.is_empty() and not melds_heard.is_empty() and heard.has(str(WS.D()["lines"]["fall"])) and heard.has(str(WS.D()["lines"]["rise"])) and heard.has("~death"),
+		"his voice: his words' lines aloud (%s), his melds' (%s), the boar's and the slam's, his scream (%d said in all)" % [", ".join(PackedStringArray(words_heard)), ", ".join(PackedStringArray(melds_heard)), heard.size()])
 	_line(M.loot._drops.size() >= drops0 + 8 and _said("The Warped Wordsmith is undone.") != "", "his hoard lies where he was (%d things); '%s'" % [M.loot._drops.size() - drops0, _said("The Warped Wordsmith")])
 	await M._snap(dir + "/fi_%02d_hoard.png" % k)
 	k += 1

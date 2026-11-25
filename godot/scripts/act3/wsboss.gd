@@ -27,8 +27,11 @@
 extends "res://scripts/act3/hc.gd"
 
 const DIR := "res://assets/act3/"
-## (his own lines, said as text: no generic call-outs: act1.gd start_act)
+## (his own lines, said over him and aloud: no generic call-outs: act1.gd start_act)
 const CALLS := {}
+## HIS WORDS' LINES, each said as its move begins so it is heard coming (his words, 13 Nov 2026: “The attack lines are too long
+## winded.  One to two word lines.”; the lines, docs/mockups/endless_tablet/README.md, HIS LINES)
+const WORD_LINES := {"power": "Kneel!", "flame": "Burn!", "frost": "Be still.", "lightning": "Storm, come!", "poison": "Rot."}
 const BODY := ["charge", "gore", "stomp"]
 const WORDS := ["power", "flame", "frost", "lightning", "poison"]
 const FLOORS := ["flame", "poison"]
@@ -202,6 +205,24 @@ static func _draw(list: Array) -> String:
 ## His line, said over him (game.ts emit 'bossSay').
 static func say(m, text: String, secs := 2.6) -> void:
 	m.say(text, secs)
+
+
+## HIS VOICE (his pick, 25 Nov 2026: real speech, “I’d like him to sound crazed.  Not cold.” ... “let’s say Scottish.  With some phaser
+## distortion from the magic”; “Take 1, use it (Recommended)”): his line said over him and aloud, in his own voice (monsters.gd speak,
+## assets/voices/wsboss, tools/godot_wsboss_voice.sh). How long it is heard (0: not aloud).
+static func say_aloud(m, text: String, secs := 2.6) -> float:
+	m.say(text, secs)
+	return float(m.mgr.speak("wsboss", text))
+
+
+## His line said a little later, over him and aloud (the slam's line, once the boar's is done).
+static func say_later(m, text: String, secs: float, wait: float) -> void:
+	if wait <= 0.0:
+		say_aloud(m, text, secs)
+		return
+	m.get_tree().create_timer(wait).timeout.connect(func() -> void:
+		if is_instance_valid(m) and not m.dead:
+			say_aloud(m, text, secs))
 
 
 # --- his rules (game/act1_rules/wsboss.ts RULES) ---
@@ -383,7 +404,9 @@ func start(m, a: Dictionary, hero) -> void:
 		"meld":
 			var mi := meld_of()
 			if mi != "":
-				say(m, str(D()["lines"]["melds"][mi]), 1.8)
+				say_aloud(m, str(D()["lines"]["melds"][mi]), 1.8)
+	if WORD_LINES.has(id):
+		say_aloud(m, str(WORD_LINES[id]), 1.6)
 	# (what the move shows while it plays: its warnings, his runes, the hammer, the spores in flight: ws_paint.gd)
 	if id in ["charge", "gore", "stomp", "power", "flame", "frost", "lightning", "poison", "meld"]:
 		peril(m, "wsboss:show", m.world, {"dur": 1e9, "act": act})
@@ -466,12 +489,12 @@ func acting(m, a: Dictionary, t0: float, t1: float, _dt: float, hero) -> void:
 			if at.call(float(F["kill"])):
 				sound(m, "slam", 1.0)
 				hero.kick(6.0)
-			if at.call(float(F["look"][0])):
-				say(m, str(D()["lines"]["fall"]), 2.4)
+				# (his word for it, aloud from the moment it is killed; the slam's line waits until it is done)
+				a1["quietAt"] = float(F["kill"]) + say_aloud(m, str(D()["lines"]["fall"]), 3.0)
 			if at.call(float(F["slam"])):
 				sound(m, "slam", 1.0)
 				hero.kick(9.0)
-				say(m, str(D()["lines"]["rise"]), 2.0)
+				say_later(m, str(D()["lines"]["rise"]), 2.0, float(a1.get("quietAt", 0.0)) + 0.05 - float(F["slam"]))
 				var L := fall_landing(m.world.x, m.world.y, fx, fy)
 				peril(m, "wsboss:fallring", L, {"dur": float(F["ring"]["long"]) * 1.2})
 				peril(m, "wsboss:scorch", m.world, {"dur": 40.0, "b": L.x, "c": L.y})
@@ -491,7 +514,9 @@ func acting(m, a: Dictionary, t0: float, t1: float, _dt: float, hero) -> void:
 		"wsboss:death":
 			var DE: Dictionary = A("DEATH")
 			if at.call(float(DE["struck"])):
-				sound(m, "boss_roar", 1.0)
+				# (a scream, cut short as he implodes: his pick, “A scream cut short”; his roar where he has no voice)
+				if float(m.mgr.speak("wsboss", "~death")) <= 0.0:
+					sound(m, "boss_roar", 1.0)
 				hero.kick(5.0)
 			if at.call(float(DE["implode"][1])):
 				sound(m, "slam", 1.0)

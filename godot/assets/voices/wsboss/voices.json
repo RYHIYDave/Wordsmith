@@ -1,0 +1,74 @@
+{
+ "Kneel!": [
+  "wsboss/power_1.ogg",
+  "wsboss/power_2.ogg"
+ ],
+ "Burn!": [
+  "wsboss/flame_1.ogg",
+  "wsboss/flame_2.ogg"
+ ],
+ "Be still.": [
+  "wsboss/frost_1.ogg",
+  "wsboss/frost_2.ogg"
+ ],
+ "Storm, come!": [
+  "wsboss/lightning_1.ogg",
+  "wsboss/lightning_2.ogg"
+ ],
+ "Rot.": [
+  "wsboss/poison_1.ogg",
+  "wsboss/poison_2.ogg"
+ ],
+ "Rise, fire!": [
+  "wsboss/eruption_1.ogg",
+  "wsboss/eruption_2.ogg"
+ ],
+ "Shatter!": [
+  "wsboss/hailstorm_1.ogg",
+  "wsboss/hailstorm_2.ogg"
+ ],
+ "Be buried.": [
+  "wsboss/avalanche_1.ogg",
+  "wsboss/avalanche_2.ogg"
+ ],
+ "Hear me!": [
+  "wsboss/thunder_1.ogg",
+  "wsboss/thunder_2.ogg"
+ ],
+ "Wither.": [
+  "wsboss/blight_1.ogg",
+  "wsboss/blight_2.ogg"
+ ],
+ "Boil.": [
+  "wsboss/scald_1.ogg",
+  "wsboss/scald_2.ogg"
+ ],
+ "Ignite!": [
+  "wsboss/wildfire_1.ogg",
+  "wsboss/wildfire_2.ogg"
+ ],
+ "Breathe deep.": [
+  "wsboss/fumes_1.ogg",
+  "wsboss/fumes_2.ogg"
+ ],
+ "Come closer.": [
+  "wsboss/frostbite_1.ogg",
+  "wsboss/frostbite_2.ogg"
+ ],
+ "Catch it.": [
+  "wsboss/contagion_1.ogg",
+  "wsboss/contagion_2.ogg"
+ ],
+ "Rest, old friend. Your fury lives in me.": [
+  "wsboss/fall_1.ogg",
+  "wsboss/fall_2.ogg"
+ ],
+ "You will pay for this!": [
+  "wsboss/rise_1.ogg",
+  "wsboss/rise_2.ogg"
+ ],
+ "~death": [
+  "wsboss/death_1.ogg",
+  "wsboss/death_2.ogg"
+ ]
+}

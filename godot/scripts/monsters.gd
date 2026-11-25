@@ -446,16 +446,23 @@ static var _voices = null
 static func voices() -> Dictionary:
 	if _voices == null:
 		_voices = JSON.parse_string(FileAccess.get_file_as_string(VOICES_DIR + "voices.json")) if FileAccess.file_exists(VOICES_DIR + "voices.json") else {"calls": {}, "voices": {}, "tune": {"sayFor": 1.8, "gap": 5.0, "basicGap": 20.0}}
+		# (THE WARPED WORDSMITH SPEAKS, in a real voice, his pick: his lines' takes, tools/godot_wsboss_voice.sh)
+		if FileAccess.file_exists(VOICES_DIR + "wsboss/voices.json"):
+			_voices["voices"]["wsboss"] = JSON.parse_string(FileAccess.get_file_as_string(VOICES_DIR + "wsboss/voices.json"))
 	return _voices
 
 
-## (the game's main.ts: a bossSay with his voice, speakBoss(kind, text)) A line said in a boss's own voice: one of its two takes.
-func speak(kind: String, text: String) -> void:
+## (the game's main.ts: a bossSay with his voice, speakBoss(kind, text)) A line said in a boss's own voice: one of its two takes. How
+## long it is heard, in seconds (0: he has no voice for it).
+func speak(kind: String, text: String) -> float:
 	var takes: Array = voices()["voices"].get(kind, {}).get(text, [])
 	if takes.is_empty():
-		return
-	sfx.play_path(VOICES_DIR + str(takes.pick_random()))
+		return 0.0
+	var path: String = VOICES_DIR + str(takes.pick_random())
+	sfx.play_path(path)
 	said_aloud.append([kind, text])
+	var st = load(path) if ResourceLoader.exists(path) else null
+	return float(st.get_length()) if st != null else 0.0
 
 
 ## (for the checks: each line said aloud, [kind, text])
