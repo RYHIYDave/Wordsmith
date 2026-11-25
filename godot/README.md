@@ -1586,6 +1586,15 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   (heroes/warlock.gd, kit.gd _reach_point); the demon falls as the man, its pact gone (game.ts die), and comes into a town as the man,
   as he is drawn there (warlock.gd turn_man); a word found and a move opened wait, as every line at the top, while the floor's name
   is up (hud.gd, loot.gd). `--only=bughunt` 17 of 17.
+- THE BUG HUNT, ROUND 4 (the frost Mage on the story floors and town, the Ranger with his companions in the city, the High City
+  and endless, the Warlock on the words, melds, gear and screens). The Warlock's: on a touch screen a tap on him, his pact full,
+  changes him (main.ts onHim, his words “then you tap on the warlock and he transforms”: nothing on a phone pressed R, so there was
+  no demon, no Bound Demon); fed by the Unsigned Pact, a tap on him lets him go; the Mage's Aura and the Brawler's combo cancel
+  the same (touch.gd _self_touch); over the full pact TAP HIM on a phone, RB on a pad. Undoing a talent is kept on reload (talents.gd
+  clean, pass after pass: one pass in the saved order dropped what came in by a later one, and a single undo lost 8 of 9). No
+  change in a town, the camp or the Rim, and the Bound Demon is gone with the place he leaves for home or falls in (heroes/warlock.gd).
+  The Unsigned Pact lets him go when what it takes would bring him under its floor (kept at it, his life regen lifted him just over
+  it each frame, and it fed for ever). The Burning Verse's mark goes with its burns (monster.gd: a later uncursed burn never went out).
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/

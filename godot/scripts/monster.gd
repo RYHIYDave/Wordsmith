@@ -1583,6 +1583,10 @@ func _afflicted(dt: float) -> bool:
 	# (UNIQUE ITEMS: the Burning Verse, a burn of his on a cursed enemy never goes out: it lasts until it dies)
 	var lasts := false
 	var hu = mgr.hero.get("uniques") if mgr.hero != null and is_instance_valid(mgr.hero) else null
+	# (its burns gone, paid off by Damning, the mark goes with them: a later burn, uncursed, went out never; the bug hunt's
+	# fourth round, 25 Nov 2026)
+	if verse and burn_t <= 0.0 and hell_t <= 0.0:
+		verse = false
 	if hu != null and hu.wears("burningverse"):
 		if not verse and curse_t > 0.0 and (burn_t > 0.0 or hell_t > 0.0):
 			verse = true

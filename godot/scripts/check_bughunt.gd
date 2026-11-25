@@ -9,7 +9,9 @@
 ## Strangler doubles a poison once however often it is held; floor 10's name and the quest banner pictured (hud.gd BANNER_CLEAR).
 ## The third round's: the Brawler's blows hold no boss; his moves are uses for their words, his jump gives its own, Twin echoes;
 ## a cursed one's burn and poison passed on at its death neither heated again nor dosed past their most; the Unfinished's pictures
-## from behind; the Curse's echo kept to his sight; the demon the man again in town and as he falls.
+## from behind; the Curse's echo kept to his sight; the demon the man again in town and as he falls. The fourth round's: a
+## talent undone kept on reload; the Unsigned Pact lets go with life regen; the Burning Verse's mark goes with its burns; a tap
+## on him on a phone changes him; no change in town, nor the Bound Demon there.
 extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
@@ -512,6 +514,131 @@ func run(main, hero, dir: String) -> void:
 			break
 	var landed: Vector2 = h.kit._reach_point(aim6, 9.0, o6) if aim6 != Vector2.INF else o6
 	_line(aim6 != Vector2.INF and M._monsters.sees(o6, landed), "the Warlock's Curse echoed at a spot behind a wall from where he threw it: lands at %s, in his sight from there (%s); it went through" % [str(landed), str(M._monsters.sees(o6, landed))])
+	# THE FOURTH ROUND'S, THE WARLOCK'S: undoing a talent kept on reload; the Unsigned Pact lets him go with life regen; the Burning
+	# Verse's mark goes with its burns; a tap on him on a touch screen changes him; no change in town, the Bound Demon left behind
+	var Tal := preload("res://scripts/talents.gd")
+	var order := ["branded", "hexchain", "blazingarm", "terribleroar", "hunger", "feast", "bloodlust", "hellwave", "damnedsouls", "souldebt"]
+	var tk: Array = Tal.starting("warlock")
+	var legal := true
+	for id in order:
+		legal = legal and Tal.take_problem("warlock", 50, tk, id) == ""
+		tk.append(id)
+	var undo_ok: bool = Tal.unlearn_problem("warlock", tk, "branded") == ""
+	var after_undo: Array = tk.filter(func(x): return x != "branded")
+	var back: Array = Tal.clean("warlock", 50, after_undo)
+	_line(legal and undo_ok and back.size() == after_undo.size(), "talents: ten taken, Branded undone (allowed %s): %d of %d back from a save (was 2)" % [str(undo_ok), back.size(), after_undo.size()])
+	var Lw = M.loot
+	var up = Lw.unique_piece("unsignedpact")
+	var up_slot: String = "ring1" if up != null and up["slot"] == "ring" else (str(up["slot"]) if up != null else "")
+	var was_up = Lw.gear.get(up_slot) if up != null else null
+	if up != null:
+		Lw.gear[up_slot] = up
+		Lw.derive()
+		h.uniques_changed()
+	h.unhurt = false
+	h.kit._become("demon")
+	h.kit.pact = 0.0
+	var floor_k: float = float(h.uniques.ut["pact"]["floor"])
+	h.life = h.max_life * (floor_k + 0.03)
+	h.stats["life_regen"] = h.max_life * 0.004
+	var tu := 0.0
+	var fed := false
+	while tu < 6.0 and h.kit.form == "demon" and h.kit.change.is_empty():
+		await M.get_tree().process_frame
+		tu += M.get_process_delta_time()
+		fed = fed or h.kit.feeding
+	var let_go: bool = h.kit.form == "man" or not h.kit.change.is_empty()
+	_line(up != null and fed and let_go, "the Unsigned Pact with life regen (%.1f a second): fed %s, let him go at %.2f of his life after %.1f s (fed for ever)" % [float(h.stats["life_regen"]), str(fed), h.life / h.max_life, tu])
+	h.kit.turn_man()
+	h.unhurt = true
+	h.life = h.max_life
+	Lw.gear[up_slot] = was_up
+	var bv = Lw.unique_piece("burningverse")
+	var bv_slot: String = "ring1" if bv != null and bv["slot"] == "ring" else (str(bv["slot"]) if bv != null else "")
+	var was_bv = Lw.gear.get(bv_slot) if bv != null else null
+	if bv != null:
+		Lw.gear[bv_slot] = bv
+	Lw.derive()
+	h.uniques_changed()
+	var mv0: Array = _near(1)
+	var vm = mv0[0] if not mv0.is_empty() else null
+	var verse_off := false
+	var later_t := -1.0
+	if vm != null:
+		vm.waits = true
+		vm.curse_t = 2.0
+		vm.burn_t = 2.0
+		vm.burn_dps = 1.0
+		await _wait(0.3)
+		var marked: bool = vm.verse
+		vm.burn_t = 0.0
+		vm.hell_t = 0.0
+		vm.curse_t = 0.0
+		await _wait(0.2)
+		verse_off = marked and not vm.verse
+		vm.burn_t = 1.0
+		vm.burn_dps = 1.0
+		await _wait(1.6)
+		later_t = vm.burn_t
+	_line(vm != null and verse_off and later_t <= 0.0, "the Burning Verse: its mark gone with its burns %s; an uncursed burn after goes out (%.1f s left; it stayed)" % [str(verse_off), later_t])
+	if bv != null:
+		Lw.gear[bv_slot] = was_bv
+		Lw.derive()
+		h.uniques_changed()
+	# (a tap on him on a touch screen, his pact full)
+	var T = M._touch
+	var finger := func(i: int, pt: Vector2, down: bool) -> void:
+		var e := InputEventScreenTouch.new()
+		e.index = i
+		e.pressed = down
+		e.position = pt
+		Input.parse_input_event(e)
+	var taps := []
+	for md in ["auto", "tap"]:
+		T.set_mode(md)
+		h.kit.turn_man()
+		h.kit.pact = 30.0
+		await _wait(0.3)
+		var sp: Vector2 = h.get_global_transform_with_canvas().origin + Vector2(0, -40)
+		var win: Vector2 = M.get_viewport().get_final_transform() * sp
+		finger.call(1, win, true)
+		await _wait(0.08)
+		finger.call(1, win, false)
+		await _wait(0.4)
+		taps.append(not h.kit.change.is_empty() or h.kit.form == "demon")
+		await _wait(2.6)
+	if dir != "":
+		h.kit.turn_man()
+		h.kit.pact = 30.0
+		await _wait(0.3)
+		await M._snap(dir + "/bughunt_tap_him.png")
+	T.set_mode("auto")
+	h.kit.turn_man()
+	_line(taps.all(func(x): return x), "a touch screen: his pact full, a tap on him changes him, aiming auto and tap %s (nothing pressed R)" % str(taps))
+	# (no change in town; the Bound Demon torn out does not follow him there)
+	var tal0: Array = h.talents.duplicate()
+	h.talents = Tal.starting("warlock") + ["terribleroar", "hunger", "bounddemon"]
+	h.talents_changed()
+	h.kit.pact = 30.0
+	h.kit._tear_out()
+	var torn: bool = not h.kit.bound.is_empty()
+	tg = 0.0
+	while M._going and tg < 15.0:
+		await M.get_tree().process_frame
+		tg += M.get_process_delta_time()
+	await M.go_to("town", "start")
+	await _wait(0.5)
+	var bound_town: bool = not h.kit.bound.is_empty()
+	h.talents = Tal.starting("warlock")
+	h.talents_changed()
+	h.kit.pact = 30.0
+	h.auto_change = true
+	await _wait(0.5)
+	var town_change: bool = not h.kit.change.is_empty() or h.kit.form == "demon"
+	_line(torn and not bound_town and not town_change, "town: the Bound Demon torn out on floor 6 there too %s (it stood by him); his pact full, R changed him %s (drawn the man with the demon's moves)" % [str(bound_town), str(town_change)])
+	h.kit.turn_man()
+	h.talents = tal0
+	h.talents_changed()
 	# (the demon: come into town as it, then fallen as it)
 	h.kit._become("demon")
 	h.kit.pact = 30.0

@@ -321,6 +321,33 @@ func _monster_at(p: Vector2):
 	return best
 
 
+## (main.ts onHim) Whether a touch at `p` (game pixels) is on the hero, and he has a use for it there: the box of him, 12 either
+## side and from 44 over his feet to 6 under; the Brawler's globes over his head too.
+func _self_touch(h, p: Vector2) -> bool:
+	var kit = h.kit
+	if kit == null:
+		return false
+	var cam := get_viewport().get_camera_2d()
+	var tl: Vector2 = cam.get_screen_center_position() - get_viewport_rect().size / 2.0 if cam != null else Vector2.ZERO
+	var at := tl / 2.0 + p
+	var s: Vector2 = Iso.to_screen(h.world.x, h.world.y) / 2.0
+	var on_him: bool = absf(at.x - s.x) <= 12.0 and at.y >= s.y - 44.0 and at.y <= s.y + 6.0
+	match str(h.cls):
+		"warlock":
+			if not on_him or h.in_town or not kit.change.is_empty():
+				return false
+			if kit.form == "demon":
+				return kit.feeding
+			return float(kit.pact) >= float(kit.W["pact"]["full"])
+		"mage":
+			return on_him and kit.has_method("aura_kind") and kit.aura_kind() != ""
+		"brawler":
+			var going: bool = not kit.globes.is_empty() or not kit.mv.is_empty() or not kit.queue.is_empty()
+			var on_globes: bool = absf(at.x - s.x) <= 22.0 and at.y >= s.y - 72.0 and at.y <= s.y - 40.0
+			return going and (on_him or on_globes)
+	return false
+
+
 func _awake_near(at: Vector2, reach: float):
 	var best = null
 	var bd := reach
@@ -408,6 +435,14 @@ func _process(dt: float) -> void:
 		asked = ["errand", spot["kind"]]
 	elif _poke != null:
 		errand = {}
+	# A TOUCH ON HIM HIMSELF (main.ts): the Warlock's pact full, it changes him (his words, “then you tap on the warlock and he
+	# transforms”), the demon fed by the Unsigned Pact, it lets him go; the Mage's Aura, “a tap on the hero ability called Aura”; the
+	# Brawler's combo going, on him or his globes, it is cancelled. No attack. (Nothing on a touch screen pressed R: the bug hunt's
+	# fourth round, 25 Nov 2026.)
+	if _poke != null and spot.is_empty() and _monster_at(_poke) == null and _self_touch(h, _poke):
+		_press("change")
+		_tap = null
+		_poke = null
 	if mode == "auto" or mode == "one":
 		var locked = _lock_update(dt)
 		var blade = _awake_near(h.world, float(quick["range"]) * 0.9) if quick["kind"] == "melee" else null

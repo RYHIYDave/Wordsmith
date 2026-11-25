@@ -358,9 +358,17 @@ static func clean(cls: String, level: int, list) -> Array:
 			out.append(id)
 	if out.is_empty():
 		out = starting(cls)
-	for id in list:
-		if id is String and not out.has(id) and take_problem(cls, level, out, id) == "":
-			out.append(id)
+	# (pass after pass, as undoing one allows (unlearn_problem: the rest reachable in any order): one pass in the saved order
+	# dropped a talent whose way in came later in the list, and an undo in town then lost most of his tree on reload; the bug
+	# hunt's fourth round, 25 Nov 2026)
+	for n in list.size() + 1:
+		var more := false
+		for id in list:
+			if id is String and not out.has(id) and take_problem(cls, level, out, id) == "":
+				out.append(id)
+				more = true
+		if not more:
+			break
 	return out
 
 

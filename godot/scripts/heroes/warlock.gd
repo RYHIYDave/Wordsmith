@@ -549,14 +549,19 @@ func _step_pact(dt: float) -> void:
 			# him go when he has little left, or at his word)
 			var U = h.uniques
 			var UP: Dictionary = U.ut["pact"] if U != null else {}
-			if U != null and U.wears("unsignedpact") and h.life > h.max_life * float(UP["floor"]) and not Input.is_action_just_pressed("change"):
+			# (what it takes this frame must leave him above the floor, else it lets him go: kept at the floor, his life's regen lifted
+			# him just over it each frame and it fed for ever, the bug hunt's fourth round, 25 Nov 2026)
+			var after: float = h.life - h.max_life * float(UP["drain"]) * dt if U != null and U.wears("unsignedpact") else 0.0
+			var let_go: bool = Input.is_action_just_pressed("change") or h.get("auto_change") == true
+			if U != null and U.wears("unsignedpact") and after > h.max_life * float(UP["floor"]) and not let_go:
 				if not feeding:
 					h._tell({"t": "unique", "id": "unsignedpact", "what": "feeds", "x": h.world.x, "y": h.world.y})
 					U._say({"id": "unsignedpact", "what": "feeds"})
 				feeding = true
-				h.life = maxf(h.max_life * float(UP["floor"]), h.life - h.max_life * float(UP["drain"]) * dt)
+				h.life = after
 			else:
 				feeding = false
+				h.auto_change = false
 				_begin_change("man")
 		else:
 			feeding = false
@@ -571,7 +576,9 @@ func _step_pact(dt: float) -> void:
 	var asked: bool = Input.is_action_just_pressed("change") or h.get("auto_change") == true
 	if h.get("auto_change") == true:
 		h.auto_change = false
-	if asked and pact >= float(P["full"]) and move.is_empty():
+	# (no change in a town, the camp or the Rim: he is drawn there as the man, the demon's moves were on the HUD; the bug hunt's
+	# fourth round, 25 Nov 2026. His full pact waits for the way out.)
+	if asked and pact >= float(P["full"]) and move.is_empty() and not h.in_town:
 		if h.has("bounddemon") and not demon2():
 			_tear_out()
 		else:
@@ -651,6 +658,12 @@ func turn_man() -> void:
 		lust = 0
 		_become("man")
 		pact = 0.0
+	# (THE BOUND DEMON goes with the place, and does not follow him home or stand by him fallen: the bug hunt's fourth round)
+	if not bound.is_empty():
+		bound = {}
+		pact = 0.0
+		lust = 0
+		rakes = 0
 
 
 ## (game.ts refresh) His three: the demon's in the places of his while he is it; his pictures' times with them.
@@ -707,7 +720,14 @@ func draw_over(c: CanvasItem, top: float, shown: float) -> void:
 			var up := 1 + (i + floori(t * 9.0)) % 3
 			c.draw_rect(Rect2(fx0, y - 2.0 - up * 2.0, 2.0, up * 2.0), Color("#e8ffff") if up > 2 else Color("#22d0e0"))
 		# (over the life bar, clear of his head)
-		PF.draw(c, "R: CHANGE", 0.0, top - 22.0, Color("#e8ffff") if hot else Color("#22d0e0"), {"align": "center", "font": "small", "shadow": ink, "scale": 2})
+		# (main.ts pactHint: on a pad RB, on a touch screen TAP HIM, else R)
+		var mm = h.monsters.main if h.monsters != null and is_instance_valid(h.monsters) else null
+		var hint := "R: CHANGE"
+		if mm != null and mm._pad != null and mm._pad.live():
+			hint = "RB: CHANGE"
+		elif mm != null and mm._touch != null and mm._touch.on:
+			hint = "TAP HIM"
+		PF.draw(c, hint, 0.0, top - 22.0, Color("#e8ffff") if hot else Color("#22d0e0"), {"align": "center", "font": "small", "shadow": ink, "scale": 2})
 
 
 func readiness() -> Dictionary:
