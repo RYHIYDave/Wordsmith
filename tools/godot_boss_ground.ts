@@ -23,7 +23,7 @@ paintWithoutCanvas();
 gameSwitches();
 const seed = Number(process.argv[2] ?? 1) >>> 0;
 const depth = Math.max(1, Number(process.argv[3] ?? 6) | 0);
-const OUT = `godot/assets/floor${depth}`;
+const OUT = `godot/assets/floor${depth}${process.env.WS_OUT_SUFFIX ?? ""}`;
 const STEP = 0.5;
 const DROP_MARGIN = 8;
 

@@ -11,7 +11,7 @@ static var _got := {}
 ## The floor's boss's ground ({} where it has none).
 static func of(depth: int) -> Dictionary:
 	if not _got.has(depth):
-		var path := "res://assets/floor%d/boss.json" % depth
+		var path: String = load("res://scripts/main.gd").dir_of("floor%d" % depth) + "/boss.json"
 		var g = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
 		_got[depth] = g if g is Dictionary else {}
 	return _got[depth]

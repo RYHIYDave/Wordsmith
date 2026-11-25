@@ -38,6 +38,7 @@ import { RNG } from '../engine/rng';
 import { COLOSSUS, onStoneOrJetty, stoneToWorld, worldToStone } from './colossus_fight';
 import type { StoneAt } from './colossus_fight';
 import { act1Def } from './act1';
+import { levels2 } from './levels2';
 import { act1Pack } from './act1_mobs';
 import { isAct2Land } from './act1';
 import type { Act1LandKind, LandKind } from './act1';
@@ -800,10 +801,12 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
     }
     yards.push(yard);
   }
-  const extra = kind === 'ledge' ? 0 : 1;
+  // (LEVELS2, floor 7: the Ledge Road a side ledge too, the vultures' nest with its chests: game/levels2.ts)
+  const extra = kind === 'ledge' ? (levels2(depth) ? 1 : 0) : 1;
   for (let n = 0; n < extra; n++) growSide(rng, plan, 'side', size(rng, 'path'), kind === 'fen' ? 2 : 2.8, 3);
   // (F9_LAIRS, on at his yes of 14 Nov 2026: floor 9's lair grown to a boss's room for the troll chieftain's camp, if it fits: game/f9_lairs.ts)
-  if (depth >= 7 && kind !== 'ledge' && !(f9Lairs(depth) && growSide(rng, plan, 'lair', LAIR9, 2.8, 3) >= 0)) growSide(rng, plan, 'lair', { rx: 4.5, ry: 4, wob: 0.12 }, kind === 'fen' ? 2 : 2.8, 3);
+  // (LEVELS2, floor 7: the Ledge Road a lair too, the lookout held by a champion's pack)
+  if (depth >= 7 && (kind !== 'ledge' || levels2(depth)) && !(f9Lairs(depth) && growSide(rng, plan, 'lair', LAIR9, 2.8, 3) >= 0)) growSide(rng, plan, 'lair', { rx: 4.5, ry: 4, wob: 0.12 }, kind === 'fen' ? 2 : 2.8, 3);
 
   // THE BOUNDS: everything moved so the open ground starts MARGIN tiles in; the halls inside laid beyond it
   let x0 = Infinity;
@@ -1310,7 +1313,7 @@ function placePacks(rng: RNG, f: Floor, plan: Plan, areaRoom: readonly number[],
       owed += (area * plan.packShare) / 70;
       n = Math.floor(owed);
       owed -= n;
-    } else n = a.role === 'lair' ? 1 : Math.max(1, Math.round(area / (kind === 'ledge' ? 22 : 70)));
+    } else n = a.role === 'lair' ? 1 : Math.max(1, Math.round(area / (kind === 'ledge' ? (levels2(depth) ? 14 : 22) : 70)));
     // (F9_LAIRS, on at his yes of 14 Nov 2026: floor 9's side area the mist wolf's glade, no pack of the floor's in it: his wolves come at his howl)
     if (a.role === 'side' && f9Lairs(depth)) return;
     // (F9_LAIRS, on at his yes of 14 Nov 2026: floor 9's lair's guardians milling round its way in, his “Some guardians milling around the entrance”)
@@ -1351,6 +1354,20 @@ function placePacks(rng: RNG, f: Floor, plan: Plan, areaRoom: readonly number[],
     if (f9Lairs(depth) && plan.areas.some((q) => q.role === 'side' && blobDist(q.blob, mid[0], mid[1]) < 1.5)) continue;
     const p = act1Pack(depth, rng, 'normal');
     put(mid[0], mid[1], -1, 'normal', p.kind, Math.max(2, Math.ceil(p.size * 0.6)));
+  }
+  // (LEVELS2, floor 7: packs along every leg of the Ledge Road's trail, where it is clear: game/levels2.ts)
+  if (kind === 'ledge' && levels2(depth) && plan.trail) {
+    const T = plan.trail;
+    for (let i = 1; i < T.length; i++) {
+      // (two on each leg, a third and two thirds along it)
+      for (const k of [0.33, 0.67]) {
+        const mx = T[i - 1][0] + (T[i][0] - T[i - 1][0]) * k;
+        const my = T[i - 1][1] + (T[i][1] - T[i - 1][1]) * k;
+        if (!free(mx, my, 0.5) || used.some(([ux, uy]) => Math.hypot(ux - mx, uy - my) < 4) || Math.hypot(mx - startX, my - startY) < 10) continue;
+        const p = act1Pack(depth, rng, 'normal');
+        put(mx, my, -1, 'normal', p.kind, Math.max(2, Math.ceil(p.size * 0.7)));
+      }
+    }
   }
   void holds;
   return out;

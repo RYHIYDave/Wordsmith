@@ -58,7 +58,9 @@ const depth = place === 'town' ? 0 : place === 'camp' ? -1 : place === 'practice
 if (place !== 'town' && place !== 'camp' && place !== 'practice' && place !== 'rim' && place !== 'final' && !(depth >= 1 && depth <= 20)) { console.error(`not a place: ${place}`); process.exit(1); }
 // (--hold n: a stronghold's hall on floors 6 to 10, as it is drawn from in it: floor<N>_hold<n>, REC.hall)
 const hold = opt('hold', null) === null ? null : Number(opt('hold', '0'));
-const name = depth === 0 ? 'town' : depth === -1 ? 'camp' : depth === -2 ? 'practice' : depth === -3 ? 'rim' : depth === -4 ? 'final' : hold !== null ? `floor${depth}_hold${hold}` : `floor${depth}`;
+// (--suffix v2: written beside the place's own, floor<N>v2: the remade floors, src/game/levels2.ts)
+const suffix = opt('suffix', '');
+const name = depth === 0 ? 'town' : depth === -1 ? 'camp' : depth === -2 ? 'practice' : depth === -3 ? 'rim' : depth === -4 ? 'final' : hold !== null ? `floor${depth}${suffix}_hold${hold}` : `floor${depth}${suffix}`;
 const seed = Number(opt('seed', '1'));
 const N = Number(opt('samples', '120'));
 const pageFile = path.resolve(ROOT, opt('page', 'dist/godot_rec.html'));

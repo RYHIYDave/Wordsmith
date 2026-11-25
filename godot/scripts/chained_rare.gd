@@ -276,7 +276,7 @@ var _halls = null
 func _a_hall(q: Dictionary) -> bool:
 	if _halls == null:
 		_halls = []
-		var path := "res://assets/floor%d/holds.json" % int(map.depth)
+		var path: String = load("res://scripts/main.gd").dir_of("floor%d" % int(map.depth)) + "/holds.json"
 		if FileAccess.file_exists(path):
 			for h in JSON.parse_string(FileAccess.get_file_as_string(path)).get("holds", []):
 				for k in ["inside", "way"]:

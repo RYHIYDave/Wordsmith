@@ -44,6 +44,8 @@ const plain = (o: object): Record<string, number | string | boolean> => {
 type Any = Record<string, any>;
 
 for (let depth = 6; depth <= 10; depth++) {
+  // (WS_FLOORS: only these floors, as "7,8": the remade floors, game/levels2.ts)
+  if (process.env.WS_FLOORS && !process.env.WS_FLOORS.split(',').includes(String(depth))) continue;
   // (a hero whose wordsmith's ring is lit, as every hero is by now: the monsters carry words, as the export's `lit` game has them)
   const game = new Game('warrior', seed);
   game.depth = depth;
@@ -53,7 +55,7 @@ for (let depth = 6; depth <= 10; depth++) {
   const L = game.level;
   const land = L.land!;
   // (is this the level the Godot side has laid out? its tiles held to godot/assets/floor<N>/layout.json)
-  const lay = JSON.parse(readFileSync(`godot/assets/floor${depth}/layout.json`, 'utf8'));
+  const lay = JSON.parse(readFileSync(`godot/assets/floor${depth}${process.env.WS_OUT_SUFFIX ?? ""}/layout.json`, 'utf8'));
   let hash = 0;
   let mine = 0;
   for (const t of lay.tiles) hash = (Math.imul(hash, 31) + t) | 0;
@@ -109,8 +111,8 @@ for (let depth = 6; depth <= 10; depth++) {
   }
   // FLOOR 10: THE CULT'S OBELISKS (the Swamp Colossus's stone: EYE3.pillars, as the fight lights them)
   if (depth === 10 && land.stone) out.pillars = EYE3.pillars.map(([u, v]) => stoneToWorld(land.stone!, u, v));
-  mkdirSync(`godot/assets/floor${depth}`, { recursive: true });
-  writeFileSync(`godot/assets/floor${depth}/holds.json`, JSON.stringify(out, null, 0));
+  mkdirSync(`godot/assets/floor${depth}${process.env.WS_OUT_SUFFIX ?? ""}`, { recursive: true });
+  writeFileSync(`godot/assets/floor${depth}${process.env.WS_OUT_SUFFIX ?? ""}/holds.json`, JSON.stringify(out, null, 0));
   console.log(`floor ${depth}: ${holds.length} stronghold${holds.length === 1 ? '' : 's'} (${holds.map((h) => `gate ${h.gx},${h.gy}, hall ${h.inside.x},${h.inside.y} ${h.inside.w}x${h.inside.h}; waves ${h.waves.map((w) => w.monsters.length).join('/')}`).join('; ')}); kinds ${[...kinds].join(', ')}${out.eyrie ? `; the eyrie's edge ${out.eyrie.to.x},${out.eyrie.to.y} (side ${out.eyrie.side})` : ''}${out.pillars ? `; obelisks ${out.pillars.map((p: Any) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}` : ''}`);
 }
 

@@ -5,6 +5,7 @@
 import { ENEMY_MOVES, useEnemyMoves } from '../src/game/enemy_moves';
 import { FLOOR_LOOKS, useFloorLooks } from '../src/game/floor_looks';
 import { ALL_OF_IT, useAllOfIt } from '../src/game/all_of_it';
+import { LEVELS2 } from '../src/game/levels2';
 // (his three new words' own colours and runes: below)
 import { GLYPH, WORD_COLOR, WORD_GLOW } from '../src/art/icons';
 import { WORD_HUE } from '../src/render/fx';
@@ -15,6 +16,8 @@ export function gameSwitches(): void {
   useEnemyMoves(ENEMY_MOVES.on);
   useFloorLooks(FLOOR_LOOKS.on);
   useAllOfIt(ALL_OF_IT.on);
+  // (THE FIVE WEAKEST FLOORS REMADE, game/levels2.ts: WS_LEVELS2=1, the remade floors laid)
+  if (typeof process !== 'undefined' && process.env.WS_LEVELS2 === '1') LEVELS2.on = true;
   // LASTING'S, FLEETING'S AND VAST'S OWN COLOURS AND RUNES, the art chat's (render/words10.ts W10_RAMP, W10_GLYPH), in place of
   // the placeholders in art/icons.ts and render/fx.ts, as the game puts them as it starts (src/main.ts: `useWordArt(art.icons,
   // W10_RAMP, W10_GLYPH, W10_WORDS)` and WORD_HUE). useWordArt's own lines, less its painting of the stones: each tool's

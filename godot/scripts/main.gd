@@ -707,9 +707,28 @@ static func depth_of(where: String) -> int:
 	return int(where.substr(5)) if where.begins_with("floor") else 0
 
 
+## THE FIVE WEAKEST FLOORS REMADE (his words, 25 Nov 2026: “And I'd like you to look at our level design, find the five weakest
+## levels, and make changes”; his pick of the five and their changes, “Yes, these five (Recommended)”: floor 7 two side ledges and
+## more fights on the trail; floor 1 more fights on its long corridors and a side crypt; floor 19 twice the fights, two more kinds
+## and an armoury wing; floor 10 a second way across the fen and a sunken shrine; floor 8 a side cave and a high and a low way).
+## PICTURES FIRST: off until his yes. On, each of these floors' files (and its recorded look) are its remade ones,
+## assets/floor<N>v2/ and assets/looks/floor<N>v2.*, laid by the game's own map-maker (src/game/levels2.ts, tools/godot_export.ts,
+## tools/godot_record.mjs); the place keeps its name ("floor7"). `--levels2=1` for the checks and pictures.
+const LEVELS2 := {"on": false, "floors": [1, 7, 8, 10, 19]}
+static var levels2_arg := false
+
+
+## The name a place's files go by: "floor7v2" for a remade floor while LEVELS2 is on, else the place's own.
+static func files_of(where: String) -> String:
+	if (bool(LEVELS2["on"]) or levels2_arg) and where.begins_with("floor") and (LEVELS2["floors"] as Array).has(int(where.substr(5))):
+		if FileAccess.file_exists("res://assets/%sv2/layout.json" % where):
+			return where + "v2"
+	return where
+
+
 ## The folder of a place's files.
 static func dir_of(where: String) -> String:
-	return TOWN_DIR if where == "town" else "res://assets/" + where
+	return TOWN_DIR if where == "town" else "res://assets/" + files_of(where)
 
 
 ## A place that is his town: the prison town, or the camp inside Vellum's gate (game/camp.ts).
@@ -732,6 +751,8 @@ static func has_floor(n: int) -> bool:
 
 
 func _ready() -> void:
+	# (THE FIVE WEAKEST FLOORS REMADE: `--levels2=1` for their checks and pictures, LEVELS2 off)
+	levels2_arg = _arg("levels2") == "1"
 	# (the checks written for the Warrior's Whirlwind give him its talent; `--whirl1`, his one-spin Whirl as he starts: talents.gd)
 	preload("res://scripts/talents.gd").checks_whirlwind = _arg("shots") != "" and _arg("whirl1") == ""
 	# (THE THREE DEFENCES, on at his yes: `--defence=0` to run without them: loot.gd DEFENCE_LAYERS)
@@ -1367,7 +1388,7 @@ func _build(where: String, arrive: String) -> void:
 		loot.roll_word_stock(last_floor)
 
 	# THE PLACE'S LOOK as the game draws it (look.gd), where tools/godot_looks.ts has recorded one; else the plain ground
-	var looked := Look.has_look(where)
+	var looked := Look.has_look(files_of(where))
 	var back := Node2D.new()
 	_place.add_child(back)
 	var floor_layer: Node2D
@@ -1406,7 +1427,7 @@ func _build(where: String, arrive: String) -> void:
 	look = null
 	if looked:
 		look = Look.new()
-		look.place = where
+		look.place = files_of(where)
 		look.back_layer = back
 		look.floor_layer = floor_layer
 		look.flat_layer = look_flats
@@ -3368,6 +3389,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "voices":
 		await preload("res://scripts/check_glows.gd").new().voices(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE FIVE WEAKEST FLOORS REMADE: check_levels2.gd, with --levels2=1 --floor=<N>)
+	if _arg("only") == "levels2":
+		await preload("res://scripts/check_levels2.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (DELVE DEEPER: check_delve.gd, with --delve=1)

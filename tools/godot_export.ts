@@ -37,7 +37,8 @@ paintWithoutCanvas();
 gameSwitches();
 const seed = Number(process.argv[2] ?? 1) >>> 0;
 const depth = Math.max(1, Number(process.argv[3] ?? 1) | 0);
-const OUT = `godot/assets/floor${depth}`;
+// (WS_OUT_SUFFIX: written beside the floor as it is, godot/assets/floor<N><suffix>: the remade floors, game/levels2.ts)
+const OUT = `godot/assets/floor${depth}${process.env.WS_OUT_SUFFIX ?? ""}`;
 mkdirSync(OUT, { recursive: true });
 
 // --- a PNG with its alpha (tools/px_png.ts lays pictures on a background; Godot wants them clear) ---

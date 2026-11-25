@@ -68,7 +68,7 @@ var _t := 0.0
 
 
 static func file_of(depth: int) -> String:
-	return "res://assets/floor%d/holds.json" % depth
+	return load("res://scripts/main.gd").dir_of("floor%d" % depth) + "/holds.json"
 
 
 func _ready() -> void:
@@ -350,7 +350,7 @@ func _mask() -> void:
 
 ## (stronghold `n`'s hall: its look, the layer of the screen it is on, how far from where it was recorded it is laid; how many halls)
 func _hall_place(n: int) -> String:
-	return "floor%d_hold%d" % [map.depth, n]
+	return "%s_hold%d" % [load("res://scripts/main.gd").files_of("floor%d" % map.depth), n]
 
 
 func _hall_bit(n: int) -> int:
