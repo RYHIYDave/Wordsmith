@@ -66,12 +66,13 @@ func run(main, hero, dir: String) -> void:
 			await M._wait(0.05)
 			await M._snap("%s/store_queen.png" % M._arg("shots"))
 		"wilds":
-			await _ready_hero(20 if h.cls == "ranger" else 12, ["poison", "swift"], ["lightning", "vast"], [[["frost", "lasting"], ["twin", "power"]], [["swift", "heavy"], ["lasting", "precise"]]], ["swift", "vast", "lasting", "frost", "twin", "precise"])
+			await _ready_hero(12, ["poison", "swift"], ["lightning", "vast"], [[["frost", "lasting"], ["twin", "power"]], [["swift", "heavy"], ["lasting", "precise"]]], ["swift", "vast", "lasting", "frost", "twin", "precise"])
 			await _go(M._arg("floor") if M._arg("floor") != "" else "floor8")
 			var near = _nearest_pack()
 			if near != null:
-				# (the Ranger stands off from the pack, the pack coming at him, his arrows flying into it: him clear of them; no
-				# Volley, his word, 25 Nov 2026: “I don't like the volley for both rangers”)
+				# (the Ranger stands off from the pack, the pack coming at him, his arrows flying into it: him clear of them. Not
+				# his Volley here, nor against the King: his words, 25 Nov 2026, “I don't like the volley for both rangers”, and
+				# “I don't care if volley is on the bar, I just didn't want both pictures showing just volley”)
 				h.world = M._spot_near(near.world, 6.5, h.world)
 				for o in M._monsters.list:
 					if is_instance_valid(o) and not o.dead and o.world.distance_to(near.world) < 7.0:
@@ -87,7 +88,7 @@ func run(main, hero, dir: String) -> void:
 			await M._wait(0.05)
 			await M._snap("%s/store_wilds.png" % M._arg("shots"))
 		"king":
-			await _ready_hero(20 if h.cls == "ranger" else 19, ["piercing", "swift"], ["lightning", "precise"], [[["frost", "lasting"], ["twin", "power"]], [["swift", "heavy"], ["lasting", "twin"]]], ["swift", "precise", "vast", "frost", "bleeding", "twin"])
+			await _ready_hero(19, ["piercing", "swift"], ["lightning", "precise"], [[["frost", "lasting"], ["twin", "power"]], [["swift", "heavy"], ["lasting", "twin"]]], ["swift", "precise", "vast", "frost", "bleeding", "twin"])
 			await _go("floor19")
 			var k = M._d_boss()
 			_alone(k, 0.0)
@@ -148,26 +149,6 @@ func run(main, hero, dir: String) -> void:
 
 
 ## His level, the ring lit, every talent point spent (no NEW TALENT waiting), and words set in front of and behind his tap.
-## How many steps along the tree's joins each talent is from `goal` (the hero's own tree).
-func _steps_to(goal: String) -> Dictionary:
-	var join := {}
-	for t in Talents.tree(h.cls)["talents"]:
-		join[str(t["id"])] = t.get("joined", [])
-	var far := {goal: 0}
-	var todo: Array = [goal]
-	while not todo.is_empty():
-		var at: String = todo.pop_front()
-		for nb in join.get(at, []):
-			if not far.has(str(nb)):
-				far[str(nb)] = int(far[at]) + 1
-				todo.append(str(nb))
-		for id in join:
-			if not far.has(id) and (join[id] as Array).has(at):
-				far[id] = int(far[at]) + 1
-				todo.append(id)
-	return far
-
-
 func _ready_hero(lv: int, front: Array, behind: Array, more: Array = [], fill: Array = []) -> void:
 	var L = M.loot
 	L.level = lv
@@ -179,13 +160,8 @@ func _ready_hero(lv: int, front: Array, behind: Array, more: Array = [], fill: A
 	while Talents.spent(h.cls, h.talents) < Talents.points(L.talent_level()) and guard < 40:
 		guard += 1
 		var took := false
-		# (the Ranger's talents toward Rally first, so Rally holds Volley's place on his HOLD button (four points: a level 20
-		# Ranger's): no Volley in his pictures, his word, 25 Nov 2026: “I don't like the volley for both rangers”)
-		var ids: Array = Talents.tree(h.cls)["talents"].map(func(t): return str(t["id"]))
-		if h.cls == "ranger" and not h.talents.has("rally"):
-			var far := _steps_to("rally")
-			ids.sort_custom(func(a, b): return int(far.get(a, 99)) < int(far.get(b, 99)))
-		for id in ids:
+		for t in Talents.tree(h.cls)["talents"]:
+			var id: String = t["id"]
 			if Talents.ported(h.cls, id) and not h.talents.has(id) and Talents.take_problem(h.cls, L.talent_level(), h.talents, id) == "":
 				h.talents.append(id)
 				took = true
