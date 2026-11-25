@@ -435,11 +435,13 @@ func _process(dt: float) -> void:
 	# transforms”), the demon fed by the Unsigned Pact, it lets him go; the Mage's Aura, “a tap on the hero ability called Aura”; the
 	# Brawler's combo going, on him or his globes, it is cancelled. No attack. On his body it is his, though he stand on a way; at
 	# his feet a way there is used. (Nothing on a touch screen pressed R: the bug hunt's fourth round, 25 Nov 2026.)
+	var selfed := false
 	if _poke != null and _monster_at(_poke) == null and _self_touch(h, _poke, not spot.is_empty()):
 		_press("change")
 		_tap = null
 		_poke = null
 		spot = {}
+		selfed = true
 	if not spot.is_empty():
 		errand = {"at": spot["at"], "kind": spot["kind"], "t": 0.0, "path": _path_to(spot["at"]), "i": 0}
 		asked = ["errand", spot["kind"]]
@@ -459,7 +461,8 @@ func _process(dt: float) -> void:
 		if mode == "one":
 			# (the quick attack by itself at the one picked, once it is in reach; a tap throws the slow one)
 			var in_reach: bool = q != null and h.world.distance_to(q.world) <= (float(quick["range"]) * 0.9 + 0.4 if quick["kind"] == "melee" else maxf(3.0, float(quick["range"]) if float(quick["range"]) > 0.0 else 8.0))
-			if in_reach and not moving:
+			# (not in the frame a touch on him cancelled the Brawler's combo: it pressed again at once; the bug hunt's fifth round)
+			if in_reach and not moving and not selfed:
 				_press("attack")
 				asked = ["quick", aims.get(0)]
 			if touched != null and spot.is_empty():

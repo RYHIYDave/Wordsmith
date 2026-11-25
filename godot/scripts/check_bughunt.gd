@@ -51,6 +51,10 @@ func run(main, hero, dir: String) -> void:
 	h.unhurt = true
 	M.loot.ring_lit = true
 	M.loot.taught = true
+	if OS.get_environment("WS_BH_FROM") == "5":
+		await _round5(dir)
+		print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+		return
 	if OS.get_environment("WS_BH_FROM") == "4":
 		await _round4(dir)
 		await _round4b(dir)
@@ -523,6 +527,7 @@ func run(main, hero, dir: String) -> void:
 	_line(aim6 != Vector2.INF and M._monsters.sees(o6, landed), "the Warlock's Curse echoed at a spot behind a wall from where he threw it: lands at %s, in his sight from there (%s); it went through" % [str(landed), str(M._monsters.sees(o6, landed))])
 	await _round4(dir)
 	await _round4b(dir)
+	await _round5(dir)
 	M.set_class("warlock", true)
 	h = M.hero
 	M.loot.level = 30
@@ -970,3 +975,173 @@ func _round4b(dir: String) -> void:
 		h.touch_aim = {}
 		h.auto_attack = false
 	_line(not ms2.is_empty() and held < 12.0 * 0.6, "the Snare thrown at an elite as fast as he can, 12 s: held %.1f s (was 11.4; an elite held half as long, as by every stun, and as Binding not again for 2 s)" % held)
+
+
+## THE FIFTH ROUND'S (with WS_BH_FROM=5 alone): the Tinkerer's golem set down only where its body has room, a refused Contraption no
+## use; the Warrior's Whirl and Lunge with the last words; a monster's Pin not again at once; Shiver not again for four seconds on an
+## elite; Fervor forgotten with the floor; the Brawler's combo cancelled in his jump's crouch, his uses as his blows are made, the last
+## words on his punches.
+func _round5(dir: String) -> void:
+	# (THE GOLEM: put down where open ground has no room for it (a prop, a slanted wall, water): it comes out again where it may stand)
+	await _hero4("tinkerer", [])
+	await _go4("floor8")
+	var K = h.kit
+	K._whistle(1, h.world + h.face * 2.0, 1.0, 1)
+	await _wait(0.8)
+	var bad_spot := Vector2.INF
+	for r in range(1, 12):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if bad_spot != Vector2.INF or maxi(absi(dx), absi(dy)) != r:
+					continue
+				var q := Vector2(floori(h.world.x) + dx + 0.5, floori(h.world.y) + dy + 0.5)
+				if h.map.open_at(floori(q.x), floori(q.y)) and not M._monsters.clear(q.x, q.y, 0.3):
+					bad_spot = q
+	var gl: Array = K._up()
+	var stood := false
+	if not gl.is_empty() and bad_spot != Vector2.INF:
+		gl[0]["x"] = bad_spot.x
+		gl[0]["y"] = bad_spot.y
+		await _wait(0.6)
+		stood = K._stands(Vector2(gl[0]["x"], gl[0]["y"]))
+	var near_ok: bool = bad_spot != Vector2.INF and K._stands(K._stand_near(bad_spot))
+	_line(not gl.is_empty() and bad_spot != Vector2.INF and stood and near_ok, "the golem put down on open ground with no room for it (%s, floor 8): out again where it may stand %s (it stood in walls and props and fired)" % [str(bad_spot), str(stood)])
+	# (A CONTRAPTION REFUSED: three standing, none past its first shot: no use, no boons)
+	await _hero4("tinkerer", ["contraption"])
+	var ci := -1
+	for k in 3:
+		if h.loadout.id(k) == "contraption":
+			ci = k
+	var refused_ok := false
+	if ci >= 0:
+		h.loadout.front[ci] = ["guarding", null]
+		h.loadout._r = [null, null, null]
+		for k in 3:
+			h.kit._throw_contraption(ci, h.world, h.world + h.face * 2.0, 1.0)
+		h.shield = 0.0
+		var u0: int = h.uses[ci]
+		h.uses[ci] += 1
+		h.kit._deliver(ci, h.world, h.world + h.face * 2.0, 1.0, true)
+		refused_ok = h.uses[ci] == u0 and h.shield == 0.0 and h.kit.contraptions.filter(func(q): return float(q["broke"]) < 0.0).size() == 3
+		h.loadout.front[ci] = [null, null]
+		h.loadout._r = [null, null, null]
+	_line(ci >= 0 and refused_ok, "a Contraption refused (three standing, none past its first shot): no use counted, no Guarding shield (it was a use)")
+	# (THE WARRIOR: Mirroring in front of his Whirl and of his Lunge: a reflection of each)
+	await _hero4("warrior", [])
+	await _go4("floor11")
+	h.loadout.front[1] = ["mirroring", null]
+	h.loadout.front[2] = ["mirroring", null]
+	h.loadout._r = [null, null, null]
+	h.last._heard.clear()
+	h._land_whirl1()
+	await _wait(0.3)
+	var whirl_m: bool = h.last._heard.has("mirror_swing")
+	h.last._heard.clear()
+	h._begin_lunge(h.world + h.face * 3.0)
+	await _wait(0.8)
+	var lunge_m: bool = h.last._heard.has("mirror_swing")
+	h.loadout.front[1] = [null, null]
+	h.loadout.front[2] = [null, null]
+	h.loadout._r = [null, null, null]
+	_line(whirl_m and lunge_m, "Mirroring in front of the Warrior's Whirl %s and his Lunge %s: a reflection of each (the Strike alone had one)" % [str(whirl_m), str(lunge_m)])
+	# (PIN: four monsters carrying it striking him eight times a second for 8 s: rooted how long, how long at most at once)
+	var pins: Array = _near(4)
+	var kp := func(w: String) -> float: return 1.0 if w == "pin" else 0.0
+	h.root_t = 0.0
+	h.root_again = 0.0
+	var rooted := 0.0
+	var most_root := 0.0
+	var tp := 0.0
+	var nextp := 0.0
+	var np := 0
+	while tp < 8.0:
+		await M.get_tree().process_frame
+		var dtp: float = M.get_process_delta_time()
+		tp += dtp
+		h.life = h.max_life
+		if tp >= nextp and not pins.is_empty():
+			nextp += 0.125
+			M._foe.after_blow(kp, pins[np % pins.size()], 10.0, [])
+			np += 1
+		if h.root_t > 0.0:
+			rooted += dtp
+		most_root = maxf(most_root, h.root_t)
+	h.root_t = 0.0
+	_line(pins.size() == 4 and rooted < 4.0 and most_root < 1.3, "four monsters with Pin striking eight times a second, 8 s: rooted %.1f s, a root at most %.1f s (was 8.4 of 10, a root grown to 2.8)" % [rooted, most_root])
+	# (SHIVER: ten crits on an elite in 5 s: frozen how long)
+	var sv: Array = _near(1)
+	var frozen_for := 0.0
+	if not sv.is_empty():
+		var e = sv[0]
+		e.elite = true
+		e.max_life = 1.0e8
+		e.life = 1.0e8
+		e.freeze_immune = 0.0
+		e.waits = false
+		h.loadout.front[0] = ["shiver", null]
+		h.loadout._r = [null, null, null]
+		var ts := 0.0
+		var nexts := 0.0
+		while ts < 5.0:
+			await M.get_tree().process_frame
+			var dts: float = M.get_process_delta_time()
+			ts += dts
+			if ts >= nexts:
+				nexts += 0.5
+				h.melds.struck8(e, 0, true, false)
+			if e.frozen_t > 0.0:
+				frozen_for += dts
+		h.loadout.front[0] = [null, null]
+		h.loadout._r = [null, null, null]
+	_line(not sv.is_empty() and frozen_for < 2.0, "Shiver, ten crits on an elite in 5 s: frozen %.1f s (as every freeze, not again for 4 s; it was 4.0 of 4.9)" % frozen_for)
+	# (FERVOR and IMPLODE: gone with the floor)
+	h.melds.fervor_t = 3.0
+	h.melds.fervor_n = 2.0
+	h.melds.implosions = [{"t": 1.0}]
+	h.fresh_place()
+	_line(h.melds.fervor_t == 0.0 and h.melds.implosions.is_empty(), "Fervor's fury and Implode's bursts to come, the floor left: %.1f s, %d left (1.24 s went on)" % [h.melds.fervor_t, h.melds.implosions.size()])
+	# (THE BRAWLER: his combo cancelled in his jump's crouch, then a tap: it is the jump's fire move, no error)
+	await _hero4("brawler", [])
+	await _go4("floor11")
+	var B = h.kit
+	B.charges[2] = 1
+	h.mana = h.max_mana
+	B._press("swipe", h.world + h.face * 2.0)
+	if B.mv.is_empty() and not B.queue.is_empty():
+		B._start()
+	h.auto_change = true
+	await M.get_tree().process_frame
+	await M.get_tree().process_frame
+	var gl_after: int = B.globes.size()
+	var went: bool = B._press("tap")
+	_line(gl_after == 1 and went and B.globes.size() >= 1 and str(B.globes[0]) in ["punchFire", "kickFire", "jump"], "the Brawler's combo cancelled in his jump's crouch: the jump's globe kept (%d), a tap then %s, globes %s (was a script error)" % [gl_after, str(went), str(B.globes)])
+	await _wait(1.5)
+	# (his uses as his blows are made: three quick taps, no use till each blow; then three)
+	B.queue = []
+	B.globes = []
+	B.done = []
+	B.mv = {}
+	var u0b: int = h.uses[0]
+	B._press("tap")
+	B._press("tap")
+	B._press("tap")
+	var at_press: int = h.uses[0] - u0b
+	var tb := 0.0
+	while tb < 3.0 and (not B.queue.is_empty() or not B.mv.is_empty()):
+		await M.get_tree().process_frame
+		tb += M.get_process_delta_time()
+	var at_blows: int = h.uses[0] - u0b
+	_line(at_press == 0 and at_blows == 3, "the Brawler's three quick taps: uses as pressed %d, as the blows were made %d (it was 3 at the press)" % [at_press, at_blows])
+	# (Mirroring in front of his punch: a reflection)
+	await _wait(1.0)
+	h.loadout.front[0] = ["mirroring", null]
+	h.loadout._r = [null, null, null]
+	h.last._heard.clear()
+	B.globes = []
+	B.done = []
+	B._press("tap")
+	await _wait(0.8)
+	var punch_m: bool = h.last._heard.has("mirror_swing")
+	h.loadout.front[0] = [null, null]
+	h.loadout._r = [null, null, null]
+	_line(punch_m, "Mirroring in front of the Brawler's punch: a reflection %s (his blows never had the last words)" % str(punch_m))

@@ -164,10 +164,15 @@ func step(dt: float, way: Vector2, hooked: bool) -> bool:
 	# it was going)
 	if (Input.is_action_just_pressed("change") or h.auto_change) and (not globes.is_empty() or not mv.is_empty() or not queue.is_empty()):
 		h.auto_change = false
-		if not mv.is_empty() and mv["id"] != "dodge":
+		var jump_on: bool = not mv.is_empty() and mv["id"] == "dodge"
+		if not mv.is_empty() and not jump_on:
 			mv = {}
 		queue = []
-		globes = []
+		# (his jump goes on as it was going, its globe with it: all emptied, a press in its crouch wrote to a globe no longer there, a
+		# script error; the bug hunt's fifth round, 25 Nov 2026)
+		globes = ["jump"] if jump_on else []
+		if jump_on:
+			mv["globe"] = 0
 		done = []
 		fire_ready = false
 		_tap = false
@@ -209,7 +214,9 @@ func step(dt: float, way: Vector2, hooked: bool) -> bool:
 	if not mv.is_empty():
 		_play(dt, way)
 		return true
-	if not globes.is_empty():
+	# (not while presses wait their turn, as while a monster holds him: the globes went out with two still to come, and three taps more
+	# played five; the bug hunt's fifth round)
+	if not globes.is_empty() and queue.is_empty():
 		idle += dt
 		if idle >= float(TUNE["gap"]):
 			globes = []
@@ -270,7 +277,6 @@ func _press(kind: String, at := Vector2.ZERO) -> bool:
 		var fq := {"id": fire_for(kind, before), "globe": globes.size() - 1}
 		fq.merge(_aim_of(kind))
 		queue.append(fq)
-		h.uses[i] += 1
 		idle = 0.0
 		return true
 	# (set in fire: the swipe's jump waiting its turn, or begun and not yet off the floor)
@@ -278,6 +284,8 @@ func _press(kind: String, at := Vector2.ZERO) -> bool:
 	var jumping: bool = last_q == null and not mv.is_empty() and mv["id"] == "dodge" and float(mv["f"]) < float(R["dodge"]["air"][0])
 	if (last_q != null and last_q["id"] == "dodge") or jumping:
 		var g: int = last_q["globe"] if last_q != null else mv["globe"]
+		if g < 0 or g >= globes.size():
+			return false
 		var prior: Array = before.slice(0, before.rfind("dodge"))
 		var id := fire_for(kind, prior)
 		globes[g] = "punchFire" if kind == "tap" else "kickFire"
@@ -291,7 +299,6 @@ func _press(kind: String, at := Vector2.ZERO) -> bool:
 			q.merge(_aim_of(kind))
 			queue.push_front(q)
 			_start()
-		h.uses[i] += 1
 		idle = 0.0
 		return true
 	if _full():
@@ -302,7 +309,6 @@ func _press(kind: String, at := Vector2.ZERO) -> bool:
 		var lq := {"id": fire_for(kind, before), "globe": globes.size() - 1}
 		lq.merge(_aim_of(kind))
 		queue.append(lq)
-		h.uses[i] += 1
 		idle = 0.0
 		h.uniques._say({"id": "lastround", "what": "fire"})
 		return true
@@ -310,7 +316,6 @@ func _press(kind: String, at := Vector2.ZERO) -> bool:
 	var q := {"id": move_for(kind, before), "globe": globes.size() - 1}
 	q.merge(_aim_of(kind))
 	queue.append(q)
-	h.uses[i] += 1
 	idle = 0.0
 	return true
 
@@ -390,15 +395,33 @@ func _start() -> void:
 		# (the attack's words: what a use gives him, Swiftness, the frenzy, a shield; and a use of it as every hero's (hero.gd _cast):
 		# Flurry, Tailwind, Quickdraw, the High City's and the city's melds that answer a use, the words' flash; his never were)
 		var skill := 0 if is_punch(id) else 1
+		# (a use as the blow is made, not as it is pressed: three quick punches were one use for Splitting, Precise and every word that
+		# answers a use; the bug hunt's fifth round)
+		h.uses[skill] += 1
 		h._boons(skill)
 		h._cast(skill, "vblow", h.world, a)
 		h._time_word_sound(skill)
+		# (THE LAST WORDS: Surging's shockwave, Mirroring's reflection and its mirrors, as every hero's moves have them (kit.gd _used);
+		# his never did)
+		var from0: Vector2 = h.world
+		h.last.cast(skill, from0, a, 1.0, func(p: Vector2, w: Vector2, fr: float) -> void: _echo_blow(skill, p, w, fr))
 	else:
 		# (his jump, as every hero's evasive move: its words told, what a use gives him, Surging's surge where it begins: hero.gd lunge)
 		h._cast(2, "vjump", h.world, a)
 		h._boons(2)
 		h._time_word_sound(2)
 		h.last.dodge_surge(h.world)
+
+
+## (the last words' blow made again elsewhere, Mirroring's reflection or a mirror's: a blow's weight on whatever stands within a tile
+## of where it lands, that way)
+func _echo_blow(i: int, at: Vector2, way: Vector2, frac: float) -> void:
+	if h.monsters == null or not is_instance_valid(h.monsters):
+		return
+	var p: Vector2 = at + way * 0.7
+	for o in h.monsters.list:
+		if is_instance_valid(o) and not o.dead and o.state != "rise" and not h.monsters.shut_in(o) and o.world.distance_to(p) <= 0.9 + o.r:
+			h.hit_monster(o, i, frac, true)
 
 
 ## (game.ts vetPace) How fast his move is played: his attack speed against his weapon's, as any attack of his quickens.
@@ -533,6 +556,9 @@ func _strike(m: Dictionary) -> void:
 	var skill := 0 if is_punch(mv["id"]) else 1
 	# (THE VETERAN'S TREE: Long Legs, his kicks reach a tile further)
 	var more: float = float(_T()["longLegs"]["more"]) if S["kind"] == "kick" and _has("vlonglegs") else 0.0
+	# (Vast's and Power's size widen his blows' reach, as their cards say; they did not: the bug hunt's fifth round)
+	var size: float = maxf(0.1, float(h.loadout.r(skill).get("size", 1.0)))
+	more = (float(F["reach"]) + more) * size - float(F["reach"])
 	if not mv["props"] and f >= from:
 		mv["props"] = true
 		var reach: float = float(F["reach"]) + more
@@ -552,7 +578,9 @@ func _strike(m: Dictionary) -> void:
 		if at < 0.0 or f < at:
 			continue
 		(mv["hit"] as Array).append(o)
-		_hit(o, m, k)
+		# (how many this blow has struck in all, not this frame: past the third, a quiet hit; counted afresh each frame, a round kick
+		# through six struck five full; the bug hunt's fifth round)
+		_hit(o, m, (mv["hit"] as Array).size() - 1)
 		k += 1
 
 
@@ -573,7 +601,7 @@ func _hit(o, m: Dictionary, n: int) -> void:
 				share *= float(T["launcher"]["mult"])
 				break
 	# (The Full Set: the last blow of a combo locked with a punch, a kick and a fire globe in it, a finisher)
-	var finisher: bool = int(mv["globe"]) == 2 and _has("vfullset") and globes.has("punch") and globes.has("kick") and (globes.has("punchFire") or globes.has("kickFire"))
+	var finisher: bool = int(mv["globe"]) == most() - 1 and _has("vfullset") and globes.has("punch") and globes.has("kick") and (globes.has("punchFire") or globes.has("kickFire"))
 	if finisher:
 		share *= float(T["fullSet"]["mult"])
 	# (TWIN in front, as his move's card has it, “hits twice, each for” its share: each blow lands twice, the second a moment after;
@@ -595,11 +623,18 @@ func _hit(o, m: Dictionary, n: int) -> void:
 			h._echo_of(i, "vblow", o.world, Vector2(mv["ax"], mv["ay"]), again2)
 		else:
 			_after(float(Words.data()["echo"]["delay"]), again2)
+	# (each after the first as hard as the melds of Twin make it (melds52_rules.gd blow: Onslaught's full second): the bug hunt's
+	# fifth round)
 	for k2 in range(1, twice):
 		var again := share
+		var kk: int = k2
 		_after(0.1 * k2, func() -> void:
 			if is_instance_valid(o) and not o.dead:
-				h.hit_monster(o, i, again, true))
+				h.hit_monster(o, i, again * h.m52.blow(i, kk), true))
+	# (THE LAST WORDS: PIERCING in front, his blow goes on through the first it lands on, to every enemy in a line behind it: hero.gd)
+	var thr: float = float(tw.get("through", 0.0))
+	if first and thr > 0.0:
+		h.last.pierce_on(i, o, o.world, Vector2(mv["ax"], mv["ay"]), share * thr)
 	# (Stoke: a fire move that lands takes two seconds off his jump's wait)
 	if first and fire and _has("vstoke") and charges[2] < 1:
 		cd[2] = maxf(0.01, cd[2] - float(T["stoke"]["secs"]))
@@ -640,17 +675,17 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	if rc.has("back") and not finisher:
 		# (Wall Slam: one his kick drives into a wall or into another enemy is stunned)
 		if kicked and _has("vwallslam") and _slams(o, from, float(rc["back"])) and not o.boss:
-			o.stun_t = maxf(o.stun_t, float(T["wallSlam"]["stun"]))
+			o.stun_for(float(T["wallSlam"]["stun"]))
 		o.throw_from(from, float(rc["back"]), float(TUNE["driveSecs"]))
 	# (no boss is staggered nor stunned by his blows, as by no one's (monster.gd stun_for, stagger_from): every punch held one, and the
 	# Warped Wordsmith stood held half his fight: the bug hunt's third round, 25 Nov 2026)
 	if rc.has("stagger") and not o.boss:
 		o.stagger_t = maxf(o.stagger_t, float(rc["stagger"]))
 	if rc.has("stun") and not o.boss:
-		o.stun_t = maxf(o.stun_t, float(rc["stun"]))
+		o.stun_for(float(rc["stun"]))
 	# (Knockdown: the third punch of a combo knocks it off its feet)
 	if int(mv["globe"]) == 2 and is_punch(id) and _has("vknockdown") and not o.boss:
-		o.stun_t = maxf(o.stun_t, float(T["knockdown"]["down"]))
+		o.stun_for(float(T["knockdown"]["down"]))
 
 
 ## (Wall Slam) Is the way it is driven blocked by a wall or another monster, within how far it is driven? (game.ts vetSlams)
@@ -676,8 +711,10 @@ func _aftershock(o) -> void:
 	for q in h.monsters.list:
 		if not is_instance_valid(q) or q == o or q.dead or q.boss or h.monsters.shut_in(q):
 			continue
+		# (knocked down as every stun holds (monster.gd stun_for): an elite half as long, none through Fortress's shield; set by hand,
+		# it held an elite 7.6 s of 10; the bug hunt's fifth round)
 		if q.world.distance_to(o.world) <= float(A["r"]) + q.r:
-			q.stun_t = maxf(q.stun_t, float(A["down"]))
+			q.stun_for(float(A["down"]))
 
 
 ## (Thunder Knee) Lightning off the one his fire kick hit, on to the three nearest it: struck and stunned (game.ts vetThunder).
@@ -694,9 +731,9 @@ func _thunder(o, m: Dictionary) -> void:
 		h._tell({"t": "arc", "x0": o.world.x, "y0": o.world.y, "x1": q.world.x, "y1": q.world.y})
 		h.hit_monster(q, 1, float(m["share"]) * float(K["share"]), true)
 		if not q.dead and not q.boss:
-			q.stun_t = maxf(q.stun_t, float(K["stun"]))
+			q.stun_for(float(K["stun"]))
 	if not o.dead and not o.boss:
-		o.stun_t = maxf(o.stun_t, float(K["stun"]))
+		o.stun_for(float(K["stun"]))
 
 
 ## (Guard Up) Between his blows his fists are up: a blow from in front of him does half harm (game.ts hurtHero). What is left.
@@ -747,7 +784,7 @@ func _step_own(dt: float) -> void:
 			continue
 		m.pop = 0.0
 		up.remove_at(k)
-		m.stun_t = maxf(m.stun_t, float(B["stun"]))
+		m.stun_for(float(B["stun"]))
 		_say({"t": "comeDown", "id": m.id, "x": m.world.x, "y": m.world.y, "secs": B["stun"]})
 		_shake(1.5)
 
