@@ -960,6 +960,16 @@ lights over the dark (town.gd `_ring_moments`):
   Unfinished, the Cantor), and those that did not call out at all now do, by the game's rule (`monster.gd` call_out: never two
   within 5 s, a basic blow's line not within 20 s): the Warden (his slam, his lockdown, his bolts), the Rat King, the Physician,
   the Prince, the Queen and the King (`act1.gd` start_act). `--only=voices` (`check_glows.gd`): 10 checks.
+- **The Warped Wordsmith speaks in a real voice** (the cloud chat, 25 Nov 2026; the queue's boss-voices-and-roars). Asked whether
+  he should speak in a real voice or mumble like the rest: “Can eleven labs do emotion?  I’d like him to sound crazed.  Not cold.  If
+  not, I guess he can be cold, and let’s say Scottish.  With some phaser distortion from the magic”; of the two samples
+  (docs/mockups/boss_voice/), “Take 1, use it (Recommended)”. Every one of his lines (docs/mockups/endless_tablet/README.md, HIS
+  LINES) spoken by ElevenLabs (eleven_v4, the voice “Arkadius - Old Storyteller”, played [crazed] [strong Scottish accent]), two
+  takes each, the phaser of his magic on them (`tools/godot_wsboss_voice.sh` -> `assets/voices/wsboss`, 36 takes, 0.9 MB): his
+  five words' lines as each begins (Power “Kneel!”, Flame “Burn!”, Frost “Be still.”, Lightning “Storm, come!”, Poison “Rot.”),
+  his ten melds' (`act3/wsboss.gd` WORD_LINES, say_aloud), the boar's line from the moment it is killed (a third again as fast, to
+  be done by his slam), the slam's once it is done (say_later), and at his death a scream cut short as he implodes. `--only=final`
+  (`check_glows.gd`): his voice heard, every kind of line.
 
 ## The walls seen through for the monsters behind them (the cloud chat, 21 Nov 2026)
 
