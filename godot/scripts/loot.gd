@@ -1413,7 +1413,9 @@ func _process(dt: float) -> void:
 	for m in msgs:
 		m["t"] += dt
 	msgs = msgs.filter(func(m): return m["t"] < m["life"])
-	if not toast.is_empty():
+	# (held while the floor's name is up, as the HUD holds it: hud.gd)
+	var held: bool = main != null and main.get("_hud") != null and not (main._hud.floor_card as Dictionary).is_empty()
+	if not toast.is_empty() and not held:
 		toast["t"] += dt
 		if toast["t"] > (TOAST_BIG if toast["big"] else TOAST):
 			toast = {}

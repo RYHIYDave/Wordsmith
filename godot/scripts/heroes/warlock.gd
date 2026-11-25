@@ -203,7 +203,9 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 		# (CURSE_RANGED: thrown where he aims, a streak of smoke to the spot; Twin's second there too)
 		var at: Vector2 = from
 		if CURSE_RANGED:
-			at = _reach_point(to, CURSE_REACH) if primary else from + (to - from).limit_length(CURSE_REACH)
+			# (its echo, from where he threw it, as far as he could see from there: it went through walls, cursing and waking what was
+			# behind them: the bug hunt's third round, 25 Nov 2026)
+			at = _reach_point(to, CURSE_REACH) if primary else _reach_point(to, CURSE_REACH, from)
 			rad = CURSE_RAD * float(r["size"])
 			_say({"t": "curseThrow", "x0": from.x, "y0": from.y, "x1": at.x, "y1": at.y, "r": rad, "fly": CURSE_FLY})
 		var count: int = r["count"]
@@ -638,6 +640,17 @@ func _step_change(dt: float) -> void:
 		if demon2() and was_demon and h.has("bounddemon"):
 			pact = float(W["pact"]["full"]) * float(D2["boundSecs"]) / float(W["pact"]["demonSecs"])
 			_tear_out()
+
+
+## The man again at once, his pact gone (game.ts die: the demon falls as the man it was): fallen, or come into a town, where he is
+## drawn as the man (the demon's moves were on the HUD there, and it burned out: the bug hunt's third round, 25 Nov 2026).
+func turn_man() -> void:
+	change = {}
+	feeding = false
+	if form == "demon":
+		lust = 0
+		_become("man")
+		pact = 0.0
 
 
 ## (game.ts refresh) His three: the demon's in the places of his while he is it; his pictures' times with them.

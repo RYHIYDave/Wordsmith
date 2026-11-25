@@ -119,7 +119,8 @@ func _ready() -> void:
 func _process(dt: float) -> void:
 	_t += dt
 	# (THE FIRST LEVELS: a move just opened, its moment running: main.ts moveToast, gone after 3.4 s)
-	if main != null and not main.move_toast.is_empty() and not get_tree().paused:
+	# (held, as every line at the top, while the floor's name is up: under it, it ran out unseen: the bug hunt's third round)
+	if main != null and not main.move_toast.is_empty() and not get_tree().paused and floor_card.is_empty():
 		main.move_toast["t"] = float(main.move_toast["t"]) + dt
 		if float(main.move_toast["t"]) > 3.4:
 			var then: Array = main.move_toast.get("then", [])
@@ -682,9 +683,11 @@ func _draw() -> void:
 	# ---- the prompt, and the word just found ----
 	# (a word found is the bigger news: for its moment it takes the prompt's place, under the boss's bar where that is up; it
 	# is not shown while the game is held)
-	var toast_up: bool = loot != null and not loot.toast.is_empty() and not get_tree().paused
-	# (FLOOR_CARD_FIRST: the first dungeon's prompt, and every line at the top, waits while the floor's name is up: main.ts)
+	# (FLOOR_CARD_FIRST: the first dungeon's prompt, and every line at the top, waits while the floor's name is up: main.ts; the word
+	# found and the move opened too, their moments held till then (loot.gd, _process above): drawn under the name, a line of the
+	# Curse's hidden by it, the bug hunt's third round found)
 	var card_up := not floor_card.is_empty()
+	var toast_up: bool = loot != null and not loot.toast.is_empty() and not get_tree().paused and not card_up
 	var b: Dictionary = main.guide.banner(not boss_up and not toast_up) if main != null and not card_up else {}
 	if card_up and main != null:
 		main.guide.gesture = {}
@@ -694,7 +697,7 @@ func _draw() -> void:
 	_notice_end = 0.0
 	if toast_up:
 		_toast(loot.toast["word"], loot.toast["t"], notice_y, loot.toast["big"], W)
-	elif main != null and not main.move_toast.is_empty() and not get_tree().paused:
+	elif main != null and not main.move_toast.is_empty() and not get_tree().paused and not card_up:
 		_notice_end = _move_toast(int(main.move_toast["skill"]), float(main.move_toast["t"]), notice_y, W)
 	elif not b.is_empty() and not boss_up and not bells_up:
 		_banner(b, W)

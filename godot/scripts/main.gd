@@ -1865,6 +1865,9 @@ func go_to(where: String, arrive: String) -> void:
 	await tw.finished
 	_build(where, arrive)
 	hero.fresh_place()
+	# (THE WARLOCK come into a town as the demon: the man again there, as he is drawn: warlock.gd turn_man)
+	if is_home(place) and hero.kit != null and hero.kit.has_method("turn_man"):
+		hero.kit.turn_man()
 	var back := create_tween()
 	back.tween_property(_curtain, "color:a", 0.0, CURTAIN)
 	await back.finished

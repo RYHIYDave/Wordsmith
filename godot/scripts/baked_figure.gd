@@ -80,6 +80,15 @@ func _init(dir: String, figure: String, lists_info: Dictionary, defer := false, 
 		_names[info[i]["name"]] = i
 		# (a list it has no pictures of has no pace: the King's Hush, which never walks)
 		_fps.append(float(info[i]["fps"]) if info[i]["fps"] != null else 0.0)
+	# (a side baked with fewer lists than the front, or a list it has none of: that side shows the front's. Floor 6's Unfinished,
+	# fused in the wall, has those pictures from the front only, and turned away it asked for what its back had not, a script error
+	# every frame: the bug hunt's third round, 25 Nov 2026)
+	for side in range(1, _lists.size()):
+		while _lists[side].size() < _lists[0].size():
+			_lists[side].append(_lists[0][_lists[side].size()])
+		for k in _lists[side].size():
+			if (_lists[side][k] as PackedInt32Array).is_empty() and k < _lists[0].size():
+				_lists[side][k] = _lists[0][k]
 
 
 func has(list: String) -> bool:

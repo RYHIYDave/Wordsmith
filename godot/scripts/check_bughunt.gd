@@ -8,7 +8,8 @@
 ## Brand's heat on a burn not passed on by Searing nor lit again by Rekindle; no royal's crest on a kind's called-up, split or risen;
 ## Strangler doubles a poison once however often it is held; floor 10's name and the quest banner pictured (hud.gd BANNER_CLEAR).
 ## The third round's: the Brawler's blows hold no boss; his moves are uses for their words, his jump gives its own, Twin echoes;
-## a cursed one's burn and poison passed on at its death neither heated again nor dosed past their most.
+## a cursed one's burn and poison passed on at its death neither heated again nor dosed past their most; the Unfinished's pictures
+## from behind; the Curse's echo kept to his sight; the demon the man again in town and as he falls.
 extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
@@ -473,4 +474,61 @@ func run(main, hero, dir: String) -> void:
 	h.loadout.behind[2] = [null, null]
 	h.loadout._r = [null, null, null]
 	_line(h.uses[2] > u2 and hs > 0.0 and sh2 > 0.0 and fl > 2 and blows_by[2] > blows_by[0], "the Brawler's moves as uses: his jump with Guarding and Swiftness, haste %.1f, shield %d; Flurry's blows %d after his punches (2 at first); blows landed in 3 s with nothing %d, Flurry %d, Twin behind %d" % [hs, int(sh2), fl, blows_by[0], blows_by[1], blows_by[2]])
+	# THE WARLOCK'S ROUND: floor 6's Unfinished turned away (its wall pictures from the front only); the Curse's echo kept to where he
+	# could see; the demon the man again come into town and as he falls
+	tg = 0.0
+	while M._going and tg < 15.0:
+		await M.get_tree().process_frame
+		tg += M.get_process_delta_time()
+	await M.go_to("floor6", "start")
+	await _wait(1.0)
+	var unf = null
+	for o in M._monsters.list:
+		if is_instance_valid(o) and str(o.kind) == "unfinished":
+			unf = o
+	var backs: Array = []
+	var fronts := 0
+	if unf != null:
+		for list in ["fusedStand", "fusedSlam", "fusedStomp", "fusedHurl", "fusedRockslide", "fusedReel", "tearFree"]:
+			fronts += unf.art.count(0, list)
+			backs.append(unf.art.count(1, list))
+	_line(unf != null and fronts > 0 and backs.all(func(c): return int(c) > 0), "floor 6's Unfinished turned away: its wall pictures from behind %s (the front's where it has none; was an error each frame)" % str(backs))
+	M.set_class("warlock", true)
+	h = M.hero
+	M.loot.level = 30
+	M.loot.derive()
+	await _wait(0.3)
+	# (the Curse's echo: a spot behind a wall, 2 tiles past the first wall in any of the eight ways, as far as 9 tiles)
+	var o6: Vector2 = h.world
+	var aim6 := Vector2.INF
+	for k in 8:
+		var u := Vector2.RIGHT.rotated(TAU * k / 8.0)
+		for d in range(1, 7):
+			var p: Vector2 = o6 + u * float(d)
+			if not h._clear(p.x, p.y):
+				aim6 = o6 + u * float(d + 2)
+				break
+		if aim6 != Vector2.INF:
+			break
+	var landed: Vector2 = h.kit._reach_point(aim6, 9.0, o6) if aim6 != Vector2.INF else o6
+	_line(aim6 != Vector2.INF and M._monsters.sees(o6, landed), "the Warlock's Curse echoed at a spot behind a wall from where he threw it: lands at %s, in his sight from there (%s); it went through" % [str(landed), str(M._monsters.sees(o6, landed))])
+	# (the demon: come into town as it, then fallen as it)
+	h.kit._become("demon")
+	h.kit.pact = 30.0
+	tg = 0.0
+	while M._going and tg < 15.0:
+		await M.get_tree().process_frame
+		tg += M.get_process_delta_time()
+	await M.go_to("town", "start")
+	await _wait(0.5)
+	var town_form: String = h.kit.form
+	await M.go_to("floor2", "start")
+	await _wait(0.5)
+	h.kit._become("demon")
+	h.kit.pact = 30.0
+	h.unhurt = false
+	h._fall()
+	var fall_form: String = h.kit.form
+	var fall_pact: float = h.kit.pact
+	_line(town_form == "man" and fall_form == "man" and fall_pact == 0.0, "the Warlock as the demon: come into town, %s; fallen, %s, his pact %d" % [town_form, fall_form, int(fall_pact)])
 	print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])

@@ -1580,7 +1580,12 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   fresh_place: melds52_rules.gd forget, uniques.gd fresh_place): a blow due a moment on (Concussion, Viper: a script error on the
   next floor), the redone melds' patches of ground (Bedrock struck floor 9's monsters where it lay on floor 7), Gyre's axe spinning;
   a monster's Momentum stops at ten, as his own (foe_melds52.gd). His own checks: whirl1 asks `--whirl1=1`, uniqueswar's Windcutter
-  times by the frame on a slow machine (both stale, not the game's).
+  times by the frame on a slow machine (both stale, not the game's). The Warlock's (resumed): floor 6's Unfinished, its pictures in the
+  wall baked from the front only, turned away asked for what its back had not (a script error each frame): a side short of a list
+  shows the front's (baked_figure.gd); the Curse's echo is thrown as far as he could see from where he threw it, not through walls
+  (heroes/warlock.gd, kit.gd _reach_point); the demon falls as the man, its pact gone (game.ts die), and comes into a town as the man,
+  as he is drawn there (warlock.gd turn_man); a word found and a move opened wait, as every line at the top, while the floor's name
+  is up (hud.gd, loot.gd). `--only=bughunt` 17 of 17.
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/

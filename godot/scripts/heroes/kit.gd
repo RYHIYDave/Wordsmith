@@ -549,18 +549,20 @@ func _open(p: Vector2) -> bool:
 
 
 ## (game.ts reachPoint) As near `to` as he can see, no further than `reach`.
-func _reach_point(to: Vector2, reach: float) -> Vector2:
-	var d: Vector2 = to - h.world
+func _reach_point(to: Vector2, reach: float, origin := Vector2.INF) -> Vector2:
+	# (`origin`: from where else he made it, an echo where the move was made: warlock.gd's Curse)
+	var o: Vector2 = h.world if origin == Vector2.INF else origin
+	var d: Vector2 = to - o
 	var far := minf(d.length(), reach)
 	if far < 0.01:
-		return h.world
+		return o
 	var u := d / d.length()
 	while far > 0.2:
-		var p: Vector2 = h.world + u * far
-		if h._clear(p.x, p.y) and (h.monsters == null or h.monsters.sees(h.world, p)):
+		var p: Vector2 = o + u * far
+		if h._clear(p.x, p.y) and (h.monsters == null or h.monsters.sees(o, p)):
 			return p
 		far -= 0.2
-	return h.world
+	return o
 
 
 # =====================================================================================================================

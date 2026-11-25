@@ -2297,6 +2297,9 @@ func _fall() -> void:
 		_tell({"t": "text", "x": world.x, "y": world.y, "text": "UP AGAIN", "color": "#ffe070"})
 		return
 	life = 0.0
+	# (THE WARLOCK: the demon falls as the man it was, its pact gone: game.ts die)
+	if kit != null and kit.has_method("turn_man"):
+		kit.turn_man()
 	alive = false
 	sfx.voice(cls, "death")
 	_down_for = 0.0
