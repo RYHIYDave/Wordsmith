@@ -90,7 +90,7 @@ the cult's fire on it either way; 3. off, the gate as it was; on, a floor's own,
 their front and courts and the cult's yard; off, as they were. `tsc --noEmit -p tsconfig.json`: clean but for
 `tests/relief.test.ts` line 378, which is on `main` as it is.
 
-SHOWN HIM, 25 Nov 2026, by 10:55: the two sheets in the game; asked by pop-up whether they match their levels well enough to switch
+SHOWN HIM, 25 Nov 2026, after 10:51 (Eastern): the two sheets in the game; asked by pop-up whether they match their levels well enough to switch
 on. HIS WORD: **“I like them except level 18 cause that is just in the middle of the flooor”**. Read as, and told him so: on 18
 the mirror door stood out on the open floor like a cabinet, where it should be part of the gallery's wall. So 18 is rebuilt as a
 run of the gallery's own wall (above), and pictured against the gallery's back wall (`WALL=4`, a place with four tiles of wall
