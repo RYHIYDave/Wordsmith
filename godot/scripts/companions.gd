@@ -101,6 +101,11 @@ func pick(kind: String) -> String:
 	if not hero.talents.has(D["groups"][g]["talent"]):
 		return "Take its talent first"
 	hero.picks["pet:" + g] = kind
+	# (the one let go goes, its picture with it: left, it stood frozen where it was till he left, one more with each pick; the bug
+	# hunt's fourth round, 25 Nov 2026)
+	for p in pets:
+		if p["group"] == g and p["seat"] < 2 and p["sprite"] != null and is_instance_valid(p["sprite"]):
+			p["sprite"].queue_free()
 	pets = pets.filter(func(p): return p["group"] != g or p["seat"] >= 2)
 	hero.sfx.play("trapSet", linear_to_db(0.4))
 	return ""
@@ -169,10 +174,11 @@ func _process(dt: float) -> void:
 		elif p["sprite"] != null and is_instance_valid(p["sprite"]):
 			p["sprite"].queue_free()
 	pets = keep
+	# (each wanted one its place, those kept moved to theirs: the collar's wolf picked as his hunting companion kept the place behind
+	# him, the collar's new one took it too, the two on one spot and his right side empty; the bug hunt's fourth round)
+	var placed: Array = []
 	for n in want.size():
 		var w: Dictionary = want[n]
-		if pets.any(func(p): return p["group"] == w["group"] and p["kind"] == w["kind"]):
-			continue
 		# (the Pack Collar's may be a second of the same group: it keeps the third place)
 		var first := -1
 		for q in want.size():
@@ -180,7 +186,17 @@ func _process(dt: float) -> void:
 				first = q
 				break
 		var seat: int = 2 if n >= 2 or first != n else (0 if w["group"] == "hunt" else 1)
+		var found := -1
+		for k in pets.size():
+			if not placed.has(k) and pets[k]["group"] == w["group"] and pets[k]["kind"] == w["kind"]:
+				found = k
+				break
+		if found >= 0:
+			pets[found]["seat"] = seat
+			placed.append(found)
+			continue
 		pets.append(_beside(w["kind"], w["group"], seat))
+		placed.append(pets.size() - 1)
 	for p in pets:
 		_step(p, dt)
 		_show(p)

@@ -17,6 +17,7 @@ extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
 const FoeWords := preload("res://scripts/foe_words.gd")
+const Words := preload("res://scripts/words.gd")
 
 var M
 var h
@@ -52,6 +53,7 @@ func run(main, hero, dir: String) -> void:
 	M.loot.taught = true
 	if OS.get_environment("WS_BH_FROM") == "4":
 		await _round4(dir)
+		await _round4b(dir)
 		print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 		return
 	await M.go_to("floor8", "start")
@@ -520,7 +522,12 @@ func run(main, hero, dir: String) -> void:
 	var landed: Vector2 = h.kit._reach_point(aim6, 9.0, o6) if aim6 != Vector2.INF else o6
 	_line(aim6 != Vector2.INF and M._monsters.sees(o6, landed), "the Warlock's Curse echoed at a spot behind a wall from where he threw it: lands at %s, in his sight from there (%s); it went through" % [str(landed), str(M._monsters.sees(o6, landed))])
 	await _round4(dir)
+	await _round4b(dir)
+	M.set_class("warlock", true)
 	h = M.hero
+	M.loot.level = 30
+	M.loot.derive()
+	await _wait(0.3)
 	# (the demon: come into town as it, then fallen as it)
 	h.kit._become("demon")
 	h.kit.pact = 30.0
@@ -793,3 +800,173 @@ func _round4(dir: String) -> void:
 		WK.HINT_TOWN_OFF = ht_was
 		M._touch.on = touch_was
 		M.loot.furnace = fur_was
+
+
+func _go4(where: String) -> void:
+	M.loot.offer = ""
+	if M._inv != null and M._inv.visible:
+		M._inv.toggle()
+	var tg := 0.0
+	while M._going and tg < 15.0:
+		await M.get_tree().process_frame
+		tg += M.get_process_delta_time()
+	await M.go_to(where, "start")
+	await _wait(1.0)
+	if M.sight != null:
+		M.sight.see_all()
+
+
+func _hero4(cls: String, talents: Array, picks := {}) -> void:
+	M.set_class(cls, true)
+	h = M.hero
+	M.loot.level = 40
+	h.talents = preload("res://scripts/talents.gd").starting(cls) + talents
+	for k in picks:
+		h.picks[k] = picks[k]
+	h.talents_changed()
+	M.loot.derive()
+	h.life = h.max_life
+	await _wait(0.3)
+
+
+func _wear4(id: String) -> void:
+	var it = M.loot.unique_piece(id)
+	if it == null:
+		return
+	M.loot.gear["ring1" if it["slot"] == "ring" else str(it["slot"])] = it
+	M.loot.derive()
+	h.uniques_changed()
+
+
+## THE FOURTH ROUND'S, THE RANGER'S (with WS_BH_FROM=4 too): the words a use answers on every hero's attacks; Venom's poison passed
+## down a chain with its doses; a companion let go takes its picture with it, and each has a place of its own; the Snare holds an
+## elite as every stun does.
+func _round4b(dir: String) -> void:
+	# (Guarding and Frenzied in front of the quick attack, Swift behind: a shield, a frenzy and haste from its uses, each hero)
+	var rows: Array = []
+	var all_ok := true
+	for cls in ["ranger", "mage", "tinkerer", "warlock"]:
+		await _hero4(cls, [])
+		await _go4("floor11")
+		var near: Array = _near(1)
+		if near.is_empty():
+			all_ok = false
+			continue
+		var o = near[0]
+		o.max_life = 1.0e8
+		o.life = 1.0e8
+		o.speed = 0.0
+		o.world = M._free_near(h.world + h.face * 3.0)
+		M._monsters.wake(o)
+		h.loadout.front[0] = ["guarding", "frenzied"]
+		h.loadout.behind[0] = ["swift", null]
+		h.loadout._r = [null, null, null]
+		h.shield = 0.0
+		h.haste = 0.0
+		h.frenzy = 0
+		var got := [0.0, 0.0, 0]
+		var u0: int = h.uses[0]
+		var t := 0.0
+		while t < 3.0:
+			await M.get_tree().process_frame
+			t += M.get_process_delta_time()
+			h.mana = h.max_mana
+			h.life = h.max_life
+			h.touch_aim = {0: o.world}
+			h.auto_attack = true
+			got[0] = maxf(got[0], h.shield)
+			got[1] = maxf(got[1], h.haste)
+			got[2] = maxi(got[2], h.frenzy)
+		h.touch_aim = {}
+		h.auto_attack = false
+		h.loadout.front[0] = [null, null]
+		h.loadout.behind[0] = [null, null]
+		h.loadout._r = [null, null, null]
+		var uses: int = h.uses[0] - u0
+		rows.append("%s %d uses: shield %d, haste %d, frenzy %d" % [cls, uses, int(got[0]), int(got[1]), int(got[2])])
+		all_ok = all_ok and uses > 0 and got[0] > 0.0 and got[1] > 0.0 and got[2] > 0
+	_line(all_ok, "Guarding and Frenzied in front of the quick attack, Swift behind: %s (all 0 but the Warrior's and the Brawler's)" % "; ".join(rows))
+	# (VENOM: eight poisoned ones dying in turn where the next stands)
+	await _hero4("ranger", ["keeneye", "venom"])
+	await _go4("floor13")
+	var ms: Array = M._monsters.list.filter(func(q): return is_instance_valid(q) and not q.dead and not q.boss and not M._monsters.shut_in(q) and q.chained == 0)
+	ms.sort_custom(func(a, b): return a.world.distance_to(h.world) < b.world.distance_to(h.world))
+	ms = ms.slice(0, 6)
+	var spot: Vector2 = M._free_near(h.world + h.face * 3.0)
+	for q in ms:
+		q.world = spot
+		q.speed = 0.0
+		q.max_life = 1.0e7
+		q.life = 1.0e7
+		q.state = "chase"
+		q.seen = true
+		q.stun_for(60.0)
+	h.world = M._spot_near(spot, 6.0, h.world)
+	var tops: Array = []
+	for q in ms:
+		for k in 8:
+			q.dose(100.0)
+		tops.append(int(q.poison_dps))
+		q.last_skill = 0
+		q.damage(q.life + q.shield + 10.0, "phys", false, false, [], false, false, 0)
+		await _wait(0.4)
+	var one_most: float = 100.0 * Words.poison_most(h) * (1.0 + float(h.stats.get("poison_pct", 0.0)) / 100.0)
+	_line(ms.size() >= 4 and float(tops.max()) <= one_most * 1.5, "Venom: %d poisoned ones, eight doses of 100 each, dying in turn where the next stands: their poisons %s a second (one's most %d; was to 7,886)" % [ms.size(), str(tops), int(one_most)])
+	# (THE COMPANIONS in town: picked again and again, the Pack Collar's wolf picked for the hunt too)
+	await _hero4("ranger", ["keeneye", "huntcompanion", "wildcompanion"], {"pet:hunt": "hawk", "pet:wild": "bat"})
+	await _go4("town")
+	var C = M._companions
+	_wear4("packcollar")
+	await _wait(0.6)
+	C.pick_collar("wolf")
+	await _wait(0.6)
+	C.pick("fox")
+	await _wait(0.6)
+	C.pick("tortoise")
+	await _wait(0.6)
+	C.pick("wolf")
+	await _wait(1.0)
+	var st = M._monsters.get("stands") if M._monsters != null else null
+	var pics: int = st.get_children().filter(func(c): return not c.is_queued_for_deletion() and c.get("come") != null and c.get("shadow") != null).size() if st != null else -1
+	var seats: Array = C.pets.map(func(q): return int(q["seat"]))
+	var twice := false
+	for k in seats.size():
+		if seats.count(seats[k]) > 1:
+			twice = true
+	if dir != "":
+		await M._snap(dir + "/companions_town.png")
+	_line(pics == C.pets.size() and not twice and C.pets.size() == 3, "companions in town, picked four times, the collar's wolf picked for the hunt: %d out, %d pictures (each pick left one more), places %s (two on one)" % [C.pets.size(), pics, str(seats)])
+	# (THE SNARE: thrown at an elite as fast as he can, 12 s)
+	await _hero4("ranger", ["widetraps", "snare", "huntcompanion"], {"pet:hunt": "wolf"})
+	await _go4("floor14")
+	var ms2: Array = M._monsters.list.filter(func(q): return is_instance_valid(q) and not q.dead and not q.boss and not M._monsters.shut_in(q) and q.chained == 0)
+	ms2.sort_custom(func(a, b): return a.world.distance_to(h.world) < b.world.distance_to(h.world))
+	var held := 0.0
+	if not ms2.is_empty():
+		var e = ms2[0]
+		for q in ms2.slice(1, 12):
+			q.damage(q.life + q.shield + 10.0, "phys", false, false, [], false, false, -1)
+		e.elite = true
+		e.max_life = 1.0e8
+		e.life = 1.0e8
+		var at0: Vector2 = h.world
+		e.world = M._free_near(at0 + Vector2(3.0, 0.0))
+		M._monsters.wake(e)
+		await _wait(0.3)
+		var t5 := 0.0
+		var k5 := 0
+		while t5 < 12.0:
+			await M.get_tree().process_frame
+			var dt5: float = M.get_process_delta_time()
+			t5 += dt5
+			k5 += 1
+			h.world = at0
+			h.life = h.max_life
+			if e.stun_t > 0.0 or e.bind_t > 0.0:
+				held += dt5
+			if k5 % 2 == 0:
+				h.touch_aim = {0: e.world}
+				h.auto_attack = true
+		h.touch_aim = {}
+		h.auto_attack = false
+	_line(not ms2.is_empty() and held < 12.0 * 0.6, "the Snare thrown at an elite as fast as he can, 12 s: held %.1f s (was 11.4; an elite held half as long, as by every stun, and as Binding not again for 2 s)" % held)

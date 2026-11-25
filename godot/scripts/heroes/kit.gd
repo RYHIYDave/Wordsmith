@@ -504,6 +504,17 @@ func _deliver(_i: int, _from: Vector2, _to: Vector2, _frac: float, _primary: boo
 	pass
 
 
+## (game.ts deliver, its end) A use by his own hand, not its echo: its boons (hero.gd _boons: Swift's haste, Frenzied's frenzy,
+## Guarding's shield; a move held had them as it began, _begin_channel) and the last words' (Surging's shockwave, Mirroring's
+## reflection and its mirrors: last_words.gd cast). The Ranger's, the Mage's, the Tinkerer's and the Warlock's attacks gave neither
+## (the bug hunt's fourth round, 25 Nov 2026: only the Ranger's Trap, his evasive move, did); the Warrior's arms do it themselves.
+func _used(i: int, from: Vector2, way: Vector2, frac: float, boons := true) -> void:
+	if boons:
+		h._boons(i)
+	if h.last != null:
+		h.last.cast(i, from, way, frac, func(at: Vector2, w: Vector2, f: float) -> void: _deliver(i, at, at + w, f, false))
+
+
 ## (his own: game.ts useEvasive) His evasive move, asked for toward `at`.
 func _use_evasive(_at: Vector2, _way: Vector2) -> void:
 	pass

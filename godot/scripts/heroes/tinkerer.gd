@@ -147,6 +147,9 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 	if primary and float(r["echo"]) > 0.0:
 		var again := func() -> void: _deliver(i, from, to, float(h.loadout.r(i)["echo"]), false)
 		h._echo_of(i, kind, from, way, again)
+	# (its boons and the last words': kit.gd _used)
+	if primary:
+		_used(i, from, way, frac, true)
 
 
 ## (game.ts tossVial) A vial lobbed from her hand to where she aimed (`n` the how-manyth of Twin's, each further to one side).

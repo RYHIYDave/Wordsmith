@@ -1604,6 +1604,16 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   head but on his name put over the name (act1/quest610.gd MARK_CLEAR: it hid the ARMOURER's middle, as the browser game does
   too); no R: CHANGE or TAP HIM over the Warlock's full pact in a town (heroes/warlock.gd HINT_TOWN_OFF). `--only=bughunt`
   (WS_BH_FROM=4 for the round's alone) 7 of 7.
+  The Ranger's: the words that answer each use (Swift's haste, Frenzied, Guarding's shield) and the last words (Surging,
+  Mirroring) now work on every attack of the Ranger, the Mage, the Tinkerer and the Warlock, as game.ts deliver has them (heroes/
+  kit.gd _used: only their evasive moves and the moves held gave them; the Warrior's and the Brawler's did already); Venom's cloud
+  passes a poison on with its doses (wakes.gd, hero.gd: set at one dose, seven more stacked on the most, and down a chain of deaths
+  it grew from 800 to 7,886 a second); a companion let go in town takes its picture with it (companions.gd pick: each pick left
+  one more frozen where it stood) and each companion keeps a place of its own (the collar's wolf picked for the hunt stood on the
+  collar's new one, his right side empty); the Snare holds as every stun does, an elite half as long, and as Binding not again
+  for two seconds after (heroes/ranger.gd, monster.gd snare_again: thrown as fast as he could it held an elite 11.4 s of 12, now
+  5.4 with his wolf's bites). Not the game's: bells line 08 as the Ranger (timing), endless line 05 (finds monsters by their place
+  in monsters.json, not the endless packs' extras). Round 4's checks, `--only=bughunt` WS_BH_FROM=4, 11 of 11.
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/

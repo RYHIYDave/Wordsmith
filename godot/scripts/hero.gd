@@ -980,7 +980,7 @@ func killed(m) -> void:
 	# (THE RANGER'S TREE: Venom, a poisoned enemy that dies bursts in a cloud that poisons those near it: game.ts venomCloud)
 	if has("venom") and m.poison_t > 0.0 and m.poison_dps > 0.0 and wakes != null:
 		var V: Dictionary = Talents.D["tune"]["venom2"]
-		wakes.add_venom(m.last_skill, m.world, float(V["r"]), float(V["dur"]), m.poison_dps)
+		wakes.add_venom(m.last_skill, m.world, float(V["r"]), float(V["dur"]), m.poison_dps, maxi(1, m.poison_n))
 	# (THE WARRIOR'S BATTLE AXE: Red Mist, each kill a step faster for a while, up to five: game.ts warriorKill)
 	if cls == "warrior" and has("redmist"):
 		var RM: Dictionary = Talents.D["warriorTune"]["redMist"]

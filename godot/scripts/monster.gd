@@ -192,6 +192,8 @@ var still_t := 0.0
 var still_k := 0.0
 var bind_t := 0.0
 var bind_again := 0.0
+## (the Ranger's Snare: not held by one again till this runs out, as Binding's `bind_again`: heroes/ranger.gd)
+var snare_again := 0.0
 ## (THE HIGH CITY'S SEVEN LAST WORDS: BLEEDING in his moves, it bleeds `bleed_dps` for `bleed_t`, `bleed_move` times as much while it
 ## walks (where it was at the last bite, `bleed_at`); and its own words: MIRRORING's wait before harm goes back again, SURGING's
 ## shockwave's clock, the gold PLUNDERING stole from him, and whether REAPING has stood it up once already: last_words.gd)
@@ -512,6 +514,7 @@ func step(dt: float, hero) -> void:
 	still_t = maxf(0.0, still_t - dt)
 	bind_t = maxf(0.0, bind_t - dt)
 	bind_again = maxf(0.0, bind_again - dt)
+	snare_again = maxf(0.0, snare_again - dt)
 	dt *= time_of()
 	# (EVERY WORD ON A DUNGEON: Hailstorm, Cauterize, Fervor wearing off: foe_words.gd tick)
 	if mgr.main != null and mgr.main.get("_foe") != null and mgr.main._foe.on() and hero != null and is_instance_valid(hero):

@@ -134,10 +134,10 @@ func add_patch(skill: int, kind: String, at: Vector2, rad: float, dur: float, dp
 
 ## (THE RANGER'S TREE: Venom, game.ts venomCloud) A poisoned enemy dies in a cloud of its poison, `rad` round `at` for `dur` seconds,
 ## poisoning those in it as it was poisoned (`dps` a second): laid as it is, whatever lies there already.
-func add_venom(skill: int, at: Vector2, rad: float, dur: float, dps: float) -> void:
+func add_venom(skill: int, at: Vector2, rad: float, dur: float, dps: float, doses := 1) -> void:
 	if not _room() or not _on_floor(at):
 		return
-	list.append({"kind": "venom", "x": at.x, "y": at.y, "r": rad, "t": 0.0, "dur": dur, "element": "phys", "dmg": dps, "slow": 0.0, "tick": 0.2, "skill": skill})
+	list.append({"kind": "venom", "x": at.x, "y": at.y, "r": rad, "t": 0.0, "dur": dur, "element": "phys", "dmg": dps, "slow": 0.0, "tick": 0.2, "skill": skill, "doses": doses})
 	_tell({"t": "zone", "kind": "venom", "x": at.x, "y": at.y, "r": rad, "el": "phys"})
 
 
@@ -534,7 +534,12 @@ func _bite(z: Dictionary) -> void:
 					m.poison_n = 1
 					m.poison_dps = 0.0
 					_tell({"t": "poisoned", "x": m.world.x, "y": m.world.y})
-				m.poison_dps = maxf(m.poison_dps, z["dmg"])
+				# (the poison passed on with its doses, as a cursed one's death passes it (monsters.gd spread_burns): set at one dose,
+				# seven more stacked on what was already the most, and the next death passed on the sum, down a chain without end;
+				# the bug hunt's fourth round, 25 Nov 2026)
+				if float(z["dmg"]) > m.poison_dps:
+					m.poison_dps = z["dmg"]
+					m.poison_n = maxi(m.poison_n, int(z.get("doses", 1)))
 				m.poison_t = maxf(m.poison_t, 2.0)
 				if int(z.get("skill", -1)) >= 0:
 					m.last_skill = int(z["skill"])

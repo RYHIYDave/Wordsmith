@@ -189,6 +189,9 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 	if primary and float(r["echo"]) > 0.0:
 		var again := func() -> void: _deliver(i, from, to, float(h.loadout.r(i)["echo"]), false)
 		h._echo_of(i, str(def["kind"]), from, way, again)
+	# (its boons and the last words': kit.gd _used)
+	if primary:
+		_used(i, from, way, frac, def["kind"] != "snipe")
 
 
 # =====================================================================================================================
@@ -290,7 +293,13 @@ func _step_traps(dt: float) -> void:
 				# Cantor fourteen seconds of fifteen: the bug hunt's second round, 25 Nov 2026; its burst still strikes it)
 				if m.boss:
 					continue
-				m.stun_t = maxf(m.stun_t, float(S["hold"]))
+				# (held as every stun holds (monster.gd stun_for): an elite half as long, none through Fortress's shield; and as Binding,
+				# not held by one again till two seconds after (city_words.gd bind_monster): thrown as fast as he could, it held an elite
+				# 11.4 s of 12, the bug hunt's fourth round, 25 Nov 2026)
+				if m.snare_again > 0.0:
+					continue
+				m.stun_for(float(S["hold"]))
+				m.snare_again = float(S["hold"]) * (0.5 if m.elite else 1.0) + float(Words.data()["city"]["bind"]["again"])
 				h._tell({"t": "bind", "id": m.id, "m": m, "secs": S["hold"]})
 			var sk: int = t["skill"]
 			var fr: float = float(t["frac"]) * float(S["share"])
