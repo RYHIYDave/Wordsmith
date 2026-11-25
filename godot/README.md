@@ -1614,6 +1614,32 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   for two seconds after (heroes/ranger.gd, monster.gd snare_again: thrown as fast as he could it held an elite 11.4 s of 12, now
   5.4 with his wolf's bites). Not the game's: bells line 08 as the Ranger (timing), endless line 05 (finds monsters by their place
   in monsters.json, not the endless packs' extras). Round 4's checks, `--only=bughunt` WS_BH_FROM=4, 11 of 11.
+- THE BUG HUNT, ROUND 5 (the Tinkerer on the story floors and town, the Warrior with the Whirlwind in the city, the High City and
+  endless, the Brawler on the words, melds, gear and screens). The Tinkerer's: her golem is set down only where its body has room
+  (heroes/tinkerer.gd _stands, _stand_near: monsters.gd clear, not open ground, which is the test for sight: it stood in walls,
+  crates and water and fired from there), comes out again where it may stand, and is not made to charge in its rocket jump; a
+  Contraption refused (three standing, none past its first shot) is no use; Prospector digs no gold in a town (her golems' shots dug
+  21 there in 18 s). The Warrior's: Surging and Mirroring on his Whirl, his Whirlwind (once a spin) and his Lunge's landing, as on the
+  Strike (game.ts deliver; the browser game's Whirlwind and Lunge lacked them too); Shiver's freeze not again for four seconds, as
+  every freeze (melds.gd); Fervor's fury and Implode's bursts gone with the floor (hero.gd fresh_place, melds.gd forget); a monster's
+  meld roots him as Binding does, not again till its wait, never with Resolute (hero.gd root_by_meld: Pin, Amber, Skewer, Undying,
+  Gravebind, Tangle; four Pin carriers rooted him 8.4 s of 10, now 2.3 of 8), and holds him not again for two seconds after (hero.gd
+  hold_by_meld: Coldcut, Crusher, Ice Lance, Haymaker, Stillpoint, Tempo, Bedrock, Concussion and the rest; Flash Freeze, Icebreaker
+  and Frostbite keep their own waits); the Silent Order's rush, the dancer's throw and the Queen's Guards' step out of the glass need
+  room for the whole body, the guards each their own spot (act3/order.gd, dancer.gd, qguard.gd). The Brawler's (heroes/brawler.gd):
+  his combo cancelled in his jump's crouch keeps the jump's globe (a press there was a script error); his globes are not let go while
+  presses wait (held by a monster, three taps more played five); a use is counted as each blow is made, not as pressed (Splitting split
+  once for three quick punches); the last words on his blows (Surging, Mirroring: his own _echo_blow for a reflection's blow) and
+  Piercing through the first his blow lands on, Twin's melds on its second hit (Onslaught's full second); his knock-downs and stuns
+  (Aftershock, Thunder Knee, Wall Slam, Knockdown, his blows', a landing after a pop-up) by the stun rules, an elite half as long, none
+  through Fortress (an elite was held 7.6 s of 10 by Aftershock alone); Vast's and Power's size widen his reach; a quiet hit past the
+  third counted over the whole blow, not each frame; the Full Set's finisher on the last globe (the Fourth Globe's fourth); the one-
+  hand touch mode does not press again in the frame a touch on him cancels. Left for his word: the Big One with Contraptions holds
+  a common about half the time (by the stun rules); Heavy on the Whirlwind stuns an elite through the spin; the Brawler's kicks hit
+  half as hard as his punches (BRAWLER_MORE on punches only, words.gd); words on his Jump do nothing (it strikes nothing); a move's
+  card on the ATTACKS page under "Wordsmith (E)" and LEVEL UP (scratchpad picture). Checks written for the Warrior, not the game's:
+  wordsui, uniques 08, touch 2-4, pad 5, practice 91, save_read 06 as the Brawler. Round 5's checks, `--only=bughunt` WS_BH_FROM=5,
+  9 of 9.
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/
