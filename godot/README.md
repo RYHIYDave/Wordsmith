@@ -1431,16 +1431,24 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   heaving, snapping, free); `--only=chained_film --shots=<dir>`
   with `--fixed-fps 30`, a film of it frame by frame (both run under `xvfb-run -a ... --rendering-driver opengl3`).
 
-- **Strongholds on any endless level: the cult's altar room** (`scripts/act1/altar_rooms.gd`, the floors 6 to 10 strongholds'
-  own rules, `act1/holds.gd`, its door and hall made a room; AltarRooms.ON, OFF until his yes to the pictures,
-  docs/mockups/altar_room/, https://claude.ai/artifact/382FjE26hEgjMJwdEeENVS). His words, 23 Nov 2026: “In endless mode I want multiple chained and stronghold encounters per
-  level”; the altar room, his “Yes and yes”. On an endless level of a floor with no strongholds of its own (floors 6 to 10 keep
-  theirs), two of its ordinary rooms (no door of their own, off the way in, no chained rare, away from the Bells) each hold the
-  cult's altar of the words with its braziers and banners (the browser game's own painters, `tools/godot_altar_room.ts` ->
-  `assets/altar_room/`). Words laid and the altar woken: the cult's pink fire stands up in every doorway of the room (wall to
-  everything), and five waves of the floor's own packs rise out of rifts in its floor, as a hall's do; the last dead, a hall's
-  reward and the fire falls. Where the floor has too few rooms that close (the city's streets, floors 11 and 13), A RING OF FIRE:
-  the altar on open floor and the fire springing up in a ring round it (RING tiles out). `--only=altarrooms --shots=<dir>`.
+- **Strongholds on any endless level: the cult's gate at the map's edge** (`scripts/act1/altar_rooms.gd`, the floors 6 to 10
+  strongholds' own rules, `act1/holds.gd`; AltarRooms.ON, OFF until his yes to the pictures, docs/mockups/edge_gate/). His words,
+  23 Nov 2026: “In endless mode I want multiple chained and stronghold encounters per level”. Shown the altar sealed in one of a
+  floor's rooms (docs/mockups/altar_room/), his “Why wouldn’t you just put the door on the edge of the map?  Why is it in the
+  middle of the area?”; asked whether to do it as floors 6 to 10 do, his pick, 25 Nov 2026: “Gate at the edge (Recommended)”.
+  On an endless level of a floor with no strongholds of its own (floors 6 to 10 keep theirs), two of the cult's gates, each the
+  Wilds' redoubt gatehouse (`art/floor6.ts gatehouse`, baked by `tools/godot_altar_room.ts` -> `assets/altar_room/`) in a wall at
+  the map's edge, nothing walked behind it, its court of flagstones, the altar, braziers and banners before it. A wall along y has
+  the gatehouse and altar TURNED: painted in the world's light turned across, then turned over (`art/floor4.ts inLight`), never a
+  picture flipped as it is (his art rulebook, Figures 7: the light still falls from the upper left). The gatehouse stands in
+  strips, each sorted where along its wall it stands, so he walks in front of its near end and its far end stands in front of
+  the wall beyond. Words laid and the door opened: the altar gone, and through the doorway, the screen dark, he is in one of the
+  Wilds' own halls (`tools/godot_edge_halls.mjs` -> `assets/altar_room/halls.json`, their looks moved where they are laid:
+  look.gd `shift`), laid in rows the floor grows past its south edge as it is laid (floor_map.gd `grow_south`; every tile keeps
+  its number), the floor's look put away while he is in it; five waves of the floor's own packs rise out of rifts there, then a
+  hall's reward; out by its threshold he is before the gate again. Siege burned in, twice as many, as many as the floor's edges
+  hold (floors 6 to 10: beside their own, away from their gates, yards and halls). `--only=altarrooms --shots=<dir>` (12 checks;
+  `--cases=gate` the first gate alone, `--cases=city` floor 13).
 
 ## The 52 designed melds and the 11 level 2 runes (the cloud chat, 23 Nov 2026; switched off until his yes to the films)
 
@@ -1519,9 +1527,9 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   door_words.gd. Each only for the Rim's door: no move (words.gd socket_problem), no piece of gear (loot.gd burn_problem), no
   stronghold's altar (holds.gd problem) and no bench (NO_MELD) takes one. They drop only on an endless level, the four sharing
   one rune's share (loot.gd drops_at). Burned in, no monster carries one and it drops no more often (loot.gd DOOR_WORDS), and the
-  level holds more of its encounter: CHAINS twice the chained rares (main.gd); SIEGE twice the strongholds, four altar rooms for
-  two, and on floors 6 to 10 two altar rooms beside the floor's own (act1/quest610.gd `rooms`; waits on the altar room's own
-  yes); TOLL the Muffled Bells for sure, and each bell rung calls its tough ones twice (act2/bells.gd _tough), on the city's
+  level holds more of its encounter: CHAINS twice the chained rares (main.gd); SIEGE twice the strongholds, four of the cult's gates
+  at the map's edge for two, and on floors 6 to 10 up to two beside the floor's own (act1/quest610.gd `rooms`; waits on the
+  gates' own yes); TOLL the Muffled Bells for sure, and each bell rung calls its tough ones twice (act2/bells.gd _tough), on the city's
   floors too; CROWN the royals' packs for sure and twice as many, and on the High City's floors a quarter more of its packs
   (main.gd royal_packs). Stones (iron chain links, a brick gatehouse, a bronze bell, a purple crown) with Greed's in
   melds52.json `extra` (`door`), docs/mockups/door_words/; listed, with the Lexicon's page and the rune bag's group DOOR, only while door_words.gd
@@ -1532,7 +1540,7 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   the story floors and the town, the city, the High City and endless, and the heroes, words, melds, gear and screens, and reported;
   what they found was fixed. ENDLESS: the Bells' copies carry no royal's crest nor rune (bells_any.gd _plain); a rung bell does not
   call a chained rare off his stakes (bells.gd ring); no bell stands on a monster, no chained rare on a bell; the Bells try room
-  after room, and with Toll a looser plan too; Siege drops and is listed only while the altar rooms are on (door_words.gd live);
+  after room, and with Toll a looser plan too; Siege drops and is listed only while the cult's gates are on (door_words.gd live);
   Chains on a crowded floor brings more, nearer each other (chained_rare.gd APART_CHAINS). HEROES AND WORDS: Frostbite redone on
   monsters freezes him once a moment however many carry it (foe_meldsredo.gd); Cauterize redone on a monster sears once, its own
   way (foe_words.gd); the evasive move's long name kept right of the slow attack's key, wrapped (hud.gd); a monster looked up by

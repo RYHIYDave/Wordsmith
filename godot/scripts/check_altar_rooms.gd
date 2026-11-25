@@ -80,6 +80,12 @@ func run(main, hero, dir: String) -> void:
 		await _city()
 		_done(was)
 		return
+	if M._arg("cases") == "tour":
+		M.endless = 6
+		M.in_endless = true
+		await _tour()
+		_done(was)
+		return
 	# --- THE STORY'S FLOOR 3: none
 	M.in_endless = false
 	await _go("floor3")
@@ -217,3 +223,25 @@ func _city() -> void:
 		_quiet(q13[0])
 		await _wait(0.5)
 		await M._snap(dir + "/g07_floor13_gate.png")
+
+
+## (pictures for his yes: a gate on more of the floors, each as he comes up to it, in either way its wall runs)
+func _tour() -> void:
+	var dir: String = M._arg("shots")
+	for e in [[3, 3, 1], [17, 4, 0], [19, 2, 0], [1, 6, 0], [15, 3, 0]]:
+		M.endless_floor = int(e[0])
+		M.altar_seed = int(e[1])
+		await _go("floor%d" % int(e[0]))
+		var R = _gates()
+		var qs: Array = R.data["holds"] if R != null else []
+		_line(not qs.is_empty(), "an endless level of floor %d: %d gates (%s)" % [int(e[0]), qs.size(), ", ".join(PackedStringArray(qs.map(func(q): return "(%d, %d)%s" % [int(q["gx"]), int(q["gy"]), " along y" if q["turned"] else ""])))])
+		if qs.size() <= int(e[2]):
+			continue
+		var q: Dictionary = qs[int(e[2])]
+		_quiet(q)
+		h.world = M._spot_near(R._gw(bool(q["turned"]), int(q["gx"]), int(q["gy"]), 1.2, 2.2), 0.8, h.world)
+		h.face = Vector2(-0.7071, -0.7071)
+		await _wait(5.0)
+		_quiet(q)
+		await _wait(0.5)
+		await M._snap(dir + "/t_floor%d_gate%d.png" % [int(e[0]), int(e[2])])

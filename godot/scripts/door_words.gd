@@ -6,8 +6,8 @@
 ## sharing one rune's share of what drops there, loot.gd drops_at), and burned into the door, no monster of that level carries it
 ## and it drops no more often for it (loot.gd DOOR_WORDS), and that level holds more of its encounter:
 ##   CHAINS, the chained rares: twice as many (chained_rare.gd ENDLESS_N, 2 to 3, made 4 to 6).
-##   SIEGE, the strongholds: twice as many: four of the cult's altar rooms where there would be two; on floors 6 to 10, whose own
-##     strongholds stay as they are, two altar rooms beside them (act1/altar_rooms.gd, act1/quest610.gd).
+##   SIEGE, the strongholds: twice as many: four of the cult's gates where there would be two; on floors 6 to 10, whose own
+##     strongholds stay as they are, up to two gates beside them (act1/altar_rooms.gd, act1/quest610.gd).
 ##   TOLL, the Muffled Bells: on the level for sure (not one level in three, act2/bells_any.gd), and every bell rung calls its tough
 ##     ones twice over (act2/bells.gd _tough); on the city's floors, where the Bells ring for sure already, the tough ones twice.
 ##   CROWN, the royals' packs: on the level for sure (not one level in two) and twice as many of its packs touched by a royal (half,
@@ -22,7 +22,7 @@ static var ON := true
 const MORE := 2
 ## (Crown on the High City's floors, their own royals kept: the share of the packs left that a royal touches)
 const CROWN_OWN := 0.25
-## (Siege on floors 6 to 10, their own strongholds kept: the altar rooms beside them)
+## (Siege on floors 6 to 10, their own strongholds kept: the cult's gates beside them, as many as the edges hold)
 const SIEGE_OWN := 2
 
 
@@ -30,7 +30,7 @@ static func is_door(w) -> bool:
 	return w != null and IDS.has(str(w))
 
 
-## The door words that can do anything now: Siege only while the altar rooms are laid (act1/altar_rooms.gd ON, pictures first):
+## The door words that can do anything now: Siege only while the cult's gates are laid (act1/altar_rooms.gd ON, pictures first):
 ## until then it neither drops nor is listed among the words to find, so none is found that does nothing.
 static func live() -> Array:
 	var rooms_on: bool = bool(load("res://scripts/act1/altar_rooms.gd").ON)
