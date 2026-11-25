@@ -1608,6 +1608,10 @@ func _afflicted(dt: float) -> bool:
 			mgr.hero.m52.status_end(self, "burn")
 	if chill_t > 0.0:
 		chill_t -= dt
+		if chill_t <= 0.0:
+			# (Whiteout's deepening goes with the chill: melds52_rules.gd)
+			m52.erase("whiteout_add")
+			m52.erase("icebound_k")
 	if freeze_immune > 0.0:
 		freeze_immune -= dt
 	if mark_t > 0.0:
@@ -1624,6 +1628,8 @@ func _afflicted(dt: float) -> bool:
 	if frozen_t > 0.0:
 		frozen_t -= dt
 		if frozen_t <= 0.0:
+			# (Frostlock lengthens each freeze once: its mark goes with the ice; kept, only its first was; the bug hunt's fourth round)
+			m52.erase("locked")
 			# (it thaws: the ice breaks off it)
 			_tell({"t": "shatter", "x": world.x, "y": world.y})
 			mgr.sfx.play("shatter", linear_to_db(0.5))
@@ -1740,6 +1746,8 @@ func burn_base() -> float:
 ## (its burn out: the melds' heat goes with it)
 func _burn_out() -> void:
 	burn_k = 1.0
+	# (Slowburn lengthens each burn once: kept, it lengthened its first alone; the bug hunt's fourth round, 25 Nov 2026)
+	m52.erase("slowburn")
 	for key in m52.keys():
 		if str(key).begins_with("hot_"):
 			m52.erase(key)

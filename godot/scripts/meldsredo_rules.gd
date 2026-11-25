@@ -108,8 +108,10 @@ func _poison(o, dps: float, secs: float) -> void:
 func _chill(o, secs: float, k: float) -> void:
 	if not ok(o):
 		return
+	# (a chill worn off is no chill: its old depth (Whiteout's 0.9) came back with a light one; the bug hunt's fourth round)
+	var was: float = o.chill if o.chill_t > 0.0 else 0.0
 	o.chill_t = maxf(o.chill_t, secs)
-	o.chill = maxf(o.chill, k)
+	o.chill = maxf(was, k)
 
 
 ## A drop of its life drawn into him (Lamprey, Lancet): `amount` off it, as much onto him.

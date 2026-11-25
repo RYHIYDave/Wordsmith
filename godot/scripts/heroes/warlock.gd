@@ -75,6 +75,9 @@ static func demon2() -> bool:
 	return DEMON2 or OS.get_cmdline_user_args().has("--demon2=1")
 
 
+## (the bug hunt's fourth round: no R: CHANGE or TAP HIM over his full pact in a town, where he does not change; off till his yes)
+static var HINT_TOWN_OFF := false
+
 const W := {
 	"hell": {"share": 0.5, "secs": 4.0},
 	"curse": {"share": 0.4, "secs": 6.0},
@@ -720,6 +723,10 @@ func draw_over(c: CanvasItem, top: float, shown: float) -> void:
 			var up := 1 + (i + floori(t * 9.0)) % 3
 			c.draw_rect(Rect2(fx0, y - 2.0 - up * 2.0, 2.0, up * 2.0), Color("#e8ffff") if up > 2 else Color("#22d0e0"))
 		# (over the life bar, clear of his head)
+		# (main.ts pactHint: on a pad RB, on a touch screen TAP HIM, else R; with HINT_TOWN_OFF none in a town, where he does not
+		# change: the bug hunt's fourth round, off till his yes)
+		if HINT_TOWN_OFF and h.in_town:
+			return
 		# (main.ts pactHint: on a pad RB, on a touch screen TAP HIM, else R)
 		var mm = h.monsters.main if h.monsters != null and is_instance_valid(h.monsters) else null
 		var hint := "R: CHANGE"

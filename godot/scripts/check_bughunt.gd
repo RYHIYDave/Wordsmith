@@ -11,7 +11,8 @@
 ## a cursed one's burn and poison passed on at its death neither heated again nor dosed past their most; the Unfinished's pictures
 ## from behind; the Curse's echo kept to his sight; the demon the man again in town and as he falls. The fourth round's: a
 ## talent undone kept on reload; the Unsigned Pact lets go with life regen; the Burning Verse's mark goes with its burns; a tap
-## on him on a phone changes him; no change in town, nor the Bound Demon there.
+## on him on a phone changes him; no change in town, nor the Bound Demon there. The frost Mage's: a monster's Flash Freeze or
+## Icebreaker not again for four seconds; Whiteout, Frostlock, Slowburn once a chill, freeze, burn; a worn-off chill not back deep.
 extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
@@ -557,6 +558,91 @@ func _round4(dir: String) -> void:
 		M.loot.derive()
 		await _wait(0.3)
 	var tg := 0.0
+	# THE FOURTH ROUND'S, THE FROST MAGE'S: a monster's Flash Freeze or Icebreaker freezes him not again for four seconds, however
+	# many strike; Whiteout deepens a chill by his frenzy once, not on each hit; Frostlock and Slowburn lengthen every freeze and
+	# burn, not the first alone; a chill worn off comes back no deeper than it is made
+	var hold4: Array = []
+	var carriers: Array = _near(4)
+	for word in ["flashfreeze", "icebreaker"]:
+		var kw := func(w: String) -> float: return 1.0 if w == word else 0.0
+		h.foe_hi.erase("freeze_at")
+		h.held = 0.0
+		var t4 := 0.0
+		var ht4 := 0.0
+		var next := 0.0
+		var nb := 0
+		while t4 < 8.0:
+			await M.get_tree().process_frame
+			var dt: float = M.get_process_delta_time()
+			t4 += dt
+			h.chill_t = 3.0
+			h.chill_k = 0.3
+			if t4 >= next and not carriers.is_empty():
+				next += 0.125
+				M._foe.after_blow(kw, carriers[nb % carriers.size()], 10.0, [])
+				nb += 1
+			if h.held > 0.0:
+				ht4 += dt
+		hold4.append(ht4)
+		h.held = 0.0
+		h.frozen_t = 0.0
+		h.chill_t = 0.0
+	_line(carriers.size() == 4 and hold4[0] < 2.5 and hold4[1] < 2.5, "four monsters striking eight times a second with Flash Freeze, then Icebreaker, him chilled: held %.1f s and %.1f s of 8 (was 6.4 and 6.9)" % hold4)
+	var fm = carriers[0] if not carriers.is_empty() else null
+	var wo: Array = []
+	var fl: Array = []
+	var sb: Array = []
+	var stale := -1.0
+	if fm != null:
+		fm.waits = false
+		if fm.state == "sleep":
+			fm.wake_up()
+		fm.stun_for(60.0)
+		h.loadout.front[0] = ["whiteout", null]
+		h.loadout._r = [null, null, null]
+		h.frenzy = 3
+		h.frenzy_t = 30.0
+		fm.chill_t = 2.5
+		fm.chill = 0.3
+		fm.m52.erase("whiteout_add")
+		for n8 in 8:
+			h.m52.struck(fm, 0, 10.0, false, fm.world, true, false, true, false, false)
+			wo.append(snappedf(fm.chill, 0.01))
+		h.loadout.front[0] = ["frostlock", null]
+		h.loadout._r = [null, null, null]
+		for n3 in 3:
+			fm.still_t = 30.0
+			fm.frozen_t = 0.0
+			fm.freeze_immune = 0.0
+			fm.chill_t = 2.5
+			fm.chill = 0.3
+			h.m52.struck(fm, 0, 10.0, false, fm.world, true, fm.burn_t > 0.0, true, false, false)
+			fl.append(snappedf(fm.frozen_t, 0.01))
+			var tw := 0.0
+			while fm.frozen_t > 0.0 and tw < 4.0:
+				await M.get_tree().process_frame
+				tw += M.get_process_delta_time()
+		h.loadout.front[0] = ["slowburn", null]
+		h.loadout._r = [null, null, null]
+		for n3 in 3:
+			fm.still_t = 30.0
+			fm.burn_t = 0.0
+			fm.set_alight(1.0, 3.0)
+			h.m52.struck(fm, 0, 10.0, false, fm.world, true, fm.burn_t > 0.0, true, false, false)
+			sb.append(snappedf(fm.burn_t, 0.01))
+			fm.burn_t = 0.02
+			await _wait(0.2)
+		h.loadout.front[0] = [null, null]
+		h.loadout._r = [null, null, null]
+		h.frenzy = 0
+		fm.chill = 0.9
+		fm.chill_t = 0.0
+		h.m52.rd._chill(fm, 2.0, 0.3)
+		stale = fm.chill
+	var wo_ok: bool = not wo.is_empty() and float(wo.max()) <= 0.3 + 0.06 * 3 + 0.011
+	var fl_ok: bool = fl.size() == 3 and float(fl[1]) >= float(fl[0]) - 0.02 and float(fl[2]) >= float(fl[0]) - 0.02 and float(fl[0]) > 0.6
+	var sb_ok: bool = sb.size() == 3 and float(sb[1]) >= float(sb[0]) - 0.05 and float(sb[2]) >= float(sb[0]) - 0.05 and float(sb[0]) > 3.0
+	_line(wo_ok and fl_ok and sb_ok and absf(stale - 0.3) < 0.001, "Whiteout, frenzy 3, eight hits on one chilled 0.30: %s (was to 0.90); Frostlock's freezes %s, Slowburn's burns %s (was the first alone longer); a chill of 0.9 worn off, chilled 0.3 again: %.2f" % [str(wo), str(fl), str(sb), stale])
 	# THE FOURTH ROUND'S, THE WARLOCK'S: undoing a talent kept on reload; the Unsigned Pact lets him go with life regen; the Burning
 	# Verse's mark goes with its burns; a tap on him on a touch screen changes him; no change in town, the Bound Demon left behind
 	var Tal := preload("res://scripts/talents.gd")
@@ -684,3 +770,26 @@ func _round4(dir: String) -> void:
 	h.kit.turn_man()
 	h.talents = tal0
 	h.talents_changed()
+	# (the quest's rune over the armourer, as now and clear of his name: act1/quest610.gd MARK_CLEAR, pictures first)
+	if dir != "" and M.town != null:
+		var Q6 := preload("res://scripts/act1/quest610.gd")
+		h.kit.pact = 30.0
+		var fur_was: String = M.loot.furnace
+		M.loot.furnace = "out"
+		for st in M.town.data["stations"]:
+			if st["kind"] == "armourer":
+				h.world = Vector2(float(st["x"]) + 1.6, float(st["y"]) - 0.6)
+		var touch_was: bool = M._touch.on
+		M._touch.on = false
+		var mc_was: bool = Q6.MARK_CLEAR
+		var WK := preload("res://scripts/heroes/warlock.gd")
+		var ht_was: bool = WK.HINT_TOWN_OFF
+		for on in [false, true]:
+			Q6.MARK_CLEAR = on
+			WK.HINT_TOWN_OFF = on
+			await _wait(1.2)
+			await M._snap(dir + ("/mark_clear.png" if on else "/mark_now.png"))
+		Q6.MARK_CLEAR = mc_was
+		WK.HINT_TOWN_OFF = ht_was
+		M._touch.on = touch_was
+		M.loot.furnace = fur_was

@@ -86,7 +86,10 @@ static func after_blow(F, k: Callable, by, dmg: float) -> void:
 	if s.call("mire") and h.poison_t > 0.0 and (h.held > 0.0 or h._knock_t > 0.0):
 		h.worse("poison", "mire", float(_t("mire")["foeFaster"]))
 		tell.call("mire")
-	if s.call("icebreaker") and h.chill_t > 0.0:
+	# (as Flash Freeze's: a monster's meld freezes him not again for four seconds, however many carry them; one Icebreaker held him
+	# 6.9 s of 8, the bug hunt's fourth round)
+	if s.call("icebreaker") and h.chill_t > 0.0 and F.clock - float(h.foe_hi.get("freeze_at", -99.0)) >= float(M52.tune("flashfreeze")["again"]):
+		h.foe_hi["freeze_at"] = F.clock
 		h.held = maxf(h.held, float(_t("icebreaker")["foeFreeze"]))
 		h.frozen_t = maxf(h.frozen_t, float(_t("icebreaker")["foeFreeze"]))
 		# (with the switch on, Frost's own ice bursts up round him, as for any other freeze: fx_looks.gd same)

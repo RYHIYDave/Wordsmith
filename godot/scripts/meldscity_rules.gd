@@ -262,7 +262,9 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_frozen
 					m.burn_t *= float(_t("slowburn")["longer"])
 					_tell({"id": "slowburn", "what": "slow", "x": at.x, "y": at.y, "m": m})
 			"icebound":
-				if m.bind_t > 0.0 and m.chill_t > 0.0:
+				# (twice as deep once a chill, not again on each hit: melds52_rules.gd whiteout, the bug hunt's fourth round)
+				if m.bind_t > 0.0 and m.chill_t > 0.0 and not bool(m.m52.get("icebound_k", false)):
+					m.m52["icebound_k"] = true
 					m.chill = minf(0.85, m.chill * float(_t("icebound")["chill"]))
 					if not quiet:
 						_tell({"id": "icebound", "what": "climb", "x": at.x, "y": at.y, "m": m})

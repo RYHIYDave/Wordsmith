@@ -37,6 +37,8 @@ const AltarRooms := preload("res://scripts/act1/altar_rooms.gd")
 const DoorWords := preload("res://scripts/door_words.gd")
 const PF := preload("res://scripts/pixel_font.gd")
 
+## (the bug hunt's fourth round: a quest's rune over a townsman's head, but on his name, put over the name; off till his yes)
+static var MARK_CLEAR := false
 const MSG_QUEST := Color("#7af8f0")
 const PIECE := Color("#e8dcc0")
 const PULL := 3.2
@@ -692,7 +694,12 @@ class _Marks extends Node2D:
 				for f in main.town._folk:
 					if f["kind"] == s["kind"] and f["node"].texture != null:
 						head = f["node"].position / 2.0 + Vector2(0, f["node"].offset.y / 2.0)
-				at.append(Vector2(head.x, head.y - 4.0) if head != null and absf(head.y - name.y) > 14.0 else Vector2(name.x, name.y - 4.0))
+				var foot := Vector2(head.x, head.y - 4.0) if head != null and absf(head.y - name.y) > 14.0 else Vector2(name.x, name.y - 4.0)
+				# (MARK_CLEAR, off till his yes: over his head but on his name, the rune (17 high, bobbing 2) is put over the name's
+				# slip instead (town.gd: name.y - 1 to + 6); it hid the ARMOURER's middle, the bug hunt's fourth round, 25 Nov 2026)
+				if q.MARK_CLEAR and foot.y + 2.5 > name.y - 1.0 and foot.y - 18.5 < name.y + 6.0:
+					foot = Vector2(name.x, name.y - 4.0)
+				at.append(foot)
 		elif main.map != null and main.map.waypoint != null and q.turn_in_for() != "":
 			var w := Vector2(float(main.map.waypoint["x"]), float(main.map.waypoint["y"]))
 			if main.look != null and main.look.data.has("waypoint"):

@@ -410,8 +410,14 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 					m.dose(dose, float(Words.data()["poison"]["time"]) * float(r["last"]), r["element"])
 				_tell({"id": "fever", "what": "dose", "n": h.frenzy, "x": at.x, "y": at.y, "m": m})
 		"whiteout":
+			# (the faster he is, the harder it slows: deeper by his frenzy once a chill, up to it, not again on each hit; each hit
+			# deepened it again, to 90% on a boss, the bug hunt's fourth round, 25 Nov 2026)
 			if m.chill_t > 0.0:
-				m.chill = minf(0.9, m.chill + float(_tune("whiteout")["slowEach"]) * h.frenzy)
+				var add: float = float(_tune("whiteout")["slowEach"]) * h.frenzy
+				var was: float = float(m.m52.get("whiteout_add", 0.0))
+				if add > was:
+					m.chill = minf(0.9, m.chill + add - was)
+					m.m52["whiteout_add"] = add
 			if not quiet:
 				_tell({"id": "whiteout", "what": "snow", "n": h.frenzy, "x": at.x, "y": at.y, "m": m})
 		"permafrost":

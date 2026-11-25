@@ -543,7 +543,8 @@ func _bite(z: Dictionary) -> void:
 				# (WORDMELDING: Scald behind's steam slows as ice does)
 				if z["kind"] == "ice" or z["kind"] == "steam":
 					m.chill = maxf(m.chill if m.chill_t > 0.0 else 0.0, z["slow"])
-					m.chill_t = 0.7
+					# (as long as the ice's, or a longer one it has: Permafrost's five seconds ended 0.7 s off the ice)
+					m.chill_t = maxf(m.chill_t, 0.7)
 				m.damage(_side(m, maxf(1.0, roundf(z["dmg"] * 0.5)), int(z.get("skill", -1))), z["element"], false, false, [], false, true, int(z.get("skill", -1)))
 
 

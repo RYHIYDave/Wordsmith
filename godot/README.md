@@ -1595,6 +1595,15 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   change in a town, the camp or the Rim, and the Bound Demon is gone with the place he leaves for home or falls in (heroes/warlock.gd).
   The Unsigned Pact lets him go when what it takes would bring him under its floor (kept at it, his life regen lifted him just over
   it each frame, and it fed for ever). The Burning Verse's mark goes with its burns (monster.gd: a later uncursed burn never went out).
+  The frost Mage's: a monster's Flash Freeze or Icebreaker freezes him not again for four seconds however many strike (Flash
+  Freeze's own `again`; foe_melds52.gd, foe_melds46.gd: four held him 6.4 s of 8, now about 1.3); Whiteout deepens a chill by his
+  frenzy once, not on each hit (it took bosses to 90% slow), Icebound doubles one once; Frostlock and Slowburn lengthen every
+  freeze and burn, not the first alone (their marks go with the ice and the fire: monster.gd); a chill worn off is no chill (its
+  old depth came back with a light one: meldsredo_rules.gd _chill); her ice ground keeps a longer chill (wakes.gd). Two looks
+  behind switches, off till his yes (docs/mockups/bughunt_fixes/quest_mark_now_and_clear.png): the quest's rune over a townsman's
+  head but on his name put over the name (act1/quest610.gd MARK_CLEAR: it hid the ARMOURER's middle, as the browser game does
+  too); no R: CHANGE or TAP HIM over the Warlock's full pact in a town (heroes/warlock.gd HINT_TOWN_OFF). `--only=bughunt`
+  (WS_BH_FROM=4 for the round's alone) 7 of 7.
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/

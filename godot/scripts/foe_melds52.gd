@@ -89,7 +89,10 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 		h.m52._tell({"id": "viper", "what": "foe", "x": h.world.x, "y": h.world.y, "foe": true})
 	if s.call("viper") > 0.0 and h.poison_t > 0.0:
 		h.worse("poison", "viper", 1.0 + float(_t("viper")["foeDoses"]) * 0.5)
-	if s.call("flashfreeze") > 0.0 and h.chill_t > 0.0:
+	# (not again for its `again`, his freezes by monsters' melds kept apart however many carry them: each blow froze him chilled,
+	# their frost blows kept him chilled, and four held him 6.4 s of 8; the bug hunt's fourth round, 25 Nov 2026)
+	if s.call("flashfreeze") > 0.0 and h.chill_t > 0.0 and F.clock - float(h.foe_hi.get("freeze_at", -99.0)) >= float(_t("flashfreeze")["again"]):
+		h.foe_hi["freeze_at"] = F.clock
 		h.held = maxf(h.held, float(_t("flashfreeze")["foeFreeze"]))
 		h.frozen_t = maxf(h.frozen_t, float(_t("flashfreeze")["foeFreeze"]))
 		h.m52._tell({"id": "flashfreeze", "what": "foe", "x": h.world.x, "y": h.world.y, "foe": true})
