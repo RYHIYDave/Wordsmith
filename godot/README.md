@@ -1655,6 +1655,15 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   minutes to kill (10% more a level, compounded, against gear that stops at floor 20's: as the browser game); Siege's extra rooms
   fewer with the other door words. Round 6's checks, `--only=bughunt` WS_BH_FROM=6, 5 of 5; talents 86 of 86 (its Tremors line
   failed only on a busy machine).
+  The random builds': a crawler (floor 7) or a Drowned (floor 10) stunned, staggered or drawn off on its way up is up after (act1.gd
+  broken, an act broken off: its end's putting right, for the crawler, the Drowned, the spawn, the patient, the carter, the dredger and
+  the inkling's rise; it stayed hidden for good and could not be struck); Piercing's line, and its 25 melds' twists, from a shot's
+  first hit as from a blow (heroes/kit.gd _shot_hit, last_words.gd pierce_on: what the line struck the shot passes by); Twin's blows
+  read their melds on every hero's shots, the Tinkerer's vials and the axe's Cleave (melds52_rules.gd blow: Onslaught's full second,
+  Flurry's, Twin II's, the second-blow twists of Staccato, Ripple, Fangs, Hydra, Backwash, Refrain, Rewind, Pitchfork, Lamprey, Double
+  Tap, Tempo), each use from its first blow (it was left at the last class's); Staccato's no pause on the Cleave; Haymaker's shorter
+  wind-up and Flurry's quicker repeat on every hero's moves (heroes/kit.gd, hero.gd _echo_of). Left: Twin II behind's second repeat on
+  the Strike alone; on the Brawler's punch Aftershock, Backwash and Hydra told nothing (not traced). Round 6's checks 7 of 7.
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/
