@@ -938,14 +938,14 @@ func step(dt: float) -> void:
 			mm.erase("stun_long")
 			mm.erase("burden_long")
 			mm.erase("gravity")
-		# (Strangler: the held poisoned twice as fast)
+		# (Strangler: the held poisoned twice as fast, once a poisoning: let go and held again, the same poison doubled again and again, to
+		# over a hundred thousand a second in half a minute: the bug hunt's second round, 25 Nov 2026. Its poison out lets it again:
+		# melds52_rules.gd status_end)
 		if mm.has("strangler") and m.bind_t > 0.0 and m.poison_t > 0.0 and not mm.get("strangled", false):
 			mm["strangled"] = true
 			m.poison_dps *= float(_t("strangler")["faster"])
 			m.poison_t /= float(_t("strangler")["faster"])
 			_tell({"id": "strangler", "what": "vines", "x": m.world.x, "y": m.world.y, "m": m})
-		if m.bind_t <= 0.0:
-			mm.erase("strangled")
 	# (Tether: arcs back and forth between the held near each other)
 	_tether_t -= dt
 	if _tether_t <= 0.0:

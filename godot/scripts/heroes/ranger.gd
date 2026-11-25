@@ -286,6 +286,10 @@ func _step_traps(dt: float) -> void:
 			for m in h.monsters.list:
 				if not is_instance_valid(m) or m.dead or m.world.distance_to(sat) > rad + m.r:
 					continue
+				# (a boss is not held, as no stun holds one (monster.gd stun_for): on it the Snare held the Headsman, the Fleshmancer and the
+				# Cantor fourteen seconds of fifteen: the bug hunt's second round, 25 Nov 2026; its burst still strikes it)
+				if m.boss:
+					continue
 				m.stun_t = maxf(m.stun_t, float(S["hold"]))
 				h._tell({"t": "bind", "id": m.id, "m": m, "secs": S["hold"]})
 			var sk: int = t["skill"]

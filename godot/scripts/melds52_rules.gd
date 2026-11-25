@@ -1071,6 +1071,7 @@ func status_end(m, what: String) -> void:
 	elif what == "poison":
 		m.m52.erase("needle_hot")
 		m.m52.erase("miasma_hot")
+		m.m52.erase("strangled")
 		if m.m52.has("bloat"):
 			var B: Dictionary = m.m52["bloat"]
 			m.m52.erase("bloat")

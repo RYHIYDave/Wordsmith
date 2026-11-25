@@ -56,6 +56,9 @@ var _stacked := false
 ## (hud.ts TOP_GLOBE_Y: with fingers the life globe is at the top left, this far down; NARROW_TOP: on a narrow screen, a phone held
 ## upright, where the prompt and the news of a word begin, under the map and the pause button)
 const TOP_GLOBE_Y := 29.0
+## THE BANNER CLEAR OF THE PLACE'S NAME (the bug hunt's second round, 25 Nov 2026: on floor 10 the quest's banner hid the last of
+## "The Sunken Fen, Level 10"): where a long name runs under it, the banner drops below the name's line. Pictures first: off.
+static var BANNER_CLEAR := false
 const NARROW_TOP := 74.0
 ## (where the prompt or the news of a word ended this frame, 0 for none: on a narrow screen the messages go under it)
 var _notice_end := 0.0
@@ -593,11 +596,8 @@ func _draw() -> void:
 	# inventory below, larger: hud.ts)
 	var btn_y := TOP_GLOBE_Y + 19.0 if _touching() else 24.0
 	var btn_h := 18.0 if _touching() else 13.0
-	var place: String = _data["places"].get(main.place if main != null else "", main.place_title() if main != null else "")
-	# (THE PRACTICE ROOM: its name, in the friend's cyan: hud.ts)
+	var place: String = _place_name()
 	var practising: bool = main != null and main.get("practice") == true
-	if practising:
-		place = "Practice room"
 	_text(place, 4, 3, T["accent"] if practising else T["text"], {"shadow": ink})
 	var stat_x := life_x + 19.0 if _touching() else 4.0
 	var gold_y := TOP_GLOBE_Y - 10.0 if _touching() else 14.0
@@ -1194,6 +1194,8 @@ func _banner(b: Dictionary, W: float) -> void:
 	# (it drops into place when the prompt changes; a panel like any other, the game showing through it a little; on a narrow
 	# screen below the corner buttons, the pause button included)
 	var by := (3.0 if wide else NARROW_TOP) - roundf((1.0 - minf(1.0, age / 0.16)) * 6.0)
+	if BANNER_CLEAR and wide and bx < 4.0 + _width(_place_name()) + 4.0:
+		by += 10.0
 	_box(bx, by, bw, bh, Color(T["bg"], 0.9), Color(cap_color if age < 0.55 else T["edgeHi"], 0.9))
 	_text(cap, cx, by + 4, cap_color, {"align": "center", "font": "small"})
 	var y := by + 12
@@ -1251,6 +1253,8 @@ func _banner_lines(b: Dictionary, W: float) -> void:
 	var bw := cw + 16
 	var bx := floorf((W - bw) / 2.0)
 	var by := (3.0 if wide else NARROW_TOP) - roundf((1.0 - minf(1.0, age / 0.16)) * 6.0)
+	if BANNER_CLEAR and wide and bx < 4.0 + _width(_place_name()) + 4.0:
+		by += 10.0
 	_notice_end = by + bh
 	_box(bx, by, bw, bh, Color(T["bg"], 0.9), Color(cap_color if age < 0.55 else T["edgeHi"], 0.9))
 	_text(cap, cx, by + 4, cap_color, {"align": "center", "font": "small"})
@@ -1439,3 +1443,10 @@ func _skills() -> Array:
 	if hero != null and of.has(hero.cls):
 		return of[hero.cls]
 	return _data["skills"]
+
+
+## The place's name at the top left, as it is shown (THE PRACTICE ROOM: its own, in the friend's cyan: hud.ts).
+func _place_name() -> String:
+	if main != null and main.get("practice") == true:
+		return "Practice room"
+	return _data["places"].get(main.place if main != null else "", main.place_title() if main != null else "")

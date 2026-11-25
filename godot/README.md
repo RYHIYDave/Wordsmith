@@ -1562,7 +1562,10 @@ with themselves to level 2”. Each step had his word: the effects (Twin's Melds
   looked up by its own number before the engine's (fx.gd: some 125 engine errors a fight); the Mage's aura's fill not asked over
   a ledge (heroes/mage_look.gd); a masked dancer stepped only where its whole body fits (act3/dancer.gd). Asked and answered: the
   old monster-side rules of the 60 redone melds still run beside the new, as their design says (“Each keeps what it did on a
-  monster ... and gains a moment”); only Cauterize did the same twice. `--only=bughunt` 9 of 9.
+  monster ... and gains a moment”); only Cauterize did the same twice. The Ranger's: Strangler in front doubles a held one's poison
+  once a poisoning, not again each time it is held anew (meldscity_rules.gd: 117,829 a second in half a minute); the Snare holds no
+  boss, as no stun does (heroes/ranger.gd: it held the Headsman fourteen seconds of fifteen); the quest's banner over a long place
+  name (floor 10's) drops below its line (hud.gd BANNER_CLEAR, off, pictures first). `--only=bughunt` 11 of 11.
 - THE REAPING CREATURES (his words, 24 Nov 2026: “Like reaping and fire makes little imps that throw fireballs instead of the
   shades.  What would the others be?”; offered the five, “Yes and work on reaping”): five melds of Reaping with the damage runes,
   Cinderbrood (Flame), Wintergrave (Frost), Stormwake (Lightning), Bogborn (Poison) and Charnel (Power) (tools/meldsreap/

@@ -5,7 +5,8 @@
 ## once, not again on each crit (it grew to millions); a monster's meld makes his burn or poison worse once a burn, not each blow;
 ## Twin's two waves aimed so the nearer crosses the spot she aims at (heroes/mage.gd TWIN_AIM). The second round's: a monster's meld
 ## deepens his curse, lengthens his root or shock once while it lasts (Omen, Manacle, Stormglass); Miasma worsens a poison once;
-## Brand's heat on a burn not passed on by Searing nor lit again by Rekindle; no royal's crest on a kind's called-up, split or risen.
+## Brand's heat on a burn not passed on by Searing nor lit again by Rekindle; no royal's crest on a kind's called-up, split or risen;
+## Strangler doubles a poison once however often it is held; floor 10's name and the quest banner pictured (hud.gd BANNER_CLEAR).
 extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
@@ -184,6 +185,24 @@ func run(main, hero, dir: String) -> void:
 	h.loadout.front[0] = [null, null]
 	h.loadout._r = [null, null, null]
 	_line(q1 <= q0 * 1.81 and q1 > 0.0, "Miasma: ten hits on a poisoned one beside two more, its poison %d a second to %d (once, %d at most)" % [int(q0), int(q1), int(q0 * 1.8)])
+	# STRANGLER IN FRONT (the Ranger's round): one poisoned, held, let go and held again three times; its poison twice once, not again
+	var sm = _near(1)[0]
+	sm.max_life = 1.0e9
+	sm.life = 1.0e9
+	h.loadout.front[0] = ["strangler", null]
+	h.loadout._r = [null, null, null]
+	h.m52.struck(sm, 0, 10.0, false, sm.world, true, false, false, false, false)
+	sm.dose(100.0, 60.0)
+	var g0: float = sm.poison_dps
+	for k in 3:
+		sm.bind_t = 1.0
+		await _wait(0.3)
+		sm.bind_t = 0.0
+		await _wait(0.3)
+	var g1: float = sm.poison_dps
+	h.loadout.front[0] = [null, null]
+	h.loadout._r = [null, null, null]
+	_line(sm.m52.has("strangler") and g1 > g0 * 1.5 and g1 <= g0 * 2.01 + 1.0, "Strangler: a poison of %d a second on one held and let go three times: %d (twice, once; as it was, %d)" % [int(g0), int(g1), int(g0 * 8.0)])
 	# THE EVASIVE MOVE'S LONG NAME: the longest melds on it in front and behind; pictured
 	M.loot.level = 20
 	h.loadout.front[2] = ["pressurepoint", "flashfreeze"]
@@ -281,4 +300,24 @@ func run(main, hero, dir: String) -> void:
 		if t.has("royal") or not (t.get("carries", []) as Array).is_empty():
 			crowned.append(kind)
 	_line(crowned.is_empty() and touched > 0 and M._monsters._plain.size() > 0, "floor 16 (%d of its monsters a royal's): the kinds as called up, split or risen, a royal's crest or rune on none of %d %s" % [touched, M._monsters._plain.size(), str(crowned)])
+	# THE QUEST'S BANNER OVER FLOOR 10'S NAME (the Ranger's round: "The Sunken Fen, Level 1"): as now, and clear of it (hud.gd
+	# BANNER_CLEAR, pictures first), pictured
+	var Hud := preload("res://scripts/hud.gd")
+	var hud_was: bool = Hud.BANNER_CLEAR
+	await M.go_to("floor10", "start")
+	tw = 0.0
+	while tw < 15.0 and M.place != "floor10":
+		await M.get_tree().process_frame
+		tw += M.get_process_delta_time()
+	# (the floor's own name across the screen as he comes in, gone first; the first lesson, to walk, learnt)
+	M.hero.walked = 99999
+	await _wait(6.0)
+	for on in [false, true]:
+		Hud.BANNER_CLEAR = on
+		M.guide._speak = {"who": "mystic", "t": 99.0, "back": true}
+		M.guide._place = M.place
+		await _wait(1.0)
+		await M._snap(dir + "/bughunt_banner_%s.png" % ("clear" if on else "now"))
+	Hud.BANNER_CLEAR = hud_was
+	_line(FileAccess.file_exists(dir + "/bughunt_banner_now.png") and FileAccess.file_exists(dir + "/bughunt_banner_clear.png"), "floor 10's name and the quest's banner pictured, as now and clear of it")
 	print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
