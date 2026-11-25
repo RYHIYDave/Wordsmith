@@ -5,6 +5,7 @@
 ##   chained  floor 3, the Chained One calls out his hook as the hero whirls (Warrior, Flame and Power in his moves)
 ##   queen    floor 18, the Glass Queen's pier glasses shatter across the hall (any hero)
 ##   wilds    floor 7, a pack of the Wilds and the hero's big move among them (any hero)
+##   king     floor 19, the King charges down his throne room at the hero
 ##   town     the town by night, the hero by the wordsmith's ring
 ##   gear     the gear screen, his words set in his moves
 extends RefCounted
@@ -69,18 +70,38 @@ func run(main, hero, dir: String) -> void:
 			await _go("floor7")
 			var near = _nearest_pack()
 			if near != null:
-				h.world = M._spot_near(near.world, 3.0, h.world)
+				# (the Ranger stands off from the pack, the pack coming at him, his volley falling on it: him clear of them)
+				h.world = M._spot_near(near.world, 6.5, h.world)
 				for o in M._monsters.list:
 					if is_instance_valid(o) and not o.dead and o.world.distance_to(near.world) < 7.0:
 						M._monsters.wake(o)
-			await M._wait(1.2)
+				h.face = (near.world - h.world).normalized()
+			await M._wait(0.5)
 			h.auto_whirl = true
-			await M._wait(0.7)
+			await M._wait(0.6)
 			M._hud.card = {}
 			M._hud.floor_card = {}
 			M.guide._speak = {}
 			await M._wait(0.05)
 			await M._snap("%s/store_wilds.png" % M._arg("shots"))
+			h.auto_whirl = false
+		"king":
+			await _ready_hero(19, ["piercing"], ["lightning"])
+			await _go("floor19")
+			var k = M._d_boss()
+			_alone(k, 0.0)
+			h.world = M._spot_near(k.world + Vector2(2.0, 2.0), 6.0, h.world)
+			await M._wait(1.0)
+			var A: Array = k.h2.acts()
+			k.h2.start_act(k, A, A.map(func(a): return a["id"]).find("gking:charge"), h)
+			h.face = (k.world - h.world).normalized()
+			h.auto_whirl = true
+			await M._wait(0.5)
+			M._hud.card = {}
+			M._hud.floor_card = {}
+			M.guide._speak = {}
+			await M._wait(0.05)
+			await M._snap("%s/store_king.png" % M._arg("shots"))
 			h.auto_whirl = false
 		"town":
 			await _ready_hero(14, ["fire"], ["frost"])
