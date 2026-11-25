@@ -51,6 +51,10 @@ func run(main, hero, dir: String) -> void:
 	h.unhurt = true
 	M.loot.ring_lit = true
 	M.loot.taught = true
+	if OS.get_environment("WS_BH_FROM") == "6":
+		await _round6(dir)
+		print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
+		return
 	if OS.get_environment("WS_BH_FROM") == "5":
 		await _round5(dir)
 		print("BUGHUNT: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
@@ -528,6 +532,7 @@ func run(main, hero, dir: String) -> void:
 	await _round4(dir)
 	await _round4b(dir)
 	await _round5(dir)
+	await _round6(dir)
 	M.set_class("warlock", true)
 	h = M.hero
 	M.loot.level = 30
@@ -1151,3 +1156,71 @@ func _round5(dir: String) -> void:
 	h.loadout.front[0] = [null, null]
 	h.loadout._r = [null, null, null]
 	_line(punch_m, "Mirroring in front of the Brawler's punch: a reflection %s (his blows never had the last words)" % str(punch_m))
+
+
+## THE SIXTH ROUND'S (WS_BH_FROM=6 alone): home by the waypoint leaves the floor behind; the Brawler's kick and jump wait for their
+## levels; the Warlock as the demon told his own new move; his armour reckoned by an endless level's depth; the death screen names
+## the endless level.
+func _round6(dir: String) -> void:
+	await _hero4("warlock", [])
+	await _go4("floor2")
+	h.kit._become("demon")
+	h.burn_t = 3.0
+	h.burn_dps = 10.0
+	h.poison_t = 3.0
+	h.poison_dps = 10.0
+	h.root_t = 2.0
+	var tg := 0.0
+	while M._going and tg < 15.0:
+		await M.get_tree().process_frame
+		tg += M.get_process_delta_time()
+	M.go_warp("town")
+	await _wait(0.5)
+	_line(str(M.place) == "town" and h.burn_t <= 0.0 and h.poison_t <= 0.0 and h.root_t <= 0.0 and h.kit.form == "man", "home by the waypoint burning, poisoned, rooted, the demon: in %s burn %.1f, poison %.1f, root %.1f, %s (they went home with him)" % [str(M.place), h.burn_t, h.poison_t, h.root_t, h.kit.form])
+	# (the Warlock as the demon: his own move in its place, not the demon's)
+	h.kit._become("demon")
+	var own: String = h.loadout.own_id(1)
+	var shown: String = h.loadout.id(1)
+	h.kit.turn_man()
+	_line(own != shown and own == str(Words.data()["classes"]["warlock"]["moves"][1]), "the Warlock as the demon, his second place: his own %s, the demon's %s (told DAMNING as a new move)" % [own, shown])
+	# (the Brawler at level 1: no kick, no jump before their levels)
+	await _hero4("brawler", [])
+	M.loot.level = 1
+	M.loot.derive()
+	h.first_levels = true
+	await _go4("floor2")
+	var B = h.kit
+	B.queue = []
+	B.globes = []
+	B.mv = {}
+	B.charges[2] = 1
+	var u1: int = h.uses[1]
+	var u2: int = h.uses[2]
+	B._press("hold")
+	B._press("swipe", h.world + h.face * 2.0)
+	var none: bool = B.queue.is_empty() and B.globes.is_empty() and h.uses[1] == u1 and h.uses[2] == u2
+	h.first_levels = false
+	M.loot.level = 40
+	M.loot.derive()
+	_line(none, "the Brawler at level 1: a hold and a swipe make nothing, globes %s (his kick and jump worked, hidden)" % str(B.globes))
+	# (his armour at Endless 50: by the level's depth)
+	var was_e: int = M.endless
+	var was_in: bool = M.in_endless
+	M.endless = 50
+	M.in_endless = true
+	var pd: float = h._power_depth()
+	var want: float = float(M.endless_power())
+	h.stats["armor"] = 366.0
+	var cut: float = h.armour_cut()
+	M.endless = was_e
+	M.in_endless = was_in
+	_line(absf(pd - want) < 0.01 and cut < 0.3, "his armour on Endless 50: reckoned at depth %d (the level's, %d), 366 armour cuts %d%% (by floor 2's, 75%%)" % [int(pd), int(want), roundi(cut * 100.0)])
+	# (the death screen, fallen on Endless 44)
+	var fe: int = M.fall_endless
+	var fl: Dictionary = M.fall_lost
+	M.fall_endless = 44
+	M.fall_lost = {}
+	var rows: Array = M.death_info().get("rows", [])
+	M.fall_endless = fe
+	M.fall_lost = fl
+	_line(rows.size() > 1 and str(rows[1]) == "Fell in Endless 44", "the death screen, fallen on Endless 44: %s (was Fell in dungeon 12)" % (str(rows[1]) if rows.size() > 1 else "-"))
