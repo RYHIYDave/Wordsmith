@@ -70,21 +70,22 @@ func run(main, hero, dir: String) -> void:
 			await _go("floor7")
 			var near = _nearest_pack()
 			if near != null:
-				# (the Ranger stands off from the pack, the pack coming at him, his volley falling on it: him clear of them)
+				# (the Ranger stands off from the pack, the pack coming at him, his arrows flying into it: him clear of them; no
+				# Volley, his word, 25 Nov 2026: “I don't like the volley for both rangers”)
 				h.world = M._spot_near(near.world, 6.5, h.world)
 				for o in M._monsters.list:
 					if is_instance_valid(o) and not o.dead and o.world.distance_to(near.world) < 7.0:
 						M._monsters.wake(o)
 				h.face = (near.world - h.world).normalized()
 			await M._wait(0.5)
-			h.auto_whirl = true
-			await M._wait(0.6)
+			for i in 9:
+				h.auto_attack = true
+				await M._wait(0.1)
 			M._hud.card = {}
 			M._hud.floor_card = {}
 			M.guide._speak = {}
 			await M._wait(0.05)
 			await M._snap("%s/store_wilds.png" % M._arg("shots"))
-			h.auto_whirl = false
 		"king":
 			await _ready_hero(19, ["piercing"], ["lightning"])
 			await _go("floor19")
@@ -92,17 +93,21 @@ func run(main, hero, dir: String) -> void:
 			_alone(k, 0.0)
 			h.world = M._spot_near(k.world + Vector2(2.0, 2.0), 6.0, h.world)
 			await M._wait(1.0)
+			# (the Ranger rolls aside, his trap left where he stood; the King charges; the Ranger looses arrows at him)
+			var to_k: Vector2 = (k.world - h.world).normalized()
+			h.auto_lunge = h.world + Vector2(-to_k.y, to_k.x) * 2.5
+			await M._wait(0.4)
 			var A: Array = k.h2.acts()
 			k.h2.start_act(k, A, A.map(func(a): return a["id"]).find("gking:charge"), h)
 			h.face = (k.world - h.world).normalized()
-			h.auto_whirl = true
-			await M._wait(0.5)
+			for i in 4:
+				h.auto_attack = true
+				await M._wait(0.1)
 			M._hud.card = {}
 			M._hud.floor_card = {}
 			M.guide._speak = {}
 			await M._wait(0.05)
 			await M._snap("%s/store_king.png" % M._arg("shots"))
-			h.auto_whirl = false
 		"town":
 			await _ready_hero(14, ["fire"], ["frost"])
 			await M.go_to("town", "start")
