@@ -4,9 +4,14 @@
 # talking bosses call out (assets/voices/voices.json, the game's BOSS_CALL_LINES) spoken by ElevenLabs (eleven_v4, a library voice
 # for each boss, each line played its own way with the model's audio tags; the words said are the line's own), two takes of each;
 # then here: the silence at either end trimmed, the boss's own touch, as loud as the bosses' roars, Vorbis:
-#   tools/godot_boss_voices.sh <dir of the takes as <boss>_<n>_<1|2>.mp3> <sessions.txt>
-#     -> godot/assets/voices/real/<boss>_<n>_<take>.ogg, and real/voices.json { boss: { line: [file, file] } }
-#   (sessions.txt: a line a line, `boss|n|line|take1 take2`, the line as the game writes it)
+#   tools/godot_boss_voices.sh <dir of the takes as <boss>_<n>_<1|2>.mp3> <sessions.txt> [<more sessions files>]
+#     -> godot/assets/voices/real/<boss>_<n>_<take>.ogg, and real/voices.json { boss: { line: [file, ...] } }
+#   (a sessions file: a line a line, `boss|n|line|take1 take2`, the line as the game writes it, one take or two)
+# THE LINES AS THEY MEET HIM, AND THE QUEEN'S MIRROR (his word again, 25 Nov 2026, “Go ahead and do the voices for the other speaking
+# bosses as well”; asked, with the credits left short of two takes, “One take each (Recommended)”): each boss's lines as his gate
+# falls (game/defs.ts BOSS_LINES; `n` m0 to m2), one take each, the Queen's and the King's among them; and the Glass Queen's
+# looking-glass, its six lines (act3/gqueen.gd SAYS, TRUTH, RING_SAYS), as the boss `mirror`, in “Matthew Schmitz - Whispering
+# Spirit of the Gentle Calm”, a ghostly whisper, glassy and far off.
 # The voices: the Warden “Villain - harsh, abrasive, and volatile”; the Headsman “Silas - Weathered Villain”; the Chained One
 # “Parasyte - Whispers from the Deep Dark”; the Amalgam “Lord Nyx - Deep, Demonic Villain”, and three of him at once, one lower and
 # one higher (many bodies, one voice); the Fleshmancer “Ezekiel Wren – The Voice Beneath the Floorboards”; the Unfinished
@@ -17,13 +22,12 @@
 # “Desmond (UK) - Distinguished Persuasion”, played old and rasping.
 set -e
 SRC="$1"
-SESSIONS="$2"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/godot/assets/voices/real"
 mkdir -p "$OUT"
 TRIM="silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.03,areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.08,areverse"
 LOUD="loudnorm=I=-16:TP=-1.5:LRA=11"
-for f in "$SRC"/*_[0-9]_[12].mp3; do
+for f in "$SRC"/*_[12].mp3; do
   b=$(basename "$f" .mp3)
   boss=${b%%_*}
   case "$boss" in
@@ -34,20 +38,25 @@ for f in "$SRC"/*_[0-9]_[12].mp3; do
     unfinished) FX=",asetrate=44100*0.9,aresample=44100,atempo=1.1111,apad=pad_dur=0.4,aecho=0.8:0.75:90|170:0.3|0.18" ;;
     cantor) FX=",apad=pad_dur=0.6,aecho=0.8:0.85:120|260|420:0.4|0.28|0.18" ;;
     gqueen) FX=",apad=pad_dur=0.3,chorus=0.7:0.9:45|60:0.4|0.32:0.3|0.45:2|2.3,aecho=0.8:0.6:35:0.15" ;;
+    mirror) FX=",apad=pad_dur=0.5,chorus=0.6:0.9:50|70:0.4|0.35:0.25|0.4:2|1.6,aecho=0.8:0.7:60|120:0.3|0.2" ;;
     *) FX="" ;;
   esac
   ffmpeg -v error -y -i "$f" -af "$TRIM$FX,$LOUD" -ac 1 -ar 44100 -c:a libvorbis -q:a 4 "$OUT/$b.ogg"
 done
-# (the table: each boss's lines, as the game writes them, and their two takes)
-python3 - "$SESSIONS" "$OUT/voices.json" <<'EOF'
+# (the table: each boss's lines, as the game writes them, and their takes)
+shift
+python3 - "$OUT/voices.json" "$@" <<'EOF'
 import json, sys
 out = {}
-for row in open(sys.argv[1], encoding="utf-8"):
-    row = row.rstrip("\n")
-    if not row:
-        continue
-    boss, n, line, _ = row.split("|")
-    out.setdefault(boss, {})[line] = ["real/%s_%s_1.ogg" % (boss, n), "real/%s_%s_2.ogg" % (boss, n)]
-json.dump(out, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+for path in sys.argv[2:]:
+    for row in open(path, encoding="utf-8"):
+        row = row.rstrip("\n")
+        if not row:
+            continue
+        boss, n, line, ids = row.split("|")
+        if line in out.get(boss, {}):
+            sys.exit("two lines the same for %s: %s" % (boss, line))
+        out.setdefault(boss, {})[line] = ["real/%s_%s_%d.ogg" % (boss, n, k + 1) for k in range(len(ids.split()))]
+json.dump(out, open(sys.argv[1], "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 EOF
 ls "$OUT"/*.ogg | wc -l

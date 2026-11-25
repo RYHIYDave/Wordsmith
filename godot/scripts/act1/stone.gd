@@ -84,7 +84,7 @@ func _meet() -> void:
 	met = true
 	if b.state == "sleep":
 		monsters.wake(b)
-	b.say(Colossus.LINES.pick_random(), Colossus.INTRO["sayFor"])
+	b.call_line(Colossus.LINES.pick_random(), Colossus.INTRO["sayFor"])
 	if main != null:
 		main.boss_card(b.title, Colossus.INTRO["secs"])
 

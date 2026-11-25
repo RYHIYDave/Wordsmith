@@ -632,18 +632,30 @@ func voices(main, hero, dir: String) -> void:
 				var st = load("res://assets/voices/" + str(f))
 				if not (st is AudioStream) or st.get_length() <= 0.2:
 					bad_files.append(f)
-	_line(files == 88 + 36 and bad_files.is_empty(), "%d bosses, %d takes of their lines, each a sound to play (%s)" % [V["voices"].size(), files, "all" if bad_files.is_empty() else str(bad_files)])
+	_line(files == 88 + 36 + 38 and bad_files.is_empty(), "%d voices, %d takes of their lines, each a sound to play (%s)" % [V["voices"].size(), files, "all" if bad_files.is_empty() else str(bad_files)])
 	# (THE TALKING BOSSES IN REAL VOICES, his word: every line of the thirteen a real voice's two takes, tools/godot_boss_voices.sh;
 	# the Warped Wordsmith's his own, wsboss/)
 	var mumbled: Array = []
-	for kind in V["voices"]:
-		if kind == "wsboss":
-			continue
-		for line in V["voices"][kind]:
-			var takes: Array = V["voices"][kind][line]
+	for kind in V["calls"]:
+		for move in V["calls"][kind]:
+			var takes: Array = V["voices"].get(kind, {}).get(str(V["calls"][kind][move]), [])
 			if takes.size() != 2 or not takes.all(func(f): return str(f).begins_with("real/")):
-				mumbled.append("%s: %s" % [kind, line])
-	_line(V["voices"].size() == 14 and mumbled.is_empty(), "the thirteen talking bosses' 44 lines in real voices, two takes each (%s)" % ["all" if mumbled.is_empty() else str(mumbled)])
+				mumbled.append("%s: %s" % [kind, V["calls"][kind][move]])
+	_line(V["voices"].size() == 15 and mumbled.is_empty(), "the thirteen talking bosses' called lines in real voices, two takes each (%s)" % ["all" if mumbled.is_empty() else str(mumbled)])
+	# (THEIR LINES AS THEY MEET HIM, and the Glass Queen's looking-glass, his pick: one take each)
+	var silent: Array = []
+	var Doors := preload("res://scripts/doors.gd")
+	for kind in Doors.LINES:
+		for line in Doors.LINES[kind]:
+			if str(line) == "..." or (kind in ["queen", "stag", "scraper", "palimpsest"]):
+				continue
+			if V["voices"].get(kind, {}).get(str(line), []).is_empty():
+				silent.append("%s: %s" % [kind, line])
+	var GQ := preload("res://scripts/act3/gqueen.gd")
+	for line in GQ.SAYS + [GQ.TRUTH, GQ.RING_SAYS]:
+		if V["voices"].get("mirror", {}).get(str(line), []).is_empty():
+			silent.append("mirror: %s" % line)
+	_line(silent.is_empty(), "every boss's line as he is met, and the looking-glass's six, said aloud (%s)" % ["all" if silent.is_empty() else str(silent)])
 	var said := func() -> Array:
 		return M._monsters.said_aloud.back() if not M._monsters.said_aloud.is_empty() else []
 	for place in ["floor1", "floor3", "floor12", "floor19"]:
@@ -654,10 +666,15 @@ func voices(main, hero, dir: String) -> void:
 		if b == null:
 			_line(false, "%s: no boss" % place)
 			continue
-		var before: int = M._monsters.said_aloud.size()
+		var met: int = M._monsters.said_aloud.size()
 		var want := ""
 		h.world = M._free_near(b.world + Vector2(3.0, 0.0))
-		await M._wait(0.2)
+		await M._wait(0.6)
+		# (his line as he is met, as his gate falls: aloud as well)
+		var greet: Array = M._monsters.said_aloud.slice(met)
+		var lines_of: Array = preload("res://scripts/doors.gd").LINES.get(b.kind, [])
+		_line(greet.size() == 1 and greet[0][0] == b.kind and lines_of.has(greet[0][1]), "%s: as he is met, %s says his line aloud (%s)" % [place, b.kind, greet])
+		var before: int = M._monsters.said_aloud.size()
 		if b.kind == "warden":
 			var i: int = b._moves.map(func(mv): return mv["id"]).find("bolts")
 			b._start(i, h, b.world.distance_to(h.world))

@@ -7,6 +7,15 @@
   "Back to your cell!": [
    "real/warden_1_1.ogg",
    "real/warden_1_2.ogg"
+  ],
+  "None leave my halls.": [
+   "real/warden_m0_1.ogg"
+  ],
+  "Another one for the cells.": [
+   "real/warden_m1_1.ogg"
+  ],
+  "The keys are mine. So are you.": [
+   "real/warden_m2_1.ogg"
   ]
  },
  "headsman": {
@@ -21,6 +30,15 @@
   "The block awaits.": [
    "real/headsman_2_1.ogg",
    "real/headsman_2_2.ogg"
+  ],
+  "Kneel.": [
+   "real/headsman_m0_1.ogg"
+  ],
+  "The block is waiting.": [
+   "real/headsman_m1_1.ogg"
+  ],
+  "Your name is on my list.": [
+   "real/headsman_m2_1.ogg"
   ]
  },
  "chained": {
@@ -35,6 +53,15 @@
   "Mmmph... FREE!": [
    "real/chained_2_1.ogg",
    "real/chained_2_2.ogg"
+  ],
+  "HRRRNNGH!": [
+   "real/chained_m0_1.ogg"
+  ],
+  "Mmmph... FREE...": [
+   "real/chained_m1_1.ogg"
+  ],
+  "GRRRAAAH!": [
+   "real/chained_m2_1.ogg"
   ]
  },
  "amalgam": {
@@ -53,6 +80,15 @@
   "We break. We mend.": [
    "real/amalgam_3_1.ogg",
    "real/amalgam_3_2.ogg"
+  ],
+  "Join us.": [
+   "real/amalgam_m0_1.ogg"
+  ],
+  "More bones. More.": [
+   "real/amalgam_m1_1.ogg"
+  ],
+  "We are many. Be one of us.": [
+   "real/amalgam_m2_1.ogg"
   ]
  },
  "fleshmancer": {
@@ -71,6 +107,15 @@
   "Burn, and be useful.": [
    "real/fleshmancer_3_1.ogg",
    "real/fleshmancer_3_2.ogg"
+  ],
+  "Your bones will serve.": [
+   "real/fleshmancer_m0_1.ogg"
+  ],
+  "Fall, and rise for me.": [
+   "real/fleshmancer_m1_1.ogg"
+  ],
+  "The cult thanks you for the flesh.": [
+   "real/fleshmancer_m2_1.ogg"
   ]
  },
  "unfinished": {
@@ -89,6 +134,15 @@
   "Tear me free!": [
    "real/unfinished_3_1.ogg",
    "real/unfinished_3_2.ogg"
+  ],
+  "The chisel never finished me.": [
+   "real/unfinished_m0_1.ogg"
+  ],
+  "Stone does not tire.": [
+   "real/unfinished_m1_1.ogg"
+  ],
+  "Lie still. Be carved.": [
+   "real/unfinished_m2_1.ogg"
   ]
  },
  "cantor": {
@@ -103,6 +157,15 @@
   "Let the stones sing.": [
    "real/cantor_2_1.ogg",
    "real/cantor_2_2.ogg"
+  ],
+  "Hear the hymn.": [
+   "real/cantor_m0_1.ogg"
+  ],
+  "Your echo is mine now.": [
+   "real/cantor_m1_1.ogg"
+  ],
+  "Sing with me. Scream with me.": [
+   "real/cantor_m2_1.ogg"
   ]
  },
  "eye": {
@@ -121,6 +184,15 @@
   "Drink deep.": [
    "real/eye_3_1.ogg",
    "real/eye_3_2.ogg"
+  ],
+  "You are seen.": [
+   "real/eye_m0_1.ogg"
+  ],
+  "Drown.": [
+   "real/eye_m1_1.ogg"
+  ],
+  "The siege is my dream. Sleep in it.": [
+   "real/eye_m2_1.ogg"
   ]
  },
  "ratking": {
@@ -135,6 +207,15 @@
   "A hundred teeth!": [
    "real/ratking_2_1.ogg",
    "real/ratking_2_2.ogg"
+  ],
+  "Hear ye! Hear ye! ...Squeak!": [
+   "real/ratking_m0_1.ogg"
+  ],
+  "Who's there? Who's there? Who's there?": [
+   "real/ratking_m1_1.ogg"
+  ],
+  "A hundred voices. Yours makes a hundred and one.": [
+   "real/ratking_m2_1.ogg"
   ]
  },
  "physician": {
@@ -149,6 +230,15 @@
   "Rounds, everyone!": [
    "real/physician_2_1.ogg",
    "real/physician_2_2.ogg"
+  ],
+  "Say ah.": [
+   "real/physician_m0_1.ogg"
+  ],
+  "Hold still. This won't hurt.": [
+   "real/physician_m1_1.ogg"
+  ],
+  "Your last words, please.": [
+   "real/physician_m2_1.ogg"
   ]
  },
  "prince": {
@@ -181,6 +271,9 @@
   "Look at me. All of me.": [
    "real/gqueen_3_1.ogg",
    "real/gqueen_3_2.ogg"
+  ],
+  "Looking-glass, Looking-glass, on the wall, who in this land is the fairest of all?": [
+   "real/gqueen_m0_1.ogg"
   ]
  },
  "gking": {
@@ -199,6 +292,29 @@
   "See what I have done.": [
    "real/gking_3_1.ogg",
    "real/gking_3_2.ogg"
+  ],
+  "Music! Music!": [
+   "real/gking_m0_1.ogg"
+  ]
+ },
+ "mirror": {
+  "Thou, O Queen, art the fairest of all!": [
+   "real/mirror_0_1.ogg"
+  ],
+  "None in this land is fairer than thou.": [
+   "real/mirror_1_1.ogg"
+  ],
+  "Fairest of all. Fairest of all.": [
+   "real/mirror_2_1.ogg"
+  ],
+  "Thou art the fairest. Strike him down.": [
+   "real/mirror_3_1.ogg"
+  ],
+  "The king is dying. Something sits on his chest.": [
+   "real/mirror_4_1.ogg"
+  ],
+  "None shall find thee, my Queen.": [
+   "real/mirror_5_1.ogg"
   ]
  }
 }

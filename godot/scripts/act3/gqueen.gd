@@ -177,6 +177,8 @@ func say(m, text: String, secs := float(TALK["secs"])) -> void:
 	var mir: Vector2 = F["mirror"]
 	var d := h.distance_to(mir)
 	var near: float = TALK["near"]
+	# (heard as well: the looking-glass's own voice, a ghostly whisper, tools/godot_boss_voices.sh; up while it is heard)
+	secs = maxf(secs, float(m.mgr.speak("mirror", text)))
 	P["say"] = text
 	P["say_t"] = secs
 	P["say_secs"] = secs

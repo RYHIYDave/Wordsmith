@@ -61,6 +61,9 @@ const LINES := {
 	"physician": ["Say ah.", "Hold still. This won't hurt.", "Your last words, please."],
 	"palimpsest": ["Shhhhhhhhh...", "Rrrrsssshhhh...", "Sssshhhh."],
 	"censor": ["..."],
+	# (ACT 3, THE HIGH CITY: the Glass Queen asks her looking-glass; the King calls for his music)
+	"gqueen": ["Looking-glass, Looking-glass, on the wall, who in this land is the fairest of all?"],
+	"gking": ["Music! Music!"],
 }
 ## (ACT 1, game.ts meetOutdoorBoss: out on the open ground there is no gate to fall behind the hero: the boss waits until he
 ## comes into his ground, well inside its area (blobDist under 0.8) or within 6 tiles of him; then he is woken and says his
@@ -428,7 +431,8 @@ func _intro(boss) -> void:
 	intro_t = INTRO
 	var lines: Array = LINES.get(boss.kind, [])
 	if not lines.is_empty():
-		boss.say(lines.pick_random(), SAY_FOR)
+		# (said aloud too, in his own voice: the real voices' takes, tools/godot_boss_voices.sh)
+		boss.call_line(lines.pick_random(), SAY_FOR)
 	# (FLOOR 13'S DOUBLE BOSS: both their names come up across the screen)
 	var other = _partner(boss)
 	var name: String = boss.title if other == null else "%s and %s" % [boss.title, "the " + other.title.substr(4) if other.title.begins_with("The ") else other.title]
