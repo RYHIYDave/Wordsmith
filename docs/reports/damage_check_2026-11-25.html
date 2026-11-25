@@ -1,0 +1,88 @@
+<title>Damage Check, Every Meld</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column; a short summary, then a table per question, then what the test turned up */
+:root {
+  --bg: #f6f5fb; --panel: #ffffff; --ink: #1d1a2e; --muted: #5d5874; --line: #dcd8ea;
+  --cyan: #0b8fa3; --rose: #b4325a; --gold: #8a6510;
+  --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --body: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14121f; --panel: #1d1a2e; --ink: #ece9f7; --muted: #a7a2bf; --line: #34304b;
+  --cyan: #5fd6e6; --rose: #ff7a9c; --gold: #f2c45a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #14121f; --panel: #1d1a2e; --ink: #ece9f7; --muted: #a7a2bf; --line: #34304b;
+  --cyan: #5fd6e6; --rose: #ff7a9c; --gold: #f2c45a; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 48px; }
+main { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: 1.9rem; }
+h2 { font-size: 1.25rem; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); }
+section { display: flex; flex-direction: column; gap: 12px; }
+.wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 0.92rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--display); font-weight: 500; color: var(--muted); font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; }
+tr:last-child td { border-bottom: none; }
+.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tag { font-size: 0.78rem; color: var(--muted); }
+.fixed { color: var(--cyan); font-weight: 600; }
+.bad { color: var(--rose); font-weight: 600; }
+ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 70ch; }
+.note { border-left: 3px solid var(--gold); padding-left: 12px; color: var(--muted); }
+</style>
+
+<main>
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>Damage check with every meld</h1>
+    <p class="lede">Every hero at level 50 in the best gear the test could pick, with every meld now switched on (the High City's, the 60 redone, the city's and the reaping ones). Each build fought one elite for 10 seconds and a tough pack of six (2,000,000 life each) for up to 30 seconds. Measured 24–25 November 2026.</p>
+  </header>
+
+  <section>
+    <h2>What it found</h2>
+    <ul>
+      <li><span class="bad">Brand ran away:</span> a critical hit doubled a burning monster's fire again every time. Into the elite it reached 362,285,065 a second. <span class="fixed">Fixed:</span> twice as hot once per burn; Brand now does 436,552 a second.</li>
+      <li><span class="bad">The Frost Mage's Twin Wave missed:</span> with Twin, her two waves fan out so wide that both pass beside an enemy 4.5 tiles ahead (0 damage). <span class="fixed">Fixed behind a switch, waiting for your yes:</span> aimed, Shiver + Twin does 60,093 a second and the pack dies in 0.7 s.</li>
+      <li>Lightning clears packs fastest for every hero (Forking or Wildfire: 1.8 to 7.9 s). Fire (Rekindle) is the strongest single-target pick for the Ranger, the Tinkerer and the Brawler.</li>
+      <li>The Warlock is the weakest with the melds of his own kind (best 195,709 a second, where the others' best run from 281,600 to 561,201).</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Every meld of his own kind, the best three into the elite</h2>
+    <p class="lede">Each meld first in front of his quick attack, the rest of his words as the test chose them. Damage a second, in the fight.</p>
+    <div class="wrap"><table>
+      <tr><th>Hero</th><th>1st</th><th>2nd</th><th>3rd</th></tr>
+      <tr><td>Tinkerer <span class="tag">lightning, volatile</span></td><td>Jolt <span class="n">561,201</span></td><td>Forking <span class="n">553,946</span></td><td>Seeker <span class="n">479,826</span></td></tr>
+      <tr><td>Brawler <span class="tag">power</span></td><td>Rekindle <span class="n">476,786</span></td><td>Eruption <span class="n">254,931</span></td><td>Berserk <span class="tag">redone</span> <span class="n">208,139</span></td></tr>
+      <tr><td>Mage <span class="tag">fire</span></td><td>Brand <span class="n">436,552</span></td><td>Brimstone <span class="tag">redone</span> <span class="n">414,817</span></td><td>Nova <span class="tag">High City</span> <span class="n">341,722</span></td></tr>
+      <tr><td>Warrior <span class="tag">power</span></td><td>Sunder <span class="tag">redone</span> <span class="n">430,718</span></td><td>Bloodlust <span class="tag">redone</span> <span class="n">391,574</span></td><td>Berserk <span class="tag">redone</span> <span class="n">351,129</span></td></tr>
+      <tr><td>Ranger <span class="tag">poison</span></td><td>Blight <span class="tag">redone</span> <span class="n">281,600</span></td><td>Needle <span class="tag">redone</span> <span class="n">280,672</span></td><td>Fumes <span class="n">213,742</span></td></tr>
+      <tr><td>Warlock <span class="tag">as a man, power</span></td><td>Firewalk <span class="n">195,709</span></td><td>Doom <span class="tag">redone</span> <span class="n">96,757</span></td><td>Eruption <span class="n">83,060</span></td></tr>
+      <tr><td>Mage <span class="tag">frost</span></td><td>Scald <span class="n">95,993</span></td><td>Hoarfrost <span class="tag">city</span> <span class="n">48,516</span></td><td>Glide <span class="tag">redone</span> <span class="n">46,315</span></td></tr>
+    </table></div>
+    <p class="note">The Frost Mage's row is low for two reasons the test turned up: the gear it chose was fire gear (made for Scald), and her Twin waves missed until the fix above.</p>
+  </section>
+
+  <section>
+    <h2>Each hero's best words, fought</h2>
+    <p class="lede">His best four words found afresh for each kind of damage, then fought. The best into the elite, and the fastest through the tough pack.</p>
+    <div class="wrap"><table>
+      <tr><th>Hero</th><th>Best into the elite</th><th>Fastest through the pack</th></tr>
+      <tr><td>Tinkerer</td><td>Rekindle, Swift; Haymaker <span class="n">583,597 /s</span></td><td>Forking, Swift; Haymaker <span class="n">1.8 s</span></td></tr>
+      <tr><td>Brawler</td><td>Rekindle, Precise; Haymaker <span class="n">505,212 /s</span></td><td>Forking, Precise; Haymaker <span class="n">2.7 s</span></td></tr>
+      <tr><td>Warrior</td><td>Anvil, Twin; Power II, Fleeting <span class="n">416,693 /s</span></td><td>Onslaught, Swift; Power II, Fleeting <span class="n">7.9 s</span></td></tr>
+      <tr><td>Ranger</td><td>Rekindle, Swift; Haymaker <span class="n">375,110 /s</span></td><td>Forking, Swift; Haymaker <span class="n">2.3 s</span></td></tr>
+      <tr><td>Mage, fire</td><td>Scald, Swift; Momentum, Fleeting <span class="n">305,229 /s</span></td><td>Wildfire, Swift; Momentum, Fleeting <span class="n">2.6 s</span></td></tr>
+      <tr><td>Mage, frost</td><td>Scald, Swift; Momentum, Fleeting <span class="n">269,687 /s</span></td><td>Wildfire, Swift; Momentum, Fleeting <span class="n">2.6 s</span></td></tr>
+      <tr><td>Warlock</td><td>Scald, Swift; Momentum, Fleeting <span class="n">267,415 /s</span></td><td>Wildfire, Swift; Momentum, Fleeting <span class="n">4.0 s</span></td></tr>
+    </table></div>
+    <p class="note">The Warrior's best elite build (Anvil and Twin) did not finish the tough pack in 30 seconds; nor did some Twin builds of the Mage. The Mage's Twin miss is explained above; the Warrior's is still to look into.</p>
+  </section>
+</main>
