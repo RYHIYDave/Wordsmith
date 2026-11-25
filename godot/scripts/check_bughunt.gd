@@ -1274,3 +1274,43 @@ func _round6(dir: String) -> void:
 	h.loadout.front[0] = [null, null]
 	h.loadout._r = [null, null, null]
 	_line(thr > 0.0 and h.last._heard.has("pierce_shot"), "Bodkin (a Piercing meld) on the Ranger's shot: its line on through the first it strikes %s (through %.2f; a shot never reached it)" % [str(h.last._heard.has("pierce_shot")), thr])
+	# (HIS PICKS, 25 Nov 2026: the Brawler's kicks as hard as his punches; his jump lands with a blow; endless softer past 20)
+	await _hero4("brawler", [])
+	await _go4("floor11")
+	var kp: float = float(h.loadout.r(1)["dmg_mult"]) / maxf(0.0001, float(h.loadout.r(0)["dmg_mult"]))
+	var kw: float = float(Words.skill(h.loadout.id(1))["dmg"]) / maxf(0.0001, float(Words.skill(h.loadout.id(0))["dmg"]))
+	_line(absf(kp - kw) < 0.01, "the Brawler's kick against his punch: %.2f of it (the moves' own shares %.2f; it was half that)" % [kp, kw])
+	var jt: Array = _near(1)
+	var jl0 := 0.0
+	var jl1 := 0.0
+	if not jt.is_empty():
+		var jo = jt[0]
+		jo.max_life = 1.0e7
+		jo.life = 1.0e7
+		jo.speed = 0.0
+		jo.waits = false
+		M._monsters.wake(jo)
+		h.world = M._spot_near(jo.world, 1.2, h.world)
+		var JB = h.kit
+		JB.queue = []
+		JB.globes = []
+		JB.done = []
+		JB.mv = {}
+		JB.charges[2] = 1
+		h.mana = h.max_mana
+		jl0 = jo.life
+		JB._press("swipe", jo.world)
+		var tj := 0.0
+		while tj < 2.5 and (not JB.queue.is_empty() or not JB.mv.is_empty()):
+			await M.get_tree().process_frame
+			tj += M.get_process_delta_time()
+		await _wait(0.2)
+		jl1 = jo.life
+	_line(not jt.is_empty() and jl1 < jl0, "the Brawler's jump comes down by a monster: its life %d to %d (his jump struck nothing)" % [int(jl0), int(jl1)])
+	var e_was: int = M.endless
+	M.endless = 50
+	var t50: float = M.endless_tough()
+	M.endless = 20
+	var t20: float = M.endless_tough()
+	M.endless = e_was
+	_line(absf(t20 - pow(1.1, 19)) < 0.01 and absf(t50 - pow(1.1, 19) * pow(1.03, 30)) < 0.01, "endless monsters past level 20: x%.1f at Endless 20 as before, x%.1f at Endless 50 (was x106.7)" % [t20, t50])

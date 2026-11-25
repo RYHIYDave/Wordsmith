@@ -162,6 +162,9 @@ var deaths := 0
 ## lesson); every way on leads to the next; a death there is the hero's end, Normal or Hardcore. `best_endless` (the account's):
 ## the deepest endless level any hero of his has cleared.
 const ENDLESS_GROW := 0.1
+## (past this endless level its monsters grow more slowly: ENDLESS_GROW_PAST a level; his pick, "Soften it")
+const ENDLESS_SOFT_FROM := 20
+const ENDLESS_GROW_PAST := 0.03
 const ENDLESS_WARN := "Hardcore"
 const ENDLESS_CARD_MORE := 1.5
 const ENDLESS_OPENS := "Endless mode is open: the waypoint leads on, each level harder. Hardcore."
@@ -295,9 +298,13 @@ func grow_packs(data: Dictionary, level: int) -> int:
 	return added
 
 
-## (endless.ts endlessTough) How much more life and damage its monsters have than its depth gives: 10% more on each after the first.
+## (endless.ts endlessTough) How much more life and damage its monsters have than its depth gives: 10% more on each after the first,
+## up to Endless 20; past it, ENDLESS_GROW_PAST more on each (his pick, 25 Nov 2026, "Soften it": at 10% all the way, past Endless 30
+## a level-50 hero died in seconds and past 50 a monster took minutes to kill, gear stopping at floor 20's; at 3%, Endless 30's
+## monsters are about half as strong as they were, Endless 50's a seventh).
 func endless_tough() -> float:
-	return pow(1.0 + ENDLESS_GROW, maxi(1, endless) - 1)
+	var e := maxi(1, endless)
+	return pow(1.0 + ENDLESS_GROW, mini(e, ENDLESS_SOFT_FROM) - 1) * pow(1.0 + ENDLESS_GROW_PAST, maxi(0, e - ENDLESS_SOFT_FROM))
 
 
 ## (endless.ts endlessName)

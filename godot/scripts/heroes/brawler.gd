@@ -508,6 +508,8 @@ func _play(dt: float, way: Vector2) -> void:
 		# (THE VETERAN'S TREE: Fire Starter, landed from his dodge jump: his next tap or hold is in fire)
 		if id == "dodge" and _has("vfirestarter"):
 			fire_ready = true
+		if id == "dodge":
+			_jump_lands()
 		# (the combo locked and played out: its globes go out)
 		if _full() and queue.is_empty():
 			globes = []
@@ -517,6 +519,28 @@ func _play(dt: float, way: Vector2) -> void:
 				h.uniques.uq["streak"] = int(h.uniques.uq.get("streak", 0)) + 1
 				h._tell({"t": "unique", "id": "winningstreak", "what": "streak", "x": h.world.x, "y": h.world.y, "mid": h.uniques.uq["streak"]})
 				h.uniques._say({"id": "winningstreak", "what": "streak"})
+
+
+## HIS JUMP COMES DOWN WITH A BLOW (his pick, 25 Nov 2026, "Land with a blow (Recommended)": it struck nothing, and the words on it did
+## nothing): as the Warrior's Lunge lands (hero.gd _fly), all round where he comes down struck at the jump's own weight, as its words
+## make it (Twin: a second a moment later, a little wider; "of Echoes": a weaker one after), what the words behind it leave left there,
+## and the last words with it.
+func _jump_lands() -> void:
+	var r2: Dictionary = h.loadout.r(2)
+	var at: Vector2 = h.world
+	var rad: float = 1.6 * float(r2["size"])
+	var each: float = float(r2["count_dmg"])
+	_shake(1.5)
+	for n in int(r2["count"]):
+		if n == 0:
+			h._blast(2, at, rad, each, "land", true, -4.0)
+		else:
+			var kn: int = n
+			_after(0.28 * n, func() -> void: h._blast(2, at, rad * 1.15, each, "land", false, -4.0, kn))
+	if float(r2["echo"]) > 0.0:
+		h._echo_of(2, "vjump", at, h.face, func() -> void: h._blast(2, at, rad, float(h.loadout.r(2)["count_dmg"]) * float(h.loadout.r(2)["echo"]), "land", false, -4.0, 0, true))
+	if h.last != null:
+		h.last.cast(2, at, h.face, 1.0, func(p: Vector2, _w: Vector2, f: float) -> void: h._blast(2, p, rad, float(h.loadout.r(2)["count_dmg"]) * f, "land", false, -4.0, 0, true))
 
 
 ## (veteran.ts vetReach) The frame a blow's force reaches one standing at `p`, radius `r` (from where he stood as it began, along

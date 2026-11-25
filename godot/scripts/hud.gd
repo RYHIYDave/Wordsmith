@@ -57,8 +57,8 @@ var _stacked := false
 ## upright, where the prompt and the news of a word begin, under the map and the pause button)
 const TOP_GLOBE_Y := 29.0
 ## THE BANNER CLEAR OF THE PLACE'S NAME (the bug hunt's second round, 25 Nov 2026: on floor 10 the quest's banner hid the last of
-## "The Sunken Fen, Level 10"): where a long name runs under it, the banner drops below the name's line. Pictures first: off.
-static var BANNER_CLEAR := false
+## "The Sunken Fen, Level 10"): where a long name runs under it, the banner drops below the name's line. On at his yes, 25 Nov 2026 ("1. Banner clear (Recommended)").
+static var BANNER_CLEAR := true
 const NARROW_TOP := 74.0
 ## (where the prompt or the news of a word ended this frame, 0 for none: on a narrow screen the messages go under it)
 var _notice_end := 0.0

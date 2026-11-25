@@ -196,7 +196,10 @@ const EVEN := {"shot": 1.303, "wave": 1.6 * MAGE_MORE, "vialtoss": 1.72, "hellbo
 	"strike": WARRIOR_MORE, "cleave": WARRIOR_MORE, "chop": WARRIOR_MORE, "smash": WARRIOR_MORE, "vpunch": BRAWLER_MORE,
 	# (and his Whirl and Whirlwind with them, so each keeps its share of a Strike as he set it, 1.4 and 0.55: THE BUG HUNT found them
 	# left out; his pick, 24 Nov 2026, “Raise them back (Recommended)”)
-	"whirl": WARRIOR_MORE, "whirlwind": WARRIOR_MORE}
+	"whirl": WARRIOR_MORE, "whirlwind": WARRIOR_MORE,
+	# (and the Brawler's kicks with his punches, as hard again as they: left out, a kick hit half a punch; his pick, 25 Nov 2026,
+	# "Raise them (Recommended)")
+	"vkick": BRAWLER_MORE}
 const FROST_HIT := 1.0
 const ATTR_KNEE := 50.0
 const ATTR_SPAN := 100.0

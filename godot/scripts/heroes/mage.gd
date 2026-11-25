@@ -22,8 +22,8 @@ var _next_id := 0
 ## that past four tiles or so both pass either side of the one she aims at and neither strikes it (with Shiver's smaller waves, none
 ## of her blows landed on an elite before her). With this on, the fan narrows with the aimed spot's distance, just so far that each
 ## wave's inner edge still crosses where she aims (aimed by a way only, along her line all the wave's reach): as wide as ever aimed near
-## her, nearer together aimed far off. Pictures first: off.
-static var TWIN_AIM := false
+## her, nearer together aimed far off. On at his yes, 25 Nov 2026 ("2. Twin waves aimed (Recommended)").
+static var TWIN_AIM := true
 
 
 func _init(hero) -> void:
