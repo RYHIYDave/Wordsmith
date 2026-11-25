@@ -1314,3 +1314,30 @@ func _round6(dir: String) -> void:
 	var t20: float = M.endless_tough()
 	M.endless = e_was
 	_line(absf(t20 - pow(1.1, 19)) < 0.01 and absf(t50 - pow(1.1, 19) * pow(1.03, 30)) < 0.01, "endless monsters past level 20: x%.1f at Endless 20 as before, x%.1f at Endless 50 (was x106.7)" % [t20, t50])
+	# (SIEGE with the other door words: still its four altar rooms (on for it), Endless 50 of floor 12)
+	var AR := preload("res://scripts/act1/altar_rooms.gd")
+	var ar_was: bool = AR.ON
+	AR.ON = true
+	var counts: Array = []
+	for ws in [["siege"], ["chains", "toll", "crown", "siege"]]:
+		M.endless = 50
+		M.endless_floor = 12
+		M.in_endless = true
+		M.chained_seed = 5
+		M.royal_seed = 2
+		M.bells_seed = 4
+		M.altar_seed = 3
+		M.dungeon_words = ws.duplicate()
+		await _go4("floor12")
+		var q6 = M.quest610
+		var nh := 0
+		if q6 != null and q6.holds != null and is_instance_valid(q6.holds):
+			nh += (q6.holds.data["holds"] as Array).size()
+		if q6 != null and q6.rooms != null and is_instance_valid(q6.rooms):
+			nh += (q6.rooms.data["holds"] as Array).size()
+		counts.append(nh)
+	AR.ON = ar_was
+	M.dungeon_words = []
+	M.in_endless = false
+	M.endless = 0
+	_line(counts.size() == 2 and counts[0] >= 4 and counts[1] >= 4, "Siege's altar rooms on Endless 50 of floor 12: alone %d, with Chains, Toll and Crown %d (was 2)" % [counts[0], counts[1]])

@@ -72,12 +72,14 @@ func _ready() -> void:
 		if data["holds"].size() >= want:
 			break
 		_keep(_plan(data["holds"].size(), r))
-	# (too few rooms that close: a ring of fire on open floor for the rest)
-	for k in 80 * want:
-		if data["holds"].size() >= want:
-			break
-		var t := Vector2i(_rng.randi_range(0, map.w - 1), _rng.randi_range(0, map.h - 1))
-		_keep(_plan_ring(data["holds"].size(), Vector2(t.x + 0.5, t.y + 0.5)))
+	# (too few rooms that close: a ring of fire on open floor for the rest; then, still short (the other door words' chained rares and
+	# bells filling the floor: Siege with all four gave half its rooms, the bug hunt's sixth round), a ring kept less far from them)
+	for loose in [false, true]:
+		for k in (80 if not loose else 240) * want:
+			if data["holds"].size() >= want:
+				break
+			var t := Vector2i(_rng.randi_range(0, map.w - 1), _rng.randi_range(0, map.h - 1))
+			_keep(_plan_ring(data["holds"].size(), Vector2(t.x + 0.5, t.y + 0.5), loose))
 	if data["holds"].is_empty():
 		return
 	_rifts = _RiftLayer.new()
@@ -136,8 +138,8 @@ func _altar_at(c: Vector2):
 
 
 ## A RING OF FIRE's plan, its altar at or next to `c` on open floor: the ring's tiles, its waves, its pieces; {} if it will not do.
-func _plan_ring(n: int, c: Vector2) -> Dictionary:
-	if c.distance_to(map.start) < FAR or not _clear_of_others(c, RING + 4.0):
+func _plan_ring(n: int, c: Vector2, loose := false) -> Dictionary:
+	if c.distance_to(map.start) < FAR or not _clear_of_others(c, RING + (1.0 if loose else 4.0)):
 		return {}
 	for r in map.rooms:
 		if str(r.get("kind", "")) in ["start", "boss"] and Rect2(float(r["x"]) - 2.0, float(r["y"]) - 2.0, float(r["w"]) + 4.0, float(r["h"]) + 4.0).has_point(c):
