@@ -453,7 +453,7 @@ export const FRONT_NAMES: Readonly<Record<number, string>> = {
   13: 'the mill-house',
   14: "the hospice's door",
   15: "the library's great door",
-  16: 'the garden folly',
+  16: 'the garden pavilion',
   17: 'the stage door',
   18: 'the mirror door',
   19: 'the inner gatehouse',

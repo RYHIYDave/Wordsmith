@@ -41,7 +41,7 @@ cult's banners and its pink fire in sconces, in the floor's own colours otherwis
 | 13 The Millrace | the mill-house: fieldstone below, timber framing and limewash above, a slate roof, a hoist-beam with a sack, the great water-wheel in the race |
 | 14 The House of Quiet | the hospice's door: pale green-white limewash over the infirmary's green boarding, a marble porch, mahogany double doors, a faintly lit lunette, a slate roof behind a parapet |
 | 15 The Great Library | the library's great door: shelves of books to the cornice, walnut pilasters, gilt, tall walnut doors, an open book carved over them with the cult's mark across its pages, a ladder |
-| 16 The Swan Gardens | the garden folly: an arch of pale limestone in a clipped yew hedge, swans carved on its piers, a balustrade with lead urns, clipped box, roses |
+| 16 The Swan Gardens | the garden pavilion, standing on its own in the gardens (his word on its first try, below): a small temple of the gardens' pale limestone on two steps, four columns across its front, its room behind them with its door sheeted in lead, a ribbed lead dome with a lantern, carved swans on plinths at its front corners, clipped box, roses up a column |
 | 17 The Masque | the stage door: ebony and gilt over the masque's dark wine damask, velvet curtains drawn back and tied, a gilt mask over the door |
 | 18 The Glass Gallery | the mirror door, built as a run of the gallery's own wall (his word on its first try, below): the wall either side at the gallery's height, violet damask over grey stone and a gilt rail, a great mirror in gilt on each; the door's bay higher, grey stone pilasters, a glazed fanlight, the door of mirror-glass, a gilt cornice with a broken pediment |
 | 19 The Keep | the inner gatehouse: two square towers of the keep's cold stone with battlements, the portcullis drawn up, the king's arms in gold with the cult's skull painted across them |
@@ -96,4 +96,9 @@ the mirror door stood out on the open floor like a cabinet, where it should be p
 run of the gallery's own wall (above), and pictured against the gallery's back wall (`WALL=4`, a place with four tiles of wall
 behind it either way); the rest as they were.
 
-WAITING FOR HIS WORD ON 18.
+Shown 18 so, asked whether it is right now. HIS WORD: **“16 doesn’t work as well”** (read as: 18 is right; 16 has the same trouble).
+Read as, and told him so: on 16 the folly's yew hedges jammed against the gardens' own balustrades and steps, where a garden
+building should stand on its own. So 16 is rebuilt as a garden pavilion standing free (above), named `the garden pavilion`, and
+pictured on the gardens' open lawn by a path (`OPEN=1 PICK=3`, a place with open ground behind it as well as before it).
+
+WAITING FOR HIS WORD ON 16.

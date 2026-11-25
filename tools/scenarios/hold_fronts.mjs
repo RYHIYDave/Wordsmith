@@ -36,11 +36,14 @@ export default async function (page, snap) {
         // (WALL: how much of the wall behind it; PICK: which of the places found, nearest first)
         const WALL = Number(opts.wall);
         const PICK = Number(opts.pick);
+        const OPEN = !!Number(opts.open);
         const spots = [];
         for (let y = 2; y < F.h - 5; y++) for (let x = 4; x < W - 4; x++) {
           let ok = true;
           for (let ty = y; ty < y + DEEP && ok; ty++) for (let tx = x - 3; tx < x + 3 && ok; tx++) if (!floorAt(tx, ty)) ok = false;
-          for (let tx = x - WALL; tx < x + WALL && ok; tx++) if (!wallAt(tx, y - 1)) ok = false;
+          // (OPEN: a building standing on its own on open ground, the ground behind it too; else at a wall's foot)
+          if (OPEN) { for (let ty = y - 4; ty < y && ok; ty++) for (let tx = x - 3; tx < x + 3 && ok; tx++) if (!floorAt(tx, ty)) ok = false; }
+          else for (let tx = x - WALL; tx < x + WALL && ok; tx++) if (!wallAt(tx, y - 1)) ok = false;
           if (!ok) continue;
           const dd = Math.hypot(x - g.hero.x, y - g.hero.y);
           if (dd > 4) spots.push({ x, y, d: dd });
@@ -63,7 +66,7 @@ export default async function (page, snap) {
       g.hero.x = gx + 2.3; g.hero.y = gy + 2.8; g.hero.fx = -0.7; g.hero.fy = -0.7;
       const gate = L.props.find((p) => p.tx === gx && p.ty === gy && p.kind === 'piece');
       return { n, own, at: [gx, gy], gate: gate?.name };
-    }, [n, { wall: process.env.WALL || 2, pick: process.env.PICK || 0 }]);
+    }, [n, { wall: process.env.WALL || 2, pick: process.env.PICK || 0, open: process.env.OPEN || 0 }]);
     log('front', JSON.stringify(info));
     if (info.none) continue;
     await page.waitForTimeout(13000);

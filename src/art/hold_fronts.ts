@@ -802,9 +802,12 @@ function libraryFront(open: boolean, f: number): Sprite {
 // =================================================================================================
 // FLOOR 16, THE SWAN GARDENS: THE SWAN PAVILION (art/floor16.ts)
 //
-// THE GARDEN FOLLY taken by the cult: an arch of the gardens' pale limestone set in a tall clipped yew hedge, a swan carved on each
-// pier, a balustrade and urns of lead on its top, clipped balls of box on plinths either side, roses climbing the stone; its door
-// sheeted in lead; the cult's banners hung from the arch, its pink fire, its mark burning in the lead.
+// THE GARDEN PAVILION taken by the cult, standing on its own in the gardens (his word on its first try, an arch in a yew hedge, 25
+// Nov 2026: “16 doesn’t work as well”; read as, and told him so: its hedges jammed against the gardens' own balustrades and steps,
+// where a garden building should stand on its own): a small temple of the gardens' pale limestone on a plinth of two steps, four
+// columns across its front, its room behind them with its door sheeted in lead, a ribbed dome of lead with a lantern on its crown,
+// a carved swan on a plinth at each front corner, clipped box either side, roses up a column; the cult's banners hung between its
+// columns, its pink fire either side of its door, its mark burning in the lead.
 
 
 /** A carved SWAN sitting on a plinth's top at (x, y, z): its body, its neck curved up, its head, facing `dir` (1: to the right). */
@@ -820,47 +823,50 @@ function swan(F: Front, x: number, y: number, z: number, dir: number, stone: Ram
 
 function follyFront(open: boolean, f: number): Sprite {
   const F = new Front();
-  const yew = leaves(SWAN.YEW, 2601, 1.6);
   const lime = ashlar(SWAN.LIMESTONE, SWAN.LIMESTONE[0], 2602, 10, 18);
-  // THE HEDGE either side, tall and clipped square
-  F.box(-98, -40, -30, -12, 0, 96, { all: yew, top: leaves(SWAN.YEW, 2603, 1.6) });
-  F.box(30, -40, 98, -12, 0, 96, { all: yew, top: leaves(SWAN.YEW, 2604, 1.6) });
-  // THE ARCH of limestone between, its piers standing out a little, a swan on each
-  const DOOR: Arch = { half: 15, spring: 50, shape: 'round' };
-  F.box(-32, -24, 32, -6, 0, 104, lime, (w, n) => n[1] > 0.5 && inArch(DOOR, w[0], w[2]));
-  voussoirs(F, DOOR, -6, 5, SWAN.LIMESTONE, SWAN.LIMESTONE[0], 0, (w, n) => lit(n, SWAN.LIMESTONE, 1));
-  door(F, DOOR, -6, 5, open, f, { slab: (x, z, n) => (fr(x / 7) < 0.1 || fr(z / 12) < 0.07 ? SWAN.LEAD[0] : lit(n, SWAN.LEAD, 0)) }, lime);
-  for (const x of [-30, 22]) {
-    F.box(x, -8, x + 8, 0, 0, 92, lime);
-    F.box(x - 1, -9, x + 9, 1, 92, 96, plain(SWAN.LIMESTONE, 1, 0.1));
-    swan(F, x + 4, -4, 96, x < 0 ? 1 : -1, SWAN.SWANW);
+  const limeTop = plain(SWAN.LIMESTONE, 1, 0.1);
+  // ITS PLINTH, two steps of limestone
+  F.box(-48, -58, 48, 14, 0, 4, { front: plain(SWAN.LIMESTONE, 0, 0.05), side: plain(SWAN.LIMESTONE, -1), top: limeTop });
+  F.box(-44, -54, 44, 9, 4, 8, { front: plain(SWAN.LIMESTONE, 0, 0.05), side: plain(SWAN.LIMESTONE, -1), top: limeTop });
+  // ITS ROOM, behind the columns, its door
+  const DOOR: Arch = { half: 12, spring: 44, shape: 'round' };
+  F.box(-32, -50, 32, -10, 8, 94, lime, (w, n) => n[1] > 0.5 && inArch(DOOR, w[0], w[2] - 8));
+  voussoirs(F, { ...DOOR, spring: DOOR.spring + 8 }, -10, 4, SWAN.LIMESTONE, SWAN.LIMESTONE[0], 0, (w, n) => lit(n, SWAN.LIMESTONE, 1));
+  door(F, { ...DOOR, spring: DOOR.spring + 8 }, -10, 4, open, f, { slab: (x, z, n) => (z < 8 ? SWAN.LEAD[0] : fr(x / 7) < 0.1 || fr(z / 12) < 0.07 ? SWAN.LEAD[0] : lit(n, SWAN.LEAD, 0)) }, lime);
+  // ITS COLUMNS across the front, their capitals; the entablature on them
+  for (const x of [-41, -28, 28, 41]) {
+    F.box(x - 4.5, -2.5, x + 4.5, 6.5, 8, 12, plain(SWAN.LIMESTONE, 0, 0.05));
+    F.column(x, 2, 12, 86, 3.4, SWAN.LIMESTONE, 3);
+    F.box(x - 4.5, -2.5, x + 4.5, 6.5, 86, 90, plain(SWAN.LIMESTONE, 1, 0.1));
   }
-  // its balustrade and urns on top
-  F.box(-34, -26, 34, -4, 104, 108, plain(SWAN.LIMESTONE, 1, 0.1));
-  for (let x = -30; x <= 30; x += 5) F.column(x, -6, 108, 118, 1.5, SWAN.LIMESTONE, 1.1);
-  F.box(-34, -26, 34, -4, 118, 122, plain(SWAN.LIMESTONE, 1, 0.1));
-  for (const x of [-30, 0, 30]) {
-    F.egg([x, -6, 128], [4.4, 4.4, 5.2], (n) => lit(n as V3, SWAN.LEAD, 0));
-    F.box(x - 2, -8, x + 2, -4, 122, 124, plain(SWAN.LEAD, 0));
-    F.box(x - 4, -10, x + 4, -2, 132, 134, plain(SWAN.LEAD, 1));
+  F.box(-48, -54, 48, 8, 90, 98, { front: (w, n) => (Math.abs(w[2] - 94) < 0.8 ? SWAN.LIMESTONE[1] : lit(n, SWAN.LIMESTONE, 1, 0.05)), side: plain(SWAN.LIMESTONE, 0), top: plain(SWAN.LEAD, 0) });
+  // ITS DOME of lead, ribbed, a lantern on its crown
+  F.egg([0, -23, 98], [34, 34, 30], (n, w) => {
+    if (w[2] < 98.5) return null;
+    const a = Math.atan2(w[1] + 23, w[0]);
+    if (fr(a / (Math.PI / 8)) < 0.1) return lit(n as V3, SWAN.LEAD, 1);
+    return lit(n as V3, SWAN.LEAD, 0);
+  });
+  F.column(0, -23, 124, 134, 3, SWAN.LIMESTONE, 3);
+  F.egg([0, -23, 137], [4, 4, 3.4], (n) => lit(n as V3, SWAN.LEAD, 1));
+  F.rod([0, -23, 140], [0, -23, 148], 0.8, SWAN.LEAD, 0.2);
+  // ITS SWANS on plinths at its front corners, CLIPPED BOX either side, ROSES up a column
+  for (const s2 of [-1, 1]) {
+    F.box(s2 * 54 - 5, 10, s2 * 54 + 5, 20, 0, 18, { front: plain(SWAN.LIMESTONE, 0, 0.05), side: plain(SWAN.LIMESTONE, -1), top: limeTop });
+    swan(F, s2 * 54, 15, 18, -s2, SWAN.SWANW);
+    F.egg([s2 * 60, -24, 11], [9, 9, 11], (n, w) => lit(n as V3, SWAN.BOX, hash(Math.floor(w[0] / 2), Math.floor(w[2] / 2), 2605) > 0.7 ? -1 : 0));
   }
-  // THE BOX either side, clipped round on plinths
-  for (const x of [-46, 46]) {
-    F.box(x - 6, 2, x + 6, 14, 0, 12, plain(SWAN.LIMESTONE, 0, 0.05));
-    F.egg([x, 8, 22], [9, 9, 10], (n, w) => lit(n as V3, SWAN.BOX, hash(Math.floor(w[0] / 2), Math.floor(w[2] / 2), 2605) > 0.7 ? -1 : 0));
-  }
-  // ROSES climbing the left pier
   const rid = F.id();
-  for (let k = 0; k < 9; k++) {
-    const z = 10 + k * 9;
-    F.rod([-26 + Math.sin(k) * 3, -0.5, z], [-26 + Math.sin(k + 1) * 3, -0.5, z + 9], 0.7, SWAN.BOX, 0.7, rid);
-    if (k % 2) F.ball([-26 + Math.sin(k) * 3 + 1.5, 0, z + 3], 1.6, SWAN.ROSE, 0.2);
+  for (let k = 0; k < 8; k++) {
+    const z = 12 + k * 9;
+    F.rod([-41 + Math.sin(k) * 3.4, 5.6, z], [-41 + Math.sin(k + 1) * 3.4, 5.6, z + 9], 0.7, SWAN.BOX, 0.7, rid);
+    if (k % 2) F.ball([-41 + Math.sin(k) * 3.4 + 1.4, 6, z + 3], 1.6, SWAN.ROSE, 0.2);
   }
-  // the cult's banners hung under the arch's piers, its pink fire
-  banner(F, -29, -23, 30, 88, 0.1, IRON_Q);
-  banner(F, 23, 29, 30, 88, 0.1, IRON_Q);
-  sconce(F, -21, -6, 60, f, IRON_Q);
-  sconce(F, 21, -6, 60, f, IRON_Q);
+  // the cult's banners hung between the outer columns, its pink fire either side of the door
+  banner(F, -38, -31, 30, 86, 2, IRON_Q);
+  banner(F, 31, 38, 30, 86, 2, IRON_Q);
+  sconce(F, -19, -10, 64, f, IRON_Q);
+  sconce(F, 19, -10, 64, f, IRON_Q);
   return F.finish();
 }
 
