@@ -554,8 +554,9 @@ export function planChain(rng: RNG, o: ChainOpts): Plan | null {
 }
 
 /** A side area off one of the chain's (not the start's, not the boss's): a reward, a lair, or a stronghold's yard. */
-function growSide(rng: RNG, plan: Plan, role: AreaRole, size: { rx: number; ry: number; wob: number }, laneW: number, gap: number, prefer?: (a: number) => number): number {
-  const hosts = plan.areas.map((a, i) => i).filter((i) => plan.areas[i].role === 'path' || (plan.areas[i].role === 'start' && role !== 'yard'));
+function growSide(rng: RNG, plan: Plan, role: AreaRole, size: { rx: number; ry: number; wob: number }, laneW: number, gap: number, prefer?: (a: number) => number, hostOk?: (a: Area) => boolean): number {
+  const hosts = plan.areas.map((a, i) => i).filter((i) => (plan.areas[i].role === 'path' || (plan.areas[i].role === 'start' && role !== 'yard')) && (!hostOk || hostOk(plan.areas[i])));
+  if (!hosts.length) return -1;
   let best: { b: Blob; lane: Lane; host: number; score: number } | null = null;
   for (let tries = 0; tries < 80; tries++) {
     let host = rng.pick(hosts);
@@ -625,7 +626,7 @@ export const PINE_PATH = { on: true, w: 4.6, clear: 7 };
  */
 export const CHAIN: Record<Act1LandKind, number> = { quarry: 10, ledge: 15, canyon: 14, pine: 11, fen: 16 };
 
-function planFor(kind: Act1LandKind, rng: RNG): Plan | null {
+function planFor(kind: Act1LandKind, rng: RNG, depth = 0): Plan | null {
   const size = sizer(kind);
   // which way the floor goes on the screen (the game's own sense of it: across, or up)
   const across = rng.chance(0.5) ? LEFT : RIGHT;
@@ -638,7 +639,7 @@ function planFor(kind: Act1LandKind, rng: RNG): Plan | null {
       return planChain(rng, { count: CHAIN.quarry, heading: rng.pick([LEFT, RIGHT, UP, DOWN]) + rng.range(-0.4, 0.4), spread: 1.2, turn: 0.75, size, broad: 0.45, laneW: 2.8, laneLong: [3, 6], gap: 3 });
     case 'canyon':
       // (up the screen, mostly; a turn across now and then: see `canyonTrail`)
-      return planCanyon(rng, size);
+      return planCanyon(rng, size, kind === 'canyon' && levels2(depth));
     case 'ledge':
       return planLedge(rng, size, across);
     case 'pine':
@@ -655,7 +656,7 @@ function planFor(kind: Act1LandKind, rng: RNG): Plan | null {
 }
 
 /** THE CANYON: a winding way up the screen, a hollow now and then; where it turns across, it runs across for a while. */
-function planCanyon(rng: RNG, size: (rng: RNG, role: AreaRole) => { rx: number; ry: number; wob: number }): Plan | null {
+function planCanyon(rng: RNG, size: (rng: RNG, role: AreaRole) => { rx: number; ry: number; wob: number }, fork = false): Plan | null {
   const areas: Area[] = [];
   const lanes: Lane[] = [];
   const way: [number, number][] = [];
@@ -684,7 +685,53 @@ function planCanyon(rng: RNG, size: (rng: RNG, role: AreaRole) => { rx: number; 
     x = nx;
     y = ny;
   }
+  // (LEVELS2, floor 8: a high way and a low way, parting at one area and meeting again at the next, a rock between them, the
+  // high way up the screen with a fight of its own on it: game/levels2.ts)
+  if (fork && !forkCanyon(rng, size, areas, lanes)) return null;
   return { areas, lanes, way, holds: [] };
+}
+
+/**
+ * (LEVELS2, floor 8) THE CANYON'S TWO WAYS: between two areas of the main way (neither the start's nor the boss's), a second way
+ * round the rock beside the first: out of the one area to an area of its own, set off the first way's side (up the screen if it
+ * fits, else down it), and on into the next; the first way stays as it was. False if no stretch of the canyon has room for it.
+ */
+function forkCanyon(rng: RNG, size: (rng: RNG, role: AreaRole) => { rx: number; ry: number; wob: number }, areas: Area[], lanes: Lane[]): boolean {
+  const legs: number[] = [];
+  for (let j = 1; j + 1 < areas.length - 1; j++) legs.push(j);
+  rng.shuffle(legs);
+  // (the earlier stretches first, so it is met on the way and not at the end of it)
+  legs.sort((a, b) => Math.abs(a - areas.length * 0.45) - Math.abs(b - areas.length * 0.45));
+  for (const j of legs) {
+    const A = areas[j].blob;
+    const B = areas[j + 1].blob;
+    const main = lanes[j];
+    const mx = (A.x + B.x) / 2;
+    const my = (A.y + B.y) / 2;
+    const h = Math.atan2(B.y - A.y, B.x - A.x);
+    const sides = [h + Math.PI / 2, h - Math.PI / 2].sort((p, q) => downOf(Math.cos(p), Math.sin(p)) - downOf(Math.cos(q), Math.sin(q)));
+    // (its area as big as the canyon's biggest, the way round it long enough to be a way of its own)
+    const sz = { rx: rng.range(6, 7), ry: rng.range(4.5, 5.5), wob: 0.18 };
+    const rF = Math.max(sz.rx, sz.ry);
+    for (const side of sides) {
+      for (const off of [20, 17, 23]) {
+        const [fx, fy] = along(mx, my, side, off);
+        const F: Blob = { x: fx, y: fy, rx: sz.rx, ry: sz.ry, rot: rng.range(0, Math.PI), wob: sz.wob, seed: rng.int(0, 9999) };
+        const w = rng.range(4.2, 5.4);
+        const l1 = wander(rng, A.x, A.y, fx, fy, w, 1.2);
+        const l2 = wander(rng, fx, fy, B.x, B.y, w, 1.2);
+        if (!clear(areas, F, 4, [j, j + 1], l1) || !clear(areas, F, 4, [j, j + 1], l2)) continue;
+        // (clear of every way already laid, the rock between the two ways a real one)
+        if (lanes.some((l) => laneDist(l, fx, fy) < rF * (1 + sz.wob) + l.w / 2 + 3)) continue;
+        const far = (pt: [number, number]): boolean => Math.hypot(pt[0] - A.x, pt[1] - A.y) > areas[j].r + 1 && Math.hypot(pt[0] - B.x, pt[1] - B.y) > areas[j + 1].r + 1;
+        if ([...l1.pts, ...l2.pts].some((pt) => far(pt) && laneDist(main, pt[0], pt[1]) < (main.w + w) / 2 + 3)) continue;
+        areas.push({ blob: F, role: 'path', path: -1, parent: j, r: radiusOf(F) });
+        lanes.push(l1, l2);
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -786,7 +833,7 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
   const rng = new RNG(seed ^ 0x51ed270b);
   // (ACT 2: a floor of the Hush laid by this map-maker is laid as the Quarry's open areas, its own ground painted over them, and has no stronghold: its event is the Bells)
   const pk: Act1LandKind = isAct2Land(kind) ? 'quarry' : kind;
-  const plan = planFor(pk, rng);
+  const plan = planFor(pk, rng, depth);
   if (!plan) return null;
   const size = sizer(pk);
   // SIDE AREAS: the strongholds (always one, never more than two: one in three floors two), a reward, a lair
@@ -807,6 +854,9 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
   // (F9_LAIRS, on at his yes of 14 Nov 2026: floor 9's lair grown to a boss's room for the troll chieftain's camp, if it fits: game/f9_lairs.ts)
   // (LEVELS2, floor 7: the Ledge Road a lair too, the lookout held by a champion's pack)
   if (depth >= 7 && (kind !== 'ledge' || levels2(depth)) && !(f9Lairs(depth) && growSide(rng, plan, 'lair', LAIR9, 2.8, 3) >= 0)) growSide(rng, plan, 'lair', { rx: 4.5, ry: 4, wob: 0.12 }, kind === 'fen' ? 2 : 2.8, 3);
+  // (LEVELS2, floor 8: a side cave too, a champion's pack in it and a chest at its back: game/levels2.ts)
+  // (off the way's later half, not by the start)
+  if (kind === 'canyon' && levels2(depth) && growSide(rng, plan, 'lair', { rx: 4.6, ry: 4, wob: 0.14 }, 2.6, 3, undefined, (a) => a.path >= CHAIN.canyon * 0.4) < 0) return null;
 
   // THE BOUNDS: everything moved so the open ground starts MARGIN tiles in; the halls inside laid beyond it
   let x0 = Infinity;
@@ -1401,6 +1451,18 @@ function baseProps(rng: RNG, f: Floor, plan: Plan, areaRoom: readonly number[], 
         if (!ok(tx, ty)) continue;
         put('chest', tx, ty);
         k++;
+      }
+    }
+    // (LEVELS2, floor 8: the side cave's chest, at its back behind its champion's pack: the canyon's lairs after its first)
+    if (a.role === 'lair' && kind === 'canyon' && levels2(f.depth) && plan.areas.findIndex((q) => q.role === 'lair') !== i) {
+      const host = plan.areas[a.parent].blob;
+      const ang = Math.atan2(b.y - host.y, b.x - host.x);
+      for (let t = 0; t < 30; t++) {
+        const tx = Math.floor(b.x + Math.cos(ang) * b.rx * rng.range(0.2, 0.5) + rng.range(-1, 1));
+        const ty = Math.floor(b.y + Math.sin(ang) * b.ry * rng.range(0.2, 0.5) + rng.range(-1, 1));
+        if (!ok(tx, ty)) continue;
+        put('chest', tx, ty);
+        break;
       }
     }
     if (a.role === 'yard' || a.role === 'boss' || a.role === 'start') return;

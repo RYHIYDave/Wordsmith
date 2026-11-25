@@ -55,10 +55,20 @@ func run(main, hero, dir: String) -> void:
 	M.guide._speak = {}
 	await M._wait(0.1)
 	await M._snap("%s/f%d_1_start.png" % [dir, d])
-	# its new side areas, each looked at
+	# its new side areas, each looked at (and an open area off the main way that is no side area: floor 8's second way)
 	var k := 2
+	var off_way := {}
+	var land_at: String = M.dir_of(place) + "/land.json"
+	if FileAccess.file_exists(land_at):
+		var land: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(land_at))
+		for a in land["areas"]:
+			if a["role"] == "path" and int(M.map.rooms[int(a["room"])].get("path", 0)) < 0:
+				off_way[int(a["room"])] = true
 	for r in M.map.rooms:
-		if not (str(r["kind"]) in ["treasure", "guardian"]):
+		if off_way.has(int(r["id"])):
+			r = r.duplicate()
+			r["kind"] = "second_way"
+		elif not (str(r["kind"]) in ["treasure", "guardian"]):
 			continue
 		var c := Vector2(float(r["x"]) + float(r["w"]) / 2.0, float(r["y"]) + float(r["h"]) / 2.0)
 		h.world = M._free_near(c + Vector2(1.5, 1.5))
