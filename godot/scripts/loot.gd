@@ -1287,7 +1287,9 @@ func _unique_piece(id: String):
 		return all.pick_random().duplicate(true)
 	var p := power()
 	var best: Array = []
-	var gap := 999
+	# (past any gap there could be: from 999, at an endless level past it none was nearer and a null was copied, a script error;
+	# the bug hunt's sixth round)
+	var gap := 1 << 30
 	for it in all:
 		var g := absi(int(it.get("floor", p)) - p)
 		if g < gap:

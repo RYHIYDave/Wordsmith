@@ -460,7 +460,17 @@ func dodge_chance() -> float:
 		d += haste * Words.SWIFT_DODGE
 	if d <= 0.0:
 		return m52.dodge()
-	return DODGE_K * d / (d + 40.0 + 20.0 * maxf(1.0, float(map.depth) if map != null else 1.0)) + m52.dodge()
+	return DODGE_K * d / (d + 40.0 + 20.0 * maxf(1.0, _power_depth())) + m52.dodge()
+
+
+## (game.ts power) The depth his armour and dodge are reckoned against: on an endless level, its level's (loot.gd power), not the
+## floor it is laid as; the floor's own on the story's floors. (By the floor's, Endless 50 of floor 2 cut 75% where the game cuts
+## 20%, and the final arena, its map at 99, 15% at any level: the bug hunt's sixth round, 25 Nov 2026.)
+func _power_depth() -> float:
+	var L = monsters.loot if monsters != null and is_instance_valid(monsters) else null
+	if L != null and L.has_method("power"):
+		return float(L.power())
+	return float(map.depth) if map != null else 1.0
 
 
 ## THE THREE DEFENCES: harm taken by his barrier first; what is left of it, for his life. Every harm waits his barrier's filling.
@@ -1915,7 +1925,7 @@ func armour_cut(ignored := 0.0) -> float:
 	var a: float = stats.get("armor", 0.0) * (1.0 - ignored) * (uniques.armour_k() if uniques != null else 1.0)
 	if a <= 0.0:
 		return 0.0
-	return minf(0.75, a / (a + 40.0 + 20.0 * maxf(1.0, float(map.depth) if map != null else 1.0)))
+	return minf(0.75, a / (a + 40.0 + 20.0 * maxf(1.0, _power_depth())))
 
 
 ## What he withstands of an element, % (his gear's, capped: loot.gd derive): Flame, Frost; anything else not plain, Lightning's.
@@ -2237,7 +2247,8 @@ func _last_words(k: Callable, src) -> void:
 	var loot = monsters.loot if monsters != null else null
 	if k.call("plundering") > 0.0 and src != null and is_instance_valid(src) and loot != null and int(loot.gold) > 0:
 		var P: Dictionary = LW["plunder"]
-		var power: int = monsters.map.depth if monsters.map != null else 1
+		# (its cap by the level's depth on an endless level, as game.ts: loot.gd power)
+		var power: int = int(loot.power())
 		var gold: int = loot.gold
 		var n := mini(gold, maxi(1, roundi(minf(gold * float(P["steal"]), float(P["stealMost"]) * maxf(1.0, power)) * float(k.call("plundering")))))
 		loot.gold -= n

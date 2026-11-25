@@ -88,6 +88,12 @@ func _ready() -> void:
 	flats.add_child(_glow)
 	for q in data["holds"]:
 		_stand(q)
+	# (a monster standing where the altar, a brazier or a banner now stands is stood beside it: left inside it, it never moved; the bug
+	# hunt's sixth round, 25 Nov 2026)
+	if main != null and main._monsters != null:
+		for m in main._monsters.list:
+			if is_instance_valid(m) and not m.dead and not m.boss and not map.walkable(floori(m.world.x), floori(m.world.y)):
+				m.world = main._free_near(m.world)
 
 
 # --- where they are ---

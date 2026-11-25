@@ -440,7 +440,9 @@ func _won(n: int) -> void:
 	var items := int(_up_to(L2["hold"], k)) if bool(L2["on"]) else int(_up_to(T["items"], k))
 	for i in items:
 		loot._item(at, (4 if i < 2 else 2) if bool(L2["on"]) else (2 if i == 0 else 1))
-	loot._gold(at, randi_range(15, 30) * maxi(1, int(data["power"])) * k * (int(L2["gold"]) if bool(L2["on"]) else 1))
+	# (by the level's depth on an endless level, as the altar rooms pay: loot.gd power; the bug hunt's sixth round)
+	var gp: int = int(main.loot.power()) if main.in_endless else int(data["power"])
+	loot._gold(at, randi_range(15, 30) * maxi(1, gp) * k * (int(L2["gold"]) if bool(L2["on"]) else 1))
 	if main.quest610 != null:
 		main.quest610.roll_page_at(at)
 	sfx.play("rare")

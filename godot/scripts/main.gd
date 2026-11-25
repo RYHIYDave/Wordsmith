@@ -545,6 +545,8 @@ var woke := false
 var _fell_for := -1.0
 var fall_lost := {}
 var fall_depth := 0
+## (the endless level he fell on, 0 on the story's floors: the death screen names it, as panels.ts drawDeath)
+var fall_endless := 0
 ## (main.ts FALL_SEEN: how long he is seen falling before the screen says what it cost; a press after 0.4 s brings it at once)
 const FALL_SEEN := 2.0
 ## (game/modes.ts NORMAL.goldShare)
@@ -7640,6 +7642,7 @@ func _fallen(dt: float) -> void:
 		var w := will_wake()
 		fall_lost = losses() if w else {}
 		fall_depth = depth_of(place)
+		fall_endless = endless if in_endless else 0
 		if not w:
 			deaths += 1
 		if saving:
@@ -7660,7 +7663,10 @@ func _fallen(dt: float) -> void:
 ## What the screen says (ui/panels.ts drawDeath): its title, its rows, its line of what it cost or what is kept, its button.
 func death_info() -> Dictionary:
 	var w := not fall_lost.is_empty()
-	var rows: Array = ["%s, level %d" % [str(Words.data()["classes"][hero.cls]["name"]), loot.level], "Fell in dungeon %d" % fall_depth]
+	# (fallen on an endless level, that level: it said "Fell in dungeon 12" on Endless 44, "dungeon 0" in the final arena; the bug
+	# hunt's sixth round)
+	var fell: String = ("Fell in " + endless_name(fall_endless)) if fall_endless > 0 and not w else "Fell in dungeon %d" % fall_depth
+	var rows: Array = ["%s, level %d" % [str(Words.data()["classes"][hero.cls]["name"]), loot.level], fell]
 	var after := ""
 	if w:
 		after = wake_line(fall_lost, fall_depth)

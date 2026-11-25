@@ -314,7 +314,8 @@ func _won(last: Vector2) -> void:
 	var loot = main.loot
 	var at: Vector2 = loot.floor_near(last)
 	var n := rung.size()
-	var power := maxi(1, int(main.map.depth))
+	# (by the level's depth on an endless level, as game.ts power: by the floor's, Endless 50 of floor 2 paid as floor 2)
+	var power := maxi(1, int(main.loot.power()))
 	# (runedust: two and one for every two bells, half again as much (LOOT2); gear, one a bell, the first two of the best; gold,
 	# by the floor, twice (LOOT2); a word at a chance, the likelier the deeper)
 	main.quest610.drop_dust(at, roundi((float(U["dust"]) + floori(n / 2.0)) * 1.5))
