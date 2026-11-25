@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dlibyhx6d1ue0"
-path="res://.godot/imported/ward_1.png-5115568255c9813e4aba4d620242f594.ctex"
+uid="uid://d2nfjw5emybjj"
+path="res://.godot/imported/gate_y_2.png-5ce77ae707d08aa683ba49f8010b9975.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/altar_room/ward_1.png"
-dest_files=["res://.godot/imported/ward_1.png-5115568255c9813e4aba4d620242f594.ctex"]
+source_file="res://assets/altar_room/gate_y_2.png"
+dest_files=["res://.godot/imported/gate_y_2.png-5ce77ae707d08aa683ba49f8010b9975.ctex"]
 
 [params]
 

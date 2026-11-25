@@ -1,87 +1,114 @@
-## STRONGHOLDS ON ANY ENDLESS LEVEL: THE CULT'S ALTAR ROOM (his words, 23 Nov 2026: “In endless mode I want multiple chained and
-## stronghold encounters per level.  And I want these random encounters, (chained, stronghold, muffled bells, and royal cards) to
-## show up in any level.  So it's more random.”; asked whether a floor with no stronghold's hall should have the cult's altar in one
-## of its rooms, the room sealing and the waves rising there, his “Yes and yes”, 22 Nov 2026, 21:23 Eastern). On an endless level
-## of a floor with no strongholds of its own (all but floors 6 to 10, whose own stay as they are), N of the floor's ordinary rooms
-## each hold the cult's altar, as a stronghold's door has it (act1/holds.gd, whose rules these are: this script is that one, its
-## door and hall made a room):
-##   THE ROOM: one of the floor's ordinary rooms, big enough, off the way in, with no door of its own, no chained rare in it and away
-##     from the Bells; the altar of the words in its middle (art/act1_cult.ts wordAltar), a brazier of the cult's pink fire at each
-##     end of it (pinkBrazier), the cult's banners by its back walls (cultBanner): tools/godot_altar_room.ts.
+## STRONGHOLDS ON ANY ENDLESS LEVEL: THE CULT'S GATE AT THE MAP'S EDGE (his words, 23 Nov 2026: “In endless mode I want multiple
+## chained and stronghold encounters per level.  And I want these random encounters, (chained, stronghold, muffled bells, and royal
+## cards) to show up in any level.  So it's more random.”; shown the cult's altar in one of a floor's rooms, the room sealed by fire,
+## his “Why wouldn’t you just put the door on the edge of the map?  Why is it in the middle of the area?”, and asked whether to do
+## it as floors 6 to 10 do, the gate in a wall at the edge and the hall behind it, his pick, 25 Nov 2026: “Gate at the edge
+## (Recommended)”). On an endless level of a floor with no strongholds of its own (all but floors 6 to 10, whose own stay as they
+## are), N of the cult's gates, each as a stronghold of the Wilds is (act1/holds.gd, whose rules these are):
+##   THE GATE: the redoubt's gatehouse of the Wilds' strongholds (art/floor6.ts gatehouse, its sealed door's mark burning), standing
+##     in a wall at the map's edge, nothing walked behind it; before it its court of flagstones, the altar of the words in the
+##     court (art/act1_cult.ts wordAltar), a brazier of the cult's pink fire either side of it (pinkBrazier), its banners at the
+##     court's foot (cultBanner): tools/godot_altar_room.ts.
 ##   THE ALTAR: E within HOLD_TUNE.near: the gear screen with the altar beside it (inventory.gd, THE ALTAR OF THE WORDS), up to three
-##     spare words laid and taken back free; WAKE THE ALTAR burns them.
-##   THE ROOM SEALS: the cult's pink fire stands up in every doorway of the room (THE WARD), wall to everything, and the room's five
-##     waves (HOLD_WAVES) rise out of rifts in its floor as a hall's do: of the floor's own packs (QUEST610 hold.make: plain, two
-##     plain, blue and plain, two blue, a yellow and a blue), each with the words burned, harder for each word past the first and
-##     each wave on (holds.gd wave).
-##   THE REWARD, the last dead: a hall's (holds.gd _won: runedust, gear, gold, a page of the muster roll), and the fire in the
-##     doorways falls.
-## ON: pictures first (docs/mockups/altar_room/); until his yes, no altar room is laid.
+##     spare words laid and taken back free; OPEN THE DOOR burns them: the seal breaks, the altar is gone, the door stands open.
+##   THE HALL beyond it: one of the Wilds' own halls (floors 6 to 10, as the game draws them from in them: assets/looks/floor<N>_hold<n>,
+##     their ground tools/godot_edge_halls.mjs), laid past the floor's south edge in rows grown for it (floor_map.gd grow_south);
+##     into the doorway, the screen dark, and he is at the far end of its hallway; out by it, before the gate. Its five waves
+##     (HOLD_WAVES) rise out of rifts in its floor as a hall's do: of the floor's own packs (QUEST610 hold.make: plain, two plain,
+##     blue and plain, two blue, a yellow and a blue), each with the words burned, harder for each word past the first and each wave on.
+##   THE REWARD, the last dead: a hall's (holds.gd _won: runedust, gear, gold, a page of the muster roll).
+## ON: pictures first (docs/mockups/edge_gate/); until his yes, no gate is laid.
 extends "res://scripts/act1/holds.gd"
 
 const AR_DIR := "res://assets/altar_room/"
 const FloorMap := preload("res://scripts/floor_map.gd")
+const DoorWords := preload("res://scripts/door_words.gd")
 static var ON := false
-## (altar rooms on a level; a room at least this many tiles each way; its middle this far from where he comes in; two rooms' middles
-## this far apart; a room with more doorway tiles than this is open ground, not a room)
+## (gates on a level; at most, Siege burned in; how far the altar from where he comes in; two altars this far apart)
 const N := 2
-## (how many on this floor: N, or as the door words make it, act1/quest610.gd)
-var want := N
-const SIZE := 7
+const MOST := 4
 const FAR := 14.0
 const APART := 14.0
-const WAYS_MOST := 12
-## (A RING OF FIRE, where the floor has too few rooms that close (the city's streets): the altar on open floor, and as it wakes the
-## cult's fire springs up in a ring round it this far out, its band this wide, so none comes in or goes out but by the waves' end)
-const RING := 5.0
-const BAND := 1.5
-## (the pieces' pictures' frames a second: the braziers' fire, the banners stirring, the ward's fire)
-const FPS := {"brazier": 8.0, "banner": 6.0, "ward": 8.0}
+## (how many on this floor: gates_for)
+var want := N
+## (A GATE'S PLACE: before it its court, open floor this many tiles across and deep; behind it the wall at the map's edge, this
+## many tiles across and deep with nothing walked on in it)
+const COURT := Vector2i(4, 3)
+const BACK := Vector2i(6, 4)
+## (THE HALLS past the south edge: this many rows of nothing between the floor and them; each one's place, across and down)
+const GAP := 8
+const SLOT := Vector2i(20, 24)
+## (their screen layers: the floor's own halls, floors 6 to 10, have the first two: holds.gd HALL_BIT)
+const EDGE_BIT := 4
+## (the gatehouse in strips this many picture pixels wide, each sorted by where along the wall it stands, so that he goes in
+## front of its near end and its far end in front of the wall beyond it)
+const STRIP := 16
+## (the pieces' pictures' frames a second: the braziers' fire, the banners stirring, the mark on the sealed door)
+const FPS := {"brazier": 8.0, "banner": 6.0, "gate": 6.0}
 const PINK := Color("#ff4f8a")
+## (the court's flagstones as dim as the floor round them)
+const FLAG_DIM := Color(0.58, 0.56, 0.64)
 
-## (that it is an altar room, for the altar's half of the gear screen: inventory.gd)
-var altar_room := true
 ## (the floor's monsters, their packs the waves are made of; the level's luck, or -1)
 var mdata: Dictionary = {}
 var seed := -1
 var _rng := RandomNumberGenerator.new()
 var _table := {}
 var _frames := {}
-## (each room's pieces: {"stand": [[Sprite2D, key]], "ward": [[Sprite2D, tile]], "ward_t": seconds since it rose, or -1}
+## (the Wilds' halls to lay: tools/godot_edge_halls.mjs)
+var _src: Array = []
+## (each gate's pieces: {"gate": [Sprite2D strips], "stand": [[Sprite2D, key]], "altar": Sprite2D or null})
 var _pieces := {}
 var _glow: Node2D
 
 
-## Is there to be an altar room here: on, an endless level, a floor that has no strongholds of its own.
+## Is there to be a gate here: on, an endless level, a floor that has no strongholds of its own.
 static func wanted(main, where: String) -> bool:
 	return ON and bool(main.in_endless) and where.begins_with("floor") and not FileAccess.file_exists(file_of(int(main.map.depth)))
+
+
+## How many of the cult's gates this level has: on a floor with no strongholds of its own N (Siege burned in, twice as many); on one
+## of floors 6 to 10, Siege burned in, SIEGE_OWN beside its own; else none (door_words.gd).
+static func gates_for(main, where: String) -> int:
+	if not ON or not bool(main.in_endless) or not where.begins_with("floor") or main.map == null:
+		return 0
+	var siege := DoorWords.burned(main, "siege") > 0
+	if FileAccess.file_exists(file_of(int(main.map.depth))):
+		return DoorWords.SIEGE_OWN if siege else 0
+	return mini(MOST, N * (DoorWords.MORE if siege else 1))
+
+
+## The rows the floor grows past its south edge for `n` halls (floor_map.gd grow_south): GAP, then as many rows of places as they need.
+static func band_rows(n: int, w: int) -> int:
+	if n <= 0:
+		return 0
+	var across := maxi(1, (w - 2) / SLOT.x)
+	return GAP + SLOT.y * ceili(float(n) / across) + 2
 
 
 func _ready() -> void:
 	Q = JSON.parse_string(FileAccess.get_file_as_string("res://assets/act1/quest610.json"))
 	T = Q["hold"]["tune"]
 	_table = JSON.parse_string(FileAccess.get_file_as_string(AR_DIR + "altar_room.json"))
-	for k in ["altar", "brazier", "banner", "ward"]:
-		_frames[k] = (_table[k] as Array).map(func(f): return {"tex": load(AR_DIR + str(f["file"])), "ox": float(f["ox"]), "oy": float(f["oy"])})
+	for k in ["altar", "brazier", "banner", "gate", "flag", "gate_y", "altar_y"]:
+		_frames[k] = (_table[k] as Array).map(func(f): return {"tex": load(AR_DIR + str(f["file"])), "ox": float(f["ox"]), "oy": float(f["oy"]), "w": int(f["w"]), "h": int(f["h"])})
+	_src = JSON.parse_string(FileAccess.get_file_as_string(AR_DIR + "halls.json"))
 	data = {"holds": [], "defs": {}, "power": maxi(1, int(loot.power()))}
 	if seed >= 0:
 		_rng.seed = seed
 	else:
 		_rng.randomize()
-	for r in _rooms():
+	if map.grown_from < 0 or _src.is_empty():
+		return
+	for c in _spots():
 		if data["holds"].size() >= want:
 			break
-		_keep(_plan(data["holds"].size(), r))
-	# (too few rooms that close: a ring of fire on open floor for the rest; then, still short (the other door words' chained rares and
-	# bells filling the floor: Siege with all four gave half its rooms, the bug hunt's sixth round), a ring kept less far from them)
-	for loose in [false, true]:
-		for k in (80 if not loose else 240) * want:
-			if data["holds"].size() >= want:
-				break
-			var t := Vector2i(_rng.randi_range(0, map.w - 1), _rng.randi_range(0, map.h - 1))
-			_keep(_plan_ring(data["holds"].size(), Vector2(t.x + 0.5, t.y + 0.5), loose))
+		_keep(_plan(data["holds"].size(), c))
 	if data["holds"].is_empty():
 		return
+	# (the floor's look on a layer of its own, put away while he is in a hall: holds.gd)
+	if look != null:
+		look.set_cull(FLOOR_BIT)
 	_rifts = _RiftLayer.new()
 	_rifts.holds = self
 	flats.add_child(_rifts)
@@ -107,7 +134,7 @@ func _keep(q: Dictionary) -> void:
 	st.append({"words": [], "open": false, "entered": false, "won": false, "wave": 0, "packs": [], "coming": false})
 
 
-## Not near a chained rare, the Bells or another altar.
+## Not near a chained rare, the Bells or another gate's altar.
 func _clear_of_others(p: Vector2, keep: float) -> bool:
 	for o in monsters.list:
 		if is_instance_valid(o) and int(o.get("chained")) != 0 and o.world.distance_to(p) < keep:
@@ -120,90 +147,109 @@ func _clear_of_others(p: Vector2, keep: float) -> bool:
 	for q in data["holds"]:
 		if Vector2(q["altar"]["x"], q["altar"]["y"]).distance_to(p) < APART:
 			return false
+	# (on floors 6 to 10, Siege burned in: away from the floor's own strongholds, their gates and their halls: holds.gd)
+	var own = main.quest610.holds if main != null and main.quest610 != null else null
+	if own != null and own != self and is_instance_valid(own):
+		for q in own.data["holds"]:
+			if Vector2(q["altar"]["x"], q["altar"]["y"]).distance_to(p) < APART or _in_hold(q, p, 4.0):
+				return false
 	return true
 
 
-## The altar's two tiles along x, open and clear round them, at or next to `c`; null if none.
-func _altar_at(c: Vector2):
-	for k in 9:
-		var cand := Vector2i(floori(c.x) + [0, 1, -1, 0, 0, 1, -1, 1, -1][k], floori(c.y) + [0, 0, 0, 1, -1, 1, 1, -1, -1][k])
-		var ok := true
-		for dx in range(-3, 3):
-			for dy in range(-1, 2):
-				if not map.walkable(cand.x + dx, cand.y + dy) or map.tile(cand.x + dx, cand.y + dy) != FloorMap.FLOOR:
-					ok = false
-		if ok:
-			return cand
-	return null
+## (open floor of one height, not cut, no stair: what a court is laid on)
+func _court_tile(tx: int, ty: int, ht: int) -> bool:
+	if not map.walkable(tx, ty) or map.tile(tx, ty) != FloorMap.FLOOR:
+		return false
+	var i: int = ty * map.w + tx
+	if not map.height.is_empty() and map.height[i] != ht:
+		return false
+	if not map.cut.is_empty() and map.cut[i] != 0:
+		return false
+	return map.stair.is_empty() or map.stair[i] == 0
 
 
-## A RING OF FIRE's plan, its altar at or next to `c` on open floor: the ring's tiles, its waves, its pieces; {} if it will not do.
-func _plan_ring(n: int, c: Vector2, loose := false) -> Dictionary:
-	if c.distance_to(map.start) < FAR or not _clear_of_others(c, RING + (1.0 if loose else 4.0)):
-		return {}
+## A gate's place by its own measures: `a` along its wall, `b` out from it, from (gx, gy), the middle of its doorway's back edge: in a
+## wall that runs along x (its door looking out down the screen to the left) (gx + a, gy + b); `turned`, in one that runs along y
+## (looking out down the screen to the right), (gx + b, gy + a). Its doorway is a from -1 to 1, b from 0 to 1.
+static func _gw(turned: bool, gx: float, gy: float, a: float, b: float) -> Vector2:
+	return Vector2(gx + b, gy + a) if turned else Vector2(gx + a, gy + b)
+
+
+static func _gt(turned: bool, gx: int, gy: int, a: int, b: int) -> Vector2i:
+	return Vector2i(gx + b, gy + a) if turned else Vector2i(gx + a, gy + b)
+
+
+## A gate's place at (gx, gy) (`turned`: in a wall along y): its court open floor before it, the wall behind it the map's edge
+## (nothing walked on in it), and nothing of the floor's own in the way.
+func _fits(gx: int, gy: int, turned: bool) -> bool:
+	# (quick: the doorway on floor, the wall straight behind it)
+	for a in [-1, 0]:
+		var d := _gt(turned, gx, gy, a, 0)
+		var k := _gt(turned, gx, gy, a, -1)
+		if not map.walkable(d.x, d.y) or map.walkable(k.x, k.y):
+			return false
+	var ht: int = map.height[gy * map.w + gx] if not map.height.is_empty() else 0
+	for a in range(-COURT.x / 2, COURT.x / 2):
+		for b in range(0, COURT.y):
+			var t := _gt(turned, gx, gy, a, b)
+			if not _court_tile(t.x, t.y, ht):
+				return false
+	for a in range(-BACK.x / 2, BACK.x / 2):
+		for b in range(-BACK.y, 0):
+			var t := _gt(turned, gx, gy, a, b)
+			if map.walkable(t.x, t.y):
+				return false
+	var c := _gw(turned, gx, gy, 0.0, 1.5)
+	if c.distance_to(map.start) < FAR:
+		return false
 	for r in map.rooms:
-		if str(r.get("kind", "")) in ["start", "boss"] and Rect2(float(r["x"]) - 2.0, float(r["y"]) - 2.0, float(r["w"]) + 4.0, float(r["h"]) + 4.0).has_point(c):
-			return {}
-	var at = _altar_at(c)
-	if at == null:
-		return {}
-	var gx: int = at.x
-	var gy: int = at.y
-	var altar := Vector2(gx, gy + 0.5)
-	# (the ring: the open floor in its band; and inside it enough open floor for the waves)
-	var ways: Array = []
-	var inner := 0
-	var R := ceili(RING + BAND)
-	for ty in range(gy - R, gy + R + 1):
-		for tx in range(gx - R, gx + R + 1):
-			var d := Vector2(tx + 0.5, ty + 0.5).distance_to(altar)
-			if not map.walkable(tx, ty) or map.tile(tx, ty) != FloorMap.FLOOR:
-				continue
-			if d >= RING - BAND / 2.0 and d < RING + BAND / 2.0:
-				ways.append(Vector2i(tx, ty))
-			elif d < RING - BAND / 2.0:
-				inner += 1
-	if inner < 40:
-		return {}
-	var box := {"x": gx - int(RING), "y": gy - int(RING), "w": int(RING) * 2, "h": int(RING) * 2}
-	var waves := _waves(n, box, altar, RING - BAND)
-	if waves.is_empty():
-		return {}
-	return {"n": n, "ring": true, "room": box, "gx": gx, "gy": gy, "altar": {"x": altar.x, "y": altar.y},
-		"fight": {"x": altar.x, "y": altar.y + 1.5}, "ways": ways, "waves": waves,
-		"braziers": [{"x": gx - 2.5, "y": gy + 0.5}, {"x": gx + 2.5, "y": gy + 0.5}],
-		"banners": [{"x": gx - 1.0, "y": gy - 1.5}, {"x": gx - 2.0, "y": gy - 0.5}]}
-
-## The floor's rooms that may hold an altar, in the level's luck's order.
-func _rooms() -> Array:
-	var doored := {}
+		if str(r.get("kind", "")) in ["start", "boss"] and Rect2(float(r["x"]) - 3.0, float(r["y"]) - 3.0, float(r["w"]) + 6.0, float(r["h"]) + 6.0).has_point(c):
+			return false
+	# (the floor's own: its ways on, its doors, its chests and barrels, its levers, its traps, its waypoint, where the fallen wordsmith lies)
+	var near: Array = []
+	for p in map.props:
+		near.append([Vector2(float(p["x"]), float(p["y"])), 3.0])
+	for l in map.levers:
+		near.append([Vector2(float(l["x"]), float(l["y"])), 4.0])
 	for d in map.doors:
-		doored[int(d.get("room", -1))] = true
+		if d.has("middle"):
+			near.append([Vector2(float(d["middle"]["x"]), float(d["middle"]["y"])), 5.0])
+	for st0 in map.stairs:
+		near.append([Vector2(float(st0["x"]), float(st0["y"])), 6.0])
+	if map.waypoint is Dictionary:
+		near.append([Vector2(float(map.waypoint["x"]), float(map.waypoint["y"])), 6.0])
+	if map.body is Dictionary:
+		near.append([Vector2(float(map.body["x"]), float(map.body["y"])), 4.0])
+	if map.ways is Dictionary:
+		for k in ["way", "stair", "shaft"]:
+			var w = map.ways.get(k)
+			if w is Dictionary and w.has("x"):
+				near.append([Vector2(float(w["x"]), float(w["y"])), 6.0])
+		var ex = map.ways.get("exit")
+		if ex is Dictionary:
+			for t in ex.get("tiles", []):
+				near.append([Vector2(int(t) % map.w + 0.5, int(t) / map.w + 0.5), 6.0])
+	for e in near:
+		if (e[0] as Vector2).distance_to(c) < float(e[1]):
+			return false
+	var c0 := _gw(turned, gx, gy, -COURT.x / 2 - 1, -1)
+	var c1 := _gw(turned, gx, gy, COURT.x / 2 + 1, COURT.y + 1)
+	var court := Rect2(minf(c0.x, c1.x), minf(c0.y, c1.y), absf(c1.x - c0.x), absf(c1.y - c0.y))
+	for hz in map.hazards:
+		if court.intersects(Rect2(float(hz["x"]), float(hz["y"]), float(hz["w"]), float(hz["h"]))):
+			return false
+	return true
+
+
+## Every place on the floor a gate fits, in either way a wall runs (Vector3i: gx, gy, 1 turned), in the level's luck's order.
+func _spots() -> Array:
 	var out: Array = []
-	for r in map.rooms:
-		if not str(r.get("kind", "")) in ["normal", "elite"] or int(r["w"]) < SIZE or int(r["h"]) < SIZE or doored.has(int(r["id"])):
-			continue
-		var c := Vector2(float(r["x"]) + float(r["w"]) / 2.0, float(r["y"]) + float(r["h"]) / 2.0)
-		if c.distance_to(map.start) < FAR:
-			continue
-		var box := Rect2(float(r["x"]) - 1.0, float(r["y"]) - 1.0, float(r["w"]) + 2.0, float(r["h"]) + 2.0)
-		# (no chained rare in it)
-		var held := false
-		for o in monsters.list:
-			if is_instance_valid(o) and int(o.get("chained")) != 0 and box.has_point(o.world):
-				held = true
-		if held:
-			continue
-		# (away from the Bells: their Muffled Bell and every bell)
-		var B: Dictionary = monsters.bells if monsters.bells is Dictionary else {}
-		var plan: Dictionary = B.get("D", B).get("plan", {}) if not B.is_empty() else {}
-		var near_bells := false
-		for p in ([plan.get("muffled")] + plan.get("bells", [])):
-			if p is Dictionary and p.has("x") and box.grow(3.0).has_point(Vector2(float(p["x"]), float(p["y"]))):
-				near_bells = true
-		if near_bells:
-			continue
-		out.append(r)
+	var top: int = map.grown_from if map.grown_from >= 0 else map.h
+	for gy in range(BACK.x / 2, top - COURT.y):
+		for gx in range(BACK.x / 2, map.w - COURT.y):
+			for turned in [false, true]:
+				if _fits(gx, gy, turned):
+					out.append(Vector3i(gx, gy, 1 if turned else 0))
 	for i in range(out.size() - 1, 0, -1):
 		var j := _rng.randi_range(0, i)
 		var x = out[i]
@@ -212,45 +258,75 @@ func _rooms() -> Array:
 	return out
 
 
-## A room's plan: its altar in its middle, its pieces, its doorways, its five waves; {} if it will not do.
-func _plan(n: int, r: Dictionary) -> Dictionary:
-	var rx := int(r["x"])
-	var ry := int(r["y"])
-	var rw := int(r["w"])
-	var rh := int(r["h"])
-	var c := Vector2(rx + rw / 2.0, ry + rh / 2.0)
-	if not _clear_of_others(c, 0.0):
+## Gate `n`'s plan at `c`: its altar, its pieces, its hall laid past the south edge and that hall's five waves; {} if it will not do.
+func _plan(n: int, c: Vector3i) -> Dictionary:
+	var gx := c.x
+	var gy := c.y
+	var turned := c.z == 1
+	var altar := _gw(turned, gx, gy, 0.0, 1.55)
+	if not _clear_of_others(altar, 6.0):
 		return {}
-	# (its doorways: the floor in the ring of wall round it)
-	var ways: Array = []
-	for x in range(rx - 1, rx + rw + 1):
-		for y in [ry - 1, ry + rh]:
-			if map.tile(x, y) == FloorMap.FLOOR and map.walkable(x, y):
-				ways.append(Vector2i(x, y))
-	for y in range(ry, ry + rh):
-		for x in [rx - 1, rx + rw]:
-			if map.tile(x, y) == FloorMap.FLOOR and map.walkable(x, y):
-				ways.append(Vector2i(x, y))
-	if ways.is_empty() or ways.size() > WAYS_MOST:
+	# (its hall: one of the Wilds' by the level's luck, in its place past the south edge)
+	var H: Dictionary = _src[_rng.randi_range(0, _src.size() - 1)]
+	var B: Dictionary = H["box"]
+	var across := maxi(1, (map.w - 2) / SLOT.x)
+	var ox: int = 2 + (n % across) * SLOT.x
+	var oy: int = map.grown_from + GAP + (n / across) * SLOT.y
+	if ox + int(B["w"]) > map.w or oy + int(B["h"]) > map.h:
 		return {}
-	# (the altar: two tiles along x, open and clear round them, as near the middle as there are)
-	var at = _altar_at(c)
-	if at == null:
-		return {}
-	var gx: int = at.x
-	var gy: int = at.y
-	var altar := Vector2(gx, gy + 0.5)
-	var waves := _waves(n, r, altar)
+	var sh := Vector2i(ox - int(B["x"]), oy - int(B["y"]))
+	_carve(H, sh, true)
+	var mv := func(r: Dictionary) -> Dictionary:
+		var o := r.duplicate()
+		o["x"] = float(r["x"]) + sh.x
+		o["y"] = float(r["y"]) + sh.y
+		return o
+	var inside: Dictionary = mv.call(H["inside"])
+	var fight: Dictionary = mv.call(H["fight"])
+	var waves := _waves(n, inside, Vector2(fight["x"], fight["y"]))
 	if waves.is_empty():
+		_carve(H, sh, false)
 		return {}
-	return {"n": n, "room": {"x": rx, "y": ry, "w": rw, "h": rh}, "gx": gx, "gy": gy, "altar": {"x": altar.x, "y": altar.y},
-		"fight": {"x": altar.x, "y": altar.y + 1.5}, "ways": ways, "waves": waves,
-		"braziers": [{"x": gx - 2.5, "y": gy + 0.5}, {"x": gx + 2.5, "y": gy + 0.5}],
-		"banners": [{"x": gx - 1.0, "y": gy - 1.5}, {"x": gx - 2.0, "y": gy - 0.5}]}
+	var at := func(a: float, b: float) -> Dictionary:
+		var p := _gw(turned, gx, gy, a, b)
+		return {"x": p.x, "y": p.y}
+	return {"n": n, "gx": gx, "gy": gy, "turned": turned, "altar": {"x": altar.x, "y": altar.y}, "inside": inside, "way": mv.call(H["way"]),
+		"entry": mv.call(H["entry"]), "fight": fight, "waves": waves, "look": str(H["place"]), "shift": [sh.x, sh.y],
+		"braziers": [at.call(-2.3, 1.1), at.call(2.3, 1.1)],
+		# (its banners at the court's front corners, as the Quarry's stand; but not one that would stand before the door on the
+		# screen, a front corner straight below it: the sealed door's mark is what is to be seen)
+		"banners": [at.call(-2.6, 2.7), at.call(2.6, 2.7)].filter(func(b): return absf(Iso.to_screen(float(b["x"]) - gx, float(b["y"]) - gy).x) > 70.0)}
 
 
-## The five waves of room `n` (QUEST610 hold.make, by the floor's own packs): each pack one of the floor's of that colour, at most
-## HOLD_TUNE.pack of it and its leader, coming up out of the room's floor about the altar one after another.
+## A hall's ground laid `sh` tiles from where it lies on its own floor (or taken up again, `lay` false): each tile's kind and whether
+## it is walked on, as there; and, on a floor whose steps are counted (height.ts), every step its walked tiles may take.
+func _carve(H: Dictionary, sh: Vector2i, lay: bool) -> void:
+	var B: Dictionary = H["box"]
+	var bw := int(B["w"])
+	var bh := int(B["h"])
+	var x0 := int(B["x"]) + sh.x
+	var y0 := int(B["y"]) + sh.y
+	for j in bh:
+		for i in bw:
+			var t: int = (y0 + j) * map.w + x0 + i
+			map.tiles[t] = int(H["tiles"][j * bw + i]) if lay else FloorMap.VOID
+			map.walk[t] = int(H["walk"][j * bw + i]) if lay else 0
+			if not map.height.is_empty():
+				map.height[t] = 0
+	if map.step.is_empty():
+		return
+	for j in bh:
+		for i in bw:
+			var tx := x0 + i
+			var ty := y0 + j
+			var bits := 0
+			if lay and map.walkable(tx, ty):
+				bits = (1 if map.walkable(tx + 1, ty) else 0) | (2 if map.walkable(tx - 1, ty) else 0) | (4 if map.walkable(tx, ty + 1) else 0) | (8 if map.walkable(tx, ty - 1) else 0)
+			map.step[ty * map.w + tx] = bits
+
+
+## The five waves of gate `n`'s hall (QUEST610 hold.make, by the floor's own packs): each pack one of the floor's of that colour, at
+## most HOLD_TUNE.pack of it and its leader, coming up out of the hall's floor about the middle of the fight one after another.
 func _waves(n: int, r: Dictionary, altar: Vector2, within := INF) -> Array:
 	var packs := {}
 	for o in mdata.get("monsters", []):
@@ -272,7 +348,7 @@ func _waves(n: int, r: Dictionary, altar: Vector2, within := INF) -> Array:
 			of["plain"].append(ms)
 	if of["plain"].is_empty():
 		return []
-	# (where they come up: the room's open floor, not by the altar, not in a doorway)
+	# (where they come up: the hall's open floor, not by the middle of the fight)
 	var spots: Array = []
 	for x in range(int(r["x"]) + 1, int(r["x"]) + int(r["w"]) - 1):
 		for y in range(int(r["y"]) + 1, int(r["y"]) + int(r["h"]) - 1):
@@ -288,12 +364,12 @@ func _waves(n: int, r: Dictionary, altar: Vector2, within := INF) -> Array:
 		var W := {"k": k + 1, "packs": [], "monsters": []}
 		var t := 0.0
 		for j in (make[k] as Array).size():
-			var want: String = str(make[k][j]["rarity"])
-			var pool: Array = of[want] if not (of[want] as Array).is_empty() else of["plain"]
+			var want_r: String = str(make[k][j]["rarity"])
+			var pool: Array = of[want_r] if not (of[want_r] as Array).is_empty() else of["plain"]
 			var tpl: Array = pool[_rng.randi_range(0, pool.size() - 1)]
 			var pid := 960000 + n * 1000 + (k + 1) * 10 + j
 			W["packs"].append(pid)
-			var most := int(T["pack"]) + (1 if want == "yellow" else 0)
+			var most := int(T["pack"]) + (1 if want_r == "yellow" else 0)
 			var take: Array = tpl.duplicate()
 			take.sort_custom(func(a, b): return str(a.get("rarity", "")) == "leader" and str(b.get("rarity", "")) != "leader")
 			for o in take.slice(0, mini(most, take.size())):
@@ -317,14 +393,33 @@ func _waves(n: int, r: Dictionary, altar: Vector2, within := INF) -> Array:
 	return out
 
 
+# --- its hall (holds.gd): its own look, laid where its ground was, on a layer of its own ---
+
+func _hall_place(n: int) -> String:
+	return str(hold(n)["look"])
+
+
+func _hall_bit(n: int) -> int:
+	return EDGE_BIT + n
+
+
+func _hall_shift(n: int) -> Vector2i:
+	var s: Array = hold(n)["shift"]
+	return Vector2i(int(s[0]), int(s[1]))
+
+
+func _hall_n() -> int:
+	return data["holds"].size()
+
+
 # --- its pieces ---
 
-func _sprite(key: String, at: Vector2, k := 0) -> Sprite2D:
+func _sprite(key: String, at: Vector2, k := 0, parent: Node = null) -> Sprite2D:
 	var s := Sprite2D.new()
 	s.centered = false
 	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	s.position = Iso.to_screen(at.x, at.y)
-	stands.add_child(s)
+	(parent if parent != null else stands).add_child(s)
 	_show(s, key, k)
 	return s
 
@@ -340,13 +435,54 @@ func _block(x: int, y: int) -> void:
 	map.walk[y * map.w + x] = 0
 
 
-## Room `q`'s altar, its braziers and its banners stood up, their tiles not walked through.
+## Gate `q` stood up: the gatehouse, its court's flagstones, the altar, its braziers and its banners, their tiles not walked through.
 func _stand(q: Dictionary) -> void:
-	var P := {"stand": [], "ward": [], "ward_t": -1.0}
+	var n := int(q["n"])
+	var P := {"gate": [], "stand": [], "altar": null, "flags": []}
+	var gx := int(q["gx"])
+	var gy := int(q["gy"])
+	var turned := bool(q.get("turned", false))
+	var ht: int = map.height[gy * map.w + gx] if not map.height.is_empty() else 0
+	# (the court's flagstones, worn down the middle to the door, where the floor is open)
+	for b in range(0, 3):
+		for a in range(-3, 3):
+			var t := _gt(turned, gx, gy, a, b)
+			if _court_tile(t.x, t.y, ht):
+				var fl := _sprite("flag", Vector2(t.x, t.y), 2 if a == -1 or a == 0 else (t.x + t.y) % 2, flats)
+				flats.move_child(fl, 0)
+				# (the Quarry's stone in the day, here in a floor's dark: as dim as the floor round it)
+				fl.modulate = FLAG_DIM
+				P["flags"].append(fl)
+	var strips := []
+	var f: Dictionary = _frames["gate_y" if turned else "gate"][0]
+	var at := Iso.to_screen(float(gx), float(gy))
+	var x := 0
+	while x < int(f["w"]):
+		var wide := mini(STRIP, int(f["w"]) - x)
+		var s := Sprite2D.new()
+		s.centered = false
+		s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		s.region_enabled = true
+		# (where along the wall this strip's middle is: a screen x of sx picture pixels from the doorway's middle is sx / HW tiles
+		# along the wall (along x, or back along y where it runs that way), so its depth is the doorway's and that much more: sorted
+		# sx * HH / HW lower (or higher), and a little more, in front of the wall it stands against; whatever stands on the floor
+		# before it is lower still)
+		var sx := float(x + wide / 2) - float(f["ox"])
+		var lift := (-sx if turned else sx) * Iso.HH / Iso.HW + 4.0
+		s.position = at + Vector2(0, lift)
+		s.set_meta("x", x)
+		s.set_meta("wide", wide)
+		s.set_meta("lift", lift)
+		stands.add_child(s)
+		strips.append(s)
+		x += wide
+	P["gate"] = strips
+	_pieces[n] = P
+	_gate_show(n, 0)
 	var a := Vector2(q["altar"]["x"], q["altar"]["y"])
-	P["stand"].append([_sprite("altar", a), "altar"])
-	_block(int(q["gx"]), int(q["gy"]))
-	_block(int(q["gx"]) - 1, int(q["gy"]))
+	P["altar"] = _sprite("altar_y" if turned else "altar", a)
+	for t in _altar_tiles(q):
+		_block(t.x, t.y)
 	for b in q["braziers"]:
 		var p := Vector2(b["x"], b["y"])
 		if map.walkable(floori(p.x), floori(p.y)):
@@ -357,58 +493,68 @@ func _stand(q: Dictionary) -> void:
 		if map.walkable(floori(p.x), floori(p.y)):
 			P["stand"].append([_sprite("banner", p, _rng.randi_range(0, 3)), "banner"])
 			_block(floori(p.x), floori(p.y))
-	_pieces[int(q["n"])] = P
 
 
-# --- the altar woken: the room sealed (holds.gd open_door, a room's) ---
+## The altar's two tiles (b 1, a -1 and 0): not walked through while it stands.
+func _altar_tiles(q: Dictionary) -> Array:
+	var turned := bool(q.get("turned", false))
+	return [_gt(turned, int(q["gx"]), int(q["gy"]), -1, 1), _gt(turned, int(q["gx"]), int(q["gy"]), 0, 1)]
 
-## WAKE THE ALTAR of room `n`: the words on it burned, the cult's fire up in every doorway, its first wave coming. False: none given.
+
+## Gate `n`'s gatehouse at frame `k` (0 to 3 the sealed door's mark flickering; 4 the door open).
+func _gate_show(n: int, k: int) -> void:
+	var F: Array = _frames["gate_y" if bool(hold(n).get("turned", false)) else "gate"]
+	var f: Dictionary = F[clampi(k, 0, F.size() - 1)]
+	for s in _pieces[n]["gate"]:
+		if not is_instance_valid(s):
+			continue
+		var x: int = s.get_meta("x")
+		var wide: int = s.get_meta("wide")
+		s.texture = f["tex"]
+		s.region_rect = Rect2(x, 0, wide, int(f["h"]))
+		s.offset = Vector2(x - float(f["ox"]), -float(f["oy"]) - float(s.get_meta("lift")))
+
+
+# --- the altar given its words: the door opened (holds.gd open_door) ---
+
+## OPEN THE DOOR of gate `n`: the words on its altar burned, its seal broken, its door open, the altar gone and its two tiles floor
+## again. False: none was given.
 func open_door(n: int) -> bool:
 	var s: Dictionary = st[n]
 	var q := hold(n)
 	if s["open"] or s["words"].is_empty():
 		return false
 	s["open"] = true
-	s["entered"] = true
-	var a := Vector2(q["altar"]["x"], q["altar"]["y"])
-	_tell({"t": "burst", "x": a.x, "y": a.y, "r": 1.4, "el": "fire", "style": "shock", "words": [], "n": 0, "echo": false})
+	var gx := int(q["gx"])
+	var gy := int(q["gy"])
+	_gate_show(n, 4)
 	var P: Dictionary = _pieces[n]
-	var r: Dictionary = q["room"]
-	for t in q["ways"]:
-		var tile: Vector2i = t
-		_block(tile.x, tile.y)
-		# (a doorway's tile: two tongues of it along the wall's line; a ring's: one)
-		var at: Array = [Vector2(0.5, 0.5)]
-		if not q.get("ring", false):
-			var along_x: bool = tile.y < int(r["y"]) or tile.y >= int(r["y"]) + int(r["h"])
-			at = [Vector2(0.25, 0.5), Vector2(0.75, 0.5)] if along_x else [Vector2(0.5, 0.25), Vector2(0.5, 0.75)]
-		for o in at:
-			var ws := _sprite("ward", Vector2(tile.x, tile.y) + o, _rng.randi_range(0, 3))
-			ws.scale = Vector2(1, 0.05)
-			P["ward"].append([ws, tile])
-	P["ward_t"] = 0.0
+	if P["altar"] != null and is_instance_valid(P["altar"]):
+		P["altar"].queue_free()
+	P["altar"] = null
+	for t in _altar_tiles(q):
+		map.walk[t.y * map.w + t.x] = 1
+	var door := _gw(bool(q.get("turned", false)), gx, gy, 0.0, 0.2)
+	_tell({"t": "burst", "x": float(q["altar"]["x"]), "y": float(q["altar"]["y"]), "r": 1.2, "el": "fire", "style": "shock", "words": [], "n": 0, "echo": false})
+	_tell({"t": "burst", "x": door.x, "y": door.y, "r": 1.6, "el": "fire", "style": "shock", "words": [], "n": 0, "echo": false})
 	hero.kick(4.0)
 	sfx.play("seal_burn", linear_to_db(0.9))
 	var k: int = s["words"].size()
-	loot.say("The altar takes %s. %s" % ["the word" if k == 1 else "%d words" % k, "A ring of fire springs up." if q.get("ring", false) else "Fire bars the way out."], MSG_WORD)
-	if bool(Q["hold"]["waves"]["on"]):
-		_after(0.6, func(): wave(n, 1))
+	loot.say("The altar takes %s. The door's seal breaks." % ("the word" if k == 1 else "%d words" % k), MSG_WORD)
 	return true
 
 
-## Its last wave dead: a hall's reward (holds.gd _won), and the fire in the doorways falls.
-func _won(n: int) -> void:
-	super._won(n)
-	var q := hold(n)
-	var P: Dictionary = _pieces[n]
-	for w in P["ward"]:
-		var tile: Vector2i = w[1]
-		map.walk[tile.y * map.w + tile.x] = 1
-		_tell({"t": "burst", "x": tile.x + 0.5, "y": tile.y + 0.5, "r": 0.8, "el": "fire", "style": "shock", "words": [], "n": 0, "echo": false})
-		w[0].queue_free()
-	P["ward"] = []
-	P["ward_t"] = -1.0
-	loot.say("The ring of fire falls." if q.get("ring", false) else "The fire in the doorways falls.", MSG_GOOD)
+## (its doorway and where he comes out, by its own measures: in a wall along y, the two tiles (gx, gy - 1) and (gx, gy))
+func _at_door(q: Dictionary, h: Vector2) -> bool:
+	if not bool(q.get("turned", false)):
+		return super._at_door(q, h)
+	var gx := int(q["gx"])
+	var gy := int(q["gy"])
+	return floori(h.x) == gx and (floori(h.y) == gy - 1 or floori(h.y) == gy) and h.x < gx + 0.6
+
+
+func _out_at(q: Dictionary) -> Vector2:
+	return _gw(bool(q.get("turned", false)), float(q["gx"]), float(q["gy"]), -1.5, 1.5)
 
 
 func _exit_tree() -> void:
@@ -418,65 +564,35 @@ func _exit_tree() -> void:
 			l.queue_free()
 
 
-## (the room's own step, in place of a hall's: the altar's prompt, the waves one after another; no door, no hall)
+## (a stronghold's own step, holds.gd: the altar's prompt, the door, the hall, its waves; and its pieces stirring)
 func _process(dt: float) -> void:
-	_t += dt
-	_step_later(dt)
-	_step_risers(dt)
+	super._process(dt)
 	_animate(dt)
-	prompt = ["", -1]
-	if hero == null or main._going or not hero.alive:
-		return
-	var an := altar_near()
-	if an >= 0:
-		prompt = ["E: Altar: give words to wake it", an]
-		if Input.is_action_just_pressed("interact") and not main._inv.visible:
-			main._inv.open_altar(an, self)
-	var waves: Dictionary = Q["hold"]["waves"]
-	for q in data["holds"]:
-		var n := int(q["n"])
-		var s: Dictionary = st[n]
-		if not s["entered"] or s["won"] or int(s["wave"]) == 0 or s["coming"] or _alive(s["packs"]) or _rising(s["packs"]):
-			continue
-		if bool(waves["on"]) and int(s["wave"]) < int(waves["n"]):
-			s["coming"] = true
-			var next := int(s["wave"]) + 1
-			_after(float(waves["gap"]), func(): wave(n, next))
-			continue
-		_won(n)
 
 
-func _animate(dt: float) -> void:
+func _animate(_dt: float) -> void:
 	if _glow == null:
 		return
 	for n in _pieces:
 		var P: Dictionary = _pieces[n]
 		for e in P["stand"]:
-			if e[1] != "altar" and is_instance_valid(e[0]):
+			if is_instance_valid(e[0]):
 				_show(e[0], e[1], int(_t * FPS[e[1]] + e[0].get_instance_id() % 4))
-		if float(P["ward_t"]) >= 0.0:
-			P["ward_t"] = float(P["ward_t"]) + dt
-			var up := minf(1.0, float(P["ward_t"]) / 0.45)
-			for w in P["ward"]:
-				if is_instance_valid(w[0]):
-					w[0].scale = Vector2(1, 0.05 + 0.95 * (1.0 - (1.0 - up) * (1.0 - up)))
-					_show(w[0], "ward", int(_t * FPS["ward"]) + int(w[1].x + w[1].y))
+		if not st[n]["open"]:
+			_gate_show(n, int(_t * FPS["gate"]) % 4)
 	_glow.queue_redraw()
-	# (their light in the dark: render.ts spot, as a cult brazier's own: look.gd spot, game pixels)
-	if look != null and is_instance_valid(look):
+	# (their light in the dark: render.ts spot, as a cult brazier's own, and the mark burning on the sealed door: look.gd spot, game
+	# pixels)
+	if look != null and is_instance_valid(look) and inside < 0:
 		for n in _pieces:
 			var q := hold(n)
 			for b in q["braziers"]:
 				var p := Iso.to_screen(float(b["x"]), float(b["y"])) / 2.0
 				look.spot(p - Vector2(0, 24), 40.0, 0.55)
-			var wards: Array = _pieces[n]["ward"]
-			var step := maxi(1, ceili(wards.size() / 8.0))
-			for i in range(0, wards.size(), step):
-				var tile: Vector2i = wards[i][1]
-				look.spot(Iso.to_screen(tile.x + 0.5, tile.y + 0.5) / 2.0 - Vector2(0, 10), 24.0 + 8.0 * (step - 1), 0.45)
+			look.spot(Iso.to_screen(float(q["gx"]), float(q["gy"])) / 2.0 - Vector2(-4 if bool(q.get("turned", false)) else 4, 40), 46.0 if not st[n]["open"] else 30.0, 0.5)
 
 
-## THEIR GLOW ON THE FLOOR: the cult's pink, round each brazier and each doorway's fire (the enemy's glow, his rule), soft, on the
+## THEIR GLOW ON THE FLOOR: the cult's pink, round each brazier and before the sealed door (the enemy's glow, his rule), soft, on the
 ## floor under everything that stands.
 class _Glow extends Node2D:
 	const PINK := Color("#ff4f8a")
@@ -488,9 +604,9 @@ class _Glow extends Node2D:
 			var q: Dictionary = R.hold(n)
 			for b in q["braziers"]:
 				_pool(Iso.to_screen(float(b["x"]), float(b["y"])), 70.0, 0.16)
-			for w in R._pieces[n]["ward"]:
-				var tile: Vector2i = w[1]
-				_pool(Iso.to_screen(tile.x + 0.5, tile.y + 0.5), 44.0, 0.2)
+			if not R.st[n]["open"]:
+				var d: Vector2 = R._gw(bool(q.get("turned", false)), float(q["gx"]), float(q["gy"]), -0.2, 0.4)
+				_pool(Iso.to_screen(d.x, d.y), 60.0, 0.14)
 
 	func _pool(c: Vector2, r: float, a: float) -> void:
 		for i in 5:

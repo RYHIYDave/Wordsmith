@@ -12,6 +12,7 @@
 ## floor); `--only=floors` pictures every floor that is in.
 extends Node2D
 
+const AltarRooms := preload("res://scripts/act1/altar_rooms.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
 ## (THE DOOR WORDS: Chains, Siege, Toll and Crown burned into the Rim's door, more of their encounters on that level)
 const DoorWords := preload("res://scripts/door_words.gd")
@@ -1283,6 +1284,11 @@ func _build(where: String, arrive: String) -> void:
 	if map != null and int(map.depth) >= 1:
 		last_floor = int(map.depth)
 	map = FloorMap.new(dir + "/layout.json")
+	# (STRONGHOLDS ON ANY ENDLESS LEVEL, THE CULT'S GATES AT THE MAP'S EDGE: rows past its south edge for the halls beyond them,
+	# before anything sizes itself by the floor: act1/altar_rooms.gd)
+	var gates: int = AltarRooms.gates_for(self, where)
+	if gates > 0:
+		map.grow_south(AltarRooms.band_rows(gates, map.w))
 	# (the camp has its look and no stone of its own: the town's stands in for the walls it never builds)
 	var ground := GroundArt.new(dir if FileAccess.file_exists(dir + "/ground.json") else TOWN_DIR)
 	# (THE WORDSMITH'S TRADE: coming into town, his shelf for this visit, and nothing of the hero's sold him yet: game.ts rollShop)

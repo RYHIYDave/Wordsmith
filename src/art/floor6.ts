@@ -725,7 +725,7 @@ const inOpening = (x: number, z: number): boolean => Math.abs(x) < GATE.half && 
  * from the face with its merlons and arrow slits, the cult's banner hung down each tower's front, and
  * the keep rising behind on the terrace's top, its own banner flying. 212 x 312 at (72, 282).
  */
-function gatehouse(open: boolean, f: number): Sprite {
+export function gatehouse(open: boolean, f: number): Sprite {
   const S = new Scene(new Px(290, 424), 98, 382);
   /** It is built a third again as big as it is measured here, its stones with it. */
   const K = 1.35;

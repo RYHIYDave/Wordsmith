@@ -168,6 +168,23 @@ export function inFaceLight<T>(alongX: boolean, k: number, f: () => T): T {
   }
 }
 
+/**
+ * Paint `f` in light from `L` (THE GODOT PORT's bake, tools/godot_altar_room.ts: a piece built along x painted in the world's light
+ * turned across, then its picture turned over, is that piece built along y in the world's own light: the gate at the map's edge
+ * in a wall turned the other way). Nothing of the game itself paints in it.
+ */
+export function inLight<T>(L: readonly number[], f: () => T): T {
+  const was = { L: light.L, dimmed: light.dimmed };
+  light.L = L;
+  light.dimmed = 0;
+  try {
+    return f();
+  } finally {
+    light.L = was.L;
+    light.dimmed = was.dimmed;
+  }
+}
+
 /** Which tone of a ramp a face turned `n` takes, in the light from the upper left. */
 export function toneAt(n: readonly number[], r: Ramp, bias = 0): string {
   const l = dot(n, light.L) + bias;

@@ -138,13 +138,14 @@ func enter(where: String) -> void:
 		h.flats = main._place.get_child(3)
 		place.add_child(h)
 		holds = h
-		# (THE DOOR WORDS: Siege burned in, the cult's altar rooms beside the floor's own strongholds: door_words.gd)
-		if AltarRooms.ON and main.in_endless and DoorWords.burned(main, "siege") > 0:
-			rooms = _altar_rooms(stands, place, DoorWords.SIEGE_OWN)
-	# (STRONGHOLDS ON ANY ENDLESS LEVEL: on a floor with none of its own, the cult's altar in its rooms: altar_rooms.gd; Siege burned
-	# in, twice as many: door_words.gd)
+		# (THE DOOR WORDS: Siege burned in, the cult's gates at the map's edge beside the floor's own strongholds: door_words.gd)
+		var more: int = AltarRooms.gates_for(main, where)
+		if more > 0:
+			rooms = _altar_rooms(stands, place, more)
+	# (STRONGHOLDS ON ANY ENDLESS LEVEL: on a floor with none of its own, the cult's gates at the map's edge: altar_rooms.gd; Siege
+	# burned in, twice as many: door_words.gd)
 	elif AltarRooms.wanted(main, where):
-		holds = _altar_rooms(stands, place, AltarRooms.N * (DoorWords.MORE if DoorWords.burned(main, "siege") > 0 else 1))
+		holds = _altar_rooms(stands, place, AltarRooms.gates_for(main, where))
 	# (ENDLESS MODE, NO STORY: the Pinewood's pieces and the Fen's pillars not on an endless level; the strongholds stay: storyHere)
 	var story: bool = main.story_here()
 	if depth == 9 and story:

@@ -257,7 +257,7 @@ func _rare(t: Dictionary, his: Array, at: Vector2) -> Dictionary:
 func _spot(r: float):
 	# (Chains burned in, `apart` nearer: an elite's room too, and anywhere in a room's middle half, not only by its middle)
 	var kinds: Array = ["normal"] if apart >= APART else ["normal", "elite"]
-	var rooms: Array = map.rooms.filter(func(q): return kinds.has(str(q.get("kind", ""))) and int(q["w"]) >= 6 and int(q["h"]) >= 6)
+	var rooms: Array = map.rooms.filter(func(q): return kinds.has(str(q.get("kind", ""))) and int(q["w"]) >= 6 and int(q["h"]) >= 6 and not _a_hall(q))
 	var side: Array = rooms.filter(func(q): return int(q.get("path", 0)) < 0)
 	var way: Array = rooms.filter(func(q): return int(q.get("path", 0)) >= 0)
 	_shuffle(side)
@@ -267,6 +267,29 @@ func _spot(r: float):
 		if p != null:
 			return p
 	return null
+
+
+## (floors 6 to 10: whether room `q` is a stronghold's hall or its hallway, beyond its sealed door, or its yard before it, where no
+## chained rare is held:
+## act1/holds.gd; one was found in floor 8's, 25 Nov 2026)
+var _halls = null
+func _a_hall(q: Dictionary) -> bool:
+	if _halls == null:
+		_halls = []
+		var path := "res://assets/floor%d/holds.json" % int(map.depth)
+		if FileAccess.file_exists(path):
+			for h in JSON.parse_string(FileAccess.get_file_as_string(path)).get("holds", []):
+				for k in ["inside", "way"]:
+					if h.has(k):
+						_halls.append(Rect2(float(h[k]["x"]) - 2.0, float(h[k]["y"]) - 2.0, float(h[k]["w"]) + 4.0, float(h[k]["h"]) + 4.0))
+				# (and its yard before the gate, where its altar and its guards are)
+				if h.has("altar"):
+					_halls.append(Rect2(float(h["altar"]["x"]) - 4.0, float(h["altar"]["y"]) - 4.0, 8.0, 8.0))
+	var r := Rect2(float(q["x"]), float(q["y"]), float(q["w"]), float(q["h"]))
+	for b in _halls:
+		if (b as Rect2).intersects(r):
+			return true
+	return false
 
 
 func _shuffle(a: Array) -> void:

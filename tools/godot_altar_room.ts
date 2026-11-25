@@ -1,21 +1,22 @@
-// THE GODOT PORT: THE CULT'S ALTAR ROOM, a stronghold on an endless level of any floor without one of its own (his words, 23 Nov
-// 2026: “In endless mode I want multiple chained and stronghold encounters per level.  And I want these random encounters, (chained,
-// stronghold, muffled bells, and royal cards) to show up in any level.”; the altar room, his “Yes and yes” of 22 Nov 2026, 21:23
-// Eastern). Its pieces are the cult's own, painted by the game's own painters (art/act1_cult.ts): the ALTAR OF THE WORDS
-// (wordAltar, its three hollows), the cult's BRAZIERS of pink fire (pinkBrazier, 4 frames) and BANNERS (cultBanner, 4 frames); and
-// THE WARD, the cult's pink fire standing in a doorway once the altar wakes (three tongues of pinkFlame on a tile's middle, leaping
-// by turns, 4 frames), lighting what is round it in the enemy's pink:
+// THE GODOT PORT: THE CULT'S GATE AT THE MAP'S EDGE, a stronghold on an endless level of any floor without one of its own (his words,
+// 23 Nov 2026: “In endless mode I want multiple chained and stronghold encounters per level.  And I want these random encounters,
+// (chained, stronghold, muffled bells, and royal cards) to show up in any level.”; the gate at the map's edge, his pick of 25 Nov 2026,
+// “Gate at the edge (Recommended)”). Its pieces are the cult's own, painted by the game's own painters: the REDOUBT'S GATEHOUSE of the
+// Wilds' strongholds (art/floor6.ts gatehouse: its sealed door's mark burning, 4 frames, and open) and its court's FLAGSTONES
+// (flagstones); the ALTAR OF THE WORDS (art/act1_cult.ts wordAltar, its three hollows), the cult's BRAZIERS of pink fire
+// (pinkBrazier, 4 frames) and BANNERS (cultBanner, 4 frames); and the gatehouse and the altar TURNED, for a wall that runs along y:
 //   npx tsx tools/godot_altar_room.ts   -> godot/assets/altar_room/<name>_<frame>.png, altar_room.json
 // Each picture in picture pixels (two to a game pixel), cut to what is painted, with its floor point (ox, oy) from its top left;
 // its lights as the art gives them.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
-import { Px } from '../src/engine/px';
-import type { Light, Sprite } from '../src/engine/px';
+import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
-import { ALTAR_HOLLOWS, cultBanner, pinkBrazier, pinkFlame, wordAltar } from '../src/art/act1_cult';
-import { compose, GRAIN } from '../src/art/kit';
-import { FLAME } from '../src/art/mkit';
+import { ALTAR_HOLLOWS, cultBanner, pinkBrazier, wordAltar } from '../src/art/act1_cult';
+import { GRAIN } from '../src/art/kit';
+import { gatehouse, quarryPieces } from '../src/art/floor6';
+import { inLight } from '../src/art/floor4';
+import { LIGHT_W } from '../src/art/floor2';
 
 paintWithoutCanvas();
 const OUT = 'godot/assets/altar_room';
@@ -42,8 +43,9 @@ function png(w: number, h: number, rgba: Uint8ClampedArray): Uint8Array {
   return all;
 }
 
-/** A sprite as a picture at two picture pixels to a game pixel, cut to what is painted, its floor point from its corner. */
-function save(s: Sprite, file: string): { file: string; w: number; h: number; ox: number; oy: number; lights: unknown; x0: number; y0: number; k: number } {
+/** A sprite as a picture at two picture pixels to a game pixel, cut to what is painted, its floor point from its corner; `turned`,
+ * the picture turned over left to right (for a piece painted in the light turned across: see TURNED below). */
+function save(s: Sprite, file: string, turned = false): { file: string; w: number; h: number; ox: number; oy: number; lights: unknown; x0: number; y0: number; k: number } {
   const p = paintingOf(s);
   const k = 2 / (s.density ?? 1);
   let x0 = p.w, y0 = p.h, x1 = -1, y1 = -1;
@@ -55,33 +57,13 @@ function save(s: Sprite, file: string): { file: string; w: number; h: number; ox
   const h = (y1 - y0 + 1) * k;
   const out = new Uint8ClampedArray(w * h * 4);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const sx = x0 + Math.floor(x / k), sy = y0 + Math.floor(y / k);
+    const sx = turned ? x1 - Math.floor(x / k) : x0 + Math.floor(x / k), sy = y0 + Math.floor(y / k);
     out.set(p.d.subarray((sy * p.w + sx) * 4, (sy * p.w + sx) * 4 + 4), (y * w + x) * 4);
   }
   writeFileSync(`${OUT}/${file}`, png(w, h, out));
-  const lights = (s as unknown as { lights?: unknown }).lights ?? [];
-  return { file, w, h, ox: s.ax * 2 - x0 * k, oy: s.ay * 2 - y0 * k, lights, x0, y0, k };
-}
-
-/** THE WARD: the cult's pink fire standing on a doorway's tile, three tongues leaping by turns over a bed of it. 40 x 64 at (20, 58). */
-function ward(f: number): Sprite {
-  const p = new Px(40, 64);
-  const X = 20;
-  const Y = 58;
-  const lean = [1, -2, 2, -1][f % 4];
-  pinkFlame(p, X, Y, 10, 9, lean * 0.4);
-  pinkFlame(p, X - 1, Y - 2, 22 + [3, 7, 0, 5][f % 4], 5, lean);
-  pinkFlame(p, X + 6, Y - 1, 14 + [6, 0, 5, 2][f % 4], 3.4, lean + 1.5);
-  pinkFlame(p, X - 7, Y, 12 + [0, 5, 3, 6][f % 4], 3, lean - 1.5);
-  for (let k = 0; k < 3; k++) {
-    const sy = Y - 30 - ((f * 7 + k * 11) % 18);
-    const sx = Math.round(X + Math.sin(f + k * 2.1) * 6);
-    p.set(sx, sy, FLAME[3]).set(sx, sy - 1, FLAME[4]);
-  }
-  const s = compose(null, [p], null).sprite(X, Y, GRAIN);
-  const lights: Light[] = [{ x: 0, y: -14 / GRAIN, r: 30 + (f % 2) * 2, color: FLAME[2], a: 0.4 }];
-  s.lights = lights;
-  return s;
+  const lights = turned ? [] : (s as unknown as { lights?: unknown }).lights ?? [];
+  const ox = s.ax * 2 - x0 * k;
+  return { file, w, h, ox: turned ? w - ox : ox, oy: s.ay * 2 - y0 * k, lights, x0, y0, k };
 }
 
 const table: Record<string, unknown> = {};
@@ -91,8 +73,23 @@ table.altar = [altar];
 table.hollows = ALTAR_HOLLOWS.map(([x, y]) => [x * altar.k, y * altar.k]);
 table.brazier = [0, 1, 2, 3].map((f) => save(pinkBrazier(f), `brazier_${f}.png`));
 table.banner = [0, 1, 2, 3].map((f) => save(cultBanner(f), `banner_${f}.png`));
-table.ward = [0, 1, 2, 3].map((f) => save(ward(f), `ward_${f}.png`));
-for (const k of ['altar', 'brazier', 'banner', 'ward']) {
+// THE CULT'S GATE AT THE MAP'S EDGE (his pick, 25 Nov 2026: "Gate at the edge (Recommended)", after his “Why wouldn’t you just put
+// the door on the edge of the map?”): the redoubt's gatehouse of the Wilds' strongholds (art/floor6.ts gatehouse: four frames of
+// the sealed door's mark burning, the fifth open), and its court's flagstones (flagstones: two laid, one worn down the middle)
+const piece = (name: string) => {
+  const pc = quarryPieces().find((q) => q.name === name);
+  if (!pc || !pc.frames) throw new Error(`no piece ${name}`);
+  return pc.frames;
+};
+table.gate = piece("the redoubt's gatehouse").map((s, f) => save(s, `gate_${f}.png`));
+table.flag = piece("the court's flagstones").map((s, f) => save(s, `flag_${f}.png`));
+// TURNED: the gate in a wall that runs along y, its door looking out down the screen to the right, and its altar along y before it.
+// Never a picture flipped as it is (his rulebook, Figures 7: the light still falls from the upper left): each painted in the world's
+// light turned across (x for y), then its picture turned over, which is the piece built along y in the world's own light.
+const ACROSS = [LIGHT_W[1], LIGHT_W[0], LIGHT_W[2]];
+table.gate_y = [0, 1, 2, 3].map((f) => inLight(ACROSS, () => gatehouse(false, f))).concat([inLight(ACROSS, () => gatehouse(true, 0))]).map((s, f) => save(s, `gate_y_${f}.png`, true));
+table.altar_y = [save(inLight(ACROSS, () => wordAltar()), 'altar_y_0.png', true)];
+for (const k of ['altar', 'brazier', 'banner', 'gate', 'flag', 'gate_y', 'altar_y']) {
   console.log(k, (table[k] as { w: number; h: number; ox: number; oy: number }[]).map((f) => `${f.w}x${f.h} at ${f.ox},${f.oy}`).join('; '));
 }
 console.log('hollows', JSON.stringify(ALTAR_HOLLOWS), 'grain', GRAIN);

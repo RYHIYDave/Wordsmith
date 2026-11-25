@@ -1340,4 +1340,4 @@ func _round6(dir: String) -> void:
 	M.dungeon_words = []
 	M.in_endless = false
 	M.endless = 0
-	_line(counts.size() == 2 and counts[0] >= 4 and counts[1] >= 4, "Siege's altar rooms on Endless 50 of floor 12: alone %d, with Chains, Toll and Crown %d (was 2)" % [counts[0], counts[1]])
+	_line(counts.size() == 2 and counts[0] >= 4 and counts[1] >= 4, "Siege's gates on Endless 50 of floor 12: alone %d, with Chains, Toll and Crown %d (was 2)" % [counts[0], counts[1]])

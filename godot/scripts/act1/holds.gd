@@ -219,9 +219,7 @@ func _process(dt: float) -> void:
 		var n := int(q["n"])
 		var s: Dictionary = st[n]
 		# (into the door: the two tiles of its doorway)
-		var gy := int(q["gy"])
-		var gx := int(q["gx"])
-		if s["open"] and floori(h.y) == gy and (floori(h.x) == gx - 1 or floori(h.x) == gx) and h.y < gy + 0.6:
+		if s["open"] and _at_door(q, h):
 			sfx.play("door", linear_to_db(0.6))
 			through(n, true)
 			return
@@ -247,6 +245,18 @@ func _process(dt: float) -> void:
 				continue
 		if s["entered"] and not s["won"] and not _alive(s["packs"]) and not _rising(s["packs"]):
 			_won(n)
+
+
+## Whether `h` is in stronghold `q`'s doorway, its two tiles along its wall (at (gx - 1, gy) and (gx, gy)), far enough in.
+func _at_door(q: Dictionary, h: Vector2) -> bool:
+	var gx := int(q["gx"])
+	var gy := int(q["gy"])
+	return floori(h.y) == gy and (floori(h.x) == gx - 1 or floori(h.x) == gx) and h.y < gy + 0.6
+
+
+## Where he stands coming out of stronghold `q`'s hall: before its door, to one side of its altar.
+func _out_at(q: Dictionary) -> Vector2:
+	return Vector2(float(q["gx"]) - 1.5, float(q["gy"]) + 1.5)
 
 
 ## game/act1_layout.ts inHold: (x, y) in a stronghold's hall or its hallway, `m` tiles round them counted in.
@@ -287,7 +297,7 @@ func through(n: int, inward: bool) -> void:
 		hero.world = Vector2(q["entry"]["x"], q["entry"]["y"])
 		hero.face = Vector2(0, -1) if q.has("way") else Vector2(-0.7071, -0.7071)
 	else:
-		hero.world = Vector2(float(q["gx"]) - 1.5, float(q["gy"]) + 1.5)
+		hero.world = _out_at(q)
 		hero.face = Vector2(0.7071, 0.7071)
 	_in_hall(n if inward else -1)
 	if inward and not st[n]["entered"]:
@@ -310,9 +320,9 @@ func _in_hall(n: int) -> void:
 	if n == inside:
 		return
 	inside = n
-	var place := "floor%d_hold%d" % [map.depth, n]
+	var place := _hall_place(n) if n >= 0 else ""
 	if n >= 0 and not _halls.has(n) and Look.has_look(place):
-		_halls[n] = _Hall.make(main, place, hero, HALL_BIT + n)
+		_halls[n] = _Hall.make(main, place, hero, _hall_bit(n), _hall_shift(n))
 	_mask()
 	if n >= 0 and _halls.has(n):
 		main._veil.material.set_shader_parameter("deep", 0.62)
@@ -333,16 +343,36 @@ func _mask() -> void:
 	var m := vp.canvas_cull_mask
 	var hall_here := inside >= 0 and _halls.has(inside)
 	m = (m & ~(1 << FLOOR_BIT)) if hall_here else (m | (1 << FLOOR_BIT))
-	for k in 2:
-		m = (m | (1 << (HALL_BIT + k))) if hall_here and inside == k else (m & ~(1 << (HALL_BIT + k)))
+	for k in _hall_n():
+		m = (m | (1 << _hall_bit(k))) if hall_here and inside == k else (m & ~(1 << _hall_bit(k)))
 	vp.canvas_cull_mask = m
+
+
+## (stronghold `n`'s hall: its look, the layer of the screen it is on, how far from where it was recorded it is laid; how many halls)
+func _hall_place(n: int) -> String:
+	return "floor%d_hold%d" % [map.depth, n]
+
+
+func _hall_bit(n: int) -> int:
+	return HALL_BIT + n
+
+
+func _hall_shift(_n: int) -> Vector2i:
+	return Vector2i.ZERO
+
+
+func _hall_n() -> int:
+	return 2
 
 
 func _exit_tree() -> void:
 	# (the floor left: every layer drawn again, for the next place's look)
 	var vp := get_viewport()
 	if vp != null:
-		vp.canvas_cull_mask = vp.canvas_cull_mask | (1 << FLOOR_BIT) | (1 << HALL_BIT) | (1 << (HALL_BIT + 1))
+		var m := vp.canvas_cull_mask | (1 << FLOOR_BIT)
+		for k in _hall_n():
+			m |= 1 << _hall_bit(k)
+		vp.canvas_cull_mask = m
 	inside = -1
 
 
@@ -486,7 +516,7 @@ class _Hall extends RefCounted:
 	var look
 	var light: Node
 
-	static func make(main, place: String, hero, bit: int) -> _Hall:
+	static func make(main, place: String, hero, bit: int, shift := Vector2i.ZERO) -> _Hall:
 		var h := _Hall.new()
 		var root: Node2D = main._place
 		var back := Node2D.new()
@@ -498,6 +528,9 @@ class _Hall extends RefCounted:
 			root.move_child(pair[0], at[pair[1]].get_index() + 1)
 		var L = LookK.new()
 		L.place = place
+		# (a hall of the Wilds laid past another floor's edge, at a gate there: act1/altar_rooms.gd)
+		L.shift = shift
+		L.shift_w = int(main.map.w)
 		L.back_layer = back
 		L.floor_layer = floor_layer
 		L.flat_layer = flat

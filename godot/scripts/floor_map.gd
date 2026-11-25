@@ -139,6 +139,36 @@ func _init(path: String) -> void:
 			pier[int(i)] = 1
 
 
+## (THE CULT'S GATES AT THE MAP'S EDGE: the first of the rows grown past the floor's south edge for their halls, or -1: grow_south)
+var grown_from := -1
+
+
+## THE CULT'S GATES AT THE MAP'S EDGE (act1/altar_rooms.gd): `rows` more rows of nothing past the floor's south edge, where the
+## halls beyond its gates are laid. Every tile keeps its number (y * w + x: w does not change), so all that counts tiles by
+## their numbers (the doors' ways, the look's fog, the props) goes on as it did. Done as the floor is laid, before anything else
+## sizes itself by it.
+func grow_south(rows: int) -> void:
+	if rows <= 0:
+		return
+	if grown_from < 0:
+		grown_from = h
+	var n := rows * w
+	tiles.resize(tiles.size() + n)
+	variant.resize(variant.size() + n)
+	walk.resize(walk.size() + n)
+	shut.resize(shut.size() + n)
+	pier.resize(pier.size() + n)
+	if not cut.is_empty():
+		cut.resize(cut.size() + n)
+	if not height.is_empty():
+		height.resize(height.size() + n)
+	if not stair.is_empty():
+		stair.resize(stair.size() + n)
+	if not step.is_empty():
+		step.resize(step.size() + n)
+	h += rows
+
+
 func tile(tx: int, ty: int) -> int:
 	if tx < 0 or ty < 0 or tx >= w or ty >= h:
 		return VOID

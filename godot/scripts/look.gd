@@ -37,6 +37,10 @@ const HH := 16.0  # picture pixels in half a tile's height: a depth of d sorts a
 const DARK_GRAIN := 4.0  # game pixels to a pixel of the dark's picture
 
 var place := ""
+## (THE CULT'S GATES AT THE MAP'S EDGE, act1/altar_rooms.gd: a hall of the Wilds laid past another floor's edge, this many tiles from
+## where its look was recorded; and that floor's width, its walls' tiles counted on its grid)
+var shift := Vector2i.ZERO
+var shift_w := 0
 var back_layer: Node2D
 var floor_layer: Node2D
 var flat_layer: Node2D
@@ -157,6 +161,8 @@ func _lexicon_out() -> void:
 func _ready() -> void:
 	data = JSON.parse_string(FileAccess.get_file_as_string(DIR + place + ".json"))
 	_format = int(data.get("format", 1))
+	if shift != Vector2i.ZERO and _format == 2:
+		_shift_all()
 	# (THE LEXICON IN THE STASH, town.gd LEXICON_IN_STASH: the town's, the camp's and the Rim's Lexicon, its book on its stand, its
 	# glow and its light, not drawn)
 	if place in ["town", "camp", "rim"] and preload("res://scripts/town.gd").LEXICON_IN_STASH:
@@ -950,6 +956,42 @@ func _glow_texture() -> GradientTexture2D:
 
 
 # --- a look recorded from the game itself (tools/godot_record.mjs, "format": 2) ---
+
+## (THE CULT'S GATES AT THE MAP'S EDGE) Every place in the recorded look moved `shift` tiles: on the screen by as much ((x - y) * 16,
+## (x + y) * 8 game pixels), each depth by x + y, each wall's tile counted afresh on the floor it is laid in.
+func _shift_all() -> void:
+	var dx := float(shift.x - shift.y) * 16.0
+	var dy := float(shift.x + shift.y) * 8.0
+	var dd := float(shift.x + shift.y)
+	var sw := int(data.get("w", 0))
+	for run in data.get("ground", []):
+		for e in run["list"]:
+			if e is Array:
+				e[1] = float(e[1]) + dx
+				e[2] = float(e[2]) + dy
+			elif e is Dictionary:
+				e["x"] = float(e["x"]) + dx
+				e["y"] = float(e["y"]) + dy
+	for it in data.get("items", []):
+		it["x"] = float(it["x"]) + dx
+		it["y"] = float(it["y"]) + dy
+		if it.get("d") != null:
+			it["d"] = float(it["d"]) + dd
+		for q in it.get("g", []):
+			q[1] = float(q[1]) + dx
+			q[2] = float(q[2]) + dy
+		if it.has("wall"):
+			var w: Array = it["wall"]
+			w[0] = float(w[0]) + dx
+			w[1] = float(w[1]) + dy
+			w[2] = float(w[2]) + dd
+			if w.size() > 3 and sw > 0 and shift_w > 0 and int(w[3]) >= 0:
+				var t := int(w[3])
+				w[3] = (t / sw + shift.y) * shift_w + (t % sw + shift.x)
+	for g in data.get("glows", []):
+		g[1] = float(g[1]) + dx
+		g[2] = float(g[2]) + dy
+
 
 ## Lay the recorded place out: the ground's runs in the renderer's order on the floor's layer (a stretch of still pictures is
 ## one drawer; a run of pictures is a sprite of its own, in its place among them), then what stands, by depth.

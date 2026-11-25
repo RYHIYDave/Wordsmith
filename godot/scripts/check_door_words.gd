@@ -228,7 +228,7 @@ func run(main, hero, dir: String) -> void:
 		await _go("floor12")
 		c12.append(M.chained_rares.size())
 	_line(c12[1] > c12[0], "Chains on floor 12: %d chained rares where there were %d" % [c12[1], c12[0]])
-	# SIEGE: the altar room switched on for the check
+	# SIEGE: the cult's gates at the map's edge switched on for the check
 	var was: bool = AltarRooms.ON
 	AltarRooms.ON = true
 	await _level(8, [])
@@ -237,7 +237,7 @@ func run(main, hero, dir: String) -> void:
 	await _level(8, ["siege"])
 	var beside: int = M.quest610.rooms.data["holds"].size() if M.quest610.rooms != null and is_instance_valid(M.quest610.rooms) else 0
 	var own1: int = M.quest610.holds.data["holds"].size() if M.quest610.holds != null else 0
-	_line(own > 0 and own1 == own and beside0 and beside == DoorWords.SIEGE_OWN, "Siege on floor 8: its own %d strongholds kept (%d), and %d altar rooms beside them (none without it: %s)" % [own, own1, beside, beside0])
+	_line(own > 0 and own1 == own and beside0 and beside >= 1 and beside <= DoorWords.SIEGE_OWN, "Siege on floor 8: its own %d strongholds kept (%d), and %d of the cult's gates beside them, as many as its edges hold (none without it: %s)" % [own, own1, beside, beside0])
 	if beside > 0:
 		var q: Dictionary = M.quest610.rooms.data["holds"][0]
 		h.world = Vector2(float(q["altar"]["x"]), float(q["altar"]["y"]) + 1.6) if q.has("altar") else h.world
@@ -248,7 +248,7 @@ func run(main, hero, dir: String) -> void:
 	var r3: int = M.quest610.holds.data["holds"].size() if M.quest610.holds != null else 0
 	await _level(3, ["siege"])
 	var r3s: int = M.quest610.holds.data["holds"].size() if M.quest610.holds != null else 0
-	_line(r3 == AltarRooms.N and r3s == AltarRooms.N * DoorWords.MORE, "Siege on floor 3: %d altar rooms where there were %d" % [r3s, r3])
+	_line(r3 == AltarRooms.N and r3s == AltarRooms.N * DoorWords.MORE, "Siege on floor 3: %d gates where there were %d" % [r3s, r3])
 	AltarRooms.ON = was
 	M.dungeon_words = []
 	print("DOORWORDS: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
