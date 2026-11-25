@@ -96,7 +96,8 @@ func acting(m, a: Dictionary, t0: float, t1: float, _dt: float, hero) -> void:
 			var n := maxi(1, ceili(absf(want - was) / 0.1))
 			for i in n:
 				var p: Vector2 = m.world + m.face * ((want - was) / n)
-				if not m.mgr.map.walkable(floori(p.x), floori(p.y)):
+				# (room for its whole body, not its middle's tile alone: rushed half into a wall it stood there; the bug hunt's fifth round)
+				if not m.mgr.clear(p.x, p.y, m.r):
 					break
 				m.world = p
 			a1["carried"] = want

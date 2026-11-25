@@ -81,14 +81,14 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 		_tell(h, "doom", "shadow", h.world, {"r": 1.1, "secs": 0.9})
 	if s.call("eternity") and F.clock - float(by.m52.get("rd_stop", -9.0)) > 3.0:
 		by.m52["rd_stop"] = F.clock
-		h.held = maxf(h.held, 0.45)
+		h.hold_by_meld(0.45)
 		_tell(h, "eternity", "stop", h.world, {"secs": 0.45})
 	if s.call("fervor") and by.m52.get("rd_fed", false):
 		by.m52["rd_fed"] = false
 		F._ground(h.world, 1.1, 3.0, "burn", "fire", F._avg(by) * 0.2, [], by, "fervor")
 		_tell(h, "fervor", "blaze", h.world, {"r": 1.1})
 	if s.call("haymaker") and n % 3 == 0:
-		h.held = maxf(h.held, 0.6)
+		h.hold_by_meld(0.6)
 		h.knock(away, 0.8)
 		_tell(h, "haymaker", "down", h.world)
 	if s.call("hourglass") and (h.poison_t > 0.0 or h.burn_t > 0.0 or h.chill_t > 0.0) and not h.foe_hi.has("rd_glass"):
@@ -117,34 +117,29 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 	if s.call("onrush") and F.clock - float(by.m52.get("rd_rushed", -9.0)) < 1.5:
 		by.m52["rd_rushed"] = -9.0
 		h.knock(away, 1.2)
-		h.held = maxf(h.held, 0.3)
+		h.hold_by_meld(0.3)
 		_tell(h, "onrush", "bowl", h.world)
-	if s.call("pin") and n % 2 == 1:
-		h.root_t = maxf(h.root_t, 0.5) + 0.6
+	if s.call("pin") and n % 2 == 1 and h.root_by_meld(maxf(h.root_t, 0.5) + 0.6):
 		_tell(h, "pin", "spike", h.world)
 	if s.call("reverb"):
 		var ec: Array = h.foe_hi.get("rd_echo", [])
 		ec.append({"at": F.clock + 0.5, "dmg": dmg * 0.3})
 		h.foe_hi["rd_echo"] = ec
-	if s.call("stillpoint") and n % 3 == 0:
-		h.held = maxf(h.held, 0.4)
+	if s.call("stillpoint") and n % 3 == 0 and h.hold_by_meld(0.4):
 		_tell(h, "stillpoint", "stop", h.world, {"secs": 0.4})
 	if s.call("sunder") and n % 2 == 0:
 		h.foe_hi["rd_sunder"] = F.clock + 3.0
 		_tell(h, "sunder", "plates", h.world)
-	if s.call("tempo") and n % 3 == 0:
-		h.held = maxf(h.held, 0.35)
+	if s.call("tempo") and n % 3 == 0 and h.hold_by_meld(0.35):
 		_tell(h, "tempo", "beat", h.world)
 	if s.call("vendetta") and n % 3 == 0:
 		h.foe_hi["rd_vend"] = F.clock + 4.0
 		_tell(h, "vendetta", "sigil", h.world, {"secs": 4.0})
-	if s.call("amber"):
-		h.root_t = maxf(h.root_t, 0.8)
+	if s.call("amber") and h.root_by_meld(0.8):
 		h.foe_hi["rd_amber"] = true
 		_tell(h, "amber", "amber", h.world, {"secs": h.root_t})
 	# --- ROUND 3
-	if s.call("bedrock") and n % 2 == 0:
-		h.held = maxf(h.held, 0.4)
+	if s.call("bedrock") and n % 2 == 0 and h.hold_by_meld(0.4):
 		_tell(h, "bedrock", "rock", h.world)
 	if s.call("bloodtide"):
 		for o in F.main._monsters.list:
@@ -156,19 +151,17 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 		h.chill(1.5, 0.3)
 		_tell(h, "burden", "weight", h.world, {"secs": 1.5})
 	if s.call("cataclysm") and n % 3 == 0:
-		h.held = maxf(h.held, 0.3)
+		h.hold_by_meld(0.3)
 		h.knock(away, 0.6)
 		_tell(h, "cataclysm", "split", h.world, {"r": 1.4})
 	if s.call("daze") and (h.held > 0.0 or h._knock_t > 0.0 or n >= 2):
 		h.chill(1.0, 0.3)
 		_tell(h, "daze", "stars", h.world)
-	if s.call("doubletap") and n % 2 == 0:
-		h.held = maxf(h.held, 0.35)
+	if s.call("doubletap") and n % 2 == 0 and h.hold_by_meld(0.35):
 		_tell(h, "doubletap", "down", h.world)
 	if s.call("fetters"):
 		h.foe_hi["rd_cuff"] = true
-	if s.call("fortress") and by.shield > 0.0:
-		h.held = maxf(h.held, 0.4)
+	if s.call("fortress") and by.shield > 0.0 and h.hold_by_meld(0.4):
 		_tell(h, "fortress", "wall", h.world)
 
 

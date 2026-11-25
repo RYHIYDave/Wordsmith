@@ -144,7 +144,7 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 	if s.call("canker") > 0.0 and h.poison_t > 0.0:
 		h.poison_t = maxf(h.poison_t, float(preload("res://scripts/words.gd").data()["poison"]["time"]))
 	if s.call("bedrock") > 0.0:
-		h.held = maxf(h.held, 0.3 * float(_t("bedrock")["foeLonger"]))
+		h.hold_by_meld(0.3 * float(_t("bedrock")["foeLonger"]))
 	if s.call("bloat") > 0.0 and h.poison_t > 0.0:
 		h.m52.on_him["bloat"] = F._avg(by) if alive_by else dmg
 	if s.call("coldsnap") > 0.0 and h.chill_t > 0.0:
@@ -265,7 +265,7 @@ static func death(F, m) -> void:
 	if m.word_share("concussion") > 0.0 and h.world.distance_to(m.world) <= 2.2:
 		var away: Vector2 = (h.world - m.world).normalized() if h.world.distance_to(m.world) > 0.01 else Vector2(1, 0)
 		h.knock(away, float(_t("concussion")["foeShove"]))
-		h.held = maxf(h.held, float(_t("concussion")["foeStun"]))
+		h.hold_by_meld(float(_t("concussion")["foeStun"]))
 		h.m52._tell({"id": "concussion", "what": "foe", "x": m.world.x, "y": m.world.y, "r": 2.2})
 		F._say(h.world, "Stunned", "#ff8a80")
 	F46.death(F, m)

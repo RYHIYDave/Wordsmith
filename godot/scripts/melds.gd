@@ -212,8 +212,11 @@ static func blight_k(r: Dictionary, m) -> float:
 func struck8(m, i: int, crit: bool, was_burning: bool) -> void:
 	var M8 := E()
 	var shiver := k8(i, "shiver")
-	if crit and shiver > 0.0 and not m.dead and not m.boss:
+	# (as every freeze, not again for four seconds (monster.gd freeze_now): under the Whirlwind's turns it kept an elite frozen 4.0 s of
+	# 4.9; the bug hunt's fifth round, 25 Nov 2026)
+	if crit and shiver > 0.0 and not m.dead and not m.boss and m.freeze_immune <= 0.0:
 		m.frozen_t = maxf(m.frozen_t, float(M8["shiver"]["secs"]) * shiver * (0.5 if m.elite else 1.0))
+		m.freeze_immune = 4.0
 		_tell({"t": "meld8", "id": "shiver", "on": m.id, "k": shiver})
 	var sunder := k8(i, "sunder")
 	if sunder > 0.0 and not m.dead:

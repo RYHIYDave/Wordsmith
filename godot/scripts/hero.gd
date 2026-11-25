@@ -283,6 +283,8 @@ var root_t := 0.0
 ## (THE HIGH CITY'S RUNES MELDED on a monster: whose bleeding is on him, and Briar's root: foe_meldshigh.gd)
 var foe_hi := {}
 var root_again := 0.0
+## (a monster's meld holding him (Coldcut, Crusher, Ice Lance): not again till this runs out: hold_by_meld)
+var hold_again := 0.0
 var poison_t := 0.0
 var poison_dps := 0.0
 ## (which monsters' melds have made an ill on him worse, "<ill>:<id>:<field>", each once while the ill lasts: worse_f())
@@ -1324,6 +1326,7 @@ func _process(dt: float) -> void:
 	still_t = maxf(0.0, still_t - dt)
 	root_t = maxf(0.0, root_t - dt)
 	root_again = maxf(0.0, root_again - dt)
+	hold_again = maxf(0.0, hold_again - dt)
 	_run_later(dt)
 	# (WORDMELDING: Implode's bursts to come, Fervor's time: melds.gd)
 	melds.step(dt)
@@ -1613,6 +1616,9 @@ func _land_whirl1() -> void:
 	if float(r["echo"]) > 0.0:
 		var at := world
 		_echo_of(1, "burst", at, face, func() -> void: _whirl1_cut(at, float(loadout.r(1)["echo"]), true))
+	# (THE LAST WORDS: Surging's shockwave, Mirroring's reflection and its mirrors, as game.ts deliver has them; the Strike alone had
+	# them: the bug hunt's fifth round, 25 Nov 2026)
+	last.cast(1, world, face, 1.0, func(p: Vector2, _w: Vector2, f: float) -> void: _whirl1_cut(p, f, true))
 
 
 func _whirl1_cut(at: Vector2, frac: float, echo: bool) -> void:
@@ -1662,6 +1668,8 @@ func _spin(dt: float, held: bool) -> void:
 		_time_word_sound(1)
 		_cast(1, "whirl", world, face)
 		_boons(1)
+		# (THE LAST WORDS, once a spin as its boons are: its reflection, and the mirrors', one turn of it where they stand)
+		last.cast(1, world, face, 1.0, func(p: Vector2, _w: Vector2, f: float) -> void: _whirl1_cut(p, f, true))
 	if _landed:
 		# (let go: the rest of its follow-through, standing out of the spin)
 		_spun += dt
@@ -1815,6 +1823,8 @@ func _fly(dt: float) -> void:
 				_after(0.28 * n, func() -> void: _blast(2, at, rad * 1.15, each, "land", false, -4.0, n))
 		if float(r2["echo"]) > 0.0:
 			_echo_of(2, "leap", at, face, func() -> void: _blast(2, at, rad, float(loadout.r(2)["count_dmg"]) * float(loadout.r(2)["echo"]), "land", false, -4.0, 0, true))
+		# (THE LAST WORDS on his landing: its reflection, and the mirrors', a landing's blow where they stand)
+		last.cast(2, at, face, 1.0, func(p: Vector2, _w: Vector2, f: float) -> void: _blast(2, p, rad, float(loadout.r(2)["count_dmg"]) * f, "land", false, -4.0, 0, true))
 		_act = ""
 		_landing = true
 		_list = LAND_LIST
@@ -2186,6 +2196,29 @@ func _city_words(k: Callable, by: Vector2) -> void:
 		_tell({"t": "text", "x": world.x, "y": world.y, "text": "Rooted", "color": FOE})
 
 
+## A MONSTER'S MELD ROOTS HIM (Pin, Amber, Skewer) for `secs`: as Binding's root does, not again till its rootAgain after, and
+## never with his tree's Resolute; whether it did. (Set by hand, four carriers rooted him 8 s of 10, Pin's root growing each
+## time: the bug hunt's fifth round, 25 Nov 2026.)
+func root_by_meld(secs: float) -> bool:
+	if root_again > 0.0 or has("resolute"):
+		return false
+	root_t = maxf(root_t, secs)
+	root_again = secs + float(Words.data().get("city", {}).get("bind", {}).get("rootAgain", 3.0))
+	return true
+
+
+## A MONSTER'S MELD HOLDS HIM where he stands for `secs` (Coldcut and Ice Lance frozen too, Crusher): not again for two seconds
+## after; whether it did. (Coldcut and Crusher held him 6 s of 10.)
+func hold_by_meld(secs: float, freeze := false) -> bool:
+	if hold_again > 0.0:
+		return false
+	held = maxf(held, secs)
+	if freeze:
+		frozen_t = maxf(frozen_t, secs)
+	hold_again = secs + 2.0
+	return true
+
+
 ## (game.ts hurtHero) THE LAST WORDS on the blow that struck him, `k` each word's share of it: BLEEDING makes him bleed; PLUNDERING
 ## steals some of his gold (the one who struck keeps it, dropped as it dies).
 func _last_words(k: Callable, src) -> void:
@@ -2335,6 +2368,9 @@ func fresh_place() -> void:
 	# struck at a floor no longer there (a script error): the bug hunt's third round, 25 Nov 2026)
 	if m52 != null:
 		m52.forget()
+	# (THE EIGHT MELDS: Fervor's fury and Implode's bursts to come went on onto the next floor: the bug hunt's fifth round)
+	if melds != null:
+		melds.forget()
 	if uniques != null:
 		uniques.fresh_place()
 	might = 0.0
@@ -2367,6 +2403,7 @@ func fresh_place() -> void:
 	still_t = 0.0
 	root_t = 0.0
 	root_again = 0.0
+	hold_again = 0.0
 	# (FLOOR 14: a word the Physician holds is never lost: left behind, or fallen, it is the hero's again: game.ts die, clearLevel,
 	# giveBackAll)
 	load("res://scripts/act2/physician.gd").give_back_all()

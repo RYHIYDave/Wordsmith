@@ -108,6 +108,33 @@ func _open(p: Vector2) -> bool:
 	return h.map != null and h.map.open_at(floori(p.x), floori(p.y))
 
 
+## (where a Golem may stand: room for its body on the walk grid (monsters.gd clear: props, slanted walls, water and pits kept
+## out), not open ground alone, which is the test for sight: set down by that it stood in walls, crates and water, and fired
+## from there; the bug hunt's fifth round, 25 Nov 2026)
+const GOLEM_R := 0.3
+
+
+func _stands(p: Vector2) -> bool:
+	if h.monsters == null or not is_instance_valid(h.monsters):
+		return _open(p)
+	return h.monsters.clear(p.x, p.y, GOLEM_R)
+
+
+## A place by `p` a Golem may stand: `p`, else the middle of the nearest tile round it with room, in her sight; else where she is.
+func _stand_near(p: Vector2) -> Vector2:
+	if _stands(p):
+		return p
+	for r in range(1, 5):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) != r:
+					continue
+				var q := Vector2(floori(p.x) + dx + 0.5, floori(p.y) + dy + 0.5)
+				if _stands(q) and (h.monsters == null or h.monsters.sees(h.world, q)):
+					return q
+	return h.world
+
+
 # =====================================================================================================================
 # WHAT HER MOVES SEND (game.ts deliver)
 
@@ -119,6 +146,11 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 	var each: float = frac * float(r["count_dmg"])
 	var echo := not primary
 	var kind := str(def["kind"])
+	# (a Contraption refused, three standing and none past its first shot, is no use: no boons, no words that answer a use, not
+	# counted; the bug hunt's fifth round, 25 Nov 2026)
+	if primary and kind == "contraption" and _contraption_refused():
+		h.uses[i] = maxi(0, h.uses[i] - 1)
+		return
 	h._cast(i, kind, from, way, echo)
 	if primary:
 		h._time_word_sound(i)
@@ -428,7 +460,7 @@ func _whistle(i: int, to: Vector2, frac: float, count: int) -> void:
 		while up.any(func(q): return int(q["seat"]) == seat):
 			seat += 1
 		var s := _golem_spot(seat, 0.6)
-		var p: Vector2 = s if _open(s) else h.world
+		var p: Vector2 = _stand_near(s)
 		# (one winding down is gone as a new one comes)
 		golems = up
 		_next_golem += 1
@@ -443,7 +475,8 @@ func _whistle(i: int, to: Vector2, frac: float, count: int) -> void:
 		_overdrive()
 		return
 	for g in up:
-		if g["act"] == "charge":
+		# (nor one in its rocket jump: it charged in mid-air where it was, its tow mark left on; the bug hunt's fifth round)
+		if g["act"] == "charge" or g["act"] == "jump":
 			continue
 		var d: Vector2 = to - Vector2(g["x"], g["y"])
 		if d.length() > 0.3:
@@ -694,7 +727,8 @@ func _rod(g: Dictionary) -> void:
 ## (PROSPECTOR, his word: its big shot, as its ground pound did) A handful of gold dug up where it lands, between them about one
 ## gold drop.
 func _prospect(at: Vector2, g: Dictionary) -> void:
-	if not h.has("prospector") or h.monsters == null or h.monsters.loot == null:
+	# (no gold dug out of a town's floor: her Golems' big shots there dug up gold for nothing, 21 in 18 s; the bug hunt's fifth round)
+	if not h.has("prospector") or h.monsters == null or h.monsters.loot == null or h.in_town:
 		return
 	var piles: int = _T()["prospector"]["n"]
 	var all := randi_range(3, 8)
@@ -834,10 +868,8 @@ func _step_golem(g: Dictionary, dt: float) -> void:
 			golems.erase(g)
 		return
 	# (left far behind, or in another place: whistled up beside her again)
-	if at.distance_to(h.world) > float(GT["lost"]) or not _open(at):
-		var p := _golem_spot(int(g["seat"]), 0.0)
-		if not _open(p):
-			p = h.world
+	if at.distance_to(h.world) > float(GT["lost"]) or (not _stands(at) and at.distance_to(h.world) > 0.5):
+		var p := _stand_near(_golem_spot(int(g["seat"]), 0.0))
 		g["x"] = p.x
 		g["y"] = p.y
 		g["act"] = "arrive"
@@ -933,10 +965,10 @@ func _step_golem(g: Dictionary, dt: float) -> void:
 		var go := minf(float(J["most"]), d - stop)
 		var l := at + u * go
 		var k := 0
-		while k < 8 and not _open(l):
+		while k < 8 and not _stands(l):
 			l -= u * 0.5
 			k += 1
-		if _open(l) and l.distance_to(at) > 2.0:
+		if _stands(l) and l.distance_to(at) > 2.0:
 			_turn_golem(g, goal)
 			g["jx"] = at.x
 			g["jy"] = at.y
@@ -1192,6 +1224,13 @@ func ammo() -> String:
 ## (game.ts throwContraption) Her Contraption thrown from `from` toward `to`: where it comes to rest. A fourth puts the oldest out
 ## of action, but never one not yet past its first shot (with three such standing, nothing more is thrown: his words of 4 Nov
 ## 2026, “After taking the passive for contraption, I don’t think the words are working as intended.”).
+## (as _throw_contraption refuses one: as many standing as she may have, the oldest not yet past its first shot)
+func _contraption_refused() -> bool:
+	var C := _C()
+	var standing: Array = contraptions.filter(func(q): return float(q["broke"]) < 0.0)
+	return standing.size() >= int(C["most"]) and float(standing[0]["t"]) < float(C["set"]) + float(C["first"])
+
+
 func _throw_contraption(i: int, from: Vector2, to: Vector2, frac: float) -> void:
 	var C := _C()
 	var reach: float = _def(i)["range"]

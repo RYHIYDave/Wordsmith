@@ -158,7 +158,8 @@ func start(m, a: Dictionary, hero) -> void:
 		return
 	# SHE TAKES HIS HANDS, at his right, facing the hero as he does: her part begins with his
 	var at := beside(m.world, m.face, act["hand"], 0.0, -float(THROW["r"]))
-	if m.mgr.map.walkable(floori(at.x), floori(at.y)):
+	# (room for his whole body there: taken by the hands into a wall he stood in it; the bug hunt's fifth round)
+	if m.mgr.clear(at.x, at.y, o.r):
 		o.world = at
 	o.h2.start_act(o, ACTS, THROWN_I, hero)
 	o.face = m.face

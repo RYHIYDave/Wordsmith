@@ -169,14 +169,11 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 	if s.call("gaff") and alive_by:
 		h.knock(-away, _n("gaff", "foeDrag", 0.6))
 		tell.call("gaff")
-	if s.call("skewer"):
-		h.root_t = maxf(h.root_t, _n("skewer", "foePin", 0.8))
+	if s.call("skewer") and h.root_by_meld(_n("skewer", "foePin", 0.8)):
 		tell.call("skewer")
 	if s.call("icelance") and h.chill_t > 0.0 and alive_by:
 		by.m52["foe_ice"] = int(by.m52.get("foe_ice", 0)) + 1
-		if int(by.m52["foe_ice"]) % 2 == 0:
-			h.held = maxf(h.held, 0.6)
-			h.frozen_t = maxf(h.frozen_t, 0.6)
+		if int(by.m52["foe_ice"]) % 2 == 0 and h.hold_by_meld(0.6, true):
 			tell.call("icelance")
 	if s.call("sundial"):
 		h.still_t = maxf(h.still_t, 2.0)
@@ -205,9 +202,7 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 		if s.call("nightshade") and h.poison_t > 0.0:
 			h.worse("poison", "nightshade", _n("nightshade", "foeLow", 1.5))
 			tell.call("nightshade")
-		if s.call("coldcut"):
-			h.held = maxf(h.held, 0.5)
-			h.frozen_t = maxf(h.frozen_t, 0.5)
+		if s.call("coldcut") and h.hold_by_meld(0.5, true):
 			tell.call("coldcut")
 		if s.call("cremate") and h.burn_t > 0.0:
 			h.worse("burn", "cremate", _n("cremate", "foeLow", 1.5))
@@ -215,8 +210,7 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 		if s.call("smite"):
 			F.main.hero.hurt_by(dmg * _n("smite", "foeBolt", 0.3), "lightning", [], {}, null, h.world, true)
 			tell.call("smite")
-		if s.call("crusher"):
-			h.held = maxf(h.held, 0.5)
+		if s.call("crusher") and h.hold_by_meld(0.5):
 			tell.call("crusher")
 		if s.call("bloodprice") and alive_by:
 			# (his blood streams to it, healing it twice as much)
@@ -382,7 +376,7 @@ static func death(F, m) -> void:
 		_tell(h, "thornspray", m, "spray")
 	if m.risen and _has(m, "undying") and h.world.distance_to(m.world) <= _n("undying", "foeHand", 4.0):
 		# (fallen again: a dead hand bursts from the ground under him and holds him)
-		h.root_t = maxf(h.root_t, _n("undying", "foeHold", 0.8))
+		h.root_by_meld(_n("undying", "foeHold", 0.8))
 		_tell(h, "undying", null, "hand")
 	if _has(m, "lastrites"):
 		# (its shield passes to the nearest monster)
@@ -591,7 +585,7 @@ static func rise(words: Array, M, o) -> void:
 	if words.has("gravewell") and h.world.distance_to(o.world) < 6.0:
 		h.knock((o.world - h.world).normalized(), 1.0)
 	if words.has("gravebind") and h.world.distance_to(o.world) < 6.0:
-		h.root_t = maxf(h.root_t, 1.0)
+		h.root_by_meld(1.0)
 	if words.has("wraithspear"):
 		M.shoot(o, (h.world - o.world).normalized(), 7.0, 12.0, (o.dmg_min + o.dmg_max) / 2.0, "arrow")
 		if not M._arrows.is_empty():
@@ -706,7 +700,7 @@ static func surged(m, at: Vector2, r: float, wait: float) -> void:
 				h.burn_dps = maxf(h.burn_dps, dmg * 0.15)
 				h.burn_t = maxf(h.burn_t, 3.0)
 			"seismic":
-				h.held = maxf(h.held, 0.4)
+				h.hold_by_meld(0.4)
 			"undertow":
 				h.knock(-away, 1.0)
 			"hexwave":
@@ -716,7 +710,7 @@ static func surged(m, at: Vector2, r: float, wait: float) -> void:
 				h.still_t = maxf(h.still_t, 2.0)
 				h.still_k = maxf(h.still_k, 0.3)
 			"tangle":
-				h.root_t = maxf(h.root_t, 0.9)
+				h.root_by_meld(0.9)
 			"bloodwave":
 				if h.bleed_t > 0.0:
 					var all: float = h.bleed_dps * h.bleed_t

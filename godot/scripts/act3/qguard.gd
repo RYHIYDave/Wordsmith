@@ -59,7 +59,9 @@ static func beside_hero(m) -> Vector2:
 	for turn in [side * 90, -side * 90, side * 135, -side * 135, 180, side * 45]:
 		var a := base + deg_to_rad(float(turn))
 		var p: Vector2 = h.world + Vector2(cos(a), sin(a)) * float(TUNE["beside"])
-		if is_open(m, p):
+		# (room for its body, and none of the others standing there: they stepped into walls, and three onto one spot; the bug hunt's
+		# fifth round, 25 Nov 2026)
+		if is_open(m, p) and m.mgr.clear(p.x, p.y, m.r) and not m.mgr.list.any(func(o): return o != m and is_instance_valid(o) and not o.dead and o.world.distance_to(p) < o.r + m.r):
 			return p
 	return Vector2.INF
 
