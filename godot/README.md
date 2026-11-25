@@ -980,6 +980,16 @@ lights over the dark (town.gd `_ring_moments`):
   up over him while it is heard (`monster.gd` call_line). To listen: `docs/mockups/boss_voice/all_bosses_lines.mp3` (every boss in
   turn, the first take of each line) and `<boss>_lines.mp3`. `--only=voices` (`check_glows.gd`): 11 checks, the thirteen's lines
   all real takes.
+- **Their lines as he meets them, and the Queen's looking-glass, aloud too** (the cloud chat, 25 Nov 2026). His word again: “Go
+  ahead and do the voices for the other speaking bosses as well”; asked, with the voice credits left short of two takes, “One take
+  each (Recommended)”. Each boss's line as his gate falls (the game's BOSS_LINES, three a boss, one picked: `doors.gd` LINES; the
+  Drowned Eye's on his stone, `act1/stone.gd`), now said aloud in his own voice (`call_line`), the Chained One's growls too; the
+  Queen's (“Looking-glass, Looking-glass, on the wall, who in this land is the fairest of all?”) and the King's (“Music! Music!”),
+  which the game has, brought over to LINES. The Glass Queen's looking-glass (`act3/gqueen.gd` say: its four praises, its line as
+  she hides in her ring, the truth as she falls) speaks in a voice of its own, “Matthew Schmitz - Whispering Spirit of the Gentle
+  Calm”, a ghostly whisper, glassy and far off (the voice `mirror`). One take each: 38 takes (`tools/godot_boss_voices.sh`, which
+  takes one take or two a line, -> `assets/voices/real`). To listen: `docs/mockups/boss_voice/meeting_lines_and_mirror.mp3`.
+  `--only=voices`: 16 checks (as each of four bosses is met, his line heard); `--only=city --floor=18 --kind=gqueen`: 8 of 8.
 
 ## The walls seen through for the monsters behind them (the cloud chat, 21 Nov 2026)
 
