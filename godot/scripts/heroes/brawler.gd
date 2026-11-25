@@ -231,6 +231,10 @@ func _press(kind: String, at := Vector2.ZERO) -> bool:
 		before.append(mv["id"])
 	for q in queue:
 		before.append(q["id"])
+	# (THE FIRST LEVELS: not before its level, as every hero's move (kit.gd _use_skill): at level 1 his kick and his jump worked, the HUD
+	# hiding them; the bug hunt's sixth round, 25 Nov 2026)
+	if not h.move_open(2 if kind == "swipe" else (0 if kind == "tap" else 1)):
+		return true
 	if kind == "swipe":
 		# (his jump in the air already: not another on top of it)
 		if _full() and not mv.is_empty() and mv["id"] == "dodge":

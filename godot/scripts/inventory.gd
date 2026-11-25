@@ -216,7 +216,9 @@ func _ready() -> void:
 
 
 func _process(dt: float) -> void:
-	if Input.is_action_just_pressed("inventory") and not (main != null and (main._title != null or main._cards != null)) and not (_rb != null and _rb.typing()):
+	# (not over the death screen, nor for one fallen: it closed the screen and he spent points dead; the bug hunt's sixth round)
+	var fallen: bool = main != null and main.hero != null and not main.hero.alive
+	if Input.is_action_just_pressed("inventory") and not fallen and not (main != null and (main._title != null or main._cards != null)) and not (_rb != null and _rb.typing()):
 		toggle()
 	if not visible:
 		return

@@ -1798,6 +1798,10 @@ func _floor_gate(flats: Node2D) -> void:
 func save_now() -> bool:
 	if not saving or hero == null or not hero.alive or _going or not is_home(place) and map == null:
 		return false
+	# (nothing while the start screen or the hero cards are up: with no hero saved, the one standing in for him there was written as a
+	# run, a Warrior never picked offered to CONTINUE; the bug hunt's sixth round)
+	if _title != null or _cards != null:
+		return false
 	return Save.write(self)
 
 
@@ -1866,10 +1870,7 @@ func go_to(where: String, arrive: String) -> void:
 	tw.tween_property(_curtain, "color:a", 1.0, CURTAIN)
 	await tw.finished
 	_build(where, arrive)
-	hero.fresh_place()
-	# (THE WARLOCK come into a town as the demon: the man again there, as he is drawn: warlock.gd turn_man)
-	if is_home(place) and hero.kit != null and hero.kit.has_method("turn_man"):
-		hero.kit.turn_man()
+	_arrived()
 	var back := create_tween()
 	back.tween_property(_curtain, "color:a", 0.0, CURTAIN)
 	await back.finished
@@ -1894,6 +1895,17 @@ func go_warp(where: String) -> void:
 	if _going:
 		return
 	_build(where, "way")
+	# (as by any other way: by the waypoint the floor's burns, poisons, roots, the demon, the melds' bursts to come went home with him,
+	# and a normal hero dying of them in town lost his run; the bug hunt's sixth round, 25 Nov 2026)
+	_arrived()
+
+
+## Come into a place by any way: what the last place left on him gone (hero.gd fresh_place); THE WARLOCK come into a town as the
+## demon, the man again there, as he is drawn (warlock.gd turn_man).
+func _arrived() -> void:
+	hero.fresh_place()
+	if is_home(place) and hero.kit != null and hero.kit.has_method("turn_man"):
+		hero.kit.turn_man()
 
 
 ## What E would do where he stands: [what is shown, what it does] (town.gd; the waypoint, waypoint.gd).

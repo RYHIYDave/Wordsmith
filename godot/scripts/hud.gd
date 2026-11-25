@@ -1052,14 +1052,15 @@ func _flourish(cx: float, cy: float, w: float, h: float, age: float) -> void:
 ## name large, and how it is made ("HOLD RIGHT CLICK to WHIRL"). Returns where it ends.
 func _move_toast(skill: int, age: float, top: float, W: float) -> float:
 	var skills: Array = _skills()
-	var sk: Dictionary = Words.skill(hero.loadout.id(skill))
+	# (his own move, not the demon's while he is it: the bug hunt's sixth round)
+	var sk: Dictionary = Words.skill(hero.loadout.own_id(skill))
 	var name: String = str(sk["name"]).to_upper()
 	var scale := 3 if W >= 380.0 else 2
 	var nw := _width(name) * scale
 	# (ui/guide.ts pressName: with a mouse, a finger or a controller)
 	var key: String = main.guide.press_name(skill) if main != null else "SPACE"
 	var line := "%s to %s" % [key, str(sk.get("verb", name))]
-	var icon: String = "ability:" + str(skills[skill]["icon"])
+	var icon: String = "ability:" + str(sk.get("icon", skills[skill]["icon"]))
 	var isz := _pic_size(icon)
 	var bw := minf(W - 8.0, maxf(isz.x * 2.0 + 8.0 + nw + 24.0, _width(line) + 20.0))
 	var row_h := maxf(9.0 * scale, isz.y * 2.0)

@@ -186,6 +186,11 @@ func id(i: int) -> String:
 	return str(Words.data()["classes"][cls]["moves"][i])
 
 
+## His class's own move in place i, whatever form he is in (the Warlock as the demon: his own, not the demon's).
+func own_id(i: int) -> String:
+	return str(Words.data()["classes"][cls]["moves"][i])
+
+
 ## (game.ts refresh `grows`) What each move grows with where her tree says other than his class: "" for his class's own; "dex" or
 ## "int" (THE TINKERER: her Gun Arm's tesla coil, Intelligence; her Contraption, its pick's).
 var grows: Array = ["", "", ""]
