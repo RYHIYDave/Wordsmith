@@ -61,7 +61,8 @@ test('1. every floor of the twenty its own front, each name once; painted for al
   assert.equal(FRONT_NAMES[8], "the waystation's gate", "Echo Canyon's, its waystation's gate, as it was");
   assert.deepEqual(HOLD_FRONTS.map((h) => h.floor), [1, 2, 3, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], 'painted for the eighteen others');
   for (const h of HOLD_FRONTS) assert.equal(h.name, FRONT_NAMES[h.floor], `floor ${h.floor}: its name`);
-  assert.equal(OWN_FRONTS.on, false, 'off in the game until his yes to their pictures');
+  // (ON at his yes to their pictures in the game, 25 Nov 2026, by 11:33: “Yes, switch them all on (Recommended)”)
+  assert.equal(OWN_FRONTS.on, true, 'on in the game, at his yes');
 });
 
 test('2. each anchored as the gatehouse is; sealed, the mark burning and its light; open, the way in dark', () => {

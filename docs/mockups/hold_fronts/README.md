@@ -12,7 +12,7 @@ stronghold wears the Quarry's gatehouse but Echo Canyon's. Asked by pop-up, his 
 - levels 7, 9 and 10 in the story (they wear the Quarry's gatehouse): **“Yes, story and endless alike (Recommended)”**.
 
 Branch `art/stronghold-fronts`, from `main` 41f47ac1 (25.3.22). Behind the switch `OWN_FRONTS` (`src/game/act1_dress.ts`), off
-until his yes.
+until his yes, on since (at its foot).
 
 ## What is in it
 
@@ -101,4 +101,6 @@ Read as, and told him so: on 16 the folly's yew hedges jammed against the garden
 building should stand on its own. So 16 is rebuilt as a garden pavilion standing free (above), named `the garden pavilion`, and
 pictured on the gardens' open lawn by a path (`OPEN=1 PICK=3`, a place with open ground behind it as well as before it).
 
-WAITING FOR HIS WORD ON 16.
+Shown 16 so, asked whether it works now. **HIS WORD, 25 Nov 2026, by 11:33 (Eastern): “Yes, switch them all on (Recommended)”.**
+SO OWN_FRONTS IS ON (`src/game/act1_dress.ts`), and `tests/hold_fronts.test.ts` 1 says so. Handed back on the queue page's ship
+list, `stronghold-fronts`, for the Godot chat to bring in (above, “For the Godot chat”).

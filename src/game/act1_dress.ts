@@ -433,9 +433,11 @@ export const CAMP = {
  * each level's building (Recommended)”; “Yes, story and endless alike (Recommended)”. So, `on`: a stronghold's front is its
  * floor's own (FRONT_NAMES; the Quarry's gatehouse on 6, the waystation's gate on 8, as they were), in the story as in endless;
  * and the twenty floors' pieces hold their fronts and the cult's altar, braziers and banners (render/act1_pieces.ts, art/floors.ts).
- * Off until his yes to their pictures.
+ * ON at his yes to their pictures in the game, 25 Nov 2026, by 11:33 (Eastern): “Yes, switch them all on (Recommended)” (after 18
+ * built as a run of the gallery's wall, at his “I like them except level 18 cause that is just in the middle of the flooor”, and 16
+ * a garden pavilion standing on its own, at his “16 doesn’t work as well”).
  */
-export const OWN_FRONTS = { on: false };
+export const OWN_FRONTS = { on: true };
 /** Each floor's stronghold's front, by its name (a piece, kind 'gate': its frames 0 to 3 sealed and burning, 4 open). */
 export const FRONT_NAMES: Readonly<Record<number, string>> = {
   1: "the tomb's sealed vault",
