@@ -1453,7 +1453,12 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   a key made for the run and thrown away: the upload key waits on his Google Play account (the repository is public, so the
   key never goes into it). His steps, the store text and the road to going public: the doc “Wordsmith on Google Play”
   (https://claude.ai/artifact/H6PTRKJ7E5VFjDDj8rU58e). `--touch=1` (`main.gd`): any check's pictures as a phone shows them (TAP,
-  HOLD, SWIPE), for the store's screenshots; `docs/mockups/play_store/`: the 512 icon and two banners for his pick.
+  HOLD, SWIPE), for the store's screenshots; `docs/mockups/play_store/`: the 512 icon and two banners for his pick (“B, the
+  whole scene (Recommended)”). THE STORE'S SIX PICTURES, `docs/mockups/play_store/screens/` (and `screens_sheet.png`), taken by
+  `--only=store --scene=<chained|queen|wilds|king|town|gear> --cls=<hero> --shots=<dir>` (`scripts/check_store.gd`): the Warrior,
+  the Mage and the Ranger only (his words: “I want the sell the warlock, tinkerer and brawler for $0.99 so I'd like to keep the
+  pictures to the first three classes”); every word slot filled; the Mage facing us in town; the Wilds in Echo Canyon; the Ranger
+  not using his Volley in either of his. His yes, 25 Nov 2026: “Looks good”.
 - **The chained rare** (new to the Godot game, not in the browser game; `scripts/chained_rare.gd`). His words, 22 Nov 2026:
   “Adding a new mechanic for the first five levels of wordsmith.  2-5 in the campaign, in all relevant levels in endless.  A
   chained immobile rare enemy.  He has his words plus a bonus word above him.  He will drop the guaranteed word above him if you
