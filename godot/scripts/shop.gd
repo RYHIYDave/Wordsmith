@@ -30,6 +30,8 @@ var owned := {}
 var prices := {}
 ## (the class whose purchase is under way, or "")
 var busy := ""
+## (why BUY did nothing, said on the cards: Google Play not reached; "" when nothing is wrong)
+var why := ""
 ## (the stand-in shop of the checks)
 var fake := false
 ## (Google Play: play_shop.gd, on Android with the billing plugin; else null)
@@ -82,6 +84,7 @@ func buy(cls: String) -> void:
 	if not locked(cls) or busy != "":
 		return
 	busy = cls
+	why = ""
 	changed.emit()
 	if fake:
 		await get_tree().create_timer(0.4, true, false, true).timeout
@@ -89,6 +92,7 @@ func buy(cls: String) -> void:
 		return
 	if play == null or not play.buy(cls):
 		busy = ""
+		why = "Google Play can't be reached right now. Try again in a moment."
 		changed.emit()
 
 

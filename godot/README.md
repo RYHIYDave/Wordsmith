@@ -1459,6 +1459,20 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   the Mage and the Ranger only (his words: “I want the sell the warlock, tinkerer and brawler for $0.99 so I'd like to keep the
   pictures to the first three classes”); every word slot filled; the Mage facing us in town; the Wilds in Echo Canyon; the Ranger
   not using his Volley in either of his. His yes, 25 Nov 2026: “Looks good”.
+- **The heroes for sale** (`scripts/shop.gd`, `scripts/play_shop.gd`; his words, 25 Nov 2026: “I want the sell the warlock,
+  tinkerer and brawler for $0.99”; asked, “Yes, start them (Recommended)”, then to the pictures, “Yes, that's good
+  (Recommended)”, and to the price, “$0.99 each (Recommended)”). The Warlock, the Tinkerer and the Brawler, each bought once
+  for $0.99 in the Android app through Google Play, kept for good on every save. On the class cards (`class_cards.gd`) a hero
+  for sale and not bought has a padlock and its price in its card's top left corner (the padlock alone on a card too narrow,
+  held upright); chosen, CONFIRM is BUY and the price, and the line over the foot says "Unlock the <hero>. Yours to keep, on
+  every save."; BUY brings up Google Play's own purchase sheet; bought, UNLOCKED a moment and CONFIRM back. Pictures:
+  `docs/mockups/paid_heroes/`. Locked only where there is a shop to buy from: the Android app with Google Play (or the
+  checks' stand-in, `--shop=fake`); a build with none (the computer) has all six open. What is owned is kept in
+  `user://owned.cfg` and asked of Google Play again each time the game starts (a hero bought is the player's on a new phone; a
+  refund takes it back). The Play products: `hero_warlock`, `hero_tinkerer`, `hero_brawler` (one-time products, $0.99, made
+  in Play Console once his account is open). Google's billing plugin for Godot (godot-sdk-integrations, 3.3.0, the Godot 4
+  line) is fetched by the Android build (`.github/workflows/android.yml`) into `godot/addons/` and switched on for the export
+  there; it is not in the repository. Check: `--only=paid --paid=1 --shop=fake` (`check_paid.gd`).
 - **The chained rare** (new to the Godot game, not in the browser game; `scripts/chained_rare.gd`). His words, 22 Nov 2026:
   “Adding a new mechanic for the first five levels of wordsmith.  2-5 in the campaign, in all relevant levels in endless.  A
   chained immobile rare enemy.  He has his words plus a bonus word above him.  He will drop the guaranteed word above him if you

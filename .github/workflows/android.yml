@@ -84,7 +84,9 @@ jobs:
           printf '\n[editor_plugins]\n\nenabled=PackedStringArray("res://addons/%s/plugin.cfg")\n' "$NAME" >> godot/project.godot
           tail -5 godot/project.godot
           find godot/addons | head -40
-          for f in $(find godot/addons -name "*.gd" -o -name "plugin.cfg"); do echo "===== $f"; cat "$f"; done
+          # (the names the plugin's Android side gives the answers' fields, for play_shop.gd)
+          mkdir -p aar && cd aar && unzip -q -o ../godot/addons/$NAME/bin/release/*.aar classes.jar && unzip -q -o classes.jar -d cls && cd ..
+          grep -rhoa '"\?[a-z]\+_[a-z_]\+"\?' aar/cls | tr -d '"' | grep -E 'price|product|purchase|acknowledg|response|offer|token|state|order' | sort -u | head -80
 
       - name: A key for this run only
         run: |
@@ -97,6 +99,11 @@ jobs:
           ./godot-bin --headless --path godot --import > import.log 2>&1 || true
           tail -5 import.log
           df -h /
+
+      - name: The game's side of the purchases loads (scripts/play_shop.gd, with the plugin there)
+        run: |
+          ./godot-bin --headless --path godot --script res://scripts/ci_play_shop.gd 2>&1 | grep -E "PLAY_SHOP|ERROR|Error" | head -20
+          ./godot-bin --headless --path godot --script res://scripts/ci_play_shop.gd > /dev/null 2>&1
 
       - name: The Play bundle
         env:

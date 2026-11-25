@@ -591,10 +591,11 @@ func _draw_front() -> void:
 	# (a hero for sale chosen: what it is, in place of what the mode means)
 	if chosen != "" and _locked(chosen) and note == "":
 		var nm := str(K["classes"][chosen]["name"])
-		for part in PF.wrap("Unlock the %s. Yours to keep, on every save." % nm, W - 16.0, "small"):
+		var why: String = _shop().why
+		for part in PF.wrap(why if why != "" else "Unlock the %s. Yours to keep, on every save." % nm, W - 16.0, "small"):
 			if hy + 6.0 > mr.position.y - 2.0 and not no_mode:
 				break
-			_text(ci, part, floorf(W / 2.0), hy, T["accent"], {"align": "center", "font": "small"})
+			_text(ci, part, floorf(W / 2.0), hy, T["bad"] if why != "" else T["accent"], {"align": "center", "font": "small"})
 			hy += 6.0
 		return
 	for part in ([] if note != "" or no_mode else PF.wrap(str(K["modeLine"][mode]), W - 16.0, "small")):
