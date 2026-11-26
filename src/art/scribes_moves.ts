@@ -168,10 +168,11 @@ function flung(body: P, back: number, out: number, z = 2.4, flat = false): P {
   const Lh = at(s.shoulderL, 1);
   const Rh = at(s.shoulderR, -1);
   const q = { ...R, ...body, lhIn: 2, lhx: Lh[0], lhy: Lh[1], lhz: Lh[2], rhIn: 2, rhx: Rh[0], rhy: Rh[1], rhz: Rh[2] } as Posed;
-  // (`flat`: the elbows down on the floor beside the body, not stood up in the air: the owner, 26 Nov 2026, of their death:
-  // “The elbows shouldn’t flare out like that”)
-  const le = elbowFor(B, q, true, flat ? norm([0, 0.5, -0.85]) : norm([-0.3, 1, 0.3]));
-  const re = elbowFor(B, { ...q, le } as Posed, false, flat ? norm([0, -0.5, -0.85]) : norm([-0.3, -1, 0.3]));
+  // (the owner, 26 Nov 2026, of their death: “The elbows shouldn’t flare out like that”; then, of the arms put up by the head:
+  // “Now his arms are bent the wrong direction”)
+  // (`flat`: the arms down along the body, the elbows turned a little out to the sides as an elbow bends, never back)
+  const le = elbowFor(B, q, true, flat ? norm([0.3, 1, 0.1]) : norm([-0.3, 1, 0.3]));
+  const re = elbowFor(B, { ...q, le } as Posed, false, flat ? norm([0.3, -1, 0.1]) : norm([-0.3, -1, 0.3]));
   return { ...body, lhIn: 2, lhx: Lh[0], lhy: Lh[1], lhz: Lh[2], rhIn: 2, rhx: Rh[0], rhy: Rh[1], rhz: Rh[2], le, re };
 }
 const SAT: P = { px: -6, pz: -HIP_H + 6.2, pitch: -22, bend: -6, yaw: 2, roll: 2, twist: 0, side: 0, faceUp: 14, faceTilt: 6, faceTurn: -6, lk: 12, rk: -12, lhIn: 0, lhx: 6, lhy: 4, lhz: -12, le: -16, rhIn: 1, rhx: -2, rhy: -8, rhz: -16, re: 20, out: 1 };
@@ -185,7 +186,7 @@ const LYING: P = flung({ px: -8, pz: -HIP_H + 7.4, pitch: -84, bend: -4, yaw: 4,
  */
 function scribeDyingKept(): Motion {
   const SAT2: P = { ...SAT, lhIn: 0, lhx: 1.5, lhy: 3.2, lhz: -12.5, le: -4, rhIn: 0, rhx: 1.5, rhy: -3.2, rhz: -12.5, re: 4 };
-  const LYING2: P = flung({ px: -8, pz: -HIP_H + 7.4, pitch: -84, bend: -4, yaw: 4, roll: 3, twist: 0, side: 1, faceUp: 72, faceTilt: 10, faceTurn: -18, lk: 14, rk: -14, out: 1 }, 4, 3.5, 2.4, true);
+  const LYING2: P = flung({ px: -8, pz: -HIP_H + 7.4, pitch: -84, bend: -4, yaw: 4, roll: 3, twist: 0, side: 1, faceUp: 72, faceTilt: 10, faceTurn: -18, lk: 14, rk: -14, out: 1 }, -16, 5, 2.4, true);
   return {
     keys: [
       { at: 0, pose: {} },
@@ -198,7 +199,7 @@ function scribeDyingKept(): Motion {
       { at: SC_DIES.sit, pose: SAT2, ease: 'out' },
       { at: 1.2, pose: { ...SAT2, pitch: -30, bend: -10, faceUp: 22 }, ease: 'io' },
       // and topple back to lie on the floor, the face to the sky, the arms along the body
-      { at: 1.42, pose: flung({ ...SAT, px: -7, pz: -HIP_H + 6.0, pitch: -62, bend: -8, faceUp: 50, lk: 14, rk: -14 }, 4, 3.5, 3.6, true), ease: 'in' },
+      { at: 1.42, pose: flung({ ...SAT, px: -7, pz: -HIP_H + 6.0, pitch: -62, bend: -8, faceUp: 50, lk: 14, rk: -14 }, -12, 4.5, 4, true), ease: 'in' },
       { at: SC_DIES.down, pose: LYING2, ease: 'out' },
       { at: SC_DIES.long, pose: LYING2, ease: 'io' },
     ],
