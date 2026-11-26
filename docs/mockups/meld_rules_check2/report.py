@@ -145,7 +145,7 @@ rep = {
         'Faults found on the way, each a moment on a monster that never came (Animations 7): Bedrock\'s rock never burst up under your feet, and Pin\'s spike and Amber\'s seal never came, because the rune\'s own stagger or root had already set your wait before theirs. Fixed: Bedrock staggers you again, Pin\'s spike holds you longer and Amber seals your feet, as their words say. And Talisman\'s and Respite\'s films now have a skeleton strike your shield, so their moment in front is seen.',
     ],
     'your_call': [
-        'Two melds\' own colours sit close to the enemy\'s pink on your side: Doom (#a03850) and Rimeblood (#c83c50). Bloodbloom and Mayhem were moved to a blood red at your yes on 23 Nov. Should these two go the same way, with their stones redrawn?',
+        'Two melds\' own colours sit close to the enemy\'s pink on your side: Doom (#a03850) and Rimeblood (#c83c50). Bloodbloom and Mayhem were moved to a blood red at your yes on 23 Nov. Your answer: keep them as they are.',
     ],
     'weakest': items,
     'shown': shown,

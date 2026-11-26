@@ -41,7 +41,8 @@ after 23 Nov). The `extra` five (Greed, Chains, Siege, Toll, Crown) never meld: 
   bell) 3 to 8 pixels across; a cloud three soft balls of light; after-images a few grey boxes; the wail and the flood plain rings.
 - A monster carrying a city meld of Splitting (and some others) laid only a soft ball of light on him.
 - Near a friend's cyan on a monster: Haven and Hydra (cyan-grey), Pitchfork, Tremor, Last Rites, Revenants, Rewind, Scissors (sea green).
-- Near the enemy's pink on his side: Doom (#a03850) and Rimeblood (#c83c50). HIS CALL (asked on the page), not changed.
+- Near the enemy's pink on his side: Doom (#a03850) and Rimeblood (#c83c50). His call, asked 26 Nov 2026: “Keep them as they are
+  (Recommended)”: not changed.
 - Faults: Bedrock on a monster never burst its rock under him (foe_melds52.gd's stagger on each blow had already set his wait before
   foe_meldsredo.gd's hold, so “every second blow, rock bursts up” never came); Pin's spike and Amber's seal on a monster never came
   either (since commit e17f49a4 monster melds root him with a wait, hero.gd root_by_meld, and their Binding's own root had set it). Talisman's and Respite's films never struck his shield in
