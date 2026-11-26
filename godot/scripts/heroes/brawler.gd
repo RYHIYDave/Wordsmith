@@ -44,6 +44,7 @@ const PUNCHES := ["jab", "cross", "hook", "elbow", "uppercut", "hammerfist"]
 const KICKS := ["roundkick", "push", "spinkick", "spinkickClose", "knee", "flyknee"]
 ## (THE BRAWLER REMADE, his ideas of 26 Nov 2026: heroes/brawler2.gd, its switch and its numbers; off, he is as he was)
 const B2 := preload("res://scripts/heroes/brawler2.gd")
+const Loot := preload("res://scripts/loot.gd")
 ## (the bake's lists: his moves after every other hero's, art/heroes3.ts HERO_PICKS)
 const VET_LIST0 := 58
 ## (game.ts TUNE.heroRadius: hero.gd RADIUS)
@@ -547,8 +548,18 @@ func more_crit(i: int) -> float:
 	var r: Dictionary = h.loadout.r(i)
 	var w = look.loot.gear.get("mainhand") if look != null and is_instance_valid(look) and look.loot != null else null
 	var wr: float = float(w["aps"]) if w != null and float(w.get("aps", 0.0)) > 0.0 else 1.0
-	var k: float = clampf(float(r["rate"]) / maxf(0.3, wr), 0.5, 2.0) * h.attack_pace()
-	return maxf(0.0, k - 1.0) * 100.0 * B2.HEAVY
+	var k: float = maxf(1.0, clampf(float(r["rate"]) / maxf(0.3, wr), 0.5, 2.0) * h.attack_pace())
+	var cm: float = float(h.stats["crit_mult"])
+	match B2.HEAVY_MODE:
+		"whole":
+			# (his whole critical hit, 1 + cm, k times as hard: what is added to cm to make it so)
+			return (1.0 + cm / 100.0) * (k - 1.0) * 100.0
+		"base":
+			# (the base critical, 1 + base, k times as big, and his gear's critical damage (cm less the base) multiplying it)
+			var base: float = Loot.CRIT_DOUBLE_BASE if Loot.CRIT_DOUBLE else 50.0
+			var crit: float = (1.0 + base / 100.0) * k * (1.0 + (cm - base) / 100.0)
+			return maxf(0.0, crit * 100.0 - 100.0 - cm)
+	return (k - 1.0) * 100.0 * B2.HEAVY
 
 
 ## (veteran.ts vetWalkable) Whether he may walk himself `f` frames into move `id`: in its wind-up or its wind-down.

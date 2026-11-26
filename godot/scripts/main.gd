@@ -3436,6 +3436,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_stuns.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	# (QUICK HANDS AGAINST HEAVY HANDS, FOUGHT: check_heavy.gd, with WS_DMG_GEAR)
+	if _arg("only") == "heavy":
+		await preload("res://scripts/check_heavy.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE CRITICAL BRAWLER: check_crit.gd, with WS_DMG_GEAR)
 	if _arg("only") == "crit":
 		await preload("res://scripts/check_crit.gd").new().run(self, hero, dir)

@@ -30,6 +30,14 @@ const KEEP := 3.0
 const LEAP := 3.5
 ## (Heavy Hands: each 1% of attack speed, this many % of critical damage)
 const HEAVY := 2.0
+## HOW HEAVY HANDS MAKES HIS CRITICALS HARDER (talked through with him, 26 Nov 2026; fought side by side, his “K let's fight it.  Do
+## it the fast hands way and both of our calcs for slow”), `k` his attack speed's pace (2 at +100%):
+##   "add"    his first words: each 1% of attack speed 2% more critical damage, added to what he has (HEAVY);
+##   "whole"  the main chat's: his whole critical hit k times as hard;
+##   "base"   his: the base critical (2.5 times a regular hit) k times as big, and his gear's critical damage multiplying that
+##            (“That would take a normal crit 2.5 times your regular damage up to 5 times your regular damage. Then you're
+##            multiplying that by your crit damage percent”).
+static var HEAVY_MODE := "add"
 ## (his presses waiting their turn, at most: no combo locks now)
 const WAITING := 2
 ## (the frames each flying move is drawn with till the art chat's come)
