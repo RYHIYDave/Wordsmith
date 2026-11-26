@@ -142,6 +142,10 @@ func run(main, hero, d: String) -> void:
 		await _warlock()
 		print("TALENTS DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " %s" % [bad]])
 		return
+	if OS.get_environment("WS_TALENTS_ONLY") == "tinkerer":
+		await _tinkerer()
+		print("TALENTS DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " %s" % [bad]])
+		return
 	# THE WARRIOR'S TALENTS IN PLAY (game.ts, TALENTS2's rules)
 	await _warrior()
 	# THE WARRIOR'S BATTLE AXE AND WARHAMMER, their moves and their talents
@@ -844,14 +848,28 @@ func _tinkerer() -> void:
 	# The Big One and Mad Mixture: every fifth vial a big one; each a brew
 	h.talents = ["bombsaway", "clustervials", "tar", "madmixture", "alchemy", "thebigone"]
 	kit.vials_thrown = 0
+	kit._since_big = 0
+	kit._big_at = -1e9
 	var bigs := []
 	var brews := {}
 	for n in 10:
 		var v := {}
+		h._clock += 1.0
 		kit._brew(v)
 		bigs.append(v.get("big", false))
 		brews[v.get("brew", "")] = true
-	_line(bigs == [false, false, false, false, true, false, false, false, false, true] and not brews.has(""), "The Big One: the 5th and 10th vials big (%s); Mad Mixture: each a brew (%s)" % [bigs, brews.keys()])
+	_line(bigs == [false, false, false, false, true, false, false, false, false, true] and not brews.has(""), "The Big One: the 5th and 10th vials big, a vial a second (%s); Mad Mixture: each a brew (%s)" % [bigs, brews.keys()])
+	# (BIG_ONE_WAIT, on at his yes: no big one sooner than BIG_ONE_SECS after the last; ten vials thrown at once, only the 5th big)
+	if kit.BIG_ONE_WAIT:
+		kit._since_big = 0
+		kit._big_at = -1e9
+		var fast := []
+		for n in 10:
+			var v := {}
+			h._clock += 0.2
+			kit._brew(v)
+			fast.append(v.get("big", false))
+		_line(fast == [false, false, false, false, true, false, false, false, false, false], "The Big One no sooner than %.0f s after the last: ten vials in two seconds, only the 5th big (%s)" % [kit.BIG_ONE_SECS, fast])
 	# Tar and Cluster Vials: a vial bursting leaves a puddle and breaks into three little ones
 	kit.tars.clear()
 	kit.vials.clear()

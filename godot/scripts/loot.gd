@@ -76,8 +76,9 @@ const EQUIP := ["mainhand", "offhand", "helm", "chest", "gloves", "belt", "boots
 ## life globe, its line over his life and its shimmer on him, DODGE over him, the cards and the stats page), 22 Nov 2026.
 static var DEFENCE_LAYERS := true
 ## THE THREE DEFENCES EVENED (his pick, 26 Nov 2026, “Fix the balance (Recommended)”, after the speed and tank test found every
-## hero's toughest build all Strength and heavy armour, his dodge never past 1%): see derive. Off until his yes to the numbers.
-static var DEFENCE_EVEN := false
+## hero's toughest build all Strength and heavy armour, his dodge never past 1%): see derive. ON at his yes to the numbers (the
+## toughest builds before and after, docs/tests/speed_tank_2026-11-26.txt), 26 Nov 2026: “Yes, both (Recommended)”.
+static var DEFENCE_EVEN := true
 ## (each point of Dexterity's dodge, each of Intelligence's barrier, with DEFENCE_EVEN on: as each of Strength is 3 life, items.json
 ## attr strLife; dodge reckoned as armour is, d / (d + 40 + 20 a floor): hero.gd dodge_chance)
 const EVEN_DEX_DODGE := 0.8

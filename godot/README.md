@@ -1505,6 +1505,14 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   it waits out a portcullis), as the game has it and with every monster a thousand times as tough; and each class's toughest
   build (the same chooser on what he can stand) among seven of floor 20's own that cannot die, striking fifteen times as hard.
   Results and builds: `docs/tests/speed_tank_2026-11-26.txt`. It found the app's resistances uncapped (fixed: 75%, `loot.gd`).
+- **The balance fixes from the speed and tank test** (his pick, 26 Nov 2026, “Fix the balance (Recommended)”; ON at his yes to
+  the numbers: “Yes, both (Recommended)”). THE THREE DEFENCES EVENED (`loot.gd` DEFENCE_EVEN): every point of Dexterity is 0.8
+  of his own dodge and every point of Intelligence 2.5 of his own barrier, as every point of Strength is 3 of his own life; before
+  it every toughest build was all Strength and heavy armour, his dodge at 1%. THE BIG ONE NOW AND THEN (`heroes/tinkerer.gd`
+  BIG_ONE_WAIT): the Tinkerer's every fifth vial still knocks everything down, but no sooner than 3 s after the last, so that
+  what is near her can strike again (before, she threw so fast that nothing near her was ever up: she could not fall). Her
+  toughness before and after and every class's: `docs/tests/speed_tank_2026-11-26.txt` (AFTER THE FIXES); measured by
+  `--only=speed` with `WS_BIG_WAIT=0|1` and `WS_DEF_EVEN=0|1` to set either switch for a run.
 - **Six enemies made livelier** (the browser art's `src/art/enemies8.ts` ENEMIES8, ON at his yes to the second pictures, 26 Nov
   2026: “Yes, put them in (Recommended)”; his words: “Next Find the 8 weakest enemies and work on them.  Weakest in terms of their
   animations and look.”). The skeleton marksman breathes as he waits and swings more in his stride; the Shade rises, sinks and

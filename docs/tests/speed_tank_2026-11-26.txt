@@ -252,3 +252,17 @@ the tank fight's foes: hshape (the floor's most common)
     ring2: Ruby Ring + swift, demolition, guarding, swift
   STANDS among seven of floor 20's own (blows x15), fighting back: 14.3, 16.0, 20.2 s (middle 16.0 s)
 DONE
+
+=== AFTER THE FIXES (both ON at his yes, 26 Nov 2026: “Yes, both (Recommended)”) ===
+The three defences evened (loot.gd DEFENCE_EVEN: each point of Dexterity 0.8 dodge, each of Intelligence 2.5 barrier, as each
+of Strength is 3 life) and The Big One no sooner than 3 s after the last (heroes/tinkerer.gd BIG_ONE_WAIT). The same tank fight
+(seven of floor 20's own, blows x15, fighting back), the middle of three tries, before -> after:
+  Tinkerer  180+ (never fell) -> 38.0 s
+  Brawler   16.0 s -> 26.7 s
+  Warrior   11.5 s -> 13.7 s
+  Ranger     7.5 s -> 11.2 s
+  Warlock    6.3 s ->  9.3 s
+  Mage       5.5 s ->  7.9 s  (fire)
+Dodge on the toughest builds now 24-27% (before: 1%). The chooser, free to put a hero's points anywhere, now puts them all in
+Intelligence for every class (barrier about 3200-3600, life about 1000-1200); held to one attribute and one kind of armour, the
+Ranger's three ways came out even: Strength and heavy 10.1 s, Dexterity and leather 10.0 s, Intelligence and cloth 9.8 s.

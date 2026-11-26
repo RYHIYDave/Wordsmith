@@ -29,8 +29,9 @@ const SHOT_WAIT := 0.5
 ## THE BIG ONE NOW AND THEN (his pick, 26 Nov 2026, “Fix the balance (Recommended)”, after the speed and tank test found her
 ## unkillable: every fifth vial knocks everything near down for 1.2 s, and she throws them so fast that the next big one came before
 ## they were up, so that nothing near her ever struck; with it on a big one comes no sooner than BIG_ONE_SECS after the last, the
-## fifth vial or a later one: they are down a little more than a third of the time). Off until his yes to the numbers.
-static var BIG_ONE_WAIT := false
+## fifth vial or a later one: they are down a little more than a third of the time). ON at his yes to the numbers (her toughness
+## before and after, docs/tests/speed_tank_2026-11-26.txt), 26 Nov 2026: “Yes, both (Recommended)”.
+static var BIG_ONE_WAIT := true
 const BIG_ONE_SECS := 3.0
 var _since_big := 0
 var _big_at := -1e9
