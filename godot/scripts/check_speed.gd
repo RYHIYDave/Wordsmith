@@ -77,6 +77,9 @@ func run(main, hero, d: String) -> void:
 		preload("res://scripts/loot.gd").DEFENCE_EVEN = OS.get_environment("WS_DEF_EVEN") == "1"
 	# (the Brawler remade, heroes/brawler2.gd: WS_BRAWLER2=1 its switch on; WS_B2_FORK=vquickhands or vheavyhands, the side of his
 	# fork in his talents, in place of Viper Jab or Long Legs)
+	# (stuns made rare, monster.gd STUNS_RARE: WS_STUNS_RARE=1 on)
+	if OS.has_environment("WS_STUNS_RARE"):
+		preload("res://scripts/monster.gd").STUNS_RARE = OS.get_environment("WS_STUNS_RARE") == "1"
 	if OS.has_environment("WS_BRAWLER2"):
 		B2.on = OS.get_environment("WS_BRAWLER2") == "1"
 	var only: Array = Array(OS.get_environment("WS_SPEED").split(" ", false)) if OS.has_environment("WS_SPEED") else []
