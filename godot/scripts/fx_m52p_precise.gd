@@ -18,7 +18,9 @@
 ##   BLUR       at a full frenzy, streaks of him trailing a step behind; a kill, a gust lifting him.
 ##   JUGGERNAUT at a full frenzy, each step shaking dust from the floor; on a monster, its shock ring the bigger the more hurt.
 ## On a monster carrying one: Quickdraw's glint on its weapon after a pause; Whiteout's snow, Overcharge's crackle and Berserk's
-## steam the thicker the more it is hurt; Blur's streaks while it is a blur.
+## steam the thicker the more it is hurt; Blur's streaks while it is a blur. And (the check of 26 Nov 2026: these never played on a
+## monster) Whiteout's blow whipping snow round him, the thicker the more hurt it is; Overcharge's bolt reaching out to him from it,
+## its sparks spattering round his feet.
 extends "res://scripts/fx_m52kit.gd"
 
 const IDS := ["duelist", "needle", "brand", "seeker", "quickdraw", "pressurepoint", "berserk", "fever", "whiteout", "overcharge", "blur", "juggernaut"]
@@ -70,6 +72,15 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 			b["end"] = 0.8
 		"whiteout:snow":
 			b["end"] = 0.7
+		"whiteout:foe":
+			b["end"] = 0.7
+			b["n"] = 1 + int(4.0 * clampf(float(b["r"]), 0.0, 1.0))
+			for i in 10 + 4 * int(b["n"]):
+				_bit(b["x"], b["y"], 6.0 + randf() * 16.0, "streak", PackedColorArray([SNOW[3], SNOW[4], SNOW[5]]), 2.6, 0.5, 10, 0, 10)
+		"overcharge:foe":
+			b["end"] = 0.35
+			for i in 10:
+				_bit(b["x"], b["y"], 2, "streak", PackedColorArray([R[3], R[4], R[5], Color.WHITE]), 2.6, 0.3, 140, 20, 70)
 		"whiteout:burst":
 			b["end"] = 1.0
 			for i in 20:
@@ -147,6 +158,10 @@ func paint_floor(b: Dictionary) -> void:
 	var R := ramp(b["id"])
 	var bt: float = b["t"]
 	match "%s:%s" % [b["id"], b["what"]]:
+		"overcharge:foe":
+			# (its shock thrown out round his feet as the bolt lands, the wider the more hurt it is)
+			var v := _ease(bt / 0.25)
+			_front(b["x"], b["y"], (0.4 + 0.9 * float(b["r"])) * v, PackedColorArray([R[1], R[2], R[3], R[4], R[5]]), int(b["seed"]), 0.9 * (1.0 - v), "shock")
 		"duelist:alone":
 			# (a dueling circle drawn round it: dashes going round, two crossed blades at its ends)
 			var u := _ease(bt / 0.2)
@@ -390,6 +405,29 @@ func paint_air(b: Dictionary) -> void:
 				_fs(R[5])
 				_fill(_ri(x), _ri(y), 1, 1)
 			_glow(p.x, p.y, 16.0, R[3], 0.5 * fade)
+		"whiteout:foe":
+			# (a monster's, on him: a squall of snow whipped round him, the thicker the more hurt it is, in swirling bands, flakes
+			# big and small; round him, not over him)
+			var n: int = b["n"]
+			var fade := _c01((0.7 - bt) / 0.3) * _c01(bt / 0.08)
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"]) - 12.0
+			for band in 4:
+				var a0 := bt * (8.0 + band) + float(band) * TAU / 4.0
+				var rr := 15.0 + 5.0 * band + bt * 10.0
+				var m := 16 + 4 * n
+				for i in m:
+					var v := float(i) / float(m)
+					var a := a0 - v * 2.6
+					var x := cx + cos(a) * rr
+					var y := cy + sin(a) * rr * 0.45 + float(band - 1) * 5.0 + (_rh(sd, band * 40 + i) - 0.5) * 5.0
+					var big := 2 if (i + band) % 2 == 0 else 1
+					_ga(fade * (1.0 - v * 0.6))
+					_fs(SNOW[1])
+					_fill(_ri(x), _ri(y) + 1, big, 1)
+					_fs(SNOW[5] if i % 3 == 0 else SNOW[4])
+					_fill(_ri(x), _ri(y), big, big)
+			_glow(cx, cy + 12.0, 24.0 + 6.0 * n, SNOW[4], 0.5 * fade)
 		"whiteout:snow":
 			# (snow whipped round what it hits, the more the faster he goes)
 			var n: int = 8 + 5 * int(b["n"])
@@ -409,6 +447,22 @@ func paint_air(b: Dictionary) -> void:
 			var bx := _wx(b["x1"], b["y1"])
 			var by := _wy(b["x1"], b["y1"]) - 12.0
 			_bolt(ax, ay, bx, by, R, sd, 1.0 - _c01((bt - 0.15) / 0.15), 3)
+		"overcharge:foe":
+			# (its bolt reaching out from it to him, the farther the more it is hurt, its amber flash at his feet, not over him)
+			var fade := 1.0 - _c01((bt - 0.15) / 0.2)
+			var hx := _wx(b["x"], b["y"])
+			var hy := _wy(b["x"], b["y"])
+			var ax := _wx(b["x1"], b["y1"])
+			var ay := _wy(b["x1"], b["y1"]) - 14.0
+			_bolt(ax, ay, hx, hy - 4.0, R, sd, fade, 3)
+			# (and forks of it striking the floor round him, the more hurt it is, the farther)
+			for k in 2 + int(3.0 * float(b["r"])):
+				var a := _rh(sd, k + 3) * TAU
+				var reach := 20.0 + 26.0 * float(b["r"]) * _rh(sd, k + 9)
+				_bolt(lerpf(ax, hx, 0.6), lerpf(ay, hy - 4.0, 0.6), hx + cos(a) * reach, hy + sin(a) * reach * 0.5, R, sd + 17 * k, fade, 2)
+				_glow(hx + cos(a) * reach, hy + sin(a) * reach * 0.5, 9.0, R[4], 0.7 * fade)
+			_glow(hx, hy, 22.0 + 14.0 * float(b["r"]), R[4], 0.7 * fade)
+			_glow(_wx(b["x1"], b["y1"]), _wy(b["x1"], b["y1"]) - 14.0, 16.0, R[4], 0.6 * fade)
 	_ga(1.0)
 
 

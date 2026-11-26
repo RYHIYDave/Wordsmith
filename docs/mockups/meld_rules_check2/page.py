@@ -1,11 +1,13 @@
 # The page of the weakest melds against his Art Rulebook, before and after (26 Nov 2026), from the films the check makes
 # (godot: --only=words --cases=m52film, each <id>.mp4 and <id>.jpg) and report.json (this folder: the ranking, each one's reasons, what
 # was done; made by report.py).
-#   python3 page.py <before films dir> <after films dir> <out dir> [<second pass before dir> <second pass after dir>]
+#   python3 page.py <before films dir> <after films dir> <out dir> [<second pass before dir> <second pass after dir>
+#     [<monster moments before dir> <monster moments after dir>]]
 import json, sys, os, shutil, html
 HERE = os.path.dirname(os.path.abspath(__file__))
 before, after, out = sys.argv[1], sys.argv[2], sys.argv[3]
 before2, after2 = (sys.argv[4], sys.argv[5]) if len(sys.argv) > 5 else (before, after)
+before3, after3 = (sys.argv[6], sys.argv[7]) if len(sys.argv) > 7 else (before, after)
 REP = json.load(open(HERE + '/report.json'))
 D = json.load(open(HERE + '/../../../godot/assets/words/melds52.json'))
 os.makedirs(out + '/film', exist_ok=True)
@@ -29,7 +31,7 @@ def cards(items, b=None, a=None, pre=''):
         why = ''.join(f'<li>{html.escape(w)}</li>' for w in item['why'])
         did = ''.join(f'<li>{html.escape(w)}</li>' for w in item['done'])
         out_cards.append(f'<article class="card"><header><b>{html.escape(name_of(m))}</b><span>{" + ".join(nm(w) for w in of)}</span></header>'
-                         f'<div class="pair">{"".join(vids)}</div><dl class="does"><dt>Why weak</dt><dd><ul>{why}</ul></dd><dt>Done</dt><dd><ul>{did}</ul></dd></dl></article>')
+                         f'<div class="pair">{"".join(vids)}</div><dl class="does"><dt>{"What was missing" if pre == "m_" else "Why weak"}</dt><dd><ul>{why}</ul></dd><dt>Done</dt><dd><ul>{did}</ul></dd></dl></article>')
     return ''.join(out_cards)
 
 
@@ -37,7 +39,8 @@ allfix = ''.join(f'<li>{html.escape(x)}</li>' for x in REP['for_all'])
 asks = ''.join(f'<li>{html.escape(x)}</li>' for x in REP.get('your_call', []))
 page = open(HERE + '/page.html').read()
 low = ', '.join(html.escape(name_of(x['id'])) for x in REP.get('pass2_low', []))
-page = (page.replace('@@P2CARDS@@', cards(REP.get('pass2', []), before2, after2, 'p2_')).replace('@@P2LOW@@', low)
+page = (page.replace('@@FOECARDS@@', cards(REP.get('foe26', []), before3, after3, 'm_'))
+        .replace('@@P2CARDS@@', cards(REP.get('pass2', []), before2, after2, 'p2_')).replace('@@P2LOW@@', low)
         .replace('@@CARDS@@', cards(REP['weakest'])).replace('@@SHOWN@@', cards(REP.get('shown', []))).replace('@@ALL@@', allfix)
         .replace('@@ASK@@', asks).replace('@@COUNT@@', str(REP['checked'])).replace('@@N@@', str(len(REP['weakest'])))
         .replace('@@SCORING@@', html.escape(REP['scoring'])))

@@ -116,6 +116,20 @@ func handle(e: Dictionary) -> void:
 			for i in 8:
 				_bit(b["x"], b["y"], 2, "puff", PackedColorArray(DUST), 1.2, 0.8, -4, 6, 14)
 			fx.kick(1.5)
+		# (ON A MONSTER, the check of 26 Nov 2026 against his Art Rulebook's Animations 7: its own moment, which never played there)
+		"aftershock:foe":
+			# (where he stood: the floor cracking white-hot under the warning while it runs, then bursting up in slabs and dust)
+			b["wait"] = float(e.get("wait", 0.6))
+			b["end"] = float(b["wait"]) + 1.1
+		"flurry:foe":
+			# (its blows quickening: green crescents of wind whipped round it, one more for each)
+			b["end"] = 0.5
+			b["n"] = clampi(int(e.get("n", 1)), 1, 4)
+			if m != null:
+				b["dx"] = m.face.x
+				b["dy"] = m.face.y
+			for i in 6 + 2 * int(b["n"]):
+				_bit(b["x"], b["y"], mid, "streak", PackedColorArray([R[3], R[4], R[5]]), 2.6, 0.3, 0, 0, 10)
 		_:
 			return
 	beats.append(b)
@@ -163,6 +177,18 @@ func update(dt: float) -> void:
 					b["puff"] = true
 					for i in 12:
 						_bit(b["x"], b["y"], 6, "streak", PackedColorArray([FIRE[2], FIRE[3], FIRE[4], FIRE[5]]), 1.6, 0.5, -40, 30, 80)
+			"aftershock:foe":
+				# (the ground bursting as the warning runs out: slabs and stones thrown, the floor kicked, a heavy hold)
+				if bt > float(b["wait"]) and not b.has("blown"):
+					b["blown"] = true
+					for i in 14:
+						_bit(b["x"], b["y"], 3, "puff", PackedColorArray(DUST), 1.6 * float(b["r"]) / 1.8, 0.9, -6, 4, 12)
+					for i in 14:
+						_bit(b["x"], b["y"], 4, "stone", PackedColorArray(STONE), 2.2, 0.8, 300, 70, 140)
+					for i in 10:
+						_bit(b["x"], b["y"], 4, "streak", PackedColorArray([STONE[3], STONE[4], STONE[5]]), 3.4, 0.35, 160, 30, 90)
+					fx.kick(3.0)
+					fx.hold(0.1)
 			"aftershock:burst":
 				if bt > 0.16 and not b.has("blown"):
 					b["blown"] = true
@@ -231,6 +257,13 @@ func draw_floor(c: CanvasItem) -> void:
 				_aftershock_floor(b)
 			"aftershock:quake":
 				_cracks(b, float(b["r"]), _c01(1.0 - float(b["t"]) / 0.9), 0.0)
+			"aftershock:foe":
+				_aftershock_foe(b)
+			"rekindle:relight":
+				# (a monster's, on him: under him, its flames licking up round him and not over him, his Art Rulebook's Animations 4;
+				# the check of 26 Nov 2026)
+				if b["foe"]:
+					_rekindle(b)
 	# (Viper behind: the wet green trail the snake leaves)
 	var h = fx.hero()
 	if h != null and h.wakes != null and is_instance_valid(h.wakes):
@@ -260,13 +293,22 @@ func draw_air(c: CanvasItem) -> void:
 				if not OWN:
 					_ice_shell(b)
 			"rekindle:relight":
-				_rekindle(b)
+				if not b["foe"]:
+					_rekindle(b)
 			"flurry:stack":
 				_crescents(b)
 			"flurry:gust":
 				_wind(b)
+			"flurry:foe":
+				_crescents(b)
 			"aftershock:burst":
 				_aftershock_air(b)
+			"aftershock:foe":
+				var w: float = b["wait"]
+				if float(b["t"]) >= w:
+					var at: Dictionary = b.duplicate()
+					at["t"] = float(b["t"]) - w + 0.16
+					_aftershock_air(at)
 	var h = fx.hero()
 	if h != null and h.wakes != null and is_instance_valid(h.wakes):
 		for z in h.wakes.list:
@@ -782,6 +824,37 @@ func _aftershock_floor(b: Dictionary) -> void:
 		_ga(0.5 * fade)
 		_fs(DUST[3])
 		_ring(b["x"], b["y"], r * u * 0.85, 2)
+	_ga(1.0)
+
+
+## On a monster: while its warning runs where he stood, cracks creeping out of the floor there, growing hotter; as it runs out, the
+## floor heaving up in slabs round it, a shock front of grit rolling out, the cracks white-hot and cooling.
+func _aftershock_foe(b: Dictionary) -> void:
+	var bt: float = b["t"]
+	var w: float = b["wait"]
+	var r: float = b["r"]
+	var sd: int = b["seed"]
+	if bt < w:
+		var c: Dictionary = b.duplicate()
+		c["t"] = 0.5 * (1.0 - bt / w)
+		_cracks(c, r * 0.9, 0.5 + 0.4 * bt / w, _ease(bt / w))
+		return
+	var s := bt - w
+	var u := _ease(s / 0.3)
+	var fade := _c01((1.1 - s) / 0.5)
+	var c2: Dictionary = b.duplicate()
+	c2["t"] = s
+	_cracks(c2, r, fade, 1.0)
+	var cx := _wx(b["x"], b["y"])
+	var cy := _wy(b["x"], b["y"])
+	var rr := r * (0.35 + 0.65 * u)
+	for i in 14:
+		var a := float(i) / 14.0 * TAU + _rh(sd, i + 40) * 0.3
+		var x := cx + cos(a) * rr * 22.6
+		var y := cy + sin(a) * rr * 11.3
+		var lift := (4.0 + 6.0 * _rh(sd, i)) * (1.0 - _c01((s - 0.25) / 0.6))
+		_shard(x, y, 5.0 + 3.0 * _rh(sd, i + 60), lift, STONE, sd + i, fade)
+	_front(b["x"], b["y"], r * u, [STONE[1], STONE[2], STONE[3], STONE[4], STONE[5]], sd, 0.9 * (1.0 - u), "shock")
 	_ga(1.0)
 
 

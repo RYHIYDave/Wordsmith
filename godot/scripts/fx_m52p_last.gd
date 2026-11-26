@@ -14,6 +14,10 @@
 ##   JOLT       all of a shock going off in one blinding jolt; its storm behind letting every bolt loose at once.
 ##   BLINK      after-images of him, a step behind each other, as he darts.
 ##   DAZE       a heavy thud on the stunned, its stars spinning fast.
+## ON A MONSTER carrying one (the check of 26 Nov 2026 against his Art Rulebook: these never played there), on him, at his feet and
+## not over him: Cold Snap's ice snapping shut round his feet; Permafrost's ice standing thick round them, crusted with sand, the
+## deeper the chill; Tempest's sand-light crackling round him with each arc; Jolt's whole shock bursting out of him at once in
+## bolts; Smoulder's coals catching where it fell, embers and smoke going up (and its ground drawn as coals, as his).
 extends "res://scripts/fx_m52kit.gd"
 
 const IDS := ["momentum", "canker", "permafrost", "smoulder", "tempest", "tailwind", "bedrock", "haymaker", "bloat", "coldsnap", "flashfire", "jolt", "blink", "daze"]
@@ -65,6 +69,28 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 			b["y0"] = b["y"]
 		"daze:thud":
 			b["end"] = 0.5
+		"coldsnap:foe":
+			b["end"] = 0.45
+			for i in 12:
+				_bit(b["x"], b["y"], 3, "streak", PackedColorArray([ICE[3], ICE[4], ICE[5]]), 2.6, 0.35, 160, 30, 90)
+		"permafrost:foe":
+			b["end"] = 1.05
+		"tempest:foe":
+			b["end"] = 0.4
+			for i in 6:
+				_bit(b["x"], b["y"], 6, "dot", PackedColorArray([SAND[3], SAND[4], R[4], R[5]]), 1.4, 0.5, 0, 6, 20)
+		"jolt:foe":
+			b["end"] = 0.4
+			fx.kick(2.2)
+			fx.hold(0.06)
+			for i in 14:
+				_bit(b["x"], b["y"], 12, "streak", PackedColorArray([R[3], R[4], R[5], Color.WHITE]), 4.0, 0.3, 0, 0, 30)
+		"smoulder:foe":
+			b["end"] = 0.8
+			for i in 14:
+				_bit(b["x"], b["y"], 2, "dot", PackedColorArray([FIRE[3], FIRE[4], FIRE[5]]), 0.8, 0.8, -30, 20, 50)
+			for i in 5:
+				_bit(b["x"], b["y"], 4, "puff", PackedColorArray([Color("#3a3438"), Color("#5a5458"), Color("#8a8488")]), 0.4, 1.0, -10, 8, 16)
 		_:
 			return false
 	return true
@@ -122,6 +148,8 @@ func paint_floor(b: Dictionary) -> void:
 			# (its edge rolling out as the thing it is, not a plain ring: How art is made 9, the check of 26 Nov 2026)
 			_front(b["x"], b["y"], float(b["r"]) * (1.0 - u * 0.6), PackedColorArray([ICE[1], ICE[2], ICE[3], ICE[4], ICE[5]]), int(b["seed"]), 0.9 * _c01((0.6 - bt) / 0.3), "water")
 		"flashfire:flare":
+			if b["foe"]:
+				_flare(b)
 			var u := _ease(bt / 0.3)
 			# (its edge rolling out as the thing it is, not a plain ring: How art is made 9, the check of 26 Nov 2026)
 			_front(b["x"], b["y"], float(b["r"]) * u, PackedColorArray([FIRE[1], FIRE[2], FIRE[3], FIRE[4], FIRE[5]]), int(b["seed"]), 0.8 * (1.0 - u), "shock")
@@ -133,6 +161,55 @@ func paint_floor(b: Dictionary) -> void:
 			var u := _ease(bt / 0.25)
 			# (its edge rolling out as the thing it is, not a plain ring: How art is made 9, the check of 26 Nov 2026)
 			_front(b["x"], b["y"], 0.3 + 0.7 * u, PackedColorArray([R[1], R[2], R[3], R[4], R[5]]), int(b["seed"]), 0.8 * (1.0 - u), "shock")
+		"coldsnap:foe":
+			# (ice snapping shut round his feet: shards standing up all round, a crack of white at their roots, then shattering)
+			var u := _ease(bt / 0.12)
+			var fade := _c01((0.45 - bt) / 0.2)
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"])
+			var sd: int = b["seed"]
+			for i in 10:
+				var a := float(i) / 10.0 * TAU + _rh(sd, i) * 0.3
+				var x := cx + cos(a) * (14.0 - 4.0 * u)
+				var y := cy + sin(a) * (7.0 - 2.0 * u)
+				var tall := (5.0 + 6.0 * _rh(sd, i + 20)) * u * (0.5 if sin(a) > 0.3 else 1.0)
+				_shard(x, y, 3.0 + 2.0 * _rh(sd, i + 40), tall, ICE, sd + i, fade)
+			_front(b["x"], b["y"], 0.75 - 0.25 * u, PackedColorArray([ICE[1], ICE[2], ICE[3], ICE[4], ICE[5]]), sd, 0.8 * fade, "water")
+			_glow(cx, cy, 20.0, R[3], 0.6 * fade)
+		"permafrost:foe":
+			# (ice standing thick round his feet, crusted with sand at its roots, the deeper his chill the taller; under him, not over)
+			var fade := _c01((1.05 - bt) / 0.15) * _c01(bt / 0.15)
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"])
+			var deep := clampf(float(b["r"]), 0.2, 1.0)
+			var sd: int = b["seed"]
+			for i in 12:
+				var a := float(i) / 12.0 * TAU + _rh(sd, i) * 0.2
+				var x := cx + cos(a) * 13.0
+				var y := cy + sin(a) * 6.0
+				var tall := (5.0 + 9.0 * deep) * (0.6 + 0.4 * _rh(sd, i + 9)) * (0.45 if sin(a) > 0.2 else 1.0)
+				# (each a jagged, leaning spike of ice, not a post: How art is made 9)
+				_shard(x, y, 4.0 + 2.0 * _rh(sd, i + 30), tall, ICE, sd + i, 0.95 * fade)
+				_ga(0.95 * fade)
+				_fs(SAND[3])
+				_fill(_ri(x) - 1, _ri(y) - 1, 4, 2)
+				_fs(SAND[4])
+				_fill(_ri(x), _ri(y) - 1, 2, 1)
+			_glow(cx, cy, 18.0, R[3], 0.45 * fade)
+		"jolt:foe":
+			# (the shock going off all at once, its front rolling out from his feet)
+			var u := _ease(bt / 0.3)
+			_front(b["x"], b["y"], 0.3 + 1.1 * u, PackedColorArray([R[1], R[2], R[3], R[4], R[5]]), int(b["seed"]), 0.9 * (1.0 - u), "shock")
+		"tempest:foe":
+			# (its sand-light crackling round his feet as the arc strikes)
+			var u := _ease(bt / 0.2)
+			_front(b["x"], b["y"], 0.35 + 0.35 * u, PackedColorArray([SAND[1], SAND[2], SAND[3], SAND[4], R[5]]), int(b["seed"]), 0.9 * (1.0 - _c01((bt - 0.15) / 0.25)), "shock")
+		"smoulder:foe":
+			# (where it fell, the coals catching: a hot glow swelling under them)
+			var u := _ease(bt / 0.3)
+			var fade := _c01((0.8 - bt) / 0.4)
+			_coals(b["x"], b["y"], 0.5 + 0.5 * u, fade, int(b["seed"]))
+			_front(b["x"], b["y"], 0.4 + 0.8 * u, PackedColorArray([FIRE[1], FIRE[2], FIRE[3], FIRE[4], FIRE[5]]), int(b["seed"]), 0.7 * (1.0 - u), "shock")
 	_ga(1.0)
 
 
@@ -168,18 +245,10 @@ func paint_air(b: Dictionary) -> void:
 				_line(p.x, p.y, p.x + cos(a) * 10.0, p.y + sin(a) * 8.0, 1)
 			_glow(p.x, p.y, 22.0, ICE[4], 0.8 * (1.0 - u))
 		"flashfire:flare":
-			# (a white-hot flare going up)
-			var u := _c01(bt / 0.4)
-			var cx := _wx(b["x"], b["y"])
-			var cy := _wy(b["x"], b["y"])
-			var hgt := 64.0 * _ease(u * 2.0)
-			for j in range(0, int(hgt), 2):
-				var v := float(j) / maxf(1.0, hgt)
-				_ga((1.0 - u) * (1.0 - v * 0.6))
-				_fs(_tone(PackedColorArray([Color.WHITE, FIRE[5], FIRE[4], FIRE[3]]), v))
-				var w := lerpf(9.0, 1.5, v)
-				_fill(_ri(cx - w), _ri(cy - j), _ri(w * 2.0), 2)
-			_glow(cx, cy - 10.0, 34.0, FIRE[4], 0.9 * (1.0 - u))
+			# (a monster's, on him: drawn under him, behind, so it goes up behind him and not over him, his Art Rulebook's Animations 4;
+			# the check of 26 Nov 2026)
+			if not b["foe"]:
+				_flare(b)
 		"jolt:jolt":
 			# (all of the shock in one blinding jolt: white bolts out of it every way)
 			var u := _c01(bt / 0.3)
@@ -200,6 +269,34 @@ func paint_air(b: Dictionary) -> void:
 		"blink:blink":
 			var u := _c01(bt / 0.4)
 			_glow(_wx(b["x0"], b["y0"]), _wy(b["x0"], b["y0"]) - 14.0, 24.0, R[5], 0.8 * (1.0 - u))
+		"jolt:foe":
+			# (the whole of the shock bursting out of him at once: bolts thrown every way from just off him, a white flash at his feet)
+			var u := _c01(bt / 0.4)
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"]) - 12.0
+			for k in 9:
+				var a := float(k) / 9.0 * TAU + _rh(sd, k) * 0.5
+				var reach := 34.0 + 14.0 * _rh(sd, k + 20)
+				_bolt(cx + cos(a) * 10.0, cy + sin(a) * 9.0, cx + cos(a) * reach, cy + sin(a) * reach * 0.6, R, sd + k, 1.0 - u, 2)
+				_glow(cx + cos(a) * reach, cy + sin(a) * reach * 0.6, 8.0, R[4], 0.7 * (1.0 - u))
+			_glow(cx, cy + 12.0, 30.0, Color.WHITE, 0.8 * (1.0 - u))
+			_glow(cx, cy + 12.0, 44.0, R[4], 0.6 * (1.0 - u))
+		"tempest:foe":
+			# (crackles of its sand-light leaping off his shoulders)
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"]) - 18.0
+			var fade := 1.0 - _c01(bt / 0.4)
+			for k in 4:
+				var side := -1.0 if k % 2 == 0 else 1.0
+				var x0 := cx + side * 9.0
+				var y0 := cy + float(k / 2) * 6.0
+				var j := (_rh(sd, k + int(bt * 30.0)) - 0.5) * 6.0
+				_ga(fade)
+				_fs(SAND[4])
+				_line(x0, y0, x0 + side * 7.0, y0 - 4.0 + j, 1)
+				_fs(R[5])
+				_line(x0 + side * 7.0, y0 - 4.0 + j, x0 + side * 11.0, y0 + j, 1)
+				_glow(x0 + side * 6.0, y0 - 2.0, 8.0, R[4], 0.6 * fade)
 		"daze:thud":
 			# (its stars spinning fast over its head)
 			var top := _mid(b["m"]) * 2.0 + 4.0
@@ -217,6 +314,21 @@ func paint_air(b: Dictionary) -> void:
 			if bt < 0.15:
 				_glow(p.x, p.y, 26.0, R[4], 0.9 * (1.0 - bt / 0.15))
 	_ga(1.0)
+
+
+## Flashfire's white-hot flare going up from (x, y).
+func _flare(b: Dictionary) -> void:
+	var u := _c01(float(b["t"]) / 0.4)
+	var cx := _wx(b["x"], b["y"])
+	var cy := _wy(b["x"], b["y"])
+	var hgt := 64.0 * _ease(u * 2.0)
+	for j in range(0, int(hgt), 2):
+		var v := float(j) / maxf(1.0, hgt)
+		_ga((1.0 - u) * (1.0 - v * 0.6))
+		_fs(_tone(PackedColorArray([Color.WHITE, FIRE[5], FIRE[4], FIRE[3]]), v))
+		var w := lerpf(9.0, 1.5, v)
+		_fill(_ri(cx - w), _ri(cy - j), _ri(w * 2.0), 2)
+	_glow(cx, cy - 10.0, 34.0, FIRE[4], 0.9 * (1.0 - u))
 
 
 ## A bed of glowing coals on the floor round (x, y), `r` tiles, breathing, smoke curling off it.
@@ -341,6 +453,9 @@ func paint_floor_more() -> void:
 		return
 	for z in h.wakes.list:
 		var id: String = str(z.get("m52", z.get("look", "")))
+		# (a monster's Smoulder ground where it died, drawn as his: the check of 26 Nov 2026)
+		if id == "" and str(z.get("foe", "")) == "smoulder":
+			id = "smoulder"
 		var x: float = z["x"]
 		var y: float = z["y"]
 		var r: float = z["r"]

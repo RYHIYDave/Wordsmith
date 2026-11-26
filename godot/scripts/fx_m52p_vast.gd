@@ -9,7 +9,9 @@
 ##   GALE       each it strikes blown out on a gust; behind, a wide wind sweeping round him and his allies.
 ##   EARTHQUAKE the stun rolling out as a wave: the floor heaving up in slabs at its front, cracks and dust behind it.
 ## On a monster carrying one: its ground under him swelling (Miasma, Glacier, Inferno), a storm gathering over him (Stormfront),
-## a gust throwing him back (Gale), the floor heaving round him (Earthquake).
+## a gust throwing him back (Gale), the floor heaving round him (Earthquake). And as each blow lays its ground (the check of 26 Nov
+## 2026: that moment never played on a monster): Miasma's haze rolling out from under him, Glacier's ice creeping out in crystals,
+## Inferno's fire running out in a ring of flame.
 extends "res://scripts/fx_m52kit.gd"
 
 const IDS := ["cataclysm", "miasma", "glacier", "inferno", "stormfront", "gale", "earthquake"]
@@ -26,12 +28,20 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 	match "%s:%s" % [b["id"], b["what"]]:
 		"cataclysm:star":
 			b["end"] = 1.2
-		"miasma:haze":
+		"miasma:haze", "miasma:foe":
 			b["end"] = 1.4
 			for i in 10:
 				_bit(b["x"], b["y"], 6, "bubble", PackedColorArray([R[4], R[5], R[3]]), 1.2, 0.7, -10, 10, 30)
 		"glacier:spread":
 			b["end"] = 0.9
+		"glacier:foe":
+			b["end"] = 0.8
+			for i in 10:
+				_bit(b["x"], b["y"], 3, "streak", PackedColorArray([ICE[3], ICE[4], ICE[5]]), 2.4, 0.4, 140, 20, 70)
+		"inferno:foe":
+			b["end"] = 0.7
+			for i in 12:
+				_bit(b["x"], b["y"], 4, "streak", PackedColorArray([FIRE[3], FIRE[4], FIRE[5]]), 2.2, 0.45, -30, 20, 70)
 		"gale:blow":
 			b["end"] = 0.45
 			for i in (2 if b.get("minor", false) else 4):
@@ -166,7 +176,7 @@ func paint_floor(b: Dictionary) -> void:
 				_ring(b["x"], b["y"], rr)
 				_fs(DUST[3])
 				_ring(b["x"], b["y"], rr * 0.85, 3)
-		"miasma:haze":
+		"miasma:haze", "miasma:foe":
 			# (its haze rolling out, puff on puff, to the edge of the blow)
 			var u := _ease(bt / 0.9)
 			var fade := 1.0 - _c01((bt - 0.8) / 0.6)
@@ -183,6 +193,40 @@ func paint_floor(b: Dictionary) -> void:
 			_ga(0.25 * fade)
 			_fs(R[2])
 			_ring(b["x"], b["y"], rr * 0.6, 2, t)
+		"glacier:foe":
+			# (ice creeping out from under him over the floor: crystals standing up at its rim as it goes, frost at their tips)
+			var u := _ease(bt / 0.4)
+			var fade := 1.0 - _c01((bt - 0.5) / 0.3)
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"])
+			var rr: float = float(b["r"]) * u
+			var n := 18
+			for i in n:
+				var a := float(i) / n * TAU + _rh(sd, i) * 0.25
+				var x := cx + cos(a) * rr * 22.6
+				var y := cy + sin(a) * rr * 11.3
+				var hh := (4.0 + 7.0 * _rh(sd, i + 20)) * (0.4 + 0.6 * u)
+				_ga(0.95 * fade)
+				_fs(ICE[1])
+				_fill(_ri(x) - 2, _ri(y) - 1, 5, 2)
+				_fs(ICE[3])
+				_fill(_ri(x) - 1, _ri(y - hh), 2, _ri(hh))
+				_fs(ICE[5])
+				_fill(_ri(x) - 1, _ri(y - hh), 1, 2)
+			_front(b["x"], b["y"], rr * 0.8, PackedColorArray([ICE[1], ICE[2], ICE[3], ICE[4], ICE[5]]), sd, 0.7 * fade, "water")
+			_glow(cx, cy, rr * 18.0 + 8.0, R[3], 0.4 * fade)
+		"inferno:foe":
+			# (its fire running out from under him in a ring of flame tongues, the ground catching behind it)
+			var u := _ease(bt / 0.4)
+			var fade := 1.0 - _c01((bt - 0.4) / 0.3)
+			var rr: float = float(b["r"]) * (0.3 + 0.7 * u)
+			var n := 14
+			for i in n:
+				var a := float(i) / n * TAU + _rh(sd, i) * 0.3
+				var x := _wx(float(b["x"]) + cos(a) * rr, float(b["y"]) + sin(a) * rr)
+				var y := _wy(float(b["x"]) + cos(a) * rr, float(b["y"]) + sin(a) * rr)
+				_flames(x, y, 1, 2.0, (10.0 + 6.0 * _rh(sd, i + 9)) * (1.0 - 0.4 * u), fade, PackedColorArray([FIRE[1], FIRE[2], FIRE[3], FIRE[4], FIRE[5]]), sd + i)
+			_glow(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]), rr * 20.0 + 10.0, FIRE[3], 0.5 * fade)
 		"glacier:spread":
 			# (ice creeping over the floor to each one touching the frozen; frost bursting on each as it gets there)
 			var u := _c01(bt / 0.35)

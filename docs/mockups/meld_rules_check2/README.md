@@ -117,3 +117,32 @@ shockwave, a burn made worse, its dying blast), some tell no moment at all on a 
 set up (him burning for Rekindle and Flashfire).
 
 The page has a second-pass section with the twelve changed, before and after.
+
+## The 26 whose own moment never played on a monster (26 Nov 2026)
+
+Asked of him, “In 26 melds ... the meld's own moment never plays when a monster carries it ... Should I fix them?”; his answer: “Fix
+them now (Recommended)”. Why each did not play, and what was done (report.json `foe26`; the page's first section, each film cut to the
+monster's part):
+
+- 21 had nothing of their own at that moment (a real gap): their twist on a monster told nothing, so it showed only as the game's warning
+  ring (Aftershock, Overcharge), a word (Hemlock, Cinderward), Lightning's plain arc (Static, Tempest), the game's dying blast (Quickfuse,
+  Time Bomb, Mayhem, Minefield), its ground with nothing as it was laid (Glacier, Inferno, Miasma, Firewalk; Smoulder's ground drawn as
+  plain fire), or nothing at all (Cold Snap, Permafrost, Whiteout, Jolt, Flurry, Spree). Each now tells its moment, "foe"
+  (foe_melds52.gd, foe_melds46.gd), and its painter draws it at his feet or round him, never over him (fx_m52paint.gd, fx_m52p_leech.gd,
+  fx_m52p_precise.gd, fx_m52p_guard.gd, fx_m52p_last.gd, fx_m52p_vast.gd, fx_m52p_last110.gd). The heavy ones hold (fx_melds52.gd HOLDS,
+  or as each lands in its painter).
+- 5 were the film's alone: Bloat, Carapace, Flashfire, Papercut and Rekindle already had their moment in the game, but the film never let
+  it come (a burn or poison never ran out; his shield took every blow; only one blow landed). check_melds52.gd now sets up what each
+  waits on (FOE_ON_HIM: him chilled, shocked, burning or poisoned as the monster comes; FOE_BLOWS: blows made sure of, up to three, until
+  it is seen; FOE_LOW: Overcharge and Whiteout brought low; Minefield dying with its shield up). Flashfire's flare and Rekindle's flames,
+  on him, now go up behind him (drawn on the floor layer), not over him (Animations 4).
+- Cold Snap, Glacier and Permafrost join fx_m52kit.gd ICY: on a monster, Frost's deep blue, as Flash Freeze's since his yes of 23 Nov.
+- The check now counts a monster's moments apart (melds52_rules.gd `told_foe`: told with `foe`, or its "foe" moment), and its films
+  write when each was first seen (`foe_told` in each film's json).
+
+The page cuts each film to the monster's part with `clip.py <films> <out> <ids>`.
+
+Checked: all 26 filmed again (MELDS52 FOE shown, all 26); the hero's box at most 30% covered in the monster's part, never for a run of
+frames (measure2.py); no script errors in the films. The rules check on the 26 (`--cases=m52:<the 26>`): 9 checks, 0 wrong
+(52 cases).
+

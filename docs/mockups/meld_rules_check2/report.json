@@ -820,5 +820,241 @@
    "id": "vendetta",
    "score": 0.605
   }
+ ],
+ "foe26": [
+  {
+   "id": "aftershock",
+   "why": [
+    "On a monster its aftershock was only the game's warning ring; nothing of Aftershock's own came as it burst."
+   ],
+   "done": [
+    "Where you stood, the floor cracks under the warning, then heaves up in slabs, stones and dust as it bursts, with a hold."
+   ]
+  },
+  {
+   "id": "bloat",
+   "why": [
+    "Its burst on you comes when its poison runs out; the film never let the poison run out."
+   ],
+   "done": [
+    "Nothing changed in the game: the film now lets its poison run out, and its own burst plays round you."
+   ]
+  },
+  {
+   "id": "carapace",
+   "why": [
+    "Its heal on a blow never came in the film: your shield took every blow."
+   ],
+   "done": [
+    "Nothing changed in the game: the film now lets its blows land, and its shell plates up as it heals."
+   ]
+  },
+  {
+   "id": "cinderward",
+   "why": [
+    "When its shield broke, only the warning ring and words showed."
+   ],
+   "done": [
+    "Its shield bursts outward in a ring of flame as it breaks, with a hold."
+   ]
+  },
+  {
+   "id": "coldsnap",
+   "why": [
+    "Its short, deep chill on you had no look at all."
+   ],
+   "done": [
+    "Ice snaps shut round your feet in a ring of shards. On a monster its colour is Frost's deep blue, as Flash Freeze's is."
+   ]
+  },
+  {
+   "id": "firewalk",
+   "why": [
+    "Its burning footprints showed, but nothing marked each step."
+   ],
+   "done": [
+    "Each footprint flares up in flame as it is set down."
+   ]
+  },
+  {
+   "id": "flashfire",
+   "why": [
+    "Its flare on you comes when its burn ends; the film never let the burn end."
+   ],
+   "done": [
+    "The film now lets the burn end. Its white-hot flare goes up behind you, not over you (Animations 4)."
+   ]
+  },
+  {
+   "id": "flurry",
+   "why": [
+    "Its quickening showed only as faint wind."
+   ],
+   "done": [
+    "Each time its blows quicken, green crescents of wind whip round it, one more each time."
+   ]
+  },
+  {
+   "id": "glacier",
+   "why": [
+    "Its frosted ground showed, but nothing as each blow laid it."
+   ],
+   "done": [
+    "Ice creeps out from under you in a ring of crystals as each blow lands. Deep blue on a monster."
+   ]
+  },
+  {
+   "id": "hemlock",
+   "why": [
+    "Striking its shield poisoned you with no look but a word."
+   ],
+   "done": [
+    "Thorns lash out of its shield at you, dripping venom."
+   ]
+  },
+  {
+   "id": "inferno",
+   "why": [
+    "Its burning ground showed, but nothing as each blow set it."
+   ],
+   "done": [
+    "Fire runs out from under you in a ring of flame as each blow lands."
+   ]
+  },
+  {
+   "id": "jolt",
+   "why": [
+    "Its shock hitting you all at once had no look."
+   ],
+   "done": [
+    "The whole shock bursts out of you at once: bolts every way, a shock rolling out from your feet, a kick and a hold."
+   ]
+  },
+  {
+   "id": "mayhem",
+   "why": [
+    "Its dying blast was only the game's warning and blast, with none of Mayhem's red."
+   ],
+   "done": [
+    "Its red frenzy winds up on it as it dies, then its blast throws a red front out, bigger the faster it was going."
+   ]
+  },
+  {
+   "id": "miasma",
+   "why": [
+    "Its poison ground showed, but nothing as each blow laid it."
+   ],
+   "done": [
+    "Its haze rolls out from under you as each blow lands."
+   ]
+  },
+  {
+   "id": "minefield",
+   "why": [
+    "Its bigger blast, with its shield still up, was only the game's blast."
+   ],
+   "done": [
+    "Its shell closes over it and cracks, its mines blinking faster, then blows apart with pieces flying and a hold."
+   ]
+  },
+  {
+   "id": "overcharge",
+   "why": [
+    "Its farther-reaching lightning was only the warning ring, and the film's monster was never hurt enough for it."
+   ],
+   "done": [
+    "Its bolt reaches out to you and forks into the floor round you, farther and with more forks the more hurt it is, and a shock rolls out at your feet. The film now brings it low first."
+   ]
+  },
+  {
+   "id": "papercut",
+   "why": [
+    "Its cuts on you opening again need a second blow; only one landed in the film."
+   ],
+   "done": [
+    "Nothing changed in the game: the film now lands a second blow, and the cuts opening again are seen."
+   ]
+  },
+  {
+   "id": "permafrost",
+   "why": [
+    "Its slow deepening on you had no look."
+   ],
+   "done": [
+    "Jagged ice stands thick round your feet, crusted with sand, taller the deeper your chill. Deep blue on a monster."
+   ]
+  },
+  {
+   "id": "quickfuse",
+   "why": [
+    "Its blast going off at once was only the game's blast."
+   ],
+   "done": [
+    "Its violet star blows apart at once over the blast, with a hold."
+   ]
+  },
+  {
+   "id": "rekindle",
+   "why": [
+    "Its burn lighting again on you comes after the burn goes out; the film never let it go out. And its flames would have gone up over you."
+   ],
+   "done": [
+    "The film now lets the burn go out and light again. Its flames lick up behind you, not over you (Animations 4)."
+   ]
+  },
+  {
+   "id": "smoulder",
+   "why": [
+    "Where it died, the ground burned as plain fire, not as Smoulder's coals."
+   ],
+   "done": [
+    "The coals catch where it fell, embers and smoke going up, and its ground is drawn as coals, as yours is."
+   ]
+  },
+  {
+   "id": "spree",
+   "why": [
+    "Its sudden bursts of speed had no look."
+   ],
+   "done": [
+    "Each burst throws a front of its colour out from its feet, with flames up its sides and streaks behind it."
+   ]
+  },
+  {
+   "id": "static",
+   "why": [
+    "Striking its shield shocked you with only Lightning's arc."
+   ],
+   "done": [
+    "Its bolt leaps out of its shield into you, and the shield flares where it leapt from."
+   ]
+  },
+  {
+   "id": "tempest",
+   "why": [
+    "Its small arcs on you were only Lightning's arcs, and the film never had you shocked."
+   ],
+   "done": [
+    "With each arc its sand-light crackles round your feet and off your shoulders. The film now has you shocked."
+   ]
+  },
+  {
+   "id": "timebomb",
+   "why": [
+    "Its late, huge blast was only the game's warning and blast."
+   ],
+   "done": [
+    "An iron bomb with a clock face sits on what is left of it, its fuse burning down, then goes off huge, with a hold."
+   ]
+  },
+  {
+   "id": "whiteout",
+   "why": [
+    "Its harder slow on you had no look, and the film's monster was never hurt."
+   ],
+   "done": [
+    "A squall of snow whips round you, thicker the more hurt it is. The film now brings it low first."
+   ]
+  }
  ]
 }

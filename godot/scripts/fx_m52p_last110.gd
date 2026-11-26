@@ -48,6 +48,9 @@ const LONG := {
 	"hourglass:foe": 0.9, "aftermath:smoke": 0.4, "aftermath:bite": 0.35, "aftermath:linger": 0.3, "aftermath:foe": 0.4,
 	"whipcrack:crack": 0.3, "whipcrack:snap": 0.3, "whipcrack:foe": 0.3, "carapace:ward": 0.4, "riposte:wardlaid": 0.4,
 	"minefield:wardlaid": 0.4,
+	# (ON A MONSTER, the check of 26 Nov 2026 against his Art Rulebook: these never played there. Firewalk's footprint flaring as it
+	# is set down; Spree's burst coming on; Time Bomb's, Minefield's and Mayhem's dying blasts, each its own way)
+	"firewalk:foe": 0.45, "spree:foe": 0.6, "timebomb:foe": 1.6, "minefield:foe": 1.1, "mayhem:foe": 1.1,
 }
 
 
@@ -71,7 +74,10 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 		if key == "feedingfrenzy:jaws":
 			n = 2 + mini(3, int(b["n"]))
 		_drain(b, n)
-	b["end"] = float(e.get("secs", LONG[key])) if key in ["detonator:charge", "timebomb:tick", "fulgurite:foe", "detonator:foe"] else float(LONG[key])
+	b["end"] = float(e.get("secs", LONG[key])) if key in ["detonator:charge", "timebomb:tick", "fulgurite:foe", "detonator:foe", "spree:foe"] else float(LONG[key])
+	if key in ["timebomb:foe", "minefield:foe", "mayhem:foe"]:
+		b["wait"] = float(e.get("wait", 0.5))
+		b["end"] = float(b["wait"]) + 0.6
 	var R := ramp(b["id"])
 	var mid := _mid(b["m"])
 	match key:
@@ -136,6 +142,12 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 				_bit(b["x"], b["y"], mid, "dot", PackedColorArray([R[2], R[3], R[4], R[5]]), 2.2, 0.5, 40, 10, 40)
 		"transfusion:drip", "transfusion:orb", "transfusion:foe":
 			b["drip"] = 0.0
+		"firewalk:foe":
+			for i in 6:
+				_bit(b["x"], b["y"], 2, "streak", PackedColorArray([FIRE[3], FIRE[4], FIRE[5]]), 0.8, 0.35, -40, 20, 60)
+		"spree:foe":
+			for i in 18:
+				_bit(b["x"], b["y"], 8, "streak", PackedColorArray([R[3], R[4], R[5], Color.WHITE]), 3.6, 0.4, 60, 20, 90)
 		"spree:burst", "spree:two", "mayhem:spark", "rapier:two":
 			var hh := _hero_at(b)
 			for i in 8:
@@ -160,6 +172,32 @@ func _spots(b: Dictionary, e: Dictionary) -> Array:
 
 func tick(b: Dictionary, dt: float) -> void:
 	match "%s:%s" % [b["id"], b["what"]]:
+		"timebomb:foe", "minefield:foe", "mayhem:foe":
+			# (a monster's dying blast going off, each its own: Time Bomb's late and huge, Minefield's shell blown apart, Mayhem's red
+			# frenzy flung out; Volatile's own blast is the game's, under it)
+			var R := ramp(b["id"])
+			if float(b["t"]) >= float(b["wait"]) and not b.get("blown", false):
+				b["blown"] = true
+				var big: bool = b["id"] == "timebomb"
+				fx.kick(3.3 if big else 2.4)
+				fx.hold(0.12 if big else 0.08)
+				for i in (22 if big else 16):
+					_bit(b["x"], b["y"], 8, "streak", PackedColorArray([R[3], R[4], R[5], Color.WHITE]), 3.6 * float(b["r"]) / 1.8, 0.45, 120, 20, 110)
+				if b["id"] == "minefield":
+					for i in 10:
+						_bit(b["x"], b["y"], 10, "stone", R, 2.6, 0.7, 260, 40, 110)
+			elif b["id"] == "mayhem" and float(b["t"]) < float(b["wait"]) and randf() < dt * 40.0:
+				# (its frenzy winding up on it as it goes: red sparks whirling in)
+				var a := randf() * TAU
+				bits.append({"x": float(b["x"]) + cos(a) * 1.1, "y": float(b["y"]) + sin(a) * 1.1, "z": 6.0 + randf() * 14.0, "vx": -cos(a) * 2.4 - sin(a) * 1.2,
+					"vy": -sin(a) * 2.4 + cos(a) * 1.2, "vz": 0.0, "fall": 0.0, "t": 0.0, "life": 0.4, "ramp": PackedColorArray([R[3], R[4], R[5]]), "kind": "streak", "size": 1.0})
+		"spree:foe":
+			# (while its burst lasts, streaks of its colour torn off behind it)
+			var m = b["m"]
+			if m != null and is_instance_valid(m) and not m.dead and randf() < dt * 30.0:
+				var R := ramp("spree")
+				bits.append({"x": m.world.x, "y": m.world.y, "z": 4.0 + randf() * 16.0, "vx": -m.face.x * 3.0, "vy": -m.face.y * 3.0, "vz": 0.0, "fall": 0.0,
+					"t": 0.0, "life": 0.3, "ramp": PackedColorArray([R[3], R[4], R[5]]), "kind": "streak", "size": 1.0})
 		"transfusion:drip", "transfusion:orb", "transfusion:foe":
 			# (the drip: a mote at a time running along to him, for a second)
 			b["drip"] = float(b["drip"]) - dt
@@ -190,6 +228,10 @@ func paint_floor(b: Dictionary) -> void:
 	var fade: float = 1.0 - u
 	var key := "%s:%s" % [b["id"], b["what"]]
 	match key:
+		"spree:foe":
+			# (its burst coming on: a front of its colour thrown out from its feet)
+			var v := _ease(bt / 0.3)
+			_front(b["x"], b["y"], 0.3 + 0.8 * v, PackedColorArray([R[2], R[3], R[4], R[5], Color.WHITE]), sd, 0.9 * (1.0 - v), "shock")
 		"charge:ram", "charge:foe", "charge:bump":
 			# (a brass shock ring rolling out)
 			var rr: float = (1.4 if key != "charge:bump" else 0.7) * _ease(u)
@@ -710,6 +752,73 @@ func paint_air(b: Dictionary) -> void:
 					else:
 						_flames(x, y + 3.0, 1, 4.0, 9.0, fade, PackedColorArray([FIRE[2], FIRE[3], FIRE[4], FIRE[5]]), sd + k + int(t * 8.0))
 						_glow(x, y, 8.0, FIRE[4], 0.6 * fade)
+		"timebomb:foe":
+			var w: float = b["wait"]
+			if bt < w:
+				# (the bomb on what is left of it, its clock going round once, its fuse burning down)
+				var c: Dictionary = b.duplicate()
+				c["what"] = "tick"
+				c["end"] = w
+				paint_air(c)
+			else:
+				var v := _c01((bt - w) / 0.6)
+				var cx := _wx(b["x"], b["y"])
+				var cy := _wy(b["x"], b["y"]) - 8.0
+				_glow(cx, cy, 48.0 * _ease(v * 3.0), R[4], 1.0 - v)
+				_glow(cx, cy, 22.0, Color.WHITE, 0.8 * (1.0 - v))
+				_front(b["x"], b["y"], float(b["r"]) * _ease(v * 1.5), PackedColorArray([R[1], R[2], R[3], R[4], R[5]]), sd, 0.9 * (1.0 - v), "shock")
+		"minefield:foe":
+			var w: float = b["wait"]
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"]) - 12.0
+			if bt < w:
+				# (its shell, still up, closing over it and cracking across, its mines blinking faster)
+				var v := bt / w
+				for i in 22:
+					var a := float(i) / 22.0 * TAU
+					_ga(0.85)
+					_fs(R[4] if sin(a + PI * 0.75) > 0.3 else R[3])
+					_fill(_ri(cx + cos(a) * 14.0), _ri(cy + sin(a) * 15.0), 2, 2)
+				for k in 4:
+					var a := _rh(sd, k) * TAU
+					var l := 14.0 * _ease(v * 1.5)
+					_ga(1.0)
+					_fs(Color.WHITE)
+					_line(cx, cy, cx + cos(a) * l, cy + sin(a) * l, 1)
+				var on: bool = fmod(bt * (4.0 + 16.0 * v), 1.0) < 0.5
+				_glow(cx, cy, 18.0, FIRE[4] if on else R[4], 0.5 + 0.3 * v)
+			else:
+				var v := _c01((bt - w) / 0.6)
+				_glow(cx, cy, 40.0 * _ease(v * 3.0), R[4], 1.0 - v)
+				_glow(cx, cy, 18.0, Color.WHITE, 0.7 * (1.0 - v))
+				_front(b["x"], b["y"], float(b["r"]) * _ease(v * 1.5), PackedColorArray([R[1], R[2], R[3], R[4], R[5]]), sd, 0.9 * (1.0 - v), "shock")
+		"mayhem:foe":
+			var w: float = b["wait"]
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"]) - 10.0
+			if bt < w:
+				_glow(cx, cy, 10.0 + 16.0 * bt / w, R[4], 0.4 + 0.5 * bt / w)
+			else:
+				var v := _c01((bt - w) / 0.6)
+				var big: float = float(b["r"]) / 1.8
+				_glow(cx, cy, 40.0 * big * _ease(v * 3.0), R[4], 1.0 - v)
+				_glow(cx, cy, 18.0 * big, Color.WHITE, 0.7 * (1.0 - v))
+				_front(b["x"], b["y"], float(b["r"]) * _ease(v * 1.5), PackedColorArray([R[1], R[2], R[3], R[4], R[5]]), sd, 0.9 * (1.0 - v), "shock")
+		"spree:foe":
+			# (its burst coming on: a flash of its colour at its feet, flames of it licking up its sides)
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"])
+			var f2 := _c01((float(b["end"]) - bt) / 0.25)
+			var hit := 1.0 - _c01(bt / 0.3)
+			_glow(cx, cy - 8.0, 34.0, R[4], 0.8 * hit)
+			_glow(cx, cy - 8.0, 14.0, Color.WHITE, 0.6 * hit)
+			_flames(cx, cy + 2.0, 7, _half(b["m"]) * 2.8, 16.0 + 6.0 * hit, 0.85 * f2, PackedColorArray([R[1], R[2], R[3], R[4], R[5]]), sd + int(t * 6.0))
+		"firewalk:foe":
+			# (the footprint flaring up as it is set down)
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"])
+			_flames(cx, cy, 3, 8.0, 12.0 * fade, fade, PackedColorArray([FIRE[1], FIRE[2], FIRE[3], FIRE[4], FIRE[5]]), sd)
+			_glow(cx, cy - 3.0, 12.0, FIRE[3], 0.6 * fade)
 		"spree:burst", "spree:two", "rapier:two":
 			# (a flash at his feet, not a haze over him: his Art Rulebook's Animations 4)
 			var hh := _hero_at(b)

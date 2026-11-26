@@ -53,7 +53,9 @@ func ramp(id: String) -> PackedColorArray:
 
 ## (FRIEND CYAN IS THE HERO'S ALONE, his Art Rulebook's Pillar 4 and Monsters 6, and his yes of 23 Nov 2026 to drawing them so: the
 ## icy melds, whose own colours sit near the friend's cyan, drawn in Frost's deeper blue when they are a monster's)
-const ICY := ["glide", "flashfreeze", "doubletap", "ripple", "quicksilver", "frostlock", "constellation", "haven", "hydra"]
+## (and Cold Snap, Glacier and Permafrost, in Flash Freeze's pale blue, now that their moments on a monster are drawn: the check of
+## 26 Nov 2026)
+const ICY := ["glide", "flashfreeze", "doubletap", "ripple", "quicksilver", "frostlock", "constellation", "haven", "hydra", "coldsnap", "glacier", "permafrost"]
 const FROST_DEEP := "#2e6cc8"
 ## (the same for the sea-green ones, whose own colours sit near the friend's cyan too: drawn in a deep green when a monster's; the
 ## check of 26 Nov 2026 against his Art Rulebook)

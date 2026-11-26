@@ -11,7 +11,8 @@
 ##   MARROW     three thick bone-white wisps drawn out of the stunned one; the cracks staggering one, a thin wisp along them to him;
 ##              on a monster, a thick wisp torn out of him into it.
 ##   QUICKFUSE  no pause before the pop: what it kills blowing apart at once in a violet star, wind streaks flung out of it; its
-##              rune behind, a fuse of sparks racing round its edge; on a monster, a fuse fizzing on it.
+##              rune behind, a fuse of sparks racing round its edge; on a monster, a fuse fizzing on it, and as it dies, its violet
+##              star blown apart at once over Volatile's blast (the check of 26 Nov 2026: that moment never played on a monster).
 ##   CONCUSSION a violet blast with a heavy bronze shock ring; its rune behind leaving cracks glowing violet; on a monster, its
 ##              dying blast's ring round him.
 extends "res://scripts/fx_m52kit.gd"
@@ -74,9 +75,10 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 			b["end"] = 0.6
 		"marrow:drain":
 			b["end"] = 0.5
-		"quickfuse:pop":
+		"quickfuse:pop", "quickfuse:foe":
 			b["end"] = 0.5
-			# (under OWN: what it killed goes up in Volatile's own blast, a moment after; the meld draws none of its own)
+			# (under OWN: what it killed goes up in Volatile's own blast, a moment after; the meld draws none of its own. On a monster
+			# its blast is Volatile's own, at once: the meld's star thrown out over it)
 			if _same("blast"):
 				return false
 			for i in 16:
@@ -238,7 +240,7 @@ func paint_air(b: Dictionary) -> void:
 		"marrow:foe":
 			if not LEECH_SAME:
 				_wisps(b["x"], b["y"], b["x1"], b["y1"], _c01(bt / 0.5), 1, PackedColorArray(BONE), sd, 2, 14.0, 14.0)
-		"quickfuse:pop":
+		"quickfuse:pop", "quickfuse:foe":
 			# (a violet star blown apart at once, its spikes thrown out)
 			var u := _c01(bt / 0.3)
 			var cx := _wx(b["x"], b["y"])

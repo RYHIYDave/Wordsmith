@@ -181,6 +181,8 @@ static func tick(F, m, dt: float, dist: float) -> void:
 		if float(m.m52["foe_step"]) <= 0.0:
 			m.m52["foe_step"] = float(_t("firewalk")["foeEvery"])
 			F._ground(m.world, 0.4, 1.5, "burn", "fire", F._avg(m) * 0.1, [], m, "firewalk")
+			# (each burning footprint flaring up as it is set down: the check of 26 Nov 2026, Animations 7)
+			h.m52._tell({"id": "firewalk", "what": "foe", "x": m.world.x, "y": m.world.y, "dx": m.face.x, "dy": m.face.y})
 	if m.m52.has("foe_drip"):
 		m.m52["foe_drip"] = float(m.m52["foe_drip"]) - dt
 		_heal(m, 0.01 * dt)
@@ -234,8 +236,13 @@ static func rage(F, m) -> float:
 		k *= 1.0 + 0.3 * float(m.m52["foe_fury"])
 	if m.word_share("spree") > 0.0:
 		var S := _t("spree")
-		if fmod(F.clock + float(m.id % 5), float(S["foeEvery"])) < float(S["foeSecs"]):
+		var on: bool = fmod(F.clock + float(m.id % 5), float(S["foeEvery"])) < float(S["foeSecs"])
+		if on:
 			k *= 1.0 + float(S["foeFaster"])
+		# (seen: each sudden burst as it comes on, the check of 26 Nov 2026, Animations 7)
+		if on and not bool(m.m52.get("foe_spree_on", false)) and h != null:
+			h.m52._tell({"id": "spree", "what": "foe", "x": m.world.x, "y": m.world.y, "m": m, "secs": float(S["foeSecs"])})
+		m.m52["foe_spree_on"] = on
 	return k
 
 
@@ -248,9 +255,15 @@ static func shield(F, m, soaked: float) -> void:
 		F.main.hero.m52._tell({"id": "riposte", "what": "foe", "x": m.world.x, "y": m.world.y, "m": m})
 
 
-## As it dies: Cluster's bomblets, Bloodbloom's healing burst, Blastwave's throw.
+## As it dies: Cluster's bomblets, Bloodbloom's healing burst, Blastwave's throw; and Time Bomb's, Minefield's and Mayhem's dying
+## blasts, each its own way (blast, below), told so their painter draws each its own twist (the check of 26 Nov 2026, Animations 7).
 static func death(F, m) -> void:
 	var h = F.main.hero
+	var b: Dictionary = blast(m)
+	for id in ["timebomb", "minefield", "mayhem"]:
+		if m.word_share(id) > 0.0 and not b.is_empty() and m.word_share("volatile") > 0.0:
+			h.m52._tell({"id": id, "what": "foe", "x": m.world.x, "y": m.world.y, "r": float(b["r"]), "wait": float(b["wait"]), "k": float(b["k"])})
+			break
 	if m.word_share("cluster") > 0.0:
 		for n in 2:
 			var a := randf() * TAU
