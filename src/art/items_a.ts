@@ -1029,7 +1029,7 @@ function slippers(r: Rar): Part[] {
   // the stone on the vamp
   if (STONE[r]) parts.push(gem([11.6, 23.0], r === 1 ? 1.25 : 1.4, STONE[r]!));
   // (a low thing: lifted to the middle of its frame and drawn a little taller)
-  return squeeze(nudge(parts, 0, -3.6), 1.03, 1.12);
+  return squeeze(nudge(parts, 0.8, -3.6), 1, 1.12);
 }
 
 /** A ring, tilted toward you, a big faceted stone in claws on top: a garnet in steel; a sapphire; a topaz in gold; amber in gold, with more. */
