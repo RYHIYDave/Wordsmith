@@ -218,6 +218,9 @@ const GEAR_KINDS: readonly GearDef[] = [
   // helm slot
   { id: 'helm', slot: 'helm', icon: 'helm', names: ['Iron Cap', 'Steel Helm', 'War Helm'], implicit: [{ stat: 'armor', at1: 5, perLevel: 3 }] },
   { id: 'hood', slot: 'helm', icon: 'hood', names: ['Cloth Hood', 'Leather Hood', 'Mail Hood'], implicit: [{ stat: 'armor', at1: 3, perLevel: 1.8 }, { stat: 'maxLife', at1: 5, perLevel: 2 }] },
+  // (THE CLOTH COWL, the Barrier gear's own head: the art chat's picture, his “Yes, both are right (Recommended)”, 26 Nov 2026; a Cowl, not
+  // a Hood, since every Hood is leather to the Barrier's rules (loot.gd base_family); its mana is Barrier there, as the robe's)
+  { id: 'cowl', slot: 'helm', icon: 'cowl', names: ['Linen Cowl', 'Silk Cowl', 'Velvet Cowl'], implicit: [{ stat: 'maxMana', at1: 5, perLevel: 1.5 }] },
   // chest slot
   { id: 'plate', slot: 'chest', icon: 'armor', names: ['Iron Plate', 'Steel Plate', 'War Plate'], implicit: [{ stat: 'armor', at1: 8, perLevel: 5 }] },
   { id: 'jerkin', slot: 'chest', icon: 'armor', names: ['Hide Jerkin', 'Leather Jerkin', 'Studded Jerkin'], implicit: [{ stat: 'armor', at1: 5, perLevel: 3 }, { stat: 'moveSpeed', tiers: [2, 3, 4] }] },
@@ -233,6 +236,8 @@ const GEAR_KINDS: readonly GearDef[] = [
   // boots slot
   { id: 'greaves', slot: 'boots', icon: 'boots', names: ['Iron Greaves', 'Steel Greaves', 'War Greaves'], implicit: [{ stat: 'armor', at1: 3, perLevel: 2 }] },
   { id: 'leatherboots', slot: 'boots', icon: 'boots', names: ['Hide Boots', 'Leather Boots', 'Studded Boots'], implicit: [{ stat: 'moveSpeed', tiers: [4, 6, 8] }] },
+  // (THE CLOTH SLIPPERS, the Barrier gear's own feet: the art chat's picture, his same yes)
+  { id: 'slippers', slot: 'boots', icon: 'slippers', names: ['Linen Slippers', 'Silk Slippers', 'Velvet Slippers'], implicit: [{ stat: 'maxMana', at1: 5, perLevel: 1.5 }] },
   // ring slot: red stones give life, blue stones give mana
   { id: 'lifering', slot: 'ring', icon: 'ring', names: ['Jasper Ring', 'Garnet Ring', 'Ruby Ring'], implicit: [{ stat: 'maxLife', at1: 5, perLevel: 1.5 }] },
   { id: 'manaring', slot: 'ring', icon: 'ring', names: ['Azurite Ring', 'Topaz Ring', 'Sapphire Ring'], implicit: [{ stat: 'maxMana', at1: 4, perLevel: 1.2 }] },
