@@ -192,8 +192,19 @@ func _flood(from: Vector2i) -> Array:
 	var came := PackedInt32Array()
 	came.resize(n)
 	came.fill(-1)
+	# (standing where the walk grid has no floor, on a ledge's edge or a door's pier: from the nearest tile that has)
 	if not mp.passable(from.x, from.y):
-		return [dist, came]
+		var near := Vector2i(-1, -1)
+		for rr in range(1, 4):
+			for oy in range(-rr, rr + 1):
+				for ox in range(-rr, rr + 1):
+					if near.x < 0 and mp.passable(from.x + ox, from.y + oy):
+						near = Vector2i(from.x + ox, from.y + oy)
+			if near.x >= 0:
+				break
+		if near.x < 0:
+			return [dist, came]
+		from = near
 	var q := PackedInt32Array([from.y * mp.w + from.x])
 	dist[q[0]] = 0
 	var head := 0
@@ -249,6 +260,8 @@ func _clear_level(b: Dictionary, life_k: float) -> Dictionary:
 	var since := 0.0
 	var unreached := 0
 	var done := false
+	var stranded := 0.0
+	var ldist := PackedInt32Array()
 	var was: Vector2 = h.world
 	while t < CLEAR_CAP:
 		await M.get_tree().process_frame
@@ -263,6 +276,7 @@ func _clear_level(b: Dictionary, life_k: float) -> Dictionary:
 			var fl := _flood(_tile_of(h.world))
 			var dist: PackedInt32Array = fl[0]
 			var came: PackedInt32Array = fl[1]
+			ldist = dist
 			var pick = null
 			var pick_d := 1 << 30
 			unreached = 0
@@ -288,8 +302,16 @@ func _clear_level(b: Dictionary, life_k: float) -> Dictionary:
 					pick_d = dd
 					pick = m
 			if pick == null:
-				done = true
-				break
+				# (none left he can walk to: done; or, while some are out of his reach where he stands, a moment more)
+				if unreached == 0:
+					done = true
+					break
+				stranded += 0.5
+				if stranded > 5.0:
+					break
+				target = null
+				continue
+			stranded = 0.0
 			if pick != target:
 				best_d = INF
 				since = 0.0
@@ -335,8 +357,15 @@ func _clear_level(b: Dictionary, life_k: float) -> Dictionary:
 			var wd: Vector2 = (aim - h.world).normalized()
 			h.auto_dir = Iso.to_screen(wd.x, wd.y).normalized()
 			# (his evasive move, to cover ground, where the way runs straight on)
-			if dlen > 6.0 and M._monsters.sees(h.world, h.world + wd * 4.0):
-				h.auto_lunge = h.world + wd * 4.0
+			# (never over a wall or a drop: where it lands, floor a short walk from him by the walk grid)
+			var land: Vector2 = h.world + wd * 4.0
+			var lt := _tile_of(land)
+			var ok: bool = lt.x >= 0 and lt.y >= 0 and lt.x < M.map.w and lt.y < M.map.h and ldist.size() == M.map.w * M.map.h
+			if ok:
+				var ld: int = ldist[lt.y * M.map.w + lt.x]
+				ok = ld >= 0 and ld <= 8
+			if dlen > 6.0 and ok and M._monsters.sees(h.world, land):
+				h.auto_lunge = land
 			walk_t += dt
 			# (no nearer in four seconds: let it be for twenty)
 			if dlen < best_d - 0.5:
