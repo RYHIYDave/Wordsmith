@@ -3426,6 +3426,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_glows.gd").new().voices(self, hero, dir)
 		get_tree().quit()
 		return
+	# (THE SPEED AND TANK TEST: check_speed.gd, with WS_DMG_GEAR=<file>)
+	if _arg("only") == "speed":
+		await preload("res://scripts/check_speed.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE SIX ENEMIES MADE LIVELIER: check_enemies8.gd)
 	if _arg("only") == "enemies8":
 		await preload("res://scripts/check_enemies8.gd").new().run(self, hero, dir)
