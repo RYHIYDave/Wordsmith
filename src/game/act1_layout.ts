@@ -698,6 +698,48 @@ function planCanyon(rng: RNG, size: (rng: RNG, role: AreaRole) => { rx: number; 
 }
 
 /**
+ * (LEVELS2, floor 7) A SIDE LEDGE OF THE LEDGE ROAD: a nook cut back into the mountain from the trail itself, on the side away from
+ * the drop (the drop's side of every leg has its outcrop), one floor with the trail, the mountain's cliff round it; never set apart
+ * from the trail by a neck of its own over the drop (the trail's cliff and the ledge's were drawn over each other: his “I need you
+ * to fix those cliffs”, 26 Nov 2026). Its index, or -1 if no leg has room.
+ */
+function ledgeSide(rng: RNG, plan: Plan, role: AreaRole, size: { rx: number; ry: number; wob: number }): number {
+  const T = plan.trail;
+  if (!T) return -1;
+  const W = plan.lanes[0].w;
+  const peak = plan.areas.find((a) => a.role === 'boss')!.blob;
+  const legs: number[] = [];
+  for (let i = 2; i < T.length - 1; i++) legs.push(i);
+  rng.shuffle(legs);
+  for (const i of legs) {
+    const [ax, ay] = T[i - 1];
+    const [bx, by] = T[i];
+    const h = Math.atan2(by - ay, bx - ax);
+    const n1 = h + Math.PI / 2;
+    const n2 = h - Math.PI / 2;
+    // (the mountain's side: of the two, the one further up the screen)
+    const side = downOf(Math.cos(n1), Math.sin(n1)) > downOf(Math.cos(n2), Math.sin(n2)) ? n2 : n1;
+    for (const t of rng.shuffle([0.5, 0.3, 0.7])) {
+      const mx = ax + (bx - ax) * t;
+      const my = ay + (by - ay) * t;
+      const [cx, cy] = along(mx, my, side, W / 2 + size.ry * 0.55);
+      if (ledgeDrops(T, peak, cx, cy)) continue;
+      const b: Blob = { x: cx, y: cy, rx: size.rx, ry: size.ry, rot: h, wob: size.wob, seed: rng.int(0, 9999) };
+      const r = radiusOf(b);
+      // (clear of the start, of the peak and of every other area on the mountain's side; those over the trail on the drop's side,
+      // the outcrops, are across the trail from it)
+      if (plan.areas.some((a) => !ledgeDrops(T, peak, a.blob.x, a.blob.y) && Math.hypot(a.blob.x - cx, a.blob.y - cy) < a.r + r + 2)) continue;
+      if (Math.hypot(peak.x - cx, peak.y - cy) < radiusOf(peak) + r + 6) continue;
+      // (and clear of the trail's other legs, but for the one it is cut from and the two it meets)
+      if (T.some((p, k) => k > 0 && Math.abs(k - i) > 1 && segDist(cx, cy, T[k - 1][0], T[k - 1][1], p[0], p[1]) < r + W / 2 + 1)) continue;
+      plan.areas.push({ blob: b, role, path: -1, parent: 0, r });
+      return plan.areas.length - 1;
+    }
+  }
+  return -1;
+}
+
+/**
  * (LEVELS2, floors 8 and 10) A SECOND WAY: between area `j` of the main way and area `j + span` (neither the start's nor the
  * boss's), a way of its own beside the first: out of the one, through `islands` areas of its own set off the first way's side (up
  * the screen if it fits, else down it), and into the other; the first way stays as it was. Floor 8: the canyon parts round a rock
@@ -869,12 +911,16 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
     }
     yards.push(yard);
   }
-  // (LEVELS2, floor 7: the Ledge Road a side ledge too, the vultures' nest with its chests: game/levels2.ts)
-  const extra = kind === 'ledge' ? (levels2(depth) ? 1 : 0) : 1;
+  // (LEVELS2, floor 7: the Ledge Road a side ledge too, the vultures' nest with its chests, out from the trail itself as its
+  // outcrops are: game/levels2.ts)
+  const ledge2 = kind === 'ledge' && levels2(depth);
+  const extra = kind === 'ledge' ? 0 : 1;
   for (let n = 0; n < extra; n++) growSide(rng, plan, 'side', size(rng, 'path'), kind === 'fen' ? 2 : 2.8, 3);
+  if (ledge2 && ledgeSide(rng, plan, 'side', { rx: 4.8, ry: 3.6, wob: 0.12 }) < 0) return null;
   // (F9_LAIRS, on at his yes of 14 Nov 2026: floor 9's lair grown to a boss's room for the troll chieftain's camp, if it fits: game/f9_lairs.ts)
   // (LEVELS2, floor 7: the Ledge Road a lair too, the lookout held by a champion's pack)
-  if (depth >= 7 && (kind !== 'ledge' || levels2(depth)) && !(f9Lairs(depth) && growSide(rng, plan, 'lair', LAIR9, 2.8, 3) >= 0)) growSide(rng, plan, 'lair', { rx: 4.5, ry: 4, wob: 0.12 }, kind === 'fen' ? 2 : 2.8, 3);
+  if (ledge2 && ledgeSide(rng, plan, 'lair', { rx: 5, ry: 3.8, wob: 0.12 }) < 0) return null;
+  if (depth >= 7 && kind !== 'ledge' && !(f9Lairs(depth) && growSide(rng, plan, 'lair', LAIR9, 2.8, 3) >= 0)) growSide(rng, plan, 'lair', { rx: 4.5, ry: 4, wob: 0.12 }, kind === 'fen' ? 2 : 2.8, 3);
   // (LEVELS2, floor 10: the sunken shrine, a second reward off the fen's later half, its chests among a drowned temple's stones:
   // game/act1_dress.ts lays the stones)
   if (kind === 'fen' && levels2(depth) && growSide(rng, plan, 'side', { rx: 5.4, ry: 4.8, wob: 0.12 }, 2, 3, undefined, (a) => a.path >= CHAIN.fen * 0.4) < 0) return null;

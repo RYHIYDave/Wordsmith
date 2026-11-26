@@ -132,6 +132,16 @@ func run(main, hero, dir: String) -> void:
 			await M._wait(0.1)
 			await M._snap("%s/f%d_%d_%s.png" % [dir, d, k, kind])
 			k += 1
+	# (`--at=x,y;x,y`: the hero set down at each such place and pictured, to look at a part of the floor)
+	if M._arg("at") != "":
+		for pair in M._arg("at").split(";"):
+			var xy: PackedStringArray = str(pair).split(",")
+			h.world = M._free_near(Vector2(float(xy[0]), float(xy[1])))
+			await M._wait(1.0)
+			M._hud.card = {}
+			M.guide._speak = {}
+			await M._wait(0.1)
+			await M._snap("%s/f%d_at_%s_%s.png" % [dir, d, xy[0], xy[1]])
 	# the large map, all of it seen
 	if M.sight != null:
 		M.sight.see_all()
