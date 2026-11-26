@@ -15,6 +15,7 @@ import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 import { ALTAR_HOLLOWS, cultBanner, pinkBrazier, wordAltar } from '../src/art/act1_cult';
 import { GRAIN } from '../src/art/kit';
 import { gatehouse, quarryPieces } from '../src/art/floor6';
+import { HOLD_FRONTS } from '../src/art/hold_fronts';
 import { inLight } from '../src/art/floor4';
 import { LIGHT_W } from '../src/art/floor2';
 
@@ -89,7 +90,19 @@ table.flag = piece("the court's flagstones").map((s, f) => save(s, `flag_${f}.pn
 const ACROSS = [LIGHT_W[1], LIGHT_W[0], LIGHT_W[2]];
 table.gate_y = [0, 1, 2, 3].map((f) => inLight(ACROSS, () => gatehouse(false, f))).concat([inLight(ACROSS, () => gatehouse(true, 0))]).map((s, f) => save(s, `gate_y_${f}.png`, true));
 table.altar_y = [save(inLight(ACROSS, () => wordAltar()), 'altar_y_0.png', true)];
-for (const k of ['altar', 'brazier', 'banner', 'gate', 'flag', 'gate_y', 'altar_y']) {
+// EACH LEVEL'S OWN FRONT (the art chat's, art/hold_fronts.ts HOLD_FRONTS, his “Yes, switch them all on (Recommended)”, 25 Nov 2026:
+// “I need the facades of the strongholds that you go into to match each of the levels”): its five frames (sealed, its mark's four
+// frames of flicker; then open), as the gatehouse's, in a wall along x and TURNED in one along y (painted in the light turned across,
+// then turned over, as the gatehouse's); `front_<floor>`, `front_<floor>_y`. Floors 6 and 8 have none: the gatehouse and the
+// waystation's gate stay theirs.
+const FRONT_OF: ReadonlyArray<readonly [boolean, number]> = [[false, 0], [false, 1], [false, 2], [false, 3], [true, 0]];
+const fronts: string[] = [];
+for (const h of HOLD_FRONTS) {
+  table[`front_${h.floor}`] = FRONT_OF.map(([open, f], i) => save(h.make(open, f), `front_${h.floor}_${i}.png`));
+  table[`front_${h.floor}_y`] = FRONT_OF.map(([open, f], i) => save(inLight(ACROSS, () => h.make(open, f)), `front_${h.floor}_y_${i}.png`, true));
+  fronts.push(`front_${h.floor}`, `front_${h.floor}_y`);
+}
+for (const k of ['altar', 'brazier', 'banner', 'gate', 'flag', 'gate_y', 'altar_y', ...fronts]) {
   console.log(k, (table[k] as { w: number; h: number; ox: number; oy: number }[]).map((f) => `${f.w}x${f.h} at ${f.ox},${f.oy}`).join('; '));
 }
 console.log('hollows', JSON.stringify(ALTAR_HOLLOWS), 'grain', GRAIN);

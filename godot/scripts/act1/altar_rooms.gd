@@ -91,7 +91,10 @@ func _ready() -> void:
 	Q = JSON.parse_string(FileAccess.get_file_as_string("res://assets/act1/quest610.json"))
 	T = Q["hold"]["tune"]
 	_table = JSON.parse_string(FileAccess.get_file_as_string(AR_DIR + "altar_room.json"))
-	for k in ["altar", "brazier", "banner", "gate", "flag", "gate_y", "altar_y"]:
+	# (and each floor's own front, the art chat's (tools/godot_altar_room.ts `front_<floor>`, `front_<floor>_y`): _gate_key)
+	for k in _table:
+		if not (k in ["altar", "brazier", "banner", "gate", "flag", "gate_y", "altar_y"] or str(k).begins_with("front_")):
+			continue
 		_frames[k] = (_table[k] as Array).map(func(f): return {"tex": load(AR_DIR + str(f["file"])), "ox": float(f["ox"]), "oy": float(f["oy"]), "w": int(f["w"]), "h": int(f["h"])})
 	_src = JSON.parse_string(FileAccess.get_file_as_string(AR_DIR + "halls.json"))
 	data = {"holds": [], "defs": {}, "power": maxi(1, int(loot.power()))}
@@ -455,7 +458,7 @@ func _stand(q: Dictionary) -> void:
 				fl.modulate = FLAG_DIM
 				P["flags"].append(fl)
 	var strips := []
-	var f: Dictionary = _frames["gate_y" if turned else "gate"][0]
+	var f: Dictionary = _frames[_gate_key(turned)][0]
 	var at := Iso.to_screen(float(gx), float(gy))
 	var x := 0
 	while x < int(f["w"]):
@@ -502,9 +505,19 @@ func _altar_tiles(q: Dictionary) -> Array:
 	return [_gt(turned, int(q["gx"]), int(q["gy"]), -1, 1), _gt(turned, int(q["gx"]), int(q["gy"]), 0, 1)]
 
 
+## The pictures a gate is drawn with: THE LEVEL'S OWN FRONT, the art chat's (his words, 25 Nov 2026: “I need the facades of the
+## strongholds that you go into to match each of the levels”; “Yes, switch them all on (Recommended)”): the cult's take on its floor's
+## own building, the floor whose look the level has (`map.depth`); the Wilds' gatehouse where a floor has none of its own.
+func _gate_key(turned: bool) -> String:
+	var k := "front_%d%s" % [int(main.map.depth) if main != null and main.map != null else 0, "_y" if turned else ""]
+	if _frames.has(k):
+		return k
+	return "gate_y" if turned else "gate"
+
+
 ## Gate `n`'s gatehouse at frame `k` (0 to 3 the sealed door's mark flickering; 4 the door open).
 func _gate_show(n: int, k: int) -> void:
-	var F: Array = _frames["gate_y" if bool(hold(n).get("turned", false)) else "gate"]
+	var F: Array = _frames[_gate_key(bool(hold(n).get("turned", false)))]
 	var f: Dictionary = F[clampi(k, 0, F.size() - 1)]
 	for s in _pieces[n]["gate"]:
 		if not is_instance_valid(s):
