@@ -1816,7 +1816,9 @@ func dose(dps: float, secs := -1.0, el := "") -> void:
 ## hero's side: hero.gd hold_by_meld, foe_words.gd Shiver. OFF until his yes to the list and the numbers.
 static var STUNS_RARE := false
 const RARE_STAGGER := 0.5
-const RARE_AGAIN := 0.5
+## (not staggered so again for 1.5 s after, as Heavy behind's cracked ground (words.json heavy staggerAgain): at 0.5 s a monster
+## struck often never got an attack off, and a Brawler of the tank test stood the full three minutes)
+const RARE_AGAIN := 1.5
 
 
 func stun_for(secs: float, meld := "", big := false) -> void:

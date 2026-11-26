@@ -1531,7 +1531,7 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
 - **Stuns made rare** (`monster.gd` STUNS_RARE, OFF until his yes; his words, 26 Nov 2026: “Looks for instances of stun.  Only the
   biggest and strongest hits should stun.  Stagger is something that can be more common.”; stuns on the hero too, “Yes, both
   ways”). Every stun on a monster is a stagger (its attack broken off, half a second at most, an elite half that, not again for
-  half a second after) but the biggest hits' (`big`): The Big One, the Warlock's demon landing and its roar, the Bulldozer, the
+  a second and a half after) but the biggest hits' (`big`): The Big One, the Warlock's demon landing and its roar, the Bulldozer, the
   Smash's built-up stun and the hammer's, Shieldwall's burst, the Drowned Arm's slam, the Brawler's flying blows, the Ranger's
   trap's hold, Sundial's stop. On the hero: a monster's meld that held him still (`hero.gd hold_by_meld`) and a monster's Shiver
   slow him a moment instead; the bosses' holds and grabs as they were. Check: `--only=stuns` (`check_stuns.gd`).
