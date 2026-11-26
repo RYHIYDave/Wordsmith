@@ -69,6 +69,12 @@ func run(main, hero, d: String) -> void:
 	h = hero
 	dir = d
 	G = JSON.parse_string(FileAccess.get_file_as_string(OS.get_environment("WS_DMG_GEAR")))
+	# (the balance fixes' switches, for their before and after: WS_ROD_WAIT=1, heroes/tinkerer.gd ROD_WAIT; WS_DEF_EVEN=1, loot.gd
+	# DEFENCE_EVEN)
+	if OS.has_environment("WS_ROD_WAIT"):
+		preload("res://scripts/heroes/tinkerer.gd").ROD_WAIT = OS.get_environment("WS_ROD_WAIT") == "1"
+	if OS.has_environment("WS_DEF_EVEN"):
+		preload("res://scripts/loot.gd").DEFENCE_EVEN = OS.get_environment("WS_DEF_EVEN") == "1"
 	var only: Array = Array(OS.get_environment("WS_SPEED").split(" ", false)) if OS.has_environment("WS_SPEED") else []
 	var part := OS.get_environment("WS_SPEED_PART") if OS.has_environment("WS_SPEED_PART") else ""
 	# (floor 20 first, for its own kind of monster: what the chooser's dummy and the tank's foes are made of)
@@ -140,9 +146,12 @@ func _tank_build(b: Dictionary) -> Dictionary:
 	_hero(tb, false)
 	_gear(b["cls"])
 	var best_attr := ""
+	# (WS_TANK_ATTR: his points held to one attribute, str, dex or int; WS_TANK_FAM: his armour held to one kind, heavy, leather or
+	# cloth (_bases): the three defences each built for, to weigh them against each other)
+	var attrs: Array = [OS.get_environment("WS_TANK_ATTR")] if OS.has_environment("WS_TANK_ATTR") else ["str", "dex", "int"]
 	for _round in 2:
 		var best := -1.0
-		for at in ["str", "dex", "int"]:
+		for at in attrs:
 			_points_in(b, at)
 			var v := _ehp()
 			if v > best:
@@ -156,6 +165,16 @@ func _tank_build(b: Dictionary) -> Dictionary:
 	_set_words(ws)
 	tank_mode = false
 	return {"picks": picks, "ws": ws, "attr": best_attr, "talents": tb["talents"]}
+
+
+## (WS_TANK_FAM, the tank's choosing only: armour of that kind alone, loot.gd base_family; the rest as the damage check has them)
+func _bases(cls: String, slot: String) -> Array:
+	var list: Array = super._bases(cls, slot)
+	if not tank_mode or not OS.has_environment("WS_TANK_FAM"):
+		return list
+	var fam := OS.get_environment("WS_TANK_FAM")
+	var kept: Array = list.filter(func(x): return M.loot.base_family({"slot": slot, "name": x["name"]}) in [fam, ""])
+	return kept if not kept.is_empty() else list
 
 
 ## Every attribute point of his fifty levels in one attribute.

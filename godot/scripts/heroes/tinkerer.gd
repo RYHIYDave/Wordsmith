@@ -26,6 +26,13 @@ extends "res://scripts/heroes/kit.gd"
 const SHOT_WAIT := 0.5
 
 ## (assets/heroes/golem.json: tools/godot_tinkerer.ts, her tune and its rocket jump's frames, as the game has them)
+## THE GOLEMS' PULL LET GO OF NOW AND THEN (his pick, 26 Nov 2026, “Fix the balance (Recommended)”, after the speed and tank test
+## found it: her Lightning Rod's pull, put again at every ground pound and big shot, never let the monsters go while two Golems
+## pounded, and she could not fall). On, a pull begins no sooner than ROD_WAIT_SECS after the last began, whichever Golem puts it:
+## for three seconds in eight they go after the Golem, the rest after her. Off until his yes to the numbers.
+static var ROD_WAIT := false
+const ROD_WAIT_SECS := 8.0
+var _rod_at := -1e9
 var G := {}
 var TT := {}
 var GT := {}
@@ -719,6 +726,10 @@ func _rod(g: Dictionary) -> void:
 	if not h.has("lightningrod") or h.monsters == null:
 		return
 	var R: Dictionary = _T()["rod"]
+	if ROD_WAIT:
+		if h._clock - _rod_at < ROD_WAIT_SECS:
+			return
+		_rod_at = h._clock
 	for q in h.monsters.decoys:
 		if q.get("golem") == g:
 			q["t"] = float(R["secs"])

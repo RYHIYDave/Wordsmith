@@ -75,6 +75,9 @@ const EQUIP := ["mainhand", "offhand", "helm", "chest", "gloves", "belt", "boots
 ## for leather, LEATHER_K x BARRIER_K for cloth. ON at his “Yes.” to its pictures (docs/mockups/defences: the barrier round his
 ## life globe, its line over his life and its shimmer on him, DODGE over him, the cards and the stats page), 22 Nov 2026.
 static var DEFENCE_LAYERS := true
+## THE THREE DEFENCES EVENED (his pick, 26 Nov 2026, “Fix the balance (Recommended)”, after the speed and tank test found every
+## hero's toughest build all Strength and heavy armour, his dodge never past 1%): see derive. Off until his yes to the numbers.
+static var DEFENCE_EVEN := false
 const HEAVY_ARMOUR := {"helm": [5.0, 3.0], "chest": [8.0, 5.0], "gloves": [3.0, 2.0], "belt": [3.0, 2.0], "boots": [3.0, 2.0]}
 const LEATHER_K := 0.75
 const BARRIER_K := 2.0
