@@ -44,7 +44,7 @@ export interface Key {
 }
 export type Joint = 'handL' | 'handR' | 'elbowL' | 'elbowR' | 'ankleL' | 'ankleR' | 'kneeL' | 'kneeR' | 'toeL' | 'toeR' | 'heelL' | 'heelR';
 /** What a foe does when a blow lands on him. */
-export type Reaction = 'snap' | 'reel' | 'knock' | 'launch' | 'fly' | 'kneed' | 'aside' | 'shove';
+export type Reaction = 'snap' | 'reel' | 'knock' | 'launch' | 'fly' | 'kneed' | 'aside' | 'shove' | 'floored';
 export interface Strike {
   /** The last frame of the held wind-up, and the frame the blow lands: one or two frames apart (Movement 9). */
   from: number;
@@ -60,6 +60,11 @@ export interface Strike {
   burst?: number;
   /** Its smear painted under him (behind his body), so that the limb that strikes is seen leading it. */
   under?: boolean;
+  /**
+   * How many frames its smear and after-images die away over after its last blow (4 if not given): the hammerfist's 2, its smear's
+   * head lying on his fists right before him (his rulebook's Animations 4: no effect covers him for more than a blink).
+   */
+  fade?: number;
   /**
    * A BLOW THAT HITS EVERYONE IN A CONE in front of him (his push kick: “Push kick hits in a cone in front of”): how wide
    * the cone is (degrees, all of it) and how far it reaches (his own measure), from the striking foot along his forward.
@@ -78,10 +83,12 @@ export interface Strike {
  * the cross, the uppercut, the knee); a CRESCENT of force flung out flat across a round blow's (the hook, the round kick,
  * the elbow); the spinning jump kick's crescent, rolled out ROUND him as he turns (one pass: each foe hit once as it passes
  * him; never a ring of blades, never again and again). `reach`: how far it goes from where he stood (his measure) when the
- * move began; `deg`: how wide (all of it); `long`: frames from the blow until its front is there.
+ * move began; `deg`: how wide (all of it); `long`: frames from the blow until its front is there. A RING OF FORCE rolled out
+ * along the floor round where a blow strikes the floor (the flying double hammerfist): its `reach` is ROUND THAT POINT, not from
+ * where he stood (he has flown there), and it comes to everyone within it, all round.
  */
 export interface Force {
-  shape: 'cone' | 'crescent' | 'round';
+  shape: 'cone' | 'crescent' | 'round' | 'ring';
   reach: number;
   deg: number;
   long: number;
@@ -154,6 +161,11 @@ export interface VetMotion {
   arc?: { joint: Joint; from: number; to: number; w: number; kind: 'punch' | 'kick'; out?: number };
   /** Frames he lands heavily: a ring of force along the floor round his feet. */
   quake?: number[];
+  /**
+   * THE GLOBE HE CARRIES BURNING ON HIM (his swipe's flying blows): on a joint (or both fists, clasped), from a frame (his leap)
+   * to the blow, growing as it comes, in the globe's colour (a punch's green, a kick's hot orange).
+   */
+  flame?: { joint: Joint | 'fists'; from: number; to: number; kind: 'punch' | 'kick' };
   /** A key put in between two, as they have it, with a palm of its own (a fist turning over in the strike). */
   turn?: { f: number; palmL?: V3; palmR?: V3 };
 }
@@ -528,7 +540,9 @@ export function forceGeo(m: VetMotion, s: Strike): ForceGeo {
   };
   const half = ((F.deg / 2) * Math.PI) / 180;
   let g: ForceGeo;
-  if (F.shape === 'cone') g = { shape: 'cone', o: limb, dir, up, half, r0: 3, r1: far(limb[0], limb[1], dir) / Math.cos(up) };
+  // (the ring: round the point on the floor under the limb as it strikes, from a little out from it to its reach round it)
+  if (F.shape === 'ring') g = { shape: 'ring', o: [limb[0], limb[1], 1], dir: lean, up: 0, half: Math.PI, r0: 4, r1: F.reach };
+  else if (F.shape === 'cone') g = { shape: 'cone', o: limb, dir, up, half, r0: 3, r1: far(limb[0], limb[1], dir) / Math.cos(up) };
   else {
     const r0 = Math.hypot(limb[0] - pel[0], limb[1] - pel[1]);
     const o: V3 = [pel[0], pel[1], limb[2]];
@@ -582,6 +596,8 @@ export function forceHit(m: VetMotion, s: Strike, P: readonly number[]): number 
     return when(Math.max(0, along - NEAR) / flat);
   }
   if (d > g.r1 + BODY) return null;
+  // (the ring: all round, as its front comes to his near side)
+  if (g.shape === 'ring') return when(d - NEAR);
   let a = Math.atan2(vy, vx) - g.dir;
   if (g.shape === 'crescent') {
     a = Math.atan2(Math.sin(a), Math.cos(a));
@@ -626,6 +642,11 @@ function hitsFromForce(m: VetMotion): void {
   }
 }
 
+/**
+ * THE LAST FRAME A STRIKE'S SMEAR AND AFTER-IMAGES GO ON TO: its last blow; but a ring of force's blow is where the fists strike
+ * the floor (the ring rolls on out to who it reaches by itself, and his fists lie still on the floor meanwhile: no smear on them).
+ */
+export const strikeEnd = (s: Strike): number => (s.force?.shape === 'ring' ? s.at : Math.max(s.at, ...s.hits.map((h) => h.f)));
 const clampF = (m: VetMotion, f: number): number => (m.loops ? f : Math.max(0, Math.min(m.long, f)));
 /** How far the game has carried him at a frame (his own forward and left). */
 export const carryAt = (m: VetMotion, f: number): [number, number] => (m.carry ? m.carry(clampF(m, f)) : [0, 0]);
@@ -1315,6 +1336,163 @@ export function kneeOf(go = 1.5 * VET_TILE, id = 'knee'): VetMotion {
 }
 const KNEE = kneeOf();
 
+// ---------------------------------------------------------------------------------------------
+// HIS SWIPE, CARRYING THE FIRST LIT GLOBE (the skins chat, 26 Nov 2026, from the queue's “Draw the Brawler's flying double
+// hammerfist and his flying knee”). His idea for the Brawler, to the Godot chat: “Then have his swipe can be something like an
+// interrupt to the combo, but whatever globe is next is now added to the swipe, so either a flying double hamerfist or a flying
+// knee”. A swipe breaks off whatever he is doing and he flies at the enemy where it points, carrying the first lit globe: a punch
+// globe the FLYING DOUBLE HAMMERFIST, a kick globe the FLYING KNEE. Both go FORWARD to the target (the dodge hops back). His
+// examples of the hammerfist (three clips, 26 Nov 2026, 07:41): he leaps, HANGS at the top with both fists clasped high and his
+// back arched right back, a long wind-up; then one fast, smeared arc down; a great burst; he lands crouched in the wreck of it.
+// Drawn his own way (Original designs only): the Brawler's build, his wraps, his headband's tails.
+//
+// BOTH ARE CARRIED ONLY WHILE HE IS IN THE AIR: his feet are on the floor where they were until he leaves it, and where they
+// come down after, so the game may carry him further or less far than the art does (to where the swipe points) by stretching
+// the carry between his take-off and his landing (`air`), and never slide a foot.
+
+// THE FLYING DOUBLE HAMMERFIST (a swipe, carrying a punch globe): GATHER, quick (it is an interrupt): sunk deep, squared up to
+// them, both arms flung down and back. THE LEAP up and on at them, the arms swung up overhead as he rises. THE HANG, HELD: at the
+// top of the leap both fists clasped together high over and behind his head, his back arched right back, his chest open, his
+// knees drawn up under him, his eyes on them. THE SLAM, in two frames: he jackknifes and drops, the clasped fists brought down in
+// one great arc to the floor before his feet as he lands, deep. A RING OF FORCE rolls out along the floor round where the fists
+// struck, two tiles, and knocks everything down; the floor bucks, stones fly, the screen shakes; held there a moment (the
+// weight of it); then he rises out of it, back to his guard.
+const HF_LONG = 48;
+/** At the top of the leap: arched right back, both fists clasped high over and behind his head, knees drawn up under him. */
+const HF_TOP: Q = P({ px: -1.5, pz: 31, yaw: -4, twist: 0, bend: -33, pitch: -24, side: 0, hunch: 0, shrug: 0.45, faceTurn: -2, faceUp: -12, faceTilt: 0,
+  lfx: -11.0, lfy: 4.0, lfz: 47, lft: 6, lk: 4, lkUp: -48, lfp: 52,
+  rfx: -14.0, rfy: -4.0, rfz: 44, rft: -6, rk: -4, rkUp: -56, rfp: 54,
+  lhx: -3.5, lhy: -7.6, lhz: 20.5, le: 0, rhx: -3.5, rhy: 7.6, rhz: 20.5, re: 0 });
+/** The slam: jackknifed over, deep in his knees, both arms driven straight down, the clasped fists on the floor before his feet. */
+const HF_SLAM: Q = P({ px: 3.5, pz: -14.0, yaw: -8, twist: 0, bend: 34, pitch: 24, side: 0, hunch: 12, shrug: 0.5, faceTurn: -6, faceUp: 6, faceTilt: 0,
+  lfx: 6.4, lfy: 3.0, lfz: 0.2, lft: 14, lk: 30, lkUp: 0, lfp: 8,
+  rfx: -6.0, rfy: -3.4, rfz: 0.4, rft: -30, rk: -32, rkUp: 0, rfp: 30,
+  lhx: 19.0, lhy: -6.8, lhz: -12.0, le: 0, rhx: 19.0, rhy: 6.8, rhz: -12.0, re: 0 });
+/** BOTH FISTS CLASPED TOGETHER at a point (his own measure: forward, left, up from the floor point under him), in a pose; each
+ * elbow then pointed along its way (his chest's own measure). */
+function clasped(q: Q, at: V3, L: V3, R: V3, half = 2.9): Q {
+  const withL = { ...q, ...handTo(q, 'L', [at[0], at[1] + half, at[2]], q.le ?? 0) };
+  const both = { ...withL, ...handTo(withL, 'R', [at[0], at[1] - half, at[2]], q.re ?? 0) };
+  return elbows(both, L, R);
+}
+/** A pose part way from one to another (each of its numbers mixed; its elbows and fists as `fistsAt` or `elbows` then put them). */
+function mixQ(a: Q, b: Q, u: number): Q {
+  const out: Record<string, number> = {};
+  for (const c of CH) out[c] = num(a, c) + (num(b, c) - num(a, c)) * u;
+  return out as Q;
+}
+/** Each fist at a point (his own measure: forward, left, up from the floor point under him), in a pose; each elbow then pointed along its way. */
+function fistsAt(q: Q, atL: V3, atR: V3, L?: V3, R?: V3): Q {
+  const withL = { ...q, ...handTo(q, 'L', atL, q.le ?? 0) };
+  const both = { ...withL, ...handTo(withL, 'R', atR, q.re ?? 0) };
+  return elbows(both, L, R);
+}
+/** The clasped fists' elbows: at the top, out to each side and up; at the slam, out and back along the arms driven down. */
+const HF_ELB_UP_L: V3 = [0.45, 0.85, 0.3];
+const HF_ELB_UP_R: V3 = [0.45, -0.85, 0.3];
+const HF_ELB_DN_L: V3 = [-0.4, 0.9, 0.1];
+const HF_ELB_DN_R: V3 = [-0.4, -0.9, 0.1];
+/** How far the leap carries him at the art's measure (the game stretches it to where the swipe points, in the air). */
+export const HF_GO = 2.5 * VET_TILE;
+const HAMMERFIST: VetMotion = {
+  id: 'hammerfist', name: 'The flying double hammerfist', input: 'swipe, carrying a punch globe', long: HF_LONG,
+  line: 'Sunk deep, arms flung back; a leap at them, both fists clasped high and his back arched right back, held at the top; then the slam, both fists down in one arc to the floor as he lands: a ring of force rolls out round him and knocks everything down.',
+  keys: [
+    { f: 0, q: P({}) },
+    // (THE GATHER: squared up and sunk deep, both arms flung down and back)
+    { f: 2, q: P({ px: -0.4, pz: -8.5, yaw: -16, twist: 4, bend: 14, pitch: 6, hunch: 8, faceTurn: -14, faceUp: 10, lhx: 7, lhy: 1, lhz: -5, le: 14, rhx: 6, rhy: -1, rhz: -5, re: 6 }), e: 'io' },
+    { f: 5, q: elbows(P({ px: -1.0, pz: -13.5, yaw: -10, twist: 2, bend: 28, pitch: 14, hunch: 12, shrug: 0.3, faceTurn: -8, faceUp: 18, lfx: 6.4, lfy: 3.0, lft: 14, lk: 28, lfp: 12, lfz: 0.4, rfx: -6.0, rfy: -3.4, rft: -28, rk: -30, rfp: 34, rfz: 2.2, lhx: -9.5, lhy: 4.0, lhz: -16.0, le: -6, rhx: -9.5, rhy: -4.0, rhz: -16.0, re: -6 }), [-1, 0.3, 0.2], [-1, -0.3, 0.2]), e: 'io' },
+    { f: 7, q: elbows(P({ px: -1.2, pz: -14.2, yaw: -10, twist: 2, bend: 29, pitch: 15, hunch: 13, shrug: 0.3, faceTurn: -8, faceUp: 19, lfx: 6.4, lfy: 3.0, lft: 14, lk: 28, lfp: 12, lfz: 0.4, rfx: -6.0, rfy: -3.4, rft: -28, rk: -30, rfp: 34, rfz: 2.2, lhx: -10.5, lhy: 4.2, lhz: -16.4, le: -6, rhx: -10.5, rhy: -4.2, rhz: -16.4, re: -6 }), [-1, 0.3, 0.2], [-1, -0.3, 0.2]), e: 'io' },
+    // (THE SPRING: up off both feet, the arms swung up past his face)
+    { f: 10, q: elbows(P({ px: 1.0, pz: 10, yaw: -6, twist: 0, bend: 0, pitch: -2, hunch: 4, shrug: 0.35, faceTurn: -4, faceUp: 8, lfx: 4.5, lfy: 3.2, lft: 10, lk: 10, lfp: 62, lfz: 9, rfx: -5.0, rfy: -3.2, rft: -12, rk: -12, rfp: 64, rfz: 8, lhx: 6.0, lhy: -3.5, lhz: 16.0, le: 0, rhx: 6.0, rhy: 3.5, rhz: 16.0, re: 0 }), HF_ELB_UP_L, HF_ELB_UP_R), e: 'out' },
+    // (rising, the knees drawn up, the fists coming together overhead, the back arching)
+    { f: 14, q: clasped(P({ ...HF_TOP, pz: 25, bend: -16, pitch: -10, lfx: -6, rfx: -9, lfz: 36, rfz: 33, lkUp: -30, rkUp: -36 }), [-6, 0, 92], HF_ELB_UP_L, HF_ELB_UP_R), e: 'out' },
+    // (THE HANG, HELD: arched right back at the top, the clasped fists high over and behind his head)
+    { f: 18, q: clasped(HF_TOP, [-16, 0, 98], HF_ELB_UP_L, HF_ELB_UP_R), e: 'io' },
+    { f: 21, q: clasped(P({ ...HF_TOP, pz: 30.2, bend: -34, pitch: -25 }), [-17, 0, 97.4], HF_ELB_UP_L, HF_ELB_UP_R), e: 'io' },
+    // (THE SLAM: two frames, the fists down in one arc to the floor as he lands)
+    { f: 22, q: clasped(P({ px: 1.5, pz: 9, yaw: -6, twist: 0, bend: 12, pitch: 8, hunch: 8, shrug: 0.5, faceTurn: -4, faceUp: 0, lfx: 4.5, lfy: 3.1, lft: 10, lk: 16, lfp: 40, lfz: 14, rfx: -6.0, rfy: -3.3, rft: -16, rk: -18, rfp: 44, rfz: 13 }), [24, 0, 50], HF_ELB_UP_L, HF_ELB_UP_R), e: 'lin' },
+    { f: 23, q: clasped(HF_SLAM, [22, 0, 7.6], HF_ELB_DN_L, HF_ELB_DN_R, 3.3), e: 'lin' },
+    // (held in the wreck of it: the weight of the blow)
+    { f: 27, q: clasped(P({ ...HF_SLAM, pz: -14.6, bend: (HF_SLAM.bend ?? 0) + 1 }), [22, 0, 7.5], HF_ELB_DN_L, HF_ELB_DN_R, 3.3), e: 'out' },
+    // (rising out of it, the fists pulled up off the floor)
+    { f: 34, q: elbows(P({ px: 2.0, pz: -11.0, yaw: -14, twist: 2, bend: 24, pitch: 14, hunch: 10, shrug: 0.3, faceTurn: -14, faceUp: 12, lfx: 6.4, lfy: 3.0, lft: 14, lk: 28, lfp: 12, lfz: 0.4, rfx: -6.0, rfy: -3.4, rft: -30, rk: -30, rfp: 30, rfz: 1.6, lhx: 12.0, lhy: -3.0, lhz: -4.0, le: 20, rhx: 11.0, rhy: 3.0, rhz: -4.0, re: 20 }), [0.1, 0.5, -1], [0.1, -0.5, -1]), e: 'io' },
+    { f: 41, q: tucked(P({ px: 1.0, pz: -7.5, yaw: -20, bend: 12, pitch: 6, faceTurn: -24, faceUp: 8 })), e: 'io' },
+    { f: HF_LONG, q: P({}) },
+  ],
+  plants: [['L', 0, 9], ['R', 0, 9], ['L', 23, HF_LONG, 'end'], ['R', 23, HF_LONG, 'end']],
+  // (carried only in the air: from his take-off to his landing, most of it as he rises, the rest in the slam)
+  carry: (f) => [HF_GO * track(f, [[9, 0], [14, 0.42], [18, 0.68], [21, 0.8], [23, 1]], 'io'), 0],
+  // (THE RING OF FORCE round where the clasped fists strike the floor, two tiles out: it knocks everything down)
+  strikes: [{ from: 21, at: 23, joint: 'handR', kind: 'punch', heavy: true, w: 20, burst: 0.75, fade: 2, hits: [], force: { shape: 'ring', reach: 2 * VET_TILE, deg: 360, long: 7, react: 'floored' } }],
+  foes: [],
+  dust: [{ f: 8, at: 'both', big: true }, { f: 23, at: 'both', big: true }, { f: 34, at: 'R' }],
+  // (no ring of a heavy landing round his feet: the ring of force is his landing's)
+  shake: [[23, 29]],
+  // (the punch globe he carries, burning green on his clasped fists from his leap to the slam)
+  flame: { joint: 'fists', from: 8, to: 23, kind: 'punch' },
+};
+
+// THE FLYING KNEE (a swipe, carrying a kick globe), MADE NEW FOR HIS SWIPE: a forward flying strike out of a run or a combo, not
+// after a jump (the queue: “the knee is to be redrawn for this”); it drives one knee through the one before him, in a straight
+// line. (The knee of combo 2, `knee`, is kept as it was for the game as it is.) THE DIP, quick: down onto his lead foot, leaning
+// in, both arms flung back. THE LAUNCH off it, long and low, straight at them. THE KNEE COCKED, HELD, as he flies: his rear thigh
+// drawn right back and down, the shin folded up behind him, his hips hollowed, both hands reaching out ahead of him for their
+// head; his lead leg hanging under him. THE KNEE, in two frames: the hips thrown through, the thigh whipped up level and the knee
+// driven straight through them, the shin tucked under it, his body leaning back off it, both arms yanked back past his hips;
+// his lead leg flung straight back. Held there a moment, still flying; then down onto his lead foot, the other after, deep, and
+// up to his guard.
+const FK_LONG = 46;
+/** How far the launch carries him at the art's measure (the game stretches it to where the swipe points, in the air). */
+export const FK_GO = 3 * VET_TILE;
+/** Flying, the knee cocked: the rear thigh drawn back and down, the shin folded up behind, the lead leg under him. */
+const FK_COCK: Q = P({ px: -0.5, pz: 17, yaw: -8, twist: 0, bend: 14, pitch: 10, side: 0, hunch: 8, shrug: 0.35, faceTurn: -6, faceUp: 10, faceTilt: 0,
+  lfx: 1.0, lfy: 3.4, lfz: 10, lft: 8, lk: 8, lkUp: -10, lfp: 60,
+  rfx: -18.0, rfy: -3.6, rfz: 28, rft: -8, rk: -6, rkUp: -66, rfp: 52 });
+/** The knee: the thigh level, the knee driven through, the shin tucked under it; leaning back off it; the lead leg flung back. */
+const FK_HIT: Q = P({ px: 4.0, pz: 20, yaw: -4, twist: 0, bend: -18, pitch: -24, side: 0, hunch: 4, shrug: 0.4, faceTurn: -4, faceUp: -2, faceTilt: 0,
+  lfx: -16.0, lfy: 3.6, lfz: 20, lft: 6, lk: 4, lkUp: -60, lfp: 66,
+  rfx: 10.0, rfy: -3.0, rfz: 36, rft: -4, rk: -2, rkUp: 22, rfp: 40 });
+/** The landing, deep: his feet where his stance has them. */
+const FK_LAND: Q = P({ px: 1.5, pz: -14.5, yaw: -18, bend: 26, pitch: 14, hunch: 12, faceTurn: -14, faceUp: 18, lfx: 6.4, lfy: 3.0, lfz: 0.2, lft: 14, lk: 30, lfp: 10, rfx: -6.0, rfy: -3.4, rfz: 0.4, rft: -30, rk: -30, rfp: 30 });
+const FLYKNEE: VetMotion = {
+  id: 'flyknee', name: 'The flying knee', input: 'swipe, carrying a kick globe', long: FK_LONG,
+  line: 'A dip onto his lead foot, arms flung back; a long, low launch at them, the knee cocked right back, both hands reaching for their head, held as he flies; then the knee driven straight through them, the thigh level, leaning back off it; down deep, and up.',
+  keys: [
+    { f: 0, q: P({}) },
+    // (THE DIP: down onto his lead foot, leaning in, both arms flung back)
+    { f: 2, q: P({ px: 0.8, pz: -8.5, yaw: -16, twist: 4, bend: 14, pitch: 6, hunch: 8, faceTurn: -14, faceUp: 10, rfp: 36, rfz: 2.8, lhx: 7, lhy: 1, lhz: -5, le: 14, rhx: 6, rhy: -1, rhz: -5, re: 6 }), e: 'io' },
+    { f: 5, q: elbows(P({ px: 2.0, pz: -12.5, yaw: -10, twist: 2, bend: 22, pitch: 16, hunch: 10, shrug: 0.3, faceTurn: -10, faceUp: 18, lfx: 6.4, lfy: 3.0, lft: 14, lk: 28, lfp: 10, lfz: 0.4, rfx: -6.0, rfy: -3.4, rft: -30, rk: -30, rfp: 44, rfz: 3.4, lhx: -9.5, lhy: 4.0, lhz: -16.0, le: -6, rhx: -9.5, rhy: -4.0, rhz: -16.0, re: -6 }), [-1, 0.3, 0.2], [-1, -0.3, 0.2]), e: 'io' },
+    { f: 7, q: elbows(P({ px: 2.3, pz: -13.2, yaw: -10, twist: 2, bend: 23, pitch: 17, hunch: 11, shrug: 0.3, faceTurn: -10, faceUp: 19, lfx: 6.4, lfy: 3.0, lft: 14, lk: 28, lfp: 10, lfz: 0.4, rfx: -6.0, rfy: -3.4, rft: -30, rk: -30, rfp: 46, rfz: 3.8, lhx: -10.5, lhy: 4.2, lhz: -16.4, le: -6, rhx: -10.5, rhy: -4.2, rhz: -16.4, re: -6 }), [-1, 0.3, 0.2], [-1, -0.3, 0.2]), e: 'io' },
+    // (THE LAUNCH: off the lead foot, long and low, the arms swung through)
+    { f: 10, q: fistsAt(P({ ...FK_COCK, pz: 9, lfx: 1, lfz: 4, lfp: 52, rfx: -12, rfz: 18, rkUp: -44, bend: 12, pitch: 8 }), [12, 6, 46], [12, -6, 46], [0.1, 0.5, -1], [0.1, -0.5, -1]), e: 'out' },
+    // (THE KNEE COCKED, HELD, as he flies: both hands reaching out ahead for their head)
+    { f: 13, q: fistsAt(FK_COCK, [19, 5.5, 58], [19, -5.5, 58], [0.1, 0.5, -1], [0.1, -0.5, -1]), e: 'out' },
+    { f: 15, q: fistsAt(P({ ...FK_COCK, pz: 17.6, rfx: -18.6, bend: 15 }), [19.6, 5.5, 58.4], [19.6, -5.5, 58.4], [0.1, 0.5, -1], [0.1, -0.5, -1]), e: 'io' },
+    // (THE KNEE: two frames, driven straight through them; both arms yanked back past his hips)
+    { f: 16, q: fistsAt(mixQ(P({ ...FK_COCK, pz: 17.6, rfx: -18.6, bend: 15 }), FK_HIT, 0.55), [3, 12, 40], [3, -12, 40], [-0.8, 0.5, 0.2], [-0.8, -0.5, 0.2]), e: 'lin' },
+    { f: 17, q: fistsAt(FK_HIT, [-15, 11, 50], [-15, -11, 50], [-0.6, 0.6, 0.5], [-0.6, -0.6, 0.5]), e: 'lin' },
+    // (held there a moment as he flies on: the weight of it)
+    { f: 20, q: fistsAt(P({ ...FK_HIT, pz: 19.2, bend: -19 }), [-15.6, 11.2, 49.4], [-15.6, -11.2, 49.4], [-0.6, 0.6, 0.5], [-0.6, -0.6, 0.5]), e: 'out' },
+    // (coming down: the knee dropped, the lead foot reaching for the floor)
+    { f: 24, q: fistsAt(P({ px: 2.5, pz: 2, yaw: -14, twist: 0, bend: 10, pitch: 4, hunch: 6, faceTurn: -10, faceUp: 8, lfx: 6.4, lfy: 3.0, lfz: 2, lft: 14, lk: 20, lkUp: 0, lfp: 30, rfx: -2.0, rfy: -3.4, rfz: 12, rft: -20, rk: -20, rkUp: -10, rfp: 50 }), [8, 10, 34], [6, -10, 34], [-0.2, 0.6, -1], [-0.2, -0.6, -1]), e: 'in' },
+    { f: 27, q: tucked(FK_LAND), e: 'out' },
+    { f: 31, q: tucked(P({ ...FK_LAND, pz: -15.2, bend: 28 })), e: 'out' },
+    { f: 38, q: tucked(P({ px: 1.0, pz: -8.0, yaw: -20, bend: 12, pitch: 6, faceTurn: -24, faceUp: 8 })), e: 'io' },
+    { f: FK_LONG, q: P({}) },
+  ],
+  plants: [['R', 0, 7], ['L', 0, 9], ['L', 24, FK_LONG, 'end'], ['R', 25, FK_LONG, 'end']],
+  // (carried only in the air: from his take-off to his landing; a third of it in the strike, the knee driven through)
+  carry: (f) => [FK_GO * track(f, [[9, 0], [13, 0.36], [15, 0.52], [17, 0.84], [20, 0.93], [24, 1]], 'io'), 0],
+  strikes: [{ from: 15, at: 17, joint: 'kneeR', kind: 'kick', heavy: true, w: 22, burst: 1.2, under: true, hits: [], force: { shape: 'cone', reach: 4.6 * VET_TILE, deg: 26, dir: 0, long: 4, react: 'kneed' } }],
+  foes: [],
+  dust: [{ f: 9, at: 'L', big: true }, { f: 25, at: 'L', big: true }, { f: 27, at: 'R' }],
+  shake: [[17, 21], [25, 27]],
+  quake: [27],
+  // (the kick globe he carries, burning hot orange on his knee from his launch to the blow)
+  flame: { joint: 'kneeR', from: 9, to: 17, kind: 'kick' },
+};
+
 // THE PUSH KICK (hold, the second of the three kicks: his “Round kick first”): his word, 3 Nov 2026, 00:36: “And the 3 kick combo seemed like two of
 // the same kicks”; his pick “Push kick, then round”; and at 00:37: “Push kick hits in a cone in front of”. So: the rear
 // knee CHAMBERED HIGH in front of him and held, the foot cocked under it, the toes pulled back; then the foot DRIVEN STRAIGHT
@@ -1472,7 +1650,22 @@ export function roundFoes(m: VetMotion, r = 3 * VET_TILE): [number, number][] {
 }
 SPINKICK.foes = roundFoes(SPINKICK);
 SPINKICK_CLOSE.foes = [[3 * VET_TILE, 0]];
-for (const m of [JAB, CROSS, HOOK, RK, ELBOW, UPPER, KNEE, SPINKICK, SPINKICK_CLOSE]) hitsFromForce(m);
+/**
+ * Foes round where a ring of force strikes the floor (the hammerfist's): the one he flew at, before him a little short of where
+ * he lands, and more about him, each well inside its reach; a last one outside it (not hit).
+ */
+export function ringFoes(m: VetMotion): [number, number][] {
+  const g = forceGeo(m, m.strikes[0]);
+  const at = (a: number, r: number): [number, number] => [g.o[0] + Math.cos((a * Math.PI) / 180) * r, g.o[1] + Math.sin((a * Math.PI) / 180) * r];
+  return [at(0, 1.1 * VET_TILE), at(115, 1.3 * VET_TILE), at(-120, 1.25 * VET_TILE), at(-35, 3.1 * VET_TILE)];
+}
+HAMMERFIST.foes = ringFoes(HAMMERFIST);
+// (the one he flies at: just before his knee as it lands, in its line)
+{
+  const kw = worldOf(FLYKNEE, FLYKNEE.strikes[0].at, skel(poseAt(FLYKNEE, FLYKNEE.strikes[0].at)).kneeR);
+  FLYKNEE.foes = [[kw[0] + 8, 0]];
+}
+for (const m of [JAB, CROSS, HOOK, RK, ELBOW, UPPER, KNEE, SPINKICK, SPINKICK_CLOSE, HAMMERFIST, FLYKNEE]) hitsFromForce(m);
 /** A move made again for a combo (a flying knee or uppercut leaping its own way in): its foe where its blow reaches, its hits. */
 export function readied(m: VetMotion): VetMotion {
   m.foes = m.strikes[0].force?.shape === 'round' ? [[3 * VET_TILE, 0]] : [standOn(m, m.strikes[0], 0, 12)];
@@ -1487,7 +1680,7 @@ export const VET_RUN: VetMotion = { id: 'run', name: 'Running', input: 'moving',
 export const VET_BOUNCE = { long: BOUNCE_LONG, spring: SPRING, touch: TOUCH, pace: BOUNCE_PACE, spot: SPOT, lane: LANE };
 
 /** EVERY MOVE OF HIS, in the order the film shows them. */
-export const VET_MOTIONS: VetMotion[] = [VET_STAND, VET_RUN, DODGE, JAB, CROSS, HOOK, RK, PUSH, ELBOW, UPPER, SPINKICK, SPINKICK_CLOSE, KNEE, HURT, FALL];
+export const VET_MOTIONS: VetMotion[] = [VET_STAND, VET_RUN, DODGE, JAB, CROSS, HOOK, RK, PUSH, ELBOW, UPPER, SPINKICK, SPINKICK_CLOSE, KNEE, HAMMERFIST, FLYKNEE, HURT, FALL];
 export const motionById = (id: string): VetMotion => {
   const m = VET_MOTIONS.find((x) => x.id === id);
   if (!m) throw new Error(`no move ${id}`);

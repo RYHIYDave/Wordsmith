@@ -47,7 +47,7 @@ import { EIGHT_MORE, MORE_WAY, moreSideOf } from '../art/sides_more';
 export const VETERAN = { on: true };
 
 /** His moves, by the art's own names (src/dev/veteran_moves.ts VET_MOTIONS). */
-export type VetMoveId = 'stand' | 'run' | 'dodge' | 'jab' | 'cross' | 'hook' | 'roundkick' | 'push' | 'elbow' | 'uppercut' | 'spinkick' | 'spinkickClose' | 'knee' | 'hurt' | 'fall';
+export type VetMoveId = 'stand' | 'run' | 'dodge' | 'jab' | 'cross' | 'hook' | 'roundkick' | 'push' | 'elbow' | 'uppercut' | 'spinkick' | 'spinkickClose' | 'knee' | 'hammerfist' | 'flyknee' | 'hurt' | 'fall';
 /** A move made by a press (not his stand, run, hurt or fall). */
 export type VetBlowId = Exclude<VetMoveId, 'stand' | 'run' | 'hurt' | 'fall'>;
 /** What a press is. */
@@ -55,7 +55,7 @@ export type VetInput = 'tap' | 'hold' | 'swipe' | 'swipeTap' | 'swipeHold';
 /** What a globe is filled with: a punch (green), a kick (hot orange), the jump (white), or set in fire, green or orange. */
 export type VetGlobe = 'punch' | 'kick' | 'jump' | 'punchFire' | 'kickFire';
 /** How a foe takes a blow (the art's reactions). */
-export type VetReact = 'snap' | 'reel' | 'knock' | 'launch' | 'fly' | 'kneed' | 'aside' | 'shove';
+export type VetReact = 'snap' | 'reel' | 'knock' | 'launch' | 'fly' | 'kneed' | 'aside' | 'shove' | 'floored';
 
 /** The frames of his moves are thirty a second, at his own pace (faster as his attack speed rises). */
 export const VET_FPS = 30;
@@ -64,10 +64,12 @@ export const VET_FPS = 30;
  * A BLOW'S FORCE, in tiles and degrees, from where he stood as the move began, along the way he faced then: a CONE shot out
  * along a straight blow, a CRESCENT flung out flat across a round one, the spinning jump kick's ROUND crescent rolled out
  * round him; `long` the frames its front takes to get out to its reach, from the blow (or `from`). (The push kick's is a cone
- * along the floor from his heel.) Each foe it comes to is hit once, as its front reaches him.
+ * along the floor from his heel.) Each foe it comes to is hit once, as its front reaches him. A RING (the flying double
+ * hammerfist's) rolls out along the floor all round where his fists strike it: its `reach` is round THAT point, not from where he
+ * stood (the art: dev/veteran_moves.ts forceGeo).
  */
 export interface VetForce {
-  shape: 'cone' | 'crescent' | 'round';
+  shape: 'cone' | 'crescent' | 'round' | 'ring';
   reach: number;
   deg: number;
   long: number;
@@ -112,6 +114,17 @@ export const VET_MOVES: Record<VetBlowId, VetMoveDef> = {
   spinkick: { long: 50, strike: { from: 14, at: 16, kind: 'kick' }, force: { shape: 'round', reach: 3.5, deg: 200, long: 8, react: 'fly' }, carry: [0, 0], air: [15, 29], share: 1.5, globe: 'kickFire' },
   spinkickClose: { long: 52, strike: { from: 14, at: 16, kind: 'kick' }, force: { shape: 'round', reach: 3.5, deg: 200, long: 6, react: 'fly', from: 22 }, carry: [2, 0], air: [15, 31], share: 1.5, globe: 'kickFire' },
   knee: { long: 58, strike: { from: 19, at: 21, kind: 'kick' }, force: { shape: 'cone', reach: 2.5, deg: 42, dir: 5, long: 3, react: 'kneed' }, carry: [1.5, 0], air: [20, 33], share: 2.4, globe: 'kickFire' },
+  // HIS SWIPE CARRYING THE FIRST LIT GLOBE (the art's of 26 Nov 2026, the skins chat: dev/veteran_moves.ts HAMMERFIST, FLYKNEE; his
+  // idea, to the Godot chat: “Then have his swipe can be something like an interrupt to the combo, but whatever globe is next is
+  // now added to the swipe, so either a flying double hamerfist or a flying knee”). The art's numbers; their `share` a start, the
+  // rules' to set. BOTH ARE CARRIED ONLY IN THE AIR (from the first frame of `air` to the frame after its last), so the carry may be
+  // stretched there to where the swipe points and no foot slides. Not made by any press of the web game's: the Godot chat's rules.
+  //   the flying double hammerfist: a punch globe; its RING of force, two tiles round where his fists strike the floor, knocks
+  //   everyone in it down
+  hammerfist: { long: 48, strike: { from: 21, at: 23, kind: 'punch' }, force: { shape: 'ring', reach: 2, deg: 360, long: 7, react: 'floored' }, carry: [2.5, 0], air: [8, 22], share: 1.6, globe: 'punchFire' },
+  //   the flying knee, made new: a kick globe; a narrow cone of force, a straight line, on through the one before him to 4.6 tiles
+  //   from where he stood (1.6 past his knee)
+  flyknee: { long: 46, strike: { from: 15, at: 17, kind: 'kick' }, force: { shape: 'cone', reach: 4.6, deg: 26, dir: 0, long: 4, react: 'kneed' }, carry: [3, 0], air: [9, 23], share: 2.2, globe: 'kickFire' },
 };
 
 /** What a foe does when each kind of blow lands: driven back (tiles, for good: “so that in a combo the next blow finds them at its reach again”), staggered or stunned (seconds), thrown up. */
@@ -124,6 +137,8 @@ export const VET_REACT: Record<VetReact, { back: number; stagger?: number; stun?
   launch: { back: 0.75, stun: 1.2, up: 0.9 },
   kneed: { back: 1.2, stun: 0.8 },
   fly: { back: 1.6, stun: 0.6 },
+  // (KNOCKED DOWN by the hammerfist's ring: swept off his feet, down on his back end, stunned there, then up)
+  floored: { back: 0.35, stun: 1.2 },
 };
 
 /** His other numbers (starting numbers, his to try and change). */

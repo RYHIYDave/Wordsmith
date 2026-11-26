@@ -267,7 +267,9 @@ test('hold, tap, hold: the round kick, the spinning elbow, the round kick', () =
 test('his moves\' numbers: every blow reaches 2.5 tiles (the push kick and the spinning kicks 3.5); the flying knee the strongest single blow', () => {
   for (const [id, m] of Object.entries(VET_MOVES)) {
     if (!m.force) continue;
-    const far = id === 'push' || id === 'spinkick' || id === 'spinkickClose' ? 3.5 : 2.5;
+    // (his swipe's flying blows, 26 Nov 2026: the hammerfist's ring two tiles round where his fists strike the floor; the new flying
+    // knee's straight line of force on to 4.6 tiles from where he stood, 1.6 past his knee: tests/vet_flying.test.ts)
+    const far = id === 'push' || id === 'spinkick' || id === 'spinkickClose' ? 3.5 : id === 'hammerfist' ? 2 : id === 'flyknee' ? 4.6 : 2.5;
     assert.equal(m.force.reach, far, id);
   }
   const top = Object.entries(VET_MOVES).sort((a, b) => b[1].share - a[1].share)[0][0];

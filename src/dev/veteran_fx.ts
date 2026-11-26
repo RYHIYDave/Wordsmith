@@ -446,3 +446,185 @@ export function floorTrace(px: Px, to: To, o: V3, a0: number, a1: number, r: num
     put(px, ...to([o[0] + Math.cos(a) * r, o[1] + Math.sin(a) * r, 0]), c);
   }
 }
+
+// ---------------------------------------------------------------------------------------------
+// THE RING OF FORCE (the flying double hammerfist, the skins chat, 26 Nov 2026): his clasped fists strike the floor and the force
+// rolls out along it all round, knocking everything down. Three pieces, each painted where it lies (behind him or before him, by
+// `keep`): THE WAVE itself, a broad band along the floor all the way round, its leading edge white-hot and standing up off the
+// floor in shards of light; STONES of the floor flung up off it and falling back as it passes; and the CRACKS it leaves, jagged
+// lines struck out from where the fists landed, glowing in the blow's colour, then dark, then gone. Never the enemy's pink or gold.
+
+/** The stones of the floor flung up by the wave: lit, mid, dark, and the seam's ink under them. */
+const STONES = ['#bcb6cc', '#958fab', '#6e6886', '#2a2438'] as const;
+
+/**
+ * THE WAVE of a ring of force at radius `r` round `o` (the move's floor, his measure), `thick` deep, in a blow's colours (`cols`:
+ * ink, outer, edge, glow, core), `age` frames after the blow; `gone` how much of it has broken up (0 none, 1 all).
+ */
+export function forceRing(px: Px, to: To, o: V3, r: number, thick: number, cols: readonly string[], age: number, gone = 0, seed = 0, keep?: (q: V3) => boolean): void {
+  if (r <= 2 || gone >= 1) return;
+  const N = Math.max(24, Math.ceil(r * Math.PI * 2 * 1.4));
+  // (the band: its depth shrinking a little as it rolls out, the bright layers leaning to its leading edge)
+  const t = Math.max(3, thick * (1 - 0.25 * Math.min(1, age / 8)));
+  type S = { x: number; y: number; ox: number; oy: number; rad: number; on: boolean; a: number };
+  const pts: S[] = [];
+  for (let k = 0; k < N; k++) {
+    const a = (k / N) * Math.PI * 2;
+    const c = Math.cos(a);
+    const sn = Math.sin(a);
+    const outer: V3 = [o[0] + c * r, o[1] + sn * r, o[2]];
+    const mid: V3 = [o[0] + c * (r - t / 2), o[1] + sn * (r - t / 2), o[2]];
+    const inner: V3 = [o[0] + c * (r - t), o[1] + sn * (r - t), o[2]];
+    const [ox, oy] = to(outer);
+    const [mx, my] = to(mid);
+    const [ix, iy] = to(inner);
+    const rad = Math.max(0.8, Math.hypot(ox - ix, oy - iy) / 2.6);
+    pts.push({ x: mx, y: my, ox, oy, rad, a, on: (keep ? keep(mid) : true) && (gone <= 0 || rnd(seed + k) > gone) });
+  }
+  const layers: [number, string, number][] = [[1.4, cols[0], 0], [0.7, cols[1], 0], [0, cols[2], 0.3], [-1.0, cols[3], 0.6], [-2.0, cols[4], 0.85]];
+  for (const [grow, c, lean] of layers) {
+    for (const p of pts) {
+      if (!p.on) continue;
+      const rr = p.rad + grow * Math.min(1, p.rad / 2);
+      if (rr <= 0.35) continue;
+      disc(px, p.x + (p.ox - p.x) * lean, p.y + (p.oy - p.y) * lean, rr, c, 0.6);
+    }
+  }
+  // (THE SHARDS: the leading edge standing up off the floor in blades of light, tallest as it is thrown, sinking as it rolls)
+  const crest = 11 * (1 - Math.min(1, age / 9)) * (1 - gone);
+  if (crest >= 1) {
+    for (let k = 0; k < N; k += 2) {
+      const p = pts[k];
+      if (!p.on) continue;
+      const h = crest * (0.45 + 0.55 * rnd(seed + 900 + k));
+      for (let z = 0; z <= h; z += 0.5) {
+        const u = z / h;
+        put(px, p.ox, p.oy - z, u > 0.75 ? cols[4] : u > 0.35 ? cols[3] : cols[2]);
+      }
+      put(px, p.ox - 1, p.oy - h * 0.4, cols[1]);
+    }
+  }
+}
+
+/**
+ * THE STONES a ring of force flings up as it passes (`front` how far out it has rolled, `reach` how far it goes), `age` frames
+ * after the blow: chips of the floor thrown up off it and falling back, each with a fleck of the blow's light on it at first.
+ */
+export function ringStones(px: Px, to: To, o: V3, front: number, reach: number, cols: readonly string[], age: number, seed = 0, keep?: (q: V3) => boolean): void {
+  const n = 22;
+  for (let i = 0; i < n; i++) {
+    const a = ((i + rnd(seed + 50 + i)) / n) * Math.PI * 2;
+    // (each thrown as the wave comes to where it lay, and flying on out a little)
+    const lay = reach * (0.12 + 0.7 * rnd(seed + 80 + i));
+    if (front <= lay) continue;
+    const thrown = age - (lay / Math.max(1, reach)) * 6;
+    const life = 11 + 7 * rnd(seed + 110 + i);
+    const u = thrown / life;
+    if (u < 0 || u > 1) continue;
+    const d = lay + reach * 0.18 * u * (0.5 + rnd(seed + 140 + i));
+    const h = (8 + 16 * rnd(seed + 170 + i)) * 4 * u * (1 - u);
+    const q: V3 = [o[0] + Math.cos(a) * d, o[1] + Math.sin(a) * d, o[2] + h];
+    if (keep && !keep([q[0], q[1], 0])) continue;
+    const [x, y] = to(q);
+    const big = rnd(seed + 200 + i) > 0.55;
+    // (the chip: a stone two or three pixels across, lit from the upper left, inked under; a fleck of light on it while it rises)
+    put(px, x, y + 1, STONES[3]);
+    put(px, x + 1, y + 1, STONES[3]);
+    put(px, x, y, STONES[1]);
+    put(px, x + 1, y, STONES[2]);
+    put(px, x, y - 1, STONES[0]);
+    if (big) {
+      put(px, x - 1, y, STONES[1]);
+      put(px, x - 1, y + 1, STONES[3]);
+      put(px, x - 1, y - 1, STONES[0]);
+      put(px, x + 1, y - 1, STONES[1]);
+    }
+    if (u < 0.35) put(px, x, y - 1, cols[3]);
+  }
+}
+
+/**
+ * THE CRACKS a ring of force leaves in the floor round where the blow struck, `age` frames after it: jagged lines struck out
+ * along the floor, glowing in the blow's colour, cooling to its dark, then to the ink of the floor's seams, and gone.
+ */
+export function ringCracks(px: Px, to: To, o: V3, reach: number, cols: readonly string[], age: number, seed = 0): void {
+  if (age < 0 || age > 30) return;
+  const n = 7;
+  const grow = Math.min(1, (age + 1) / 3);
+  const c = age < 5 ? cols[3] : age < 11 ? cols[2] : age < 20 ? cols[1] : INK;
+  const core = age < 3 ? cols[4] : c;
+  for (let i = 0; i < n; i++) {
+    if (age > 24 && rnd(seed + 300 + i) < (age - 24) / 6) continue;
+    let a = ((i + 0.6 * rnd(seed + 260 + i)) / n) * Math.PI * 2;
+    const L = reach * (0.32 + 0.3 * rnd(seed + 230 + i)) * grow;
+    let x = o[0];
+    let y = o[1];
+    const steps = Math.ceil(L / 4);
+    for (let k = 0; k < steps; k++) {
+      a += (rnd(seed + 400 + i * 31 + k) - 0.5) * 0.9;
+      const nx = x + Math.cos(a) * 4;
+      const ny = y + Math.sin(a) * 4;
+      const [x0, y0] = to([x, y, 0]);
+      const [x1, y1] = to([nx, ny, 0]);
+      const m = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2));
+      for (let j = 0; j <= m; j++) {
+        const X = x0 + ((x1 - x0) * j) / m;
+        const Y = y0 + ((y1 - y0) * j) / m;
+        put(px, X, Y, k < steps * 0.4 ? core : c);
+        if (k < steps * 0.3 && age < 14) put(px, X, Y + 1, cols[1]);
+      }
+      // (a branch off it, now and then)
+      if (k > 1 && rnd(seed + 500 + i * 17 + k) > 0.8) {
+        const b = a + (rnd(seed + 600 + k) > 0.5 ? 0.9 : -0.9);
+        const [bx, by] = to([nx + Math.cos(b) * 6, ny + Math.sin(b) * 6, 0]);
+        const [ax, ay] = to([nx, ny, 0]);
+        for (let j = 0; j <= 8; j++) put(px, ax + ((bx - ax) * j) / 8, ay + ((by - ay) * j) / 8, c);
+      }
+      x = nx;
+      y = ny;
+    }
+  }
+}
+
+/**
+ * THE GLOBE HE CARRIES, BURNING ON HIM (the skins chat, 26 Nov 2026): his swipe carries the first lit globe into its blow (his
+ * “whatever globe is next is now added to the swipe”), so its fire burns on the fists or the knee that will strike, from his
+ * leap to the blow, as the globe's own fire burns (green a punch's, hot orange a kick's): tongues of flame licking up off it and
+ * blown back by the wind of his flight (`wind`, screen pixels a frame), sparks spat off it, growing (`grow`, 0 to 1) as the blow
+ * comes. Small round the limb, never over him (his rulebook's Animations 4 and 5: power you can see, the hero in sight).
+ */
+export function globeFlame(px: Px, x: number, y: number, f: number, cols: readonly string[], seed: number, grow: number, wind: readonly [number, number]): void {
+  if (grow <= 0) return;
+  const R = 4 + 5.5 * grow;
+  const n = 11;
+  // (the tongues: each a tapering lick, up and back with the wind, flickering frame to frame)
+  for (const [w, c] of [[1.6, cols[0]], [0.9, cols[1]], [0, cols[2]], [-1.1, cols[3]], [-2.2, cols[4]]] as const) {
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const flick = 0.55 + 0.45 * rnd(seed + i * 7 + Math.floor(f) * 13);
+      const L = R * (1.1 + 1.3 * flick);
+      const ox = Math.cos(a) * R * 0.45;
+      const oy = Math.sin(a) * R * 0.3;
+      const dx = -wind[0] * 0.5;
+      const dy = -2.2 - wind[1] * 0.5;
+      const dn = Math.hypot(dx, dy) || 1;
+      const steps = Math.ceil(L * 2);
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps;
+        const r = (1.9 + 0.5 * grow) * (1 - t) + w * (1 - t * 0.6);
+        if (r <= 0.3) continue;
+        const wob = Math.sin(t * 5 + i + f * 0.9) * 0.9 * t;
+        disc(px, x + ox + (dx / dn) * L * t + wob, y + oy + (dy / dn) * L * t, r, c);
+      }
+    }
+    disc(px, x, y, R * 0.6 + w, c);
+  }
+  // (sparks spat off it, flying back and up)
+  for (let i = 0; i < 10; i++) {
+    const life = 5;
+    const age = (f + i * 0.83 + rnd(seed + 70 + i) * 5) % life;
+    const a = -Math.PI / 2 + (rnd(seed + 90 + i) - 0.5) * 2.2;
+    const d = R + age * (2.2 + grow);
+    put(px, x + Math.cos(a) * d - wind[0] * age * 0.6, y + Math.sin(a) * d - wind[1] * age * 0.6, age < 2 ? cols[4] : cols[3]);
+  }
+}
