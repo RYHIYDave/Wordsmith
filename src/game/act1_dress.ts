@@ -427,10 +427,51 @@ export const CAMP = {
   breakables: ['supply crates', 'sacks of grain', 'firepots'],
 };
 
+/**
+ * THE STRONGHOLDS' FRONTS, A FLOOR'S OWN EACH (art/hold_fronts.ts paints them; docs/mockups/hold_fronts/README.md). The owner, 25
+ * Nov 2026, 08:58 (Eastern), as endless mode puts strongholds on every level: “Endless mode is adding strongholds to every level,
+ * and I need the facades of the strongholds that you go into to match each of the levels.” His picks by 10:04: “The cult's, in
+ * each level's building (Recommended)”; “Yes, story and endless alike (Recommended)”. So, `on`: a stronghold's front is its
+ * floor's own (FRONT_NAMES; the Quarry's gatehouse on 6, the waystation's gate on 8, as they were), in the story as in endless;
+ * and the twenty floors' pieces hold their fronts and the cult's altar, braziers and banners (render/act1_pieces.ts, art/floors.ts).
+ * ON at his yes to their pictures in the game, 25 Nov 2026, by 11:33 (Eastern): “Yes, switch them all on (Recommended)” (after 18
+ * built as a run of the gallery's wall, at his “I like them except level 18 cause that is just in the middle of the flooor”, and 16
+ * a garden pavilion standing on its own, at his “16 doesn’t work as well”).
+ */
+export const OWN_FRONTS = { on: true };
+/** Each floor's stronghold's front, by its name (a piece, kind 'gate': its frames 0 to 3 sealed and burning, 4 open). */
+export const FRONT_NAMES: Readonly<Record<number, string>> = {
+  1: "the tomb's sealed vault",
+  2: "the condemned's block",
+  3: 'the iron vault',
+  4: "the bone chapel's portal",
+  5: 'the temple in the rock',
+  6: "the redoubt's gatehouse",
+  7: 'the cliff watch-fort',
+  8: "the waystation's gate",
+  9: 'the stockade gate',
+  10: 'the drowned shrine',
+  11: 'the watch-house',
+  12: 'the sluice-house',
+  13: 'the mill-house',
+  14: "the hospice's door",
+  15: "the library's great door",
+  16: 'the garden pavilion',
+  17: 'the stage door',
+  18: 'the mirror door',
+  19: 'the inner gatehouse',
+  20: "the tower's bell-door",
+};
+
+/** (OWN_FRONTS) The court before a stronghold's front in the Wilds, in its floor's own stone (the Quarry's its own; Echo Canyon's as it was). */
+export const COURT_NAMES: Readonly<Record<number, string>> = { 7: "the watch-fort's flagstones", 9: "the stockade's flagstones", 10: "the shrine's flagstones" };
+
 /** A stronghold's own (art/act1_cult.ts, the set's; art/floor6.ts the Quarry's gatehouse and court; art/redoubt.ts the hall's). */
 export const HOLD = {
-  gate: (floor: number): string => (floor === 8 ? "the waystation's gate" : "the redoubt's gatehouse"),
+  gate: (floor: number): string => (floor === 8 ? "the waystation's gate" : OWN_FRONTS.on && FRONT_NAMES[floor] ? FRONT_NAMES[floor] : "the redoubt's gatehouse"),
   court: "the court's flagstones",
+  /** (OWN_FRONTS) The court of floor `floor`'s strongholds' yards: its own stone's where it has one. */
+  courtOf: (floor: number): string => (OWN_FRONTS.on && COURT_NAMES[floor] ? COURT_NAMES[floor] : "the court's flagstones"),
   altar: 'the altar of the words',
   brazier: "the cult's brazier",
   banner: "the cult's banner",
@@ -551,7 +592,7 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
 
   // ---- THE STRONGHOLDS: the gate, its court, the altar, the braziers and banners; inside, the ring and the obelisk
   for (const q of land.holds) {
-    for (let ty = q.gy; ty < q.gy + 3; ty++) for (let tx = q.gx - 3; tx < q.gx + 3; tx++) if (whole(tx, ty)) layTile(ty * W + tx, HOLD.court, tx === q.gx - 1 || tx === q.gx ? 2 : (tx + ty) % 2);
+    for (let ty = q.gy; ty < q.gy + 3; ty++) for (let tx = q.gx - 3; tx < q.gx + 3; tx++) if (whole(tx, ty)) layTile(ty * W + tx, HOLD.courtOf(n), tx === q.gx - 1 || tx === q.gx ? 2 : (tx + ty) % 2);
     // (the gate stands on the court's back line, over the two tiles of its door: what the rules know of it is game/act1_holds.ts)
     put(HOLD.gate(n), q.gx, q.gy, false, 0, { x: q.gx, y: q.gy });
     put(HOLD.altar, q.gx, q.gy + 1, true, 0, { x: q.altar.x, y: q.altar.y });

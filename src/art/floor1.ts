@@ -245,9 +245,9 @@ const LCY = LH / 2;
 // a ring of gold-work seen as a band, its hollow seen from above, five points rising from its near
 // half with a ball on each, jewels on the band. Cut in stone, laid in the floor, or burning.
 
-type CrownPart = 'band' | 'point' | 'hollow' | 'jewel' | null;
+export type CrownPart = 'band' | 'point' | 'hollow' | 'jewel' | null;
 /** What of the crown is at (s, t) from the middle of its box: s across, t up, both in half its width (-1..1). */
-function crownAt(s: number, t: number): CrownPart {
+export function crownAt(s: number, t: number): CrownPart {
   if (Math.abs(s) > 1.02) return null;
   const top = 0.12;
   const ry = 0.3;

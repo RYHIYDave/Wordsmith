@@ -137,7 +137,7 @@ import { RNG } from './engine/rng';
 import { ALL_CLASS_IDS, CLASS_IDS, MELD8_IDS, MELD_IDS, VOLT_MELD_IDS, WORD_IDS } from './game/types';
 import type { ClassId, Item, MeldId, Rarity, Slot, WordId } from './game/types';
 import { Fx, WORD_HUE, wx, wy } from './render/fx';
-import { NAME_LIFT, PAINT_DEFER, Renderer, STATION_NAME } from './render/render';
+import { PICTURE_LEAN, NAME_LIFT, PAINT_DEFER, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
 import { BakedHeroes, PACKS } from './render/baked';
 import { BakedTownsfolk, TOWNSFOLK_BAKED } from './render/townsfolk_baked';
@@ -157,7 +157,7 @@ import { guideAttack, guideBanner, huntBanner, questBanner } from './ui/guide';
 import { WORD_HALF, WORD_LEX, WORD_ROOM, drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
 import { EXIT_LABELS, exitLabels } from './game/exit_labels';
 import { BELL_MARK } from './render/bell_mark';
-import { HALL_LOOK } from './game/act1_dress';
+import { FRONT_NAMES, HALL_LOOK, OWN_FRONTS } from './game/act1_dress';
 import { LOW_STACKS } from './art/low_stacks';
 import { FLOW } from './art/flowing';
 import { AISLES_CLEAR } from './game/act2/library';
@@ -3347,6 +3347,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     bellMark: BELL_MARK,
     /** (THE STRONGHOLDS' HALLS GIVEN MORE TO THEM, behind HALL_LOOK in game/act1_dress.ts, off until his yes) Its switch: `hallLook.on` (a level made after it is set). */
     hallLook: HALL_LOOK,
+    /** (THE STRONGHOLDS' FRONTS, A FLOOR'S OWN EACH, behind OWN_FRONTS in game/act1_dress.ts, off until his yes) Its switch: `ownFronts.on` (a level made after it is set). */
+    ownFronts: OWN_FRONTS,
+    /** (OWN_FRONTS) Floor `n`'s stronghold front's name. */
+    frontName: (n: number): string => FRONT_NAMES[n],
+    /** The view leaned off the hero for a picture (render/render.ts PICTURE_LEAN): `pictureLean.y` game pixels up. */
+    pictureLean: PICTURE_LEAN,
     /** (A LITTLE HALLWAY INTO EACH STRONGHOLD'S HALL, behind HOLD_HALLWAY in game/act1_layout.ts) Its switch: set it before the floor is made. */
     holdHallway: HOLD_HALLWAY,
     /** (ENEMIES COMING IN UP OUT OF RIFTS, behind ARRIVALS in game/arrivals.ts) Its switch. */

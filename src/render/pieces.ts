@@ -232,6 +232,8 @@ export class FloorPieces {
     if (pm && this.momentShown(pm)) return null;
     if (p.kind === 'chest') return fr[p.state === 1 && fr[1] ? 1 : 0];
     if (p.kind === 'barrel' || p.kind === 'urn') return p.state === 0 ? fr[0] : null;
+    // (OWN_FRONTS: a stronghold's front, a gate's: its mark's four frames of flicker while sealed, the fifth open; art/hold_fronts.ts)
+    if (pc?.kind === 'gate' && fr.length === 5) return p.state === 1 ? fr[4] : fr[Math.floor(t * 6) % 4];
     return fr.length >= 3 ? fr[Math.floor(t * LOOP_FPS + p.variant + p.tx) % fr.length] : fr[0];
   }
 

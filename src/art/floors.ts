@@ -93,11 +93,16 @@ import { CRYPT_FLOORS } from './crypt';
 import { LAIR } from './lair';
 import { prisonStoryPieces } from './prison_story';
 import { STORIES } from '../game/stories';
+import { FRONT_NAMES, OWN_FRONTS } from '../game/act1_dress';
+import { holdFrontOf, holdFrontSteps } from './hold_fronts';
+import { quarryPieceSteps, quarryPieces } from './floor6';
 
 const PIECES = new Map<number, Map<string, Piece>>();
 /** The pieces of look `k` (1 to 5) by name, made the first time they are asked for (a quarter to half a second), and kept until `forgetPieces`. */
 export function lookPieces(k: number): Map<string, Piece> {
   let m = PIECES.get(k);
+  // (OWN_FRONTS: its front wanted where it was not made, the switch put on since: made again with it)
+  if (m && OWN_FRONTS.on && !m.has(FRONT_NAMES[k] ?? '')) m = undefined;
   if (!m) {
     // (FLOOR 3, THE BLACK IRON PRISON, behind PRISON: floor 3's own pieces in look B's colours, and the prison's chains: art/prison.ts)
     // (FLOOR 4, THE BURIED CHAPEL, behind CHAPEL: floor 4's own pieces in look A's colours, and the chapel's own: art/chapel.ts;
@@ -107,7 +112,10 @@ export function lookPieces(k: number): Map<string, Piece> {
     const list = k === 1 ? (TOMB.on ? makeTombArt().pieces : wardenPieces()) : k === 2 ? (GROUNDS.on ? makeGroundsArt().pieces : headsmanPieces()) : k === 3 ? (PRISON.on ? makePrisonArt().pieces : chainedPieces()) : k === 4 ? (CHAPEL.on ? makeChapelArt().pieces : ossuaryPieces()) : LAIR_TEMPLE.on ? makeLairTempleArt().pieces : lairPieces();
     // (STORIES: the threads' pieces with floors 3 and 4's own, in the floor's look: art/prison_story.ts)
     const story = STORIES.on ? prisonStoryPieces(k) : [];
-    PIECES.set(k, (m = new Map([...list, ...story].map((p) => [p.name, p]))));
+    // (OWN_FRONTS: the floor's own stronghold front and the cult's altar, braziers and banners: art/hold_fronts.ts, art/floor6.ts)
+    const front = holdFrontOf(k);
+    const fronts = OWN_FRONTS.on && front ? [front as unknown as Piece, ...quarryPieces().filter((p) => p.name === 'the altar of the words' || p.name === "the cult's brazier" || p.name === "the cult's banner")] : [];
+    PIECES.set(k, (m = new Map([...list, ...story, ...fronts].map((p) => [p.name, p]))));
   }
   return m;
 }
@@ -121,7 +129,9 @@ export function lookPieceSteps(k: number): LoadStep[] {
   // loading screen, measured in Chrome by the Loading-frames chat); the queue's make-floors-look-builders-in-parts: art/tomb.ts
   // tombSteps, art/chapel.ts chapelSteps. The others as one step, as before)
   const parts = k === 1 && TOMB.on ? tombSteps() : k === 4 && CHAPEL.on ? chapelSteps() : [];
-  return [...parts, () => void lookPieces(k)];
+  // (OWN_FRONTS: the floor's stronghold front a frame a step, and the Quarry's list a piece a step, the cult's things being its)
+  const fronts = OWN_FRONTS.on && holdFrontSteps(k).length ? [...holdFrontSteps(k), ...quarryPieceSteps()] : [];
+  return [...parts, ...fronts, () => void lookPieces(k)];
 }
 /** Let go of every floor's pieces but this one's (they are made again if they are wanted). */
 export function forgetPieces(keep: number): void {
