@@ -75,6 +75,11 @@ const EQUIP := ["mainhand", "offhand", "helm", "chest", "gloves", "belt", "boots
 ## for leather, LEATHER_K x BARRIER_K for cloth. ON at his “Yes.” to its pictures (docs/mockups/defences: the barrier round his
 ## life globe, its line over his life and its shimmer on him, DODGE over him, the cards and the stats page), 22 Nov 2026.
 static var DEFENCE_LAYERS := true
+## A CRITICAL HIT AT LEAST DOUBLE A REGULAR ONE (his words, 26 Nov 2026, told a critical hit does 50% more at base: “See there's the
+## problem.  A crit should be at least double a regular hit”): every class's base critical damage +100% in place of the items
+## table's +50% (tune baseCritMult), what gear adds on top. OFF until his yes to the numbers.
+static var CRIT_DOUBLE := false
+const CRIT_DOUBLE_BASE := 100.0
 ## THE THREE DEFENCES EVENED (his pick, 26 Nov 2026, “Fix the balance (Recommended)”, after the speed and tank test found every
 ## hero's toughest build all Strength and heavy armour, his dodge never past 1%): see derive. ON at his yes to the numbers (the
 ## toughest builds before and after, docs/tests/speed_tank_2026-11-26.txt), 26 Nov 2026: “Yes, both (Recommended)”.
@@ -566,7 +571,7 @@ func derive() -> void:
 		"phys_pct": g.call("physPct"), "fire_pct": g.call("firePct"), "frost_pct": g.call("frostPct"), "light_pct": g.call("lightPct"),
 		"poison_pct": g.call("poisonPct"),
 		"crit_chance": float(_tune["baseCrit"]) + g.call("critChance") + Words.eff_attr(dex) * float(_attr["dexCrit"]),
-		"crit_mult": float(_tune["baseCritMult"]) + g.call("critMult"),
+		"crit_mult": (CRIT_DOUBLE_BASE if CRIT_DOUBLE else float(_tune["baseCritMult"])) + g.call("critMult"),
 		"life_regen": float(_tune["baseLifeRegen"]) + g.call("lifeRegen"),
 		"life_on_hit": g.call("lifeOnHit"), "life_on_kill": g.call("lifeOnKill"),
 		"armor": g.call("armor"), "move_speed": g.call("moveSpeed"), "area": 1.0 + g.call("areaPct") / 100.0,
