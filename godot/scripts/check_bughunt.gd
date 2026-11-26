@@ -46,6 +46,8 @@ func _near(k: int) -> Array:
 
 
 func run(main, hero, dir: String) -> void:
+	# (the Brawler as he was, whose combo these rounds checked: the Brawler remade (heroes/brawler2.gd) is checked by check_brawler2.gd)
+	preload("res://scripts/heroes/brawler2.gd").on = false
 	M = main
 	h = hero
 	h.unhurt = true

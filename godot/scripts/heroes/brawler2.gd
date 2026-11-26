@@ -16,10 +16,11 @@
 ## HANDS, every punch lights a globe; HEAVY HANDS, his attack speed no longer makes him faster, each 1% of it HEAVY% more critical
 ## damage instead. His other talents bent to fit (TEXT). The art chat draws the two flying moves (the queue's
 ## draw-brawler-hammerfist-and-flying-knee); till then the uppercut's frames stand for the hammerfist, the knee's for the knee (ART).
-## OFF: he is exactly as he was. Off until his yes to the film and the numbers.
+## OFF: he is exactly as he was. ON for him to try, 26 Nov 2026, asked how to: “I'd like to try the new changes to the brawler.
+## How do I do that?”, then “Can you just update the game?”.
 extends RefCounted
 
-static var on := false
+static var on := true
 
 ## (how many punches light a punch globe; Quick Hands: one)
 const NEED := 3

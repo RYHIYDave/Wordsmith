@@ -142,6 +142,10 @@ func run(main, hero, d: String) -> void:
 		await _warlock()
 		print("TALENTS DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " %s" % [bad]])
 		return
+	if OS.get_environment("WS_TALENTS_ONLY") == "ranger":
+		await _ranger()
+		print("TALENTS DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " %s" % [bad]])
+		return
 	if OS.get_environment("WS_TALENTS_ONLY") == "tinkerer":
 		await _tinkerer()
 		print("TALENTS DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " %s" % [bad]])
@@ -597,6 +601,8 @@ func _arms() -> void:
 
 
 func _veteran() -> void:
+	# (THE VETERAN'S TREE as he was: the Brawler remade (heroes/brawler2.gd) is checked by check_brawler2.gd)
+	preload("res://scripts/heroes/brawler2.gd").on = false
 	M.set_class("brawler", true)
 	M.loot.level = 50
 	h.life = h.max_life
@@ -1119,8 +1125,9 @@ func _ranger() -> void:
 			o._t = 1e9
 			o._cd = 1e9
 	kit._use_evasive(h.world + Vector2(2, 0), Vector2(1, 0))
+	var laid: int = kit.traps.size()
 	await _run(0.4)
-	_line(kit.traps.size() == 3, "Minefield: a roll lays three traps in a fan (%d)" % kit.traps.size())
+	_line(kit.traps.size() == 3, "Minefield: a roll lays three traps in a fan (%d; %d as the roll began; mana %.0f, its charges %d)" % [kit.traps.size(), laid, h.mana, kit.charges[2]])
 	kit.traps.clear()
 	# Split Shot: an arrow that kills splits into three that fly on
 	h.talents = ["fleet", "windrunner", "steadyaim", "quickdraw", "longshot", "lightstep", "huntersmark", "splitshot"]

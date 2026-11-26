@@ -593,6 +593,8 @@ func _tinkerer() -> void:
 ## tap set the globe in green fire, the flying uppercut throwing the one before him up in the air, stunned as it comes down; a
 ## swipe alone his dodging jump, nothing reaching him off the floor, the jump spent (another at once: "No jump"); R cancels a combo.
 func _brawler() -> void:
+	# (his combo as it was: the Brawler remade (heroes/brawler2.gd) is checked by check_brawler2.gd)
+	preload("res://scripts/heroes/brawler2.gd").on = false
 	var K = h.kit
 	var home: Vector2 = h.world
 	var way := _open_way(home)
