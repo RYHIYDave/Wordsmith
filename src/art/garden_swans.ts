@@ -31,6 +31,7 @@ import type { Skin } from './skin';
 import { stage } from './skin';
 import type { GameView, Stage } from './skin';
 import type { V3 } from './skeleton';
+import { ENEMIES8 } from './enemies8';
 
 /** THE SWITCH, OFF: nothing of the game reads this file. */
 export const SWAN_ON = { on: false };
@@ -209,17 +210,19 @@ function standPose(t: number): SwanPose {
   // (it breathes; its raised wings ruffle; it glances aside; now and then it hisses)
   const glance = bump(t % SWAN_STAND.period, SWAN_HABITS.glance[0], SWAN_HABITS.glance[1]);
   const hiss = bump(t % SWAN_STAND.period, SWAN_HABITS.hiss[0], SWAN_HABITS.hiss[1]);
+  // (livelier, behind ENEMIES8: art/enemies8.ts: it breathes deeper, its wings ruffle more, its head weaves, its tail wags)
+  const L = ENEMIES8.on ? 1 : 0;
   return {
     ...REST,
-    z: 0.3 * Math.sin(ph),
-    pitch: -1.2 * Math.sin(ph),
-    wings: 1 + 0.06 * Math.sin(ph + 0.8) + 0.1 * hiss,
+    z: (0.3 + 0.3 * L) * Math.sin(ph),
+    pitch: (-1.2 - 0.8 * L) * Math.sin(ph),
+    wings: 1 + (0.06 + 0.06 * L) * Math.sin(ph + 0.8) + 0.1 * hiss,
     // (its neck in its S, leaning forward at you: a swan warning you off)
     neck: [0.8, 0.12 + 0.3 * hiss, 0.08],
-    look: -20 * glance,
-    nod: 2 * Math.sin(ph * 2),
+    look: -20 * glance + 7 * L * Math.sin(ph),
+    nod: (2 + 1.5 * L) * Math.sin(ph * 2),
     gape: 0.55 * hiss,
-    tail: 4 * Math.sin(ph * 2 + 0.4),
+    tail: (4 + 3 * L) * Math.sin(ph * 2 + 0.4),
   };
 }
 /** THE CHARGE: a heavy waddle, rocking from foot to foot, its neck stretched out low before it, its wings up. */
@@ -234,20 +237,24 @@ function walkPose(t: number): SwanPose {
     const q = ((p % 1) + 1) % 1;
     if (q < 0.5) return [FOOT_X + stride / 2 - stride * (q / 0.5), side * FOOT_Y, 0];
     const s = (q - 0.5) / 0.5;
-    return [FOOT_X - stride / 2 + stride * sm(s), side * FOOT_Y, 2.2 * Math.sin(Math.PI * s)];
+    return [FOOT_X - stride / 2 + stride * sm(s), side * FOOT_Y, (2.2 + 1.3 * L) * Math.sin(Math.PI * s)];
   };
+  // (livelier, behind ENEMIES8: art/enemies8.ts: its head pumps forward with each step as a goose's does, its raised wings
+  // beat a little, it bounces harder onto each foot, its feet come up higher and its tail wags wider)
+  const L = ENEMIES8.on ? 1 : 0;
   const rock = Math.sin(ph * TAU);
+  const pump = Math.sin(ph * TAU * 2);
   return {
     ...REST,
-    z: -0.5 * Math.abs(Math.cos(ph * TAU)),
-    pitch: 5,
+    z: (-0.5 - 0.6 * L) * Math.abs(Math.cos(ph * TAU)),
+    pitch: 5 + 1.5 * L * pump,
     roll: 7 * rock,
     yaw: 3 * rock,
     neck: [0.68, 0, 0.32],
-    reach: -3,
-    nod: -2,
-    wings: 1.15 + 0.08 * Math.abs(rock),
-    tail: -6 * rock,
+    reach: -3 + 2.6 * L * pump,
+    nod: -2 + 3 * L * Math.sin(ph * TAU * 2 + 0.8),
+    wings: 1.15 + 0.08 * Math.abs(rock) + 0.14 * L * Math.sin(ph * TAU * 2 + 1.2),
+    tail: (-6 - 3 * L) * rock,
     feet: [foot(ph, 1), foot(ph + 0.5, -1)],
   };
 }

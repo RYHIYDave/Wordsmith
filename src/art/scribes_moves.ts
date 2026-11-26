@@ -32,6 +32,7 @@ import { TILE3, mobSet } from './new_mobs3';
 import type { Mob, MobMove } from './new_mobs3';
 import { add, elbowFor, lerp3, mul, norm, solve, sub } from './skeleton';
 import type { Bones, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
+import { ENEMIES8 } from './enemies8';
 
 type P = Partial<Bones>;
 const B = SCRIBE_BODY;
@@ -61,22 +62,22 @@ function stepFoot(k: number, n: number, step: number, lift: number): [number, nu
   const g = u * u * (3 - 2 * u);
   return [-step * (half / 2) + step * half * g, lift * Math.sin(Math.PI * u), 8 * Math.sin(Math.PI * u) * (1 - u) - 3 * Math.sin(Math.PI * u) * u];
 }
-function scribeGlide(): Motion {
+function scribeGlide(more = 1): Motion {
   const n = SC_WALK.frames;
   const d = (SC_PACE * TILE3) / SC_WALK.fps;
   const keys: Key3[] = [];
   for (let i = 0; i <= n; i++) {
     const j = i % n;
     const a = (j / n) * Math.PI * 2;
-    const [lx, lz, lp] = stepFoot(j, n, d, 1.5);
-    const [rx, rz, rp] = stepFoot((j + n / 2) % n, n, d, 1.5);
-    const sag = Math.abs(Math.sin(a));
+    const [lx, lz, lp] = stepFoot(j, n, d, 1.5 * more);
+    const [rx, rz, rp] = stepFoot((j + n / 2) % n, n, d, 1.5 * more);
+    const sag = Math.abs(Math.sin(a)) * more;
     keys.push({
       at: i / SC_WALK.fps,
       ease: 'lin',
       pose: {
-        pz: R.pz - 0.35 * sag, py: 0.5 * Math.sin(a), roll: R.roll + 1.2 * Math.sin(a), yaw: 2 * Math.cos(a),
-        pitch: R.pitch + 3, bend: R.bend - 2, faceUp: R.faceUp + 8, faceTilt: R.faceTilt + 3 * Math.sin(a), faceTurn: R.faceTurn,
+        pz: R.pz - 0.35 * sag, py: 0.5 * more * Math.sin(a), roll: R.roll + 1.2 * more * Math.sin(a), yaw: 2 * more * Math.cos(a),
+        pitch: R.pitch + 3, bend: R.bend - 2, faceUp: R.faceUp + 8, faceTilt: R.faceTilt + 3 * more * Math.sin(a), faceTurn: R.faceTurn,
         lfx: lx, lfz: lz, lfp: lp, lfy: R.lfy, lft: R.lft,
         rfx: rx, rfz: rz, rfp: rp, rfy: R.rfy, rft: R.rft,
         rhx: R.rhx - 1, rhz: R.rhz + 0.5 * sag, lhz: R.lhz + 0.3 * sag,
@@ -242,8 +243,13 @@ function scribeMob(): Mob {
   };
 }
 export const SCRIBE = scribeMob();
+/**
+ * THE SCRIBE MADE LIVELIER (art/enemies8.ts, behind ENEMIES8): real steps under the robe, each foot lifting the hem twice as
+ * high, the body rocking from side to side and dipping onto each step, the masked head swaying with it, the ledger held to it.
+ */
+export const SCRIBE8: Mob = { ...SCRIBE, walk: { ...SCRIBE.walk, motion: scribeGlide(2.2) } };
 export const SCRIBES_ALL: readonly Mob[] = [SCRIBE];
-export function makeScribeArt3(mob: Mob = SCRIBE, pace = mob.pace): ActorArt {
+export function makeScribeArt3(mob: Mob = ENEMIES8.on ? SCRIBE8 : SCRIBE, pace = mob.pace): ActorArt {
   return { front: mobSet(mob, 'front', pace), back: mobSet(mob, 'back', pace) };
 }
 

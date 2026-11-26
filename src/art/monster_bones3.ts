@@ -79,7 +79,8 @@ import type { Light, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { BONE, INDIGO, INK, PINK, PLUM, TEAL, dim, dir, lazyFrames, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
-import { BLOOD, DEATH_FPS, ENEMY_RIM, FLAME, RUST, SOCKET } from './mkit';
+import { BLOOD, CRAWL_FPS, CRAWL_OUT, CRAWL_TIME, DEATH_FPS, ENEMY_RIM, FLAME, RUST, SOCKET, inPit } from './mkit';
+import { ARCHER_RAIN, RAIN_LOOSE } from './monster_bones';
 import { CANVAS3, TIPPED, ball, cloth, eyesToward, girdle, laidAlong, mid, rod, skirtOf, stage, thread, wornOn } from './skin';
 import type { ClothLook, GameView, Ring, Sheet, Skin, Stage } from './skin';
 import { about, add, bonesAt, buildOf, cross, dot, elbowFor, heading, len, lerp3, mul, norm, solve, standing, sub } from './skeleton';
@@ -1469,6 +1470,57 @@ function spriteOf(m: SkMove, t: number, view: GameView): Sprite {
   return toSprite(paintSkeleton3(m, t, view), MENACE3, CANVAS3.ax, CANVAS3.ay);
 }
 
+/**
+ * CRAWLING OUT OF THE GROUND, called up by the Warden (as today's skeleton does, behind CRAWL_OUT: the pit, its stones and its
+ * motes are art/mkit.ts inPit's): its free hand up out of the pit first, clawing at the air, then the skull, thrown back, the
+ * jaw wide, the sword low in the other hand; then both hands come down onto the rim and it heaves, the skull down; a knee comes
+ * up onto the floor, and it straightens into its stance. Its times are the clip's, CRAWL_TIME long.
+ */
+function crawl3(): Motion {
+  const T = CRAWL_TIME;
+  const reach: P = {
+    pitch: -8, bend: -10, roll: 4, faceUp: 26, faceTilt: 4, faceTurn: -6, draw: 0.95,
+    rhIn: 1, rhx: 3.5, rhy: -2.5, rhz: 15.5, re: 24,
+    lhIn: 1, lhx: 3, lhy: 2.2, lhz: HANG + 2.5, le: -4, wAz: 20, wEl: -78,
+  };
+  const claw: P = { ...reach, roll: 1, rhx: 6, rhy: -3.5, rhz: 13, re: 46, faceUp: 18, draw: 0.55 };
+  const haul: P = {
+    px: 1.2, pitch: 24, bend: 30, roll: -2, faceUp: -22, faceTilt: 12, faceTurn: 0, draw: 0.3,
+    rhIn: 1, rhx: 11, rhy: -5.5, rhz: -5, re: 6,
+    lhIn: 1, lhx: 10, lhy: 5, lhz: -6, le: 6, wAz: 40, wEl: -12,
+  };
+  const knee: P = { ...haul, pitch: 16, bend: 20, faceUp: -8, draw: 0.6, lfx: 4.5, lfz: 3.2, lfp: 20, lk: 34, rhz: -7, lhz: -8 };
+  const rising: P = { px: 0.6, pitch: 9, bend: 15, faceUp: -2, faceTilt: 10, draw: 0.2, wEl: -50 };
+  return {
+    keys: [
+      // (the hand still below the floor until the pit has opened)
+      { at: 0, pose: { ...reach, rhx: 2, rhz: 4, re: 40 } },
+      { at: T * 0.1, pose: reach, ease: 'out' },
+      { at: T * 0.2, pose: claw, ease: 'io' },
+      { at: T * 0.32, pose: reach, ease: 'io' },
+      { at: T * 0.42, pose: claw, ease: 'io' },
+      { at: T * 0.56, pose: haul, ease: 'out' },
+      { at: T * 0.72, pose: knee, ease: 'io' },
+      { at: T * 0.86, pose: rising, ease: 'io' },
+      { at: T, pose: {}, ease: 'io' },
+    ],
+  };
+}
+const CRAWL3: SkMove = { name: 'The skeleton crawls out of the ground', motion: crawl3(), rest: SKELETON3_REST };
+/** How far down it starts, in picture pixels: all of it, its clawing hand and all, below the floor. */
+const CRAWL3_TALL = 50;
+
+/** Its crawl out of the ground as the game holds it (AnimSet.clips.moves.crawl): only while CRAWL_OUT is on, as today's. */
+function crawlClip3(view: GameView): Record<string, Clip> {
+  if (!CRAWL_OUT.on) return {};
+  const n = Math.round(CRAWL_TIME * CRAWL_FPS) + 1;
+  const frame = (i: number): Sprite => {
+    const k = i / (n - 1);
+    return toSprite(inPit(paintSkeleton3(CRAWL3, k * CRAWL_TIME, view), k, CANVAS3.ax, CANVAS3.ay, CRAWL3_TALL), null, CANVAS3.ax, CANVAS3.ay);
+  };
+  return { crawl: { frames: lazyFrames(n, frame), fps: CRAWL_FPS } };
+}
+
 function animSet3(view: GameView): AnimSet {
   const idle = lazyFrames(STAND_FRAMES, (i) => spriteOf(STAND3, i / STAND_FPS, view));
   const walk = lazyFrames(PLOD_FRAMES, (i) => spriteOf(PLOD3, i / PLOD_FPS, view));
@@ -1479,7 +1531,8 @@ function animSet3(view: GameView): AnimSet {
   const dieN = Math.round(DIE3_TIME * DEATH_FPS) + 1;
   // (a dying thing has no pool of light behind it, and no edge of light round it)
   const die: Clip = { frames: lazyFrames(dieN, (i) => toSprite(deathOf3(i / (dieN - 1), view), null, CANVAS3.ax, CANVAS3.ay)), fps: DEATH_FPS };
-  return { idle, walk, attack: lazyFrames(3, (i) => attack.frames[picks[i]]), idleFps: STAND_FPS, walkFps: PLOD_FPS, clips: { attack, die } };
+  const moves = crawlClip3(view);
+  return { idle, walk, attack: lazyFrames(3, (i) => attack.frames[picks[i]]), idleFps: STAND_FPS, walkFps: PLOD_FPS, clips: { attack, die, ...(Object.keys(moves).length ? { moves } : {}) } };
 }
 
 /** THE SKELETON ON THE BONES, in the shape the game holds a monster's pictures in (art/actor_types.ts). */
@@ -1711,9 +1764,54 @@ function looseJaw(t: number): number {
   return 0.18 + (0.35 - 0.18) * Math.max(0, 1 - (t - H - 0.2) / 0.1);
 }
 
+/**
+ * THE ARROW RAIN, its second shot (today's archer's, art/monster_bones.ts archerRainTimeline, behind ARCHER_RAIN; the owner's
+ * pick “Both shots”), on the bones and at today's times: it looses at RAIN_LOOSE and is at rest 0.82 s after. It sets its feet
+ * and leans back; the bow comes up out in front of it, the arm long, the string coming back as it rises, until the arrow points
+ * almost straight up, drawn to the jaw, the skull thrown back to look up its line; HELD there, trembling, leaning further back
+ * (the warning); the string goes in one frame, the hand flung back past the skull and the bow kicking on up; it watches it go a
+ * moment, and the bow comes down, a fresh arrow on the string. (What it looses is drawn by the game: the rain's rise.)
+ */
+const RAIN3_EL = 66;
+function rain3(): Motion {
+  const H = RAIN_LOOSE;
+  const lean = (more: number): P => ({ ...SET, yaw: -26, twist: -22, pitch: -6 - more, bend: -6 - more * 1.5, faceUp: 22 + more * 2, faceTilt: 2, pz: -1.2 });
+  const hold = (n: number, pull: number, more: number, el: number): Key3 => ({ at: H - n * FR, pose: drawnBow(lean(more), RAIN3_EL + el, pull), ease: 'hold' });
+  return {
+    hit: H,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.14, pose: lowBow({ px: 0.3, pz: -1.0, yaw: -16, twist: -10, bend: 4, faceUp: 6 }, [LOW_GRIP[0] + 1.5, LOW_GRIP[1], LOW_GRIP[2] + 3], LOW_AZ, LOW_EL + 14), ease: 'io' },
+      { at: 0.3, pose: drawnBow({ ...lean(0), pitch: -2, bend: 0, faceUp: 10 }, 24, 0.3), ease: 'in' },
+      { at: 0.5, pose: drawnBow(lean(1), RAIN3_EL, 1), ease: 'out' },
+      hold(11, 1.0, 1.2, 0.6),
+      hold(9, 1.02, 1.4, -0.5),
+      hold(7, 1.03, 1.6, 0.5),
+      hold(5, 1.04, 1.8, -0.4),
+      hold(3, 1.05, 2.0, 0.4),
+      hold(1, 1.06, 2.2, -0.3),
+      { at: H, pose: { ...loosedBow(lean(2.6), RAIN3_EL, 3.6, 2.0, -6), pt: 3 }, ease: 'hold' },
+      { at: H + 2 * FR, pose: { ...loosedBow(lean(2.2), RAIN3_EL, 4.2, 1.2, -4), pt: -1 }, ease: 'out' },
+      { at: H + 0.17, pose: { ...loosedBow(lean(1.4), RAIN3_EL - 4, 4.0, 0.8, -2), pt: 0 }, ease: 'out' },
+      { at: H + 0.42, pose: lowBow({ px: 0.3, pz: -1.0, yaw: -20, twist: -14, bend: 4, faceUp: 4, lfx: 3.2, lft: 8, rfx: -2.2, rft: -28, rk: -16 }, [LOW_GRIP[0] + 2.5, LOW_GRIP[1] - 1, LOW_GRIP[2] + 4], LOW_AZ, LOW_EL + 18, LOW_ROLL - 10), ease: 'io' },
+      { at: H + 0.82, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** Its jaw: clenched as it draws, dropping open as the string goes, hanging open as it watches. */
+function rainJaw(t: number): number {
+  const H = RAIN_LOOSE;
+  if (t < 0.14) return 0.18 * (1 - t / 0.14);
+  if (t < H - 1e-6) return 0;
+  if (t < H + 3 * FR) return 0.7;
+  if (t < H + 0.42) return 0.45;
+  return 0.18 + (0.45 - 0.18) * Math.max(0, 1 - (t - H - 0.42) / 0.4);
+}
+
 export const ASTAND3: SkMove = { name: 'The bone archer stands', motion: listen(), rest: ARCHER3_REST, kit: BOWMAN, jaw: listenJaw };
 export const AWALK3: SkMove = { name: 'The bone archer walks', motion: stalk(), rest: ARCHER3_REST, kit: BOWMAN, jaw: stalkJaw };
 export const ASHOT3: SkMove = { name: 'The bone archer shoots', motion: loose(), rest: ARCHER3_REST, kit: BOWMAN, jaw: looseJaw };
+const ARAIN3: SkMove = { name: 'The bone archer looses the rain', motion: rain3(), rest: ARCHER3_REST, kit: BOWMAN, jaw: rainJaw };
 
 /**
  * ITS DEATH: AS THE SKELETON'S. A jolt (the skull thrown back, the light in the sockets flaring,
@@ -1761,7 +1859,10 @@ function archerSet3(view: GameView): AnimSet {
   const dieN = Math.round(DIE3_TIME * DEATH_FPS) + 1;
   // (a dying thing has no pool of light behind it, and no edge of light round it)
   const die: Clip = { frames: lazyFrames(dieN, (i) => toSprite(deathOf3(i / (dieN - 1), view, ARCHER_UNDOING), null, CANVAS3.ax, CANVAS3.ay)), fps: DEATH_FPS };
-  return { idle, walk, attack: lazyFrames(3, (i) => attack.frames[picks[i]]), idleFps: STAND_FPS, walkFps: PLOD_FPS, clips: { attack, die } };
+  // (its rain, as today's archer's: only while ARCHER_RAIN is on; 27 frames to the loose, at thirty a second)
+  const rn = Math.round((RAIN_LOOSE + 0.82) * CHOP_FPS) + 1;
+  const rain: Clip = { frames: lazyFrames(rn, (i) => spriteOf(ARAIN3, i / CHOP_FPS, view)), fps: CHOP_FPS, hit: RAIN_LOOSE };
+  return { idle, walk, attack: lazyFrames(3, (i) => attack.frames[picks[i]]), idleFps: STAND_FPS, walkFps: PLOD_FPS, clips: { attack, die, ...(ARCHER_RAIN.on ? { moves: { rain } } : {}) } };
 }
 
 /** THE BONE ARCHER ON THE BONES, in the shape the game holds a monster's pictures in (art/actor_types.ts). */

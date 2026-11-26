@@ -36,7 +36,8 @@ import { INK, PINK, hash } from './kit';
 import type { Painted } from './kit';
 import { FLAME } from './mkit';
 import type { Canvas } from './mkit';
-import { SHADE, SHADE_HIT, mobSet } from './new_mobs3';
+import { SHADE, SHADE8, SHADE_HIT, mobSet } from './new_mobs3';
+import { ENEMIES8 } from './enemies8';
 import type { Bit, Mob, Moment } from './new_mobs3';
 import type { Stage } from './skin';
 import { add, mul, norm, sub } from './skeleton';
@@ -465,6 +466,10 @@ export function frostBits(st: Stage, m: Moment): Bit[] {
 export const FROST_SHADE: Mob = { ...SHADE, bits: (st, m) => [...SHADE.bits(st, m), ...frostBits(st, m)] };
 /** The cold Shade as the game holds a monster (as art/new_mobs3.ts makeShadeArt3). */
 export function makeFrostShadeArt(pace = SHADE.pace): ActorArt {
-  return { front: mobSet(FROST_SHADE, 'front', pace), back: mobSet(FROST_SHADE, 'back', pace) };
+  // (the livelier Shade, behind ENEMIES8: art/enemies8.ts)
+  const mob = ENEMIES8.on ? FROST_SHADE8 : FROST_SHADE;
+  return { front: mobSet(mob, 'front', pace), back: mobSet(mob, 'back', pace) };
 }
+/** The cold Shade made livelier (new_mobs3.ts SHADE8), behind ENEMIES8. */
+const FROST_SHADE8: Mob = { ...SHADE8, bits: (st, m) => [...SHADE8.bits(st, m), ...frostBits(st, m)] };
 void INK;

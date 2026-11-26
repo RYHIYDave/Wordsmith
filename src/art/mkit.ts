@@ -146,6 +146,26 @@ export const CRAWL_FPS = 20;
 const RIM_STONE: Ramp = ['#2a2331', '#2a2331', '#3a3040', '#655868', '#857888'];
 
 function crawlOut(rig: Rig, back: boolean, base: Pose, crawl: { pose: (k: number) => Partial<Pose>; tall: number }, k: number, ax: number, ay: number, rim: string | null): Painted {
+  const ease = (u: number): number => u * u * (3 - 2 * u);
+  // (once out, it settles into its own standing pose)
+  const settle = ease(Math.max(0, Math.min(1, (k - 0.84) / 0.16)));
+  const posed: Pose = { ...base, ...crawl.pose(Math.min(k, 0.84)) };
+  const numbers = posed as unknown as Record<string, unknown>;
+  const rest = base as unknown as Record<string, unknown>;
+  for (const f of Object.keys(numbers)) if (typeof numbers[f] === 'number' && typeof rest[f] === 'number') numbers[f] = (numbers[f] as number) + ((rest[f] as number) - (numbers[f] as number)) * settle;
+  if (settle >= 1) Object.assign(posed, base);
+  const fig = rig(posed, back);
+  if (rim) edge(fig.px, rim);
+  return inPit(fig, k, ax, ay, crawl.tall);
+}
+
+/**
+ * A FIGURE ALREADY PAINTED (its edge of light on it), `k` (0..1) of the way out of a pit in the floor at (ax, ay): the pit opens,
+ * the figure comes up out of it in two heaves (the hands and the skull; the rest of it), struggling on the rim between them,
+ * stone thrown up as its hands break through and pink motes rising out of the dark; and the pit closes once it stands. `tall`:
+ * how far down it starts (picture pixels). Today's skeleton's (crawlOut) and the skeleton on the bones' (art/monster_bones3.ts).
+ */
+export function inPit(fig: Painted, k: number, ax: number, ay: number, tall: number): Painted {
   const clamp = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
   const ease = (u: number): number => u * u * (3 - 2 * u);
   const part = (a: number, b: number): number => clamp((k - a) / (b - a));
@@ -154,16 +174,7 @@ function crawlOut(rig: Rig, back: boolean, base: Pose, crawl: { pose: (k: number
   const heave2 = ease(part(0.52, 0.82));
   // (between the heaves it struggles on the rim: a wobble)
   const struggle = Math.sin(part(0.42, 0.52) * Math.PI) * 2;
-  const depth = Math.round(crawl.tall * (1 - 0.4 * heave1 - 0.6 * heave2) + struggle);
-  // (and once out, it settles into its own standing pose)
-  const settle = ease(part(0.84, 1));
-  const posed: Pose = { ...base, ...crawl.pose(Math.min(k, 0.84)) };
-  const numbers = posed as unknown as Record<string, unknown>;
-  const rest = base as unknown as Record<string, unknown>;
-  for (const f of Object.keys(numbers)) if (typeof numbers[f] === 'number' && typeof rest[f] === 'number') numbers[f] = (numbers[f] as number) + ((rest[f] as number) - (numbers[f] as number)) * settle;
-  if (settle >= 1) Object.assign(posed, base);
-  const fig = rig(posed, back);
-  if (rim) edge(fig.px, rim);
+  const depth = Math.round(tall * (1 - 0.4 * heave1 - 0.6 * heave2) + struggle);
   const W = fig.px.w;
   const H = fig.px.h;
   const out = new Px(W, H);
@@ -283,6 +294,8 @@ export interface MonsterOpts {
    * brittle". How a thing moves says what it is before its shape does.
    */
   walk?: Partial<Pose>[];
+  /** A standing loop of its own, in place of the kit's (kit.ts, idlePoses): a monster's livelier stance (art/enemies8.ts). */
+  idle?: Partial<Pose>[];
 }
 
 /**
@@ -299,6 +312,7 @@ export function monsterArt(rig: Rig, front: MonsterMoves, back: MonsterMoves, op
       moves.more = more;
     }
     if (opts.walk) moves.walk = opts.walk;
+    if (opts.idle) moves.idle = opts.idle;
     const rim = opts.rim === undefined ? ENEMY_RIM : opts.rim;
     const look: RigOpts = opts.canvas ? { aura, anchor: [opts.canvas.ax, opts.canvas.ay] } : { aura };
     if (rim) look.rim = rim;

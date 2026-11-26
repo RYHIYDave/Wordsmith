@@ -28,6 +28,7 @@ import { fallen, quench } from './death';
 import { BONE, CLIP_FPS, HI, INDIGO, INK, KAX, KAY, KH, KW, KX, LO, PINK, REST, STEEL, TURN, ball, compose, dim, dir, edge, footOf, hash, inEllipse, joint, layer, lazyFrames, limb, lit, shearBy, slant, stamp, toSprite } from './kit';
 import type { Painted, Pose, Ramp, V } from './kit';
 import { ENEMY_RIM, FLAME, GLOOM, IRON, MENACE, SOCKET, monsterArt, onGrid, strike } from './mkit';
+import { CULT_IDLE, CULT_WALK, ENEMIES8, PRIEST_IDLE, PRIEST_WALK } from './enemies8';
 
 // --- how the cultist is built, in pixels -------------------------------------------------------
 /** Floor to the top of the shoulders, to the rope round the waist, to the chin. */
@@ -776,7 +777,7 @@ export function makeCultistArt(): ActorArt {
   // (THE FIRE SIGIL, behind its switch: its attack in place of the fire bolt, which is kept in cultMoves, out of its set)
   const { front, backMoves } = CULTIST_SIGIL.on ? { front: { attack: cultistSigilTimeline(false) }, backMoves: { attack: cultistSigilTimeline(true) } } : moves;
   // (it does not hurry: its steps are a little slower than a hero's)
-  return monsterArt(paintCultist, DEATH_PAINTED ? { ...front, die: (k) => cultistDeath(k, false) } : front, DEATH_PAINTED ? { ...backMoves, die: (k) => cultistDeath(k, true) } : backMoves, { rest: { act: 1 }, walkFps: 14, dieTime: 0.95 });
+  return monsterArt(paintCultist, DEATH_PAINTED ? { ...front, die: (k) => cultistDeath(k, false) } : front, DEATH_PAINTED ? { ...backMoves, die: (k) => cultistDeath(k, true) } : backMoves, { rest: { act: 1 }, walkFps: 14, dieTime: 0.95, ...(ENEMIES8.on ? { idle: CULT_IDLE, walk: CULT_WALK } : {}) });
 }
 
 /** One frame of the cultist, as a painting. */
@@ -1076,7 +1077,7 @@ function priestClip(t: Timeline, back: boolean): Clip {
 /** THE HIGH PRIEST, as the game holds a monster: his stand, his procession, his fire bolt (`attack`), his death, and his own move (`clips.moves.censer`). */
 export function makeHighPriestArt(): ActorArt {
   const { front, backMoves } = priestMoves();
-  const art = monsterArt((q, back) => cultist(q, back, false, true), { ...front, die: (k) => priestDeath(k, false) }, { ...backMoves, die: (k) => priestDeath(k, true) }, { rest: { act: 1 }, walk: PROCESSION, walkFps: PROCESSION_FPS, dieTime: PRIEST_DIE_TIME });
+  const art = monsterArt((q, back) => cultist(q, back, false, true), { ...front, die: (k) => priestDeath(k, false) }, { ...backMoves, die: (k) => priestDeath(k, true) }, { rest: { act: 1 }, walk: ENEMIES8.on ? PRIEST_WALK : PROCESSION, walkFps: PROCESSION_FPS, dieTime: PRIEST_DIE_TIME, ...(ENEMIES8.on ? { idle: PRIEST_IDLE } : {}) });
   for (const [set, back] of [[art.front, false], [art.back, true]] as const) set.clips = { ...set.clips, moves: { censer: priestClip(censerSwing(back), back) } };
   return art;
 }

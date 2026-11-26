@@ -995,6 +995,8 @@ export interface Moves {
   whirlEnd?: Timeline;
   /** A walk of the figure's own, in place of the kit's (see runPoses): WALK_FRAMES poses, played at WALK_FPS. */
   walk?: ReadonlyArray<Partial<Pose>>;
+  /** A standing loop of the figure's own, in place of the kit's (idlePoses), played at IDLE_FPS: a monster's (art/enemies8.ts). */
+  idle?: ReadonlyArray<Partial<Pose>>;
   /** A roll: its keys run from 0 (going down into it) to 1 (up out of it), as a leap's do. */
   roll?: Timeline;
   /** What the hero does once a leap has landed, if left standing: it begins as the leap's last frame and ends standing. */
@@ -1070,7 +1072,7 @@ export function animSet(rig: Rig, back: boolean, rest: Partial<Pose>, moves: Mov
     return lazyFrames(3, (i) => c.frames[picks[i]]);
   };
   const attack = clip(moves.attack, CLIP_FPS);
-  const set: AnimSet = { idle: list(idlePoses()), walk: list(moves.walk ?? walkPoses()), attack: three(attack), idleFps: IDLE_FPS, walkFps: WALK_FPS, clips: { attack } };
+  const set: AnimSet = { idle: list(moves.idle ?? idlePoses()), walk: list(moves.walk ?? walkPoses()), attack: three(attack), idleFps: IDLE_FPS, walkFps: WALK_FPS, clips: { attack } };
   const clips = set.clips as NonNullable<AnimSet['clips']>;
   if (moves.heavy) {
     clips.heavy = clip(moves.heavy, CLIP_FPS);

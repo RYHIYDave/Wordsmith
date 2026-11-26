@@ -63,6 +63,7 @@ import { CANVAS3, band, ball, cloth, eyesToward, laidAlong, mid, rod, stage, thr
 import type { ClothLook, GameView, PaintView, Ring, Sheet, Skin, Stage } from './skin';
 import { GRID, about, add, aimFor, bonesAt, buildOf, cross, dot, elbowFor, heading, len, lerp3, mul, norm, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
+import { ENEMIES8 } from './enemies8';
 
 /** THE SWITCH, OFF. Nothing of the game reads this file; a chat that puts these monsters in, on the owner's yes, does it behind this. */
 export const NEW_MOBS = { on: false };
@@ -979,7 +980,7 @@ const SH_REST: Bones = {
 const ROBE_TORN: readonly number[] = [3, 1, 4, 2, 0, 3, 1, 2, 4, 1, 0, 2, 3, 1, 4, 2];
 
 /** THE SHADE AS SOLIDS. `fade`: how far it has come apart (its death: the arms go first, then the robe thins). */
-function shadeBits(st: Stage, m: Moment, fade = 0, eyes = 1): Bit[] {
+function shadeBits(st: Stage, m: Moment, fade = 0, eyes = 1, swing = 1): Bit[] {
   const { s, q } = m;
   const B = SB;
   const bits: Bit[] = [];
@@ -1013,7 +1014,7 @@ function shadeBits(st: Stage, m: Moment, fade = 0, eyes = 1): Bit[] {
     const a = (i / 16) * Math.PI * 2;
     const rear = Math.max(0, -Math.cos(a));
     const p0 = add(hc, add(mul(f, Math.cos(a) * deep), mul(l, Math.sin(a) * wide)));
-    pts.push(add(p0, add(mul(f, -rear * (1.6 + 3 * stream)), [0, 0, Math.sin(wave * flutter + a * 2) * (0.7 + 0.8 * stream + 1.4 * flare) + rear * (1.2 + 1.5 * stream)])));
+    pts.push(add(p0, add(mul(f, -rear * (1.6 + 3 * stream)), [0, 0, Math.sin(wave * flutter + a * 2) * (0.7 * swing + 0.8 * stream + 1.4 * flare) + rear * (1.2 + 1.5 * stream)])));
   }
   const hem: Ring = { c: hc, u: mul(f, deep), v: mul(l, wide), pts };
   if (fade < 0.85) put('robe', 'robe', { k: 'cloth', rings: [collar, shoulders, waist, hem], ramp: fade > 0.45 ? dim(SHROUD) : SHROUD, look: { folds: [25, -25, 70, -70, 180], lift: 0.25 }, torn: ROBE_TORN });
@@ -1028,8 +1029,8 @@ function shadeBits(st: Stage, m: Moment, fade = 0, eyes = 1): Bit[] {
       let last: V3 = add(base, [0, 0, 1.2]);
       for (let i = 1; i <= 4; i++) {
         const k = i / 4;
-        const sway = Math.sin(wave * flutter + j * 1.9 + k * 3.2) * (1.3 + 1.1 * stream) * k;
-        const p = add(base, add(add(mul(f, -L * k), mul(l, Math.sin(ang) * k * (3.4 + 2 * flare) + sway)), [0, 0, -L * (0.42 - 0.24 * stream - 0.2 * flare) * k + Math.cos(wave * 2 * flutter + j + k * 2) * (0.7 + 0.6 * stream) * k]));
+        const sway = Math.sin(wave * flutter + j * 1.9 + k * 3.2) * (1.3 + 1.1 * stream) * k * swing;
+        const p = add(base, add(add(mul(f, -L * k), mul(l, Math.sin(ang) * k * (3.4 + 2 * flare) + sway)), [0, 0, -L * (0.42 - 0.24 * stream - 0.2 * flare) * k + Math.cos(wave * 2 * flutter + j + k * 2) * (0.7 + 0.6 * stream) * k * swing]));
         const pp: V3 = [p[0], p[1], Math.max(1.6, p[2])];
         put(`tail${j}`, 'robe', { k: 'rod', a: last, b: pp, ra: 1.9 * (1 - (i - 1) / 4) + 0.3, rb: 1.9 * (1 - k) + 0.3, ramp: SHROUD });
         last = pp;
@@ -1246,6 +1247,67 @@ export const SHADE: Mob = {
   aura: { x: CANVAS3.ax - 2, y: CANVAS3.ay - 30, r: 34, color: '#ff3a78', a: 0.13 },
   shadow: 9,
   bits: (st, m) => shadeBits(st, m),
+};
+
+/**
+ * THE SHADE MADE LIVELIER (art/enemies8.ts: the owner's eight weakest enemies, behind ENEMIES8, off until his yes to the
+ * pictures). STANDING it hangs in the air and breathes: it rises and sinks a good hand's breadth, rolling from side to side,
+ * its hood tipping and turning as if it listened; its long arms drift to and fro out of time with each other, the claws
+ * curling and spreading; the robe's tails sway wide under it.
+ */
+function shadeHover8(): Motion {
+  const R = SH_REST;
+  const n = 12;
+  const keys: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const a = ((i % n) / n) * Math.PI * 2;
+    keys.push({
+      at: i / 10,
+      ease: 'lin',
+      pose: {
+        px: 0.4 * Math.sin(a + 1), pz: R.pz + 1.4 + 1.8 * Math.sin(a),
+        roll: 3 * Math.sin(a + 0.5), side: -Math.sin(a + 0.5), pitch: R.pitch - 1.5 * Math.cos(a), bend: R.bend + 2 * Math.sin(a + 1.2),
+        faceUp: -2 + 3 * Math.sin(a + 0.3), faceTilt: 4 + 4 * Math.sin(a + 2), faceTurn: 7 * Math.sin(a - 0.4),
+        lhIn: 0, lhx: R.lhx + 1.6 * Math.sin(a + 0.9), lhy: R.lhy, lhz: R.lhz + 1.8 * Math.sin(a + 1.6), le: R.le,
+        rhIn: 0, rhx: R.rhx + 1.6 * Math.sin(a + 0.9 + Math.PI), rhy: R.rhy, rhz: R.rhz + 1.8 * Math.sin(a + 1.6 + Math.PI), re: R.re,
+        draw: 0.4 + 0.28 * Math.sin(a * 2),
+      },
+    });
+  }
+  return { keys, loop: 0 };
+}
+
+/**
+ * ITS GLIDE MADE LIVELIER: it leans hard into its way, its hood up to look ahead, and swims through the air, its body rising
+ * and falling and rolling as it goes; its arms trail out behind it, sweeping in turn; the robe's tails stream and whip.
+ */
+function shadeGlide8(): Motion {
+  const R = SH_REST;
+  const n = SHADE_WALK_FRAMES;
+  const keys: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const a = ((i % n) / n) * Math.PI * 2;
+    keys.push({
+      at: i / SHADE_WALK_FPS,
+      ease: 'lin',
+      pose: {
+        px: 1.0, pz: R.pz + 1.4 + 2.0 * Math.sin(a), yaw: -4 + 3 * Math.sin(a + 0.6), pitch: 17 + 3 * Math.sin(a + 1.2), bend: 13 + 2 * Math.sin(a + 0.6), roll: 3.5 * Math.sin(a), twist: 2, side: 0,
+        faceUp: 9 + 3 * Math.sin(a + 1.6), faceTilt: 3 * Math.sin(a + 0.4), faceTurn: 0,
+        lhIn: 0, lhx: -5.0 + 1.6 * Math.sin(a + 0.8), lhy: 5.4, lhz: -12.0 + 1.3 * Math.cos(a + 0.8), le: -20,
+        rhIn: 0, rhx: -4.6 + 1.6 * Math.sin(a + 0.8 + Math.PI), rhy: -5.6, rhz: -12.0 + 1.3 * Math.cos(a + 0.8 + Math.PI), re: -20,
+        draw: 0.3 + 0.12 * Math.sin(a * 2),
+      },
+    });
+  }
+  return { keys, loop: 0 };
+}
+
+/** The Shade made livelier (see shadeHover8): its stance and glide, and its robe's tails swaying wider; its rake, its flinch and its death as they were. */
+export const SHADE8: Mob = {
+  ...SHADE,
+  stand: { name: 'The Shade hovers', motion: shadeHover8(), rest: SH_REST },
+  walk: { ...SHADE.walk, name: 'The Shade glides', motion: shadeGlide8() },
+  bits: (st, m) => shadeBits(st, m, 0, 1, 1.9),
 };
 
 /** Its wisps and motes as it comes apart: each born at its own moment somewhere on it, drifting up and away. */
@@ -3466,6 +3528,27 @@ function mkStill(): Motion {
     ],
   };
 }
+/**
+ * STILL AND PATIENT (his pick), MADE LIVELIER (art/enemies8.ts, behind ENEMIES8): as mkStill, his head turning slowly to look
+ * along his left and back past straight, but he breathes, as a thing of bones should not, his ribs rising and sinking twice
+ * round and his weight settling from foot to foot, so that his cloak stirs.
+ */
+function mkStill8(): Motion {
+  const R = MK_BASE;
+  const at = (faceTurn: number, breath: number, more: P = {}): P => mkRest({ faceTurn, pz: R.pz + 0.5 * breath, pitch: R.pitch - 1.0 * breath, roll: R.roll + 0.8 * breath, side: R.side - 0.5 * breath, ...more });
+  return {
+    loop: 0,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.6, pose: at(20, 1, { faceTilt: -1 }), ease: 'io' },
+      { at: 0.9, pose: at(30, 0.6, { faceTilt: -2 }), ease: 'io' },
+      { at: 1.3, pose: at(31, 0, { faceTilt: -2 }), ease: 'io' },
+      { at: 1.8, pose: at(-6, 1, { faceUp: 3, faceTilt: 1 }), ease: 'io' },
+      { at: 2.0, pose: at(-10, 0.7, { faceUp: 3, faceTilt: 1 }), ease: 'io' },
+      { at: 2.4, pose: {}, ease: 'io' },
+    ],
+  };
+}
 /** His jaw: shut, but for a clack now and then. */
 function mkStillJaw(t: number): number {
   const i = Math.floor((((t % 2.4) + 2.4) % 2.4) * 10 + 1e-6);
@@ -3481,7 +3564,7 @@ function mkStillJaw(t: number): number {
 const MK_WALK_FRAMES = 8;
 const MK_WALK_FPS = 10;
 export const MARKSMAN_PACE = 1.5;
-function mkStalk(): Motion {
+function mkStalk(more = 1): Motion {
   const R = MK_BASE;
   const n = MK_WALK_FRAMES;
   const d = (MARKSMAN_PACE * TILE3) / MK_WALK_FPS;
@@ -3496,13 +3579,13 @@ function mkStalk(): Motion {
     const [rx, rz] = foot(j);
     const [lx, lz] = foot((j + 4) % n);
     const body: P = {
-      px: 0.6, py: -0.6 * Math.sin(a), pz: -1.0 - 0.8 * Math.cos(2 * a),
-      yaw: R.yaw + 3 * Math.cos(a), twist: -2 * Math.cos(a), pitch: 3 + 0.6 * Math.cos(2 * a), bend: 2,
-      roll: 1.6 * Math.sin(a), side: 0.8 * Math.sin(a),
-      faceUp: 2, faceTurn: -1.5 * Math.cos(a), faceTilt: -1 * Math.sin(a),
+      px: 0.6, py: -0.6 * more * Math.sin(a), pz: -1.0 - 0.8 * more * Math.cos(2 * a),
+      yaw: R.yaw + 3 * more * Math.cos(a), twist: -2 * more * Math.cos(a), pitch: 3 + 0.6 * more * Math.cos(2 * a), bend: 2,
+      roll: 1.6 * more * Math.sin(a), side: 0.8 * more * Math.sin(a),
+      faceUp: 2, faceTurn: -1.5 * more * Math.cos(a), faceTilt: -1 * more * Math.sin(a),
       rfx: rx, rfz: rz, rfy: -2.2, rft: -10, rk: -8, rfp: rz > 0 ? 10 : j === 0 ? -4 : 0,
       lfx: lx, lfz: lz, lfy: 2.2, lft: 10, lk: 8, lfp: lz > 0 ? 10 : j === 4 ? -4 : 0,
-      rhIn: 0, rhx: 0.6 - 2.4 * Math.cos(a), rhy: -1.8, rhz: MK_HANG + 1.0 + 0.8 * Math.max(0, -Math.cos(a)), re: 8,
+      rhIn: 0, rhx: 0.6 - 2.4 * more * Math.cos(a), rhy: -1.8, rhz: MK_HANG + 1.0 + 0.8 * more * Math.max(0, -Math.cos(a)), re: 8 + 6 * (more - 1) * Math.max(0, -Math.cos(a)),
     };
     keys.push({ at: i / MK_WALK_FPS, ease: 'lin', pose: mkCarry(body, Math.cos(a)) });
   }
@@ -3739,9 +3822,18 @@ export const MARKSMAN: Mob = {
   },
 };
 
+/** The Marksman made livelier (behind ENEMIES8, art/enemies8.ts): he breathes as he waits (mkStill8), and walks with more swing in his stride and his free arm. */
+export const MARKSMAN8: Mob = {
+  ...MARKSMAN,
+  stand: { ...MARKSMAN.stand, motion: mkStill8() },
+  walk: { ...MARKSMAN.walk, motion: mkStalk(1.7) },
+};
+
 /** THE BONE MARKSMAN, as the game holds a monster (see makeShadeArt3). */
 export function makeMarksmanArt3(pace = MARKSMAN.pace): ActorArt {
-  return { front: mobSet(MARKSMAN, 'front', pace), back: mobSet(MARKSMAN, 'back', pace) };
+  // (livelier, behind ENEMIES8: art/enemies8.ts)
+  const mob = ENEMIES8.on ? MARKSMAN8 : MARKSMAN;
+  return { front: mobSet(mob, 'front', pace), back: mobSet(mob, 'back', pace) };
 }
 
 // ---------------------------------------------------------------------------------------------
