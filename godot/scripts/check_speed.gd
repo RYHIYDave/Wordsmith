@@ -271,6 +271,10 @@ func _clear_level(b: Dictionary, life_k: float) -> Dictionary:
 		tiles += h.world.distance_to(was)
 		was = h.world
 		replan -= dt
+		# (waiting, nothing in reach: he looks again every half second)
+		if stranded > 0.0 and replan > 0.0:
+			h.auto_dir = Vector2.ZERO
+			continue
 		if target == null or not is_instance_valid(target) or target.dead or replan <= 0.0:
 			replan = 0.5
 			var fl := _flood(_tile_of(h.world))
@@ -302,12 +306,12 @@ func _clear_level(b: Dictionary, life_k: float) -> Dictionary:
 					pick_d = dd
 					pick = m
 			if pick == null:
-				# (none left he can walk to: done; or, while some are out of his reach where he stands, a moment more)
+				# (none left he can walk to: done; or, while some are out of his reach where he stands (a portcullis down across the hall: 4.5 s, act3/keep.gd), he waits for it, 15 s at most)
 				if unreached == 0:
 					done = true
 					break
 				stranded += 0.5
-				if stranded > 5.0:
+				if stranded > 15.0:
 					break
 				target = null
 				continue
