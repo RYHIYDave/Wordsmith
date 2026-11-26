@@ -138,6 +138,15 @@ function hangRock(v: number, px: number, shade: number): RGB {
   return mixc(c, HAZE, Math.min(0.42, Math.floor((v / 500) * 6) / 6 * 0.5));
 }
 
+/**
+ * THE MOUNTAINSIDE WITHOUT SNOW, ITS FIRS ON GROUND (his words, 26 Nov 2026, of the mountain over the trail: “I'm not sure what's
+ * going on at the top of the cliffs but it looks like the trees are floating.  And is that snow?  Cause it's not a snow level”). On:
+ * no snow on the heights, the rock going on up, darker as it climbs; a band of alpine meadow along the wall's brow, the firs and
+ * boulders up there stood only in it (render/act1_pieces.ts), so that each stands on grass and not on the bare streaked rock.
+ * ON at his yes to its pictures (docs/mockups/levels/floor7_mountain_fix.jpg), 26 Nov 2026: “Yes, put it in (Recommended)”.
+ */
+export const LEDGE_SLOPES = { on: true, meadow: 0.42 };
+
 /** Snow on the heights, in shade and lit. */
 const SNOW: RGB[] = [hex('#a9adc0'), hex('#c9cbd8'), hex('#e8e8ee')];
 /**
@@ -159,6 +168,17 @@ function mountainside(x: number, y: number, px: number, py: number, back: number
   const lip = Math.abs(ledge - 0.5) < 0.025 && vnoise(px / 25, py / 25, 944) > 0.5;
   let c = L_ROCK[row][lip ? (ledge > 0.5 ? 0 : 3) : hash(Math.floor(px / 5), Math.floor(py / 4), 944) > 0.75 ? 2 : 1];
   const strata = lip ? 0 : 1;
+  // (LEDGE_SLOPES: no snow; the rock darker as it climbs; a meadow along the brow, its edge ragged, a stone here and there in it)
+  if (LEDGE_SLOPES.on) {
+    const edge = LEDGE_SLOPES.meadow + 0.16 * (fbm(x * 0.8, y * 0.8, 946) - 0.5);
+    if (climb < edge) {
+      const g = fbm(x * 1.4, y * 1.4, 948);
+      if (g > 0.72) return L_STONE[hash(Math.floor(px / 3), Math.floor(py / 2), 949) > 0.5 ? 1 : 2];
+      return L_GRASS[g < 0.38 ? 0 : g < 0.55 ? 1 : hash(Math.floor(px / 3), Math.floor(py / 2), 947) > 0.7 ? 3 : 2];
+    }
+    const dark = Math.min(1, (climb - edge) / 0.6);
+    return mixc(c, L_ROCK[2][2], 0.15 + 0.35 * dark);
+  }
   // snow lying higher up, thickest in the hollows and on the gentler ground, the ribs showing through
   const deep = climb + 0.28 * (fbm(x * 0.7, y * 0.7, 945) - 0.5) + (rib < 0.4 ? 0.08 : rib > 0.66 ? -0.1 : 0);
   if (deep > 0.55) {

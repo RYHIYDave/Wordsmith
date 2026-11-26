@@ -22,6 +22,7 @@
 import { campPieceSteps, campPieces } from '../art/act1_camp';
 import type { Piece } from '../art/floor1';
 import { quarryPieceSteps, quarryPieces } from '../art/floor6';
+import { LEDGE_SLOPES } from '../art/ledge';
 import { ledgePieces } from '../art/floor7';
 import { canyonPieceSteps, canyonPieces } from '../art/floor8';
 import { pinewoodPieces } from '../art/floor9';
@@ -636,7 +637,9 @@ export class Act1Pieces {
             else if (roll < 0.045) pick = { name: 'boulder', frame: Math.floor(k * 3), hw: 22 };
             else if (roll < 0.05) pick = { name: 'stacked blocks', frame: 0, hw: 34 };
           } else if (n === 7) {
-            // (firs low on the mountainside, the set's; boulders)
+            // (firs low on the mountainside, the set's; boulders. LEDGE_SLOPES: only in the meadow along the brow, art/ledge.ts)
+            const inMeadow = !LEDGE_SLOPES.on || (T.climbAt ? T.climbAt(wx, wy) : 0) < LEDGE_SLOPES.meadow - 0.1;
+            if (!inMeadow) continue;
             if (grove > 0.58 && roll < 0.32) pick = { name: 'pine', frame: k < 0.5 ? 0 : 1, hw: 30, tall: true };
             else if (roll < 0.03) pick = { name: 'boulder', frame: Math.floor(k * 3), hw: 22 };
           } else if (n === 8) {
