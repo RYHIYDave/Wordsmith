@@ -95,6 +95,8 @@ paintWithoutCanvas();
 // (the game's own switches, as it starts: tools/godot_switches.ts)
 gameSwitches();
 const OUT = 'godot/assets/looks';
+/** (WS_OUT_SUFFIX: floor 1 remade, written beside it as floor1<suffix>: game/levels2.ts) The files' name of a place. */
+const fileOf = (name: string): string => (name === 'floor1' ? name + (process.env.WS_OUT_SUFFIX ?? '') : name);
 mkdirSync(OUT, { recursive: true });
 
 // ================================================================================================================================
@@ -1636,7 +1638,7 @@ function writePlace(P: Place, sheetWidth: number, crop: { x: number; y: number; 
   const stairs = recordStairs(P, atlas, films);
   more?.(atlas);
   if (films.pics.size) {
-    const fs = writeSheet(films, `${P.name}_stair`, 4096);
+    const fs = writeSheet(films, `${fileOf(P.name)}_stair`, 4096);
     console.log(`  the stairwell's opening: ${stairs.length} places, ${films.pics.size} frames in a ${fs.W}x${fs.H} sheet`);
   }
   const look = P.look;
@@ -1644,9 +1646,9 @@ function writePlace(P: Place, sheetWidth: number, crop: { x: number; y: number; 
   const zones = recordZones(P, atlas);
   const waypoint = recordWaypoint(P, atlas);
   const traps = recordTraps(P, atlas);
-  const sheet = writeSheet(atlas, P.name, sheetWidth);
-  writeFileSync(`${OUT}/${P.name}.json`, JSON.stringify({
-    place: P.name,
+  const sheet = writeSheet(atlas, fileOf(P.name), sheetWidth);
+  writeFileSync(`${OUT}/${fileOf(P.name)}.json`, JSON.stringify({
+    place: fileOf(P.name),
     dark,
     vignette: P.vignette,
     hero: { x: Math.round(wx(P.cam, P.game.hero.x, P.game.hero.y) * 100) / 100, y: Math.round(wy(P.cam, P.game.hero.x, P.game.hero.y) * 100) / 100, wx: P.game.hero.x, wy: P.game.hero.y },
@@ -1666,7 +1668,7 @@ function writePlace(P: Place, sheetWidth: number, crop: { x: number; y: number; 
   const hy = wy(P.cam, h.x, h.y) - 8;
   // (the hero's own pools, render.ts light: on a dungeon's floor a wide gentle one under the bright one; in town the bright one alone)
   const pools = P.L.town ? [{ x: hx, y: hy, r: 170, a: 1 }] : [{ x: hx, y: hy, r: 380, a: 0.36 }, { x: hx, y: hy, r: 165, a: 1 }];
-  preview(`${OUT}/${P.name}_preview.png`, items, lights, picLights, sheet, crop, dark, pools);
+  preview(`${OUT}/${fileOf(P.name)}_preview.png`, items, lights, picLights, sheet, crop, dark, pools);
   // (a look at another place of it: --at wx,wy [--to dir], a 640 by 400 stretch round that world point)
   const atArg = process.argv.indexOf('--at');
   if (atArg > 0) {

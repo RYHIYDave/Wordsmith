@@ -1094,6 +1094,28 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
     out.scenes = [];
     const scenes = SCENE_SETS[depth] ?? [];
     const used = new Map<string, number>();
+    // (LEVELS2, floor 1: THE SIDE CRYPT laid as a tomb first, its sarcophagus, niche and slab: game/levels2.ts)
+    // (two sarcophagi against its back walls, wherever along them they stand, one lying open; a burial niche in the wall over each,
+    // a ledger stone before each; not where its way comes in)
+    for (const r of rooms.filter((q) => q.crypt)) {
+      const cx = r.x + Math.floor(r.w / 2);
+      const cy = r.y + Math.floor(r.h / 2);
+      // (along the back wall up the screen to the right, y = r.y, side 0; and along the one to the left, x = r.x, side 1)
+      const spots: [number, number, 0 | 1][] = [];
+      for (const d of [0, 1, -1, 2, -2, 3, -3]) spots.push([cx + d, r.y + 1, 0], [r.x + 1, cy + d, 1]);
+      let laid = 0;
+      for (const [x, y, side] of spots) {
+        if (laid >= 2) break;
+        if (!stand(x, y, laid === 0 ? 'sarcophagus' : 'open sarcophagus')) continue;
+        laid++;
+        onWall(side === 0 ? x : r.x, side === 0 ? r.y : y, side, 'burial niche');
+        onFloor(side === 0 ? x : x + 2, side === 0 ? y + 2 : y, 'ledger stone');
+      }
+      if (laid > 0) {
+        sceneRooms.add(r.id);
+        out.scenes.push({ room: r.id, name: 'the side crypt' });
+      }
+    }
     // (the biggest rooms first, so that the grandest scenes find room; a cell and the start have none)
     // (STORIES: the way's rooms are the story's)
     const hosts = [...rooms].filter((r) => r.kind !== 'start' && !r.cell && !sceneRooms.has(r.id)).sort((a, b) => b.w * b.h - a.w * a.h);

@@ -67,7 +67,7 @@ func run(main, hero, dir: String) -> void:
 			held[int(q["yard"])] = true
 			held[int(q["hall"])] = true
 	for r in M.map.rooms:
-		if str(r["kind"]) == "normal" and int(r.get("path", 0)) < 0 and not held.has(int(r["id"])) and int(r["w"]) < 20:
+		if d in [8, 10] and str(r["kind"]) == "normal" and int(r.get("path", 0)) < 0 and not held.has(int(r["id"])) and int(r["w"]) < 20:
 			off_way[int(r["id"])] = true
 	for r in M.map.rooms:
 		if off_way.has(int(r["id"])):
@@ -85,6 +85,31 @@ func run(main, hero, dir: String) -> void:
 		await M._wait(0.1)
 		await M._snap("%s/f%d_%d_%s.png" % [dir, d, k, r["kind"]])
 		k += 1
+	# (floors 1 and 7: a fight along the way between areas, a pack in no room: the corridors' and the trail's new ones)
+	if d in [1, 7]:
+		var L2: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(M.dir_of(place) + "/layout.json"))
+		var Mo2: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(M.dir_of(place) + "/monsters.json"))
+		var at_of := {}
+		for m in Mo2["monsters"]:
+			if not m.get("boss", false):
+				at_of[m["packId"]] = Vector2(float(m["x"]), float(m["y"]))
+		var start := Vector2(float(L2["start"]["x"]), float(L2["start"]["y"]))
+		var shot := 0
+		for id in at_of:
+			var at: Vector2 = at_of[id]
+			if shot >= 2 or at.distance_to(start) < 30.0:
+				continue
+			if (L2["rooms"] as Array).any(func(r): return at.x >= float(r["x"]) and at.y >= float(r["y"]) and at.x < float(r["x"]) + float(r["w"]) and at.y < float(r["y"]) + float(r["h"])):
+				continue
+			h.world = M._free_near(at + Vector2(2.5, 2.5))
+			await M._wait(1.2)
+			M._hud.card = {}
+			M.guide._speak = {}
+			await M._wait(0.1)
+			await M._snap("%s/f%d_%d_along.png" % [dir, d, k])
+			_line(true, "a fight along the way at %.0f, %.0f" % [at.x, at.y])
+			k += 1
+			shot += 1
 	# the large map, all of it seen
 	if M.sight != null:
 		M.sight.see_all()

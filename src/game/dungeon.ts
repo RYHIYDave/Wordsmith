@@ -38,6 +38,7 @@ import { flowField, UNREACHABLE } from './nav';
 import { laySunken, layTerraces } from './relief';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_NEAR, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from './types';
 import { WAYS } from './ways';
+import { levels2 } from './levels2';
 import { YARD_N, layYard, yardOn } from './yard';
 import { GROUNDS_HALL, groundsHere } from './grounds_way';
 import type { Floor, MonsterKind, PackSpot, PropKind, PropSpot, Room, RoomKind } from './types';
@@ -266,6 +267,8 @@ interface RoomPlan extends Rect {
   base?: number;
   /** FLOOR 2 AS THE PRISON'S GROUNDS: one of the grid's courtyards. */
   court?: boolean;
+  /** (LEVELS2, floor 1) THE SIDE CRYPT: a vault laid as a tomb, one chest in it. */
+  crypt?: boolean;
 }
 
 /**
@@ -960,6 +963,13 @@ function planLevel(rng: RNG, depth: number): Plan | null {
     const hosts: number[] = [];
     for (let i = lo; i <= hi; i++) hosts.push(i);
     if (!growBranch(rng, rooms, corridors, rng.shuffle(hosts), rewards[b], used)) return null;
+  }
+  // (LEVELS2, floor 1: THE SIDE CRYPT, one more way off the main path, to a tomb with a chest in it, off its second half: game/levels2.ts)
+  if (levels2(depth) && depth === 1) {
+    const hosts: number[] = [];
+    for (let i = Math.ceil(pathLen / 2); i < pathLen - 1; i++) hosts.push(i);
+    if (!growBranch(rng, rooms, corridors, rng.shuffle(hosts), 'vault', used)) return null;
+    rooms[rooms.length - 1].crypt = true;
   }
 
   // THE MIX: A GATE ACROSS THE WAY, ITS LEVER NEARBY. One room k of the main path (never the first
@@ -1711,6 +1721,12 @@ function placeBackWalls(st: Stage): void {
       break;
     }
     if (st.kinds[r.id] !== 'treasure') continue;
+    // (LEVELS2, floor 1: the side crypt's one chest, the middle of the wall, between the fires)
+    if (r.crypt) {
+      const one = at(Math.round((c + 1) / 2));
+      if (solidAllowed(st, one, true)) addProp(st, 'chest', one);
+      continue;
+    }
     const chests = c % 2 === 0 ? [at(c / 2), at(c / 2 + 1)] : [at((c + 1) / 2 - 1), at((c + 1) / 2 + 1)];
     if (chests.every(i => solidAllowed(st, i, true))) for (const i of chests) addProp(st, 'chest', i);
   }
@@ -1724,6 +1740,11 @@ function placeTreasureChests(st: Stage): void {
     const c = centreY(r) * st.size + centreX(r);
     const along = r.w >= r.h ? 1 : st.size;
     let placed = 0;
+    // (LEVELS2, floor 1: the side crypt's one chest, in its middle)
+    if (r.crypt && solidAllowed(st, c, true)) {
+      addProp(st, 'chest', c);
+      continue;
+    }
     for (const i of [c - along, c + along]) {
       if (!solidAllowed(st, i, true)) continue;
       addProp(st, 'chest', i);
@@ -1854,16 +1875,21 @@ function placePacks(st: Stage, lay: Layout): PackSpot[] {
   }
 
   // Spots for small corridor packs: the middle stretch of long corridor legs.
+  // (LEVELS2, floor 1: a small fight in every corridor leg of 8 tiles or more, two in one of 16 or more, still the fewest of their
+  // kind and one more: its long empty corridors fought along, still a first floor's: game/levels2.ts)
+  const alongWay = levels2(depth) && depth === 1;
   const corridorSpots: number[] = [];
   for (const c of lay.corridors) {
     // (no pack stands in a corridor across the screen: it is short, and its legs are only the squares it is kept clear by)
     if (c.across) continue;
     for (const leg of c.legs) {
       const len = leg.horiz ? leg.x1 - leg.x0 + 1 : leg.y1 - leg.y0 + 1;
-      if (len < CORRIDOR_PACK_MIN_LEN) continue;
-      const off = rng.int(5, len - 6);
-      const i = leg.horiz ? leg.lane * size + leg.x0 + off : (leg.y0 + off) * size + leg.lane;
-      if (st.clear[i] >= 2 && farFromStart(i)) corridorSpots.push(i);
+      if (len < (alongWay ? 8 : CORRIDOR_PACK_MIN_LEN)) continue;
+      const offs = alongWay ? (len >= 16 ? [Math.round(len / 3), Math.round((2 * len) / 3)] : [Math.floor(len / 2)]) : [rng.int(5, len - 6)];
+      for (const off of offs) {
+        const i = leg.horiz ? leg.lane * size + leg.x0 + off : (leg.y0 + off) * size + leg.lane;
+        if (st.clear[i] >= 2 && farFromStart(i)) corridorSpots.push(i);
+      }
     }
   }
   rng.shuffle(corridorSpots);
@@ -1889,7 +1915,7 @@ function placePacks(st: Stage, lay: Layout): PackSpot[] {
       if (capacity[r.id] >= 2 && rng.chance(0.5)) normalIn[r.id] = 1;
     } else if (kind === 'guardian') lairs++; // the guardian and its followers, nothing else
   }
-  const maxCorridorPacks = Math.min(CORRIDOR_PACKS_MAX, corridorSpots.length);
+  const maxCorridorPacks = Math.min(alongWay ? 12 : CORRIDOR_PACKS_MAX, corridorSpots.length);
   let corridorPacks = rng.int(0, maxCorridorPacks);
 
   // Nudge the pack count until the budget can be met with pack sizes away from their limits.
@@ -1925,6 +1951,8 @@ function placePacks(st: Stage, lay: Layout): PackSpot[] {
     else normalIn[pick]--;
   }
 
+  // (LEVELS2, floor 1: every corridor spot fought over, whatever the rooms' packs came to)
+  if (alongWay) corridorPacks = maxCorridorPacks;
   // --- where each pack stands ---
   const drafts: PackDraft[] = [];
   for (const r of rooms) {
@@ -2351,6 +2379,7 @@ export function generateFloor(depth: number, seed: number): Floor {
     if (r.block) rooms[r.id].block = true;
     if (r.role === 'cell') rooms[r.id].cell = true;
     if (r.court) rooms[r.id].court = true;
+    if (r.crypt) rooms[r.id].crypt = true;
   }
   const floor: Floor = {
     depth: d,

@@ -487,6 +487,8 @@ export interface Room {
    */
   block?: boolean;
   cell?: boolean;
+  /** (LEVELS2, floor 1: game/levels2.ts) THE SIDE CRYPT: a treasure vault off the way laid as a tomb, a sarcophagus in it and one chest. */
+  crypt?: boolean;
   /** FLOOR 2 AS THE PRISON'S GROUNDS (game/grounds_way.ts, behind GROUNDS; absent where it is off): a courtyard of its grid, under the sky. */
   court?: boolean;
   /**
