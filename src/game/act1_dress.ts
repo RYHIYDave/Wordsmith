@@ -21,6 +21,7 @@
 // it on the cliffs: his rule) is for the eye alone: render/act1_pieces.ts lays it from the painted ground.
 
 import { F8F9_FIX } from './f8f9';
+import { levels2 } from './levels2';
 import { RNG } from '../engine/rng';
 import { act1Floor, cityFloor } from './act1';
 import { dressAct2 } from './act2_dress';
@@ -850,6 +851,26 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     used.set(sc.name, (used.get(sc.name) ?? 0) + 1);
     return true;
   };
+  // (LEVELS2, floor 10: THE SUNKEN SHRINE, the fen's second reward: a drowned temple's stones round its chests, the statue's head
+  // at its back, a broken column either side, the fallen drums and a broken stair before it: the floor's own pieces, game/levels2.ts)
+  if (n === 10 && levels2(depth)) {
+    const sides = land.areas.filter((a) => a.role === 'side');
+    const shrine = sides.length > 1 ? sides[sides.length - 1] : null;
+    if (shrine) {
+      const sc: Act1Scene = {
+        name: 'the sunken shrine',
+        need: 3,
+        most: 1,
+        parts: [S(0, -3, "a sunken statue's head"), S(-3, -1, 'a broken column'), S(3, -1, 'a broken column'), S(-3, 2, 'fallen column drums'), S(3, 2, 'a broken stair'), Ly(-1, -2, 'mossy stones'), Ly(1, 3, 'mossy stones'), Ly(2, -3, 'sedge tussock')],
+      };
+      const mid = tilesOf(shrine.blob, (x, y) => blobDist(shrine.blob, x, y) < 0.3);
+      let done = false;
+      for (const [tx, ty] of mid) {
+        for (let k = 0; k < 4 && !done; k++) done = layScene(sc, tx, ty, k, false);
+        if (done) break;
+      }
+    }
+  }
   if (scened) {
     const set6 = ACT1_SCENE_SETS[n];
     for (const a of rng.shuffle([...land.areas])) {

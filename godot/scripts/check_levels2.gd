@@ -57,13 +57,18 @@ func run(main, hero, dir: String) -> void:
 	await M._snap("%s/f%d_1_start.png" % [dir, d])
 	# its new side areas, each looked at (and an open area off the main way that is no side area: floor 8's second way)
 	var k := 2
+	# (off the main way: a room of the open ground with no place on the way, not a stronghold's yard or hall, nor the Colossus's
+	# stone)
 	var off_way := {}
-	var land_at: String = M.dir_of(place) + "/land.json"
-	if FileAccess.file_exists(land_at):
-		var land: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(land_at))
-		for a in land["areas"]:
-			if a["role"] == "path" and int(M.map.rooms[int(a["room"])].get("path", 0)) < 0:
-				off_way[int(a["room"])] = true
+	var held := {}
+	var holds_at: String = M.dir_of(place) + "/holds.json"
+	if FileAccess.file_exists(holds_at):
+		for q in (JSON.parse_string(FileAccess.get_file_as_string(holds_at)) as Dictionary).get("holds", []):
+			held[int(q["yard"])] = true
+			held[int(q["hall"])] = true
+	for r in M.map.rooms:
+		if str(r["kind"]) == "normal" and int(r.get("path", 0)) < 0 and not held.has(int(r["id"])) and int(r["w"]) < 20:
+			off_way[int(r["id"])] = true
 	for r in M.map.rooms:
 		if off_way.has(int(r["id"])):
 			r = r.duplicate()

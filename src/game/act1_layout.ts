@@ -650,8 +650,13 @@ function planFor(kind: Act1LandKind, rng: RNG, depth = 0): Plan | null {
       // (its paths between the open areas wider than they were, 3.2: "The thin paths through the forest are hard to see past
       // the trees maybe make them a little wider", 17 Oct 2026, 11:37)
       return planChain(rng, { count: CHAIN.pine, heading: across + rng.range(-0.3, 0.3), spread: 0.9, turn: 0.6, size, broad: 0.55, laneW: PINE_PATH.on ? PINE_PATH.w : 3.2, laneLong: [3, 7], gap: 4 });
-    case 'fen':
-      return planChain(rng, { count: CHAIN.fen, heading: across + rng.range(-0.3, 0.3), spread: 0.9, turn: 0.8, size, broad: 0, laneW: 2, laneLong: [2, 5], gap: 3 });
+    case 'fen': {
+      const fen = planChain(rng, { count: CHAIN.fen, heading: across + rng.range(-0.3, 0.3), spread: 0.9, turn: 0.8, size, broad: 0, laneW: 2, laneLong: [2, 5], gap: 3 });
+      // (LEVELS2, floor 10: a second way across the fen, by two islands of its own and their boardwalks, from one island of the
+      // first way to the third on from it: game/levels2.ts)
+      if (fen && levels2(depth) && !forkWay(rng, fen.areas, fen.lanes, { span: 3, islands: 2, offs: [11, 13, 9], size: (r) => size(r, 'path'), w: [2, 2], gap: 3 })) return null;
+      return fen;
+    }
   }
 }
 
@@ -687,46 +692,62 @@ function planCanyon(rng: RNG, size: (rng: RNG, role: AreaRole) => { rx: number; 
   }
   // (LEVELS2, floor 8: a high way and a low way, parting at one area and meeting again at the next, a rock between them, the
   // high way up the screen with a fight of its own on it: game/levels2.ts)
-  if (fork && !forkCanyon(rng, size, areas, lanes)) return null;
+  // (its area as big as the canyon's biggest, the way round it long enough to be a way of its own)
+  if (fork && !forkWay(rng, areas, lanes, { span: 1, islands: 1, offs: [20, 17, 23], size: (r) => ({ rx: r.range(6, 7), ry: r.range(4.5, 5.5), wob: 0.18 }), w: [4.2, 5.4], gap: 4 })) return null;
   return { areas, lanes, way, holds: [] };
 }
 
 /**
- * (LEVELS2, floor 8) THE CANYON'S TWO WAYS: between two areas of the main way (neither the start's nor the boss's), a second way
- * round the rock beside the first: out of the one area to an area of its own, set off the first way's side (up the screen if it
- * fits, else down it), and on into the next; the first way stays as it was. False if no stretch of the canyon has room for it.
+ * (LEVELS2, floors 8 and 10) A SECOND WAY: between area `j` of the main way and area `j + span` (neither the start's nor the
+ * boss's), a way of its own beside the first: out of the one, through `islands` areas of its own set off the first way's side (up
+ * the screen if it fits, else down it), and into the other; the first way stays as it was. Floor 8: the canyon parts round a rock
+ * between two of its areas (one area on the second way, a fight of its own on it). Floor 10: a second way across the fen, by two
+ * islands and their boardwalks, from one island to the third on from it. False if no stretch of the way has room for it.
  */
-function forkCanyon(rng: RNG, size: (rng: RNG, role: AreaRole) => { rx: number; ry: number; wob: number }, areas: Area[], lanes: Lane[]): boolean {
+interface ForkOpts {
+  span: number;
+  islands: number;
+  /** How far off the first way the second runs, tried in turn. */
+  offs: number[];
+  size: (rng: RNG) => { rx: number; ry: number; wob: number };
+  w: [number, number];
+  gap: number;
+}
+function forkWay(rng: RNG, areas: Area[], lanes: Lane[], o: ForkOpts): boolean {
   const legs: number[] = [];
-  for (let j = 1; j + 1 < areas.length - 1; j++) legs.push(j);
+  for (let j = 1; j + o.span < areas.length - 1; j++) legs.push(j);
   rng.shuffle(legs);
-  // (the earlier stretches first, so it is met on the way and not at the end of it)
+  // (the stretches near the middle first, so it is met on the way and not at the end of it)
   legs.sort((a, b) => Math.abs(a - areas.length * 0.45) - Math.abs(b - areas.length * 0.45));
   for (const j of legs) {
+    const k = j + o.span;
     const A = areas[j].blob;
-    const B = areas[j + 1].blob;
-    const main = lanes[j];
-    const mx = (A.x + B.x) / 2;
-    const my = (A.y + B.y) / 2;
+    const B = areas[k].blob;
+    // (the first way's own lanes between them: the second kept clear of them, a real rock or water between)
+    const mains = lanes.slice(j, k);
     const h = Math.atan2(B.y - A.y, B.x - A.x);
     const sides = [h + Math.PI / 2, h - Math.PI / 2].sort((p, q) => downOf(Math.cos(p), Math.sin(p)) - downOf(Math.cos(q), Math.sin(q)));
-    // (its area as big as the canyon's biggest, the way round it long enough to be a way of its own)
-    const sz = { rx: rng.range(6, 7), ry: rng.range(4.5, 5.5), wob: 0.18 };
-    const rF = Math.max(sz.rx, sz.ry);
+    const szs = Array.from({ length: o.islands }, () => o.size(rng));
     for (const side of sides) {
-      for (const off of [20, 17, 23]) {
-        const [fx, fy] = along(mx, my, side, off);
-        const F: Blob = { x: fx, y: fy, rx: sz.rx, ry: sz.ry, rot: rng.range(0, Math.PI), wob: sz.wob, seed: rng.int(0, 9999) };
-        const w = rng.range(4.2, 5.4);
-        const l1 = wander(rng, A.x, A.y, fx, fy, w, 1.2);
-        const l2 = wander(rng, fx, fy, B.x, B.y, w, 1.2);
-        if (!clear(areas, F, 4, [j, j + 1], l1) || !clear(areas, F, 4, [j, j + 1], l2)) continue;
+      for (const off of o.offs) {
+        const F: Blob[] = szs.map((sz, i) => {
+          const t = (i + 1) / (o.islands + 1);
+          const [fx, fy] = along(A.x + (B.x - A.x) * t, A.y + (B.y - A.y) * t, side, off);
+          return { x: fx, y: fy, rx: sz.rx, ry: sz.ry, rot: rng.range(0, Math.PI), wob: sz.wob, seed: rng.int(0, 9999) };
+        });
+        const w = rng.range(o.w[0], o.w[1]);
+        const stops: Blob[] = [A, ...F, B];
+        const ls: Lane[] = [];
+        for (let i = 0; i + 1 < stops.length; i++) ls.push(wander(rng, stops[i].x, stops[i].y, stops[i + 1].x, stops[i + 1].y, w, 1.2));
+        if (F.some((f) => ls.some((l) => !clear(areas, f, o.gap, [j, k], l)))) continue;
+        // (the second way's own areas apart from each other)
+        if (F.some((f, i) => F.some((g, m) => m > i && Math.hypot(f.x - g.x, f.y - g.y) < radiusOf(f) + radiusOf(g) + o.gap))) continue;
         // (clear of every way already laid, the rock between the two ways a real one)
-        if (lanes.some((l) => laneDist(l, fx, fy) < rF * (1 + sz.wob) + l.w / 2 + 3)) continue;
-        const far = (pt: [number, number]): boolean => Math.hypot(pt[0] - A.x, pt[1] - A.y) > areas[j].r + 1 && Math.hypot(pt[0] - B.x, pt[1] - B.y) > areas[j + 1].r + 1;
-        if ([...l1.pts, ...l2.pts].some((pt) => far(pt) && laneDist(main, pt[0], pt[1]) < (main.w + w) / 2 + 3)) continue;
-        areas.push({ blob: F, role: 'path', path: -1, parent: j, r: radiusOf(F) });
-        lanes.push(l1, l2);
+        if (F.some((f) => lanes.some((l) => laneDist(l, f.x, f.y) < Math.max(f.rx, f.ry) * (1 + f.wob) + l.w / 2 + 3))) continue;
+        const far = (pt: [number, number]): boolean => Math.hypot(pt[0] - A.x, pt[1] - A.y) > areas[j].r + 1 && Math.hypot(pt[0] - B.x, pt[1] - B.y) > areas[k].r + 1;
+        if (ls.some((l) => l.pts.some((pt) => far(pt) && mains.some((m) => laneDist(m, pt[0], pt[1]) < (m.w + w) / 2 + 3)))) continue;
+        F.forEach((f, i) => areas.push({ blob: f, role: 'path', path: -1, parent: i === 0 ? j : areas.length - 1, r: radiusOf(f) }));
+        lanes.push(...ls);
         return true;
       }
     }
@@ -854,6 +875,9 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
   // (F9_LAIRS, on at his yes of 14 Nov 2026: floor 9's lair grown to a boss's room for the troll chieftain's camp, if it fits: game/f9_lairs.ts)
   // (LEVELS2, floor 7: the Ledge Road a lair too, the lookout held by a champion's pack)
   if (depth >= 7 && (kind !== 'ledge' || levels2(depth)) && !(f9Lairs(depth) && growSide(rng, plan, 'lair', LAIR9, 2.8, 3) >= 0)) growSide(rng, plan, 'lair', { rx: 4.5, ry: 4, wob: 0.12 }, kind === 'fen' ? 2 : 2.8, 3);
+  // (LEVELS2, floor 10: the sunken shrine, a second reward off the fen's later half, its chests among a drowned temple's stones:
+  // game/act1_dress.ts lays the stones)
+  if (kind === 'fen' && levels2(depth) && growSide(rng, plan, 'side', { rx: 5.4, ry: 4.8, wob: 0.12 }, 2, 3, undefined, (a) => a.path >= CHAIN.fen * 0.4) < 0) return null;
   // (LEVELS2, floor 8: a side cave too, a champion's pack in it and a chest at its back: game/levels2.ts)
   // (off the way's later half, not by the start)
   if (kind === 'canyon' && levels2(depth) && growSide(rng, plan, 'lair', { rx: 4.6, ry: 4, wob: 0.14 }, 2.6, 3, undefined, (a) => a.path >= CHAIN.canyon * 0.4) < 0) return null;
