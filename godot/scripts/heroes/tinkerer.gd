@@ -277,7 +277,7 @@ func _vial_bursts(v: Dictionary) -> void:
 		for m in caught:
 			if is_instance_valid(m) and not m.dead:
 				m.throw_from(at, float(T["bigOne"]["far"]), 0.2)
-				m.stun_for(float(T["bigOne"]["down"]))
+				m.stun_for(float(T["bigOne"]["down"]), "", true)
 	# (TAR: a puddle of it left where it burst)
 	if not little and h.has("tar"):
 		var tr: float = rad * float(T["tar"]["size"])
@@ -1425,7 +1425,7 @@ func _bolt_strikes(t, i: int, frac: float, second: bool, little: bool) -> void:
 		for m in caught:
 			if is_instance_valid(m) and not m.dead:
 				m.throw_from(at, float(T["bigOne"]["far"]), 0.2)
-				m.stun_for(float(T["bigOne"]["down"]))
+				m.stun_for(float(T["bigOne"]["down"]), "", true)
 	if not little and h.has("tar"):
 		var tr: float = rad * float(T["tar"]["size"])
 		tars.append({"x": at.x, "y": at.y, "r": tr, "t": 0.0})

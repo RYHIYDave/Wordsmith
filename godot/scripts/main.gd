@@ -3431,6 +3431,16 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_speed.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	# (STUNS MADE RARE, CHECKED: check_stuns.gd, monster.gd STUNS_RARE on for it alone)
+	if _arg("only") == "stuns":
+		await preload("res://scripts/check_stuns.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE CRITICAL BRAWLER: check_crit.gd, with WS_DMG_GEAR)
+	if _arg("only") == "crit":
+		await preload("res://scripts/check_crit.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE BRAWLER REMADE, PLAYED: check_brawler2.gd, its switch on for the check alone)
 	if _arg("only") == "brawler2":
 		await preload("res://scripts/check_brawler2.gd").new().run(self, hero, dir)

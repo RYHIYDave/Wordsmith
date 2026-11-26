@@ -400,7 +400,7 @@ func _through() -> void:
 func _land() -> void:
 	for m in carried:
 		if is_instance_valid(m) and not m.dead:
-			m.stun_for(float(W["bulldozer"]["stun"]))
+			m.stun_for(float(W["bulldozer"]["stun"]), "", true)
 	carried = []
 	var def := _def(2)
 	var r: Dictionary = h.loadout.r(2)

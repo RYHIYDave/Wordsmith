@@ -1808,11 +1808,25 @@ func dose(dps: float, secs := -1.0, el := "") -> void:
 
 ## HEAVY in front (game.ts stunMonster): stunned `secs` (an elite half that; never a boss), unless it is stunned for longer
 ## already; what it was winding up is broken off. (`meld`: the melded word whose stun it is, Thunder's, told with it.)
-func stun_for(secs: float, meld := "") -> void:
+## STUNS MADE RARE (his words, 26 Nov 2026: “Looks for instances of stun.  Only the biggest and strongest hits should stun.  Stagger is
+## something that can be more common.”, and asked whether stuns on the hero too, “Yes, both ways”): with it on, a stun is only the
+## biggest hits' (`big`: The Big One, the Warlock's demon landing and roaring, the Bulldozer, the Smash's built-up stun and the
+## hammer's, Shieldwall's burst, the Drowned Arm's slam, the Brawler's flying blows, the Ranger's trap, Sundial's stop); every other
+## a stagger: its attack broken off, held RARE_STAGGER at most (an elite half), and not staggered so again for RARE_AGAIN after. The
+## hero's side: hero.gd hold_by_meld, foe_words.gd Shiver. OFF until his yes to the list and the numbers.
+static var STUNS_RARE := false
+const RARE_STAGGER := 0.5
+const RARE_AGAIN := 0.5
+
+
+func stun_for(secs: float, meld := "", big := false) -> void:
 	if dead or boss:
 		return
 	# (THE 52 DESIGNED MELDS: Fortress, while its shield holds nothing stops it)
 	if shield > 0.0 and word_share("fortress") > 0.0:
+		return
+	if STUNS_RARE and not big:
+		rare_stagger(secs)
 		return
 	var t := secs / 2.0 if elite else secs
 	if t <= stun_t:
@@ -1823,6 +1837,17 @@ func stun_for(secs: float, meld := "") -> void:
 	if meld != "":
 		e["meld"] = meld
 	_tell(e)
+
+
+## (STUNS MADE RARE) A stun not of the biggest hits, a stagger instead: its attack broken off, held a moment.
+func rare_stagger(secs: float) -> void:
+	if dead or boss or stagger_cd > 0.0 or stun_t > 0.0:
+		return
+	var t := minf(secs, RARE_STAGGER) / (2.0 if elite else 1.0)
+	stagger_t = maxf(stagger_t, t)
+	stagger_cd = t + RARE_AGAIN
+	break_off()
+	_tell({"t": "stagger", "id": id, "x": world.x, "y": world.y, "fromX": world.x - 0.01, "fromY": world.y})
 
 
 ## HEAVY behind (game.ts staggerMonster): it has walked onto cracked ground lying at `from`, and reels (0.55 s), its attack

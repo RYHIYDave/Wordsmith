@@ -171,7 +171,7 @@ func each(i: int, o, n: int, count: int, at: Vector2, w: Vector2) -> void:
 		"sundial":
 			H.still(o, H.n("sundial", "secs", 2.0), minf(0.85, H.n("sundial", "slow", 0.25) + H.n("sundial", "per", 0.12) * n))
 			if n == count:
-				H.stun(o, H.n("sundial", "stop", 0.8))
+				H.stun(o, H.n("sundial", "stop", 0.8), true)
 			H.tell(id, "slow", o.world, {"n": n})
 		"harrow":
 			o.m52["harrow_t"] = H.clock() + H.n("harrow", "secs", 4.0)

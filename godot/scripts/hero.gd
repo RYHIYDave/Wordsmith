@@ -547,7 +547,7 @@ func _hammer_stun(m, secs: float) -> void:
 	if uniques != null:
 		uniques.hammer_stun(m, secs)
 	else:
-		m.stun_for(secs)
+		m.stun_for(secs, "", true)
 
 
 ## How much faster his attacks are played (game.ts frenzyPace x handPace): the frenzy's, and the Half-Carved Hand's below half life.
@@ -2222,9 +2222,16 @@ func root_by_meld(secs: float) -> bool:
 
 ## A MONSTER'S MELD HOLDS HIM where he stands for `secs` (Coldcut and Ice Lance frozen too, Crusher): not again for two seconds
 ## after; whether it did. (Coldcut and Crusher held him 6 s of 10.)
+## (STUNS MADE RARE) How much a monster's hold or freeze slows him instead, while it lasts.
+const RARE_SLOW := 0.6
 func hold_by_meld(secs: float, freeze := false) -> bool:
 	if hold_again > 0.0:
 		return false
+	# (STUNS MADE RARE, his “Yes, both ways”: a monster's meld no longer holds him still, it slows him a moment: monster.gd)
+	if preload("res://scripts/monster.gd").STUNS_RARE:
+		chill(secs, RARE_SLOW)
+		hold_again = secs + 2.0
+		return true
 	held = maxf(held, secs)
 	if freeze:
 		frozen_t = maxf(frozen_t, secs)
@@ -2939,7 +2946,7 @@ func _throw_near(rad: float, far: float, stun: float) -> void:
 		if not is_instance_valid(m) or m.dead or monsters.shut_in(m) or m.world.distance_to(world) > rad + m.r:
 			continue
 		if stun > 0.0:
-			m.stun_for(stun)
+			m.stun_for(stun, "", true)
 		m.throw_from(world, far)
 
 
@@ -3102,7 +3109,7 @@ func smashed(m, way: Vector2) -> void:
 	m.daze_at = _clock
 	if m.daze >= 1.0 - 1e-9:
 		m.daze = 0.0
-		m.stun_for(float(S["stun"]))
+		m.stun_for(float(S["stun"]), "", true)
 
 
 ## A MONSTER'S MELD MAKING HIS BURN OR POISON WORSE (`what` "burn" or "poison", `id` the meld's): `k` times as bad, and if

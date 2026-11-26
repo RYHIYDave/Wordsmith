@@ -814,7 +814,7 @@ func _step_arm(dt: float) -> void:
 			if not _fine(o) or o.world.distance_to(at) > float(A["r"]) + o.r:
 				continue
 			_ally(o, _unique_hit(float(A["share"])))
-			o.stun_for(float(A["stun"]))
+			o.stun_for(float(A["stun"]), "", true)
 			n += 1
 		_say({"id": "drownedarm", "what": "slam", "n": n}))
 
@@ -1055,7 +1055,7 @@ func _tithe(m) -> void:
 func hammer_stun(m, secs: float) -> void:
 	var knell := wears("deathknell")
 	var K: Dictionary = ut["knell"]
-	m.stun_for(secs * (1.0 - float(K["shorter"])) if knell else secs)
+	m.stun_for(secs * (1.0 - float(K["shorter"])) if knell else secs, "", true)
 	if not knell or m.dead or m.boss or m.stun_t <= 0.0:
 		return
 	var fresh: bool = m.knell_t <= 0.0

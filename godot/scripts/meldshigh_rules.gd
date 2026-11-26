@@ -225,9 +225,9 @@ func still(o, secs: float, k: float) -> void:
 	o.still_k = maxf(o.still_k, k)
 
 
-func stun(o, secs: float) -> void:
+func stun(o, secs: float, big := false) -> void:
 	if ok(o) and not o.boss:
-		o.stun_for(secs)
+		o.stun_for(secs, "", big)
 
 
 ## Thrown from `from` by `far` (a pull: `from` the far side of it).

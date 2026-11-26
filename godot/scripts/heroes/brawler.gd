@@ -837,7 +837,7 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	if kicked and _has("vaftershock"):
 		_aftershock(o)
 	# (the Brawler remade, Launcher: his flying hammerfist throws up all round where he lands)
-	if id == "hammerfist" and _has("vlauncher"):
+	if id == "hammerfist" and _has("vlauncher") and first:
 		rc = V["react"]["launch"]
 	if rc.has("up") and _pop_up(o):
 		o.stun_t = float(V["up"]["up"]) + float(rc.get("stun", 0.0))
@@ -852,8 +852,9 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	# Warped Wordsmith stood held half his fight: the bug hunt's third round, 25 Nov 2026)
 	if rc.has("stagger") and not o.boss:
 		o.stagger_t = maxf(o.stagger_t, float(rc["stagger"]))
+	# (a stun of his: his fire moves' and flying blows' alone, the biggest of his: STUNS MADE RARE, monster.gd)
 	if rc.has("stun") and not o.boss:
-		o.stun_for(float(rc["stun"]))
+		o.stun_for(float(rc["stun"]), "", true)
 	# (Knockdown: the third punch of a combo knocks it off its feet)
 	var third: bool = int(mv.get("nth", 0)) > 0 and int(mv.get("nth", 0)) % 3 == 0 if B2.on else int(mv["globe"]) == 2
 	if third and is_punch(id) and _has("vknockdown") and not o.boss:

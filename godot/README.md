@@ -1528,6 +1528,16 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   trust you to do it” (the queue's `draw-brawler-hammerfist-and-flying-knee`); till it comes the uppercut's and the knee's frames
   stand in (`brawler2.gd` ART). Check: `--only=brawler2` (`check_brawler2.gd`, the switch on for it alone); the speed test with
   `WS_BRAWLER2=1 WS_B2_FORK=vquickhands|vheavyhands`.
+- **Stuns made rare** (`monster.gd` STUNS_RARE, OFF until his yes; his words, 26 Nov 2026: “Looks for instances of stun.  Only the
+  biggest and strongest hits should stun.  Stagger is something that can be more common.”; stuns on the hero too, “Yes, both
+  ways”). Every stun on a monster is a stagger (its attack broken off, half a second at most, an elite half that, not again for
+  half a second after) but the biggest hits' (`big`): The Big One, the Warlock's demon landing and its roar, the Bulldozer, the
+  Smash's built-up stun and the hammer's, Shieldwall's burst, the Drowned Arm's slam, the Brawler's flying blows, the Ranger's
+  trap's hold, Sundial's stop. On the hero: a monster's meld that held him still (`hero.gd hold_by_meld`) and a monster's Shiver
+  slow him a moment instead; the bosses' holds and grabs as they were. Check: `--only=stuns` (`check_stuns.gd`).
+- **The critical Brawler** (`check_crit.gd`, `--only=crit` with `WS_DMG_GEAR`; his words: “Now build a Brawler that gets 100% crit
+  chance through items and gear and maximizes crit damage.”): the damage check's chooser going by his critical chance first, then
+  its damage, Heavy Hands taken; and beside him the remade Brawler with Quick Hands and the Brawler as he is, chosen by damage.
 - **Six enemies made livelier** (the browser art's `src/art/enemies8.ts` ENEMIES8, ON at his yes to the second pictures, 26 Nov
   2026: “Yes, put them in (Recommended)”; his words: “Next Find the 8 weakest enemies and work on them.  Weakest in terms of their
   animations and look.”). The skeleton marksman breathes as he waits and swings more in his stride; the Shade rises, sinks and

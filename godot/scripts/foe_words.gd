@@ -218,6 +218,11 @@ func after_blow(k: Callable, by, dmg: float, parts: Array) -> void:
 		if h.siphon_less <= 0.0:
 			_say(h.world, "Healing cut", "#ff8a80")
 		h.siphon_less = maxf(h.siphon_less, minf(0.9, float(U["siphon"]) * float(k.call("siphon"))))
+	if _shiver and preload("res://scripts/monster.gd").STUNS_RARE:
+		# (STUNS MADE RARE, his “Yes, both ways”: a monster's Shiver slows him a moment, no longer freezes him still: monster.gd)
+		_shiver = false
+		h.chill(float(U["shiver"]["freeze"]), h.RARE_SLOW)
+		_say(h.world, "Chilled", "#a5d8ff")
 	if _shiver:
 		_shiver = false
 		# (frozen in place a moment: as the Drowned's frost grab holds him)

@@ -530,7 +530,7 @@ func _demon_lands() -> void:
 			if is_instance_valid(m) and not m.dead and m.world.distance_to(h.world) <= float(S["burst"]) + m.r:
 				m.throw_from(h.world, 1.2, 0.2)
 				if demon2() and not m.boss and not m.dead:
-					m.stun_for(float(S["stun"]))
+					m.stun_for(float(S["stun"]), "", true)
 	# (THE DEMON MADE TERRIBLE: the ground burning where it lands)
 	if demon2() and h.wakes != null and is_instance_valid(h.wakes):
 		h.wakes.add_patch(2, "burn", h.world, float(S["burnR"]), float(S["burnSecs"]), h.avg_hit(2, float(S["burnShare"])), "fire")
@@ -638,7 +638,7 @@ func _step_change(dt: float) -> void:
 						h.hit_monster(m, 0, float(D2["roar"]["share"]), struck >= 3)
 						struck += 1
 						if not m.dead and not m.boss:
-							m.stun_for(float(D2["roar"]["stun"]))
+							m.stun_for(float(D2["roar"]["stun"]), "", true)
 		_terrible_roar(h.world, R)
 	else:
 		# (HIS TREE: Last Rites, as the demon burns out, Damning goes off by itself round him)

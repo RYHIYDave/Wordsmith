@@ -298,7 +298,7 @@ func _step_traps(dt: float) -> void:
 				# 11.4 s of 12, the bug hunt's fourth round, 25 Nov 2026)
 				if m.snare_again > 0.0:
 					continue
-				m.stun_for(float(S["hold"]))
+				m.stun_for(float(S["hold"]), "", true)
 				m.snare_again = float(S["hold"]) * (0.5 if m.elite else 1.0) + float(Words.data()["city"]["bind"]["again"])
 				h._tell({"t": "bind", "id": m.id, "m": m, "secs": S["hold"]})
 			var sk: int = t["skill"]
