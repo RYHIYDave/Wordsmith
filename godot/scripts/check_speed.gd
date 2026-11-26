@@ -368,7 +368,9 @@ func _clear_level(b: Dictionary, life_k: float) -> Dictionary:
 			if ok:
 				var ld: int = ldist[lt.y * M.map.w + lt.x]
 				ok = ld >= 0 and ld <= 8
-			if dlen > 6.0 and ok and M._monsters.sees(h.world, land):
+			# (WS_NO_EVADE: not at all, for a hero whose evasive move holds him up more than it carries him: the Brawler's jump, a move of
+			# his combo, stands him still while it plays)
+			if dlen > 6.0 and ok and not OS.has_environment("WS_NO_EVADE") and M._monsters.sees(h.world, land):
 				h.auto_lunge = land
 			walk_t += dt
 			# (no nearer in four seconds: let it be for twenty)
