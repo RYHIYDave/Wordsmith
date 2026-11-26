@@ -1813,8 +1813,9 @@ func dose(dps: float, secs := -1.0, el := "") -> void:
 ## biggest hits' (`big`: The Big One, the Warlock's demon landing and roaring, the Bulldozer, the Smash's built-up stun and the
 ## hammer's, Shieldwall's burst, the Drowned Arm's slam, the Brawler's flying blows, the Ranger's trap, Sundial's stop); every other
 ## a stagger: its attack broken off, held RARE_STAGGER at most (an elite half), and not staggered so again for RARE_AGAIN after. The
-## hero's side: hero.gd hold_by_meld, foe_words.gd Shiver. OFF until his yes to the list and the numbers.
-static var STUNS_RARE := false
+## hero's side: hero.gd hold_by_meld, foe_words.gd Shiver. ON at his yes to the list and the numbers, 26 Nov 2026: “Both on
+## (Recommended)”.
+static var STUNS_RARE := true
 const RARE_STAGGER := 0.5
 ## (not staggered so again for 1.5 s after, as Heavy behind's cracked ground (words.json heavy staggerAgain): at 0.5 s a monster
 ## struck often never got an attack off, and a Brawler of the tank test stood the full three minutes)

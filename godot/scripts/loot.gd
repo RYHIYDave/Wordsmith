@@ -77,9 +77,9 @@ const EQUIP := ["mainhand", "offhand", "helm", "chest", "gloves", "belt", "boots
 static var DEFENCE_LAYERS := true
 ## A CRITICAL HIT AT LEAST DOUBLE A REGULAR ONE (his words, 26 Nov 2026, told a critical hit does 50% more at base: “See there's the
 ## problem.  A crit should be at least double a regular hit”, then “Maybe 2.5x”): every class's base critical damage +150% (a
-## critical hit 2.5 times a regular one) in place of the items table's +50% (tune baseCritMult), what gear adds on top. OFF until
-## his yes to the numbers.
-static var CRIT_DOUBLE := false
+## critical hit 2.5 times a regular one) in place of the items table's +50% (tune baseCritMult), what gear adds on top. ON at his
+## yes, 26 Nov 2026: “Both on (Recommended)”.
+static var CRIT_DOUBLE := true
 const CRIT_DOUBLE_BASE := 150.0
 ## THE THREE DEFENCES EVENED (his pick, 26 Nov 2026, “Fix the balance (Recommended)”, after the speed and tank test found every
 ## hero's toughest build all Strength and heavy armour, his dodge never past 1%): see derive. ON at his yes to the numbers (the
