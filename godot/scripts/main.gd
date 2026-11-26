@@ -3431,6 +3431,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_speed.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	# (THE BRAWLER REMADE, PLAYED: check_brawler2.gd, its switch on for the check alone)
+	if _arg("only") == "brawler2":
+		await preload("res://scripts/check_brawler2.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE SIX ENEMIES MADE LIVELIER: check_enemies8.gd)
 	if _arg("only") == "enemies8":
 		await preload("res://scripts/check_enemies8.gd").new().run(self, hero, dir)

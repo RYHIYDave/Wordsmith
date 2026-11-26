@@ -167,7 +167,43 @@ static func _own_words() -> void:
 
 static func tree(cls: String) -> Dictionary:
 	ready_up()
+	if cls == "brawler" and B2.on:
+		return _brawler2()
 	return D["trees"].get(cls, D["trees"]["warrior"])
+
+
+## THE BRAWLER REMADE (heroes/brawler2.gd, its switch on): his tree with the fork, Quick Hands and Heavy Hands, a stone each side of
+## Stiff Jab, and his talents' cards bent to fit; made once.
+const B2 := preload("res://scripts/heroes/brawler2.gd")
+static var _b2_tree := {}
+static func _brawler2() -> Dictionary:
+	if not _b2_tree.is_empty():
+		return _b2_tree
+	var t: Dictionary = (D["trees"]["brawler"] as Dictionary).duplicate(true)
+	var by := {}
+	for x in t["talents"]:
+		by[x["id"]] = x
+	for id in B2.TEXT:
+		if by.has(id):
+			by[id]["text"] = B2.TEXT[id]
+	for id in B2.FORK:
+		var n: Dictionary = (by["vstiffjab"] as Dictionary).duplicate(true)
+		n.merge({"id": id, "name": B2.FORK[id]["name"], "text": B2.FORK[id]["text"], "at": B2.FORK[id]["at"], "from": ["vstiffjab"],
+			"joined": ["vstiffjab"], "big": false}, true)
+		(t["talents"] as Array).append(n)
+		(by["vstiffjab"]["joined"] as Array).append(id)
+	_b2_tree = t
+	return t
+
+
+## (THE BRAWLER REMADE) Whether the other side of his fork is taken: only one of Quick Hands and Heavy Hands.
+static func _fork_other(cls: String, id: String, taken: Array) -> bool:
+	if cls != "brawler" or not B2.on or not B2.FORK.has(id):
+		return false
+	for o in B2.FORK:
+		if o != id and taken.has(o):
+			return true
+	return false
 
 
 static func of(cls: String, id: String) -> Dictionary:
@@ -178,7 +214,7 @@ static func of(cls: String, id: String) -> Dictionary:
 
 
 static func ported(cls: String, id: String) -> bool:
-	return (PORTED.get(cls, []) as Array).has(id)
+	return (PORTED.get(cls, []) as Array).has(id) or (cls == "brawler" and B2.on and B2.FORK.has(id))
 
 
 ## How many points a hero of `level` has had in all (talentPoints).
@@ -298,6 +334,8 @@ static func take_problem(cls: String, level: int, taken: Array, id: String) -> S
 		return "No points left" if nx < 0 else "Next point at level %d" % nx
 	if not _way_open(t, taken):
 		return "Take one joined to it first"
+	if _fork_other(cls, id, taken):
+		return "Quick Hands or Heavy Hands: only one"
 	var out := swap_out(cls, taken, id)
 	if out.begins_with("!"):
 		return out.substr(1)
@@ -316,7 +354,7 @@ static func take_problem(cls: String, level: int, taken: Array, id: String) -> S
 static func open(cls: String, taken: Array, id: String) -> bool:
 	var t := of(cls, id)
 	var swap_ok := is_weapon(cls, id) and not swap_out(cls, taken, id).begins_with("!")
-	return not t.is_empty() and not taken.has(id) and _way_open(t, taken) and (swap_ok or not _other_weapon(cls, id, taken)) \
+	return not t.is_empty() and not taken.has(id) and _way_open(t, taken) and not _fork_other(cls, id, taken) and (swap_ok or not _other_weapon(cls, id, taken)) \
 		and not _not_his_weapon(cls, t, taken) and not _waits_for_weapon(cls, t, taken)
 
 

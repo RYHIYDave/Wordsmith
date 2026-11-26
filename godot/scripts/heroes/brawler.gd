@@ -40,8 +40,10 @@ var _plays := 0
 ## Those his uppercut has thrown up: {m, t}.
 var up: Array = []
 
-const PUNCHES := ["jab", "cross", "hook", "elbow", "uppercut"]
-const KICKS := ["roundkick", "push", "spinkick", "spinkickClose", "knee"]
+const PUNCHES := ["jab", "cross", "hook", "elbow", "uppercut", "hammerfist"]
+const KICKS := ["roundkick", "push", "spinkick", "spinkickClose", "knee", "flyknee"]
+## (THE BRAWLER REMADE, his ideas of 26 Nov 2026: heroes/brawler2.gd, its switch and its numbers; off, he is as he was)
+const B2 := preload("res://scripts/heroes/brawler2.gd")
 ## (the bake's lists: his moves after every other hero's, art/heroes3.ts HERO_PICKS)
 const VET_LIST0 := 58
 ## (game.ts TUNE.heroRadius: hero.gd RADIUS)
@@ -50,6 +52,9 @@ const HERO_R := 0.3
 
 ## (THE VETERAN'S TREE: Fire Starter, landed from his dodge jump: his next tap or hold comes out in fire)
 var fire_ready := false
+## (THE BRAWLER REMADE: the punches thrown toward the next punch globe; the punches in a row of this combo, for Knockdown)
+var taps_in := 0
+var _punches := 0
 
 
 ## THE VETERAN'S TREE (game/talents.ts VETERAN_TREE; game.ts, his moves; veteran.ts VET_TALENTS): `id` his, and its numbers.
@@ -68,6 +73,8 @@ func _init(hero) -> void:
 	R = V["rules"]
 	TUNE = V["tune"]
 	MOVES = V["moves"]
+	# (the two flying moves of the Brawler remade in his numbers, their stand-in frames: nothing of his old moves changed)
+	B2.alias(V)
 
 
 ## How high off the floor his lowest foot is now, game pixels (veteran_fx.ts liftOf: vetLiftAt of the frame he is in; 0 out of
@@ -170,7 +177,7 @@ func step(dt: float, way: Vector2, hooked: bool) -> bool:
 		queue = []
 		# (his jump goes on as it was going, its globe with it: all emptied, a press in its crouch wrote to a globe no longer there, a
 		# script error; the bug hunt's fifth round, 25 Nov 2026)
-		globes = ["jump"] if jump_on else []
+		globes = ["jump"] if jump_on and not B2.on else []
 		if jump_on:
 			mv["globe"] = 0
 		done = []
@@ -184,14 +191,14 @@ func step(dt: float, way: Vector2, hooked: bool) -> bool:
 	# (a press goes in as it is made; one made while the combo is locked waits, while it is still held, for the combo's end)
 	if fire and not _fire_was:
 		_tap = true
-	elif fire and not _tap and queue.is_empty() and not _full():
+	elif fire and not _tap and queue.is_empty() and (B2.on or not _full()):
 		_tap = true
 	if not fire:
 		_tap = false
 	_fire_was = fire
 	if cast and not _cast_was:
 		_hold = true
-	elif cast and not _hold and queue.is_empty() and not _full():
+	elif cast and not _hold and queue.is_empty() and (B2.on or not _full()):
 		_hold = true
 	if not cast:
 		_hold = false
@@ -214,6 +221,17 @@ func step(dt: float, way: Vector2, hooked: bool) -> bool:
 	if not mv.is_empty():
 		_play(dt, way)
 		return true
+	# (THE BRAWLER REMADE: the combo's string of moves over after the gap, as before; the globes lit kept till KEEP has gone by)
+	if B2.on:
+		if queue.is_empty():
+			idle += dt
+			if idle >= float(TUNE["gap"]):
+				done = []
+				_punches = 0
+			if idle >= B2.KEEP:
+				globes = []
+				taps_in = 0
+		return false
 	# (not while presses wait their turn, as while a monster holds him: the globes went out with two still to come, and three taps more
 	# played five; the bug hunt's fifth round)
 	if not globes.is_empty() and queue.is_empty():
@@ -235,6 +253,8 @@ func _press(kind: String, at := Vector2.ZERO) -> bool:
 	# hiding them; the bug hunt's sixth round, 25 Nov 2026)
 	if not h.move_open(2 if kind == "swipe" else (0 if kind == "tap" else 1)):
 		return true
+	if B2.on:
+		return _press2(kind, at, before)
 	if kind == "swipe":
 		# (his jump in the air already: not another on top of it)
 		if _full() and not mv.is_empty() and mv["id"] == "dodge":
@@ -324,6 +344,67 @@ func _press(kind: String, at := Vector2.ZERO) -> bool:
 	return true
 
 
+## THE BRAWLER REMADE (B2 on): a press of his. A swipe breaks off whatever he is doing and spends his jump: with a globe lit he flies
+## at the enemy where it points carrying the first (all of them, with The Full Set and every globe lit), else the hop as before; a
+## tap or a hold his next punch or kick, waiting its turn (WAITING at most). Whether it went in.
+func _press2(kind: String, at: Vector2, before: Array) -> bool:
+	if kind == "swipe":
+		# (his jump in the air already: not another on top of it; UNIQUE ITEMS: Sprung Heels, he can jump again in the air)
+		if not mv.is_empty() and mv["id"] == "dodge":
+			var sprung: bool = float(mv["f"]) >= float(R["dodge"]["air"][0]) and h.uniques != null and h.uniques.wears("sprungheels")
+			if not sprung:
+				return false
+		if charges[2] < 1:
+			if _deny <= 0.0:
+				_deny = 0.8
+				h.sfx.play("deny")
+				h._tell({"t": "text", "x": h.world.x, "y": h.world.y, "text": "No jump", "color": "#8c8090"})
+			return true
+		if h.mana < float(h.loadout.r(2)["mana"]):
+			h.no_mana()
+			return true
+		h.mana -= float(h.loadout.r(2)["mana"])
+		charges[2] -= 1
+		h.uses[2] += 1
+		if cd[2] <= 0.0:
+			cd[2] = float(h.loadout.r(2)["cooldown"]) * (float(_T()["lightFeet"]["wait"]) if _has("vlightfeet") else 1.0)
+			full[2] = maxf(0.01, cd[2])
+		fire_ready = false
+		if not mv.is_empty() and mv["id"] == "dodge":
+			h.uniques._say({"id": "sprungheels", "what": "again"})
+		if not mv.is_empty():
+			done.append(mv["id"])
+		mv = {}
+		queue = []
+		idle = 0.0
+		if globes.is_empty():
+			queue.append({"id": "dodge", "globe": -1, "tx": at.x, "ty": at.y})
+		else:
+			var spend := globes.size() if globes.size() >= most() and _has("vfullset") else 1
+			var g: String = globes[0]
+			globes = globes.slice(spend)
+			var q := {"id": "hammerfist" if g == "punch" else "flyknee", "globe": -1, "leap": true, "set": spend, "tx": at.x, "ty": at.y, "aimed": true}
+			var best := INF
+			if h.monsters != null:
+				for o in h.monsters.list:
+					if not is_instance_valid(o) or o.dead or h.monsters.shut_in(o):
+						continue
+					var d: float = o.world.distance_to(at) - o.r
+					if d <= 1.5 and d < best:
+						best = d
+						q["tid"] = o
+			queue.append(q)
+		_start()
+		return true
+	if queue.size() >= B2.WAITING:
+		return false
+	var q := {"id": move_for(kind, before), "globe": -1}
+	q.merge(_aim_of(kind))
+	queue.append(q)
+	idle = 0.0
+	return true
+
+
 ## (game.ts vetAimOf) What a press aims at: the point, and the enemy there if there is one.
 func _aim_of(kind: String) -> Dictionary:
 	var at := _aim(float(TUNE["retarget"]), kind)
@@ -390,6 +471,22 @@ func _start() -> void:
 		f0 = floorf(float(R["roundkick"]["strike"]["from"]) * float(_T()["switchKick"]["skip"]))
 	mv = {"id": id, "f": f0, "x0": h.world.x, "y0": h.world.y, "fx": f.x, "fy": f.y, "ax": a.x, "ay": a.y, "carried": Vector2.ZERO, "hit": [], "globe": q["globe"],
 		"wx": 0.0, "wy": 0.0, "props": false, "n": _plays, "tid": null}
+	# (THE BRAWLER REMADE: a punch thrown toward the next punch globe, the third lighting it (Quick Hands: each); a kick lighting a kick
+	# globe; a flying move going as far past its own carry as reaches its enemy, LEAP at most, before its blow)
+	if B2.on and id != "dodge":
+		if q.get("leap", false):
+			mv["leap"] = clampf(at.distance_to(h.world) - float(R[id]["carry"][0]) - 0.8, 0.0, B2.LEAP)
+			mv["set"] = int(q.get("set", 1))
+		elif is_punch(id):
+			_punches += 1
+			mv["nth"] = _punches
+			taps_in += 1
+			if taps_in >= (1 if _has("vquickhands") else B2.NEED):
+				taps_in = 0
+				if globes.size() < most():
+					globes.append("punch")
+		elif globes.size() < most():
+			globes.append("kick")
 	if id != "dodge":
 		if h.monsters != null:
 			for o in h.monsters.list:
@@ -435,7 +532,23 @@ func _pace(id: String) -> float:
 	var r: Dictionary = h.loadout.r(0 if is_punch(id) else 1)
 	var w = look.loot.gear.get("mainhand") if look != null and is_instance_valid(look) and look.loot != null else null
 	var wr: float = float(w["aps"]) if w != null and float(w.get("aps", 0.0)) > 0.0 else 1.0
-	return clampf(float(r["rate"]) / maxf(0.3, wr), 0.5, 2.0) * h.attack_pace()
+	var k: float = clampf(float(r["rate"]) / maxf(0.3, wr), 0.5, 2.0) * h.attack_pace()
+	# (THE BRAWLER REMADE, Heavy Hands: his attack speed makes him no faster, his critical blows harder instead: more_crit)
+	if B2.on and _has("vheavyhands"):
+		return minf(1.0, k)
+	return k
+
+
+## (THE BRAWLER REMADE, Heavy Hands) What his critical blows of move `i` gain, in % of the hit: HEAVY% for each 1% his attack speed
+## would have quickened them (hero.gd hit_monster).
+func more_crit(i: int) -> float:
+	if not B2.on or not _has("vheavyhands") or i > 1:
+		return 0.0
+	var r: Dictionary = h.loadout.r(i)
+	var w = look.loot.gear.get("mainhand") if look != null and is_instance_valid(look) and look.loot != null else null
+	var wr: float = float(w["aps"]) if w != null and float(w.get("aps", 0.0)) > 0.0 else 1.0
+	var k: float = clampf(float(r["rate"]) / maxf(0.3, wr), 0.5, 2.0) * h.attack_pace()
+	return maxf(0.0, k - 1.0) * 100.0 * B2.HEAVY
 
 
 ## (veteran.ts vetWalkable) Whether he may walk himself `f` frames into move `id`: in its wind-up or its wind-down.
@@ -494,6 +607,15 @@ func _play(dt: float, way: Vector2) -> void:
 		var fw := Vector2(mv["fx"], mv["fy"])
 		var left := Vector2(fw.y, -fw.x)
 		h.world = h.map.slide(h.world, HERO_R, fw * dc.x + left * dc.y)
+	# (THE BRAWLER REMADE: a flying move's leap past its own carry, over its frames before its blow; walls stop him)
+	if float(mv.get("leap", 0.0)) > 0.0 and S != null:
+		var till: float = maxf(1.0, float(S["from"]))
+		var df: float = clampf(f, 0.0, till) - clampf(f0, 0.0, till)
+		if df > 0.0:
+			var was2: Vector2 = h.world
+			h.world = h.map.slide(h.world, HERO_R, Vector2(mv["ax"], mv["ay"]) * float(mv["leap"]) * df / till)
+			mv["wx"] = float(mv["wx"]) + h.world.x - was2.x
+			mv["wy"] = float(mv["wy"]) + h.world.y - was2.y
 	# (his dodging jump: nothing touches him while he is off the floor)
 	# (THE VETERAN'S TREE: Hang Time, nor through any move of his in the air)
 	# (UNIQUE ITEMS: Broken Shackles, he can be hit during his dodge: hero.gd move_safe)
@@ -505,13 +627,21 @@ func _play(dt: float, way: Vector2) -> void:
 		done.append(id)
 		mv = {}
 		idle = 0.0
-		# (THE VETERAN'S TREE: Fire Starter, landed from his dodge jump: his next tap or hold is in fire)
+		# (THE VETERAN'S TREE: Fire Starter, landed from his dodge jump: his next tap or hold is in fire; the Brawler remade: a punch
+		# globe lit)
 		if id == "dodge" and _has("vfirestarter"):
-			fire_ready = true
+			if not B2.on:
+				fire_ready = true
+			elif globes.size() < most():
+				globes.append("punch")
 		if id == "dodge":
 			_jump_lands()
-		# (the combo locked and played out: its globes go out)
-		if _full() and queue.is_empty():
+		# (the combo locked and played out: its globes go out; the Brawler remade, no combo locks: a flying blow his finish)
+		if B2.on and B2.FLYING.has(id) and h.uniques != null and h.uniques.wears("winningstreak"):
+			h.uniques.uq["streak"] = int(h.uniques.uq.get("streak", 0)) + 1
+			h._tell({"t": "unique", "id": "winningstreak", "what": "streak", "x": h.world.x, "y": h.world.y, "mid": h.uniques.uq["streak"]})
+			h.uniques._say({"id": "winningstreak", "what": "streak"})
+		if not B2.on and _full() and queue.is_empty():
 			globes = []
 			done = []
 			# (UNIQUE ITEMS: the Winning Streak, every combo he finishes makes his next blows hit harder)
@@ -568,6 +698,13 @@ func _reach(m: Dictionary, o: Vector2, a: Vector2, left: Vector2, p: Vector2, r:
 	return from + float(F["long"]) * (1.0 - pow(1.0 - k, 1.0 / 3.0))
 
 
+## Where his blow goes out from: where he stood as the move began and what he walked; a flying move's, where he comes down.
+func _origin() -> Vector2:
+	if B2.FLYING.has(str(mv.get("id", ""))):
+		return h.world
+	return Vector2(float(mv["x0"]) + float(mv["wx"]), float(mv["y0"]) + float(mv["wy"]))
+
+
 ## (game.ts vetStrike) His blow's force going out: what stands on the floor in its way, once a move; each monster it comes to struck,
 ## once.
 func _strike(m: Dictionary) -> void:
@@ -577,7 +714,7 @@ func _strike(m: Dictionary) -> void:
 	var f: float = mv["f"]
 	if f > from + float(F["long"]) + 1.0:
 		return
-	var b := Vector2(float(mv["x0"]) + float(mv["wx"]), float(mv["y0"]) + float(mv["wy"]))
+	var b := _origin()
 	var a := Vector2(mv["ax"], mv["ay"])
 	# (his left about the way his blow goes: never a mirror, from all eight sides)
 	var left := Vector2(a.y, -a.x)
@@ -620,7 +757,7 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	var first: bool = (mv["hit"] as Array).size() == 1
 	var share: float = m["share"]
 	var T := _T()
-	var fire: bool = m.get("globe") == "punchFire" or m.get("globe") == "kickFire"
+	var fire: bool = m.get("globe") == "punchFire" or m.get("globe") == "kickFire" or (B2.on and B2.FLYING.has(id))
 	var kicked: bool = m["strike"]["kind"] == "kick"
 	# (THE VETERAN'S TREE: Launcher, his blows on one hanging in the air land twice as hard)
 	if _has("vlauncher"):
@@ -630,6 +767,9 @@ func _hit(o, m: Dictionary, n: int) -> void:
 				break
 	# (The Full Set: the last blow of a combo locked with a punch, a kick and a fire globe in it, a finisher)
 	var finisher: bool = int(mv["globe"]) == most() - 1 and _has("vfullset") and globes.has("punch") and globes.has("kick") and (globes.has("punchFire") or globes.has("kickFire"))
+	# (the Brawler remade: a flying blow that spent every globe, The Full Set's)
+	if B2.on:
+		finisher = int(mv.get("set", 0)) >= most() and _has("vfullset")
 	if finisher:
 		share *= float(T["fullSet"]["mult"])
 	# (TWIN in front, as his move's card has it, “hits twice, each for” its share: each blow lands twice, the second a moment after;
@@ -667,12 +807,12 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	if first and fire and _has("vstoke") and charges[2] < 1:
 		cd[2] = maxf(0.01, cd[2] - float(T["stoke"]["secs"]))
 	# (Thunder Knee: his flying knee and spinning jump kicks crack with lightning, on to three more near each one they hit)
-	if id in ["knee", "spinkick", "spinkickClose"] and _has("vthunderknee"):
+	if id in ["knee", "spinkick", "spinkickClose", "flyknee"] and _has("vthunderknee"):
 		_thunder(o, m)
 	if finisher:
 		_shake(5.0)
 		if not o.dead:
-			o.throw_from(Vector2(float(mv["x0"]) + float(mv["wx"]), float(mv["y0"]) + float(mv["wy"])), float(T["fullSet"]["throw"]), 0.3)
+			o.throw_from(_origin(), float(T["fullSet"]["throw"]), 0.3)
 	if first:
 		h._landed_on(i)
 		# (what the words behind it leave, his blow leaves where it first lands, once a move)
@@ -696,10 +836,13 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	# (Aftershock: every kick that lands knocks down everything near the one it hit)
 	if kicked and _has("vaftershock"):
 		_aftershock(o)
+	# (the Brawler remade, Launcher: his flying hammerfist throws up all round where he lands)
+	if id == "hammerfist" and _has("vlauncher"):
+		rc = V["react"]["launch"]
 	if rc.has("up") and _pop_up(o):
 		o.stun_t = float(V["up"]["up"]) + float(rc.get("stun", 0.0))
 		return
-	var from := Vector2(float(mv["x0"]) + float(mv["wx"]), float(mv["y0"]) + float(mv["wy"]))
+	var from := _origin()
 	if rc.has("back") and not finisher:
 		# (Wall Slam: one his kick drives into a wall or into another enemy is stunned)
 		if kicked and _has("vwallslam") and _slams(o, from, float(rc["back"])) and not o.boss:
@@ -712,7 +855,8 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	if rc.has("stun") and not o.boss:
 		o.stun_for(float(rc["stun"]))
 	# (Knockdown: the third punch of a combo knocks it off its feet)
-	if int(mv["globe"]) == 2 and is_punch(id) and _has("vknockdown") and not o.boss:
+	var third: bool = int(mv.get("nth", 0)) > 0 and int(mv.get("nth", 0)) % 3 == 0 if B2.on else int(mv["globe"]) == 2
+	if third and is_punch(id) and _has("vknockdown") and not o.boss:
 		o.stun_for(float(T["knockdown"]["down"]))
 
 
@@ -832,7 +976,7 @@ func walk_slow() -> float:
 func _own_picture(side: int) -> Array:
 	if mv.is_empty():
 		return []
-	var list: int = VET_LIST0 + (V["lists"] as Array).find(mv["id"])
+	var list: int = VET_LIST0 + (V["lists"] as Array).find(B2.art_of(mv["id"]))
 	var n: int = h.art.count(side, list)
 	if n == 0:
 		return []
@@ -846,6 +990,8 @@ func readiness() -> Dictionary:
 
 
 func _clear_own() -> void:
+	taps_in = 0
+	_punches = 0
 	globes = []
 	queue = []
 	mv = {}

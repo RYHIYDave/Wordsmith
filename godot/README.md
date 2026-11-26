@@ -1513,6 +1513,21 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   what is near her can strike again (before, she threw so fast that nothing near her was ever up: she could not fall). Her
   toughness before and after and every class's: `docs/tests/speed_tank_2026-11-26.txt` (AFTER THE FIXES); measured by
   `--only=speed` with `WS_BIG_WAIT=0|1` and `WS_DEF_EVEN=0|1` to set either switch for a run.
+- **The Brawler remade** (`heroes/brawler2.gd`, its switch `on`, OFF until his yes to the film and the numbers; his ideas, 26 Nov
+  2026: “it takes three taps to fill one of his globes with a punch.  Then have a branching talent tree where one way has a single
+  tap fills a globe, and the other has attack speed modifiers now affect crit damage at 200% or something like that”, and “his
+  swipe can be something like an interrupt to the combo, but whatever globe is next is now added to the swipe, so either a flying
+  double hamerfist or a flying knee”; a kick globe from one hold, his pick “One hold fills it (Recommended)”). Every tap a punch as
+  before, every third lighting a punch globe; every hold a kick, lighting a kick globe; lit globes kept till spent or 3 s with no
+  blow. A swipe breaks off what he is doing and spends his jump: a globe lit, he flies up to 3.5 tiles past the move's own carry at
+  the enemy where it points with the first (a punch globe the flying double hammerfist, a round blow knocking down all round where
+  he lands; a kick globe the flying knee); none lit, the hop as before. No fire globes. The fork off Stiff Jab, one side only:
+  Quick Hands (every punch a globe) or Heavy Hands (no faster; each 1% of attack speed 2% more critical damage). Knockdown, Launcher,
+  Fire Starter, Stoke, Hang Time, The Full Set, Thunder Knee and Light Feet bent to fit (`brawler2.gd` TEXT; `talents.gd` tree).
+  THE TWO FLYING MOVES' ART is the art chat's, at his word: “Send the hammer fist and flying knee to the queue and art chat.  I don’t
+  trust you to do it” (the queue's `draw-brawler-hammerfist-and-flying-knee`); till it comes the uppercut's and the knee's frames
+  stand in (`brawler2.gd` ART). Check: `--only=brawler2` (`check_brawler2.gd`, the switch on for it alone); the speed test with
+  `WS_BRAWLER2=1 WS_B2_FORK=vquickhands|vheavyhands`.
 - **Six enemies made livelier** (the browser art's `src/art/enemies8.ts` ENEMIES8, ON at his yes to the second pictures, 26 Nov
   2026: “Yes, put them in (Recommended)”; his words: “Next Find the 8 weakest enemies and work on them.  Weakest in terms of their
   animations and look.”). The skeleton marksman breathes as he waits and swings more in his stride; the Shade rises, sinks and

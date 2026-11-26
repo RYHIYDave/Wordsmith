@@ -18,6 +18,7 @@ const BakedHero := preload("res://scripts/baked_hero.gd")
 var kit
 var loot
 var air: Node2D
+const B2 := preload("res://scripts/heroes/brawler2.gd")
 var V := {}
 var _sheet: Texture2D
 var _pics := {}
@@ -72,6 +73,8 @@ class _Behind extends Node2D:
 
 func _ready() -> void:
 	V = JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/veteran.json"))
+	# (the two flying moves of the Brawler remade: their stand-in frames, heroes/brawler2.gd)
+	B2.alias(V)
 	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/heroes/veteran_fx.json"))
 	_pics = d["pics"]
 	_sheet = load("res://assets/heroes/veteran_fx-0.png")
@@ -184,7 +187,7 @@ func _step(dt: float) -> void:
 			if not is_instance_valid(o) or ss.is_empty():
 				continue
 			_burst_on(live, ss[0], o.world, (live["struck"] as Array).size() - 1)
-			if live["id"] == "uppercut":
+			if live["id"] == "uppercut" or live["id"] == "hammerfist":
 				launched[o] = _clock
 	plays = plays.filter(func(p): return p["live"] or float(p["f"]) < float(V["moves"][p["id"]]["long"]) + AFTER)
 	bursts = bursts.filter(func(b): return plays.has(b["play"]) and float(b["play"]["f"]) - float(b["born"]) < 10.0)
@@ -241,7 +244,7 @@ func _piece(c: CanvasItem, key: String, x: float, y: float) -> void:
 func _layer(c: CanvasItem, p: Dictionary, layer: int, at: Vector2) -> void:
 	var art = kit.h.art
 	var F := floori(float(p["f"]))
-	var list: int = 80 + (V["lists"] as Array).find(p["id"]) * 3 + layer
+	var list: int = 80 + (V["lists"] as Array).find(B2.art_of(p["id"])) * 3 + layer
 	var side := _side_of(p["fx"], p["fy"])
 	if F < 0 or F >= art.count(side, list):
 		return
@@ -290,7 +293,7 @@ func _place_ghosts() -> void:
 		return
 	var M: Dictionary = V["moves"][live["id"]]
 	var side := _side_of(live["fx"], live["fy"])
-	var idx: int = (V["lists"] as Array).find(live["id"])
+	var idx: int = (V["lists"] as Array).find(B2.art_of(live["id"]))
 	var list := 58 + idx
 	var halves_list := 69 + idx
 	var halves = M["halves"]

@@ -723,7 +723,9 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 		crit = true
 	if crit and not sure_thing:
 		# (THE SKILL TREES: Hunter's Mark, Precise's mark makes a triple critical)
-		dmg *= 1.0 + stats["crit_mult"] / 100.0 * (float(Talents.D["tune"]["huntersMark"]) if spent and has("huntersmark") else 1.0)
+		# (THE BRAWLER REMADE, Heavy Hands: what his attack speed would have quickened, his critical blows' instead: heroes/brawler.gd)
+		var more_cm: float = kit.more_crit(i) if kit != null and kit.has_method("more_crit") else 0.0
+		dmg *= 1.0 + (stats["crit_mult"] + more_cm) / 100.0 * (float(Talents.D["tune"]["huntersMark"]) if spent and has("huntersmark") else 1.0)
 	# (UNIQUE ITEMS: The Physician's Coat counts the hits on elites and bosses: uniques.gd landed)
 	if uniques != null:
 		uniques.landed(m, crit, quiet)

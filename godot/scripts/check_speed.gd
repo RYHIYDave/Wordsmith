@@ -75,6 +75,10 @@ func run(main, hero, d: String) -> void:
 		preload("res://scripts/heroes/tinkerer.gd").BIG_ONE_WAIT = OS.get_environment("WS_BIG_WAIT") == "1"
 	if OS.has_environment("WS_DEF_EVEN"):
 		preload("res://scripts/loot.gd").DEFENCE_EVEN = OS.get_environment("WS_DEF_EVEN") == "1"
+	# (the Brawler remade, heroes/brawler2.gd: WS_BRAWLER2=1 its switch on; WS_B2_FORK=vquickhands or vheavyhands, the side of his
+	# fork in his talents, in place of Viper Jab or Long Legs)
+	if OS.has_environment("WS_BRAWLER2"):
+		B2.on = OS.get_environment("WS_BRAWLER2") == "1"
 	var only: Array = Array(OS.get_environment("WS_SPEED").split(" ", false)) if OS.has_environment("WS_SPEED") else []
 	var part := OS.get_environment("WS_SPEED_PART") if OS.has_environment("WS_SPEED_PART") else ""
 	# (floor 20 first, for its own kind of monster: what the chooser's dummy and the tank's foes are made of)
@@ -84,9 +88,13 @@ func run(main, hero, d: String) -> void:
 	_put("FLOOR 20's own monsters: %s" % _lives())
 	await _set_out()
 	_put("the tank fight's foes: %s (the floor's most common)" % kind)
-	for b in BUILDS:
+	for b0 in BUILDS:
+		var b: Dictionary = b0
 		if b["id"] == "mage_frost":
 			continue
+		if b["cls"] == "brawler":
+			b = b0.duplicate(true)
+			b["talents"] = _b2_talents(b["talents"])
 		if not only.is_empty() and not only.has(b["id"]):
 			continue
 		if part != "tank":
@@ -100,6 +108,27 @@ func run(main, hero, d: String) -> void:
 
 
 # --- the builds ---
+
+const B2 := preload("res://scripts/heroes/brawler2.gd")
+
+
+## (the Brawler remade) His talents with the side of his fork, WS_B2_FORK, in place of Viper Jab or Long Legs.
+static func _b2_talents(list: Array) -> Array:
+	var out: Array = list.duplicate()
+	if not B2.on or not OS.has_environment("WS_B2_FORK"):
+		return out
+	for x in ["vviperjab", "vlonglegs"]:
+		var i := out.find(x)
+		if i >= 0:
+			out[i] = OS.get_environment("WS_B2_FORK")
+			return out
+	return out
+
+
+## (the Brawler remade) With a globe lit and his jump ready, he flies his blow at `at`.
+func _b2_fly(at: Vector2) -> void:
+	if B2.on and h.cls == "brawler" and h.kit != null and not h.kit.globes.is_empty() and int(h.kit.charges[2]) >= 1:
+		h.auto_lunge = at
 
 func _show_build(b: Dictionary, picks: Dictionary, ws: Array, talents: Array) -> void:
 	var s: Dictionary = h.stats
@@ -143,6 +172,8 @@ func _tank_build(b: Dictionary) -> Dictionary:
 	_arena()
 	var tb: Dictionary = b.duplicate()
 	tb["talents"] = TANK_TALENTS[b["id"]]
+	if b["cls"] == "brawler":
+		tb["talents"] = _b2_talents(tb["talents"])
 	# (WS_TANK_TALENTS="a,b,c": these in place of the build's own, to weigh one talent against the rest)
 	if OS.has_environment("WS_TANK_TALENTS"):
 		tb["talents"] = Array(OS.get_environment("WS_TANK_TALENTS").split(",", false))
@@ -369,6 +400,7 @@ func _clear_level(b: Dictionary, life_k: float) -> Dictionary:
 				h._turn(to.normalized())
 			h.auto_attack = true
 			h.auto_whirl = true
+			_b2_fly(target.world)
 			fight_t += dt
 			since = 0.0
 		else:
@@ -473,6 +505,8 @@ func _tank_fight(k: float) -> float:
 			h._turn((near.world - h.world).normalized())
 		h.auto_attack = true
 		h.auto_whirl = true
+		if near != null:
+			_b2_fly(near.world)
 		# (WS_TANK_TRACE: every two seconds, his life and barrier, how many of them are within two tiles of him, the decoys)
 		if OS.has_environment("WS_TANK_TRACE") and int(t / 2.0) != int((t - dt) / 2.0):
 			var close := 0
