@@ -344,11 +344,14 @@ export type OffhandKind = 'shield' | 'quiver' | 'focus';
  * The new classes' weapons ('wraps', 'tome', 'wrench') have stand-in pictures in art/icons.ts, shown while ITEMS_A is off; with it
  * on, every item's picture is the art chat's (art/items_a.ts, asked for through art/icons.ts itemPic).
  */
-export type IconKey = WeaponKind | OldWeaponKind | OffhandKind | 'helm' | 'hood' | 'armor' | 'robe' | 'gloves' | 'belt' | 'boots' | 'ring' | 'amulet';
+export type IconKey = WeaponKind | OldWeaponKind | OffhandKind | 'helm' | 'hood' | 'armor' | 'robe' | 'gloves' | 'belt' | 'boots' | 'ring' | 'amulet'
+  // (THE BARRIER GEAR'S HEAD AND FEET: the cloth cowl and slippers, drawn; no piece has them until their bases are added)
+  | 'cowl' | 'slippers';
 export const ICON_KEYS: readonly IconKey[] = [
   'sword', 'axe', 'mace', 'greatsword', 'maul', 'bow', 'longbow', 'wand', 'staff', 'shield', 'quiver', 'focus',
   'helm', 'hood', 'armor', 'robe', 'gloves', 'belt', 'boots', 'ring', 'amulet',
   'wraps', 'tome', 'wrench',
+  'cowl', 'slippers',
 ];
 
 export interface Affix {

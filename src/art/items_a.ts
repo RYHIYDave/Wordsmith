@@ -30,13 +30,15 @@ export const ITEMS_A = { on: true };
 export const ITEM_A_KINDS = [
   'sword', 'greatsword', 'bow', 'wand', 'staff', 'wraps', 'tome', 'wrench', 'shield', 'quiver', 'focus',
   'helm', 'hood', 'armor', 'robe', 'gloves', 'belt', 'boots', 'ring', 'amulet',
+  // (THE BARRIER GEAR'S HEAD AND FEET, the cloth cowl and slippers: drawn, no piece of the game's has them yet)
+  'cowl', 'slippers',
 ] as const;
 export type ItemAKind = (typeof ITEM_A_KINDS)[number];
 /** The names he knows them by. */
 export const ITEM_A_NAME: Record<ItemAKind, string> = {
   sword: 'Sword', greatsword: 'Greatsword', bow: 'Bow', wand: 'Wand', staff: 'Staff', wraps: 'Brawler’s wraps', tome: 'Demonic tome',
   wrench: 'Tinkerer’s wrench', shield: 'Shield', quiver: 'Quiver', focus: 'Focus', helm: 'Helmet', hood: 'Hood', armor: 'Armour',
-  robe: 'Robe', gloves: 'Gloves', belt: 'Belt', boots: 'Boots', ring: 'Ring', amulet: 'Amulet',
+  robe: 'Robe', gloves: 'Gloves', belt: 'Belt', boots: 'Boots', ring: 'Ring', amulet: 'Amulet', cowl: 'Cowl', slippers: 'Slippers',
 };
 /** The weapons that were in the game until Version 12 (game/types.ts OldWeaponKind): each shows the picture of the kind it becomes (game/items.ts OLD_WEAPON, migrateItem). */
 export const ITEM_A_OLD: Record<'axe' | 'mace' | 'maul' | 'longbow', ItemAKind> = { axe: 'sword', mace: 'sword', maul: 'greatsword', longbow: 'bow' };
@@ -361,6 +363,31 @@ function squeeze(parts: readonly Part[], sx: number, sy: number, deg = 0): Part[
       case 'dome': return { k: 'dome', c: f(sh.c), r: sh.r * kr, ry: (sh.ry ?? sh.r) * kr };
       case 'ridge': return { ...sh, a: f(sh.a), b: f(sh.b) };
       case 'face': return { k: 'face', n: [sh.n[0] * ca - sh.n[1] * sa, sh.n[0] * sa + sh.n[1] * ca] };
+      default: return sh;
+    }
+  };
+  return parts.map((pt) => ({
+    ...pt, s: shape(pt.s), cut: pt.cut?.map(shape), sh: shade(pt.sh),
+    marks: pt.marks?.map((mk) => ({ a: f(mk.a), b: mk.b ? f(mk.b) : undefined, t: mk.t })),
+  }));
+}
+
+/** Parts moved `dx` across and `dy` down: their shapes, their light and their marks. */
+function nudge(parts: readonly Part[], dx: number, dy: number): Part[] {
+  const f = (p: V): V => [p[0] + dx, p[1] + dy];
+  const shape = (s: Shape): Shape => {
+    switch (s.t) {
+      case 'poly': return { t: 'poly', p: s.p.map(f) };
+      case 'cap': return { ...s, a: f(s.a), b: f(s.b) };
+      case 'ell': return { ...s, c: f(s.c) };
+      case 'path': return { t: 'path', p: s.p.map(f), r: s.r };
+    }
+  };
+  const shade = (sh: Shade): Shade => {
+    switch (sh.k) {
+      case 'cyl': return { ...sh, a: f(sh.a), b: f(sh.b) };
+      case 'dome': return { ...sh, c: f(sh.c) };
+      case 'ridge': return { ...sh, a: f(sh.a), b: f(sh.b) };
       default: return sh;
     }
   };
@@ -821,6 +848,44 @@ function hood(r: Rar): Part[] {
   return parts;
 }
 
+/**
+ * THE CLOTH COWL (the Barrier gear's head piece: Linen, Silk, Velvet Cowl), in the robe's colours: a soft round cowl with no
+ * point, its face in shadow inside a band (the robe's band: cloth, blue, gold), the cloth falling in two swags at the throat and a
+ * short mantle over the shoulders cut to a point at the front; a cord at the throat in the robe's sash's colours (cord, blue, red),
+ * a brooch with its stone on the finer ones.
+ */
+function cowl(r: Rar): Part[] {
+  const parts: Part[] = [];
+  const cloth: Mat = r === 3 ? 'black' : 'vcloth';
+  const band: Mat = r === 0 ? 'vcloth' : r === 1 ? 'blue' : 'gold';
+  const cord: Mat = r === 0 ? 'string' : r === 1 ? 'blue' : 'red';
+  const lift = r === 3 ? 0.14 : 0;
+  const GOLDLINE = r === 3 ? INLAY : '#d0902c';
+  parts.push({
+    s: poly([15.0, 1.8], [19.8, 2.6], [23.6, 5.0], [25.8, 9.2], [26.4, 14.4], [25.6, 19.0], [28.8, 21.8], [30.6, 25.2], [26.0, 27.0], [21.6, 28.6],
+      [16, 31.0], [10.4, 28.6], [6.0, 27.0], [1.4, 25.2], [3.2, 21.8], [6.4, 19.0], [5.6, 14.4], [6.0, 9.2], [7.6, 5.2], [10.6, 2.6]),
+    m: cloth, sh: { k: 'soft', r: 4.5 }, bias: lift,
+    // (the cloth's folds; on the finer, a gold-stitched hem down to the mantle's point)
+    marks: [{ a: [9.4, 5.6], b: [7.4, 12.0], t: 3 }, { a: [23.8, 8.4], b: [24.6, 15.4], t: 1 }, { a: [4.6, 23.2], b: [7.2, 26.6], t: 1 }, { a: [27.4, 23.2], b: [24.8, 26.6], t: 1 },
+      ...(r >= 2 ? [{ a: [2.4, 25.0], b: [10.4, 27.8], t: GOLDLINE }, { a: [10.4, 27.8], b: [16, 30.0], t: GOLDLINE }, { a: [16, 30.0], b: [21.6, 27.8], t: GOLDLINE }, { a: [21.6, 27.8], b: [29.6, 25.0], t: GOLDLINE }] as Mark[] : [])],
+  });
+  // the face: the band round the opening, the shadow inside it
+  parts.push({ s: ell([16, 12.6], 6.4, 7.8), m: band, sh: { k: 'soft', r: 2 }, shine: r >= 2, bias: r === 0 ? -0.25 : 0 });
+  parts.push({ s: ell([16, 13.0], 4.8, 6.2), m: 'shadow', sh: { k: 'flat' }, marks: r === 3 ? [{ a: [12.6, 8.6], b: [19.4, 8.6], t: '#46446e' }] : [] });
+  // the cowl's swag of cloth at the throat, over the band's foot
+  const swag = (outer: readonly V[], inner: readonly V[], b: number): Part => ({ s: poly(...outer, ...inner), m: cloth, sh: { k: 'soft', r: 1.8 }, bias: b + lift });
+  parts.push(swag([[6.6, 19.2], [9.4, 23.2], [12.6, 25.6], [16, 26.4], [19.4, 25.6], [22.6, 23.2], [25.4, 19.2]], [[23.2, 20.4], [20.2, 22.8], [16, 23.6], [11.8, 22.8], [8.8, 20.4]], 0.06));
+  // the cord tied across the throat: its knot, or a brooch with its stone over it
+  parts.push({ s: path([[12.0, 21.0], [14.2, 22.4], [16, 22.8], [17.8, 22.4], [20.0, 21.0]], [0.75, 0.8, 0.8, 0.8, 0.75]), m: cord, sh: { k: 'soft', r: 1 } });
+  if (STONE[r]) {
+    parts.push({ s: ell([16, 22.2], 2.0, 1.8), m: TRIM(r), sh: { k: 'dome', c: [16, 22.2], r: 2.0, ry: 1.8 }, shine: true });
+    parts.push(gem([16, 22.2], 1.2, STONE[r]!));
+  } else parts.push({ s: ell([16, 22.2], 1.5, 1.3), m: cord, sh: { k: 'dome', c: [16, 22.2], r: 1.5, ry: 1.3 } });
+  // (the finest: stones at the mantle's shoulders)
+  if (r === 3) for (const p of [[5.6, 24.4], [26.4, 24.4]] as V[]) parts.push(gem(p, 0.95, 'amber'));
+  return parts;
+}
+
 /** A breastplate with shoulder plates, a fauld of two bands, and a belt. */
 function armor(r: Rar): Part[] {
   const parts: Part[] = [];
@@ -930,6 +995,43 @@ function boots(r: Rar): Part[] {
   return parts;
 }
 
+/**
+ * THE CLOTH SLIPPERS (the Barrier gear's feet: Linen, Silk, Velvet Slippers), in the robe's colours: one soft cloth slipper from the
+ * side, its toe to the left as the boots', no heel, the toe swept up into a point curled back over the foot, a tassel hung from it
+ * in the robe's sash's colours (cord, blue, red), its mouth banded as the robe (cloth, blue, gold) round the dark inside, a thin
+ * sole; the finer with a stone on the vamp, a gold toe and gold stitching.
+ */
+function slippers(r: Rar): Part[] {
+  const parts: Part[] = [];
+  const cloth: Mat = r === 3 ? 'black' : 'vcloth';
+  const band: Mat = r === 0 ? 'vcloth' : r === 1 ? 'blue' : 'gold';
+  const cord: Mat = r === 0 ? 'string' : r === 1 ? 'blue' : 'red';
+  const lift = r === 3 ? 0.14 : 0;
+  const GOLDLINE = r === 3 ? INLAY : '#d0902c';
+  // the sole, under it all
+  parts.push({ s: poly([26.8, 25.8], [27.4, 28.6], [26.4, 29.4], [7.0, 29.4], [4.2, 28.2], [3.2, 26.2]), m: 'dleather', sh: { k: 'flat', bev: 0.8 } });
+  // the slipper: the sole line, the back of the foot up to its mouth, the vamp down to the toe
+  parts.push({
+    s: poly([27.2, 13.6], [28.4, 18.0], [28.6, 23.0], [27.4, 27.8], [7.2, 27.8], [4.6, 27.0], [2.8, 25.0], [2.2, 22.4], [4.8, 21.6],
+      [7.8, 20.8], [10.8, 19.6], [13.6, 18.0], [17.4, 15.8], [22.4, 14.0]),
+    m: cloth, sh: { k: 'soft', r: 3.2 }, bias: lift,
+    marks: [{ a: [6.0, 23.4], b: [12.6, 21.6], t: 3 }, { a: [24.6, 19.4], b: [25.8, 25.6], t: 1 }, { a: [18.6, 21.0], b: [20.4, 26.2], t: 1 },
+      ...(r >= 2 ? [{ a: [5.6, 26.4], b: [27.0, 26.4], t: GOLDLINE } as Mark] : [])],
+  });
+  // the toe swept up and curled back over the foot: cloth, or gold
+  parts.push({ s: path([[5.4, 24.8], [3.0, 21.8], [2.4, 17.6], [3.6, 13.8], [6.4, 12.2], [8.4, 13.6]], [2.6, 2.3, 1.9, 1.5, 1.15, 0.85]), m: r >= 2 ? 'gold' : cloth, sh: { k: 'soft', r: 1.4 }, shine: r >= 2, bias: lift + 0.05 });
+  // its mouth: the band round it, the dark inside
+  parts.push({ s: ell([21.4, 16.6], 7.8, 3.4, -22), m: band, sh: { k: 'soft', r: 1.4 }, shine: r >= 2, bias: r === 0 ? -0.2 : 0 });
+  parts.push({ s: ell([21.6, 16.2], 5.8, 1.9, -22), m: 'shadow', sh: { k: 'flat' } });
+  // the tassel hung from the toe's point: its knot, its fringe
+  parts.push({ s: path([[8.4, 14.6], [8.8, 16.6], [8.8, 18.6]], [0.65, 1.0, 1.35]), m: cord, sh: { k: 'soft', r: 1 }, marks: [{ a: [8.4, 17.4], b: [8.4, 19.4], t: 1 }] });
+  parts.push(r === 3 ? gem([8.4, 13.8], 1.0, 'amber') : { s: ell([8.4, 14.0], 1.0), m: cord, sh: { k: 'dome', c: [8.4, 14.0], r: 1.0 } });
+  // the stone on the vamp
+  if (STONE[r]) parts.push(gem([11.6, 23.0], r === 1 ? 1.25 : 1.4, STONE[r]!));
+  // (a low thing: lifted to the middle of its frame and drawn a little taller)
+  return squeeze(nudge(parts, 0, -3.6), 1.03, 1.12);
+}
+
 /** A ring, tilted toward you, a big faceted stone in claws on top: a garnet in steel; a sapphire; a topaz in gold; amber in gold, with more. */
 function ring(r: Rar): Part[] {
   const parts: Part[] = [];
@@ -973,7 +1075,7 @@ function amulet(r: Rar): Part[] {
 }
 
 type Painter = (r: Rar) => Part[];
-const PAINTERS: Record<ItemAKind, Painter> = { sword, greatsword, bow, wand, staff, wraps, tome, wrench, shield, quiver, focus, helm, hood, armor, robe, gloves, belt, boots, ring, amulet };
+const PAINTERS: Record<ItemAKind, Painter> = { sword, greatsword, bow, wand, staff, wraps, tome, wrench, shield, quiver, focus, helm, hood, armor, robe, gloves, belt, boots, ring, amulet, cowl, slippers };
 
 /** One item at one rarity: a 32 by 32 picture (two picture pixels to a game pixel). */
 export function paintItemA(kind: ItemAKind, rarity: Rarity): Px {
