@@ -108,6 +108,8 @@ but for `tests/relief.test.ts` line 378, on `main` as it is.
   `src/dev/veteran_plays.ts`).
 - `tools/vet_flying_pics.ts`: his frames in a sheet, with what the checks find; `tools/vet_flying_game.ts`: as the game paints them.
 
-## Waiting
+## His word
 
-SHOWN HIM, 26 Nov 2026: the film and the key frames; asked by pop-up whether they are right.
+SHOWN HIM, 26 Nov 2026: the film and the key frames; asked by pop-up whether they are right. **HIS WORD, by 09:20 (Eastern): “Yes, both
+are right (Recommended)”.** Handed back on the queue page's ship list, `draw-brawler-hammerfist-and-flying-knee`, for the Godot chat to
+bring in (above, “For the Godot chat”).
