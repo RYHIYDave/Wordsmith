@@ -26,13 +26,14 @@ extends "res://scripts/heroes/kit.gd"
 const SHOT_WAIT := 0.5
 
 ## (assets/heroes/golem.json: tools/godot_tinkerer.ts, her tune and its rocket jump's frames, as the game has them)
-## THE GOLEMS' PULL LET GO OF NOW AND THEN (his pick, 26 Nov 2026, “Fix the balance (Recommended)”, after the speed and tank test
-## found it: her Lightning Rod's pull, put again at every ground pound and big shot, never let the monsters go while two Golems
-## pounded, and she could not fall). On, a pull begins no sooner than ROD_WAIT_SECS after the last began, whichever Golem puts it:
-## for three seconds in eight they go after the Golem, the rest after her. Off until his yes to the numbers.
-static var ROD_WAIT := false
-const ROD_WAIT_SECS := 8.0
-var _rod_at := -1e9
+## THE BIG ONE NOW AND THEN (his pick, 26 Nov 2026, “Fix the balance (Recommended)”, after the speed and tank test found her
+## unkillable: every fifth vial knocks everything near down for 1.2 s, and she throws them so fast that the next big one came before
+## they were up, so that nothing near her ever struck; with it on a big one comes no sooner than BIG_ONE_SECS after the last, the
+## fifth vial or a later one: they are down a little more than a third of the time). Off until his yes to the numbers.
+static var BIG_ONE_WAIT := false
+const BIG_ONE_SECS := 3.0
+var _since_big := 0
+var _big_at := -1e9
 var G := {}
 var TT := {}
 var GT := {}
@@ -70,10 +71,23 @@ func _brew(v: Dictionary) -> void:
 		v["sticky"] = true
 	if h.has("thebigone"):
 		vials_thrown += 1
-		if vials_thrown % int(_T()["bigOne"]["every"]) == 0:
+		if _big_now(int(_T()["bigOne"]["every"])):
 			v["big"] = true
 	if h.has("madmixture"):
 		v["brew"] = ["burn", "freeze", "poison"][randi() % 3]
+
+
+## (The Big One) Whether the vial just thrown is a big one: every `every`th; with BIG_ONE_WAIT, no sooner than BIG_ONE_SECS after the
+## last (the one owed comes with the first vial after the wait).
+func _big_now(every: int) -> bool:
+	if not BIG_ONE_WAIT:
+		return vials_thrown % every == 0
+	_since_big += 1
+	if _since_big >= every and h._clock - _big_at >= BIG_ONE_SECS:
+		_since_big = 0
+		_big_at = h._clock
+		return true
+	return false
 
 
 func _init(hero) -> void:
@@ -726,10 +740,6 @@ func _rod(g: Dictionary) -> void:
 	if not h.has("lightningrod") or h.monsters == null:
 		return
 	var R: Dictionary = _T()["rod"]
-	if ROD_WAIT:
-		if h._clock - _rod_at < ROD_WAIT_SECS:
-			return
-		_rod_at = h._clock
 	for q in h.monsters.decoys:
 		if q.get("golem") == g:
 			q["t"] = float(R["secs"])
@@ -1390,7 +1400,7 @@ func _bolt_strikes(t, i: int, frac: float, second: bool, little: bool) -> void:
 	var big := false
 	if not little and h.has("thebigone"):
 		vials_thrown += 1
-		big = vials_thrown % int(T["bigOne"]["every"]) == 0
+		big = _big_now(int(T["bigOne"]["every"]))
 	var brew := ""
 	if h.has("madmixture"):
 		brew = ["burn", "freeze", "poison"][randi() % 3]

@@ -69,10 +69,10 @@ func run(main, hero, d: String) -> void:
 	h = hero
 	dir = d
 	G = JSON.parse_string(FileAccess.get_file_as_string(OS.get_environment("WS_DMG_GEAR")))
-	# (the balance fixes' switches, for their before and after: WS_ROD_WAIT=1, heroes/tinkerer.gd ROD_WAIT; WS_DEF_EVEN=1, loot.gd
+	# (the balance fixes' switches, for their before and after: WS_BIG_WAIT=1, heroes/tinkerer.gd BIG_ONE_WAIT; WS_DEF_EVEN=1, loot.gd
 	# DEFENCE_EVEN)
-	if OS.has_environment("WS_ROD_WAIT"):
-		preload("res://scripts/heroes/tinkerer.gd").ROD_WAIT = OS.get_environment("WS_ROD_WAIT") == "1"
+	if OS.has_environment("WS_BIG_WAIT"):
+		preload("res://scripts/heroes/tinkerer.gd").BIG_ONE_WAIT = OS.get_environment("WS_BIG_WAIT") == "1"
 	if OS.has_environment("WS_DEF_EVEN"):
 		preload("res://scripts/loot.gd").DEFENCE_EVEN = OS.get_environment("WS_DEF_EVEN") == "1"
 	var only: Array = Array(OS.get_environment("WS_SPEED").split(" ", false)) if OS.has_environment("WS_SPEED") else []
@@ -143,6 +143,9 @@ func _tank_build(b: Dictionary) -> Dictionary:
 	_arena()
 	var tb: Dictionary = b.duplicate()
 	tb["talents"] = TANK_TALENTS[b["id"]]
+	# (WS_TANK_TALENTS="a,b,c": these in place of the build's own, to weigh one talent against the rest)
+	if OS.has_environment("WS_TANK_TALENTS"):
+		tb["talents"] = Array(OS.get_environment("WS_TANK_TALENTS").split(",", false))
 	_hero(tb, false)
 	_gear(b["cls"])
 	var best_attr := ""
@@ -422,10 +425,12 @@ func _tank_test(b: Dictionary) -> void:
 	_show_build(b, made["picks"], made["ws"], made["talents"])
 	var k := float(OS.get_environment("WS_TANK_DMG")) if OS.has_environment("WS_TANK_DMG") else 15.0
 	var times: Array = []
-	for _try in 3:
+	# (WS_TANK_TRIES: fewer tries, for a trace)
+	var tries := int(OS.get_environment("WS_TANK_TRIES")) if OS.has_environment("WS_TANK_TRIES") else 3
+	for _try in tries:
 		times.append(await _tank_fight(k))
 	times.sort()
-	_put("  STANDS among seven of floor 20's own (blows x%d), fighting back: %s s (middle %.1f s)" % [int(k), ", ".join(times.map(func(x): return "%.1f" % x)), times[1]])
+	_put("  STANDS among seven of floor 20's own (blows x%d), fighting back: %s s (middle %.1f s)" % [int(k), ", ".join(times.map(func(x): return "%.1f" % x)), times[times.size() / 2]])
 
 
 func _tank_fight(k: float) -> float:
@@ -453,7 +458,9 @@ func _tank_fight(k: float) -> float:
 		foes.append(m)
 	var t := 0.0
 	var prev: float = h.life
-	while t < TANK_CAP:
+	# (WS_TANK_CAP: a shorter fight, for a trace)
+	var cap := float(OS.get_environment("WS_TANK_CAP")) if OS.has_environment("WS_TANK_CAP") else TANK_CAP
+	while t < cap:
 		await M.get_tree().process_frame
 		var dt: float = M.get_process_delta_time()
 		t += dt
