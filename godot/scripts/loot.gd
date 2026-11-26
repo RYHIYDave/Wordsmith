@@ -78,6 +78,10 @@ static var DEFENCE_LAYERS := true
 ## THE THREE DEFENCES EVENED (his pick, 26 Nov 2026, “Fix the balance (Recommended)”, after the speed and tank test found every
 ## hero's toughest build all Strength and heavy armour, his dodge never past 1%): see derive. Off until his yes to the numbers.
 static var DEFENCE_EVEN := false
+## (each point of Dexterity's dodge, each of Intelligence's barrier, with DEFENCE_EVEN on: as each of Strength is 3 life, items.json
+## attr strLife; dodge reckoned as armour is, d / (d + 40 + 20 a floor): hero.gd dodge_chance)
+const EVEN_DEX_DODGE := 1.0
+const EVEN_INT_BARRIER := 3.0
 const HEAVY_ARMOUR := {"helm": [5.0, 3.0], "chest": [8.0, 5.0], "gloves": [3.0, 2.0], "belt": [3.0, 2.0], "boots": [3.0, 2.0]}
 const LEATHER_K := 0.75
 const BARRIER_K := 2.0
@@ -591,12 +595,17 @@ func derive() -> void:
 				hero.stats["armor"] = 0.0
 			more_dodge = U.speed_as_dodge(float(hero.stats["move_speed"]))
 		hero.stats["dodge"] = roundf((g.call("dodge") + more_dodge) * (1.0 + Words.eff_attr(dex) * DEX_DODGE / 100.0) * (U.dodge_more() if U != null else 1.0))
+		# (THE THREE DEFENCES EVENED, DEFENCE_EVEN: every point of Dexterity his own dodge too, as every point of Strength is his own
+		# life: so that a hero built on it is as hard to kill as one built on Strength)
+		if DEFENCE_EVEN:
+			hero.stats["dodge"] += roundf(dex * EVEN_DEX_DODGE)
 		# (THE THREE DEFENCES' WORDS: a chance to block gone; a piece that had one burned into it before, its barrier: ten a point)
 		var from_block := 0.0
 		if Words.DEFENCE_WORDS:
 			from_block = g.call("blockChance") * 10.0
 			hero.stats["block_chance"] = 0.0
-		hero.set_max_barrier(roundf((g.call("barrier") + from_block + from_armour) * (1.0 + Words.eff_attr(int_) * INT_BARRIER / 100.0)))
+		# (DEFENCE_EVEN: every point of Intelligence his own barrier too, as every point of Strength is his own life)
+		hero.set_max_barrier(roundf((g.call("barrier") + from_block + from_armour) * (1.0 + Words.eff_attr(int_) * INT_BARRIER / 100.0) + (int_ * EVEN_INT_BARRIER if DEFENCE_EVEN else 0.0)))
 	else:
 		hero.stats["dodge"] = 0.0
 		hero.set_max_barrier(0.0)
