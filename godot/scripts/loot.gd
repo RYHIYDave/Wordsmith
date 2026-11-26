@@ -80,8 +80,8 @@ static var DEFENCE_LAYERS := true
 static var DEFENCE_EVEN := false
 ## (each point of Dexterity's dodge, each of Intelligence's barrier, with DEFENCE_EVEN on: as each of Strength is 3 life, items.json
 ## attr strLife; dodge reckoned as armour is, d / (d + 40 + 20 a floor): hero.gd dodge_chance)
-const EVEN_DEX_DODGE := 1.0
-const EVEN_INT_BARRIER := 3.0
+const EVEN_DEX_DODGE := 0.8
+const EVEN_INT_BARRIER := 2.5
 const HEAVY_ARMOUR := {"helm": [5.0, 3.0], "chest": [8.0, 5.0], "gloves": [3.0, 2.0], "belt": [3.0, 2.0], "boots": [3.0, 2.0]}
 const LEATHER_K := 0.75
 const BARRIER_K := 2.0
