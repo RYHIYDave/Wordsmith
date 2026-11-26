@@ -94,9 +94,20 @@ frames, the burst, the ring with its shards, stones and cracks, the shake, the h
 knee burning, the knee in two frames and its line of force. Looked at as a phone shows him (`tools/vet_flying_game.ts`, the game's own
 layers at the game's grain).
 
+`node tools/unit.mjs --only vet_flying,veteran,veteran_art,veteran_rules,veteran_packs,baked_packs,sides_more,wrap_skins,reflections_up,
+veteran_talents,veteran_words,windup,class_cards_paint,uniques_heroes` and the core, on 110127f9: 37 files, 35 passed. The two that
+failed fail on `main` as it is, nothing of this: `windup.test.ts` (the Ranger's Snipe, 0.333 s; run on `main` 41f47ac1 alone, the same)
+and `reflections_up.test.ts` 5 (the Warrior's eyes in floor 18's glass; failed so on an earlier run, 6982329f). `tsc --noEmit`: clean
+but for `tests/relief.test.ts` line 378, on `main` as it is.
+
 ## Pictures
 
+- `pictures/brawler_flying_key_frames.jpg`: the hammerfist at the top, the slam, the ring; the knee cocked, the knee, its line of force.
 - `pictures/brawler_flying_blows.mp4`: each from in front and from behind, at half speed, from all eight sides, out of a run, and out
   of a combo with the globes over him (`FILM=flying npx tsx tools/veteran_film.ts <out.mp4>`; its parts `FLYING_FILM`,
   `src/dev/veteran_plays.ts`).
 - `tools/vet_flying_pics.ts`: his frames in a sheet, with what the checks find; `tools/vet_flying_game.ts`: as the game paints them.
+
+## Waiting
+
+SHOWN HIM, 26 Nov 2026: the film and the key frames; asked by pop-up whether they are right.
