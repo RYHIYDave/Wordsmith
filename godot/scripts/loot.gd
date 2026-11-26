@@ -570,7 +570,10 @@ func derive() -> void:
 		"stun_chance": g.call("stunChance"),
 		# (Guarding burned into a piece: a chance to block a blow outright, 50% at most: game.ts hurtHero)
 		"block_chance": g.call("blockChance"),
-		"res_fire": g.call("fireRes"), "res_frost": g.call("frostRes"), "res_light": g.call("lightRes"), "res_poison": g.call("poisonRes"),
+		# (what he withstands of each element, at most TUNE.resCap, 75%: stats.ts derive, `Math.min(cap, stats.fireRes)`; uncapped,
+		# a hero with enough of it took nothing from that element at all: the speed and tank test, 26 Nov 2026)
+		"res_fire": minf(float(_tune["resCap"]), g.call("fireRes")), "res_frost": minf(float(_tune["resCap"]), g.call("frostRes")),
+		"res_light": minf(float(_tune["resCap"]), g.call("lightRes")), "res_poison": minf(float(_tune["resCap"]), g.call("poisonRes")),
 	}
 	hero.set_max_life(maxf(1.0, life))
 	# (THE THREE DEFENCES: his dodge and his barrier, his gear's and what Dexterity and Intelligence add)

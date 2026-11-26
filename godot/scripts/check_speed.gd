@@ -2,7 +2,7 @@
 ## which class can get the tankiest.  And a breakdown of the builds and why”):
 ##   godot ... -- --only=speed --shots=<dir>   with WS_DMG_GEAR=<file> (tools/godot_dmg_gear.ts 20); WS_SPEED="warrior ranger" for
 ##   some builds only; WS_SPEED_PART="clear" or "tank" for one half only; WS_TOUGH (the hard clear's life, x1000 if not given);
-##   WS_TANK_DMG (the tank fight's blows, x40 if not given). Written to <shots>/speed.txt.
+##   WS_TANK_DMG (the tank fight's blows, x15 if not given). Written to <shots>/speed.txt.
 ## Each hero of level 50, every talent point and word slot open, as the damage check makes them (check_dmg.gd, whose choosing this
 ## uses: the best gear there is, four words burned into each piece, his attribute points and his four words chosen for it).
 ##   THE CLEAR. His fastest build: the damage check's, its front led by lightning (in the damage test of 25 Nov every hero's quickest
@@ -366,7 +366,7 @@ func _tank_test(b: Dictionary) -> void:
 	var made: Dictionary = await _tank_build(b)
 	_put("  (his build chosen in %.0f s; his points all in %s)" % [(Time.get_ticks_msec() - t0) / 1000.0, made["attr"]])
 	_show_build(b, made["picks"], made["ws"], made["talents"])
-	var k := float(OS.get_environment("WS_TANK_DMG")) if OS.has_environment("WS_TANK_DMG") else 40.0
+	var k := float(OS.get_environment("WS_TANK_DMG")) if OS.has_environment("WS_TANK_DMG") else 15.0
 	var times: Array = []
 	for _try in 3:
 		times.append(await _tank_fight(k))
