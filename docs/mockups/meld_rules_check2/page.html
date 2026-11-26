@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Weakest Melds, Brought Up</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* The game's night indigo and friendly cyan; each film on the dark it was shot on. */
+:root {
+  --bg: #f2f3fb; --panel: #ffffff; --line: #d4d8ef; --fg: #161a3a; --muted: #5a618c; --accent: #0c8fa3; --stage: #0e0c24; --stagefg: #e4e7ff;
+  --display: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1030; --panel: #161a44; --line: #2c3274; --fg: #e9ecff; --muted: #a3abd8; --accent: #28dcf0; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #0d1030; --panel: #161a44; --line: #2c3274; --fg: #e9ecff; --muted: #a3abd8; --accent: #28dcf0; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; margin: 0; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 24px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+.wrap > * { min-width: 0; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 7vw, 38px); line-height: 1.1; margin: 4px 0 8px; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 20px; margin: 0 0 12px; }
+p { margin: 0; max-width: 70ch; }
+p + p { margin-top: 10px; }
+.lead { color: var(--muted); }
+ul.list { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6px; max-width: 75ch; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 14px; }
+.card { background: var(--stage); color: var(--stagefg); border-radius: 8px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
+.card header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.card b { font-family: var(--display); font-weight: 600; font-size: 18px; }
+.card header span { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #7af8f0; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+figure { margin: 0; display: grid; gap: 4px; min-width: 0; }
+figcaption { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: #a3abd8; }
+video { width: 100%; height: auto; aspect-ratio: 10 / 7; border-radius: 4px; background: #05040f; display: block; }
+.does { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: 13.5px; line-height: 1.45; }
+.does dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #7af8f0; padding-top: 2px; }
+.does dd { margin: 0; color: #e4e7ff; }
+.does ul { margin: 0; padding-left: 16px; display: grid; gap: 2px; }
+.ask { background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 16px; display: grid; gap: 8px; }
+.ask b { font-family: var(--display); font-size: 17px; }
+@media (max-width: 520px) { .pair { grid-template-columns: 1fr; } }
+</style></head><body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Wordsmith · melds · against your Art Rulebook</div>
+    <h1>The weakest melds, brought up to the rulebook</h1>
+    <p class="lead">I checked @@COUNT@@ melds against your Art Rulebook: every one not checked on 23 Nov. That covers the city's 45 and 44, the High City's 110, the Reaping creatures' 5, the game's first 23, and the 60 redone on 24 Nov. Each was filmed in the game, in front of the Strike, behind it, and carried by a monster.</p>
+    <p class="lead">@@SCORING@@</p>
+  </header>
+  <section>
+    <h2>Fixed for all of them</h2>
+    <p class="lead">Some faults were in the painters that draw whole groups, so I fixed those once and every meld they draw got better:</p>
+    <ul class="list">@@ALL@@</ul>
+  </section>
+  <section>
+    <h2>The @@N@@ weakest, before and after</h2>
+    <div class="cards">@@CARDS@@</div>
+  </section>
+  <section>
+    <h2>More of the fixes for all, before and after</h2>
+    <p class="lead">Not among the weakest, but each shows one of the group fixes above.</p>
+    <div class="cards">@@SHOWN@@</div>
+  </section>
+  <div class="ask"><b>Your call</b><ul class="list">@@ASK@@</ul><p>None of this is in the game yet. Say yes and it goes into the next update, or tell me which ones to change.</p></div>
+</div>
+</body></html>

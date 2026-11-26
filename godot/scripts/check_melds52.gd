@@ -283,6 +283,10 @@ func run(only := "") -> void:
 # <shots>/film/<id>.mp4 (ffmpeg) as each is done, its frames then let go.
 
 var _dir := ""
+## (each film's marks, for its look to be measured: the frame each side starts on, and the frame each moment its rules told was
+## first seen on; written beside the film as <id>.json)
+var _marks := {}
+var _told_at := {}
 
 
 ## The film waiting `secs`; for a meld seen only as he moves (MOVES), him darting aside (`way` 1 one way, -1 back) as the blow
@@ -305,6 +309,9 @@ func _frames(k: int, secs: float) -> int:
 		await M.get_tree().process_frame
 		await RenderingServer.frame_post_draw
 		M.get_viewport().get_texture().get_image().save_jpg("%s/%04d.jpg" % [_dir, k], 0.92)
+		for told in h.m52.told:
+			if not _told_at.has(told):
+				_told_at[told] = k
 		k += 1
 		t += M.get_process_delta_time()
 	return k
@@ -450,7 +457,10 @@ func film(only := "") -> void:
 		M.fx.clear()
 		var k := 0
 		h.m52.told = {}
+		_marks = {}
+		_told_at = {}
 		for side in ["front", "behind"]:
+			_marks[side] = k
 			_fresh()
 			# (Hourglass behind works on the ground the blow leaves: Guarding beside it, for the film, leaves a ward)
 			# (Purge in front waits on one blow culling three: the Whirl's, as its check makes it)
@@ -521,6 +531,13 @@ func film(only := "") -> void:
 			else:
 				M._w_strike(h)
 				k = await _walk(k, 0.6, id, 1.0)
+			# (Talisman and Respite in front wait on a blow on his shield: one of the pack strikes it, so their moment is seen)
+			if side == "front" and id in ["talisman", "respite"] and not M._w_pack.is_empty():
+				var by = M._w_pack[0]
+				h.blow_by = by
+				h.hurt_by(20.0, "phys", by.words, {}, by, by.world)
+				h.blow_by = null
+				k = await _frames(k, 0.3)
 			# (what its new moment waits on after the first blow, as its check makes it: a blow on him, one dying in its circle)
 			if CH != null:
 				await CH._after(id, side)
@@ -564,6 +581,7 @@ func film(only := "") -> void:
 					h.frenzy_t = minf(h.frenzy_t, 0.3)
 			k = await _walk(k, rest, id, -1.0)
 		# (carried by one of the pack, which comes for him: its two runes and the meld, as an altar lays them)
+		_marks["foe"] = k
 		_fresh()
 		# (a Guarding meld: his shield up as the monster comes, to show what it does to what strikes it)
 		M._w_put(h, 0, "front", [id] if SHIELD.has(id) else [])
@@ -656,6 +674,11 @@ func film(only := "") -> void:
 		for f in DirAccess.get_files_at(_dir):
 			DirAccess.remove_absolute(_dir + "/" + f)
 		DirAccess.remove_absolute(_dir)
+		_marks["end"] = k
+		var mf := FileAccess.open(root + "/" + id + ".json", FileAccess.WRITE)
+		if mf != null:
+			mf.store_string(JSON.stringify({"sides": _marks, "told": _told_at}))
+			mf.close()
 		print("MELDS52 FILM %s: %d frames, ffmpeg %d" % [id, k, code])
 		print("MELDS52 TOLD %s: %s" % [id, ", ".join(PackedStringArray(h.m52.told.keys()))])
 		var want: Array = preload("res://scripts/check_high.gd").EXPECT.get(id, {}).get("foe", []) + (preload("res://scripts/check_redo.gd").EXPECT.get(id, {}).get("foe", []) if M52.is_redo(id) else [])

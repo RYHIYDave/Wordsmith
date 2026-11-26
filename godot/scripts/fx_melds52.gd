@@ -62,6 +62,8 @@ func ramp(id: String) -> PackedColorArray:
 	if _ramps.has(id):
 		return _ramps[id]
 	var c := Color(str(M52.T()["color"].get(id, "#ffffff"))) if id != "~icy" else Color(preload("res://scripts/fx_m52kit.gd").FROST_DEEP)
+	if id == "~sea":
+		c = Color(preload("res://scripts/fx_m52kit.gd").SEA_DEEP)
 	var out := PackedColorArray([c.lerp(Color.WHITE, 0.65), c.lerp(Color.WHITE, 0.3), c, c.darkened(0.3), c.darkened(0.55)])
 	_ramps[id] = out
 	return out
@@ -85,7 +87,7 @@ const HOLDS := {"aftershock:burst": 0.1, "marrow:drink": 0.08, "concussion:boom"
 	"blastwave:wave": 0.12,
 	# (the city's melds: meldscity_rules.gd, fx_m52p_city.gd)
 	"maw:crash": 0.1, "maw:collapse": 0.12, "gravity:crater": 0.12, "stasis:snap": 0.08, "shackle:bite": 0.08, "anchor:sink": 0.12,
-	"firetrap:blaze": 0.08, "burden:weight": 0.1, "rubble:thud": 0.06,
+	"firetrap:blaze": 0.08, "burden:weight": 0.1, "rubble:thud": 0.06, "standstill:pulse": 0.1,
 	# (the city's runes with the floor 6–10 runes: meldscity2_rules.gd, fx_m52p_city2.gd)
 	"tripwire:boom": 0.1, "slowfuse:boom": 0.1, "hexblast:burst": 0.08, "whiplash:snap": 0.08, "stutter:went": 0.06, "omen:went": 0.06}
 
@@ -300,7 +302,8 @@ func update(dt: float) -> void:
 		var c52: String = _carrier(m)
 		if c52 != "" and randf() < 0.6:
 			# (FRIEND CYAN IS THE HERO'S ALONE: the icy ones smoulder in Frost's deep blue on a monster, fx_m52kit.gd ICY)
-			fx.mote(m.world.x, m.world.y, ramp("~icy") if preload("res://scripts/fx_m52kit.gd").ICY.has(c52) else ramp(c52))
+			var K := preload("res://scripts/fx_m52kit.gd")
+			fx.mote(m.world.x, m.world.y, ramp("~icy") if K.ICY.has(c52) else (ramp("~sea") if K.SEA.has(c52) else ramp(c52)))
 		if m.m52.has("brand") or (m.mark_t > 0.0 and str(m.m52.get("mark", "")) == "brand"):
 			fx.mote(m.world.x, m.world.y, ramp("brand"))
 	if h == null:
