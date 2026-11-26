@@ -574,8 +574,8 @@ func _use() -> void:
 			# (THE SHAFT'S RIM: game.ts interactHint, "Gate: words for Endless N")
 			prompt = ["E: Gate: words for %s" % main.endless_name(main.endless), "gate"]
 		"record":
-			# (DELVE DEEPER: the record stone, the way deeper; asked once, its ask waiting: main.gd delve_deeper)
-			prompt = ["E: Use again to delve to Depth %d" % (main.delve + 1) if main.delve_ask > 0.0 else "E: Record stone: delve deeper to Depth %d" % (main.delve + 1), "delve"]
+			# (DELVE DEEPER: the record stone, his deepest with each hero: inventory.gd _rec_side; the way deeper is at the gate)
+			prompt = ["E: Record stone", "record"]
 		"stash", "lexicon", "stranger":
 			# (his half beside the gear screen: the stranger's gamble, the stash, the Lexicon: inventory.gd)
 			# (QUESTS1620: the stranger's whole court, asked for or brought, before his half: game.ts handInNear)
@@ -612,8 +612,8 @@ func _do(what: String) -> void:
 			main._inv.open_service("gate")
 		"tablet":
 			main.set_tablet()
-		"delve":
-			main.delve_deeper()
+		"record":
+			main._inv.open_service("record")
 		"talk":
 			if loot.ring_lit:
 				loot.say("The wordsmith: \"The ring burns. Go, and use what it gives you.\"", Color(0.35, 0.9, 1.0))

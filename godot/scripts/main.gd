@@ -171,7 +171,7 @@ const ENDLESS_GROW_PAST := 0.03
 const ENDLESS_WARN := "Hardcore"
 const ENDLESS_CARD_MORE := 1.5
 const ENDLESS_OPENS := "Endless mode is open: the waypoint leads on, each level harder. Hardcore."
-const ENDLESS_OPENS_DELVE := "Endless mode is open: the waypoint leads on. For harder levels and better finds, delve deeper at the record stone in the Shaft's Rim. Hardcore."
+const ENDLESS_OPENS_DELVE := "Endless mode is open: the waypoint leads on. For harder levels and better finds, delve deeper at the gate in the Shaft's Rim. Hardcore."
 var endless := 0
 var endless_floor := 0
 var in_endless := false
@@ -187,11 +187,25 @@ var best_endless := 0
 ## boss, 1 in 3”: “Wait no I want that to stay on just the 5,10,15, and 20 bosses”); the Warped Wordsmith may be fought again and
 ## again at the depth the hero can bear. `best_delve` (the account's): the deepest any of his heroes has gone. PICTURES FIRST: off
 ## until his yes to how it is shown (his word on the first pictures, the record stone used: “I think we can do better than that”).
+##   HOW IT IS SHOWN, his words, 26 Nov 2026: “Maybe some sort of UI on the stone that shows the leaderboard for depth per class.  And
+## a delve deeper button on the door?  So when you're putting in your words you can make the choice”; the leaderboard, his pick: “My
+## bests now, online later (Recommended)”. So the depth is chosen at the Rim's gate, on its page where the words are burned in (DELVE
+## DEEPER, pressed twice: inventory.gd _gate_side), and the record stone opens his deepest with each hero (`delve_best_by`, the
+## account's, kept with the meta: inventory.gd _rec_side).
 const DELVE := {"on": false, "tough": 4.0 / 3.0, "power": 3, "mf": 15.0, "confirm": 5.0}
 var delve := 1
 var best_delve := 1
-## (the record stone asked once, waiting for the second press that delves: seconds left)
-var delve_ask := 0.0
+## (each hero's deepest: class -> {"depth": the deepest depth he has delved to, "endless": the last endless level cleared at it}; the
+## record stone's leaderboard)
+var delve_best_by := {}
+## (the gate's DELVE DEEPER pressed once, waiting for the second press that delves: seconds left, by the clock, for the game stands
+## still while the gate's page is open)
+var _delve_ask_until := 0
+var delve_ask: float:
+	get:
+		return maxf(0.0, float(_delve_ask_until - Time.get_ticks_msec()) / 1000.0)
+	set(v):
+		_delve_ask_until = Time.get_ticks_msec() + int(v * 1000.0) if v > 0.0 else 0
 
 
 ## Whether Delve Deeper is on (the switch, or `--delve=1` for its check and pictures).
@@ -206,13 +220,14 @@ func delve_deeper() -> String:
 		return ""
 	if delve_ask <= 0.0:
 		delve_ask = float(DELVE["confirm"])
-		var line := "Delve deeper, to Depth %d? Monsters a third stronger, better finds. It can't be undone. Use the stone again to delve." % (delve + 1)
+		var line := "Delve deeper, to Depth %d? Monsters a third stronger, better finds. It can't be undone. Press again to delve." % (delve + 1)
 		loot.say(line, Color("#7af8f0"))
 		sfx.play("click")
 		return line
 	delve_ask = 0.0
 	delve += 1
 	best_delve = maxi(best_delve, delve)
+	delve_note(0)
 	var said := "Depth %d. The levels below are harder now, and richer." % delve
 	loot.say(said, Color("#7af8f0"))
 	sfx.play("power", linear_to_db(0.9))
@@ -225,6 +240,20 @@ func delve_deeper() -> String:
 	if saving:
 		Save.write(self)
 	return said
+
+
+## (DELVE DEEPER) His hero's record on the stone kept: a depth he is the first to reach with this hero, or `cleared` (an endless
+## level) the furthest at the deepest he has been with him.
+func delve_note(cleared: int) -> void:
+	if not delve_on() or hero == null:
+		return
+	var cls := str(hero.cls)
+	var r: Dictionary = delve_best_by.get(cls, {"depth": 0, "endless": 0})
+	if delve > int(r["depth"]):
+		r = {"depth": delve, "endless": cleared}
+	elif delve == int(r["depth"]):
+		r["endless"] = maxi(int(r["endless"]), cleared)
+	delve_best_by[cls] = r
 
 
 ## (DELVE DEEPER) The magic find a depth gives, on an endless level.
@@ -436,6 +465,7 @@ func open_endless(from: int) -> bool:
 func next_endless() -> void:
 	var was := endless
 	best_endless = maxi(best_endless, was)
+	delve_note(was)
 	loot.cleared += 1
 	endless = was + 1
 	endless_floor = endless_floor_for(endless, map.depth if map != null else 0)
@@ -1925,8 +1955,6 @@ func _process(dt: float) -> void:
 	if hero != null and not hero.alive and hero.stays_down:
 		_fallen(dt)
 	# (DELVE DEEPER: the record stone's ask, waiting for its second press)
-	if delve_ask > 0.0:
-		delve_ask = maxf(0.0, delve_ask - dt)
 	# (THE UNIQUE WEAPON IN HIS HAND drawn as itself: hero.gd dress)
 	if hero != null and loot != null and not hero.arts.is_empty():
 		hero.dress(loot.gear["mainhand"])

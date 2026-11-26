@@ -1,8 +1,10 @@
 ## DELVE DEEPER, ITS CHECK AND PICTURES (--only=delve --delve=1 --shots=<dir>; main.gd DELVE): endless by the hero's depth, a line a
 ## step (OK or WRONG):
 ##   an endless level no harder than the one before it (Endless 12 and Endless 40 the same, at a depth); each depth a third stronger,
-##   its finds three levels deeper and 15 more magic find; the Shaft's Rim's record stone naming the depth, used once (asked), let
-##   go (nothing), used twice (a depth deeper, for good, kept in the save); the shards still only the bosses' of floors 5, 10, 15, 20.
+##   its finds three levels deeper and 15 more magic find; the Shaft's Rim's record stone naming the depth; the gate's page with the
+##   depth and DELVE DEEPER (his words, 26 Nov 2026: “a delve deeper button on the door?”), pressed once (asked), let go (nothing),
+##   pressed twice (a depth deeper, for good, kept in the save, on his hero's record); a level cleared there on his record; the record
+##   stone's page, his deepest with each hero; the shards still only the bosses' of floors 5, 10, 15, 20.
 extends RefCounted
 
 const Save := preload("res://scripts/save.gd")
@@ -18,6 +20,13 @@ func _line(ok: bool, what: String) -> void:
 	if not ok:
 		bad.append(n)
 	print("DELVE %02d %s: %s" % [n, "OK" if ok else "WRONG", what])
+
+
+func _hit(action: String):
+	for x in M._inv._hits:
+		if x[1] == action:
+			return x
+	return null
 
 
 func _said(start: String) -> String:
@@ -75,25 +84,54 @@ func run(main, hero, dir: String) -> void:
 	M._hud.card = {}
 	await M._wait(0.5)
 	var near: String = T.station_near()
-	await M._snap(dir + "/delve_1_stone.png")
-	_line(near == "record" and str(T.prompt[0]).begins_with("E: Record stone: delve deeper to Depth 2"), "beside it: '%s'" % T.prompt[0])
-	# USED ONCE: ASKED; LET GO: NOTHING
-	T._do("delve")
-	await M._wait(0.6)
+	_line(near == "record" and str(T.prompt[0]) == "E: Record stone", "beside it: '%s'" % T.prompt[0])
+	# THE GATE: THE DEPTH CHOSEN WHERE THE WORDS ARE BURNED IN (his words: “a delve deeper button on the door?”)
+	var I = M._inv
+	M.loot.give_word("frost")
+	M.loot.give_word("twin")
+	T._do("gate")
+	await M._wait(0.3)
+	M.plan_word("frost")
+	await M._wait(0.4)
+	await M._snap(dir + "/delve_1_gate.png")
+	_line(I.visible and I.svc == "gate" and _hit("gate_delve") != null, "the gate's page: its depth and DELVE DEEPER")
+	# PRESSED ONCE: ASKED; LET GO: NOTHING
+	I._gate_press("gate_delve", null)
+	await M._wait(0.4)
 	await M._snap(dir + "/delve_2_asked.png")
-	_line(M.delve == 1 and _said("Delve deeper, to Depth 2?") != "" and str(T.prompt[0]).begins_with("E: Use again to delve to Depth 2"), "used once: asked ('%s'), still Depth 1; its prompt '%s'" % [_said("Delve deeper"), T.prompt[0]])
+	_line(M.delve == 1 and _said("Delve deeper, to Depth 2?") != "" and M.delve_ask > 0.0, "pressed once: asked ('%s'), still Depth 1" % _said("Delve deeper"))
 	await M._wait(float(M.DELVE["confirm"]) + 0.3)
 	_line(M.delve == 1 and M.delve_ask == 0.0, "let go %.0f s: nothing, still Depth 1" % float(M.DELVE["confirm"]))
-	# USED TWICE: A DEPTH DEEPER, FOR GOOD
+	# PRESSED TWICE: A DEPTH DEEPER, FOR GOOD
 	M.loot.msgs.clear()
-	T._do("delve")
+	I._gate_press("gate_delve", null)
 	await M._wait(0.3)
-	T._do("delve")
+	I._gate_press("gate_delve", null)
 	await M._wait(0.5)
 	await M._snap(dir + "/delve_3_deeper.png")
 	var run: Dictionary = Save.run_of(M)
-	_line(M.delve == 2 and M.best_delve == 2 and R.record_line() == "DEPTH 2, ENDLESS 12" and _said("Depth 2.") != "" and int(run.get("delve", 0)) == 2 and int(Save.meta_of(M).get("bestDelve", 0)) == 2,
-		"used twice: Depth 2 ('%s'), the stone '%s', saved (run %d, best %d)" % [_said("Depth 2."), R.record_line(), int(run.get("delve", 0)), int(Save.meta_of(M).get("bestDelve", 0))])
+	var rec: Dictionary = M.delve_best_by.get(str(h.cls), {})
+	_line(M.delve == 2 and M.best_delve == 2 and R.record_line() == "DEPTH 2, ENDLESS 12" and _said("Depth 2.") != "" and int(run.get("delve", 0)) == 2 and int(Save.meta_of(M).get("bestDelve", 0)) == 2 and int(rec.get("depth", 0)) == 2,
+		"pressed twice: Depth 2 ('%s'), the stone '%s', saved (run %d, best %d), his hero's record Depth %d" % [_said("Depth 2."), R.record_line(), int(run.get("delve", 0)), int(Save.meta_of(M).get("bestDelve", 0)), int(rec.get("depth", 0))])
+	# A LEVEL CLEARED AT IT: ON HIS HERO'S RECORD
+	M.delve_note(14)
+	var meta: Dictionary = Save.meta_of(M)
+	M.delve_best_by = {}
+	Save.restore_meta(M, meta)
+	_line(int(M.delve_best_by.get(str(h.cls), {}).get("endless", 0)) == 14 and int(M.delve_best_by[str(h.cls)]["depth"]) == 2, "Endless 14 cleared at Depth 2: on his record, and read back from the save (%s)" % [M.delve_best_by.get(str(h.cls), {})])
+	I.toggle()
+	await M._wait(0.3)
+	# THE RECORD STONE: HIS DEEPEST WITH EACH HERO (for the picture, some heroes' records as if played)
+	var keep: Dictionary = M.delve_best_by.duplicate(true)
+	M.delve_best_by["warlock"] = {"depth": 4, "endless": 31}
+	M.delve_best_by["mage"] = {"depth": 2, "endless": 19}
+	M.delve_best_by["ranger"] = {"depth": 3, "endless": 22}
+	T._do("record")
+	await M._wait(0.5)
+	await M._snap(dir + "/delve_4_stone.png")
+	_line(I.visible and I.svc == "record", "the record stone used: its page, his deepest with each hero")
+	I.toggle()
+	M.delve_best_by = keep
 	M.delve = 1
 	Save.restore_run(M, run)
 	_line(M.delve == 2, "the save read back: Depth %d" % M.delve)

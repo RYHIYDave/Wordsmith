@@ -632,7 +632,7 @@ func _press(action: String, arg) -> void:
 			toggle()
 		"altar_put", "altar_take", "altar_open":
 			_altar_press(action, arg)
-		"gate_put", "gate_take", "gate_enter":
+		"gate_put", "gate_take", "gate_enter", "gate_delve":
 			_gate_press(action, arg)
 		"ws_tab", "ws_hollow", "ws_meld", "ws_to_meld", "ws_cell", "ws_buy", "ws_sell":
 			_ws_press(action, arg)
@@ -3083,6 +3083,8 @@ func _svc_side(blink: bool) -> void:
 			_lx_side(blink, x0, w)
 		"gate":
 			_gate_side(blink, x0, w)
+		"record":
+			_rec_side(x0, w)
 
 
 ## What a word does on a monster, for the gate's and the altar's lines: its own text; a Rank II, which has none of its own, its rune's,
@@ -3165,6 +3167,10 @@ func _gate_side(blink: bool, x0: float, w: float) -> void:
 				for l in _wrap("%s." % ", ".join(PackedStringArray(bits)), w, 10):
 					_text(Vector2(x0, y), l, 10, PICK)
 					y += 13.0
+	# (DELVE DEEPER: the depth chosen here, as the words are burned in: his words, 26 Nov 2026, “a delve deeper button on the door?  So
+	# when you're putting in your words you can make the choice”)
+	if main.delve_on():
+		y = _gate_depth(blink, x0, w, y + 6.0)
 	_text(Vector2(x0, y), "Its boss waits at the end. %s." % main.ENDLESS_WARN, 10, BAD)
 	_svc_button("ENTER %s" % where, x0, w, "gate_enter", true, blink)
 
@@ -3185,6 +3191,92 @@ func _gate_press(action: String, arg) -> void:
 		"gate_enter":
 			toggle()
 			main.enter_endless()
+		"gate_delve":
+			main.delve_deeper()
+
+
+## (DELVE DEEPER) The gate's depth: the hero's DEPTH, what it does, and DELVE DEEPER, at the foot of the page to the left of the way in,
+## pressed once (it asks: CONFIRM DEPTH N, what it does and that it is for good) and again within the ask's seconds (a depth deeper).
+## Returns where the page goes on.
+func _gate_depth(blink: bool, x0: float, w: float, y: float) -> float:
+	var d: int = main.delve
+	_text(Vector2(x0, y), "DEPTH", 9, DIM)
+	_text(Vector2(x0 + 44.0, y + 4.0), str(d), 16, PICK)
+	y += 20.0
+	var bits: Array = []
+	if d > 1:
+		bits.append("Monsters %d%% stronger" % roundi((pow(float(main.DELVE["tough"]), d - 1) - 1.0) * 100.0))
+		bits.append("finds as %d levels deeper" % (int(main.DELVE["power"]) * (d - 1)))
+		bits.append("%d%% increased magic find" % roundi(float(main.DELVE["mf"]) * (d - 1)))
+	var said: String = "Depth %d: %s." % [d, ", ".join(PackedStringArray(bits))] if d > 1 else "Depth 1: the endless levels as they come."
+	for l in _wrap(said, w, 10):
+		_text(Vector2(x0, y), l, 10, TEXT)
+		y += 13.0
+	var asking: bool = main.delve_ask > 0.0
+	var next := "Deeper, Depth %d: monsters a third stronger again, better finds. It can't be undone." % (d + 1)
+	for l in _wrap(next, w, 10):
+		_text(Vector2(x0, y), l, 10, BAD if asking else DIM)
+		y += 13.0
+	var label := "CONFIRM DEPTH %d" % (d + 1) if asking else "DELVE DEEPER"
+	var bwid := _width(label, NORMAL) + 32.0
+	var br := Rect2(x0, _vh() - 52.0, bwid, 30.0)
+	var lit := br.has_point(_mouse)
+	_gbox(br, Color(PICK_BG, (0.9 if blink else 0.6) if asking else (0.7 if lit else 0.45)), PICK if asking or lit else PICK_LO)
+	_mid(br, label, NORMAL, PICK if asking and blink else Color.WHITE)
+	_hits.append([br, "gate_delve", null, null])
+	return y + 6.0
+
+
+## DELVE DEEPER: THE RECORD STONE (his words, 26 Nov 2026: “Maybe some sort of UI on the stone that shows the leaderboard for depth per
+## class.”; his pick, “My bests now, online later (Recommended)”): his deepest with each hero (main.gd delve_best_by), the deepest first,
+## the hero he plays now lit; a hero not yet delved with, a dash.
+const REC_CLASSES := ["warrior", "mage", "ranger", "warlock", "tinkerer", "brawler"]
+
+
+func _rec_side(x0: float, w: float) -> void:
+	_text(Vector2(x0, 22), "THE RECORD STONE", 16, PICK)
+	var y := 42.0
+	for l in _wrap("Your deepest with each hero, and the last endless level cleared there.", w, 10):
+		_text(Vector2(x0, y), l, 10, TEXT)
+		y += 13.0
+	y += 12.0
+	var by: Dictionary = main.delve_best_by
+	var order: Array = REC_CLASSES.duplicate()
+	order.sort_custom(func(a, b):
+		var ra: Dictionary = by.get(a, {"depth": 0, "endless": 0})
+		var rb: Dictionary = by.get(b, {"depth": 0, "endless": 0})
+		if int(ra["depth"]) != int(rb["depth"]):
+			return int(ra["depth"]) > int(rb["depth"])
+		if int(ra["endless"]) != int(rb["endless"]):
+			return int(ra["endless"]) > int(rb["endless"])
+		return REC_CLASSES.find(a) < REC_CLASSES.find(b))
+	var cx := [x0 + 8.0, x0 + 40.0, x0 + w * 0.56, x0 + w * 0.78]
+	_text(Vector2(cx[1], y), "HERO", 9, DIM)
+	_text(Vector2(cx[2], y), "DEPTH", 9, DIM)
+	_text(Vector2(cx[3], y), "ENDLESS", 9, DIM)
+	y += 10.0
+	var rank := 0
+	for c in order:
+		var r: Dictionary = by.get(c, {"depth": 0, "endless": 0})
+		var has := int(r["depth"]) > 0
+		var now: bool = hero != null and str(hero.cls) == c
+		var row := Rect2(x0, y, w, 34.0)
+		_gbox(row, PICK_BG if now else INK, PICK if now else EDGE)
+		var name := str(CLASS_NAME.get(c, c)).to_upper()
+		if has:
+			rank += 1
+			_text(Vector2(cx[0], y + 22.0), str(rank), 16, PICK if now else TEXT)
+		else:
+			_text(Vector2(cx[0], y + 22.0), "-", 16, FAINT)
+		_text(Vector2(cx[1], y + 22.0), name, 12, PICK if now else (TEXT if has else FAINT))
+		_text(Vector2(cx[2], y + 22.0), str(r["depth"]) if has else "-", 16, PICK if has else FAINT)
+		_text(Vector2(cx[3], y + 22.0), str(r["endless"]) if has and int(r["endless"]) > 0 else "-", 12, TEXT if has else FAINT)
+		y += 40.0
+	y += 6.0
+	if hero != null:
+		for l in _wrap("Now: %s at Depth %d, %s. Choose to delve deeper at the gate." % [str(CLASS_NAME.get(str(hero.cls), hero.cls)), main.delve, main.endless_name(main.endless)], w, 10):
+			_text(Vector2(x0, y), l, 10, DIM)
+			y += 13.0
 
 
 func _svc_button(label: String, x0: float, w: float, action: String, can: bool, blink: bool) -> Rect2:

@@ -1470,8 +1470,14 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   final boss too), finds as three endless levels deeper (`endless_power`), 15 more magic find on an endless level (`delve_mf`),
   experience by the finds' depth. The Tablet Shards stay the bosses' of floors 5, 10, 15 and 20 (his word: “Wait no I want that
   to stay on just the 5,10,15, and 20 bosses”). Off, endless is as it was (10% a level). How it is shown is being redone (his
-  word on the record stone's first pictures: “I think we can do better than that”). Check and pictures: `--only=delve
-  --delve=1` (`check_delve.gd`, 10 checks); `docs/mockups/delve/`.
+  word on the record stone's first pictures: “I think we can do better than that”). HOW IT IS SHOWN, his words, 26 Nov 2026: “Maybe
+  some sort of UI on the stone that shows the leaderboard for depth per class.  And a delve deeper button on the door?  So when
+  you're putting in your words you can make the choice”; his pick, “My bests now, online later (Recommended)”: the Rim's gate page
+  (`inventory.gd _gate_depth`) shows the hero's DEPTH and what it does, and DELVE DEEPER beside the way in (pressed once it asks,
+  CONFIRM DEPTH N, for `DELVE.confirm` seconds by the clock; pressed again, a depth deeper); the record stone opens his deepest with
+  each hero (`main.gd delve_best_by`, saved with the meta as `bestDelveBy`; `inventory.gd _rec_side`), deepest first, then by the
+  last endless level cleared there, the hero he plays lit. Everyone's scores online wait for his Play account (Google Play Games).
+  Check and pictures: `--only=delve --delve=1` (`check_delve.gd`, 13 checks); `docs/mockups/delve/` (`delve_door_and_stone.jpg`).
 - **The five weakest floors remade** (`main.gd LEVELS2`, ON at his yes to the pictures, 26 Nov 2026: “Yes, all five (Recommended)”; the browser game's `src/game/levels2.ts`, its map-maker for
   them; his words, 25 Nov 2026: “And I'd like you to look at our level design, find the five weakest levels, and make changes”;
   his pick of the five and their changes: “Yes, these five (Recommended)”). On (or `--levels2=1`), floors 1, 7, 8, 10 and 19 are

@@ -103,6 +103,8 @@ static func meta_of(main) -> Dictionary:
 		"bestEndless": main.best_endless,
 		# (DELVE DEEPER: the deepest any of his heroes has gone)
 		"bestDelve": main.best_delve,
+		# (DELVE DEEPER: each hero's deepest, the record stone's leaderboard)
+		"bestDelveBy": main.delve_best_by.duplicate(true),
 		# (ENDLESS_KEY: the shards of the tablet held, the account's, kept with the stash: game.ts meta.quarters)
 		"quarters": main.quarters}
 
@@ -151,6 +153,12 @@ static func restore_meta(main, m: Dictionary) -> void:
 	main.deaths = maxi(0, int(_num(m.get("deaths"), 0)))
 	main.best_endless = maxi(0, int(_num(m.get("bestEndless"), 0)))
 	main.best_delve = maxi(1, int(_num(m.get("bestDelve"), 1)))
+	main.delve_best_by = {}
+	var by = m.get("bestDelveBy", {})
+	if by is Dictionary:
+		for c in by:
+			if by[c] is Dictionary:
+				main.delve_best_by[str(c)] = {"depth": maxi(0, int(_num(by[c].get("depth"), 0))), "endless": maxi(0, int(_num(by[c].get("endless"), 0)))}
 	main.quarters = int(_num(m.get("quarters"), 0)) & 15
 	main.next_mode = "hardcore" if m.get("mode") == "hardcore" else "normal"
 	# (the mana option gone: always cooldowns, loot.gd set_limit)
