@@ -106,7 +106,9 @@ static func meta_of(main) -> Dictionary:
 		# (DELVE DEEPER: each hero's deepest, the record stone's leaderboard)
 		"bestDelveBy": main.delve_best_by.duplicate(true),
 		# (ENDLESS_KEY: the shards of the tablet held, the account's, kept with the stash: game.ts meta.quarters)
-		"quarters": main.quarters}
+		"quarters": main.quarters,
+		# (the Rim's gate explained, the first time its page opened: inventory.gd _gate_help)
+		"gateTaught": main.gate_taught}
 
 
 ## Written (main.ts writeSave). Not while he is down, nor between places: the run as it stands at a quiet moment. A FALLEN HERO
@@ -160,6 +162,7 @@ static func restore_meta(main, m: Dictionary) -> void:
 			if by[c] is Dictionary:
 				main.delve_best_by[str(c)] = {"depth": maxi(0, int(_num(by[c].get("depth"), 0))), "endless": maxi(0, int(_num(by[c].get("endless"), 0)))}
 	main.quarters = int(_num(m.get("quarters"), 0)) & 15
+	main.gate_taught = m.get("gateTaught", false) == true
 	main.next_mode = "hardcore" if m.get("mode") == "hardcore" else "normal"
 	# (the mana option gone: always cooldowns, loot.gd set_limit)
 	loot.limit = "cooldown"

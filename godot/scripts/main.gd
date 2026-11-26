@@ -192,7 +192,11 @@ var best_endless := 0
 ## bests now, online later (Recommended)”. So the depth is chosen at the Rim's gate, on its page where the words are burned in (DELVE
 ## DEEPER, pressed twice: inventory.gd _gate_side), and the record stone opens his deepest with each hero (`delve_best_by`, the
 ## account's, kept with the meta: inventory.gd _rec_side).
-const DELVE := {"on": false, "tough": 4.0 / 3.0, "power": 3, "mf": 15.0, "confirm": 5.0}
+##   ON at his yes to its pictures (docs/mockups/delve/delve_door_and_stone.jpg), 26 Nov 2026: “Yes, and the first time you use the
+## door, I’d like it to explain the delve and the door mechanics.  Or have a “speak to the wordsmith” to explain what’s going on”: the
+## first time the gate's page opens the wordsmith says how the gate works, its words and the depth (inventory.gd _gate_help; `gate_taught`,
+## the account's), and its ? says it again.
+const DELVE := {"on": true, "tough": 4.0 / 3.0, "power": 3, "mf": 15.0, "confirm": 5.0}
 var delve := 1
 var best_delve := 1
 ## (each hero's deepest: class -> {"depth": the deepest depth he has delved to, "endless": the last endless level cleared at it}; the
@@ -512,6 +516,8 @@ var dungeon_words: Array = []
 ## (game.ts meta.quarters: the bosses of floors 5, 10, 15 and 20).
 var rim_seen := 0
 var quarters := 0
+## (the wordsmith has said how the Rim's gate works, the first time its page opened: inventory.gd _gate_help; the account's)
+var gate_taught := false
 const PLAN_MAX := 3
 ## (ENDLESS_KEY, game/endless_key.ts) The shards lying on the floor (shards.gd); the landing at the Rim open for this hero, the four
 ## set in the bench (game.ts hero.finalOpen: open until he goes through and wins below).

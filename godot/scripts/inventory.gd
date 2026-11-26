@@ -632,7 +632,7 @@ func _press(action: String, arg) -> void:
 			toggle()
 		"altar_put", "altar_take", "altar_open":
 			_altar_press(action, arg)
-		"gate_put", "gate_take", "gate_enter", "gate_delve":
+		"gate_put", "gate_take", "gate_enter", "gate_delve", "gate_help", "gate_help_done":
 			_gate_press(action, arg)
 		"ws_tab", "ws_hollow", "ws_meld", "ws_to_meld", "ws_cell", "ws_buy", "ws_sell":
 			_ws_press(action, arg)
@@ -2967,6 +2967,8 @@ func _ws_page(w: String, x: float, y: float, pw: float, end: float) -> void:
 
 ## (the service whose half is open: "stranger", "stash", "lexicon"; "": none)
 var svc := ""
+## (the Rim's gate: the wordsmith's word on how it works shown over its page: the first time, and on its ?)
+var gate_help := false
 var gm_pick := -1
 ## (THE ROYAL CARDS: the stranger's half on his second page, his cards (ui/royal_cards.ts cardsSide), and the hand picked there)
 var gm_cards := false
@@ -2989,6 +2991,7 @@ func open_service(kind: String) -> void:
 	gm_cards = false
 	cd_pick = ""
 	lx_pick = ""
+	gate_help = kind == "gate" and not main.gate_taught
 	if kind == "lexicon":
 		lx_sel = ""
 		for p in Words.data()["lexPages"]:
@@ -3109,8 +3112,16 @@ static var DOOR_GOLD_LINE := true
 # then a socket, or dragging it there; pressed again, taken back (free until he goes in).
 
 func _gate_side(blink: bool, x0: float, w: float) -> void:
+	if gate_help:
+		_gate_help(blink, x0, w)
+		return
 	var where: String = main.endless_name(main.endless).to_upper()
 	_text(Vector2(x0, 22), "GATE: %s" % where, 16, PICK)
+	# (the wordsmith's word on how it works, again)
+	var qr := Rect2(x0 + w - 26.0, 8.0, 26.0, 22.0)
+	_gbox(qr, HOT if qr.has_point(_mouse) else INK, EDGE)
+	_mid(qr, "?", NORMAL, TEXT)
+	_hits.append([qr, "gate_help", null, null])
 	var y := 42.0
 	for l in _wrap("Burn up to three spare words into this dungeon. They are used up.", w, 10):
 		_text(Vector2(x0, y), l, 10, TEXT)
@@ -3193,6 +3204,38 @@ func _gate_press(action: String, arg) -> void:
 			main.enter_endless()
 		"gate_delve":
 			main.delve_deeper()
+		"gate_help":
+			gate_help = true
+		"gate_help_done":
+			gate_help = false
+			if not main.gate_taught:
+				main.gate_taught = true
+				if main.saving:
+					main.Save.write(main)
+
+
+## THE RIM'S GATE EXPLAINED (his words, 26 Nov 2026: “the first time you use the door, I’d like it to explain the delve and the door
+## mechanics.  Or have a “speak to the wordsmith” to explain what’s going on”): the wordsmith's word on what the gate does, over its
+## page the first time it opens (main.gd gate_taught) and on its ?; GOT IT to the page.
+func _gate_help(blink: bool, x0: float, w: float) -> void:
+	_text(Vector2(x0, 22), "THE GATE", 16, PICK)
+	var y := 44.0
+	_text(Vector2(x0, y), "THE WORDSMITH:", 9, DIM)
+	y += 16.0
+	var says: Array = [
+		"\"Every level past this gate is a dungeon of its own, and each goes deeper than the last. Its boss waits at the end.\"",
+		"\"Before you go in, burn up to three spare words into it. They are used up. Every monster inside carries them: harder fights, and better finds. More items, more words, more magic find, and each rune you burn drops more often.\"",
+		"\"Some words are only for the gate. Chains, Siege, Toll and Crown change the dungeon itself.\"",
+	]
+	if main.delve_on():
+		says.append("\"DELVE DEEPER takes you a depth down, and there is no coming back up. Each depth, the monsters are a third stronger, and the finds richer. Stay at a depth as long as you like.\"")
+		says.append("\"The record stone keeps your deepest with each of your heroes.\"")
+	for p in says:
+		for l in _wrap(p, w, 10):
+			_text(Vector2(x0, y), l, 10, TEXT)
+			y += 13.0
+		y += 8.0
+	_svc_button("GOT IT", x0, w, "gate_help_done", true, blink)
 
 
 ## (DELVE DEEPER) The gate's depth: the hero's DEPTH, what it does, and DELVE DEEPER, at the foot of the page to the left of the way in,

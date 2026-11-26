@@ -89,8 +89,18 @@ func run(main, hero, dir: String) -> void:
 	var I = M._inv
 	M.loot.give_word("frost")
 	M.loot.give_word("twin")
+	M.gate_taught = false
 	T._do("gate")
-	await M._wait(0.3)
+	await M._wait(0.4)
+	# (THE FIRST TIME: the wordsmith's word on how the gate works, over its page; his words: “the first time you use the door, I’d
+	# like it to explain the delve and the door mechanics”)
+	await M._snap(dir + "/delve_0_help.png")
+	_line(I.gate_help and _hit("gate_help_done") != null, "the gate's page opened the first time: the wordsmith says how it works")
+	I._gate_press("gate_help_done", null)
+	await M._wait(0.2)
+	_line(not I.gate_help and M.gate_taught and Save.meta_of(M).get("gateTaught") == true, "GOT IT: the page itself; not said again on its own (kept in the save)")
+	await M._wait(0.2)
+	_line(_hit("gate_help") != null, "its ? there to hear it again")
 	M.plan_word("frost")
 	await M._wait(0.4)
 	await M._snap(dir + "/delve_1_gate.png")

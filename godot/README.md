@@ -1477,7 +1477,12 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   CONFIRM DEPTH N, for `DELVE.confirm` seconds by the clock; pressed again, a depth deeper); the record stone opens his deepest with
   each hero (`main.gd delve_best_by`, saved with the meta as `bestDelveBy`; `inventory.gd _rec_side`), deepest first, then by the
   last endless level cleared there, the hero he plays lit. Everyone's scores online wait for his Play account (Google Play Games).
-  Check and pictures: `--only=delve --delve=1` (`check_delve.gd`, 13 checks); `docs/mockups/delve/` (`delve_door_and_stone.jpg`).
+  ON at his yes, 26 Nov 2026: “Yes, and the first time you use the door, I’d like it to explain the delve and the door mechanics.  Or
+  have a “speak to the wordsmith” to explain what’s going on”: the first time the gate's page opens, the wordsmith's word on how it
+  works (its dungeons, the words burned in, the door's own words, the depth, the record stone; `inventory.gd _gate_help`,
+  `main.gd gate_taught` kept with the meta), GOT IT to the page; its ? says it again.
+  Check and pictures: `--only=delve` (`check_delve.gd`, 16 checks); `docs/mockups/delve/` (`delve_door_and_stone.jpg`,
+  `door_delve_0_help.png`).
 - **The five weakest floors remade** (`main.gd LEVELS2`, ON at his yes to the pictures, 26 Nov 2026: “Yes, all five (Recommended)”; the browser game's `src/game/levels2.ts`, its map-maker for
   them; his words, 25 Nov 2026: “And I'd like you to look at our level design, find the five weakest levels, and make changes”;
   his pick of the five and their changes: “Yes, these five (Recommended)”). On (or `--levels2=1`), floors 1, 7, 8, 10 and 19 are
