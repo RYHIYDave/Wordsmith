@@ -283,11 +283,16 @@ func _warrior() -> void:
 	_line(crits == [false, false, false, true, false, false, false, true] and h._strokes == 0, "Master Stroke: his 4th and 8th hits certain criticals, the count begun again (%s)" % [crits])
 	# Honed Edge: a critical bleeds
 	h.talents = ["greatsword", "sweepingcut", "drilledleap", "honededge"]
+	# (life enough to take a critical hit and bleed after it: at 2.5 times a regular hit (loot.gd CRIT_DOUBLE) it fell to the one)
+	var mx0: float = m.max_life
+	m.max_life = 1e6
 	m.life = m.max_life
 	m.bleed_t = 0.0
 	h.stats["crit_chance"] = 100.0
 	h.hit_monster(m, 0, 0.5, false)
 	h.stats["crit_chance"] = 5.0
+	m.max_life = mx0
+	m.life = minf(m.life, mx0)
 	_line(m.bleed_t > 2.9 and m.bleed_dps > 0.0, "Honed Edge: a critical hit makes it bleed half the hit again over 3 s (%.1f a second for %.1f s)" % [m.bleed_dps, m.bleed_t])
 	# Giant Slayer: an elite's cracks, more from everything
 	h.talents = ["greatsword", "sweepingcut", "drilledleap", "giantslayer"]
@@ -1105,6 +1110,14 @@ func _ranger() -> void:
 	h.talents_changed()
 	kit.traps.clear()
 	kit.charges[2] = 3
+	# (what is near him held where it stands, so that none walks onto the traps before they are counted: with stuns made rare
+	# (monster.gd STUNS_RARE) the ones the checks before had stunned were up again and sprang them)
+	for o in M._monsters.list:
+		if is_instance_valid(o) and not o.dead:
+			o.speed = 0.0
+			o.state = "recover"
+			o._t = 1e9
+			o._cd = 1e9
 	kit._use_evasive(h.world + Vector2(2, 0), Vector2(1, 0))
 	await _run(0.4)
 	_line(kit.traps.size() == 3, "Minefield: a roll lays three traps in a fan (%d)" % kit.traps.size())
