@@ -466,6 +466,16 @@ func _tank_fight(k: float) -> float:
 			h._turn((near.world - h.world).normalized())
 		h.auto_attack = true
 		h.auto_whirl = true
+		# (WS_TANK_TRACE: every two seconds, his life and barrier, how many of them are within two tiles of him, the decoys)
+		if OS.has_environment("WS_TANK_TRACE") and int(t / 2.0) != int((t - dt) / 2.0):
+			var close := 0
+			var states := {}
+			for m in foes:
+				if is_instance_valid(m) and m.world.distance_to(h.world) <= 2.0:
+					close += 1
+				if is_instance_valid(m):
+					states[m.state] = int(states.get(m.state, 0)) + 1
+			_put("    t %.0f: life %d/%d barrier %d; %d within 2 tiles; their states %s; decoys %d" % [t, h.life, h.max_life, h.barrier, close, str(states), M._monsters.decoys.size()])
 		# (fallen: the practice room's rule stood him up again, his life full at once)
 		if h.life >= h.max_life - 0.5 and prev < h.max_life * 0.5:
 			break
