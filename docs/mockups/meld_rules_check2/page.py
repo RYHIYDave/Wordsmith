@@ -1,10 +1,11 @@
 # The page of the weakest melds against his Art Rulebook, before and after (26 Nov 2026), from the films the check makes
 # (godot: --only=words --cases=m52film, each <id>.mp4 and <id>.jpg) and report.json (this folder: the ranking, each one's reasons, what
 # was done; made by report.py).
-#   python3 page.py <before films dir> <after films dir> <out dir>
+#   python3 page.py <before films dir> <after films dir> <out dir> [<second pass before dir> <second pass after dir>]
 import json, sys, os, shutil, html
 HERE = os.path.dirname(os.path.abspath(__file__))
 before, after, out = sys.argv[1], sys.argv[2], sys.argv[3]
+before2, after2 = (sys.argv[4], sys.argv[5]) if len(sys.argv) > 5 else (before, after)
 REP = json.load(open(HERE + '/report.json'))
 D = json.load(open(HERE + '/../../../godot/assets/words/melds52.json'))
 os.makedirs(out + '/film', exist_ok=True)
@@ -13,16 +14,17 @@ def nm(w): return NAME.get(w, w.capitalize())
 def name_of(m): return D['words'].get(m, {}).get('name', m.capitalize())
 
 
-def cards(items):
+def cards(items, b=None, a=None, pre=''):
+    b, a = b or before, a or after
     out_cards = []
     for item in items:
         m = item['id']
         vids = []
-        for tag, d in (('before', before), ('after', after)):
+        for tag, d in (('before', b), ('after', a)):
             if os.path.exists(f'{d}/{m}.mp4'):
-                shutil.copy(f'{d}/{m}.mp4', f'{out}/film/{m}_{tag}.mp4')
-                shutil.copy(f'{d}/{m}.jpg', f'{out}/film/{m}_{tag}.jpg')
-                vids.append(f'<figure><figcaption>{tag.capitalize()}</figcaption><video src="film/{m}_{tag}.mp4" poster="film/{m}_{tag}.jpg" controls muted playsinline loop preload="none"></video></figure>')
+                shutil.copy(f'{d}/{m}.mp4', f'{out}/film/{pre}{m}_{tag}.mp4')
+                shutil.copy(f'{d}/{m}.jpg', f'{out}/film/{pre}{m}_{tag}.jpg')
+                vids.append(f'<figure><figcaption>{tag.capitalize()}</figcaption><video src="film/{pre}{m}_{tag}.mp4" poster="film/{pre}{m}_{tag}.jpg" controls muted playsinline loop preload="none"></video></figure>')
         of = D['of'].get(m, [])
         why = ''.join(f'<li>{html.escape(w)}</li>' for w in item['why'])
         did = ''.join(f'<li>{html.escape(w)}</li>' for w in item['done'])
@@ -34,7 +36,9 @@ def cards(items):
 allfix = ''.join(f'<li>{html.escape(x)}</li>' for x in REP['for_all'])
 asks = ''.join(f'<li>{html.escape(x)}</li>' for x in REP.get('your_call', []))
 page = open(HERE + '/page.html').read()
-page = (page.replace('@@CARDS@@', cards(REP['weakest'])).replace('@@SHOWN@@', cards(REP.get('shown', []))).replace('@@ALL@@', allfix)
+low = ', '.join(html.escape(name_of(x['id'])) for x in REP.get('pass2_low', []))
+page = (page.replace('@@P2CARDS@@', cards(REP.get('pass2', []), before2, after2, 'p2_')).replace('@@P2LOW@@', low)
+        .replace('@@CARDS@@', cards(REP['weakest'])).replace('@@SHOWN@@', cards(REP.get('shown', []))).replace('@@ALL@@', allfix)
         .replace('@@ASK@@', asks).replace('@@COUNT@@', str(REP['checked'])).replace('@@N@@', str(len(REP['weakest'])))
         .replace('@@SCORING@@', html.escape(REP['scoring'])))
 open(out + '/index.html', 'w').write(page)

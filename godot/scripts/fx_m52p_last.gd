@@ -110,39 +110,29 @@ func paint_floor(b: Dictionary) -> void:
 		"tailwind:gust":
 			var hh := _hero_at(b)
 			var u := _ease(bt / 0.4)
-			_ga(0.8 * (1.0 - u))
-			_fs(R[4])
-			_ring(hh.x, hh.y, 0.3 + 0.9 * u, 2, bt * 8.0)
+			# (its edge rolling out as the thing it is, not a plain ring: How art is made 9, the check of 26 Nov 2026)
+			_front(hh.x, hh.y, 0.3 + 0.9 * u, PackedColorArray([R[1], R[2], R[3], R[4], R[5]]), int(b["seed"]), 0.8 * (1.0 - u), "sound")
 		"bloat:burst":
 			# (it swells, then bursts)
 			var r := 0.4 + 1.1 * _ease((bt - 0.1) / 0.2) if bt > 0.1 else 0.3 + bt
-			_ga(0.6 * _c01((0.6 - bt) / 0.3))
-			_fs(R[3])
-			_ring(b["x"], b["y"], r, 0)
-			_fs(R[4])
-			_ring(b["x"], b["y"], r * 0.9, 2)
+			# (its edge rolling out as the thing it is, not a plain ring: How art is made 9, the check of 26 Nov 2026)
+			_front(b["x"], b["y"], r, PackedColorArray([R[1], R[2], R[3], R[4], R[5]]), int(b["seed"]), 0.7 * _c01((0.6 - bt) / 0.3), "water")
 		"coldsnap:melt":
 			var u := _ease(bt / 0.3)
-			_ga(0.9 * _c01((0.6 - bt) / 0.3))
-			_fs(ICE[5])
-			_ring(b["x"], b["y"], float(b["r"]) * (1.0 - u * 0.6), 0)
-			_fs(ICE[4])
-			_ring(b["x"], b["y"], float(b["r"]) * (1.0 - u * 0.6) * 0.9, 2)
+			# (its edge rolling out as the thing it is, not a plain ring: How art is made 9, the check of 26 Nov 2026)
+			_front(b["x"], b["y"], float(b["r"]) * (1.0 - u * 0.6), PackedColorArray([ICE[1], ICE[2], ICE[3], ICE[4], ICE[5]]), int(b["seed"]), 0.9 * _c01((0.6 - bt) / 0.3), "water")
 		"flashfire:flare":
 			var u := _ease(bt / 0.3)
-			_ga(0.8 * (1.0 - u))
-			_fs(FIRE[5])
-			_ring(b["x"], b["y"], float(b["r"]) * u, 0)
+			# (its edge rolling out as the thing it is, not a plain ring: How art is made 9, the check of 26 Nov 2026)
+			_front(b["x"], b["y"], float(b["r"]) * u, PackedColorArray([FIRE[1], FIRE[2], FIRE[3], FIRE[4], FIRE[5]]), int(b["seed"]), 0.8 * (1.0 - u), "shock")
 		"jolt:all":
 			var u := _ease(bt / 0.3)
-			_ga(0.9 * (1.0 - u))
-			_fs(R[5])
-			_ring(b["x"], b["y"], float(b["r"]) * u, 0)
+			# (its edge rolling out as the thing it is, not a plain ring: How art is made 9, the check of 26 Nov 2026)
+			_front(b["x"], b["y"], float(b["r"]) * u, PackedColorArray([R[1], R[2], R[3], R[4], R[5]]), int(b["seed"]), 0.9 * (1.0 - u), "shock")
 		"daze:thud":
 			var u := _ease(bt / 0.25)
-			_ga(0.8 * (1.0 - u))
-			_fs(R[4])
-			_ring(b["x"], b["y"], 0.3 + 0.7 * u, 0)
+			# (its edge rolling out as the thing it is, not a plain ring: How art is made 9, the check of 26 Nov 2026)
+			_front(b["x"], b["y"], 0.3 + 0.7 * u, PackedColorArray([R[1], R[2], R[3], R[4], R[5]]), int(b["seed"]), 0.8 * (1.0 - u), "shock")
 	_ga(1.0)
 
 

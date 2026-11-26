@@ -154,15 +154,13 @@ func paint_floor(b: Dictionary) -> void:
 	var y: float = b["y"]
 	match what:
 		"rise":
-			_ga(0.8 * fade)
-			_fs(R[4])
-			_ring(x, y, 0.3 + 0.7 * _ease(u), 3, u * 2.0)
-			_fs(R[3])
-			_ring(x, y, 0.2 + 0.5 * _ease(u), 0, -u * 2.0)
+			# (the ground giving way as it rises: its edge breaking open and rolling out, not a plain ring: his Art Rulebook's How art
+			# is made 9, the check of 26 Nov 2026)
+			_front(x, y, 0.3 + 0.8 * _ease(u), Array(R), int(b["seed"]), 0.9 * fade, "shock")
+			_front(x, y, 0.2 + 0.5 * _ease(u), Array(R), int(b["seed"]) + 3, 0.7 * fade, "water")
 		"shatter", "puff", "spread":
-			_ga(0.6 * fade)
-			_fs(R[3])
-			_ring(x, y, float(b["r"]) * _ease(u), 2, u)
+			# (its burst rolling out: jagged for a shatter, billowing for a puff or a spread)
+			_front(x, y, float(b["r"]) * _ease(u), Array(R), int(b["seed"]), 0.8 * fade, "shock" if what == "shatter" else "water")
 		"slam":
 			# the floor cracked out from where the fists came down, and the wave of it going out
 			var cx := _wx(x, y)
@@ -190,9 +188,8 @@ func paint_floor(b: Dictionary) -> void:
 				var dist := rr * (0.25 + 0.55 * _rh(int(b["seed"]), k + 3))
 				_curl(cx + cos(ang) * dist, cy + sin(ang) * dist * 0.5 - 3.0 - sin(t * 2.0 + k) * 1.5, 9.0 + 3.0 * _rh(int(b["seed"]), k + 6), [R[1], R[2], R[3]], int(b["seed"]) + k, 0.55 * a)
 		"charge":
-			_ga(0.5 * minf(1.0, float(b["t"]) * 4.0))
-			_fs(R[3])
-			_ring(float(b["x1"]), float(b["y1"]), 0.25, 2, t * 6.0)
+			# (where its blow will fall: a sight closing on the spot)
+			_reticle(float(b["x1"]), float(b["y1"]), 0.25 + 0.3 * (1.0 - minf(1.0, float(b["t"]) * 2.0)), Array(R), 0.6 * minf(1.0, float(b["t"]) * 4.0))
 	_ga(1.0)
 
 

@@ -121,6 +121,26 @@ if after_m:
                f'{pct(mean([after_m[m]["front"] for m in weak]))}, behind {pct(mean([B[m]["behind"] for m in weak]))} to '
                f'{pct(mean([after_m[m]["behind"] for m in weak]))}, on a monster {pct(mean([B[m]["foe"] for m in weak]))} to '
                f'{pct(mean([after_m[m]["foe"] for m in weak]))}.')
+# --- THE SECOND PASS (his words, 26 Nov 2026: "Go back over and check again vs our rules.  Don't create changes if they don't need
+# them but check again for weak melds") ---
+RING = 'Its {0} was drawn as a plain ring on the floor (How art is made 9: never a plain ball, box or ring)'
+PASS2 = [
+    ('cinderbrood', [RING.format('creature\'s rising and its burst')], ['As its creature rises, the ground breaks open round it and rolls out; its burst rolls out jagged or billowing']),
+    ('wintergrave', [RING.format('creature\'s rising and its shatter')], ['As its creature rises, the ground breaks open round it and rolls out; its shatter rolls out jagged']),
+    ('stormwake', [RING.format('creature\'s rising')], ['As its creature rises, the ground breaks open round it and rolls out']),
+    ('bogborn', [RING.format('creature\'s rising and its poison puff')], ['As its creature rises, the ground breaks open round it; its puff rolls out billowing']),
+    ('charnel', [RING.format('creature\'s rising, and the spot its slam would fall on')], ['As its creature rises, the ground breaks open round it; where its slam will fall, a sight closes on the spot']),
+    ('tailwind', [RING.format('gust round you')], ['Its gust goes out round you as wind\'s arcs']),
+    ('bloat', [RING.format('swelling and bursting')], ['Its burst rolls out as a billowing front']),
+    ('coldsnap', [RING.format('melting')], ['Its melt rolls in as a rippling front of ice']),
+    ('flashfire', [RING.format('flare')], ['Its flare rolls out as a jagged front of fire']),
+    ('jolt', [RING.format('jolt through them all')], ['Its jolt rolls out as a jagged front of lightning']),
+    ('daze', [RING.format('thud')], ['Its thud rolls out as a jagged shock front']),
+    ('shellburst', ['Its blast did not freeze as it went off (Movement 7: heavy blows land with a freeze)'], ['Its blast holds the game still a moment as it goes off, as the other blasts do']),
+]
+pass2 = [{'id': m, 'why': w, 'done': d} for m, w, d in PASS2]
+P2 = json.load(open(HERE + '/ranking_pass2.json')) if os.path.exists(HERE + '/ranking_pass2.json') else []
+low = [x for x in P2 if x['group'] != 'first23'][:20]
 rep = {
     'checked': len(before),
     'scoring': ('How each was scored: every film set frame by frame beside a film of the plain Strike with no meld, so what is counted is what the meld '
@@ -149,6 +169,8 @@ rep = {
     ],
     'weakest': items,
     'shown': shown,
+    'pass2': pass2,
+    'pass2_low': [{'id': x['id'], 'score': x['score']} for x in low],
 }
 json.dump(rep, open(out, 'w'), indent=1)
 print('weakest', len(items))

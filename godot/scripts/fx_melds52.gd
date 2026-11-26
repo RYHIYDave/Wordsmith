@@ -89,7 +89,7 @@ const HOLDS := {"aftershock:burst": 0.1, "marrow:drink": 0.08, "concussion:boom"
 	"maw:crash": 0.1, "maw:collapse": 0.12, "gravity:crater": 0.12, "stasis:snap": 0.08, "shackle:bite": 0.08, "anchor:sink": 0.12,
 	"firetrap:blaze": 0.08, "burden:weight": 0.1, "rubble:thud": 0.06, "standstill:pulse": 0.1,
 	# (the city's runes with the floor 6–10 runes: meldscity2_rules.gd, fx_m52p_city2.gd)
-	"tripwire:boom": 0.1, "slowfuse:boom": 0.1, "hexblast:burst": 0.08, "whiplash:snap": 0.08, "stutter:went": 0.06, "omen:went": 0.06}
+	"tripwire:boom": 0.1, "slowfuse:boom": 0.1, "hexblast:burst": 0.08, "shellburst:pop": 0.08, "whiplash:snap": 0.08, "stutter:went": 0.06, "omen:went": 0.06}
 
 
 func handle(e: Dictionary) -> void:

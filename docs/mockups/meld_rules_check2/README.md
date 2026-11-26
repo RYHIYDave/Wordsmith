@@ -92,3 +92,28 @@ measure counts every bright pixel, so fire and blasts score highest and a curse 
   a monster). Lancet, Bullseye and Momentum pass when run alone on both: they fail only after the cases before them. Pin and Amber on a
   monster failed alone on the base branch and pass now (foe_meldsredo.gd).
 - No script errors in any film or check.
+
+## The second pass (26 Nov 2026)
+
+His words, asked whether to start another task: “Go back over and check again vs our rules.  Don’t create changes if they don’t need
+them but check again for weak melds”. Every meld filmed again with the fixes in (the city's 45 and 44, the High City's 110, the 60 redone,
+the Reaping 5, and this time the 98 of 23 Nov too: 308 films; the first 23 as filmed before), measured and ranked as before
+(`ranking_pass2.json`, 325), and the painters read again. Changed only what still broke a rule:
+
+- Plain rings on the floor (How art is made 9): the Reaping creatures' rising, burst and the spot their slam falls on
+  (fx_m52p_reap.gd: `_front`, `_reticle`), and the floor edges of Tailwind's gust, Bloat's burst, Coldsnap's melt, Flashfire's
+  flare, Jolt's jolt and Daze's thud (fx_m52p_last.gd: `_front` of each one's kind).
+- Shellburst's blast did not freeze (Movement 7): fx_melds52.gd HOLDS `shellburst:pop`.
+
+Not changed: no film covers him for more than a blink (the hero's box at most 40% covered, never for two frames running). Still the
+smallest by the measure: the city's slow, curse and hold melds already brought up (their moments in place), and of the 98 Lifeline,
+Second Wind, Juggernaut, Marrow, Hornet and Aftermath (no rule broken; small).
+
+Open, asked of him: in 26 films (Aftershock, Bloat, Carapace, Cinderward, Coldsnap, Firewalk, Flashfire, Flurry, Glacier, Hemlock,
+Inferno, Jolt, Mayhem, Miasma, Minefield, Overcharge, Permafrost, Quickfuse, Rekindle, Smoulder, Spree, Static, Tempest, Timebomb,
+Whiteout; Papercut) the meld's own moment never plays while a monster carries it (MELDS52 FOE ... NOT SHOWN). The same on the base
+branch (filmed there: Coldsnap, Rekindle, Quickfuse), so not from this work. Some show only their runes' own look on a monster (a warned
+shockwave, a burn made worse, its dying blast), some tell no moment at all on a monster (Coldsnap), some wait on what the film does not
+set up (him burning for Rekindle and Flashfire).
+
+The page has a second-pass section with the twelve changed, before and after.

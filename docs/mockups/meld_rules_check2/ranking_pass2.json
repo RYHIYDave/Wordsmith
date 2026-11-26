@@ -1,0 +1,2927 @@
+[
+{
+"id": "lifeline",
+"score": 0.426,
+"group": "98",
+"front": 0.4,
+"behind": 0.44,
+"foe": 0.44,
+"cover": 0.0
+},
+{
+"id": "secondwind",
+"score": 0.459,
+"group": "98",
+"front": 0.38,
+"behind": 0.51,
+"foe": 0.5,
+"cover": 0.0
+},
+{
+"id": "sap",
+"score": 0.51,
+"group": "city2",
+"front": 0.46,
+"behind": 0.48,
+"foe": 0.65,
+"cover": 0.0
+},
+{
+"id": "juggernaut",
+"score": 0.514,
+"group": "98",
+"front": 0.59,
+"behind": 0.47,
+"foe": 0.47,
+"cover": 0.0
+},
+{
+"id": "stutter",
+"score": 0.525,
+"group": "city2",
+"front": 0.46,
+"behind": 0.53,
+"foe": 0.64,
+"cover": 0.0
+},
+{
+"id": "snag",
+"score": 0.528,
+"group": "city2",
+"front": 0.44,
+"behind": 0.6,
+"foe": 0.56,
+"cover": 0.0
+},
+{
+"id": "torpor",
+"score": 0.53,
+"group": "city",
+"front": 0.44,
+"behind": 0.47,
+"foe": 0.83,
+"cover": 0.0
+},
+{
+"id": "omen",
+"score": 0.531,
+"group": "city2",
+"front": 0.46,
+"behind": 0.53,
+"foe": 0.69,
+"cover": 0.0
+},
+{
+"id": "stockade",
+"score": 0.533,
+"group": "city2",
+"front": 0.49,
+"behind": 0.54,
+"foe": 0.61,
+"cover": 0.0
+},
+{
+"id": "anchor",
+"score": 0.536,
+"group": "city",
+"front": 0.49,
+"behind": 0.54,
+"foe": 0.62,
+"cover": 0.0
+},
+{
+"id": "lasso",
+"score": 0.54,
+"group": "city",
+"front": 0.38,
+"behind": 0.6,
+"foe": 0.73,
+"cover": 0.0
+},
+{
+"id": "marrow",
+"score": 0.551,
+"group": "98",
+"front": 0.5,
+"behind": 0.46,
+"foe": 0.84,
+"cover": 0.0
+},
+{
+"id": "respite",
+"score": 0.558,
+"group": "city2",
+"front": 0.49,
+"behind": 0.54,
+"foe": 0.74,
+"cover": 0.0
+},
+{
+"id": "whisper",
+"score": 0.559,
+"group": "city",
+"front": 0.42,
+"behind": 0.6,
+"foe": 0.76,
+"cover": 0.0
+},
+{
+"id": "thrall",
+"score": 0.562,
+"group": "city2",
+"front": 0.52,
+"behind": 0.59,
+"foe": 0.6,
+"cover": 0.0
+},
+{
+"id": "hornet",
+"score": 0.587,
+"group": "98",
+"front": 0.4,
+"behind": 0.67,
+"foe": 0.8,
+"cover": 0.0
+},
+{
+"id": "witchknot",
+"score": 0.593,
+"group": "city",
+"front": 0.46,
+"behind": 0.6,
+"foe": 0.85,
+"cover": 0.0
+},
+{
+"id": "standstill",
+"score": 0.596,
+"group": "city",
+"front": 0.51,
+"behind": 0.54,
+"foe": 0.89,
+"cover": 0.0
+},
+{
+"id": "aftermath",
+"score": 0.598,
+"group": "98",
+"front": 0.5,
+"behind": 0.62,
+"foe": 0.74,
+"cover": 0.0
+},
+{
+"id": "vendetta",
+"score": 0.605,
+"group": "redo",
+"front": 0.54,
+"behind": 0.74,
+"foe": 0.46,
+"cover": 0.0
+},
+{
+"id": "staccato",
+"score": 0.617,
+"group": "98",
+"front": 0.6,
+"behind": 0.66,
+"foe": 0.57,
+"cover": 0.0
+},
+{
+"id": "doldrums",
+"score": 0.64,
+"group": "city2",
+"front": 0.54,
+"behind": 0.64,
+"foe": 0.84,
+"cover": 0.0
+},
+{
+"id": "spree",
+"score": 0.643,
+"group": "98",
+"front": 0.65,
+"behind": 0.65,
+"foe": 0.63,
+"cover": 0.0
+},
+{
+"id": "whipcrack",
+"score": 0.646,
+"group": "98",
+"front": 0.57,
+"behind": 0.67,
+"foe": 0.75,
+"cover": 0.0
+},
+{
+"id": "pressurepoint",
+"score": 0.65,
+"group": "98",
+"front": 0.54,
+"behind": 0.54,
+"foe": 1.08,
+"cover": 0.0
+},
+{
+"id": "conduit",
+"score": 0.656,
+"group": "98",
+"front": 0.73,
+"behind": 0.63,
+"foe": 0.56,
+"cover": 0.0
+},
+{
+"id": "eternity",
+"score": 0.664,
+"group": "city2",
+"front": 0.59,
+"behind": 0.66,
+"foe": 0.82,
+"cover": 0.0
+},
+{
+"id": "stagnation",
+"score": 0.666,
+"group": "city",
+"front": 0.56,
+"behind": 0.71,
+"foe": 0.79,
+"cover": 0.0
+},
+{
+"id": "rampage",
+"score": 0.666,
+"group": "98",
+"front": 0.64,
+"behind": 0.62,
+"foe": 0.82,
+"cover": 0.0
+},
+{
+"id": "whiplash",
+"score": 0.667,
+"group": "city2",
+"front": 0.73,
+"behind": 0.61,
+"foe": 0.65,
+"cover": 0.0
+},
+{
+"id": "parry",
+"score": 0.67,
+"group": "98",
+"front": 0.44,
+"behind": 0.53,
+"foe": 1.41,
+"cover": 0.0
+},
+{
+"id": "pall",
+"score": 0.674,
+"group": "city2",
+"front": 0.54,
+"behind": 0.66,
+"foe": 0.97,
+"cover": 0.0
+},
+{
+"id": "flurry",
+"score": 0.678,
+"group": "98",
+"front": 0.63,
+"behind": 0.76,
+"foe": 0.62,
+"cover": 0.0
+},
+{
+"id": "haunting",
+"score": 0.679,
+"group": "high",
+"front": 0.61,
+"behind": 0.67,
+"foe": 0.83,
+"cover": 0.0
+},
+{
+"id": "undying",
+"score": 0.679,
+"group": "high",
+"front": 0.56,
+"behind": 0.7,
+"foe": 0.86,
+"cover": 0.0
+},
+{
+"id": "gravewarden",
+"score": 0.681,
+"group": "high",
+"front": 0.63,
+"behind": 0.7,
+"foe": 0.74,
+"cover": 0.0
+},
+{
+"id": "fetch",
+"score": 0.681,
+"group": "high",
+"front": 0.63,
+"behind": 0.68,
+"foe": 0.79,
+"cover": 0.0
+},
+{
+"id": "feedingfrenzy",
+"score": 0.684,
+"group": "redo",
+"front": 0.75,
+"behind": 0.71,
+"foe": 0.51,
+"cover": 0.0
+},
+{
+"id": "quickening",
+"score": 0.686,
+"group": "city2",
+"front": 0.74,
+"behind": 0.65,
+"foe": 0.66,
+"cover": 0.0
+},
+{
+"id": "limbo",
+"score": 0.688,
+"group": "high",
+"front": 0.61,
+"behind": 0.69,
+"foe": 0.86,
+"cover": 0.0
+},
+{
+"id": "quickdraw",
+"score": 0.69,
+"group": "redo",
+"front": 0.58,
+"behind": 0.75,
+"foe": 0.79,
+"cover": 0.0
+},
+{
+"id": "riptide",
+"score": 0.696,
+"group": "city",
+"front": 0.7,
+"behind": 0.72,
+"foe": 0.64,
+"cover": 0.0
+},
+{
+"id": "harpoon",
+"score": 0.697,
+"group": "city2",
+"front": 0.77,
+"behind": 0.67,
+"foe": 0.6,
+"cover": 0.0
+},
+{
+"id": "eddy",
+"score": 0.699,
+"group": "city2",
+"front": 0.74,
+"behind": 0.69,
+"foe": 0.65,
+"cover": 0.0
+},
+{
+"id": "seeker",
+"score": 0.7,
+"group": "98",
+"front": 0.71,
+"behind": 0.68,
+"foe": 0.7,
+"cover": 0.0
+},
+{
+"id": "rewind",
+"score": 0.701,
+"group": "city2",
+"front": 0.62,
+"behind": 0.79,
+"foe": 0.69,
+"cover": 0.0
+},
+{
+"id": "lancet",
+"score": 0.701,
+"group": "redo",
+"front": 0.64,
+"behind": 0.74,
+"foe": 0.76,
+"cover": 0.0
+},
+{
+"id": "carapace",
+"score": 0.703,
+"group": "98",
+"front": 0.52,
+"behind": 0.45,
+"foe": 1.59,
+"cover": 0.0
+},
+{
+"id": "sanctuary",
+"score": 0.708,
+"group": "98",
+"front": 0.46,
+"behind": 0.51,
+"foe": 1.6,
+"cover": 0.0
+},
+{
+"id": "talisman",
+"score": 0.709,
+"group": "city2",
+"front": 0.53,
+"behind": 0.5,
+"foe": 1.49,
+"cover": 0.0
+},
+{
+"id": "gullet",
+"score": 0.711,
+"group": "city2",
+"front": 0.8,
+"behind": 0.64,
+"foe": 0.67,
+"cover": 0.0
+},
+{
+"id": "daze",
+"score": 0.713,
+"group": "redo",
+"front": 0.65,
+"behind": 0.69,
+"foe": 0.88,
+"cover": 0.0
+},
+{
+"id": "scatter",
+"score": 0.716,
+"group": "city",
+"front": 0.59,
+"behind": 0.82,
+"foe": 0.76,
+"cover": 0.0
+},
+{
+"id": "stasis",
+"score": 0.718,
+"group": "city",
+"front": 0.67,
+"behind": 0.81,
+"foe": 0.65,
+"cover": 0.0
+},
+{
+"id": "tempest",
+"score": 0.723,
+"group": "98",
+"front": 0.8,
+"behind": 0.62,
+"foe": 0.78,
+"cover": 0.0
+},
+{
+"id": "bloat",
+"score": 0.725,
+"group": "98",
+"front": 0.62,
+"behind": 0.77,
+"foe": 0.84,
+"cover": 0.0
+},
+{
+"id": "gravebind",
+"score": 0.727,
+"group": "high",
+"front": 0.62,
+"behind": 0.68,
+"foe": 1.03,
+"cover": 0.0
+},
+{
+"id": "haven",
+"score": 0.732,
+"group": "city2",
+"front": 0.8,
+"behind": 0.68,
+"foe": 0.7,
+"cover": 0.0
+},
+{
+"id": "shieldwall",
+"score": 0.733,
+"group": "98",
+"front": 0.53,
+"behind": 0.61,
+"foe": 1.37,
+"cover": 0.0
+},
+{
+"id": "noose",
+"score": 0.739,
+"group": "high",
+"front": 0.58,
+"behind": 0.56,
+"foe": 1.4,
+"cover": 0.0
+},
+{
+"id": "ambush",
+"score": 0.742,
+"group": "redo",
+"front": 0.63,
+"behind": 0.8,
+"foe": 0.84,
+"cover": 0.0
+},
+{
+"id": "manacle",
+"score": 0.742,
+"group": "city2",
+"front": 0.65,
+"behind": 0.73,
+"foe": 0.96,
+"cover": 0.0
+},
+{
+"id": "miasma",
+"score": 0.745,
+"group": "98",
+"front": 0.51,
+"behind": 0.68,
+"foe": 1.34,
+"cover": 0.0
+},
+{
+"id": "longspear",
+"score": 0.746,
+"group": "high",
+"front": 0.62,
+"behind": 0.6,
+"foe": 1.3,
+"cover": 0.0
+},
+{
+"id": "plague",
+"score": 0.746,
+"group": "city",
+"front": 0.52,
+"behind": 0.73,
+"foe": 1.24,
+"cover": 0.0
+},
+{
+"id": "detonator",
+"score": 0.747,
+"group": "98",
+"front": 0.55,
+"behind": 0.94,
+"foe": 0.75,
+"cover": 0.0
+},
+{
+"id": "overcharge",
+"score": 0.748,
+"group": "98",
+"front": 0.9,
+"behind": 0.66,
+"foe": 0.61,
+"cover": 0.0
+},
+{
+"id": "pin",
+"score": 0.749,
+"group": "city2",
+"front": 0.63,
+"behind": 0.76,
+"foe": 0.98,
+"cover": 0.0
+},
+{
+"id": "ghoul",
+"score": 0.75,
+"group": "high",
+"front": 0.64,
+"behind": 0.69,
+"foe": 1.07,
+"cover": 0.0
+},
+{
+"id": "condemn",
+"score": 0.751,
+"group": "high",
+"front": 0.64,
+"behind": 0.6,
+"foe": 1.26,
+"cover": 0.0
+},
+{
+"id": "tombstone",
+"score": 0.751,
+"group": "high",
+"front": 0.59,
+"behind": 0.65,
+"foe": 1.27,
+"cover": 0.0
+},
+{
+"id": "horizon",
+"score": 0.755,
+"group": "city",
+"front": 0.81,
+"behind": 0.71,
+"foe": 0.75,
+"cover": 0.0
+},
+{
+"id": "strangler",
+"score": 0.756,
+"group": "city",
+"front": 0.49,
+"behind": 0.87,
+"foe": 1.06,
+"cover": 0.0
+},
+{
+"id": "gravity",
+"score": 0.759,
+"group": "city",
+"front": 0.97,
+"behind": 0.62,
+"foe": 0.61,
+"cover": 0.0
+},
+{
+"id": "dragnet",
+"score": 0.759,
+"group": "city2",
+"front": 0.63,
+"behind": 0.81,
+"foe": 0.92,
+"cover": 0.0
+},
+{
+"id": "deadeye",
+"score": 0.759,
+"group": "high",
+"front": 0.57,
+"behind": 0.75,
+"foe": 1.15,
+"cover": 0.0
+},
+{
+"id": "wraithstep",
+"score": 0.761,
+"group": "high",
+"front": 0.58,
+"behind": 0.77,
+"foe": 1.1,
+"cover": 0.0
+},
+{
+"id": "pinpoint",
+"score": 0.762,
+"group": "city2",
+"front": 0.61,
+"behind": 0.92,
+"foe": 0.75,
+"cover": 0.0
+},
+{
+"id": "flashfire",
+"score": 0.769,
+"group": "98",
+"front": 0.78,
+"behind": 0.77,
+"foe": 0.75,
+"cover": 0.0
+},
+{
+"id": "earthquake",
+"score": 0.772,
+"group": "98",
+"front": 0.81,
+"behind": 0.6,
+"foe": 1.02,
+"cover": 0.0
+},
+{
+"id": "mire",
+"score": 0.772,
+"group": "98",
+"front": 0.54,
+"behind": 0.76,
+"foe": 1.25,
+"cover": 0.0
+},
+{
+"id": "sundial",
+"score": 0.772,
+"group": "high",
+"front": 0.7,
+"behind": 0.63,
+"foe": 1.21,
+"cover": 0.0
+},
+{
+"id": "refrain",
+"score": 0.773,
+"group": "city2",
+"front": 0.69,
+"behind": 0.77,
+"foe": 0.95,
+"cover": 0.0
+},
+{
+"id": "swarm",
+"score": 0.776,
+"group": "city2",
+"front": 0.9,
+"behind": 0.71,
+"foe": 0.65,
+"cover": 0.0
+},
+{
+"id": "timeslip",
+"score": 0.776,
+"group": "city",
+"front": 0.59,
+"behind": 0.65,
+"foe": 1.39,
+"cover": 0.0
+},
+{
+"id": "skewer",
+"score": 0.776,
+"group": "high",
+"front": 0.72,
+"behind": 0.62,
+"foe": 1.22,
+"cover": 0.0
+},
+{
+"id": "legion",
+"score": 0.777,
+"group": "high",
+"front": 0.7,
+"behind": 0.79,
+"foe": 0.91,
+"cover": 0.0
+},
+{
+"id": "gale",
+"score": 0.777,
+"group": "98",
+"front": 0.63,
+"behind": 0.58,
+"foe": 1.46,
+"cover": 0.0
+},
+{
+"id": "slowburn",
+"score": 0.78,
+"group": "city",
+"front": 0.82,
+"behind": 0.75,
+"foe": 0.77,
+"cover": 0.0
+},
+{
+"id": "reel",
+"score": 0.787,
+"group": "city",
+"front": 0.8,
+"behind": 0.71,
+"foe": 0.91,
+"cover": 0.0
+},
+{
+"id": "riot",
+"score": 0.794,
+"group": "city2",
+"front": 0.78,
+"behind": 0.79,
+"foe": 0.82,
+"cover": 0.0
+},
+{
+"id": "gravewell",
+"score": 0.794,
+"group": "high",
+"front": 0.79,
+"behind": 0.7,
+"foe": 0.99,
+"cover": 0.0
+},
+{
+"id": "brand",
+"score": 0.794,
+"group": "98",
+"front": 0.83,
+"behind": 0.74,
+"foe": 0.83,
+"cover": 0.0
+},
+{
+"id": "riposte",
+"score": 0.797,
+"group": "redo",
+"front": 0.6,
+"behind": 0.77,
+"foe": 1.24,
+"cover": 0.0
+},
+{
+"id": "fumes",
+"score": 0.803,
+"group": "first23",
+"front": 0.95,
+"behind": 0.66,
+"foe": 0.79,
+"cover": 0.0
+},
+{
+"id": "transfusion",
+"score": 0.805,
+"group": "redo",
+"front": 0.98,
+"behind": 0.7,
+"foe": 0.65,
+"cover": 0.0
+},
+{
+"id": "viper",
+"score": 0.806,
+"group": "98",
+"front": 0.67,
+"behind": 0.91,
+"foe": 0.86,
+"cover": 0.0
+},
+{
+"id": "dart",
+"score": 0.811,
+"group": "high",
+"front": 0.7,
+"behind": 0.65,
+"foe": 1.35,
+"cover": 0.0
+},
+{
+"id": "charge",
+"score": 0.815,
+"group": "98",
+"front": 0.71,
+"behind": 0.65,
+"foe": 1.36,
+"cover": 0.0
+},
+{
+"id": "tailwind",
+"score": 0.817,
+"group": "redo",
+"front": 0.82,
+"behind": 0.87,
+"foe": 0.7,
+"cover": 0.0
+},
+{
+"id": "witchpin",
+"score": 0.82,
+"group": "high",
+"front": 0.8,
+"behind": 0.64,
+"foe": 1.21,
+"cover": 0.0
+},
+{
+"id": "mauler",
+"score": 0.82,
+"group": "city2",
+"front": 0.79,
+"behind": 0.77,
+"foe": 0.99,
+"cover": 0.0
+},
+{
+"id": "windward",
+"score": 0.82,
+"group": "redo",
+"front": 0.67,
+"behind": 0.76,
+"foe": 1.24,
+"cover": 0.0
+},
+{
+"id": "reverb",
+"score": 0.822,
+"group": "redo",
+"front": 0.79,
+"behind": 0.96,
+"foe": 0.6,
+"cover": 0.0
+},
+{
+"id": "shiver",
+"score": 0.824,
+"group": "first23",
+"front": 0.87,
+"behind": 0.87,
+"foe": 0.64,
+"cover": 0.0
+},
+{
+"id": "jolt",
+"score": 0.826,
+"group": "98",
+"front": 0.7,
+"behind": 1.01,
+"foe": 0.7,
+"cover": 0.0
+},
+{
+"id": "aegis",
+"score": 0.826,
+"group": "98",
+"front": 0.55,
+"behind": 0.63,
+"foe": 1.77,
+"cover": 0.0
+},
+{
+"id": "bullseye",
+"score": 0.829,
+"group": "redo",
+"front": 0.72,
+"behind": 0.92,
+"foe": 0.87,
+"cover": 0.0
+},
+{
+"id": "duelist",
+"score": 0.829,
+"group": "redo",
+"front": 0.4,
+"behind": 1.1,
+"foe": 1.15,
+"cover": 0.0
+},
+{
+"id": "bedrock",
+"score": 0.831,
+"group": "redo",
+"front": 0.69,
+"behind": 0.81,
+"foe": 1.16,
+"cover": 0.0
+},
+{
+"id": "shackle",
+"score": 0.832,
+"group": "city",
+"front": 0.76,
+"behind": 0.91,
+"foe": 0.81,
+"cover": 0.0
+},
+{
+"id": "rebound",
+"score": 0.833,
+"group": "city2",
+"front": 0.75,
+"behind": 0.92,
+"foe": 0.82,
+"cover": 0.0
+},
+{
+"id": "delirium",
+"score": 0.833,
+"group": "city2",
+"front": 0.82,
+"behind": 0.74,
+"foe": 1.05,
+"cover": 0.0
+},
+{
+"id": "maelstrom",
+"score": 0.833,
+"group": "city2",
+"front": 0.81,
+"behind": 0.94,
+"foe": 0.66,
+"cover": 0.0
+},
+{
+"id": "jinx",
+"score": 0.834,
+"group": "city",
+"front": 0.81,
+"behind": 0.7,
+"foe": 1.16,
+"cover": 0.0
+},
+{
+"id": "whirlpool",
+"score": 0.847,
+"group": "city2",
+"front": 1.15,
+"behind": 0.64,
+"foe": 0.65,
+"cover": 0.0
+},
+{
+"id": "coven",
+"score": 0.85,
+"group": "city",
+"front": 0.77,
+"behind": 0.86,
+"foe": 0.97,
+"cover": 0.0
+},
+{
+"id": "coldsnap",
+"score": 0.85,
+"group": "98",
+"front": 0.68,
+"behind": 0.9,
+"foe": 1.08,
+"cover": 0.0
+},
+{
+"id": "quietus",
+"score": 0.851,
+"group": "high",
+"front": 0.7,
+"behind": 0.83,
+"foe": 1.21,
+"cover": 0.0
+},
+{
+"id": "poltergeist",
+"score": 0.855,
+"group": "high",
+"front": 0.73,
+"behind": 0.87,
+"foe": 1.08,
+"cover": 0.0
+},
+{
+"id": "constellation",
+"score": 0.856,
+"group": "city",
+"front": 0.75,
+"behind": 0.98,
+"foe": 0.82,
+"cover": 0.0
+},
+{
+"id": "macabre",
+"score": 0.859,
+"group": "high",
+"front": 0.8,
+"behind": 0.77,
+"foe": 1.16,
+"cover": 0.0
+},
+{
+"id": "burden",
+"score": 0.86,
+"group": "city",
+"front": 0.65,
+"behind": 0.73,
+"foe": 1.55,
+"cover": 0.0
+},
+{
+"id": "starburst",
+"score": 0.86,
+"group": "city2",
+"front": 0.77,
+"behind": 0.98,
+"foe": 0.79,
+"cover": 0.0
+},
+{
+"id": "fulgurite",
+"score": 0.864,
+"group": "98",
+"front": 0.77,
+"behind": 0.74,
+"foe": 1.29,
+"cover": 0.0
+},
+{
+"id": "needle",
+"score": 0.865,
+"group": "redo",
+"front": 0.61,
+"behind": 0.91,
+"foe": 1.28,
+"cover": 0.0
+},
+{
+"id": "revenants",
+"score": 0.865,
+"group": "high",
+"front": 0.75,
+"behind": 0.89,
+"foe": 1.04,
+"cover": 0.0
+},
+{
+"id": "wraithspear",
+"score": 0.866,
+"group": "high",
+"front": 0.7,
+"behind": 0.74,
+"foe": 1.44,
+"cover": 0.0
+},
+{
+"id": "bloodtide",
+"score": 0.867,
+"group": "redo",
+"front": 0.77,
+"behind": 1.04,
+"foe": 0.73,
+"cover": 0.0
+},
+{
+"id": "hairtrigger",
+"score": 0.868,
+"group": "98",
+"front": 0.86,
+"behind": 0.9,
+"foe": 0.83,
+"cover": 0.0
+},
+{
+"id": "hemlock",
+"score": 0.871,
+"group": "98",
+"front": 0.5,
+"behind": 0.74,
+"foe": 1.87,
+"cover": 0.0
+},
+{
+"id": "blur",
+"score": 0.876,
+"group": "redo",
+"front": 0.57,
+"behind": 0.89,
+"foe": 1.45,
+"cover": 0.0
+},
+{
+"id": "bloodbloom",
+"score": 0.879,
+"group": "98",
+"front": 0.93,
+"behind": 0.94,
+"foe": 0.65,
+"cover": 0.0
+},
+{
+"id": "rimeward",
+"score": 0.88,
+"group": "first23",
+"front": 1.0,
+"behind": 0.87,
+"foe": 0.66,
+"cover": 0.0
+},
+{
+"id": "evileye",
+"score": 0.886,
+"group": "city2",
+"front": 0.85,
+"behind": 0.86,
+"foe": 1.02,
+"cover": 0.0
+},
+{
+"id": "fortress",
+"score": 0.886,
+"group": "redo",
+"front": 0.64,
+"behind": 0.77,
+"foe": 1.61,
+"cover": 0.0
+},
+{
+"id": "stillpoint",
+"score": 0.889,
+"group": "city2",
+"front": 0.54,
+"behind": 1.02,
+"foe": 1.32,
+"cover": 0.0
+},
+{
+"id": "smoulder",
+"score": 0.889,
+"group": "98",
+"front": 0.91,
+"behind": 0.66,
+"foe": 1.31,
+"cover": 0.0
+},
+{
+"id": "quickfuse",
+"score": 0.89,
+"group": "98",
+"front": 0.75,
+"behind": 1.12,
+"foe": 0.72,
+"cover": 0.0
+},
+{
+"id": "tether",
+"score": 0.891,
+"group": "city",
+"front": 0.93,
+"behind": 0.81,
+"foe": 0.96,
+"cover": 0.0
+},
+{
+"id": "sunder",
+"score": 0.891,
+"group": "first23",
+"front": 0.77,
+"behind": 0.93,
+"foe": 1.06,
+"cover": 0.0
+},
+{
+"id": "amber",
+"score": 0.893,
+"group": "city",
+"front": 0.6,
+"behind": 0.94,
+"foe": 1.38,
+"cover": 0.0
+},
+{
+"id": "bloodlance",
+"score": 0.897,
+"group": "high",
+"front": 0.95,
+"behind": 0.64,
+"foe": 1.31,
+"cover": 0.0
+},
+{
+"id": "fetters",
+"score": 0.898,
+"group": "city2",
+"front": 0.82,
+"behind": 1.02,
+"foe": 0.81,
+"cover": 0.0
+},
+{
+"id": "coup",
+"score": 0.898,
+"group": "high",
+"front": 0.61,
+"behind": 0.76,
+"foe": 1.77,
+"cover": 0.0
+},
+{
+"id": "doubletap",
+"score": 0.898,
+"group": "redo",
+"front": 0.81,
+"behind": 1.07,
+"foe": 0.74,
+"cover": 0.0
+},
+{
+"id": "charnel",
+"score": 0.9,
+"group": "reap",
+"front": 0.51,
+"behind": 1.13,
+"foe": 1.22,
+"cover": 0.0
+},
+{
+"id": "sump",
+"score": 0.901,
+"group": "city",
+"front": 0.82,
+"behind": 0.93,
+"foe": 0.99,
+"cover": 0.0
+},
+{
+"id": "redoubt",
+"score": 0.901,
+"group": "98",
+"front": 0.62,
+"behind": 0.74,
+"foe": 1.79,
+"cover": 0.0
+},
+{
+"id": "contagion",
+"score": 0.901,
+"group": "first23",
+"front": 0.95,
+"behind": 0.92,
+"foe": 0.76,
+"cover": 0.0
+},
+{
+"id": "rapier",
+"score": 0.903,
+"group": "redo",
+"front": 0.72,
+"behind": 0.83,
+"foe": 1.42,
+"cover": 0.0
+},
+{
+"id": "bogborn",
+"score": 0.905,
+"group": "reap",
+"front": 0.47,
+"behind": 1.09,
+"foe": 1.39,
+"cover": 0.0
+},
+{
+"id": "spearwall",
+"score": 0.907,
+"group": "high",
+"front": 0.89,
+"behind": 0.72,
+"foe": 1.31,
+"cover": 0.0
+},
+{
+"id": "flechette",
+"score": 0.909,
+"group": "city2",
+"front": 0.84,
+"behind": 0.95,
+"foe": 0.97,
+"cover": 0.0
+},
+{
+"id": "broadspear",
+"score": 0.91,
+"group": "high",
+"front": 0.84,
+"behind": 0.83,
+"foe": 1.22,
+"cover": 0.0
+},
+{
+"id": "confluence",
+"score": 0.911,
+"group": "city",
+"front": 0.91,
+"behind": 0.95,
+"foe": 0.85,
+"cover": 0.0
+},
+{
+"id": "beckon",
+"score": 0.912,
+"group": "city",
+"front": 0.85,
+"behind": 0.83,
+"foe": 1.22,
+"cover": 0.0
+},
+{
+"id": "quicksilver",
+"score": 0.913,
+"group": "98",
+"front": 1.04,
+"behind": 0.9,
+"foe": 0.69,
+"cover": 0.0
+},
+{
+"id": "stormwake",
+"score": 0.914,
+"group": "reap",
+"front": 0.69,
+"behind": 1.12,
+"foe": 0.94,
+"cover": 0.0
+},
+{
+"id": "grudge",
+"score": 0.916,
+"group": "city2",
+"front": 0.74,
+"behind": 0.69,
+"foe": 1.72,
+"cover": 0.0
+},
+{
+"id": "bodkin",
+"score": 0.917,
+"group": "high",
+"front": 0.94,
+"behind": 0.73,
+"foe": 1.25,
+"cover": 0.0
+},
+{
+"id": "deathwatch",
+"score": 0.92,
+"group": "high",
+"front": 0.79,
+"behind": 0.89,
+"foe": 1.23,
+"cover": 0.0
+},
+{
+"id": "batteringram",
+"score": 0.923,
+"group": "high",
+"front": 0.77,
+"behind": 0.69,
+"foe": 1.71,
+"cover": 0.0
+},
+{
+"id": "backwash",
+"score": 0.924,
+"group": "city2",
+"front": 0.93,
+"behind": 0.98,
+"foe": 0.8,
+"cover": 0.0
+},
+{
+"id": "cinderbrood",
+"score": 0.925,
+"group": "reap",
+"front": 0.55,
+"behind": 1.19,
+"foe": 1.14,
+"cover": 0.0
+},
+{
+"id": "rubble",
+"score": 0.927,
+"group": "city",
+"front": 0.74,
+"behind": 0.75,
+"foe": 1.67,
+"cover": 0.0
+},
+{
+"id": "bloodprice",
+"score": 0.931,
+"group": "high",
+"front": 0.8,
+"behind": 0.8,
+"foe": 1.46,
+"cover": 0.0
+},
+{
+"id": "harvest",
+"score": 0.931,
+"group": "high",
+"front": 0.71,
+"behind": 0.87,
+"foe": 1.5,
+"cover": 0.0
+},
+{
+"id": "phalanx",
+"score": 0.932,
+"group": "city2",
+"front": 0.76,
+"behind": 1.08,
+"foe": 0.97,
+"cover": 0.0
+},
+{
+"id": "concussion",
+"score": 0.936,
+"group": "98",
+"front": 0.67,
+"behind": 0.88,
+"foe": 1.57,
+"cover": 0.0
+},
+{
+"id": "web",
+"score": 0.945,
+"group": "city",
+"front": 0.77,
+"behind": 1.18,
+"foe": 0.82,
+"cover": 0.0
+},
+{
+"id": "rupture",
+"score": 0.946,
+"group": "first23",
+"front": 0.46,
+"behind": 1.03,
+"foe": 1.77,
+"cover": 0.0
+},
+{
+"id": "slowfuse",
+"score": 0.949,
+"group": "city2",
+"front": 0.87,
+"behind": 0.98,
+"foe": 1.04,
+"cover": 0.0
+},
+{
+"id": "canker",
+"score": 0.961,
+"group": "redo",
+"front": 0.87,
+"behind": 1.01,
+"foe": 1.04,
+"cover": 0.0
+},
+{
+"id": "trident",
+"score": 0.961,
+"group": "high",
+"front": 0.82,
+"behind": 0.98,
+"foe": 1.21,
+"cover": 0.0
+},
+{
+"id": "stormfront",
+"score": 0.971,
+"group": "98",
+"front": 1.06,
+"behind": 0.74,
+"foe": 1.24,
+"cover": 0.0
+},
+{
+"id": "mercy",
+"score": 0.972,
+"group": "high",
+"front": 0.52,
+"behind": 1.26,
+"foe": 1.3,
+"cover": 0.0
+},
+{
+"id": "mayhem",
+"score": 0.977,
+"group": "98",
+"front": 0.9,
+"behind": 1.2,
+"foe": 0.7,
+"cover": 0.0
+},
+{
+"id": "hydra",
+"score": 0.979,
+"group": "city2",
+"front": 0.94,
+"behind": 1.12,
+"foe": 0.78,
+"cover": 0.0
+},
+{
+"id": "barrage",
+"score": 0.979,
+"group": "high",
+"front": 1.09,
+"behind": 0.73,
+"foe": 1.26,
+"cover": 0.0
+},
+{
+"id": "bloodcurse",
+"score": 0.98,
+"group": "city2",
+"front": 0.76,
+"behind": 0.94,
+"foe": 1.49,
+"cover": 0.0
+},
+{
+"id": "ripple",
+"score": 0.985,
+"group": "98",
+"front": 0.91,
+"behind": 1.04,
+"foe": 1.02,
+"cover": 0.0
+},
+{
+"id": "stinger",
+"score": 0.991,
+"group": "high",
+"front": 0.86,
+"behind": 0.87,
+"foe": 1.5,
+"cover": 0.0
+},
+{
+"id": "bloodlust",
+"score": 0.995,
+"group": "redo",
+"front": 0.92,
+"behind": 0.99,
+"foe": 1.17,
+"cover": 0.0
+},
+{
+"id": "firetrap",
+"score": 0.996,
+"group": "city",
+"front": 0.81,
+"behind": 1.08,
+"foe": 1.2,
+"cover": 0.0
+},
+{
+"id": "crusher",
+"score": 0.997,
+"group": "high",
+"front": 0.79,
+"behind": 0.83,
+"foe": 1.74,
+"cover": 0.0
+},
+{
+"id": "maw",
+"score": 1.001,
+"group": "city",
+"front": 0.98,
+"behind": 1.04,
+"foe": 0.95,
+"cover": 0.0
+},
+{
+"id": "siphon",
+"score": 1.001,
+"group": "first23",
+"front": 0.89,
+"behind": 0.99,
+"foe": 1.24,
+"cover": 0.0
+},
+{
+"id": "flicker",
+"score": 1.002,
+"group": "high",
+"front": 0.97,
+"behind": 0.94,
+"foe": 1.18,
+"cover": 0.0
+},
+{
+"id": "permafrost",
+"score": 1.003,
+"group": "98",
+"front": 1.29,
+"behind": 0.8,
+"foe": 0.84,
+"cover": 0.0
+},
+{
+"id": "artery",
+"score": 1.004,
+"group": "high",
+"front": 0.65,
+"behind": 1.0,
+"foe": 1.72,
+"cover": 0.0
+},
+{
+"id": "onrush",
+"score": 1.005,
+"group": "redo",
+"front": 0.94,
+"behind": 0.96,
+"foe": 1.23,
+"cover": 0.0
+},
+{
+"id": "breakthrough",
+"score": 1.005,
+"group": "high",
+"front": 0.73,
+"behind": 1.07,
+"foe": 1.42,
+"cover": 0.0
+},
+{
+"id": "implode",
+"score": 1.008,
+"group": "first23",
+"front": 0.92,
+"behind": 1.11,
+"foe": 0.99,
+"cover": 0.0
+},
+{
+"id": "smite",
+"score": 1.014,
+"group": "high",
+"front": 0.61,
+"behind": 1.04,
+"foe": 1.76,
+"cover": 0.0
+},
+{
+"id": "anvil",
+"score": 1.018,
+"group": "98",
+"front": 0.82,
+"behind": 0.78,
+"foe": 1.9,
+"cover": 0.0
+},
+{
+"id": "eruption",
+"score": 1.02,
+"group": "first23",
+"front": 1.25,
+"behind": 0.93,
+"foe": 0.74,
+"cover": 0.0
+},
+{
+"id": "hexblast",
+"score": 1.025,
+"group": "city2",
+"front": 0.95,
+"behind": 0.98,
+"foe": 1.26,
+"cover": 0.0
+},
+{
+"id": "tempo",
+"score": 1.026,
+"group": "redo",
+"front": 1.11,
+"behind": 1.0,
+"foe": 0.91,
+"cover": 0.0
+},
+{
+"id": "gaff",
+"score": 1.028,
+"group": "high",
+"front": 0.92,
+"behind": 0.89,
+"foe": 1.53,
+"cover": 0.0
+},
+{
+"id": "clot",
+"score": 1.029,
+"group": "high",
+"front": 0.59,
+"behind": 1.0,
+"foe": 1.97,
+"cover": 0.0
+},
+{
+"id": "scald",
+"score": 1.029,
+"group": "first23",
+"front": 1.56,
+"behind": 0.64,
+"foe": 0.75,
+"cover": 0.0
+},
+{
+"id": "aftershock",
+"score": 1.031,
+"group": "98",
+"front": 0.84,
+"behind": 0.82,
+"foe": 1.85,
+"cover": 0.0
+},
+{
+"id": "nightshade",
+"score": 1.032,
+"group": "high",
+"front": 0.74,
+"behind": 0.91,
+"foe": 1.85,
+"cover": 0.0
+},
+{
+"id": "butcher",
+"score": 1.04,
+"group": "high",
+"front": 0.68,
+"behind": 0.92,
+"foe": 2.24,
+"cover": 0.0
+},
+{
+"id": "thornshield",
+"score": 1.043,
+"group": "high",
+"front": 0.66,
+"behind": 0.95,
+"foe": 2.06,
+"cover": 0.0
+},
+{
+"id": "blink",
+"score": 1.046,
+"group": "redo",
+"front": 0.87,
+"behind": 0.94,
+"foe": 1.6,
+"cover": 0.0
+},
+{
+"id": "mangle",
+"score": 1.054,
+"group": "high",
+"front": 0.68,
+"behind": 0.95,
+"foe": 2.11,
+"cover": 0.0
+},
+{
+"id": "fury",
+"score": 1.059,
+"group": "redo",
+"front": 1.09,
+"behind": 0.84,
+"foe": 1.44,
+"cover": 0.0
+},
+{
+"id": "finalhour",
+"score": 1.062,
+"group": "high",
+"front": 0.73,
+"behind": 1.05,
+"foe": 1.76,
+"cover": 0.0
+},
+{
+"id": "chainreaction",
+"score": 1.065,
+"group": "first23",
+"front": 0.71,
+"behind": 1.62,
+"foe": 0.65,
+"cover": 0.0
+},
+{
+"id": "bloodhex",
+"score": 1.067,
+"group": "high",
+"front": 0.61,
+"behind": 1.05,
+"foe": 2.23,
+"cover": 0.0
+},
+{
+"id": "berserk",
+"score": 1.068,
+"group": "redo",
+"front": 1.15,
+"behind": 1.03,
+"foe": 0.98,
+"cover": 0.0
+},
+{
+"id": "coldblood",
+"score": 1.07,
+"group": "redo",
+"front": 1.39,
+"behind": 0.97,
+"foe": 0.62,
+"cover": 0.0
+},
+{
+"id": "icebound",
+"score": 1.074,
+"group": "city",
+"front": 1.11,
+"behind": 1.07,
+"foe": 1.02,
+"cover": 0.0
+},
+{
+"id": "lens",
+"score": 1.077,
+"group": "high",
+"front": 0.66,
+"behind": 1.31,
+"foe": 1.45,
+"cover": 0.0
+},
+{
+"id": "lodestone",
+"score": 1.081,
+"group": "city",
+"front": 1.14,
+"behind": 1.09,
+"foe": 0.95,
+"cover": 0.0
+},
+{
+"id": "whiteout",
+"score": 1.082,
+"group": "98",
+"front": 1.09,
+"behind": 1.37,
+"foe": 0.5,
+"cover": 0.0
+},
+{
+"id": "cinderward",
+"score": 1.083,
+"group": "98",
+"front": 0.82,
+"behind": 0.89,
+"foe": 2.63,
+"cover": 0.0
+},
+{
+"id": "avalanche",
+"score": 1.086,
+"group": "first23",
+"front": 1.28,
+"behind": 1.0,
+"foe": 0.88,
+"cover": 0.0
+},
+{
+"id": "firewalk",
+"score": 1.089,
+"group": "98",
+"front": 1.14,
+"behind": 1.03,
+"foe": 1.11,
+"cover": 0.0
+},
+{
+"id": "tripwire",
+"score": 1.094,
+"group": "city2",
+"front": 1.16,
+"behind": 1.01,
+"foe": 1.13,
+"cover": 0.0
+},
+{
+"id": "briar",
+"score": 1.102,
+"group": "high",
+"front": 0.83,
+"behind": 0.94,
+"foe": 1.96,
+"cover": 0.0
+},
+{
+"id": "forking",
+"score": 1.103,
+"group": "first23",
+"front": 1.16,
+"behind": 1.1,
+"foe": 0.99,
+"cover": 0.0
+},
+{
+"id": "blight",
+"score": 1.104,
+"group": "first23",
+"front": 0.86,
+"behind": 1.09,
+"foe": 1.64,
+"cover": 0.0
+},
+{
+"id": "lamprey",
+"score": 1.107,
+"group": "redo",
+"front": 1.02,
+"behind": 1.11,
+"foe": 1.28,
+"cover": 0.0
+},
+{
+"id": "massacre",
+"score": 1.111,
+"group": "high",
+"front": 0.84,
+"behind": 1.11,
+"foe": 1.66,
+"cover": 0.0
+},
+{
+"id": "static",
+"score": 1.111,
+"group": "98",
+"front": 0.93,
+"behind": 0.85,
+"foe": 3.02,
+"cover": 0.0
+},
+{
+"id": "wildfire",
+"score": 1.112,
+"group": "first23",
+"front": 1.28,
+"behind": 0.76,
+"foe": 1.49,
+"cover": 0.0
+},
+{
+"id": "deathblow",
+"score": 1.116,
+"group": "high",
+"front": 0.74,
+"behind": 1.05,
+"foe": 2.15,
+"cover": 0.0
+},
+{
+"id": "soulburst",
+"score": 1.118,
+"group": "high",
+"front": 0.82,
+"behind": 1.32,
+"foe": 1.33,
+"cover": 0.0
+},
+{
+"id": "frostlock",
+"score": 1.119,
+"group": "city",
+"front": 1.12,
+"behind": 1.05,
+"foe": 1.26,
+"cover": 0.0
+},
+{
+"id": "timebomb",
+"score": 1.12,
+"group": "98",
+"front": 1.13,
+"behind": 1.15,
+"foe": 1.03,
+"cover": 0.0
+},
+{
+"id": "pitchfork",
+"score": 1.123,
+"group": "high",
+"front": 0.88,
+"behind": 1.16,
+"foe": 1.53,
+"cover": 0.0
+},
+{
+"id": "bloodfeast",
+"score": 1.124,
+"group": "high",
+"front": 0.71,
+"behind": 1.1,
+"foe": 2.29,
+"cover": 0.0
+},
+{
+"id": "gallows",
+"score": 1.13,
+"group": "high",
+"front": 0.79,
+"behind": 1.04,
+"foe": 2.63,
+"cover": 0.0
+},
+{
+"id": "stormglass",
+"score": 1.131,
+"group": "city",
+"front": 0.72,
+"behind": 1.22,
+"foe": 1.77,
+"cover": 0.0
+},
+{
+"id": "hemorrhage",
+"score": 1.139,
+"group": "high",
+"front": 0.61,
+"behind": 1.24,
+"foe": 3.39,
+"cover": 0.0
+},
+{
+"id": "hexwave",
+"score": 1.142,
+"group": "high",
+"front": 1.15,
+"behind": 1.01,
+"foe": 1.39,
+"cover": 0.0
+},
+{
+"id": "stormlance",
+"score": 1.146,
+"group": "high",
+"front": 1.2,
+"behind": 1.01,
+"foe": 1.31,
+"cover": 0.0
+},
+{
+"id": "doom",
+"score": 1.153,
+"group": "city",
+"front": 1.08,
+"behind": 1.03,
+"foe": 1.56,
+"cover": 0.0
+},
+{
+"id": "fishhook",
+"score": 1.153,
+"group": "high",
+"front": 0.8,
+"behind": 1.08,
+"foe": 2.25,
+"cover": 0.0
+},
+{
+"id": "guillotine",
+"score": 1.159,
+"group": "high",
+"front": 0.77,
+"behind": 1.13,
+"foe": 2.18,
+"cover": 0.0
+},
+{
+"id": "powderkeg",
+"score": 1.159,
+"group": "first23",
+"front": 0.75,
+"behind": 1.48,
+"foe": 1.33,
+"cover": 0.0
+},
+{
+"id": "fever",
+"score": 1.161,
+"group": "redo",
+"front": 0.93,
+"behind": 1.08,
+"foe": 1.8,
+"cover": 0.0
+},
+{
+"id": "thunder",
+"score": 1.163,
+"group": "first23",
+"front": 1.16,
+"behind": 0.96,
+"foe": 1.57,
+"cover": 0.0
+},
+{
+"id": "lull",
+"score": 1.164,
+"group": "high",
+"front": 1.23,
+"behind": 0.98,
+"foe": 1.42,
+"cover": 0.0
+},
+{
+"id": "momentum",
+"score": 1.165,
+"group": "redo",
+"front": 1.06,
+"behind": 1.04,
+"foe": 1.62,
+"cover": 0.0
+},
+{
+"id": "fractal",
+"score": 1.167,
+"group": "city",
+"front": 0.93,
+"behind": 1.57,
+"foe": 0.83,
+"cover": 0.0
+},
+{
+"id": "hoarfrost",
+"score": 1.176,
+"group": "city",
+"front": 1.22,
+"behind": 1.15,
+"foe": 1.15,
+"cover": 0.0
+},
+{
+"id": "haymaker",
+"score": 1.181,
+"group": "redo",
+"front": 0.97,
+"behind": 1.14,
+"foe": 1.68,
+"cover": 0.0
+},
+{
+"id": "blastwave",
+"score": 1.189,
+"group": "98",
+"front": 0.79,
+"behind": 1.35,
+"foe": 1.64,
+"cover": 0.0
+},
+{
+"id": "tangle",
+"score": 1.192,
+"group": "high",
+"front": 1.3,
+"behind": 0.99,
+"foe": 1.37,
+"cover": 0.0
+},
+{
+"id": "ricochet",
+"score": 1.193,
+"group": "high",
+"front": 1.3,
+"behind": 1.35,
+"foe": 0.65,
+"cover": 0.0
+},
+{
+"id": "icebreaker",
+"score": 1.194,
+"group": "98",
+"front": 1.21,
+"behind": 1.08,
+"foe": 1.39,
+"cover": 0.0
+},
+{
+"id": "splinter",
+"score": 1.202,
+"group": "city",
+"front": 1.02,
+"behind": 1.44,
+"foe": 1.09,
+"cover": 0.0
+},
+{
+"id": "bloodharvest",
+"score": 1.206,
+"group": "high",
+"front": 0.9,
+"behind": 1.11,
+"foe": 2.34,
+"cover": 0.0
+},
+{
+"id": "cataclysm",
+"score": 1.209,
+"group": "redo",
+"front": 1.53,
+"behind": 1.15,
+"foe": 0.68,
+"cover": 0.0
+},
+{
+"id": "lastrites",
+"score": 1.221,
+"group": "high",
+"front": 0.74,
+"behind": 1.31,
+"foe": 3.21,
+"cover": 0.0
+},
+{
+"id": "deathknell",
+"score": 1.221,
+"group": "high",
+"front": 1.23,
+"behind": 1.1,
+"foe": 1.43,
+"cover": 0.0
+},
+{
+"id": "lacerate",
+"score": 1.224,
+"group": "high",
+"front": 0.87,
+"behind": 1.19,
+"foe": 2.02,
+"cover": 0.0
+},
+{
+"id": "spark",
+"score": 1.224,
+"group": "high",
+"front": 0.98,
+"behind": 1.3,
+"foe": 1.56,
+"cover": 0.0
+},
+{
+"id": "onslaught",
+"score": 1.224,
+"group": "98",
+"front": 1.21,
+"behind": 1.09,
+"foe": 1.53,
+"cover": 0.0
+},
+{
+"id": "rekindle",
+"score": 1.226,
+"group": "98",
+"front": 1.49,
+"behind": 1.22,
+"foe": 0.72,
+"cover": 0.0
+},
+{
+"id": "minefield",
+"score": 1.233,
+"group": "98",
+"front": 1.17,
+"behind": 1.04,
+"foe": 1.75,
+"cover": 0.0
+},
+{
+"id": "scissors",
+"score": 1.234,
+"group": "high",
+"front": 0.9,
+"behind": 1.18,
+"foe": 2.15,
+"cover": 0.0
+},
+{
+"id": "papercut",
+"score": 1.239,
+"group": "high",
+"front": 0.91,
+"behind": 1.18,
+"foe": 2.07,
+"cover": 0.0
+},
+{
+"id": "seismic",
+"score": 1.257,
+"group": "high",
+"front": 1.3,
+"behind": 1.01,
+"foe": 1.67,
+"cover": 0.0
+},
+{
+"id": "cremate",
+"score": 1.26,
+"group": "high",
+"front": 0.88,
+"behind": 1.32,
+"foe": 1.91,
+"cover": 0.0
+},
+{
+"id": "firewhirl",
+"score": 1.261,
+"group": "city",
+"front": 1.39,
+"behind": 1.2,
+"foe": 1.12,
+"cover": 0.0
+},
+{
+"id": "hailstorm",
+"score": 1.263,
+"group": "first23",
+"front": 1.61,
+"behind": 1.05,
+"foe": 1.0,
+"cover": 0.0
+},
+{
+"id": "heartbeat",
+"score": 1.263,
+"group": "high",
+"front": 1.33,
+"behind": 1.17,
+"foe": 1.3,
+"cover": 0.0
+},
+{
+"id": "bloodrage",
+"score": 1.268,
+"group": "high",
+"front": 0.97,
+"behind": 1.2,
+"foe": 2.01,
+"cover": 0.0
+},
+{
+"id": "harrow",
+"score": 1.274,
+"group": "high",
+"front": 1.04,
+"behind": 1.14,
+"foe": 2.64,
+"cover": 0.0
+},
+{
+"id": "gangrene",
+"score": 1.28,
+"group": "high",
+"front": 0.97,
+"behind": 1.23,
+"foe": 2.5,
+"cover": 0.0
+},
+{
+"id": "fervor",
+"score": 1.296,
+"group": "first23",
+"front": 1.05,
+"behind": 1.19,
+"foe": 2.37,
+"cover": 0.0
+},
+{
+"id": "decimate",
+"score": 1.338,
+"group": "high",
+"front": 1.03,
+"behind": 1.31,
+"foe": 2.03,
+"cover": 0.0
+},
+{
+"id": "cauterize",
+"score": 1.338,
+"group": "first23",
+"front": 1.23,
+"behind": 1.3,
+"foe": 1.63,
+"cover": 0.0
+},
+{
+"id": "soulstorm",
+"score": 1.34,
+"group": "high",
+"front": 1.28,
+"behind": 1.12,
+"foe": 1.88,
+"cover": 0.0
+},
+{
+"id": "bulwark",
+"score": 1.34,
+"group": "redo",
+"front": 0.97,
+"behind": 1.38,
+"foe": 2.73,
+"cover": 0.0
+},
+{
+"id": "rush",
+"score": 1.347,
+"group": "high",
+"front": 1.43,
+"behind": 1.22,
+"foe": 1.44,
+"cover": 0.0
+},
+{
+"id": "spore",
+"score": 1.349,
+"group": "city",
+"front": 0.94,
+"behind": 1.49,
+"foe": 1.89,
+"cover": 0.0
+},
+{
+"id": "undertow",
+"score": 1.353,
+"group": "high",
+"front": 1.36,
+"behind": 1.18,
+"foe": 1.7,
+"cover": 0.0
+},
+{
+"id": "wintergrave",
+"score": 1.355,
+"group": "reap",
+"front": 1.13,
+"behind": 1.59,
+"foe": 1.34,
+"cover": 0.0
+},
+{
+"id": "impaler",
+"score": 1.361,
+"group": "high",
+"front": 1.18,
+"behind": 1.54,
+"foe": 1.37,
+"cover": 0.0
+},
+{
+"id": "bastion",
+"score": 1.371,
+"group": "high",
+"front": 1.45,
+"behind": 1.11,
+"foe": 1.73,
+"cover": 0.0
+},
+{
+"id": "bloodburst",
+"score": 1.371,
+"group": "high",
+"front": 0.91,
+"behind": 1.57,
+"foe": 1.89,
+"cover": 0.0
+},
+{
+"id": "frostbite",
+"score": 1.39,
+"group": "first23",
+"front": 2.13,
+"behind": 0.82,
+"foe": 1.06,
+"cover": 0.0
+},
+{
+"id": "pestilence",
+"score": 1.39,
+"group": "high",
+"front": 1.38,
+"behind": 1.35,
+"foe": 1.48,
+"cover": 0.0
+},
+{
+"id": "sunspear",
+"score": 1.391,
+"group": "high",
+"front": 1.23,
+"behind": 1.25,
+"foe": 2.0,
+"cover": 0.0
+},
+{
+"id": "galvanic",
+"score": 1.394,
+"group": "high",
+"front": 1.07,
+"behind": 1.41,
+"foe": 2.46,
+"cover": 0.0
+},
+{
+"id": "embers",
+"score": 1.394,
+"group": "city",
+"front": 1.1,
+"behind": 1.38,
+"foe": 2.08,
+"cover": 0.0
+},
+{
+"id": "resonance",
+"score": 1.406,
+"group": "high",
+"front": 1.36,
+"behind": 1.15,
+"foe": 2.16,
+"cover": 0.0
+},
+{
+"id": "gore",
+"score": 1.409,
+"group": "high",
+"front": 1.13,
+"behind": 1.39,
+"foe": 2.3,
+"cover": 0.0
+},
+{
+"id": "rimeblood",
+"score": 1.416,
+"group": "high",
+"front": 1.31,
+"behind": 1.23,
+"foe": 2.76,
+"cover": 0.0
+},
+{
+"id": "fuse",
+"score": 1.419,
+"group": "high",
+"front": 1.36,
+"behind": 1.41,
+"foe": 1.56,
+"cover": 0.0
+},
+{
+"id": "deathburst",
+"score": 1.42,
+"group": "high",
+"front": 1.24,
+"behind": 1.34,
+"foe": 1.94,
+"cover": 0.0
+},
+{
+"id": "upheaval",
+"score": 1.435,
+"group": "high",
+"front": 1.61,
+"behind": 1.43,
+"foe": 1.09,
+"cover": 0.0
+},
+{
+"id": "bramble",
+"score": 1.442,
+"group": "high",
+"front": 1.27,
+"behind": 1.34,
+"foe": 2.5,
+"cover": 0.0
+},
+{
+"id": "drift",
+"score": 1.442,
+"group": "city",
+"front": 1.46,
+"behind": 1.65,
+"foe": 1.01,
+"cover": 0.0
+},
+{
+"id": "inferno",
+"score": 1.449,
+"group": "98",
+"front": 1.68,
+"behind": 0.95,
+"foe": 1.98,
+"cover": 0.0
+},
+{
+"id": "flashfreeze",
+"score": 1.451,
+"group": "98",
+"front": 1.46,
+"behind": 1.56,
+"foe": 1.21,
+"cover": 0.0
+},
+{
+"id": "crescendo",
+"score": 1.486,
+"group": "high",
+"front": 1.83,
+"behind": 1.32,
+"foe": 1.13,
+"cover": 0.0
+},
+{
+"id": "bloodboil",
+"score": 1.486,
+"group": "high",
+"front": 1.19,
+"behind": 1.52,
+"foe": 2.59,
+"cover": 0.0
+},
+{
+"id": "overload",
+"score": 1.49,
+"group": "high",
+"front": 1.64,
+"behind": 1.34,
+"foe": 1.48,
+"cover": 0.0
+},
+{
+"id": "fangs",
+"score": 1.497,
+"group": "high",
+"front": 1.04,
+"behind": 1.7,
+"foe": 3.32,
+"cover": 0.0
+},
+{
+"id": "brimstone",
+"score": 1.527,
+"group": "city",
+"front": 1.31,
+"behind": 1.61,
+"foe": 1.8,
+"cover": 0.0
+},
+{
+"id": "tremor",
+"score": 1.535,
+"group": "high",
+"front": 1.65,
+"behind": 1.43,
+"foe": 1.5,
+"cover": 0.0
+},
+{
+"id": "coldcut",
+"score": 1.544,
+"group": "high",
+"front": 1.47,
+"behind": 1.5,
+"foe": 1.8,
+"cover": 0.0
+},
+{
+"id": "glide",
+"score": 1.55,
+"group": "redo",
+"front": 1.61,
+"behind": 1.44,
+"foe": 1.66,
+"cover": 0.0
+},
+{
+"id": "icelance",
+"score": 1.552,
+"group": "high",
+"front": 1.48,
+"behind": 1.4,
+"foe": 2.28,
+"cover": 0.0
+},
+{
+"id": "tsunami",
+"score": 1.563,
+"group": "high",
+"front": 0.84,
+"behind": 2.07,
+"foe": 2.29,
+"cover": 0.0
+},
+{
+"id": "thornspray",
+"score": 1.566,
+"group": "high",
+"front": 1.11,
+"behind": 1.8,
+"foe": 3.91,
+"cover": 0.0
+},
+{
+"id": "purge",
+"score": 1.571,
+"group": "high",
+"front": 1.86,
+"behind": 1.07,
+"foe": 3.92,
+"cover": 0.0
+},
+{
+"id": "bloodwave",
+"score": 1.637,
+"group": "high",
+"front": 1.31,
+"behind": 1.78,
+"foe": 2.96,
+"cover": 0.0
+},
+{
+"id": "demolition",
+"score": 1.639,
+"group": "first23",
+"front": 0.6,
+"behind": 2.5,
+"foe": 6.64,
+"cover": 0.0
+},
+{
+"id": "sleet",
+"score": 1.681,
+"group": "city",
+"front": 1.43,
+"behind": 2.29,
+"foe": 0.98,
+"cover": 0.0
+},
+{
+"id": "cluster",
+"score": 1.688,
+"group": "98",
+"front": 1.4,
+"behind": 1.82,
+"foe": 2.5,
+"cover": 0.0
+},
+{
+"id": "glacier",
+"score": 1.776,
+"group": "98",
+"front": 1.94,
+"behind": 1.52,
+"foe": 1.96,
+"cover": 0.0
+},
+{
+"id": "hourglass",
+"score": 1.818,
+"group": "redo",
+"front": 1.44,
+"behind": 2.1,
+"foe": 2.03,
+"cover": 0.0
+},
+{
+"id": "thunderclap",
+"score": 1.82,
+"group": "high",
+"front": 2.1,
+"behind": 1.52,
+"foe": 1.85,
+"cover": 0.0
+},
+{
+"id": "shellburst",
+"score": 1.834,
+"group": "city2",
+"front": 0.88,
+"behind": 3.13,
+"foe": 1.15,
+"cover": 0.0
+},
+{
+"id": "blizzard",
+"score": 1.877,
+"group": "high",
+"front": 2.14,
+"behind": 1.89,
+"foe": 1.33,
+"cover": 0.0
+},
+{
+"id": "nova",
+"score": 1.882,
+"group": "high",
+"front": 1.75,
+"behind": 1.95,
+"foe": 2.24,
+"cover": 0.0
+},
+{
+"id": "shatter",
+"score": 2.145,
+"group": "first23",
+"front": 0.99,
+"behind": 3.37,
+"foe": 10.0,
+"cover": 0.0
+}
+]

@@ -628,5 +628,197 @@
     "On a monster it shows in Frost's deep blue"
    ]
   }
+ ],
+ "pass2": [
+  {
+   "id": "cinderbrood",
+   "why": [
+    "Its creature's rising and its burst was drawn as a plain ring on the floor (How art is made 9: never a plain ball, box or ring)"
+   ],
+   "done": [
+    "As its creature rises, the ground breaks open round it and rolls out; its burst rolls out jagged or billowing"
+   ]
+  },
+  {
+   "id": "wintergrave",
+   "why": [
+    "Its creature's rising and its shatter was drawn as a plain ring on the floor (How art is made 9: never a plain ball, box or ring)"
+   ],
+   "done": [
+    "As its creature rises, the ground breaks open round it and rolls out; its shatter rolls out jagged"
+   ]
+  },
+  {
+   "id": "stormwake",
+   "why": [
+    "Its creature's rising was drawn as a plain ring on the floor (How art is made 9: never a plain ball, box or ring)"
+   ],
+   "done": [
+    "As its creature rises, the ground breaks open round it and rolls out"
+   ]
+  },
+  {
+   "id": "bogborn",
+   "why": [
+    "Its creature's rising and its poison puff was drawn as a plain ring on the floor (How art is made 9: never a plain ball, box or ring)"
+   ],
+   "done": [
+    "As its creature rises, the ground breaks open round it; its puff rolls out billowing"
+   ]
+  },
+  {
+   "id": "charnel",
+   "why": [
+    "Its creature's rising, and the spot its slam would fall on was drawn as a plain ring on the floor (How art is made 9: never a plain ball, box or ring)"
+   ],
+   "done": [
+    "As its creature rises, the ground breaks open round it; where its slam will fall, a sight closes on the spot"
+   ]
+  },
+  {
+   "id": "tailwind",
+   "why": [
+    "Its gust round you was drawn as a plain ring on the floor (How art is made 9: never a plain ball, box or ring)"
+   ],
+   "done": [
+    "Its gust goes out round you as wind's arcs"
+   ]
+  },
+  {
+   "id": "bloat",
+   "why": [
+    "Its swelling and bursting was drawn as a plain ring on the floor (How art is made 9: never a plain ball, box or ring)"
+   ],
+   "done": [
+    "Its burst rolls out as a billowing front"
+   ]
+  },
+  {
+   "id": "coldsnap",
+   "why": [
+    "Its melting was drawn as a plain ring on the floor (How art is made 9: never a plain ball, box or ring)"
+   ],
+   "done": [
+    "Its melt rolls in as a rippling front of ice"
+   ]
+  },
+  {
+   "id": "flashfire",
+   "why": [
+    "Its flare was drawn as a plain ring on the floor (How art is made 9: never a plain ball, box or ring)"
+   ],
+   "done": [
+    "Its flare rolls out as a jagged front of fire"
+   ]
+  },
+  {
+   "id": "jolt",
+   "why": [
+    "Its jolt through them all was drawn as a plain ring on the floor (How art is made 9: never a plain ball, box or ring)"
+   ],
+   "done": [
+    "Its jolt rolls out as a jagged front of lightning"
+   ]
+  },
+  {
+   "id": "daze",
+   "why": [
+    "Its thud was drawn as a plain ring on the floor (How art is made 9: never a plain ball, box or ring)"
+   ],
+   "done": [
+    "Its thud rolls out as a jagged shock front"
+   ]
+  },
+  {
+   "id": "shellburst",
+   "why": [
+    "Its blast did not freeze as it went off (Movement 7: heavy blows land with a freeze)"
+   ],
+   "done": [
+    "Its blast holds the game still a moment as it goes off, as the other blasts do"
+   ]
+  }
+ ],
+ "pass2_low": [
+  {
+   "id": "lifeline",
+   "score": 0.426
+  },
+  {
+   "id": "secondwind",
+   "score": 0.459
+  },
+  {
+   "id": "sap",
+   "score": 0.51
+  },
+  {
+   "id": "juggernaut",
+   "score": 0.514
+  },
+  {
+   "id": "stutter",
+   "score": 0.525
+  },
+  {
+   "id": "snag",
+   "score": 0.528
+  },
+  {
+   "id": "torpor",
+   "score": 0.53
+  },
+  {
+   "id": "omen",
+   "score": 0.531
+  },
+  {
+   "id": "stockade",
+   "score": 0.533
+  },
+  {
+   "id": "anchor",
+   "score": 0.536
+  },
+  {
+   "id": "lasso",
+   "score": 0.54
+  },
+  {
+   "id": "marrow",
+   "score": 0.551
+  },
+  {
+   "id": "respite",
+   "score": 0.558
+  },
+  {
+   "id": "whisper",
+   "score": 0.559
+  },
+  {
+   "id": "thrall",
+   "score": 0.562
+  },
+  {
+   "id": "hornet",
+   "score": 0.587
+  },
+  {
+   "id": "witchknot",
+   "score": 0.593
+  },
+  {
+   "id": "standstill",
+   "score": 0.596
+  },
+  {
+   "id": "aftermath",
+   "score": 0.598
+  },
+  {
+   "id": "vendetta",
+   "score": 0.605
+  }
  ]
 }
