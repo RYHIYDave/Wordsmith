@@ -21,8 +21,8 @@ def font(s):
 was, now = load("floor%d" % N), load("floor%dv2" % N)
 W = max(was[0]["w"], now[0]["w"]); H = max(was[0]["h"], now[0]["h"])
 S = max(2, min(6, 900 // max(W, H)))
-PAD, TOP = 30, 110
-img = Image.new("RGB", (PAD * 3 + W * S * 2, TOP + H * S + 120), (18, 16, 30))
+PAD, TOP = 30, 140
+img = Image.new("RGB", (max(PAD * 3 + W * S * 2, 900), TOP + H * S + 200), (18, 16, 30))
 d = ImageDraw.Draw(img)
 d.text((PAD, 20), TITLE, fill=(235, 230, 255), font=font(34))
 old_kinds = {r["kind"] for r in was[0]["rooms"]}
@@ -57,7 +57,13 @@ def draw(L, mons, ox, label):
         d.ellipse([x - 9, y - 9, x + 9, y + 9], fill=(200, 30, 40), outline=(255, 255, 255), width=2)
     packs = len({m.get("packId") for m in mons if not m.get("boss")})
     chests = sum(1 for p in L["props"] if p["kind"] == "chest")
-    d.text((ox, TOP - 42), "%s:  %d monsters, %d packs, %d chests" % (label, sum(1 for m in mons if not m.get("boss")), packs, chests), fill=(235, 230, 255), font=font(24))
+    # (its name over it, and its numbers under that, each fitted to its side's width)
+    d.text((ox, TOP - 70), label, fill=(235, 230, 255), font=font(24))
+    line = "%d monsters, %d packs, %d chests" % (sum(1 for m in mons if not m.get("boss")), packs, chests)
+    fs = 22
+    while fs > 12 and d.textlength(line, font=font(fs)) > W * S:
+        fs -= 1
+    d.text((ox, TOP - 40), line, fill=(200, 195, 225), font=font(fs))
 
 draw(*was, PAD, "AS IT IS")
 draw(*now, PAD * 2 + W * S, "REMADE")
@@ -65,6 +71,10 @@ y = TOP + H * S + 30
 items = [((230, 60, 70), "monster"), ((255, 200, 60), "pack leader"), ((255, 210, 70), "chest"), ((80, 230, 255), "start"), ((200, 30, 40), "boss"), ((255, 200, 60), "new treasure area"), ((255, 140, 40), "new guardian area"), ((240, 240, 240), "other new area")]
 x = PAD
 for c, t in items:
-    d.rectangle([x, y + 6, x + 16, y + 22], fill=c); d.text((x + 24, y), t, fill=(220, 215, 240), font=font(22)); x += 50 + int(d.textlength(t, font=font(22)))
+    step = 50 + int(d.textlength(t, font=font(22)))
+    if x + step > img.size[0] - PAD:
+        x = PAD
+        y += 34
+    d.rectangle([x, y + 6, x + 16, y + 22], fill=c); d.text((x + 24, y), t, fill=(220, 215, 240), font=font(22)); x += step
 img.save(OUT)
 print(OUT, img.size)

@@ -73,6 +73,10 @@ func run(main, hero, dir: String) -> void:
 		if off_way.has(int(r["id"])):
 			r = r.duplicate()
 			r["kind"] = "second_way"
+		elif str(r["kind"]) == "elite" and int(r.get("path", 0)) < 0:
+			# (floor 19's armoury wing: a yellow pack's room off the way)
+			r = r.duplicate()
+			r["kind"] = "armoury_wing"
 		elif not (str(r["kind"]) in ["treasure", "guardian"]):
 			continue
 		var c := Vector2(float(r["x"]) + float(r["w"]) / 2.0, float(r["y"]) + float(r["h"]) / 2.0)
@@ -110,6 +114,24 @@ func run(main, hero, dir: String) -> void:
 			_line(true, "a fight along the way at %.0f, %.0f" % [at.x, at.y])
 			k += 1
 			shot += 1
+	# (floor 19: one of each of its two new kinds, the palace guard and the footmen, stood among)
+	if d == 19:
+		for kind in ["pguard", "footman"]:
+			var one = null
+			for o in M._monsters.list:
+				if is_instance_valid(o) and not o.dead and o.kind == kind:
+					one = o
+					break
+			_line(one != null, "its new kind %s on the floor" % kind)
+			if one == null:
+				continue
+			h.world = M._free_near(one.world + Vector2(3.0, 3.0))
+			await M._wait(1.2)
+			M._hud.card = {}
+			M.guide._speak = {}
+			await M._wait(0.1)
+			await M._snap("%s/f%d_%d_%s.png" % [dir, d, k, kind])
+			k += 1
 	# the large map, all of it seen
 	if M.sight != null:
 		M.sight.see_all()

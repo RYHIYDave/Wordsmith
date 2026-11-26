@@ -24,6 +24,7 @@
 
 import { RNG } from '../../engine/rng';
 import { act2Pack } from '../act2_mobs';
+import { levels2 } from '../levels2';
 import type { Act1Dress, Act1Tile } from '../act1_dress';
 import { walkReach } from './housequiet';
 import type { AreaRole, Blob, Laid, Land, Lane } from '../act1_layout';
@@ -357,6 +358,10 @@ export function generate(depth: number, seed: number): Laid | null {
   growSide(rng, plan, 'store', rng.shuffle([...anyHost]));
   // (COMBO, his pick for floor 19: ways round between its halls and its armoury)
   if (KP_COMBO.on && waysRound(rng, plan) < KP_COMBO.least) return null;
+  // (LEVELS2, floor 19: THE ARMOURY WING, off one of its halls before the throne, a dead end (grown after the ways round, so none
+  // runs through it): a yellow pack and the guards with it, the racks and the war table, and the armoury's chests: game/levels2.ts)
+  // (off the latest hall it fits off, so that it is met deep in the keep)
+  if (levels2(depth) && ![...halls].reverse().some((h) => growSide(rng, plan, 'armoury', [h], 50) >= 0)) return null;
 
   // THE BOUNDS: everything moved MARGIN in from the map's edge
   let x0 = Infinity;
@@ -426,7 +431,7 @@ export function generate(depth: number, seed: number): Laid | null {
   });
   const idOf: number[] = [];
   order.forEach((pi, id) => (idOf[pi] = id));
-  const kindOf = (r: PlanRoom): RoomKind => (r.role === 'bailey' ? 'start' : r.role === 'throne' ? 'boss' : r.role === 'barracks' ? 'guardian' : r.role === 'store' ? 'treasure' : 'normal');
+  const kindOf = (r: PlanRoom): RoomKind => (r.role === 'bailey' ? 'start' : r.role === 'throne' ? 'boss' : r.role === 'barracks' ? 'guardian' : r.role === 'store' ? 'treasure' : wingOf(r) ? 'elite' : 'normal');
   const rooms: Room[] = order.map((pi, id) => {
     const r = plan.rooms[pi];
     return { id, x: r.x, y: r.y, w: r.w, h: r.h, kind: kindOf(r), path: r.path };
@@ -521,14 +526,16 @@ function packsOf(rng: RNG, f: Floor, plan: Plan, idOf: readonly number[], depth:
       put(r.x + Math.floor(r.w / 2), r.y + Math.floor(r.h / 2), id, 'champion', act2Pack(depth, rng, 'champion'));
       return;
     }
-    const n = r.role === 'store' ? 1 : Math.max(1, Math.min(3, Math.round((r.w * r.h) / 70)));
+    // (LEVELS2, floor 19: twice the fights, a pack for every 35 tiles of a room, at most five; the armoury wing's three)
+    const n = r.role === 'store' ? 1 : wingOf(r) ? 3 : levels2(depth) ? Math.max(2, Math.min(5, Math.round((r.w * r.h) / 35))) : Math.max(1, Math.min(3, Math.round((r.w * r.h) / 70)));
     for (let k = 0; k < n; k++) {
       for (let tries = 0; tries < 40; tries++) {
         const x = rng.int(r.x + 1, r.x + r.w - 2);
         const y = rng.int(r.y + 1, r.y + r.h - 2);
         if (!free(x, y)) continue;
         if (Math.hypot(x + 0.5 - f.start.x, y + 0.5 - f.start.y) < 10) continue;
-        if (used.some((u) => Math.hypot(u.x - x - 0.5, u.y - y - 0.5) < 5)) continue;
+        // (LEVELS2: packs four apart where there are twice as many)
+        if (used.some((u) => Math.hypot(u.x - x - 0.5, u.y - y - 0.5) < (levels2(depth) ? 4 : 5))) continue;
         const tier: PackSpot['tier'] = room.kind === 'elite' && k === 0 ? 'elite' : 'normal';
         put(x, y, id, tier, act2Pack(depth, rng, tier));
         break;
@@ -538,11 +545,16 @@ function packsOf(rng: RNG, f: Floor, plan: Plan, idOf: readonly number[], depth:
   return out;
 }
 
+/** (LEVELS2, floor 19) Whether a room is the armoury wing: an armoury off the way. */
+function wingOf(r: PlanRoom): boolean {
+  return r.role === 'armoury' && r.path < 0;
+}
+
 /** The game's own things on the floor: a store's chests (two or three, the reward), near its middle, none on a pack's. */
 function storesOf(rng: RNG, f: Floor, plan: Plan): PropSpot[] {
   const out: PropSpot[] = [];
   for (const r of plan.rooms) {
-    if (r.role !== 'store') continue;
+    if (r.role !== 'store' && !wingOf(r)) continue;
     const n = rng.int(2, 3);
     const cx = r.x + Math.floor(r.w / 2);
     const cy = r.y + Math.floor(r.h / 2);

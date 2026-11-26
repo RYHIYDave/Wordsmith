@@ -18,6 +18,7 @@ import { RIME_TUNE } from './act1_rules/rshade';
 import { RIME_SHADE_ON } from '../art/rime_shade';
 import { SWAN } from './act1_rules/swan';
 import { PACK_BY_SIZE, sizeOf } from './defs';
+import { levels2 } from './levels2';
 import type { MonsterKind } from './types';
 
 export interface Act2Mob {
@@ -95,6 +96,12 @@ export const ACT2_OWN: Readonly<Record<number, readonly Act2Mob[]>> = {
     { kind: 'rshade', weight: 4 },
   ],
 };
+/** (LEVELS2, floor 19) The two more kinds among the keep's packs. */
+const LEVELS2_KEEP: readonly Act2Mob[] = [
+  { kind: 'pguard', weight: 4 },
+  // (the footmen come in crowds: fewer of their packs)
+  { kind: 'footman', weight: 1.5 },
+];
 /** Each floor's guardian (its lair's big one and its own): its medium kind. */
 export const ACT2_GUARD: Readonly<Record<number, MonsterKind>> = { 11: 'watch', 12: 'dredger', 13: 'carter', 14: 'orderly', 15: 'bookwarden', 16: 'pguard', 17: 'footman', 18: 'qguard', 19: 'kknight', 20: 'rshadow' };
 /** The tiny ones, never a yellow pack (they are not led). */
@@ -115,7 +122,10 @@ export function act2Pack(depth: number, rng: RNG, tier: 'normal' | 'elite' | 'ch
   // lair, the barracks, two: game/act1_rules/kknight.ts KNIGHT_TUNE)
   const knight = (k: MonsterKind): boolean => k === 'kknight' && act2Ready('kknight');
   if (tier === 'champion') return { kind: standIn(ACT2_GUARD[n]), size: knight(ACT2_GUARD[n]) ? KNIGHT_TUNE.lair : rng.int(3, 4) };
-  const list = ACT2_OWN[n].filter((m) => !(tier === 'elite' && TINY.has(m.kind)) && (m.kind !== 'rshade' || RIME_SHADE_ON.on));
+  // (LEVELS2, floor 19: two more kinds of the High City's own among its packs, the palace guard and the footmen, the court's soldiers
+  // come to the keep: game/levels2.ts)
+  const own = n === 19 && levels2(depth) ? [...ACT2_OWN[19], ...LEVELS2_KEEP] : ACT2_OWN[n];
+  const list = own.filter((m) => !(tier === 'elite' && TINY.has(m.kind)) && (m.kind !== 'rshade' || RIME_SHADE_ON.on));
   const pick = rng.weighted(list, (m) => m.weight);
   const kind = standIn(pick.kind);
   // (THE HIGH CITY, FLOOR 16: the swans come in flocks, his “Knee-high, in flocks”: a pack of them bigger than another small
