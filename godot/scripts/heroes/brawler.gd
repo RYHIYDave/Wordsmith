@@ -609,11 +609,13 @@ func _play(dt: float, way: Vector2) -> void:
 		h.world = h.map.slide(h.world, HERO_R, fw * dc.x + left * dc.y)
 	# (THE BRAWLER REMADE: a flying move's leap past its own carry, over its frames before its blow; walls stop him)
 	if float(mv.get("leap", 0.0)) > 0.0 and S != null:
+		# (over his flight, take-off to blow, as the art carries him only in the air; the stand-ins', from the move's start)
 		var till: float = maxf(1.0, float(S["from"]))
-		var df: float = clampf(f, 0.0, till) - clampf(f0, 0.0, till)
+		var a0: float = float(m["air"][0]) if m["air"] != null and float(m["air"][0]) < till - 1.0 else 0.0
+		var df: float = clampf(f, a0, till) - clampf(f0, a0, till)
 		if df > 0.0:
 			var was2: Vector2 = h.world
-			h.world = h.map.slide(h.world, HERO_R, Vector2(mv["ax"], mv["ay"]) * float(mv["leap"]) * df / till)
+			h.world = h.map.slide(h.world, HERO_R, Vector2(mv["ax"], mv["ay"]) * float(mv["leap"]) * df / (till - a0))
 			mv["wx"] = float(mv["wx"]) + h.world.x - was2.x
 			mv["wy"] = float(mv["wy"]) + h.world.y - was2.y
 	# (his dodging jump: nothing touches him while he is off the floor)
@@ -684,7 +686,7 @@ func _reach(m: Dictionary, o: Vector2, a: Vector2, left: Vector2, p: Vector2, r:
 	var reach: float = float(F["reach"]) + more
 	if near > reach:
 		return -1.0
-	if F["shape"] != "round":
+	if F["shape"] != "round" and F["shape"] != "ring":
 		var t := deg_to_rad(float(F.get("dir", 0.0)))
 		var u := a * cos(t) + left * sin(t)
 		var along := d.dot(u)
@@ -700,6 +702,9 @@ func _reach(m: Dictionary, o: Vector2, a: Vector2, left: Vector2, p: Vector2, r:
 
 ## Where his blow goes out from: where he stood as the move began and what he walked; a flying move's, where he comes down.
 func _origin() -> Vector2:
+	# (a ring of force (the art chat's hammerfist): round where his fists strike the floor, a little before him)
+	if not mv.is_empty() and R.has(mv["id"]) and R[mv["id"]]["force"] != null and R[mv["id"]]["force"]["shape"] == "ring":
+		return h.world + Vector2(mv["ax"], mv["ay"]) * 0.7
 	if B2.FLYING.has(str(mv.get("id", ""))):
 		return h.world
 	return Vector2(float(mv["x0"]) + float(mv["wx"]), float(mv["y0"]) + float(mv["wy"]))
@@ -727,7 +732,7 @@ func _strike(m: Dictionary) -> void:
 	if not mv["props"] and f >= from:
 		mv["props"] = true
 		var reach: float = float(F["reach"]) + more
-		if F["shape"] == "round":
+		if F["shape"] == "round" or F["shape"] == "ring":
 			h._break_props(skill, b, reach)
 		else:
 			var t := deg_to_rad(float(F.get("dir", 0.0)))
@@ -977,7 +982,7 @@ func walk_slow() -> float:
 func _own_picture(side: int) -> Array:
 	if mv.is_empty():
 		return []
-	var list: int = VET_LIST0 + (V["lists"] as Array).find(B2.art_of(mv["id"]))
+	var list: int = VET_LIST0 + (V["lists"] as Array).find(B2.art_of(mv["id"], V["lists"]))
 	var n: int = h.art.count(side, list)
 	if n == 0:
 		return []

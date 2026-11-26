@@ -56,8 +56,9 @@ const TEXT := {
 }
 
 
-static func art_of(id: String) -> String:
-	return ART.get(id, id)
+## The list a move is drawn from: its own once the art chat's are baked in (`lists` naming it), else its stand-in's.
+static func art_of(id: String, lists: Array) -> String:
+	return id if lists.has(id) else ART.get(id, id)
 
 
 ## The two flying moves put in his numbers (assets/heroes/veteran.json, as loaded): their frames the stand-ins', their rules their
@@ -66,9 +67,18 @@ static func alias(V: Dictionary) -> void:
 	if V.has("_brawler2"):
 		return
 	V["_brawler2"] = true
+	var R: Dictionary = V["rules"]
+	# (THE ART CHAT'S OWN TWO, baked in (art/brawler-flying-blows, his “Yes, both are right (Recommended)”): their numbers as the art has
+	# them, the hammerfist's ring of force round where his fists strike the floor; what it does to them, driven back and staggered, at
+	# his word, and the globes they carry the plain ones)
+	if (V["lists"] as Array).has("hammerfist") and R.has("hammerfist"):
+		(R["hammerfist"]["force"] as Dictionary)["react"] = "slam"
+		R["hammerfist"]["globe"] = "punch"
+		R["flyknee"]["globe"] = "kick"
+		V["react"]["slam"] = {"back": 1.0, "stagger": 0.5}
+		return
 	for id in ART:
 		V["moves"][id] = V["moves"][ART[id]]
-	var R: Dictionary = V["rules"]
 	var hf: Dictionary = (R["uppercut"] as Dictionary).duplicate(true)
 	hf["force"] = {"shape": "round", "reach": 2.5, "deg": 360, "long": 4, "react": "slam"}
 	hf["share"] = 2.0

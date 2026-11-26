@@ -244,7 +244,8 @@ func _piece(c: CanvasItem, key: String, x: float, y: float) -> void:
 func _layer(c: CanvasItem, p: Dictionary, layer: int, at: Vector2) -> void:
 	var art = kit.h.art
 	var F := floori(float(p["f"]))
-	var list: int = 80 + (V["lists"] as Array).find(B2.art_of(p["id"])) * 3 + layer
+	# (his action lines' lists after his moves' and their halves' in the bake (art/heroes3.ts): 58 + twice as many as his moves)
+	var list: int = 58 + 2 * (V["lists"] as Array).size() + (V["lists"] as Array).find(B2.art_of(p["id"], V["lists"])) * 3 + layer
 	var side := _side_of(p["fx"], p["fy"])
 	if F < 0 or F >= art.count(side, list):
 		return
@@ -293,9 +294,9 @@ func _place_ghosts() -> void:
 		return
 	var M: Dictionary = V["moves"][live["id"]]
 	var side := _side_of(live["fx"], live["fy"])
-	var idx: int = (V["lists"] as Array).find(B2.art_of(live["id"]))
+	var idx: int = (V["lists"] as Array).find(B2.art_of(live["id"], V["lists"]))
 	var list := 58 + idx
-	var halves_list := 69 + idx
+	var halves_list: int = 58 + (V["lists"] as Array).size() + idx
 	var halves = M["halves"]
 	var v := _view(live["fx"], live["fy"])
 	var F := floori(float(live["f"]))

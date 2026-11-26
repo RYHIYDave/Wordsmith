@@ -519,7 +519,17 @@ func _tank_fight(k: float) -> float:
 					close += 1
 				if is_instance_valid(m):
 					states[m.state] = int(states.get(m.state, 0)) + 1
-			_put("    t %.0f: life %d/%d barrier %d; %d within 2 tiles; their states %s; decoys %d" % [t, h.life, h.max_life, h.barrier, close, str(states), M._monsters.decoys.size()])
+			var held := 0
+			var reeling := 0
+			var far: Array = []
+			for m in foes:
+				if is_instance_valid(m) and not m.dead:
+					if m.stun_t > 0.0:
+						held += 1
+					if m.stagger_t > 0.0:
+						reeling += 1
+					far.append(snappedf(m.world.distance_to(h.world), 0.1))
+			_put("    t %.0f: life %d/%d barrier %d; %d within 2 tiles; their states %s; stunned %d, staggered %d; how far %s; decoys %d; he %s, invuln %.2f" % [t, h.life, h.max_life, h.barrier, close, str(states), held, reeling, str(far), M._monsters.decoys.size(), str(h.kit.mv.get("id", "-")) if h.kit != null and "mv" in h.kit else "-", h._invuln])
 		# (fallen: the practice room's rule stood him up again, his life full at once)
 		if h.life >= h.max_life - 0.5 and prev < h.max_life * 0.5:
 			break
