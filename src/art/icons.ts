@@ -716,6 +716,50 @@ function wrenchIcon(): Sprite {
   ]));
 }
 
+/** STAND-IN, shown only while ITEMS_A is off (on, the art chat's: itemPic): the cloth cowl, the robe's purple (1..3), a gold band round its dark face (4). */
+function cowlIcon(): Sprite {
+  return icon(grid('cowl', [
+    '................',
+    '......1122......',
+    '.....112223.....',
+    '....11222223....',
+    '....12gggg23....',
+    '...12g4444g23...',
+    '...12g4444g23...',
+    '...12g4444g23...',
+    '...12g4444g23...',
+    '...122g44g223...',
+    '..1122gggg2233..',
+    '.11222222222233.',
+    '.12222222222233.',
+    '..1222222222233.',
+    '.....122223.....',
+    '................',
+  ], P.pu4, P.pu3, P.pu2, P.wd1));
+}
+
+/** STAND-IN, shown only while ITEMS_A is off (on, the art chat's: itemPic): a cloth slipper, the robe's purple (1..3), its toe curled up, a gold band round its mouth. */
+function slippersIcon(): Sprite {
+  return icon(grid('slippers', [
+    '................',
+    '................',
+    '................',
+    '..11............',
+    '.12.1.....ggggg.',
+    '.12......g44443.',
+    '.12.....g44443..',
+    '.122...ggggg23..',
+    '.1222222222223..',
+    '.12222222222233.',
+    '..1222222222233.',
+    '...bbbbbbbbbbbb.',
+    '................',
+    '................',
+    '................',
+    '................',
+  ], P.pu4, P.pu3, P.pu2, P.wd1));
+}
+
 function makeItemIcons(): Record<IconKey, Sprite> {
   return {
     sword: swordIcon(),
@@ -748,6 +792,9 @@ function makeItemIcons(): Record<IconKey, Sprite> {
     wraps: wrapsIcon(),
     tome: tomeIcon(),
     wrench: wrenchIcon(),
+    // (THE BARRIER GEAR'S COWL AND SLIPPERS: stand-ins, for ITEMS_A off; on, the art chat's, itemPic)
+    cowl: cowlIcon(),
+    slippers: slippersIcon(),
   };
 }
 
