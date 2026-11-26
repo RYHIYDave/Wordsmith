@@ -4,8 +4,8 @@
 // and the scribe. What each was promised: a real walk (steps, robes swaying), a livelier stance and attack, a proper fall, and
 // sharper detail.
 //
-// PICTURES FIRST (his standing rule): all of it is behind ENEMIES8, off, until he has seen the pictures and said yes; while it
-// is off every one of them is exactly as it was. (The skeleton and the bone archer are made new by their own switches,
+// PICTURES FIRST (his standing rule): all of it is behind ENEMIES8, off until he had seen the pictures and said yes (now on);
+// while it is off every one of them is exactly as it was. (The skeleton and the bone archer are made new by their own switches,
 // SKELETON3 and ARCHER3, art/bestiary.ts: the skeletons on the heroes' bones, now with the crawl out of the ground and the
 // arrow rain that today's have.)
 //
@@ -14,8 +14,12 @@
 
 import type { Pose } from './kit';
 
-/** THE SWITCH, OFF until his yes to the pictures. */
-export const ENEMIES8 = { on: false };
+/**
+ * THE SWITCH, ON at his yes, 26 Nov 2026, to the second pictures (the six with their movement made much bigger, the scribe's
+ * death with the arms lying along the body; the skeletons kept as they are, his word: “Honestly I like the old shamble for the
+ * skeletons”): “Yes, put them in (Recommended)”.
+ */
+export const ENEMIES8 = { on: true };
 
 const TAU = Math.PI * 2;
 

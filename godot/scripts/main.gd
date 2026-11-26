@@ -3426,6 +3426,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_glows.gd").new().voices(self, hero, dir)
 		get_tree().quit()
 		return
+	# (THE SIX ENEMIES MADE LIVELIER: check_enemies8.gd)
+	if _arg("only") == "enemies8":
+		await preload("res://scripts/check_enemies8.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE FIVE WEAKEST FLOORS REMADE: check_levels2.gd, with --levels2=1 --floor=<N>)
 	if _arg("only") == "levels2":
 		await preload("res://scripts/check_levels2.gd").new().run(self, hero, dir)

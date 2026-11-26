@@ -1498,6 +1498,17 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   `godot_looks.ts floor1`, the looks by `tools/godot_record.mjs <N> --suffix v2` on a page built with the switch on; the floor as
   it is beside it remade, `python3 tools/level_compare.py <N> <out.png>`. Check and pictures: `--only=levels2 --levels2=1
   --floor=<N>` (`check_levels2.gd`); `docs/mockups/levels/`.
+- **Six enemies made livelier** (the browser art's `src/art/enemies8.ts` ENEMIES8, ON at his yes to the second pictures, 26 Nov
+  2026: “Yes, put them in (Recommended)”; his words: “Next Find the 8 weakest enemies and work on them.  Weakest in terms of their
+  animations and look.”). The skeleton marksman breathes as he waits and swings more in his stride; the Shade rises, sinks and
+  rolls, its arms drifting and its tails whipping, and leans hard into its glide; the cultist takes real steps under its robe,
+  the hem swinging, the flame flickering; the high priest's censer swings standing and walking, his steps showing; the scribe
+  steps under its robe, and in its death its hands go up to the splitting mask and its arms lie along its body (his words of
+  the old one: “The elbows shouldn’t flare out like that”); the swan pumps its head with each step and beats its wings. The
+  skeleton and the bone archer stay as they were, his word: “Honestly I like the old shamble for the skeletons”. Baked into
+  `assets/monsters/` (`cultist`, `priest`, `shade`, `marksman`, `scribe`, `swan`) by `node tools/godot_bake_figures.mjs
+  cultist,priest,shade,marksman,scribe,swan`, the same frame counts as before. Check: `--only=enemies8` (`check_enemies8.gd`);
+  pictures `docs/mockups/enemies8/`.
 - **The human enemies' voices** (the queue's "Make voices for the human enemies"; `monster.gd VOICE`). The cult of the first
   floors (the Cultist, the Dagger Cultist, the High Priest, the Chanter, the Firepot Thrower) share one real voice, his pick,
   25 Nov 2026, “Yes, two takes each (Recommended)”: its shout as it first sees the hero ("Heretic!"), its grunt on a big hit, its
