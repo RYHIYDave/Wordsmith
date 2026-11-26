@@ -185,16 +185,18 @@ func run(main, hero, d: String) -> void:
 	var start: Vector2 = h.world
 	await _press("swipe", A.world)
 	var flying: bool = not K.mv.is_empty() and K.mv["id"] == "hammerfist"
-	o = {"landed": h.world, "stunned": 0.0}
+	var a_at: Vector2 = A.world
+	o = {"landed": h.world, "stunned": 0.0, "staggered": 0.0}
 	await _run(3.0, func():
-		if A.stun_t > float(o["stunned"]):
-			o["stunned"] = A.stun_t
+		o["stunned"] = maxf(float(o["stunned"]), A.stun_t)
+		o["staggered"] = maxf(float(o["staggered"]), A.stagger_t)
 		o["landed"] = h.world
 		return _played())
 	var landed: Vector2 = o["landed"]
 	var stunned: float = o["stunned"]
-	_line(flying and K.globes == ["kick"] and A.life < a0 and start.distance_to(landed) > 3.0 and stunned > 1.0,
-		"a swipe with a punch globe: the flying hammerfist (%s), the punch globe spent (left %s); he flew %.1f tiles to the one 4.5 tiles off; struck it (%.0f to %.0f), knocked down %.1f s" % [flying, K.globes, start.distance_to(landed), a0, A.life, stunned])
+	var staggered: float = o["staggered"]
+	_line(flying and K.globes == ["kick"] and A.life < a0 and start.distance_to(landed) > 3.0 and stunned == 0.0 and staggered > 0.0 and A.world.distance_to(a_at) > 0.5,
+		"a swipe with a punch globe: the flying hammerfist (%s), the punch globe spent (left %s); he flew %.1f tiles to the one 4.5 tiles off; struck it (%.0f to %.0f), drove it back %.1f tiles, staggered %.1f s, not knocked down (stunned %.1f s)" % [flying, K.globes, start.distance_to(landed), a0, A.life, A.world.distance_to(a_at), staggered, stunned])
 	# ITS PICTURES: as it flies, as it lands
 	_reset(4.5)
 	K.globes = ["punch"]

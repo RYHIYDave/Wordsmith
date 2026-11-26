@@ -10,7 +10,7 @@
 ## WITH IT ON (heroes/brawler.gd): every tap a punch, as before (jab, cross, hook), and every third punch lights a punch globe; every
 ## hold a kick, and every kick lights a kick globe; the globes lit stay till he spends them or has struck nothing for KEEP seconds. A
 ## SWIPE breaks off whatever he is doing and spends his jump as before: a globe lit, he flies at the enemy where it points with the
-## first one (a punch globe the FLYING DOUBLE HAMMERFIST, knocking down all round where he lands; a kick globe the FLYING KNEE, driven
+## first one (a punch globe the FLYING DOUBLE HAMMERFIST, driving back and staggering all round where he lands, none knocked down; a kick globe the FLYING KNEE, driven
 ## through the one before him), going as far as LEAP past the move's own carry to reach it; none lit, the hop as before. No tap or
 ## hold in the jump sets a globe in fire any more. THE FORK in his tree, a stone each side of Stiff Jab, only one of them his: QUICK
 ## HANDS, every punch lights a globe; HEAVY HANDS, his attack speed no longer makes him faster, each 1% of it HEAVY% more critical
@@ -61,7 +61,7 @@ static func art_of(id: String) -> String:
 
 
 ## The two flying moves put in his numbers (assets/heroes/veteran.json, as loaded): their frames the stand-ins', their rules their
-## own (the hammerfist a round blow where he lands that knocks down; the knee the knee's).
+## own (the hammerfist a round blow where he lands that drives back and staggers; the knee the knee's).
 static func alias(V: Dictionary) -> void:
 	if V.has("_brawler2"):
 		return
@@ -70,11 +70,13 @@ static func alias(V: Dictionary) -> void:
 		V["moves"][id] = V["moves"][ART[id]]
 	var R: Dictionary = V["rules"]
 	var hf: Dictionary = (R["uppercut"] as Dictionary).duplicate(true)
-	hf["force"] = {"shape": "round", "reach": 2.5, "deg": 360, "long": 4, "react": "down"}
+	hf["force"] = {"shape": "round", "reach": 2.5, "deg": 360, "long": 4, "react": "slam"}
 	hf["share"] = 2.0
 	hf["globe"] = "punch"
 	R["hammerfist"] = hf
 	var fk: Dictionary = (R["knee"] as Dictionary).duplicate(true)
 	fk["globe"] = "kick"
 	R["flyknee"] = fk
-	V["react"]["down"] = {"back": 0.3, "stun": 1.5}
+	# (struck, driven back and staggered, not knocked down: his word to its knocking everything down, 26 Nov 2026, “Just don’t have
+	# them fall over?  Maybe they stagger or are knocked back but a full stun should be harder and more rare in all instances”)
+	V["react"]["slam"] = {"back": 1.0, "stagger": 0.5}
