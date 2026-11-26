@@ -1472,6 +1472,21 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   to stay on just the 5,10,15, and 20 bosses”). Off, endless is as it was (10% a level). How it is shown is being redone (his
   word on the record stone's first pictures: “I think we can do better than that”). Check and pictures: `--only=delve
   --delve=1` (`check_delve.gd`, 10 checks); `docs/mockups/delve/`.
+- **The five weakest floors remade** (`main.gd LEVELS2`, switch, off; the browser game's `src/game/levels2.ts`, its map-maker for
+  them; his words, 25 Nov 2026: “And I'd like you to look at our level design, find the five weakest levels, and make changes”;
+  his pick of the five and their changes: “Yes, these five (Recommended)”). On (or `--levels2=1`), floors 1, 7, 8, 10 and 19 are
+  read from `assets/floor<N>v2/` and their looks from `assets/looks/floor<N>v2*` (`files_of`, `dir_of`): 7, two side ledges (a
+  vultures' nest with three chests, a lookout held by a champion's pack) and two packs on every leg of its trail; 8, a second way
+  round the rock between two of its areas, meeting the first again, and a side cave (a champion's pack, a chest at its back); 10, a
+  second way across the fen by two islands of its own, and a sunken shrine (its chests among the statue's head, broken columns,
+  fallen drums and a broken stair); 1, a small fight in every corridor leg of 8 tiles or more (66 monsters to 99) and a side
+  crypt (two sarcophagi, burial niches, one chest); 19, twice the packs (14 to 28), the palace guard and the footmen among its
+  own, and an armoury wing off the hall before the throne (a yellow pack and two more, the racks, armour, anvil and war table,
+  its chests). Off, every floor is as it was (each exported with the switch off and compared, the same). Made by
+  `WS_LEVELS2=1 WS_OUT_SUFFIX=v2` on `tools/godot_export.ts`, `godot_holds.ts`, `godot_boss_ground.ts` and (floor 1)
+  `godot_looks.ts floor1`, the looks by `tools/godot_record.mjs <N> --suffix v2` on a page built with the switch on; the floor as
+  it is beside it remade, `python3 tools/level_compare.py <N> <out.png>`. Check and pictures: `--only=levels2 --levels2=1
+  --floor=<N>` (`check_levels2.gd`); `docs/mockups/levels/`.
 - **The human enemies' voices** (the queue's "Make voices for the human enemies"; `monster.gd VOICE`). The cult of the first
   floors (the Cultist, the Dagger Cultist, the High Priest, the Chanter, the Firepot Thrower) share one real voice, his pick,
   25 Nov 2026, “Yes, two takes each (Recommended)”: its shout as it first sees the hero ("Heretic!"), its grunt on a big hit, its
