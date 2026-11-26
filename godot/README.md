@@ -1472,7 +1472,7 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   to stay on just the 5,10,15, and 20 bosses”). Off, endless is as it was (10% a level). How it is shown is being redone (his
   word on the record stone's first pictures: “I think we can do better than that”). Check and pictures: `--only=delve
   --delve=1` (`check_delve.gd`, 10 checks); `docs/mockups/delve/`.
-- **The five weakest floors remade** (`main.gd LEVELS2`, switch, off; the browser game's `src/game/levels2.ts`, its map-maker for
+- **The five weakest floors remade** (`main.gd LEVELS2`, ON at his yes to the pictures, 26 Nov 2026: “Yes, all five (Recommended)”; the browser game's `src/game/levels2.ts`, its map-maker for
   them; his words, 25 Nov 2026: “And I'd like you to look at our level design, find the five weakest levels, and make changes”;
   his pick of the five and their changes: “Yes, these five (Recommended)”). On (or `--levels2=1`), floors 1, 7, 8, 10 and 19 are
   read from `assets/floor<N>v2/` and their looks from `assets/looks/floor<N>v2*` (`files_of`, `dir_of`): 7, two side ledges (a

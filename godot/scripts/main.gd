@@ -714,7 +714,8 @@ static func depth_of(where: String) -> int:
 ## PICTURES FIRST: off until his yes. On, each of these floors' files (and its recorded look) are its remade ones,
 ## assets/floor<N>v2/ and assets/looks/floor<N>v2.*, laid by the game's own map-maker (src/game/levels2.ts, tools/godot_export.ts,
 ## tools/godot_record.mjs); the place keeps its name ("floor7"). `--levels2=1` for the checks and pictures.
-const LEVELS2 := {"on": false, "floors": [1, 7, 8, 10, 19]}
+##   ON at his yes to their pictures (docs/mockups/levels/five_remade_sheet.jpg), 26 Nov 2026: “Yes, all five (Recommended)”.
+const LEVELS2 := {"on": true, "floors": [1, 7, 8, 10, 19]}
 static var levels2_arg := false
 
 
