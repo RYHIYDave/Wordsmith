@@ -51,16 +51,16 @@ export interface FoeState {
   down: boolean;
 }
 /** How long each reaction plays (frames), and whether he ends where he started (he comes back in) or stays down. */
-export const REACT_LONG: Record<Reaction, number> = { snap: 14, reel: 24, knock: 34, launch: 60, fly: 46, kneed: 46, aside: 34, shove: 34 };
-export const REACT_STAYS: Record<Reaction, boolean> = { snap: false, reel: false, knock: false, launch: true, fly: true, kneed: true, aside: false, shove: false };
+export const REACT_LONG: Record<Reaction, number> = { snap: 14, reel: 24, knock: 34, launch: 60, fly: 46, kneed: 46, aside: 34, shove: 34, floored: 56 };
+export const REACT_STAYS: Record<Reaction, boolean> = { snap: false, reel: false, knock: false, launch: true, fly: true, kneed: true, aside: false, shove: false, floored: true };
 /**
  * HOW FAR EACH BLOW DRIVES HIM BACK FOR GOOD (his measure): the force off the Veteran's blows (his “I’d like all of his moves
  * to have more reach”) drives him back as far as the Veteran's step carries the Veteran in, so that in a combo the next blow
  * finds him at its reach again. (Those flung away for good are driven back by their fall.)
  */
-export const REACT_DRIVE: Record<Reaction, number> = { snap: STEP_PUNCH, reel: STEP_PUNCH, knock: STEP_KICK, launch: 0, fly: 0, kneed: 0, aside: STEP_PUNCH, shove: STEP_KICK };
+export const REACT_DRIVE: Record<Reaction, number> = { snap: STEP_PUNCH, reel: STEP_PUNCH, knock: STEP_KICK, launch: 0, fly: 0, kneed: 0, aside: STEP_PUNCH, shove: STEP_KICK, floored: 0 };
 /** Which way a blow sends him, turned from straight away from the Veteran (degrees to the left): the spinning elbow knocks him ASIDE. */
-export const REACT_VEER: Record<Reaction, number> = { snap: 0, reel: 0, knock: 0, launch: 0, fly: 0, kneed: 0, aside: -30, shove: 0 };
+export const REACT_VEER: Record<Reaction, number> = { snap: 0, reel: 0, knock: 0, launch: 0, fly: 0, kneed: 0, aside: -30, shove: 0, floored: 0 };
 
 /** Him, `g` frames after a blow of a kind landed (g >= 0). */
 export function foeHit(kind: Reaction, g: number): FoeState {
@@ -117,6 +117,29 @@ export function foeHit(kind: Reaction, g: number): FoeState {
         pose: { ...G, pz: tr(g, [[0, -3.5], [4, -8], [18, -7], [34, -3.5]]), yaw: tr(g, [[0, -10], [3, -46], [16, -30], [34, -10]]), twist: tr(g, [[0, 4], [3, -40], [14, -20], [34, 4]]), side: tr(g, [[0, 0], [3, 22], [14, 10], [34, 0]]), pitch: tr(g, [[0, 2], [3, -10], [12, 8], [34, 2]]), bend: tr(g, [[0, 10], [3, -8], [14, 20], [34, 10]]), faceTurn: tr(g, [[0, -4], [3, -64], [16, -20], [34, -4]]), faceUp: tr(g, [[0, 6], [3, 26], [14, -4], [34, 6]]), faceTilt: tr(g, [[0, 0], [3, 30], [16, 8], [34, 0]]), lhx: tr(g, [[0, 9.5], [4, 0], [20, 6], [34, 9.5]]), lhy: tr(g, [[0, -1], [4, 12], [34, -1]]), lhz: tr(g, [[0, 2], [4, 6], [20, -4], [34, 2]]), rhx: tr(g, [[0, 8.5], [4, -2], [20, 6], [34, 8.5]]), rhy: tr(g, [[0, 1], [4, -12], [34, 1]]), rhz: tr(g, [[0, 1], [4, 2], [20, -5], [34, 1]]), lfx: tr(g, [[0, 4.5], [8, 9], [34, 4.5]]), lfy: tr(g, [[0, 2.5], [8, -2], [34, 2.5]]) },
         back: tr(g, [[0, 0], [6, 30], [14, 34], [22, 28], [34, 0]]), lift: 0, stars: false, down: false,
       };
+    case 'floored': {
+      // KNOCKED DOWN (the flying double hammerfist's ring of force): the floor bucks under him, his feet are swept out from under
+      // him and he is thrown up off them, arms flung out; down hard on his back end, sprawled back on his hands; a bounce; he
+      // lies there stunned; then he gets up
+      const air = tr(g, [[0, 0], [4, 10], [9, 0]]);
+      const sit = g < 9 ? tr(g, [[0, 0], [9, 1]]) : g < 40 ? 1 : tr(g, [[40, 1], [56, 0]]);
+      const bounce = g >= 9 && g < 16 ? Math.sin(((g - 9) / 7) * Math.PI) * 2.5 : 0;
+      return {
+        pose: {
+          ...G,
+          pz: -3.5 + (-15.5 + 3.5) * sit + bounce,
+          pitch: tr(g, [[0, 2], [3, -34], [9, -30], [12, -24], [40, -24], [50, 6], [56, 2]]),
+          bend: tr(g, [[0, 10], [3, -12], [9, 6], [40, 6], [50, 22], [56, 10]]),
+          faceUp: tr(g, [[0, 6], [3, 34], [10, 4], [40, 4], [56, 6]]) + (g >= 10 && g < 40 ? 6 * Math.sin(g * 0.4) : 0),
+          faceTilt: g >= 10 && g < 40 ? 14 * Math.sin(g * 0.3) : 0,
+          lfx: tr(g, [[0, 4.5], [4, 14], [9, 15], [40, 15], [50, 8], [56, 4.5]]), lfz: tr(g, [[0, 0], [4, 6], [9, 1.5], [40, 1.5], [56, 0]]), lk: 20, lkUp: tr(g, [[0, 0], [9, 34], [40, 34], [56, 0]]),
+          rfx: tr(g, [[0, -4.5], [4, 9], [9, 11], [40, 11], [50, 2], [56, -4.5]]), rfz: tr(g, [[0, 0], [4, 8], [9, 1.5], [40, 1.5], [56, 0]]), rk: -20, rkUp: tr(g, [[0, 0], [9, 40], [40, 40], [56, 0]]),
+          lhx: tr(g, [[0, 9.5], [3, 2], [9, -9], [40, -9], [52, 9.5]]), lhy: tr(g, [[0, -1], [3, 10], [9, 4], [40, 4], [52, -1]]), lhz: tr(g, [[0, 2], [3, 10], [9, -14], [40, -14], [52, 2]]), le: 24,
+          rhx: tr(g, [[0, 8.5], [3, 2], [9, -9], [40, -9], [52, 8.5]]), rhy: tr(g, [[0, 1], [3, -10], [9, -4], [40, -4], [52, 1]]), rhz: tr(g, [[0, 1], [3, 10], [9, -14], [40, -14], [52, 1]]), re: 24,
+        },
+        back: tr(g, [[0, 0], [8, 14], [56, 14]]), lift: air, stars: g > 10 && g < 42, down: g >= 9 && g < 44,
+      };
+    }
     case 'shove':
       // SHOVED BACK: doubled over round the heel in his middle, driven back skidding; he comes back
       return {

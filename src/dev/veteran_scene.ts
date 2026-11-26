@@ -11,11 +11,11 @@ import { GRID } from '../art/skeleton';
 import type { V3 } from '../art/skeleton';
 import { INK } from '../art/kit';
 import { VET_CANVAS, paintVeteran } from './sculpt_veteran';
-import { VET_STAND, carryAt, forceFront, forceGeo, forceHit, placeOf, poseAt, roundSpan, skel, vetAt, worldOf } from './veteran_moves';
+import { VET_STAND, carryAt, forceFront, forceGeo, forceHit, placeOf, poseAt, roundSpan, skel, strikeEnd, vetAt, worldOf } from './veteran_moves';
 import type { Input, Reaction, VetMotion } from './veteran_moves';
 import { FOE_CANVAS, REACT_DRIVE, REACT_LONG, REACT_STAYS, REACT_VEER, SWING_HIT, foeHit, foeSwing, paintFoe } from './veteran_foe';
 import type { FoeState } from './veteran_foe';
-import { FX_KICK, FX_PUNCH, coneBlast, crescent, dust, floorRing, floorTrace, ghost, impact, put, rnd, shadow, shockCone, smear, speedLines, stars } from './veteran_fx';
+import { FX_KICK, FX_PUNCH, coneBlast, crescent, dust, floorRing, floorTrace, forceRing, ghost, globeFlame, impact, put, ringCracks, ringStones, rnd, shadow, shockCone, smear, speedLines, stars } from './veteran_fx';
 import { GLOBES_H, GLOBES_W, paintGlobes } from './veteran_globes';
 import type { Globe, GlobeRow } from './veteran_globes';
 
@@ -89,6 +89,10 @@ export function coneLength(from: readonly number[], o: readonly number[], way: n
   return -b + Math.sqrt(Math.max(0, b * b - (ox * ox + oy * oy) + reach * reach));
 }
 
+/** How many frames a ring of force's pieces last after its blow (its cracks in the floor the longest). */
+const RING_LAST = 30;
+/** How big the burst where a ring's fists strike the floor is (a heavy blow's is 1). */
+export const RING_BURST = 1.7;
 /** Every blow that lands in a play: when (play frame), on whom, how, and from where (his pelvis then). */
 interface Ev {
   G: number;
@@ -376,7 +380,7 @@ export function scene(p: Play, G: number, shot: Shot): Px {
   }
   // SHOCKWAVE RINGS along the floor, under the heavy blows
   for (const e of evs) {
-    if (e.react === 'swing' || !e.heavy || e.react === 'shove') continue;
+    if (e.react === 'swing' || !e.heavy || e.react === 'shove' || e.react === 'floored') continue;
     const age = G - e.G;
     if (age < 0 || age > 9) continue;
     const fo = p.foes[e.foe];
@@ -401,8 +405,8 @@ export function scene(p: Play, G: number, shot: Shot): Px {
       t += st.m.long;
     });
     for (const e of evs) {
-      if (e.react !== 'fly' && e.react !== 'launch' && e.react !== 'knock' && e.react !== 'kneed' && e.react !== 'aside' && e.react !== 'shove') continue;
-      const land = e.G + (e.react === 'fly' || e.react === 'kneed' ? 15 : e.react === 'launch' ? 28 : e.react === 'shove' ? 4 : 3);
+      if (e.react !== 'fly' && e.react !== 'launch' && e.react !== 'knock' && e.react !== 'kneed' && e.react !== 'aside' && e.react !== 'shove' && e.react !== 'floored') continue;
+      const land = e.G + (e.react === 'fly' || e.react === 'kneed' ? 15 : e.react === 'launch' ? 28 : e.react === 'shove' ? 4 : e.react === 'floored' ? 9 : 3);
       const age = G - land;
       if (age < 0 || age > 14) continue;
       const fo = foeAt(p, e.foe, land, [0, 0]);
@@ -458,7 +462,7 @@ export function scene(p: Play, G: number, shot: Shot): Px {
         const F = s.force;
         const fa = F.from ?? s.at;
         const age = G - (t + fa);
-        if (age < 0 || age > F.long + 7) continue;
+        if (age < 0 || age > (F.shape === 'ring' ? RING_LAST : F.long + 7)) continue;
         const O = stepAt(p, t + fa).origin;
         const g = forceGeo(st.m, s);
         const fm = G - t;
@@ -467,6 +471,17 @@ export function scene(p: Play, G: number, shot: Shot): Px {
         const to = (q: readonly number[]): [number, number] => scr(toScene([q[0] + O[0], q[1] + O[1], q[2]]));
         const gone = Math.max(0, Math.min(1, (age - F.long - 2) / 5));
         const seed = t * 13 + fa;
+        if (g.shape === 'ring') {
+          // THE RING OF FORCE: its cracks in the floor now; the wave and the stones it flings behind him now, before him after
+          ringCracks(px, to, g.o, F.reach, cols, age, seed);
+          if (gone < 1) floorTrace(px, to, g.o, -Math.PI, Math.PI, front, cols[1], gone);
+          const keepOf = (behind: boolean) => (q: readonly number[]): boolean => to([q[0], q[1], 0])[1] < fs[1] === behind;
+          forces.push((behind) => {
+            forceRing(px, to, g.o, front, 13, cols, age, gone, seed, keepOf(behind));
+            ringStones(px, to, g.o, front, F.reach, cols, age, seed, keepOf(behind));
+          });
+          continue;
+        }
         if (g.shape === 'cone') {
           forces.push((behind) => {
             if (!behind) shockCone(px, to, g.o, g.dir, g.up, g.half, front, age, F.long + 1, cols, seed);
@@ -512,16 +527,16 @@ export function scene(p: Play, G: number, shot: Shot): Px {
   const arc = arcOf();
   if (arc) smear(px, arc.path, arc.w, arc.cols, arc.show, arc.behind);
   const strikesNow = at.m.strikes.filter((s) => {
-    const lastHit = Math.max(s.at, ...s.hits.map((h) => h.f));
-    return at.f > s.from && at.f <= lastHit + 4;
+    const lastHit = strikeEnd(s);
+    return at.f > s.from && at.f <= lastHit + (s.fade ?? 4);
   });
   const kindCols = (k: 'punch' | 'kick'): readonly string[] => (k === 'kick' ? FX_KICK : FX_PUNCH);
   const smearOf = (s: (typeof strikesNow)[number]): void => {
-    const lastHit = Math.max(s.at, ...s.hits.map((h) => h.f));
+    const lastHit = strikeEnd(s);
     const until = Math.min(at.f, lastHit);
     const path: [number, number][] = [];
     for (let g = s.from - 0.5; g <= until + 1e-6; g += 0.1) path.push(scr(toScene(vetWorld(at, skel(poseAt(at.m, g))[s.joint] as V3, g))));
-    const show = at.f <= lastHit ? 1 : Math.max(0, 1 - (at.f - lastHit) / 4);
+    const show = at.f <= lastHit ? 1 : Math.max(0, 1 - (at.f - lastHit) / (s.fade ?? 4));
     smear(px, path, s.w ?? (s.heavy ? 13 : 9), kindCols(s.kind), show);
   };
   for (const s of strikesNow) if (s.under) smearOf(s);
@@ -534,7 +549,7 @@ export function scene(p: Play, G: number, shot: Shot): Px {
     draw: () => {
       // AFTER-IMAGES of him along the strike: where he was a half and a whole frame ago
       for (const s of strikesNow) {
-        const lastHit = Math.max(s.at, ...s.hits.map((h) => h.f));
+        const lastHit = strikeEnd(s);
         if (at.f > lastHit + 1) continue;
         for (const [back, fill, edge] of [[1.0, 1, 2], [0.5, 2, 3]] as const) {
           const g = Math.max(s.from, at.f - back);
@@ -575,6 +590,21 @@ export function scene(p: Play, G: number, shot: Shot): Px {
     const air = vetLift > 3;
     if (air || at.m.id === 'run') speedLines(px, a[0], a[1] - 4, (a[0] - b[0]) * 1.4, (a[1] - b[1]) * 1.4, 14, Math.floor(G / 2) * 13, ['', '', '#6a64b0', '#b4b0e6', '#f0eeff']);
   }
+  // THE GLOBE HE CARRIES, burning on his fists or his knee from his leap to the blow (his swipe's flying blows)
+  {
+    const fl = at.m.flame;
+    if (fl && at.f >= fl.from && at.f < fl.to) {
+      const where = (g: number): V3 => {
+        const sk = skel(poseAt(at.m, g));
+        const j = fl.joint === 'fists' ? ([(sk.handL[0] + sk.handR[0]) / 2, (sk.handL[1] + sk.handR[1]) / 2, (sk.handL[2] + sk.handR[2]) / 2 + 2] as V3) : (sk[fl.joint] as V3);
+        return vetWorld(at, j, g);
+      };
+      const a = scr(toScene(where(at.f)));
+      const b = scr(toScene(where(at.f - 1)));
+      const u = (at.f - fl.from) / (fl.to - fl.from);
+      globeFlame(px, a[0], a[1], at.f, kindCols(fl.kind), fl.from * 31, 0.35 + 0.65 * u * u * (3 - 2 * u), [a[0] - b[0], a[1] - b[1]]);
+    }
+  }
   // THE SMEARS along his blows (those that go under him were painted before him)
   for (const s of strikesNow) {
     if (s.under) continue;
@@ -604,6 +634,14 @@ export function scene(p: Play, G: number, shot: Shot): Px {
     if (age < 0 || age > 6) continue;
     const q = scr(toScene(vetWorld(at, skel(poseAt(at.m, s.at))[s.joint] as V3, s.at)));
     impact(px, q[0], q[1], age, kindCols(s.kind), s.heavy, s.at * 7, s.burst ?? 1);
+  }
+  // (a ring's blow: its great burst where the fists strike the floor)
+  for (const s of at.m.strikes) {
+    if (s.force?.shape !== 'ring') continue;
+    const age = Math.floor(at.f - s.at);
+    if (age < 0 || age > 6) continue;
+    const q = scr(toScene(vetWorld(at, skel(poseAt(at.m, s.at))[s.joint] as V3, s.at)));
+    impact(px, q[0], q[1], age, kindCols(s.kind), s.heavy, s.at * 7, RING_BURST);
   }
   // STARS round a stunned foe's head
   for (const fo of foes) {

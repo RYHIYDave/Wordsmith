@@ -20,9 +20,9 @@ import { ASKED } from './asked';
 import { HEAVY, LEFT_TO_PAINTER, toSprite } from './kit';
 import { MORE_TURN } from './sides_more';
 import type { MoreSide } from './sides_more';
-import { forceFront, forceGeo, placeOf, poseAt, roundSpan, skel, worldOf } from '../dev/veteran_moves';
+import { forceFront, forceGeo, placeOf, poseAt, roundSpan, skel, strikeEnd, worldOf } from '../dev/veteran_moves';
 import type { Joint, Strike, VetMotion } from '../dev/veteran_moves';
-import { FX_KICK, FX_PUNCH, coneBlast, crescent, dust, floorRing, floorTrace, impact, shockCone, smear, speedLines } from '../dev/veteran_fx';
+import { FX_KICK, FX_PUNCH, coneBlast, crescent, dust, floorRing, floorTrace, forceRing, globeFlame, impact, ringCracks, ringStones, shockCone, smear, speedLines } from '../dev/veteran_fx';
 
 /** How many frames a move's effects go on after it ends (its dust, its force breaking up): its lists are this much longer. */
 export const VET_FX_AFTER = 16;
@@ -36,7 +36,7 @@ const kindCols = (k: 'punch' | 'kick'): readonly string[] => (k === 'kick' ? FX_
 /** The grey-white of a heavy landing's ring of force (the art's). */
 const QUAKE = ['#2a2438', '#6e6886', '#958fab', '#bcb6cc', '#f0eeff'];
 /** The last frame his blow lands (the art's: the smear and after-images go on to it). */
-export const vetLastHit = (s: Strike): number => Math.max(s.at, ...s.hits.map((h) => h.f));
+export const vetLastHit = (s: Strike): number => strikeEnd(s);
 
 /** His pose's skeleton at a frame of a move (fractional frames to a tenth), worked out once. */
 const SKELS = new Map<string, Skeleton>();
@@ -66,7 +66,7 @@ function coneLength(from: readonly number[], way: number, reach: number): number
 /** A crescent's place at a frame of its move (the art's), or null if it is not out. */
 function crescentOf(m: VetMotion, s: Strike, F: number): { o: V3; a0: number; a1: number; front: number; gone: number; thick: number; r0?: number } | null {
   const Fo = s.force;
-  if (!Fo || Fo.shape === 'cone') return null;
+  if (!Fo || Fo.shape === 'cone' || Fo.shape === 'ring') return null;
   const fa = Fo.from ?? s.at;
   const age = F - fa;
   if (age < 0 || age > Fo.long + 7) return null;
@@ -78,6 +78,21 @@ function crescentOf(m: VetMotion, s: Strike, F: number): { o: V3; a0: number; a1
   const gone = Math.max(0, Math.min(1, (age - Fo.long - 2) / 5));
   return { o: g.o as V3, a0, a1, front, gone, thick: g.shape === 'round' ? 18 : s.heavy ? 14 : 11, r0: g.shape === 'round' ? undefined : g.r0 };
 }
+
+/**
+ * A RING OF FORCE's place at a frame of its move (the flying double hammerfist's: the art's film, dev/veteran_scene.ts), or null if
+ * none of it is out: round where the fists struck, how far out its front is, how far it has broken up, how long since the blow.
+ */
+function ringOf(m: VetMotion, s: Strike, F: number): { o: V3; front: number; gone: number; age: number; reach: number } | null {
+  const Fo = s.force;
+  if (!Fo || Fo.shape !== 'ring') return null;
+  const age = F - (Fo.from ?? s.at);
+  if (age < 0 || age > RING_LAST) return null;
+  return { o: forceGeo(m, s).o as V3, front: forceFront(m, s, F), gone: Math.max(0, Math.min(1, (age - Fo.long - 2) / 5)), age, reach: Fo.reach };
+}
+/** How long a ring's pieces last after its blow, and how big its burst where the fists strike the floor (the art's film's). */
+const RING_LAST = 30;
+const RING_BURST = 1.7;
 
 /** How open a cone's rings must show to the eye to be left as they are (1 a full circle, 0 edge-on), and how far one that shows less is leaned (degrees). */
 const CONE_OPEN = 0.4;
@@ -136,7 +151,7 @@ export function paintVetFx(m: VetMotion, F: number, view: MoreSide, layer: VetFx
   const at = placeOf(m, Math.min(F, m.long)).at;
   const heroY = to([at[0], at[1], 0])[1];
   const behind = (q: readonly number[]): boolean => to([q[0], q[1], 0])[1] < heroY;
-  const strikesNow = live ? m.strikes.filter((s) => F > s.from && F <= vetLastHit(s) + 4) : [];
+  const strikesNow = live ? m.strikes.filter((s) => F > s.from && F <= vetLastHit(s) + (s.fade ?? 4)) : [];
   const smearOf = (s: Strike): void => {
     const last = vetLastHit(s);
     const until = Math.min(F, last);
@@ -146,7 +161,7 @@ export function paintVetFx(m: VetMotion, F: number, view: MoreSide, layer: VetFx
       if (g > until + 1e-6) break;
       path.push(to(vetJointAt(m, g, s.joint)));
     }
-    smear(px, path, s.w ?? (s.heavy ? 13 : 9), kindCols(s.kind), F <= last ? 1 : Math.max(0, 1 - (F - last) / 4));
+    smear(px, path, s.w ?? (s.heavy ? 13 : 9), kindCols(s.kind), F <= last ? 1 : Math.max(0, 1 - (F - last) / (s.fade ?? 4)));
   };
   const arcOf = (): { path: [number, number][]; behind: boolean[]; w: number; cols: readonly string[]; show: number } | null => {
     const a = m.arc;
@@ -205,6 +220,12 @@ export function paintVetFx(m: VetMotion, F: number, view: MoreSide, layer: VetFx
       }
       const cr = crescentOf(m, s, F);
       if (cr) floorTrace(px, to, cr.o, cr.a0, cr.a1, cr.front, kindCols(s.kind)[1], cr.gone);
+      // (a ring of force: the cracks it leaves in the floor, and where its front is over the floor)
+      const rg = ringOf(m, s, F);
+      if (rg) {
+        ringCracks(px, to, rg.o, rg.reach, kindCols(s.kind), rg.age, s.at * 13);
+        if (rg.gone < 1) floorTrace(px, to, rg.o, -Math.PI, Math.PI, rg.front, kindCols(s.kind)[1], rg.gone);
+      }
     }
   } else if (layer === 'behind') {
     // the crescents' stretches behind him; the turn in light behind him; the smears painted under him (so the limb that
@@ -212,6 +233,12 @@ export function paintVetFx(m: VetMotion, F: number, view: MoreSide, layer: VetFx
     for (const s of m.strikes) {
       const cr = crescentOf(m, s, F);
       if (cr) crescent(px, to, cr.o, cr.a0, cr.a1, cr.front, cr.thick, kindCols(s.kind), cr.gone, s.at * 13, behind, cr.r0);
+      // (a ring of force: its wave and the stones it flings, where they are behind him)
+      const rg = ringOf(m, s, F);
+      if (rg) {
+        forceRing(px, to, rg.o, rg.front, 13, kindCols(s.kind), rg.age, rg.gone, s.at * 13, behind);
+        ringStones(px, to, rg.o, rg.front, rg.reach, kindCols(s.kind), rg.age, s.at * 13, behind);
+      }
     }
     const arc = arcOf();
     if (arc) smear(px, arc.path, arc.w, arc.cols, arc.show, arc.behind);
@@ -227,10 +254,24 @@ export function paintVetFx(m: VetMotion, F: number, view: MoreSide, layer: VetFx
       const b = to(vetJointAt(m, F - 1, 'pelvis'));
       speedLines(px, a[0], a[1] - 4, (a[0] - b[0]) * 1.4, (a[1] - b[1]) * 1.4, 14, Math.floor(F / 2) * 13, ['', '', '#6a64b0', '#b4b0e6', '#f0eeff']);
     }
+    // (the globe he carries, burning on his fists or his knee from his leap to the blow: the art's film's)
+    const fl = m.flame;
+    if (fl && live && F >= fl.from && F < fl.to) {
+      const where = (g: number): V3 => {
+        if (fl.joint !== 'fists') return vetJointAt(m, g, fl.joint);
+        const l = vetJointAt(m, g, 'handL');
+        const r = vetJointAt(m, g, 'handR');
+        return [(l[0] + r[0]) / 2, (l[1] + r[1]) / 2, (l[2] + r[2]) / 2 + 2];
+      };
+      const a = to(where(F));
+      const b = to(where(F - 1));
+      const u = (F - fl.from) / (fl.to - fl.from);
+      globeFlame(px, a[0], a[1], F, kindCols(fl.kind), fl.from * 31, 0.35 + 0.65 * u * u * (3 - 2 * u), [a[0] - b[0], a[1] - b[1]]);
+    }
     for (const s of strikesNow) if (!s.under) smearOf(s);
     for (const s of m.strikes) {
       const Fo = s.force;
-      if (Fo) {
+      if (Fo && Fo.shape !== 'ring') {
         const fa = Fo.from ?? s.at;
         const age = F - fa;
         if (age < 0 || age > Fo.long + 7) continue;
@@ -246,6 +287,17 @@ export function paintVetFx(m: VetMotion, F: number, view: MoreSide, layer: VetFx
         if (age >= 0 && age <= 6) {
           const [x, y] = to(vetJointAt(m, s.at, s.joint));
           impact(px, x, y, age, kindCols(s.kind), s.heavy, s.at * 7, s.burst ?? 1);
+        }
+      }
+      // (a ring of force: its wave and its stones before him; its great burst where the fists strike the floor)
+      const rg = ringOf(m, s, F);
+      if (rg) {
+        const front = (q: readonly number[]): boolean => !behind(q);
+        forceRing(px, to, rg.o, rg.front, 13, kindCols(s.kind), rg.age, rg.gone, s.at * 13, front);
+        ringStones(px, to, rg.o, rg.front, rg.reach, kindCols(s.kind), rg.age, s.at * 13, front);
+        if (rg.age <= 6) {
+          const [x, y] = to(vetJointAt(m, s.at, s.joint));
+          impact(px, x, y, Math.floor(rg.age), kindCols(s.kind), s.heavy, s.at * 7, RING_BURST);
         }
       }
     }

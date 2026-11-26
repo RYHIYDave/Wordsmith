@@ -2,7 +2,7 @@
 // MOCK-UP; NOTHING OF THE GAME IMPORTS IT. Every move from in front and from behind side by side; his six combos in a row,
 // the globes filling over him; the biggest blows again at half speed (tools/veteran_film.ts).
 
-import { VET_COMBOS, VET_RUN, VET_STAND, VET_TILE, closeKickOf, motionById, worldOf } from './veteran_moves';
+import { VET_COMBOS, VET_RUN, VET_STAND, VET_TILE, closeKickOf, motionById, ringFoes, worldOf } from './veteran_moves';
 import type { Input, Reaction, VetMotion } from './veteran_moves';
 import type { Play, Step } from './veteran_scene';
 import { playLong } from './veteran_scene';
@@ -125,3 +125,49 @@ const SLOW: FilmPart[] = [
   { ...slow('spinkick', motionById('spinkick').foes, 'THE SPINNING JUMP KICK', 'His leg throws one crescent of force, rolled out round him: each hit once', 3, 6), sy: 0.66, ahead: 0 },
 ];
 export const VET_FILM: FilmPart[] = [...MOVES, ...COMBOS, ...SLOW];
+
+// ---------------------------------------------------------------------------------------------
+// HIS SWIPE'S TWO FLYING BLOWS, A FILM OF THEIR OWN FOR HIS YES (the skins chat, 26 Nov 2026; tools/veteran_film.ts with
+// FILM=flying): each from in front and from behind, at half speed, from all eight of the game's sides, and out of a run and out
+// of a combo with the globes over him.
+
+/** The game's eight sides, as each turns him (art/sides_more.ts MORE_TURN), four to a part. */
+const EIGHT_A = [0, -45, -90, -135];
+const EIGHT_B = [180, 135, 90, 45];
+const eight = (title: string, line: string, play: Play, views: number[], sy: number, ahead: number): FilmPart => ({ title, line, play, from: 0, long: playLong(play), speed: 1, views, k: 2, sy, ahead });
+/** Where a move of a play starts, its steps before it laid end to end (for its foes). */
+const after = (ms: VetMotion[], k: number, f: [number, number]): [number, number] => {
+  const o = startOf(ms, k);
+  return [o[0] + f[0], o[1] + f[1]];
+};
+function flyingFilm(): FilmPart[] {
+  const hf = motionById('hammerfist');
+  const fk = motionById('flyknee');
+  const hfPlay = solo('hammerfist', hf.foes, 6, 30);
+  const fkPlay = solo('flyknee', fk.foes, 6, 18);
+  const slowOf = (play: Play, title: string, line: string, before: number, after2: number, sy: number, ahead: number): FilmPart => {
+    const m = play.steps[0].m;
+    const st = m.strikes[0];
+    return { title: `${title} · HALF SPEED`, line, play, from: play.lead + st.from - before, long: before + (st.at - st.from) + after2, speed: 0.5, views: [0], k: 3, sy, ahead };
+  };
+  // (out of a run: two springs of his run at them, then the swipe; out of a combo: the globes lit, then the swipe carrying one)
+  const runKnee: Play = { steps: [{ m: VET_RUN }, { m: VET_RUN }, { m: fk }], foes: [after([VET_RUN, VET_RUN, fk], 2, fk.foes[0])], lead: 4, tail: 16 };
+  const jcHammer = [motionById('jab'), motionById('cross'), hf];
+  const comboHammer: Play = { steps: [{ m: jcHammer[0], input: 'tap', foe: 0 }, { m: jcHammer[1], input: 'tap', foe: 0 }, { m: hf, input: 'swipeTap' }], foes: [after(jcHammer, 0, motionById('jab').foes[0]), ...hf.foes.slice(1).map((f) => after(jcHammer, 2, f))], lead: 8, tail: 30, globes: true };
+  const rkKnee = [motionById('roundkick'), fk];
+  const comboKnee: Play = { steps: [{ m: rkKnee[0], input: 'hold', foe: 1 }, { m: fk, input: 'swipeHold', foe: 0 }], foes: [after(rkKnee, 1, fk.foes[0]), after(rkKnee, 0, motionById('roundkick').foes[0])], lead: 8, tail: 18, globes: true };
+  return [
+    { ...wide('THE FLYING DOUBLE HAMMERFIST · a swipe, carrying a punch globe', 'Sunk, arms flung back; a leap at them, fists clasped high, arched back, held; the slam: a ring of force knocks all down', hfPlay), sy: 0.8, ahead: 30 },
+    slowOf(hfPlay, 'THE FLYING DOUBLE HAMMERFIST', 'Held at the top; the fists down in two frames as he lands; the ring of force rolls out 2 tiles round him', 5, 22, 0.76, 40),
+    eight('THE FLYING DOUBLE HAMMERFIST · FROM ALL EIGHT SIDES (1)', 'Each truly turned, never a mirror: from in front, and turning round to his left', { ...hfPlay, foes: [] }, EIGHT_A, 0.8, 14),
+    eight('THE FLYING DOUBLE HAMMERFIST · FROM ALL EIGHT SIDES (2)', 'Each truly turned, never a mirror: from behind him, and on round', { ...hfPlay, foes: [] }, EIGHT_B, 0.8, 14),
+    { ...wide('THE FLYING KNEE · a swipe, carrying a kick globe', 'A dip, arms back; a long low launch at them, the knee cocked, held as he flies; driven straight through them', fkPlay), sy: 0.68, ahead: 36 },
+    slowOf(fkPlay, 'THE FLYING KNEE', 'Cocked, held as he flies; the knee driven through in two frames: a straight line of force on past them', 5, 14, 0.62, 40),
+    eight('THE FLYING KNEE · FROM ALL EIGHT SIDES (1)', 'Each truly turned, never a mirror: from in front, and turning round to his left', { ...fkPlay, foes: [] }, EIGHT_A, 0.72, 6),
+    eight('THE FLYING KNEE · FROM ALL EIGHT SIDES (2)', 'Each truly turned, never a mirror: from behind him, and on round', { ...fkPlay, foes: [] }, EIGHT_B, 0.72, 6),
+    { title: 'OUT OF A RUN · running at them, a swipe', line: 'His fighter’s bounce, then the swipe breaks it off: the flying knee, straight through them', play: runKnee, from: 0, long: playLong(runKnee), speed: 1, views: [0], k: 3, sy: 0.66, ahead: 80 },
+    { title: 'OUT OF A COMBO · tap, tap, then a swipe carrying the punch globe', line: 'Jab, cross; the swipe breaks it off: the flying double hammerfist, and all about him go down', play: comboHammer, from: 0, long: playLong(comboHammer), speed: 1, views: [0], k: 3, sy: 0.7, ahead: 70 },
+    { title: 'OUT OF A COMBO · a hold, then a swipe carrying the kick globe', line: 'The round kick; the swipe breaks it off: the flying knee through the next one', play: comboKnee, from: 0, long: playLong(comboKnee), speed: 1, views: [0], k: 3, sy: 0.66, ahead: 80 },
+  ];
+}
+export const FLYING_FILM: FilmPart[] = flyingFilm();

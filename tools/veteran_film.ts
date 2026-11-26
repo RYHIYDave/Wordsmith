@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Px } from '../src/engine/px';
 import { scene } from '../src/dev/veteran_scene';
-import { VET_FILM } from '../src/dev/veteran_plays';
+import { FLYING_FILM, VET_FILM } from '../src/dev/veteran_plays';
 import type { FilmPart } from '../src/dev/veteran_plays';
 import { png } from './king_png';
 
@@ -53,7 +53,8 @@ function frameOf(p: FilmPart, i: number): Px {
 const framesOf = (p: FilmPart): number => Math.round(p.long / p.speed);
 
 const [out = 'veteran_moves.mp4', mode = '', which = ''] = process.argv.slice(2);
-const parts = VET_FILM;
+// (FILM=flying: his swipe's two flying blows, a film of their own)
+const parts = process.env.FILM === 'flying' ? FLYING_FILM : VET_FILM;
 let total = 0;
 for (const p of parts) total += framesOf(p);
 console.log(parts.length, 'parts,', total, 'frames,', (total / FPS).toFixed(1), 's');

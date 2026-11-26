@@ -52,7 +52,9 @@ export const VET_TURN: Record<GameView, number> = { front: 0, back: 90 };
  */
 export type VetSide = MoreSide;
 /** His moves made by a press, in the order the painter paints them (the most thrown first). */
-export const VET_LISTS: readonly VetBlowId[] = ['jab', 'cross', 'hook', 'roundkick', 'dodge', 'push', 'elbow', 'uppercut', 'knee', 'spinkick', 'spinkickClose'];
+export const VET_LISTS: readonly VetBlowId[] = ['jab', 'cross', 'hook', 'roundkick', 'dodge', 'push', 'elbow', 'uppercut', 'knee', 'spinkick', 'spinkickClose',
+  // (his swipe carrying the first lit globe, the skins chat's of 26 Nov 2026: last, so the lists before keep their places in the bake)
+  'hammerfist', 'flyknee'];
 /** How far his run's round carries him, tiles (its 12 frames at the game's hero pace). */
 export const VET_RUN_STRIDE = carryAt(VET_RUN, VET_RUN.long)[0] / VET_TILE;
 /** Every list of his is the side painter's (art/kit.ts HEAVY). */
