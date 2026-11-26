@@ -1498,6 +1498,13 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   `godot_looks.ts floor1`, the looks by `tools/godot_record.mjs <N> --suffix v2` on a page built with the switch on; the floor as
   it is beside it remade, `python3 tools/level_compare.py <N> <out.png>`. Check and pictures: `--only=levels2 --levels2=1
   --floor=<N>` (`check_levels2.gd`); `docs/mockups/levels/`.
+- **The speed and tank test** (`check_speed.gd`, `--only=speed`, with `WS_DMG_GEAR=<tools/godot_dmg_gear.ts 20>`; his words, 26 Nov
+  2026: “Give me a speed test to see which class can finish a level the fastest.  And which class can get the tankiest.  And a
+  breakdown of the builds and why”). Each class at level 50 with the damage check's chooser (its build led by lightning), floor
+  19 cleared by a plain autoplayer (the nearest monster by the walk grid, quick attack and hold, the evasive move to cover ground;
+  it waits out a portcullis), as the game has it and with every monster a thousand times as tough; and each class's toughest
+  build (the same chooser on what he can stand) among seven of floor 20's own that cannot die, striking fifteen times as hard.
+  Results and builds: `docs/tests/speed_tank_2026-11-26.txt`. It found the app's resistances uncapped (fixed: 75%, `loot.gd`).
 - **Six enemies made livelier** (the browser art's `src/art/enemies8.ts` ENEMIES8, ON at his yes to the second pictures, 26 Nov
   2026: “Yes, put them in (Recommended)”; his words: “Next Find the 8 weakest enemies and work on them.  Weakest in terms of their
   animations and look.”). The skeleton marksman breathes as he waits and swings more in his stride; the Shade rises, sinks and

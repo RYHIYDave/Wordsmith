@@ -1,0 +1,254 @@
+THE SPEED AND TANK TEST, 26 Nov 2026 (godot/scripts/check_speed.gd, --only=speed). His words: “Give me a speed test to see which class can finish a level the fastest.  And which class can get the tankiest.  And a breakdown of the builds and why”.
+Each class's raw output below: its build (gear, words, talents, numbers) and its results. The Brawler's clear without his dodge jump (WS_NO_EVADE=1): it stands him still.
+
+FLOOR 20's own monsters: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+the tank fight's foes: hshape (the floor's most common)
+
+=== WARRIOR: THE CLEAR ===
+  (his build chosen in 35 s)
+  attributes: Str 367, Dex 128, Int 6; life 1894, barrier 0, armour 712 (takes 62% of a plain blow), dodge 1%, block 0%, resist fire 0% frost 0% lightning 0%, regeneration 0.6 a second; walks 4.60 tiles a second
+  his quick attack's words: in front fulgurite, swift; behind power2, fleeting. Worked out: 193253 damage a second into one, what he can stand 3393
+  talents: greatsword, sweepingcut, drilledleap, footwork, honededge, giantslayer, executioner, mastertop, gswhirlwind, thickskin, shieldwall
+    mainhand: War Greatsword + forking, thunder, swift, piercing
+    helm: War Helm + swift, twin, power, power
+    chest: War Plate + swift, twin, power, power
+    gloves: Studded Gloves + forking, thunder, swift, splitting
+    belt: Studded Belt + swift, twin, power, power
+    boots: War Greaves + swift, twin, power, power
+    amulet: Emerald Amulet + forking, swift, piercing, splitting
+    ring1: Ruby Ring + forking, thunder, piercing, splitting
+    ring2: Ruby Ring + forking, thunder, swift, piercing
+  FLOOR 19: 204 of 204 monsters dead in 63.8 s (walking 53 s, fighting 7 s, 257 tiles walked; 0 out of reach)
+  FLOOR 19 x1000 TOUGH: 204 of 204 monsters dead in 252.2 s (walking 56 s, fighting 196 s, 372 tiles walked; 0 out of reach)
+DONE
+
+FLOOR 20's own monsters: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+the tank fight's foes: hshape (the floor's most common)
+
+=== WARRIOR: THE TANK ===
+  (his build chosen in 30 s; his points all in str)
+  attributes: Str 458, Dex 156, Int 106; life 2166, barrier 1767, armour 1005 (takes 70% of a plain blow), dodge 1%, block 0%, resist fire 75% frost 75% lightning 75%, regeneration 13.2 a second; walks 4.60 tiles a second
+  his quick attack's words: in front secondwind, twin; behind -, -. Worked out: 2655 damage a second into one, what he can stand 31335
+  talents: greatsword, sweepingcut, thickskin, bulwark, shieldwall, resolute, unbreakable, drilledleap, footwork, honededge
+    mainhand: War Greatsword + swift, demolition, guarding, swift
+    helm: Mail Hood + power2, eruption, rimeward, forking
+    chest: War Plate + power2, eruption, rimeward, chainreaction
+    gloves: War Gauntlets + swift, avalanche, guarding, forking
+    belt: War Belt + power2, eruption, guarding, leech
+    boots: War Greaves + power2, power, guarding, leech
+    amulet: Obsidian Amulet + swift, demolition, guarding, swift
+    ring1: Ruby Ring + swift, demolition, guarding, swift
+    ring2: Ruby Ring + swift, demolition, guarding, swift
+  STANDS among seven of floor 20's own (blows x15), fighting back: 11.2, 11.5, 16.6 s (middle 11.5 s)
+DONE
+
+FLOOR 20's own monsters: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+the tank fight's foes: hshape (the floor's most common)
+
+=== RANGER: THE CLEAR ===
+  (his build chosen in 34 s)
+  attributes: Str 143, Dex 406, Int 6; life 1222, barrier 0, armour 823 (takes 65% of a plain blow), dodge 1%, block 0%, resist fire 0% frost 0% lightning 0%, regeneration 0.6 a second; walks 4.60 tiles a second
+  his quick attack's words: in front forking, swift; behind haymaker, -. Worked out: 519520 damage a second into one, what he can stand 2299
+  talents: keeneye, venom, steadyaim, quickdraw, longshot, lightstep, huntersmark, splitshot, piercing, farsight
+    mainhand: Horn Bow + forking, power2, lightning2, piercing
+    offhand: Studded Quiver + twin, swift, power, power
+    helm: War Helm + twin, swift, power, power
+    chest: War Plate + twin, swift, power, power
+    gloves: Studded Gloves + forking, power2, lightning2, piercing
+    belt: Studded Belt + twin, swift, power, power
+    boots: War Greaves + twin, swift, power, power
+    amulet: Emerald Amulet + forking, swift, piercing, splitting
+    ring1: Ruby Ring + forking, thunder, swift, splitting
+    ring2: Ruby Ring + forking, power2, lightning2, piercing
+  FLOOR 19: 204 of 204 monsters dead in 45.4 s (walking 35 s, fighting 11 s, 177 tiles walked; 0 out of reach)
+  FLOOR 19 x1000 TOUGH: 204 of 204 monsters dead in 239.6 s (walking 47 s, fighting 193 s, 257 tiles walked; 0 out of reach)
+DONE
+
+FLOOR 20's own monsters: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+the tank fight's foes: hshape (the floor's most common)
+
+=== RANGER: THE TANK ===
+  (his build chosen in 38 s; his points all in str)
+  attributes: Str 479, Dex 216, Int 106; life 2229, barrier 1973, armour 1171 (takes 73% of a plain blow), dodge 1%, block 0%, resist fire 75% frost 75% lightning 75%, regeneration 6.9 a second; walks 4.60 tiles a second
+  his quick attack's words: in front secondwind, twin; behind -, -. Worked out: 1074 damage a second into one, what he can stand 42702
+  talents: wildcompanion, huntcompanion, longshot, widetraps, snare, minefield, lightstep, keeneye, venom, quickdraw
+    mainhand: Horn Bow + swift, demolition, guarding, swift
+    offhand: Studded Quiver + power2, eruption, rimeward, forking
+    helm: Mail Hood + power2, eruption, rimeward, chainreaction
+    chest: War Plate + power2, avalanche, forking, guarding
+    gloves: War Gauntlets + swift, demolition, guarding, swift
+    belt: War Belt + power2, eruption, guarding, leech
+    boots: War Greaves + power2, power, guarding, swift
+    amulet: Obsidian Amulet + swift, power, guarding, swift
+    ring1: Ruby Ring + swift, demolition, guarding, swift
+    ring2: Ruby Ring + swift, demolition, guarding, swift
+  STANDS among seven of floor 20's own (blows x15), fighting back: 6.9, 7.5, 7.6 s (middle 7.5 s)
+DONE
+
+FLOOR 20's own monsters: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+the tank fight's foes: hshape (the floor's most common)
+
+=== TINKERER: THE CLEAR ===
+  (his build chosen in 34 s)
+  attributes: Str 6, Dex 403, Int 146; life 867, barrier 0, armour 943 (takes 68% of a plain blow), dodge 1%, block 0%, resist fire 0% frost 0% lightning 0%, regeneration 0.6 a second; walks 4.60 tiles a second
+  his quick attack's words: in front forking, swift; behind haymaker, -. Worked out: 450451 damage a second into one, what he can stand 1704
+  talents: bombsaway, clustervials, tar, madmixture, alchemy, thebigone, growthserum, lightningrod, shrapnel, fortune
+    mainhand: War Wrench + forking, power2, lightning2, piercing
+    offhand: War Shield + twin, swift, volatile, power
+    helm: War Helm + twin, swift, volatile, power
+    chest: War Plate + twin, swift, volatile, power
+    gloves: Studded Gloves + forking, thunder, piercing, swift
+    belt: Studded Belt + twin, swift, volatile, power
+    boots: War Greaves + twin, swift, volatile, power
+    amulet: Emerald Amulet + forking, splitting, piercing, swift
+    ring1: Ruby Ring + forking, thunder, splitting, swift
+    ring2: Ruby Ring + forking, thunder, piercing, splitting
+  FLOOR 19: 204 of 204 monsters dead in 75.7 s (walking 44 s, fighting 29 s, 222 tiles walked; 0 out of reach)
+  FLOOR 19 x1000 TOUGH: 204 of 204 monsters dead in 103.6 s (walking 44 s, fighting 60 s, 234 tiles walked; 0 out of reach)
+DONE
+
+FLOOR 20's own monsters: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+the tank fight's foes: hshape (the floor's most common)
+
+=== TINKERER: THE TANK ===
+  (his build chosen in 38 s; his points all in str)
+  attributes: Str 470, Dex 206, Int 111; life 2258, barrier 1994, armour 1291 (takes 75% of a plain blow), dodge 1%, block 0%, resist fire 75% frost 75% lightning 75%, regeneration 13.2 a second; walks 4.60 tiles a second
+  his quick attack's words: in front secondwind, twin; behind -, -. Worked out: 1661 damage a second into one, what he can stand 42869
+  talents: lightningrod, markii, growthserum, shrapnel, tar, thebigone, clustervials, madmixture, bombsaway, overdrive
+    mainhand: War Wrench + swift, demolition, guarding, swift
+    offhand: War Shield + power2, eruption, rimeward, forking
+    helm: Mail Hood + power2, eruption, rimeward, forking
+    chest: War Plate + power2, avalanche, guarding, forking
+    gloves: War Gauntlets + swift, demolition, guarding, swift
+    belt: War Belt + power2, eruption, guarding, leech
+    boots: War Greaves + power2, power, guarding, leech
+    amulet: Obsidian Amulet + swift, demolition, guarding, swift
+    ring1: Ruby Ring + swift, demolition, guarding, swift
+    ring2: Ruby Ring + swift, demolition, guarding, swift
+  STANDS among seven of floor 20's own (blows x15), fighting back: 180.0, 180.0, 180.0 s (middle 180.0 s)
+DONE
+
+FLOOR 20's own monsters: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+the tank fight's foes: hshape (the floor's most common)
+
+=== MAGE: THE CLEAR ===
+  (his build chosen in 39 s)
+  attributes: Str 6, Dex 128, Int 367; life 811, barrier 0, armour 712 (takes 62% of a plain blow), dodge 1%, block 0%, resist fire 0% frost 0% lightning 0%, regeneration 0.6 a second; walks 4.60 tiles a second
+  his quick attack's words: in front wildfire, twin; behind haymaker, -. Worked out: 312682 damage a second into one, what he can stand 1465
+  talents: kindling, searing, aura, flamewarp, fuel, inferno, lasting, charged, forking, ball
+    mainhand: Runed Staff + eruption, twin, fervor, piercing
+    helm: War Helm + swift, twin, volatile, power
+    chest: War Plate + swift, twin, volatile, power
+    gloves: Studded Gloves + fire2, eruption, twin, splitting
+    belt: Studded Belt + twin, swift, volatile, power
+    boots: War Greaves + twin, swift, volatile, power
+    amulet: Emerald Amulet + fire2, twin, piercing, splitting
+    ring1: Ruby Ring + eruption, twin, fire2, piercing
+    ring2: Ruby Ring + eruption, twin, fire2, piercing
+  FLOOR 19: 204 of 204 monsters dead in 59.5 s (walking 40 s, fighting 15 s, 277 tiles walked; 0 out of reach)
+  FLOOR 19 x1000 TOUGH: 204 of 204 monsters dead in 270.7 s (walking 42 s, fighting 224 s, 312 tiles walked; 0 out of reach)
+DONE
+
+FLOOR 20's own monsters: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+the tank fight's foes: hshape (the floor's most common)
+
+=== MAGE: THE TANK ===
+  (his build chosen in 34 s; his points all in str)
+  attributes: Str 450, Dex 156, Int 114; life 2142, barrier 1797, armour 1005 (takes 70% of a plain blow), dodge 1%, block 0%, resist fire 75% frost 75% lightning 75%, regeneration 13.2 a second; walks 4.60 tiles a second
+  his quick attack's words: in front secondwind, twin; behind -, -. Worked out: 1520 damage a second into one, what he can stand 30399
+  talents: bittercold, aura, lasting, deepfreeze, frostwarp, rime, shatter, kindling, searing, spear
+    mainhand: Runed Staff + swift, demolition, guarding, swift
+    helm: Mail Hood + power2, eruption, rimeward, forking
+    chest: War Plate + power2, eruption, rimeward, chainreaction
+    gloves: War Gauntlets + swift, avalanche, guarding, forking
+    belt: War Belt + power2, eruption, guarding, leech
+    boots: War Greaves + power2, demolition, guarding, leech
+    amulet: Obsidian Amulet + swift, power, guarding, swift
+    ring1: Ruby Ring + swift, demolition, guarding, swift
+    ring2: Ruby Ring + swift, demolition, guarding, swift
+  STANDS among seven of floor 20's own (blows x15), fighting back: 3.9, 5.5, 5.8 s (middle 5.5 s)
+DONE
+
+FLOOR 20's own monsters: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+the tank fight's foes: hshape (the floor's most common)
+
+=== WARLOCK: THE CLEAR ===
+  (his build chosen in 39 s)
+  attributes: Str 356, Dex 207, Int 111; life 1861, barrier 0, armour 823 (takes 65% of a plain blow), dodge 1%, block 0%, resist fire 0% frost 0% lightning 0%, regeneration 0.6 a second; walks 4.60 tiles a second
+  his quick attack's words: in front forking, swift; behind power2, fleeting. Worked out: 277343 damage a second into one, what he can stand 3484
+  talents: branded, hexchain, blazingarm, withering, pyre, souldebt, lastrites, hunger, terribleroar, bloodlust
+    mainhand: Pact Tome + forking, thunder, swift, piercing
+    offhand: Runed Focus + swift, twin, demolition, power
+    helm: War Helm + swift, twin, demolition, power
+    chest: War Plate + swift, twin, demolition, power
+    gloves: Studded Gloves + forking, thunder, swift, splitting
+    belt: Studded Belt + swift, twin, demolition, power
+    boots: War Greaves + swift, twin, demolition, power
+    amulet: Emerald Amulet + forking, swift, piercing, splitting
+    ring1: Ruby Ring + forking, thunder, piercing, swift
+    ring2: Ruby Ring + forking, power2, lightning2, swift
+  FLOOR 19: 204 of 204 monsters dead in 64.1 s (walking 47 s, fighting 18 s, 258 tiles walked; 0 out of reach)
+  FLOOR 19 x1000 TOUGH: 204 of 204 monsters dead in 409.5 s (walking 52 s, fighting 319 s, 315 tiles walked; 0 out of reach)
+DONE
+
+FLOOR 20's own monsters: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+the tank fight's foes: hshape (the floor's most common)
+
+=== WARLOCK: THE TANK ===
+  (his build chosen in 37 s; his points all in str)
+  attributes: Str 482, Dex 215, Int 91; life 2238, barrier 1905, armour 1171 (takes 73% of a plain blow), dodge 1%, block 0%, resist fire 75% frost 75% lightning 75%, regeneration 6.9 a second; walks 4.60 tiles a second
+  his quick attack's words: in front secondwind, twin; behind -, -. Worked out: 2045 damage a second into one, what he can stand 44043
+  talents: branded, withering, hexchain, terribleroar, bounddemon, pyre, hunger, feast, bloodlust, souldebt
+    mainhand: Pact Tome + swift, demolition, guarding, swift
+    offhand: Runed Focus + power2, eruption, rimeward, forking
+    helm: Mail Hood + power2, eruption, rimeward, chainreaction
+    chest: War Plate + power2, avalanche, guarding, leech
+    gloves: War Gauntlets + swift, thunder, guarding, swift
+    belt: War Belt + power2, eruption, guarding, swift
+    boots: War Greaves + power2, power, guarding, swift
+    amulet: Obsidian Amulet + swift, power, guarding, swift
+    ring1: Ruby Ring + swift, demolition, guarding, swift
+    ring2: Ruby Ring + swift, demolition, guarding, swift
+  STANDS among seven of floor 20's own (blows x15), fighting back: 4.3, 6.3, 6.5 s (middle 6.3 s)
+DONE
+
+FLOOR 20's own monsters: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+the tank fight's foes: hshape (the floor's most common)
+
+=== BRAWLER: THE CLEAR ===
+  (his build chosen in 40 s)
+  attributes: Str 364, Dex 131, Int 6; life 1885, barrier 0, armour 712 (takes 62% of a plain blow), dodge 1%, block 0%, resist fire 0% frost 0% lightning 0%, regeneration 0.6 a second; walks 4.60 tiles a second
+  his quick attack's words: in front fulgurite, twin; behind power2, fleeting. Worked out: 251116 damage a second into one, what he can stand 3377
+  talents: vstiffjab, vviperjab, vknockdown, vlauncher, vswitchkick, vlonglegs, vwallslam, vaftershock, vthunderknee, vfullset
+    mainhand: War Wraps + forking, thunder, swift, piercing
+    helm: War Helm + swift, twin, power, power
+    chest: War Plate + swift, twin, power, power
+    gloves: Studded Gloves + forking, thunder, swift, splitting
+    belt: Studded Belt + swift, twin, power, power
+    boots: War Greaves + swift, twin, power, power
+    amulet: Emerald Amulet + forking, swift, piercing, splitting
+    ring1: Ruby Ring + forking, thunder, piercing, splitting
+    ring2: Ruby Ring + forking, thunder, swift, piercing
+  FLOOR 19: 204 of 204 monsters dead in 81.9 s (walking 76 s, fighting 6 s, 314 tiles walked; 0 out of reach)
+  FLOOR 19 x1000 TOUGH: 204 of 204 monsters dead in 298.8 s (walking 82 s, fighting 217 s, 760 tiles walked; 0 out of reach)
+DONE
+
+FLOOR 20's own monsters: hshape 229, moth (boss) 20124, order 312, rshade (elite) 688, rshade 275, rshadow (elite) 2754, rshadow 551
+the tank fight's foes: hshape (the floor's most common)
+
+=== BRAWLER: THE TANK ===
+  (his build chosen in 40 s; his points all in str)
+  attributes: Str 455, Dex 159, Int 106; life 2157, barrier 1767, armour 1005 (takes 70% of a plain blow), dodge 1%, block 0%, resist fire 75% frost 75% lightning 75%, regeneration 13.2 a second; walks 4.60 tiles a second
+  his quick attack's words: in front secondwind, twin; behind -, -. Worked out: 1222 damage a second into one, what he can stand 31282
+  talents: vguardup, vhangtime, vstiffjab, vknockdown, vwallslam, vlauncher, vaftershock, vthunderknee, vlonglegs, vswitchkick
+    mainhand: War Wraps + swift, demolition, guarding, swift
+    helm: Mail Hood + power2, eruption, rimeward, forking
+    chest: War Plate + power2, eruption, rimeward, chainreaction
+    gloves: War Gauntlets + swift, avalanche, guarding, forking
+    belt: War Belt + power2, eruption, guarding, leech
+    boots: War Greaves + power2, power, guarding, leech
+    amulet: Obsidian Amulet + swift, demolition, guarding, swift
+    ring1: Ruby Ring + swift, demolition, guarding, swift
+    ring2: Ruby Ring + swift, demolition, guarding, swift
+  STANDS among seven of floor 20's own (blows x15), fighting back: 14.3, 16.0, 20.2 s (middle 16.0 s)
+DONE
