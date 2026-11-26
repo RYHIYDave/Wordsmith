@@ -162,19 +162,48 @@ const HIP_H = B.ankle + B.shank + B.thigh;
 /** Sat down hard: the pelvis just off the floor, leaning back, the knees up, the feet out before them on their heels. */
 const SIT_FEET = { L: plantBy(L0, 9, 1.0, 6, { on: 'heel', pitch: -24 }), R: plantBy(R0, 7, -1.0, -6, { on: 'heel', pitch: -24 }) };
 /** Their arms flung out on the floor where their body puts them: each hand `back` behind its shoulder and `out` to its side, on the floor. */
-function flung(body: P, back: number, out: number, z = 2.4): P {
+function flung(body: P, back: number, out: number, z = 2.4, flat = false): P {
   const s = solve(B, { ...R, ...body, lhIn: 0, rhIn: 0 } as Posed);
   const at = (sh: V3, side: number): V3 => [sh[0] - back, sh[1] + side * out, z];
   const Lh = at(s.shoulderL, 1);
   const Rh = at(s.shoulderR, -1);
   const q = { ...R, ...body, lhIn: 2, lhx: Lh[0], lhy: Lh[1], lhz: Lh[2], rhIn: 2, rhx: Rh[0], rhy: Rh[1], rhz: Rh[2] } as Posed;
-  const le = elbowFor(B, q, true, norm([-0.3, 1, 0.3]));
-  const re = elbowFor(B, { ...q, le } as Posed, false, norm([-0.3, -1, 0.3]));
+  // (`flat`: the elbows down on the floor beside the body, not stood up in the air: the owner, 26 Nov 2026, of their death:
+  // “The elbows shouldn’t flare out like that”)
+  const le = elbowFor(B, q, true, flat ? norm([0, 0.5, -0.85]) : norm([-0.3, 1, 0.3]));
+  const re = elbowFor(B, { ...q, le } as Posed, false, flat ? norm([0, -0.5, -0.85]) : norm([-0.3, -1, 0.3]));
   return { ...body, lhIn: 2, lhx: Lh[0], lhy: Lh[1], lhz: Lh[2], rhIn: 2, rhx: Rh[0], rhy: Rh[1], rhz: Rh[2], le, re };
 }
 const SAT: P = { px: -6, pz: -HIP_H + 6.2, pitch: -22, bend: -6, yaw: 2, roll: 2, twist: 0, side: 0, faceUp: 14, faceTilt: 6, faceTurn: -6, lk: 12, rk: -12, lhIn: 0, lhx: 6, lhy: 4, lhz: -12, le: -16, rhIn: 1, rhx: -2, rhy: -8, rhz: -16, re: 20, out: 1 };
 /** Lying on their back, the knees still up, the feet where they sat; the face to the sky, the arms flung out on the floor. */
 const LYING: P = flung({ px: -8, pz: -HIP_H + 7.4, pitch: -84, bend: -4, yaw: 4, roll: 3, twist: 0, side: 1, faceUp: 72, faceTilt: 10, faceTurn: -18, lk: 14, rk: -14, out: 1 }, -2, 12, 2.8);
+/**
+ * THEIR DEATH WITH THE ARMS KEPT IN (behind ENEMIES8, art/enemies8.ts: the owner, 26 Nov 2026: “the death animation for the
+ * scribe is bad.  The elbows shouldn’t flare out like that”): as the mask splits the hands fly up to it, clutching at the
+ * halves; as they sink and sit down hard the arms drop to their sides, the hands on the floor by the hips; and they lie with
+ * the arms along the body, the elbows down on the floor.
+ */
+function scribeDyingKept(): Motion {
+  const SAT2: P = { ...SAT, lhIn: 0, lhx: 1.5, lhy: 3.2, lhz: -12.5, le: -4, rhIn: 0, rhx: 1.5, rhy: -3.2, rhz: -12.5, re: 4 };
+  const LYING2: P = flung({ px: -8, pz: -HIP_H + 7.4, pitch: -84, bend: -4, yaw: 4, roll: 3, twist: 0, side: 1, faceUp: 72, faceTilt: 10, faceTurn: -18, lk: 14, rk: -14, out: 1 }, 4, 3.5, 2.4, true);
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.07, pose: { px: -2.0, pz: R.pz + 0.3, pitch: -4, bend: -6, faceUp: R.faceUp + 26, out: 0.15 }, ease: 'out' },
+      // the mask splitting: the head thrown back, the hands flying up to the face, the ledger bursting open
+      { at: SC_DIES.mask, pose: { px: -2.6, pz: R.pz + 0.8, pitch: -10, bend: -14, faceUp: 32, faceTilt: 4, faceTurn: -10, lhIn: 1, lhx: 5, lhy: -1.6, lhz: 5, rhIn: 1, rhx: 5, rhy: 1.6, rhz: 6, out: 0.5 }, ease: 'out' },
+      { at: 0.56, pose: { px: -3.0, pz: R.pz - 1.0, pitch: -12, bend: -12, faceUp: 26, faceTilt: 8, faceTurn: -8, lhIn: 1, lhx: 4.5, lhy: -1.2, lhz: 3, rhIn: 1, rhx: 4.5, rhy: 1.2, rhz: 4, lk: 8, rk: -8, out: 0.9 }, ease: 'io' },
+      // the knees buckle: down hard onto the floor, sat, leaning back, the arms dropping to their sides
+      { at: 0.8, pose: { px: -4.6, pz: -HIP_H * 0.45, pitch: -12, bend: -8, faceUp: 18, lk: 12, rk: -12, lhIn: 0, lhx: 2.5, lhy: 2.6, lhz: -13, le: -4, rhIn: 0, rhx: 2.5, rhy: -2.6, rhz: -13, re: 4, out: 1 }, ease: 'in' },
+      { at: SC_DIES.sit, pose: SAT2, ease: 'out' },
+      { at: 1.2, pose: { ...SAT2, pitch: -30, bend: -10, faceUp: 22 }, ease: 'io' },
+      // and topple back to lie on the floor, the face to the sky, the arms along the body
+      { at: 1.42, pose: flung({ ...SAT, px: -7, pz: -HIP_H + 6.0, pitch: -62, bend: -8, faceUp: 50, lk: 14, rk: -14 }, 4, 3.5, 3.6, true), ease: 'in' },
+      { at: SC_DIES.down, pose: LYING2, ease: 'out' },
+      { at: SC_DIES.long, pose: LYING2, ease: 'io' },
+    ],
+  };
+}
 function scribeDying(): Motion {
   return {
     keys: [
@@ -247,7 +276,7 @@ export const SCRIBE = scribeMob();
  * THE SCRIBE MADE LIVELIER (art/enemies8.ts, behind ENEMIES8): real steps under the robe, each foot lifting the hem twice as
  * high, the body rocking from side to side and dipping onto each step, the masked head swaying with it, the ledger held to it.
  */
-export const SCRIBE8: Mob = { ...SCRIBE, walk: { ...SCRIBE.walk, motion: scribeGlide(2.2) } };
+export const SCRIBE8: Mob = { ...SCRIBE, walk: { ...SCRIBE.walk, motion: scribeGlide(3.2) }, dying: { ...SCRIBE.dying, motion: scribeDyingKept() } };
 export const SCRIBES_ALL: readonly Mob[] = [SCRIBE];
 export function makeScribeArt3(mob: Mob = ENEMIES8.on ? SCRIBE8 : SCRIBE, pace = mob.pace): ActorArt {
   return { front: mobSet(mob, 'front', pace), back: mobSet(mob, 'back', pace) };

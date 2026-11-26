@@ -211,7 +211,7 @@ function standPose(t: number): SwanPose {
   const glance = bump(t % SWAN_STAND.period, SWAN_HABITS.glance[0], SWAN_HABITS.glance[1]);
   const hiss = bump(t % SWAN_STAND.period, SWAN_HABITS.hiss[0], SWAN_HABITS.hiss[1]);
   // (livelier, behind ENEMIES8: art/enemies8.ts: it breathes deeper, its wings ruffle more, its head weaves, its tail wags)
-  const L = ENEMIES8.on ? 1 : 0;
+  const L = ENEMIES8.on ? 1.8 : 0;
   return {
     ...REST,
     z: (0.3 + 0.3 * L) * Math.sin(ph),
@@ -241,7 +241,7 @@ function walkPose(t: number): SwanPose {
   };
   // (livelier, behind ENEMIES8: art/enemies8.ts: its head pumps forward with each step as a goose's does, its raised wings
   // beat a little, it bounces harder onto each foot, its feet come up higher and its tail wags wider)
-  const L = ENEMIES8.on ? 1 : 0;
+  const L = ENEMIES8.on ? 1.8 : 0;
   const rock = Math.sin(ph * TAU);
   const pump = Math.sin(ph * TAU * 2);
   return {

@@ -28,13 +28,13 @@ export const CULT_IDLE: Partial<Pose>[] = Array.from({ length: 12 }, (_, i) => {
   const a = (i / 12) * TAU;
   return {
     wind: i / 12,
-    bob: Math.sin(a) > 0.25 ? 1 : 0,
-    lean: Math.round(Math.sin(a + 0.6) * 1.2),
-    swing: 0.6 * Math.sin(a - 0.5),
-    hx: Math.round(Math.sin(a * 2) * 0.8),
-    hy: Math.round(Math.sin(a) * 1.4),
-    act: 1 + 0.22 * Math.sin(a * 3),
-    off: 0.15 * Math.sin(a),
+    bob: Math.sin(a) > 0.5 ? 2 : Math.sin(a) > -0.3 ? 1 : 0,
+    lean: Math.round(Math.sin(a + 0.6) * 2.2),
+    swing: 1.1 * Math.sin(a - 0.5),
+    hx: Math.round(Math.sin(a * 2) * 1.4),
+    hy: Math.round(Math.sin(a) * 2.4),
+    act: 1 + 0.4 * Math.sin(a * 3),
+    off: 0.3 * Math.sin(a),
     drag: 0.3,
   };
 });
@@ -46,19 +46,19 @@ export const CULT_IDLE: Partial<Pose>[] = Array.from({ length: 12 }, (_, i) => {
  */
 export const CULT_WALK: Partial<Pose>[] = Array.from({ length: 8 }, (_, i) => {
   const a = (i / 8) * TAU;
-  const BOB = [2, 1, 0, 1, 2, 1, 0, 1];
-  const LEAN = [1, 1, 2, 2, 1, 1, 2, 2];
+  const BOB = [3, 1, 0, 1, 3, 1, 0, 1];
+  const LEAN = [1, 2, 3, 2, 1, 2, 3, 2];
   return {
-    near: -Math.cos(a) * 1.5,
-    nearLift: Math.max(0, Math.sin(a)) * 1.2,
-    far: Math.cos(a) * 1.5,
-    farLift: Math.max(0, -Math.sin(a)) * 1.2,
+    near: -Math.cos(a) * 2.3,
+    nearLift: Math.max(0, Math.sin(a)) * 1.9,
+    far: Math.cos(a) * 2.3,
+    farLift: Math.max(0, -Math.sin(a)) * 1.9,
     bob: BOB[i],
     lean: LEAN[i],
-    swing: Math.cos(a) * 2,
-    hx: Math.round(-Math.cos(a) * 1.2),
+    swing: Math.cos(a) * 3.2,
+    hx: Math.round(-Math.cos(a) * 2),
     hy: BOB[i] - 1,
-    off: -0.4 * Math.cos(a),
+    off: -0.7 * Math.cos(a),
     wind: ((i / 8) * 2) % 1,
     drag: 1.7,
   };
@@ -73,12 +73,12 @@ export const PRIEST_IDLE: Partial<Pose>[] = Array.from({ length: 12 }, (_, i) =>
   return {
     wind: i / 12,
     bob: Math.sin(a) > 0.25 ? 1 : 0,
-    lean: Math.round(Math.sin(a + 0.6) * 0.7),
-    swing: 0.4 * Math.sin(a - 0.5),
-    hy: Math.round(Math.sin(a) * 1.0),
-    act: 1 + 0.15 * Math.sin(a * 2),
+    lean: Math.round(Math.sin(a + 0.6) * 1.4),
+    swing: 0.8 * Math.sin(a - 0.5),
+    hy: Math.round(Math.sin(a) * 1.8),
+    act: 1 + 0.3 * Math.sin(a * 2),
     ohy: -1.5,
-    gale: 16 * Math.sin(a),
+    gale: 28 * Math.sin(a),
     drag: 0.3,
   };
 });
@@ -91,16 +91,16 @@ export const PRIEST_IDLE: Partial<Pose>[] = Array.from({ length: 12 }, (_, i) =>
 export const PRIEST_WALK: Partial<Pose>[] = Array.from({ length: 8 }, (_, i) => {
   const a = (i / 8) * TAU;
   return {
-    near: -Math.cos(a) * 1.0,
-    nearLift: Math.max(0, Math.sin(a)) * 0.7,
-    far: Math.cos(a) * 1.0,
-    farLift: Math.max(0, -Math.sin(a)) * 0.7,
-    bob: i % 4 === 0 ? 1 : 0,
-    lean: Math.round(Math.sin(a) * 0.8),
-    swing: Math.cos(a) * 1.1,
+    near: -Math.cos(a) * 1.7,
+    nearLift: Math.max(0, Math.sin(a)) * 1.2,
+    far: Math.cos(a) * 1.7,
+    farLift: Math.max(0, -Math.sin(a)) * 1.2,
+    bob: i % 4 === 0 ? 2 : i % 2 ? 1 : 0,
+    lean: Math.round(Math.sin(a) * 1.5),
+    swing: Math.cos(a) * 2,
     wind: ((i / 8) * 2) % 1,
     drag: 0.8,
     ohy: -1.5,
-    gale: 34 * Math.sin(a - 0.9),
+    gale: 44 * Math.sin(a - 0.9),
   };
 });

@@ -1265,12 +1265,12 @@ function shadeHover8(): Motion {
       at: i / 10,
       ease: 'lin',
       pose: {
-        px: 0.4 * Math.sin(a + 1), pz: R.pz + 1.4 + 1.8 * Math.sin(a),
-        roll: 3 * Math.sin(a + 0.5), side: -Math.sin(a + 0.5), pitch: R.pitch - 1.5 * Math.cos(a), bend: R.bend + 2 * Math.sin(a + 1.2),
-        faceUp: -2 + 3 * Math.sin(a + 0.3), faceTilt: 4 + 4 * Math.sin(a + 2), faceTurn: 7 * Math.sin(a - 0.4),
-        lhIn: 0, lhx: R.lhx + 1.6 * Math.sin(a + 0.9), lhy: R.lhy, lhz: R.lhz + 1.8 * Math.sin(a + 1.6), le: R.le,
-        rhIn: 0, rhx: R.rhx + 1.6 * Math.sin(a + 0.9 + Math.PI), rhy: R.rhy, rhz: R.rhz + 1.8 * Math.sin(a + 1.6 + Math.PI), re: R.re,
-        draw: 0.4 + 0.28 * Math.sin(a * 2),
+        px: 0.8 * Math.sin(a + 1), pz: R.pz + 2.4 + 3.2 * Math.sin(a),
+        roll: 5.5 * Math.sin(a + 0.5), side: -1.8 * Math.sin(a + 0.5), pitch: R.pitch - 3 * Math.cos(a), bend: R.bend + 3.5 * Math.sin(a + 1.2),
+        faceUp: -2 + 5 * Math.sin(a + 0.3), faceTilt: 4 + 7 * Math.sin(a + 2), faceTurn: 14 * Math.sin(a - 0.4),
+        lhIn: 0, lhx: R.lhx + 3 * Math.sin(a + 0.9), lhy: R.lhy + 1.2 * Math.sin(a), lhz: R.lhz + 3.2 * Math.sin(a + 1.6), le: R.le,
+        rhIn: 0, rhx: R.rhx + 3 * Math.sin(a + 0.9 + Math.PI), rhy: R.rhy - 1.2 * Math.sin(a), rhz: R.rhz + 3.2 * Math.sin(a + 1.6 + Math.PI), re: R.re,
+        draw: 0.4 + 0.4 * Math.sin(a * 2),
       },
     });
   }
@@ -1291,10 +1291,10 @@ function shadeGlide8(): Motion {
       at: i / SHADE_WALK_FPS,
       ease: 'lin',
       pose: {
-        px: 1.0, pz: R.pz + 1.4 + 2.0 * Math.sin(a), yaw: -4 + 3 * Math.sin(a + 0.6), pitch: 17 + 3 * Math.sin(a + 1.2), bend: 13 + 2 * Math.sin(a + 0.6), roll: 3.5 * Math.sin(a), twist: 2, side: 0,
-        faceUp: 9 + 3 * Math.sin(a + 1.6), faceTilt: 3 * Math.sin(a + 0.4), faceTurn: 0,
-        lhIn: 0, lhx: -5.0 + 1.6 * Math.sin(a + 0.8), lhy: 5.4, lhz: -12.0 + 1.3 * Math.cos(a + 0.8), le: -20,
-        rhIn: 0, rhx: -4.6 + 1.6 * Math.sin(a + 0.8 + Math.PI), rhy: -5.6, rhz: -12.0 + 1.3 * Math.cos(a + 0.8 + Math.PI), re: -20,
+        px: 1.4, pz: R.pz + 2.4 + 3.4 * Math.sin(a), yaw: -4 + 6 * Math.sin(a + 0.6), pitch: 21 + 6 * Math.sin(a + 1.2), bend: 15 + 4 * Math.sin(a + 0.6), roll: 7 * Math.sin(a), twist: 2, side: 0,
+        faceUp: 12 + 5 * Math.sin(a + 1.6), faceTilt: 5 * Math.sin(a + 0.4), faceTurn: 0,
+        lhIn: 0, lhx: -6.0 + 3 * Math.sin(a + 0.8), lhy: 5.8, lhz: -11.0 + 2.6 * Math.cos(a + 0.8), le: -20,
+        rhIn: 0, rhx: -5.6 + 3 * Math.sin(a + 0.8 + Math.PI), rhy: -6.0, rhz: -11.0 + 2.6 * Math.cos(a + 0.8 + Math.PI), re: -20,
         draw: 0.3 + 0.12 * Math.sin(a * 2),
       },
     });
@@ -1307,7 +1307,7 @@ export const SHADE8: Mob = {
   ...SHADE,
   stand: { name: 'The Shade hovers', motion: shadeHover8(), rest: SH_REST },
   walk: { ...SHADE.walk, name: 'The Shade glides', motion: shadeGlide8() },
-  bits: (st, m) => shadeBits(st, m, 0, 1, 1.9),
+  bits: (st, m) => shadeBits(st, m, 0, 1, 2.8),
 };
 
 /** Its wisps and motes as it comes apart: each born at its own moment somewhere on it, drifting up and away. */
@@ -3535,7 +3535,7 @@ function mkStill(): Motion {
  */
 function mkStill8(): Motion {
   const R = MK_BASE;
-  const at = (faceTurn: number, breath: number, more: P = {}): P => mkRest({ faceTurn, pz: R.pz + 0.5 * breath, pitch: R.pitch - 1.0 * breath, roll: R.roll + 0.8 * breath, side: R.side - 0.5 * breath, ...more });
+  const at = (faceTurn: number, breath: number, more: P = {}): P => mkRest({ faceTurn, pz: R.pz + 0.9 * breath, pitch: R.pitch - 2.0 * breath, roll: R.roll + 1.6 * breath, side: R.side - 1.0 * breath, ...more });
   return {
     loop: 0,
     keys: [
@@ -3826,7 +3826,7 @@ export const MARKSMAN: Mob = {
 export const MARKSMAN8: Mob = {
   ...MARKSMAN,
   stand: { ...MARKSMAN.stand, motion: mkStill8() },
-  walk: { ...MARKSMAN.walk, motion: mkStalk(1.7) },
+  walk: { ...MARKSMAN.walk, motion: mkStalk(2.5) },
 };
 
 /** THE BONE MARKSMAN, as the game holds a monster (see makeShadeArt3). */
