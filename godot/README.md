@@ -1563,6 +1563,14 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   (`node tools/godot_record.mjs 9`, `7 --suffix v2`, `10 --suffix v2` on pages built afresh; each the same level as its layout).
   Checks: `--only=altarrooms`; `--only=holdfronts` (`check_hold_fronts.gd`: each story stronghold on 7, 9 and 10 pictured from
   its yard).
+- **The weakest melds brought up to the art rules** (the art chat's `art/meld-rules-check-all`, his “Bring them in
+  (Recommended)”; his ask, 26 Nov 2026: “I’d like you to look at all our melds and find which are weakest compared to our art and
+  animation ruleset.  Then bring them up to our standard”). The 30 weakest (the city's melds that slow, curse or hold) and 14 more
+  painted again; 26 melds whose own moment never played on a monster that carried one now have it. Read first:
+  `docs/mockups/meld_rules_check2/README.md`. AND, STUNS BEING RARE, the melds that work on the stunned work on the staggered too
+  (`monster.gd held_still`; his “Work on staggers too (Recommended)”): Standstill, Anchor, Gravity, Burden, Charge, Mire, Anvil,
+  Pressure Point, Daze and Marrow; Standstill's, Anchor's and Gravity's longer stun a longer stagger, never a stun. Checks:
+  `--only=words --cases=m52:<ids>` (the 80 touched: 152 of 154, the two left being Standstill's and Anchor's, then these ten 20 of 20).
 - **The Hannar Manor Games splash** (`scripts/splash.gd`, `main.gd` SPLASH; the art chat's; his ask, 26 Nov 2026: “I’d like a title
   splash screen before the wordsmith title screen.  I’d like it to fade up from black.”, his pick “White”): the film
   (`assets/splash/hannar_manor_splash.ogv`, 6.6 s) over black as the game begins, the game held still behind it, a tap skipping it,
