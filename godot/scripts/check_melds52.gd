@@ -441,7 +441,8 @@ func film(only := "") -> void:
 	M52.HIGH_ON = true
 	# (`redo`: ALL MELDS, THE LEAST EXCITING REDONE, every round's; `redo:round=1`, one round's: their new moments with them)
 	var was_redo: bool = M52.REDO_ON
-	if only.begins_with("redo"):
+	# (`redo` or `redo:...`, not a word that begins so: Redoubt)
+	if only == "redo" or only.begins_with("redo:"):
 		M52.REDO_ON = true
 		var rounds: Array = T.get("redoRounds", [])
 		var span := only.trim_prefix("redo").trim_prefix(":")

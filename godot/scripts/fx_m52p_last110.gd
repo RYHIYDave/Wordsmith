@@ -357,10 +357,13 @@ func paint_floor(b: Dictionary) -> void:
 				_shard(cx + cos(a) * rr, cy + sin(a) * rr * 0.5, 4.0, lift, [DUST[0], DUST[1], R[1], R[2], R[3], R[4]], sd + k, fade)
 			_front(b["x"], b["y"], 0.3 + 0.6 * _ease(u), [R[1], R[2], R[3], R[4], R[5]], sd, 0.8 * fade, "shock")
 		"redoubt:inner", "sanctuary:ward", "aegis:wide", "minefield:ward", "riposte:ward", "shieldwall:ward", "carapace:ward", "shieldwall:pulse":
+			# (its own edge rising round it as it is laid, a front going out under it: not a plain ring, How art is made 9; his
+			# “Give the 7 shields their own rings (Recommended)”, 27 Nov 2026)
 			var rr: float = float(b["r"]) * (0.4 + 0.6 * _ease(u))
-			_ga(0.8 * fade)
-			_fs(R[4])
-			_ring(b["x"], b["y"], rr)
+			var eid: String = "redoubt_in" if b["what"] == "inner" else str(b["id"])
+			_shell_edge(eid, _wx(b["x"], b["y"]), _wy(b["x"], b["y"]), rr, bt, sd, 0.95 * fade, R, _ease(_c01(u * 1.6)))
+			_front(b["x"], b["y"], rr, [R[1], R[2], R[3], R[4], R[5]], sd, 0.55 * fade * (1.0 - _ease(_c01(u * 2.0))),
+				"shock" if eid in ["redoubt", "redoubt_in", "shieldwall"] else "sound")
 		"reverb:ring", "reverb:foe":
 			# (the blow ringing out again and again: broken sound-waves going out, each fainter)
 			for k in 3:
@@ -1047,6 +1050,200 @@ func paint_air(b: Dictionary) -> void:
 	_ga(1.0)
 
 
+## THE SHELLS' EDGES: each ward circle drawn as its own edge standing round it, not a plain ring (How art is made 9; his “Give
+## the 7 shields their own rings (Recommended)”, 27 Nov 2026). (cx, cy) its middle on the screen, `r` in tiles, `t` the time,
+## `rise` how far up it has come as it is laid (0 to 1).
+##   redoubt     a wall of battlements; redoubt_in, the inner wall, brighter
+##   sanctuary   a ring of candles of its light, lit one after another, flickering
+##   aegis       interlocking hex plates, a shimmer running round them
+##   minefield   a fuse round it, a spark running along it, burnt behind
+##   riposte     crossed blades standing round it, glinting in turn
+##   shieldwall  round shields standing rim to rim, each with its boss
+##   carapace    overlapping shell plates, lit on their tops
+func _shell_edge(id: String, cx: float, cy: float, r: float, t: float, sd: int, a: float, R: PackedColorArray, rise := 1.0) -> void:
+	var rx := r * 22.6
+	var ry := r * 11.3
+	var around := TAU * sqrt((rx * rx + ry * ry) * 0.5)
+	if a <= 0.0 or rx < 2.0:
+		return
+	match id:
+		"redoubt", "redoubt_in":
+			var n := maxi(12, int(around / 4.0))
+			var inner := id == "redoubt_in"
+			for i in n:
+				var an := float(i) / n * TAU
+				var px := _ri(cx + cos(an) * rx)
+				var py := _ri(cy + sin(an) * ry)
+				var hh := (4.0 if i % 2 == 0 else 2.0) * rise
+				_ga(a)
+				_fs(R[1])
+				_fill(px - 2, py - _ri(hh), 4, _ri(hh) + 1)
+				_fs(R[3])
+				_fill(px - 2, py - _ri(hh) + 1, 1, maxi(1, _ri(hh) - 1))
+				_fs(R[5] if inner else R[4])
+				_fill(px - 2, py - _ri(hh), 4, 1)
+			_glow(cx, cy, rx, R[3], (0.3 if inner else 0.2) * a)
+		"sanctuary":
+			var n := maxi(8, int(around / 14.0))
+			for i in n:
+				var an := float(i) / n * TAU + 0.2
+				var px := _ri(cx + cos(an) * rx)
+				var py := _ri(cy + sin(an) * ry)
+				var lit := _c01(rise * float(n) * 1.2 - float(i))
+				var fl := sin(t * 9.0 + float(i) * 1.7) * 0.5 + 0.5
+				# (a short candle, its wax in shadow, so that its flame is what shines)
+				_ga(a)
+				_fs(R[0])
+				_fill(px - 2, py - 4, 4, 5)
+				_fs(R[2])
+				_fill(px - 1, py - 4, 2, 4)
+				_fs(R[3])
+				_fill(px - 1, py - 4, 1, 3)
+				if lit > 0.0:
+					_ga(a * lit)
+					_fs(R[4])
+					_fill(px - 2, py - 8, 4, 4)
+					_fs(R[5])
+					_fill(px - 1 + (1 if fl > 0.5 else 0), py - 10, 2, 5)
+					_fs(Color.WHITE)
+					_fill(px, py - 8 - (1 if fl > 0.5 else 0), 1, 3)
+					_glow(px, py - 7, 12.0, R[4], 0.9 * a * lit)
+					_glow(px, py - 7, 5.0, R[5], 0.8 * a * lit)
+		"aegis":
+			var n := maxi(10, int(around / 8.0))
+			var run := fmod(t * 0.5, 1.0)
+			for i in n:
+				var an := float(i) / n * TAU
+				if float(i) / n > rise:
+					continue
+				var px := cx + cos(an) * rx
+				var py := cy + sin(an) * ry
+				var near := absf(fmod(float(i) / n - run + 1.5, 1.0) - 0.5)
+				var shine := 1.0 - _c01(near / 0.06)
+				for k in 6:
+					var a0 := float(k) / 6.0 * TAU
+					var a1 := float(k + 1) / 6.0 * TAU
+					_ga(a)
+					_fs(R[1])
+					_line(px + cos(a0) * 4.5, py - 2.0 + sin(a0) * 3.0, px + cos(a1) * 4.5, py - 2.0 + sin(a1) * 3.0, 2)
+					_fs(Color.WHITE if shine > 0.3 else R[5])
+					_line(px + cos(a0) * 4.5, py - 3.0 + sin(a0) * 3.0, px + cos(a1) * 4.5, py - 3.0 + sin(a1) * 3.0, 1)
+				_ga(a * 0.7)
+				_fs(R[3])
+				_fill(_ri(px) - 2, _ri(py) - 4, 4, 2)
+				_fs(R[5])
+				_fill(_ri(px) - 1, _ri(py) - 4, 1, 1)
+				if shine > 0.3:
+					_glow(px, py - 3.0, 8.0, R[5], 0.7 * a * shine)
+			_glow(cx, cy, rx, R[3], 0.2 * a)
+		"minefield":
+			var n := maxi(24, int(around / 3.0))
+			var head := fmod(t * 0.35, 1.0)
+			for i in n:
+				var f0 := float(i) / n
+				var an0 := f0 * TAU
+				var an1 := float(i + 1) / n * TAU
+				var w0 := 1.0 + 0.04 * sin(an0 * 9.0 + float(sd % 5))
+				var w1 := 1.0 + 0.04 * sin(an1 * 9.0 + float(sd % 5))
+				var behind := fmod(head - f0 + 1.0, 1.0)
+				var burnt := behind < 0.3
+				# (a twisted cord: dark under, its strands lit in turn; black and ashen where the spark has been)
+				_ga(a)
+				_fs(DUST[0] if burnt else R[0])
+				_line(cx + cos(an0) * rx * w0, cy + sin(an0) * ry * w0 + 1.0, cx + cos(an1) * rx * w1, cy + sin(an1) * ry * w1 + 1.0, 3)
+				_fs(DUST[1] if burnt else (R[4] if i % 2 == 0 else R[2]))
+				_line(cx + cos(an0) * rx * w0, cy + sin(an0) * ry * w0, cx + cos(an1) * rx * w1, cy + sin(an1) * ry * w1, 1)
+			var ha := head * TAU
+			var hx := cx + cos(ha) * rx * (1.0 + 0.04 * sin(ha * 9.0 + float(sd % 5)))
+			var hy := cy + sin(ha) * ry * (1.0 + 0.04 * sin(ha * 9.0 + float(sd % 5)))
+			_ga(a)
+			_fs(FIRE[3])
+			_fill(_ri(hx) - 2, _ri(hy) - 2, 5, 4)
+			_fs(FIRE[5])
+			_fill(_ri(hx) - 1, _ri(hy) - 2, 3, 3)
+			_fs(Color.WHITE)
+			_fill(_ri(hx), _ri(hy) - 2, 1, 2)
+			for k in 7:
+				var sa := _rh(sd + int(t * 20.0), k) * TAU
+				var sr := 2.0 + 6.0 * _rh(sd + int(t * 20.0), k + 4)
+				_fs(FIRE[5] if k % 2 == 0 else FIRE[3])
+				_fill(_ri(hx + cos(sa) * sr), _ri(hy - 2.0 + sin(sa) * sr * 0.6), 1, 1)
+			_glow(hx, hy, 16.0, FIRE[3], 0.9 * a)
+			_glow(hx, hy, 6.0, FIRE[5], 0.8 * a)
+		"riposte":
+			var n := maxi(6, int(around / 16.0))
+			for i in n:
+				var an := float(i) / n * TAU
+				var px := cx + cos(an) * rx
+				var py := cy + sin(an) * ry
+				var hh := 11.0 * rise
+				var glint := fmod(t * 1.2 + float(i) / n, 1.0) < 0.1
+				_ga(a)
+				_fs(R[0])
+				_line(px - 4.0, py + 1.0, px + 4.0, py - hh + 1.0, 3)
+				_line(px + 4.0, py + 1.0, px - 4.0, py - hh + 1.0, 3)
+				_fs(R[4])
+				_line(px - 4.0, py, px + 4.0, py - hh, 1)
+				_line(px + 4.0, py, px - 4.0, py - hh, 1)
+				# (their hilts in the floor, a cross-guard on each)
+				_fs(R[2])
+				_fill(_ri(px - 5.0), _ri(py - 2.0), 3, 1)
+				_fill(_ri(px + 3.0), _ri(py - 2.0), 3, 1)
+				_fs(Color.WHITE if glint else R[5])
+				_fill(_ri(px + 4.0), _ri(py - hh), 1, 1)
+				_fill(_ri(px - 4.0), _ri(py - hh), 1, 1)
+				if glint:
+					_glow(px, py - hh, 5.0, R[5], 0.8 * a)
+		"shieldwall":
+			var n := maxi(10, int(around / 8.0))
+			for i in n:
+				var an := float(i) / n * TAU
+				# (a heater shield standing on its point: flat top, straight sides, tapering to the floor; a band down it and
+				# its rim lit along the top; not a ball)
+				var px := _ri(cx + cos(an) * rx)
+				var py := _ri(cy + sin(an) * ry - 2.0 * rise)
+				var top := py - _ri(9.0 * rise)
+				_ga(a)
+				var rows := [7, 7, 7, 7, 5, 5, 3, 1]
+				var hgt := py - top
+				for j in hgt:
+					var w: int = rows[mini(7, int(float(j) / maxf(1.0, float(hgt)) * 8.0))]
+					_fs(R[0])
+					_fill(px - (w + 1) / 2 - 1, top + j, w + 2, 1)
+					_fs(R[2] if j > hgt / 2 else R[3])
+					_fill(px - (w + 1) / 2, top + j, w, 1)
+				if hgt >= 3:
+					_fs(R[4])
+					_fill(px - 3, top, 7, 1)
+					_fs(R[5])
+					_fill(px, top + 1, 1, maxi(1, hgt - 3))
+					_fs(Color.WHITE)
+					_fill(px - 2, top, 2, 1)
+		"carapace":
+			var n := maxi(10, int(around / 5.0))
+			for i in n:
+				var an := float(i) / n * TAU
+				var px := _ri(cx + cos(an) * rx)
+				var py := _ri(cy + sin(an) * ry)
+				# (an arched plate like a beetle's, each lapping over the last: domed, a lit curve along its back, a dark seam)
+				var hh := 5.0 * rise
+				var widths := [3, 5, 7, 7, 7, 7]
+				_ga(a)
+				for j in 6:
+					var w: int = widths[j]
+					var yy := _ri(py - hh + float(j) * hh / 6.0)
+					_fs(R[0])
+					_fill(px - w / 2 - 1, yy, w + 2, 1)
+					_fs(R[3] if j < 2 else R[2])
+					_fill(px - w / 2, yy, w, 1)
+				_fs(R[5])
+				_fill(px - 1, _ri(py - hh), 2, 1)
+				_fs(R[4])
+				_fill(px - 3, _ri(py - hh) + 2, 1, 2)
+				_fill(px - 2, _ri(py - hh) + 1, 1, 1)
+			_glow(cx, cy, rx, R[3], 0.2 * a)
+
+
 ## Lifeline's heartbeat at (cx, cy), `s` times its first size: a pink trace with its spike, its bright head running along it as `u`
 ## goes 0 to 1, a glow behind it.
 func _heartbeat(cx: float, cy: float, s: float, u: float, R: PackedColorArray, fade: float) -> void:
@@ -1340,9 +1537,11 @@ func paint_floor_more() -> void:
 				_ga(0.7 * life * (pulse if id == "sanctuary" else 1.0))
 				_fs(R[4])
 				# (Parry's not a plain ring but its blades, standing on its edge: the second check of the weakest melds, 27 Nov 2026,
-				# How art is made 9)
+				# How art is made 9; and the seven others each an edge of its own, his “Give the 7 shields their own rings
+				# (Recommended)”, 27 Nov 2026: _shell_edge)
 				if id != "parry":
-					_ring(x, y, r)
+					_shell_edge("redoubt_in" if id == "redoubt" and z.get("inner", false) else id, cx, cy, r, t, sd,
+						0.85 * life * ((0.8 + 0.2 * pulse) if id == "sanctuary" else 1.0), R)
 				match id:
 					"parry":
 						var nb := 14
@@ -1368,21 +1567,11 @@ func paint_floor_more() -> void:
 							_fill(_ri(cx + cos(a) * d * 22.6) - 1, _ri(cy + sin(a) * d * 11.3) - 1, 3, 3)
 							_fs(FIRE[4] if on else R[4])
 							_fill(_ri(cx + cos(a) * d * 22.6), _ri(cy + sin(a) * d * 11.3), 1, 1)
-					"riposte":
-						for i in 8:
-							var a := float(i) / 8.0 * TAU
-							_ga(life)
-							_fs(R[5])
-							_line(cx + cos(a) * r * 22.6, cy + sin(a) * r * 11.3, cx + cos(a) * (r * 22.6 - 5.0), cy + sin(a) * (r * 11.3 - 2.5), 1)
 					"carapace":
 						if randf() < 0.2:
 							var a := randf() * TAU
 							bits.append({"x": x + cos(a) * r * 0.6, "y": y + sin(a) * r * 0.6, "z": 0.0, "vx": 0.0, "vy": 0.0, "vz": 14.0, "fall": 0.0, "t": 0.0,
 								"life": 0.8, "ramp": PackedColorArray([R[3], R[4], R[5]]), "kind": "dot", "size": 1.0})
-					"redoubt":
-						if z.get("inner", false):
-							_fs(R[5])
-							_ring(x, y, r * 0.98, 2, t)
 					"sanctuary":
 						if randf() < 0.15:
 							var a := randf() * TAU
