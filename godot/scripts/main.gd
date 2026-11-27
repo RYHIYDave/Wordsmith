@@ -900,6 +900,10 @@ func _ready() -> void:
 	if _arg("deftal") != "":
 		preload("res://scripts/talents.gd").DEFENCE_TALENTS = _arg("deftal") == "1"
 		preload("res://scripts/talents.gd").D = {}
+	# (THE WARLOCK'S BUILDS, heroes/warlock_builds.gd: `--wbuilds=1` on for a run, the trees made again)
+	if _arg("wbuilds") != "":
+		preload("res://scripts/heroes/warlock_builds.gd").on = _arg("wbuilds") == "1"
+		preload("res://scripts/talents.gd").D = {}
 	# (THE BRAWLER'S BUILDS, heroes/brawler3.gd: `--bbuilds=1` on for a run, his tree made again)
 	if _arg("bbuilds") != "":
 		preload("res://scripts/heroes/brawler3.gd").on = _arg("bbuilds") == "1"
@@ -3492,6 +3496,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (DEFENCE IN EVERY TREE: --only=deftal --deftal=1, check_deftal.gd)
 	if _arg("only") == "deftal":
 		await preload("res://scripts/check_deftal.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE WARLOCK'S BUILDS: --only=wbuilds --wbuilds=1, check_wbuilds.gd)
+	if _arg("only") == "wbuilds":
+		await preload("res://scripts/check_wbuilds.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (THE BRAWLER'S BUILDS: --only=bbuilds --bbuilds=1, check_bbuilds.gd)

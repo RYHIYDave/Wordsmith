@@ -49,6 +49,7 @@ static func ready_up() -> void:
 		_twigs()
 		_godot_tune()
 		_defence()
+		_wbuilds()
 
 
 ## DEFENCE IN EVERY TREE (his ask, 27 Nov 2026, 10:02: “Can you look at the classes we have, find the ones that don’t have any
@@ -124,6 +125,34 @@ static func def(id: String):
 
 ## DEFENCE IN EVERY TREE: its talents laid in, each a twig off its own path (as the attacks changed are: _twigs), and the
 ## Warrior's and the Brawler's cards worded for the three defences; while DEFENCE_TALENTS is on.
+## THE WARLOCK'S BUILDS (heroes/warlock_builds.gd, on): Embrace, Devour and Soul Link in his tree, and his tree laid out as a claw.
+const WB := preload("res://scripts/heroes/warlock_builds.gd")
+static func _wbuilds() -> void:
+	if not WB.on or not D["trees"].has("warlock"):
+		return
+	var tree: Dictionary = D["trees"]["warlock"]
+	var all: Array = tree["talents"]
+	var by := {}
+	for t in all:
+		by[t["id"]] = t
+	for id in WB.NODES:
+		var N: Dictionary = WB.NODES[id]
+		if by.has(id):
+			continue
+		var t := {"id": id, "name": N["name"], "text": N["text"], "word": null, "big": N["big"], "path": N["path"],
+			"at": (WB.AT[id] as Array).duplicate(), "from": (N["from"] as Array).duplicate(), "joined": (N["from"] as Array).duplicate(),
+			"mods": [], "remade": false, "pick": null, "works": true}
+		all.append(t)
+		by[id] = t
+		for f in N["from"]:
+			by[f]["joined"].append(id)
+	for id in WB.AT:
+		if by.has(id):
+			by[id]["at"] = (WB.AT[id] as Array).duplicate()
+	tree["room"] = WB.ROOM.duplicate()
+	tree["figures"] = WB.FIGURES.duplicate(true)
+
+
 static func _defence() -> void:
 	if not DEFENCE_TALENTS:
 		return
@@ -343,7 +372,8 @@ static func of(cls: String, id: String) -> Dictionary:
 
 
 static func ported(cls: String, id: String) -> bool:
-	return (PORTED.get(cls, []) as Array).has(id) or (cls == "brawler" and B2.on and (B2.FORK.has(id) or (B3.on and B3.NODES.has(id))))
+	return (PORTED.get(cls, []) as Array).has(id) or (cls == "brawler" and B2.on and (B2.FORK.has(id) or (B3.on and B3.NODES.has(id)))) \
+		or (cls == "warlock" and WB.on and WB.NODES.has(id))
 
 
 ## How many points a hero of `level` has had in all (talentPoints).
