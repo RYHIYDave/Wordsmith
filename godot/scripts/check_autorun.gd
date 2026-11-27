@@ -37,6 +37,27 @@ func run(main, hero, d: String) -> void:
 	if OS.has_environment("WS_AUTORUN_PROBE"):
 		await _probe(OS.get_environment("WS_AUTORUN_PROBE"))
 		return
+	# (ENDLESS, his word, 27 Nov 2026, after “run through the whole game, all 20 levels”: “And endless”: WS_AUTORUN_ENDLESS=N, the
+	# endless levels 1 to N one after another, as the game makes each (game.ts nextEndless: a floor at random, never the one just
+	# beaten, stronger each level), from the hero made ready for floor 20 (`--trial=20`))
+	if OS.has_environment("WS_AUTORUN_ENDLESS"):
+		var prev := 20
+		var e0 := int(OS.get_environment("WS_AUTORUN_ENDLESS_FROM")) if OS.has_environment("WS_AUTORUN_ENDLESS_FROM") else 1
+		for e in range(e0, int(OS.get_environment("WS_AUTORUN_ENDLESS")) + 1):
+			M.endless = e
+			M.endless_floor = M.endless_floor_for(e, prev)
+			M.in_endless = true
+			var ef: int = M.endless_floor
+			await M.go_to("floor%d" % ef, "down" if ef > 1 else "start")
+			await M._wait(2.0)
+			var r := await _play(ef, k)
+			var ok: bool = r["boss"] and r["stalls"] <= 3 and r["dead"] * 10 >= r["all"] * 8
+			if not ok:
+				n_bad += 1
+			print("AUTORUN %s endless %d (floor %d) %s: %d of %d monsters, boss %s, %d stalls, %.0f s" % [h.cls, e, ef, "OK" if ok else "LOOK", r["dead"], r["all"], "dead" if r["boss"] else "alive", r["stalls"], r["t"]])
+			prev = ef
+		print("AUTORUN %s: endless, %d to look at" % [h.cls, n_bad])
+		return
 	var last := int(OS.get_environment("WS_AUTORUN_TO")) if OS.has_environment("WS_AUTORUN_TO") else 5
 	for f in range(int(OS.get_environment("WS_AUTORUN_FROM")) if OS.has_environment("WS_AUTORUN_FROM") else 1, last + 1):
 		if M.place != "floor%d" % f:
