@@ -59,29 +59,15 @@ def cover() -> None:
     L = json.load(open('godot/assets/floor2/layout.json'))
     tw, th, tiles = L['w'], L['h'], L['tiles']
     cols = W // step
-    INF = 10 ** 9
-    far = [INF] * cols
-    for ty in range(th):
-        for tx in range(tw):
-            if tiles[ty * tw + tx] == 0:
-                continue
-            cx = (tx - ty) * 16
-            y0 = (tx + ty) * 8
-            for i in range(max(0, (cx - 16 - lx // 2) // GRAIN), min(cols, (cx + 16 - lx // 2) // GRAIN + 1)):
-                x = lx // 2 + (i + 0.5) * GRAIN
-                if abs(x - cx) <= 16:
-                    far[i] = min(far[i], int(y0 + abs(x - cx) * 0.5))
+    # (each tile's top as a line going on down both ways at the tiles' own slope, half a pixel to one across: the lowest of
+    # them is the far edge of all the prison's ground and of the ground round it, smooth past its ends, no step at a wing)
+    t = np.array(tiles).reshape(th, tw)
+    ty, tx = np.nonzero(t != 0)
+    cx = (tx - ty) * 16.0
+    y0 = (tx + ty) * 8.0
+    xs = lx // 2 + (np.arange(cols) + 0.5) * GRAIN
     UP = 60
-    have = [i for i in range(cols) if far[i] < INF]
-    i0, i1 = have[0], have[-1]
-    top = []
-    for i in range(cols):
-        if far[i] < INF:
-            top.append(far[i] - UP)
-        elif i < i0:
-            top.append(far[i0] - UP + (i0 - i) * GRAIN // 2)
-        else:
-            top.append(far[i1] - UP + (i - i1) * GRAIN // 2)
+    top = [int(np.min(y0 + np.abs(x - cx) * 0.5)) - UP for x in xs]
     json.dump({'x': lx // 2, 'y': ly // 2, 'grain': GRAIN, 'w': W // step, 'h': H // step, 'top': top}, open(LOOKS + 'floor2_cover.json', 'w'))
     print('cover', img.size, 'origin game px', lx // 2, ly // 2)
 
@@ -177,8 +163,13 @@ def ground() -> None:
     # repeats, two picture pixels to a game pixel)
     rng = random.Random(5)
     N = 64
-    base = np.array([18, 17, 30], float)
+    base = np.array([22, 21, 35], float)
     img = np.tile(base, (N, N, 1))
+    # (broad patches a shade apart, wrapping, so that it reads as earth and not as nothing)
+    yy, xx = np.mgrid[0:N, 0:N] / N * 2 * math.pi
+    patch = np.sin(xx * 2 + 0.7) * np.sin(yy * 3 + 1.9) + 0.6 * np.sin(xx * 5 + yy * 2 + 0.4)
+    img[patch > 0.55] = (25, 24, 39)
+    img[patch < -0.75] = (19, 18, 31)
     for _ in range(420):
         x = rng.randrange(N)
         y = rng.randrange(N)
