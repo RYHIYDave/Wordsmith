@@ -69,6 +69,9 @@ func _play(f: int, life_k: float) -> Dictionary:
 	var stranded := 0.0
 	var ldist := PackedInt32Array()
 	var spots := {}
+	var hit_life := INF
+	var hit_since := 0.0
+	var vain := 0
 	while t < CAP:
 		await M.get_tree().process_frame
 		var dt: float = M.get_process_delta_time()
@@ -146,6 +149,8 @@ func _play(f: int, life_k: float) -> Dictionary:
 			if pick != target:
 				best_d = INF
 				since = 0.0
+				hit_life = INF
+				hit_since = 0.0
 			target = pick
 			path = []
 			var tl2 := _tile_of(target.world)
@@ -178,6 +183,22 @@ func _play(f: int, life_k: float) -> Dictionary:
 			h.auto_attack = true
 			h.auto_whirl = true
 			since = 0.0
+			# (STRUCK AT IN VAIN: twelve seconds at it, in reach and in sight, and its life no less: pictured, let be for twenty)
+			if not (target is Spot):
+				if float(target.life) < hit_life - 0.01:
+					hit_life = float(target.life)
+					hit_since = 0.0
+				else:
+					hit_since += dt
+				if hit_since > 12.0:
+					stalls += 1
+					vain += 1
+					if vain <= 3:
+						M._snap(dir + "/vain_%s_f%d_%d.png" % [h.cls, f, vain])
+					print("AUTORUN   struck in vain on floor %d at %s at %s at %s (%.1f of %.1f)" % [f, h.world, target.def.get("name", "?") if target.get("def") is Dictionary else "?", target.world, target.life, target.max_life])
+					skip[target.get_instance_id()] = t + 20.0
+					target = null
+					hit_since = 0.0
 		else:
 			# (walking: his attacks let go, as a player's are, so that a held Whirlwind does not keep him spinning where he stands)
 			h.auto_attack = false
@@ -346,7 +367,7 @@ func _probe(spec: String) -> void:
 			if mid.distance_to(at) < 16.0:
 				print("PROBE door %s want %s at %s, room %s, word %s" % [d["kind"], d.get("want"), mid, d.get("room", "-"), d.get("word", d.get("need", "-"))])
 		for r in M.map.rooms:
-			if FloorMap.in_room(r, at):
+			if at.x >= r["x"] and at.y >= r["y"] and at.x < r["x"] + r["w"] and at.y < r["y"] + r["h"]:
 				print("PROBE in room %s: %s" % [r.get("id"), r])
 		var fl := _flood(_tile_of(h.world))
 		var dist: PackedInt32Array = fl[0]
