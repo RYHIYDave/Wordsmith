@@ -157,6 +157,10 @@ func _play(f: int, life_k: float) -> Dictionary:
 			var tl2 := _tile_of(target.world)
 			var at := -1
 			var at_d := 1 << 30
+			# (a thing to be taken or turned: its own tile, where he can be; a monster: any tile next to it, from which he strikes)
+			if target is Spot and dist[tl2.y * M.map.w + tl2.x] >= 0:
+				at = tl2.y * M.map.w + tl2.x
+				at_d = -1
 			for oy in range(-1, 2):
 				for ox in range(-1, 2):
 					var tx: int = tl2.x + ox
@@ -207,7 +211,8 @@ func _play(f: int, life_k: float) -> Dictionary:
 			while path.size() > 1 and h.world.distance_to(path[0]) < 0.6:
 				path.pop_front()
 			# (straight for it only where a body could walk the line: sight passes over a torch's tile, he does not)
-			var aim: Vector2 = target.world if see and _walkable_line(h.world, target.world) else (path[0] if not path.is_empty() else target.world)
+			# (on the last tile of the way: straight for it)
+			var aim: Vector2 = target.world if path.size() <= 1 or (see and _walkable_line(h.world, target.world)) else path[0]
 			for kk in range(mini(3, path.size()) - 1, 0, -1):
 				if _walkable_line(h.world, path[kk]):
 					aim = path[kk]
@@ -361,6 +366,32 @@ func _probe(spec: String) -> void:
 	await M.go_to("floor%d" % f, "down" if f > 1 else "stairs")
 	await M._wait(1.0)
 	h.unhurt = true
+	if a.size() > 5 and a[5] == "spot":
+		# (can a body stand within reach of a thing lying at (x, y)? every place within `tx` of it, a tenth of a tile apart)
+		var at := Vector2(float(a[1]), float(a[2]))
+		var mp = M.map
+		for ty in range(floori(at.y) - 2, floori(at.y) + 3):
+			var row := ""
+			for tx in range(floori(at.x) - 2, floori(at.x) + 3):
+				var i: int = ty * mp.w + tx
+				row += "%d,%d:%s/%s/%s " % [tx, ty, "W" if mp.walkable(tx, ty) else "-", mp.step[i] if not mp.step.is_empty() else ".", mp.cut[i] if i < mp.cut.size() else "."]
+			print("PROBE row %s" % row)
+		var near := float(a[3])
+		var fit := []
+		for k in range(-10, 11):
+			for j in range(-10, 11):
+				var q := at + Vector2(k, j) * 0.1
+				if q.distance_to(at) <= near and mp.fits(q.x, q.y, h.RADIUS):
+					fit.append(q)
+		print("PROBE places within %.2f where he fits: %d, e.g. %s" % [near, fit.size(), fit.slice(0, 6)])
+		var fl := _flood(_tile_of(h.world))
+		var dist: PackedInt32Array = fl[0]
+		var reached := 0
+		for q in fit:
+			if dist[floori(q.y) * mp.w + floori(q.x)] >= 0:
+				reached += 1
+		print("PROBE of those, on tiles reached from his arrival: %d" % reached)
+		return
 	if a.size() > 5 and a[5] == "doors":
 		var at := Vector2(float(a[1]), float(a[2]))
 		for d in M.map.doors:
