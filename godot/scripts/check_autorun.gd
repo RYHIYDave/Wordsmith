@@ -8,6 +8,18 @@
 extends "res://scripts/check_speed.gd"
 
 const CAP := 300.0
+
+
+## (a place he walks to that is no monster: a lever)
+class Spot:
+	var world: Vector2
+	var r := 0.3
+	var dead := false
+	var def := {"name": "lever"}
+	var prop: Dictionary
+	func _init(at: Vector2, p: Dictionary) -> void:
+		world = at
+		prop = p
 var n_bad := 0
 
 
@@ -51,6 +63,7 @@ func _play(f: int, life_k: float) -> Dictionary:
 	var since := 0.0
 	var stranded := 0.0
 	var ldist := PackedInt32Array()
+	var spots := {}
 	while t < CAP:
 		await M.get_tree().process_frame
 		var dt: float = M.get_process_delta_time()
@@ -91,6 +104,34 @@ func _play(f: int, life_k: float) -> Dictionary:
 				if dd < pick_d:
 					pick_d = dd
 					pick = m
+			if pick == null and unreached > 0:
+				# (all he can reach are dead: a lever he can reach, walked to, as a player pulls it to raise its gate)
+				var lv_d := 1 << 30
+				for p in M.map.props:
+					if p["kind"] != "lever" or int(p["state"]) != 0 or p.get("name", "") == "crank":
+						continue
+					var lt := Vector2i(floori(float(p["x"])), floori(float(p["y"])))
+					for oy in range(-1, 2):
+						for ox in range(-1, 2):
+							var tx: int = lt.x + ox
+							var ty: int = lt.y + oy
+							if tx < 0 or ty < 0 or tx >= M.map.w or ty >= M.map.h:
+								continue
+							var v: int = dist[ty * M.map.w + tx]
+							if v >= 0 and v < lv_d:
+								lv_d = v
+								if not spots.has(int(p["i"])):
+									spots[int(p["i"])] = Spot.new(Vector2(float(p["x"]), float(p["y"])), p)
+								pick = spots[int(p["i"])]
+				if pick != null:
+					pick_d = lv_d
+				elif stranded == 0.0:
+					var far: Array = []
+					for m in M._monsters.list:
+						if is_instance_valid(m) and not m.dead and far.size() < 6:
+							far.append("%s at %s" % [m.def.get("name", "?") if m.get("def") is Dictionary else "?", m.world])
+					print("AUTORUN   out of reach on floor %d, he at %s: %s" % [f, h.world, ", ".join(far)])
+					M._snap(dir + "/reach_%s_f%d.png" % [h.cls, f])
 			if pick == null:
 				if unreached == 0:
 					break
@@ -121,10 +162,14 @@ func _play(f: int, life_k: float) -> Dictionary:
 			while at >= 0:
 				path.push_front(Vector2(at % M.map.w + 0.5, at / M.map.w + 0.5))
 				at = came[at]
+		if target is Spot and int(target.prop["state"]) != 0:
+			print("AUTORUN   a lever pulled on floor %d at %s" % [f, target.world])
+			target.dead = true
+			continue
 		var to: Vector2 = target.world - h.world
 		var dlen: float = to.length()
 		var see: bool = M._monsters.sees(h.world, target.world)
-		if dlen <= reach + float(target.r) and see:
+		if dlen <= (0.4 if target is Spot else reach) + float(target.r) and see:
 			h.auto_dir = Vector2.ZERO
 			if to.length() > 0.01:
 				h._turn(to.normalized())
