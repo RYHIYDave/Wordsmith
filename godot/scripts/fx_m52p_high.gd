@@ -54,7 +54,7 @@ const SIGN := {"guillotine:blade": "guillotine", "tombstone:thud": "tomb", "gall
 	"fishhook:hook": "hook", "gaff:haul": "hook", "pitchfork:prong": "fork", "scissors:snip": "scissors", "fangs:bite": "fangs",
 	"impaler:stake": "stake", "witchpin:needle": "needle", "ghoul:maw": "maw", "macabre:dance": "dance", "thornshield:burst": "spikes",
 	"lastrites:rites": "rites", "lastrites:pass": "rites", "bastion:ward": "shieldon", "gravewarden:shade": "shieldon",
-	"bloodfeast:harden": "harden", "deadeye:eye": "eyeup",
+	"bloodfeast:harden": "harden", "deadeye:eye": "eyeup", "sundial:slow": "dial",
 	"spearwall:impale": "stake", "stinger:barb": "barb", "harrow:spikes": "spikes", "thornspray:root": "spikes", "lacerate:deeper": "cuts",
 	"wraithstep:image": "image", "undying:hand": "hand", "haunting:wail": "wail", "coup:slash": "cuts", "massacre:whirl": "whirl",
 	"deathwatch:watch": "hood", "deathwatch:shadow": "hood", "deathwatch:scythe": "scythe", "harvest:sweep": "scythe",
@@ -577,6 +577,8 @@ func _thing(sign: String, cx: float, cy: float, R: PackedColorArray, a: float, u
 			_tomb(cx, cy, R, a, u)
 		"noose":
 			_noose(cx, cy, R, a, u)
+		"dial":
+			_dial(cx, cy, R, a, u)
 		"hook":
 			_hook(cx, cy, R, a, u, b)
 		"fork":
@@ -689,9 +691,10 @@ func _guillotine(cx: float, cy: float, R: PackedColorArray, a: float, u: float) 
 ## A gravestone dropping onto it: its round top, the cross cut in it, and the dust it throws.
 func _tomb(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
 	var f := minf(1.0, u / 0.22)
-	var base := cy + 10.0 - (1.0 - f * f) * 30.0
-	var W := 12
-	var H := 16
+	# (bigger: the third check of the weakest melds, 27 Nov 2026, Animations 1)
+	var base := cy + 12.0 - (1.0 - f * f) * 40.0
+	var W := 18
+	var H := 24
 	_ga(a)
 	for row in H:
 		var half := W * 0.5
@@ -703,42 +706,95 @@ func _tomb(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> voi
 		_fill(_ri(cx - half), _ri(base - H + row), 1, 1)
 	# (the cross cut in it, glowing its meld's colour)
 	_fs(R[4])
-	_fill(_ri(cx), _ri(base - H) + 3, 1, 8)
-	_fill(_ri(cx) - 2, _ri(base - H) + 5, 5, 1)
-	_glow(cx, base - H * 0.5, 9.0, R[4], a * 0.5)
+	_fill(_ri(cx), _ri(base - H) + 4, 2, 12)
+	_fill(_ri(cx) - 3, _ri(base - H) + 7, 8, 2)
+	_fs(R[5])
+	_fill(_ri(cx), _ri(base - H) + 4, 1, 12)
+	_glow(cx, base - H * 0.5, 14.0, R[4], a * 0.6)
 	if f >= 1.0:
 		# (where it lands: its shadow and the dust)
 		_ga(a * 0.5)
 		_fs(DUST6[0])
-		_fill(_ri(cx) - 8, _ri(base), 17, 2)
-		for k in 6:
-			var dx := (k - 2.5) * 5.0 * (1.0 + (u - 0.22) * 2.0)
+		_fill(_ri(cx) - 12, _ri(base), 25, 3)
+		for k in 10:
+			var dx := (k - 4.5) * 5.0 * (1.0 + (u - 0.22) * 2.5)
 			_fs(DUST6[3])
-			_fill(_ri(cx + dx), _ri(base) - 1 - int((u - 0.22) * 8.0 * (1.0 - absf(k - 2.5) / 3.0)), 2, 1)
+			_fill(_ri(cx + dx), _ri(base) - 1 - int((u - 0.22) * 12.0 * (1.0 - absf(k - 4.5) / 5.0)), 3, 2)
 	_ga(1.0)
 
 
 ## A noose: the rope coming down to its knot's coils and the loop round the neck, drawn tight.
 func _noose(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
+	# (thicker and bigger, the loop drawn tight with a jerk, a light going out as it bites: the third check of the weakest melds,
+	# 27 Nov 2026, Animations 1)
 	var neck := cy - 4.0
-	var loop := 7.0 - 3.0 * minf(1.0, u / 0.4)
-	var knot := neck - loop * 0.6 - 4.0
+	var pull := minf(1.0, u / 0.3)
+	var loop := 11.0 - 5.0 * pull * pull
+	var knot := neck - loop * 0.6 - 5.0
 	_ga(a)
-	# (the rope, from above)
-	_fs(DUST6[3])
-	_fill(_ri(cx), _ri(neck - 40.0), 1, _ri(knot - (neck - 40.0)))
-	_fs(DUST6[2])
-	_fill(_ri(cx) + 1, _ri(neck - 40.0), 1, _ri(knot - (neck - 40.0)))
+	# (the rope, from above: twisted, three strands)
+	for k in 3:
+		_fs([DUST6[2], DUST6[4], DUST6[3]][k])
+		_fill(_ri(cx) - 1 + k, _ri(neck - 52.0), 1, _ri(knot - (neck - 52.0)))
+	for j in range(0, _ri(knot - (neck - 52.0)), 4):
+		_fs(DUST6[5])
+		_fill(_ri(cx) - 1, _ri(neck - 52.0) + j, 1, 1)
 	# (its knot: the coils)
-	for k in 4:
-		_fs(R[4] if k % 2 == 0 else R[3])
-		_fill(_ri(cx) - 1, _ri(knot) + k * 2 - 6, 4, 1)
-	# (the loop)
-	for k in 20:
-		var ang := k * TAU / 20.0
-		_fs(R[4] if sin(ang) < 0.0 else R[3])
-		_fill(_ri(cx + cos(ang) * loop), _ri(neck + sin(ang) * loop * 0.45), 2, 1)
-	_glow(cx, neck, 10.0, R[4], a * 0.4)
+	for k in 6:
+		_fs(R[4] if k % 2 == 0 else R[2])
+		_fill(_ri(cx) - 2, _ri(knot) + k * 2 - 10, 6, 2)
+	# (the loop, two strands thick)
+	for k in 28:
+		var ang := k * TAU / 28.0
+		var front := sin(ang) > 0.0
+		_fs(R[4] if front else R[2])
+		_fill(_ri(cx + cos(ang) * loop) - 1, _ri(neck + sin(ang) * loop * 0.45), 3, 2)
+		if front:
+			_fs(R[5])
+			_fill(_ri(cx + cos(ang) * loop), _ri(neck + sin(ang) * loop * 0.45), 1, 1)
+	_glow(cx, neck, 16.0, R[4], a * 0.6)
+	# (as it bites: a pulse going out from the loop)
+	if pull >= 1.0 and u < 0.6:
+		var v := (u - 0.3) / 0.3
+		_ga(a * (1.0 - v))
+		_fs(R[5])
+		for k in 16:
+			var ang := k * TAU / 16.0
+			_fill(_ri(cx + cos(ang) * (8.0 + v * 12.0)), _ri(neck + sin(ang) * (8.0 + v * 12.0) * 0.45), 2, 1)
+	_ga(1.0)
+
+
+## A sundial over it: its stone face, the hours cut round it, the gnomon standing on it and its shadow sweeping round, slowing
+## to a stop (Sundial's own, the third check of the weakest melds, 27 Nov 2026: it had nothing of its own but the lance)
+func _dial(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
+	var y := cy - 18.0
+	var rx := 13.0
+	var ry := 6.5
+	_ga(a)
+	# (the face: a stone disc seen from above and aside)
+	for row in range(-_ri(ry), _ri(ry) + 1):
+		var half := rx * sqrt(maxf(0.0, 1.0 - pow(float(row) / ry, 2.0)))
+		_fs(STONE[3] if row < 0 else STONE[2])
+		_fill(_ri(cx - half), _ri(y) + row, maxi(1, _ri(half * 2.0)), 1)
+	_fs(STONE[1])
+	_fill(_ri(cx - rx * 0.8), _ri(y + ry), _ri(rx * 1.6), 2)
+	# (its hours)
+	for k in 12:
+		var ang := float(k) / 12.0 * TAU
+		_fs(R[4] if k % 3 == 0 else R[3])
+		_fill(_ri(cx + cos(ang) * rx * 0.8), _ri(y + sin(ang) * ry * 0.8), 2 if k % 3 == 0 else 1, 1)
+	# (the shadow, sweeping round and slowing to a stop)
+	var sw := -PI * 0.5 + 2.6 * (1.0 - pow(1.0 - minf(1.0, u * 1.4), 3.0))
+	_fs(R[1])
+	_line(cx, y, cx + cos(sw) * rx * 0.85, y + sin(sw) * ry * 0.85, 2)
+	_fs(R[5])
+	_line(cx, y, cx + cos(sw) * rx * 0.85, y + sin(sw) * ry * 0.85, 1)
+	# (the gnomon)
+	_fs(STONE[4])
+	_line(cx, y, cx + 3.0, y - 8.0, 2)
+	_fs(STONE[5])
+	_fill(_ri(cx + 3.0), _ri(y - 8.0), 1, 1)
+	_glow(cx, y, 18.0, R[4], a * 0.55)
 	_ga(1.0)
 
 

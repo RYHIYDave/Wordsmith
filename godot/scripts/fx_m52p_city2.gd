@@ -217,7 +217,14 @@ func paint_floor(b: Dictionary) -> void:
 				var ex := _wx(pq.x, pq.y)
 				var ey := _wy(pq.x, pq.y)
 				var v := _ease(u)
-				_streak(sx + (ex - sx) * maxf(0.0, v - 0.25), sy + (ey - sy) * maxf(0.0, v - 0.25) - sin(maxf(0.0, v - 0.25) * PI) * 10.0, sx + (ex - sx) * v, sy + (ey - sy) * v - sin(v * PI) * 10.0, R, fade, 2)
+				_streak(sx + (ex - sx) * maxf(0.0, v - 0.25), sy + (ey - sy) * maxf(0.0, v - 0.25) - sin(maxf(0.0, v - 0.25) * PI) * 10.0, sx + (ex - sx) * v, sy + (ey - sy) * v - sin(v * PI) * 10.0, R, fade, 3 if b["id"] == "swarm" else 2)
+				# (Swarm's: each a red shard at the head of its streak, glowing: the third check of the weakest melds, 27 Nov 2026,
+				# Animations 1)
+				if b["id"] == "swarm":
+					var hx2 := sx + (ex - sx) * v
+					var hy2 := sy + (ey - sy) * v - sin(v * PI) * 10.0
+					_shard(hx2, hy2 + 3.0, 4.0, 7.0, [R[0], R[1], R[2], R[3], R[4], R[5]], sd, fade)
+					_glow(hx2, hy2, 10.0, R[4], 0.6 * fade)
 	_ga(1.0)
 
 
@@ -265,7 +272,13 @@ func paint_air(b: Dictionary) -> void:
 		"stagger", "stun", "yank":
 			_stars(top.x, top.y - 4.0, 3, R, fade, bt * 8.0)
 		"drink", "drain":
-			_drops(mp.x, mp.y - _mid(b["m"]), x1px, y1px, u, 5, R, fade, sd)
+			# (Swarm's copies' drink: a thicker stream, its life landing on him in a glow; the third check of the weakest melds)
+			var swarm: bool = b["id"] == "swarm"
+			_drops(mp.x, mp.y - _mid(b["m"]), x1px, y1px, u, 9 if swarm else 5, R, fade, sd)
+			if swarm:
+				_drops(mp.x + 4.0, mp.y - _mid(b["m"]) + 2.0, x1px + 3.0, y1px, u, 6, R, fade * 0.8, sd + 5)
+				_glow(x1px, y1px, 14.0 * _ease(u), R[4], 0.7 * fade)
+				_glow(mp.x, mp.y - _mid(b["m"]), 10.0, R[3], 0.5 * fade)
 		"orb":
 			_glow(ax, ay, 14.0, R[3], 0.7 * fade)
 			_drops(ax - 6.0, ay + 8.0, ax, ay - 16.0, u, 4, R, fade, sd)

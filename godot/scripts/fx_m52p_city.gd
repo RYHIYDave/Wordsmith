@@ -478,10 +478,57 @@ func paint_floor(b: Dictionary) -> void:
 		"gravity:crater":
 			_front(x, y, 0.5 + 1.6 * _ease(u), _A5(R), sd, fade, "shock")
 			_swirl(x, y, 1.8 * (1.0 - u), R, fade * 0.8, -bt * 6.0, 5, 3)
+			# (the floor caving in round where it struck: cracks torn out from it, the middle sunk dark; the third check of the
+			# weakest melds, 27 Nov 2026: Animations 1)
+			var gx := _wx(x, y)
+			var gy := _wy(x, y)
+			var open := _ease(_c01(u * 3.0))
+			for k in 8:
+				var ang := float(k) / 8.0 * TAU + _rh(sd, k) * 0.5
+				var px := gx
+				var py := gy
+				for j in 4:
+					var l := (6.0 + 5.0 * _rh(sd, k * 4 + j)) * open
+					var a2 := ang + (_rh(sd, k * 7 + j) - 0.5) * 0.9
+					var nx := px + cos(a2) * l
+					var ny := py + sin(a2) * l * 0.5
+					_ga(fade)
+					_fs(R[0])
+					_line(px, py + 1.0, nx, ny + 1.0, 2)
+					_fs(R[4] if j == 0 else R[3])
+					_line(px, py, nx, ny, 1)
+					px = nx
+					py = ny
+			_ga(0.7 * fade)
+			_fs(R[0])
+			for row in range(-4, 5):
+				var half := 10.0 * open * sqrt(maxf(0.0, 1.0 - pow(float(row) / 4.5, 2.0)))
+				_fill(_ri(gx - half), _ri(gy) + row, maxi(1, _ri(half * 2.0)), 1)
+			_glow(gx, gy, 26.0, R[4], 0.5 * fade)
 		"gravity:pulse", "standstill:pulse":
 			_front(x, y, float(b["r"]) * _ease(u), _A5(R), sd, fade * 0.8, "shock")
 		"horizon:rim":
 			_front(x, y, 1.2 + 0.3 * sin(bt * 8.0), _A5(R), sd, fade, "water")
+			# (an event horizon where it holds them: a dark disc, its rim burning, light dragged round and down into it; the third
+			# check of the weakest melds, 27 Nov 2026: Animations 1, its own, not only the water's edge)
+			var hx := _wx(x, y)
+			var hy := _wy(x, y)
+			var rr := 18.0 * (0.6 + 0.4 * _ease(u * 2.0))
+			_ga(0.8 * fade)
+			_fs(R[0])
+			for row in range(-_ri(rr * 0.45), _ri(rr * 0.45) + 1):
+				var half := rr * sqrt(maxf(0.0, 1.0 - pow(float(row) / (rr * 0.45), 2.0)))
+				_fill(_ri(hx - half), _ri(hy) + row, maxi(1, _ri(half * 2.0)), 1)
+			for k in 10:
+				var a0 := float(k) / 10.0 * TAU + bt * 3.0
+				var a1 := a0 + 1.1
+				_streak(hx + cos(a0) * rr * 1.8, hy + sin(a0) * rr * 0.8, hx + cos(a1) * rr * 0.9, hy + sin(a1) * rr * 0.42, R, fade * 0.9, 2)
+			for k in 24:
+				var ang := float(k) / 24.0 * TAU + bt * 4.0
+				_ga(fade)
+				_fs(R[5] if k % 3 == 0 else R[4])
+				_fill(_ri(hx + cos(ang) * rr), _ri(hy + sin(ang) * rr * 0.45), 2, 1)
+			_glow(hx, hy, rr * 1.6, R[4], 0.55 * fade)
 		"riptide:wave":
 			_front(x, y, 0.6 + 0.4 * int(b["n"]) + 0.6 * _ease(u), _A5(R), sd, fade, "water")
 		"riptide:wake":
