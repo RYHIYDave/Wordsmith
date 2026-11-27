@@ -339,6 +339,23 @@ func _probe(spec: String) -> void:
 	await M.go_to("floor%d" % f, "down" if f > 1 else "stairs")
 	await M._wait(1.0)
 	h.unhurt = true
+	if a.size() > 5 and a[5] == "doors":
+		var at := Vector2(float(a[1]), float(a[2]))
+		for d in M.map.doors:
+			var mid := Vector2(float(d["middle"]["x"]), float(d["middle"]["y"]))
+			if mid.distance_to(at) < 16.0:
+				print("PROBE door %s want %s at %s, room %s, word %s" % [d["kind"], d.get("want"), mid, d.get("room", "-"), d.get("word", d.get("need", "-"))])
+		for r in M.map.rooms:
+			if FloorMap.in_room(r, at):
+				print("PROBE in room %s: %s" % [r.get("id"), r])
+		var fl := _flood(_tile_of(h.world))
+		var dist: PackedInt32Array = fl[0]
+		print("PROBE from his arrival the spot is %s" % ("reached in %d" % dist[floori(at.y) * M.map.w + floori(at.x)] if dist[floori(at.y) * M.map.w + floori(at.x)] >= 0 else "not reached"))
+		M.map.step = PackedByteArray()
+		fl = _flood(_tile_of(h.world))
+		dist = fl[0]
+		print("PROBE heights set aside, the spot is %s" % ("reached" if dist[floori(at.y) * M.map.w + floori(at.x)] >= 0 else "not reached"))
+		return
 	print("PROBE arrived at %s, kit %s, scene_pace %s, act '%s'" % [h.world, h.kit != null, h.scene_pace, h._act])
 	if float(a[1]) >= 0.0:
 		for m in M._monsters.list:
