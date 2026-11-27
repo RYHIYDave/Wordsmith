@@ -1,0 +1,161 @@
+{
+ "asked": "Check 20 more weak melds (Recommended)",
+ "picked": "I took the next 20 smallest by my measure, none of them worked on before: Noose, Ambush, Manacle, Longspear, Detonator, Pin, Ghoul, Tombstone, Horizon, Strangler, Gravity, Dragnet, Deadeye, Earthquake, Mire, Sundial, Refrain, Swarm, Timeslip, Skewer.",
+ "checks": [
+  "The game's rules check on the 20: 0 wrong. Each in front of the Strike and behind it, 40 cases, its twist seen in all 40.",
+  "All 20 filmed again: no script errors. Every moment each one has now plays in its film.",
+  "Your hero kept in sight: nothing covers him for a run of frames in any of the changed ones."
+ ],
+ "weakest": [
+  {
+   "id": "detonator",
+   "why": [
+    "Behind, its mark and the marked one going up twice as big never played: the film killed the pack on the first blow, before the mark."
+   ],
+   "done": [
+    "The film now lets the mark land and the marked one fall to the second blow, so its mark and its big blast play. Nothing in the game changed for it."
+   ]
+  },
+  {
+   "id": "gravity",
+   "why": [
+    "Its longer stun on what it drags in never played: the film's pack was never stunned.",
+    "Where it struck was only a shock front and a swirl."
+   ],
+   "done": [
+    "The film now has the pack stunned first, so its longer stun plays.",
+    "The floor caves in where it strikes: cracks torn out, the middle sunk dark, a glow."
+   ]
+  },
+  {
+   "id": "horizon",
+   "why": [
+    "Its hold was only a water's edge pulsing round them."
+   ],
+   "done": [
+    "An event horizon where it holds them: a dark disc with a burning rim, light dragged round and down into it."
+   ]
+  },
+  {
+   "id": "sundial",
+   "why": [
+    "It had nothing of its own but the lance of light."
+   ],
+   "done": [
+    "A sundial over each one it slows: its stone face, the hours cut round it, the gnomon, and its shadow sweeping round and slowing to a stop."
+   ]
+  },
+  {
+   "id": "tombstone",
+   "why": [
+    "Its gravestone was small."
+   ],
+   "done": [
+    "The gravestone is half again as big, its cross lit, and it throws more dust where it lands."
+   ]
+  },
+  {
+   "id": "noose",
+   "why": [
+    "Its rope and loop were thin and small."
+   ],
+   "done": [
+    "A thicker, twisted rope, a bigger knot, and a loop two strands thick drawn tight, with a pulse going out as it bites."
+   ]
+  },
+  {
+   "id": "swarm",
+   "why": [
+    "Its shards and the life its copies drink were thin streaks."
+   ],
+   "done": [
+    "Each shard a red shard at the head of a thicker streak, glowing; the life it drinks a thicker stream landing on you in a glow."
+   ]
+  }
+ ],
+ "left": [
+  [
+   "ambush",
+   "its glint, its mark's sight and its lunge are its own, and big enough"
+  ],
+  [
+   "manacle",
+   "its shackles and its lock are its own"
+  ],
+  [
+   "longspear",
+   "its lance of light stands wide and long"
+  ],
+  [
+   "pin",
+   "its white pin driving down is big and its own"
+  ],
+  [
+   "ghoul",
+   "its maw opens wide in the floor, fangs round it; its blood streams to you"
+  ],
+  [
+   "strangler",
+   "its vines and thorns fill the snare"
+  ],
+  [
+   "dragnet",
+   "its net of rope spreads wide over the pack"
+  ],
+  [
+   "deadeye",
+   "its eyes and its bright shots are its own"
+  ],
+  [
+   "earthquake",
+   "its spikes and cracks roll out wide: one of the strongest"
+  ],
+  [
+   "mire",
+   "its mud and poison cover the cracked ground"
+  ],
+  [
+   "refrain",
+   "its curse marks and its second circle are its own"
+  ],
+  [
+   "timeslip",
+   "its clock hands and its bubble are its own"
+  ],
+  [
+   "skewer",
+   "its line of pins and its lance are its own"
+  ]
+ ],
+ "note": "The plain rings you may see in some films (a cream ring under a stun, a pink ring when you are rooted, a dotted ring of slow time) are the runes' own looks, Heavy's, Binding's and Stilling's, not the melds'; left as decided before.",
+ "posters": {
+  "detonator": [
+   "detonator:boom",
+   4
+  ],
+  "gravity": [
+   "gravity:crater",
+   8
+  ],
+  "horizon": [
+   "horizon:rim",
+   5
+  ],
+  "sundial": [
+   "sundial:slow",
+   3
+  ],
+  "tombstone": [
+   "tombstone:thud",
+   8
+  ],
+  "noose": [
+   "noose:tighten",
+   6
+  ],
+  "swarm": [
+   "swarm:shards",
+   8
+  ]
+ }
+}

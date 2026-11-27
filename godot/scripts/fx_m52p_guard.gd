@@ -228,7 +228,8 @@ func paint_air_more() -> void:
 	if h == null:
 		return
 	# (his shell, a Guarding meld in front, while it holds)
-	if h.shield > 0.0 or h.barrier > 0.0:
+	# (only while a shield holds: a barrier is shown on his life globe, no shell round him; his words, 27 Nov 2026)
+	if h.shield > 0.0:
 		for i in 3:
 			var f: String = h.m52.fid(i)
 			if IDS.has(f):

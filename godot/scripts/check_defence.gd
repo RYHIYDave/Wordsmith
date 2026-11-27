@@ -168,12 +168,67 @@ func run(main, hero, d: String) -> void:
 	var topped: float = h.barrier
 	var line: String = str(h.loadout.r(0)["lines"].filter(func(l): return str(l).begins_with("Guarding"))[0])
 	_line(topped > 10.0 and h.shield == 0.0, "Guarding in front, with a barrier: each use tops it up (10 to %d of %d); \"%s\"" % [topped, h.max_barrier, line])
+	# (THE GUARDING MELDS WITH A BARRIER: a top-up counts as a fresh shield for Sanctuary, Parry, Aegis and Shieldwall; before, with
+	# any barrier they did nothing. His “Fix it (Recommended)”, 27 Nov 2026)
+	for id in ["sanctuary", "parry", "aegis", "shieldwall"]:
+		M._w_put(h, 0, "front", [id])
+		h.m52.x.forget()
+		h.m52.told = {}
+		h.shield = 0.0
+		h.shield_t = 0.0
+		h.frenzy = 5 if id == "shieldwall" else 0
+		h.barrier = 10.0
+		h.m52.used(0, false)
+		h._boons(0)
+		h.m52.step(0.02)
+		var got: float = h.barrier - 10.0
+		# (its own top-up as Guarding gives it, the meld's shield share of his life: hero.gd guard_up_by)
+		var plain_by: float = h.guard_up_by
+		var told: Array = h.m52.told.keys()
+		match id:
+			"sanctuary":
+				_line(told.has("sanctuary:hold") and (got > plain_by * 1.5 or h.barrier >= h.max_barrier) and h.shield == 0.0,
+					"Sanctuary in front, with a barrier: its top-up twice as big (%d, plain %d, most %d); told %s" % [got, plain_by, h.max_barrier, told])
+			"parry":
+				var through: bool = not h.m52.x.parried(h.world + Vector2(1.0, 0.0))
+				_line(told.has("parry:flash") and h.m52.x._parry_t > 0.0 and not through and absf(got - plain_by) < 1.0,
+					"Parry in front, with a barrier: a moment where nothing gets through (%.1fs), its top-up as plain (%d); told %s" % [h.m52.x._parry_t, got, told])
+			"aegis":
+				_line(told.has("aegis:dome") and absf(got - plain_by) < 1.0, "Aegis in front, with a barrier: its dome, its top-up as plain (%d); told %s" % [got, told])
+			"shieldwall":
+				_line(told.has("shieldwall:band") and (got > plain_by * 1.5 or h.barrier >= h.max_barrier),
+					"Shieldwall in front at a full frenzy, with a barrier: its top-up twice as big (%d, plain %d, most %d); told %s" % [got, plain_by, h.max_barrier, told])
+	h.frenzy = 0
+	h.m52.x.forget()
+	h.loadout.front[0] = ["guarding", null]
+	h.loadout._r = [null, null, null]
 	M.loot.gear["chest"] = null
 	M.loot.derive()
 	h.shield = 0.0
 	h._boons(0)
 	# (no barrier on his gear, none from his Intelligence either (his word of 27 Nov 2026): Guarding's shield, as before)
 	_line(h.max_barrier == 0.0 and h.shield > 0.0, "with no barrier on his gear (his Intelligence giving none without it): a shield of %d for a while, as before" % h.shield)
+	# (and with no barrier the Guarding melds as before: Sanctuary's shield twice as long, Parry's a moment)
+	for id in ["sanctuary", "parry"]:
+		M._w_put(h, 0, "front", [id])
+		h.m52.x.forget()
+		h.shield = 0.0
+		h.shield_t = 0.0
+		h.m52.step(0.02)
+		h.m52.told = {}
+		h._boons(0)
+		var t0: float = h.shield_t
+		h.m52.step(0.02)
+		var t1: float = h.shield_t
+		var told2: Array = h.m52.told.keys()
+		if id == "sanctuary":
+			_line(told2.has("sanctuary:hold") and t1 > t0 * 1.8, "Sanctuary in front, no barrier: its shield %.1fs, plain %.1fs; told %s" % [t1, t0, told2])
+		else:
+			_line(told2.has("parry:flash") and h.m52.x._parry_t > 0.0 and t1 < t0, "Parry in front, no barrier: its shield a moment (%.1fs); told %s" % [t1, told2])
+	h.loadout.front[0] = ["guarding", null]
+	h.loadout._r = [null, null, null]
+	h.shield = 0.0
+	h._boons(0)
 	await M._wait(0.3)
 	await M._snap(dir + "/def08_guarding_shield.png")
 	# (a chance to block gone: one burned into gear before, barrier)

@@ -42,6 +42,8 @@ var _shield_t_was := 0.0
 var _parry_t := 0.0
 ## (Shieldwall: a use's shield to be thickened as it comes)
 var _wall_due := false
+## (Guarding's barrier top-ups counted so far: hero.gd guard_ups)
+var _guard_ups_was := 0
 ## (Firewalk's footprints, Quicksilver's passing arcs, Charge's bumps: their clocks)
 var _step_t := 0.0
 var _pass_t := 0.0
@@ -134,6 +136,9 @@ func used(i: int, echo: bool, at: Vector2) -> void:
 		if not r.has("vast46"):
 			r["vast46"] = float(r["vast"])
 		r["vast"] = float(r["vast46"]) * (1.0 + float(_t("rampage")["splash"]) * h.frenzy)
+		# (seen: its splash swelling with the frenzy, the check of 27 Nov 2026: nothing of its own showed behind)
+		if h.frenzy > 0:
+			_tell({"id": "rampage", "what": "splash", "n": h.frenzy, "x": h.world.x + h.face.x * 1.6, "y": h.world.y + h.face.y * 1.6, "r": 1.0 + 0.4 * h.frenzy})
 	# SHIELDWALL: the shield this use gives, thicker for each step of the frenzy (step: as it comes)
 	if f == "shieldwall":
 		_wall_due = true
@@ -698,21 +703,38 @@ func ground(z: Dictionary, id: String, at: Vector2, rad: float, tick: bool, dt: 
 func step(dt: float) -> void:
 	var sh: float = h.shield + (h.barrier if Words.DEFENCE_WORDS else 0.0)
 	# (a fresh shield: Sanctuary twice as long, Parry a moment and nothing through it, Aegis its allies too, Shieldwall thicker)
-	if h.shield_t > _shield_t_was + 0.3 and h.shield > 0.0:
+	var fresh: bool = h.shield_t > _shield_t_was + 0.3 and h.shield > 0.0
+	# (WITH A BARRIER, Guarding tops it up and gives no shield (hero.gd _boons): the top-up counts as a fresh shield for these four,
+	# so they work with a barrier too. His “Fix it (Recommended)”, 27 Nov 2026, to: with any barrier they did nothing. A barrier
+	# does not run out by time, so with one, Sanctuary's twice as long is its top-up twice as big, and Shieldwall's thicker is its
+	# top-up bigger with the frenzy; each up to the barrier's most)
+	var ups: int = int(h.guard_ups) if "guard_ups" in h else 0
+	var topped: bool = not fresh and ups != _guard_ups_was
+	_guard_ups_was = ups
+	if fresh or topped:
+		var by: float = float(h.guard_up_by) if topped else 0.0
+		var secs: float = h.shield_t if fresh else float(Words.data()["guard"]["shieldTime"])
 		if p.any_has("sanctuary"):
-			h.shield_t *= float(_t("sanctuary")["longer"])
-			_tell({"id": "sanctuary", "what": "hold", "x": h.world.x, "y": h.world.y, "secs": h.shield_t})
+			if fresh:
+				h.shield_t *= float(_t("sanctuary")["longer"])
+			else:
+				h.barrier = minf(h.max_barrier, h.barrier + by * (float(_t("sanctuary")["longer"]) - 1.0))
+			_tell({"id": "sanctuary", "what": "hold", "x": h.world.x, "y": h.world.y, "secs": secs * float(_t("sanctuary")["longer"])})
 		if p.any_has("parry"):
-			h.shield_t = float(_t("parry")["secs"])
+			if fresh:
+				h.shield_t = float(_t("parry")["secs"])
 			_parry_t = float(_t("parry")["secs"])
 			_tell({"id": "parry", "what": "flash", "x": h.world.x, "y": h.world.y})
 		if p.any_has("aegis"):
 			if h.has_method("allies_shield"):
-				h.allies_shield(h.shield, h.shield_t, float(_t("aegis")["allies"]))
+				h.allies_shield(h.shield if fresh else by, secs, float(_t("aegis")["allies"]))
 			_tell({"id": "aegis", "what": "dome", "x": h.world.x, "y": h.world.y, "r": float(_t("aegis")["allies"])})
 		if _wall_due:
 			_wall_due = false
-			h.shield *= 1.0 + float(_t("shieldwall")["each"]) * h.frenzy
+			if fresh:
+				h.shield *= 1.0 + float(_t("shieldwall")["each"]) * h.frenzy
+			else:
+				h.barrier = minf(h.max_barrier, h.barrier + by * float(_t("shieldwall")["each"]) * h.frenzy)
 			_tell({"id": "shieldwall", "what": "band", "n": h.frenzy, "x": h.world.x, "y": h.world.y})
 	_shield_t_was = h.shield_t
 	_parry_t = maxf(0.0, _parry_t - dt)
@@ -880,4 +902,5 @@ func forget() -> void:
 	_sh_was = 0.0
 	_parry_t = 0.0
 	_wall_due = false
+	_guard_ups_was = int(h.guard_ups) if "guard_ups" in h else 0
 	_echo_until = [-99.0, -99.0, -99.0]

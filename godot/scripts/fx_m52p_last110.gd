@@ -28,11 +28,11 @@ const LONG := {
 	"lamprey:drink": 0.6, "lamprey:echo": 0.5, "lamprey:foe": 0.6, "cluster:bomblets": 0.42, "cluster:pop": 0.4, "cluster:second": 0.5,
 	"cluster:foe": 0.6, "doubletap:tap": 0.4, "doubletap:marks": 0.6, "doubletap:foe": 0.5, "tempo:beat": 0.5, "tempo:hold": 0.4,
 	"tempo:foe": 0.4, "redoubt:second": 0.5, "redoubt:inner": 0.6, "redoubt:foe": 0.5, "reverb:ring": 0.8, "reverb:foe": 0.8,
-	"staccato:tick": 0.25, "staccato:quick": 0.25, "staccato:foe": 0.25, "ripple:ripple": 0.6, "ripple:wide": 0.7, "ripple:foe": 0.5,
+	"staccato:tick": 0.35, "staccato:quick": 0.35, "staccato:foe": 0.35, "ripple:ripple": 0.6, "ripple:wide": 0.7, "ripple:foe": 0.5,
 	"bloodbloom:bloom": 0.7, "bloodbloom:orb": 0.4, "bloodbloom:foe": 0.7, "lancet:cut": 0.6, "lancet:markcut": 0.6, "lancet:mark": 0.5,
 	"lancet:foe": 0.6, "feedingfrenzy:jaws": 0.5, "feedingfrenzy:orb": 0.4, "feedingfrenzy:foe": 0.6, "carapace:plate": 0.6,
 	"carapace:motes": 0.5, "carapace:foe": 0.5, "transfusion:drip": 1.2, "transfusion:orb": 1.2, "transfusion:foe": 1.0,
-	"lifeline:beat": 0.6, "lifeline:pull": 0.4, "lifeline:foe": 0.6, "bloodtide:tide": 0.6, "bloodtide:splash": 0.5, "bloodtide:foe": 0.7,
+	"lifeline:beat": 0.8, "lifeline:pull": 0.6, "lifeline:foe": 0.8, "bloodtide:tide": 0.6, "bloodtide:splash": 0.5, "bloodtide:foe": 0.7,
 	"detonator:charge": 0.8, "detonator:burst": 0.45, "detonator:boom": 0.6, "detonator:mark": 0.4, "detonator:foe": 0.8,
 	"mayhem:spark": 0.45, "mayhem:burst": 0.45, "minefield:mine": 0.45, "minefield:ward": 0.5, "timebomb:tick": 1.0,
 	"timebomb:boom": 0.6, "timebomb:wait": 0.6, "hairtrigger:trigger": 0.4, "hairtrigger:touch": 0.4, "hairtrigger:set": 0.5,
@@ -42,10 +42,10 @@ const LONG := {
 	"ambush:glint": 0.4, "ambush:snap": 0.4, "ambush:mark": 1.2, "ambush:foe": 0.4, "bullseye:ring": 0.45, "bullseye:marks": 0.6,
 	"bullseye:mark": 0.4, "bullseye:foe": 0.45, "doubletap:mark": 0.4,
 	"shieldwall:band": 0.6, "shieldwall:pulse": 0.5, "shieldwall:ward": 0.5, "shieldwall:foe": 0.5, "fury:ember": 0.6, "fury:hold": 0.5,
-	"spree:burst": 0.4, "spree:two": 0.4, "rampage:swell": 0.5, "rampage:foe": 0.5,
-	"sanctuary:hold": 0.6, "sanctuary:ward": 0.6, "sanctuary:foe": 0.6, "parry:flash": 0.35, "parry:glance": 0.35, "parry:ward": 0.5,
+	"spree:burst": 0.4, "spree:two": 0.4, "rampage:swell": 0.6, "rampage:foe": 0.5, "rampage:splash": 0.75,
+	"sanctuary:hold": 0.6, "sanctuary:ward": 0.6, "sanctuary:foe": 0.6, "parry:flash": 0.5, "parry:glance": 0.45, "parry:ward": 0.8,
 	"parry:foe": 0.4, "aegis:dome": 0.6, "aegis:wide": 0.6, "aegis:foe": 0.6, "hourglass:turn": 0.9, "hourglass:sand": 0.6,
-	"hourglass:foe": 0.9, "aftermath:smoke": 0.4, "aftermath:bite": 0.35, "aftermath:linger": 0.3, "aftermath:foe": 0.4,
+	"hourglass:foe": 0.9, "aftermath:smoke": 0.8, "aftermath:bite": 0.55, "aftermath:linger": 0.7, "aftermath:foe": 0.6,
 	"whipcrack:crack": 0.3, "whipcrack:snap": 0.3, "whipcrack:foe": 0.3, "carapace:ward": 0.4, "riposte:wardlaid": 0.4,
 	"minefield:wardlaid": 0.4,
 	# (ON A MONSTER, the check of 26 Nov 2026 against his Art Rulebook: these never played there. Firewalk's footprint flaring as it
@@ -84,6 +84,32 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 		"hornet:sting", "bloodbloom:orb", "feedingfrenzy:orb":
 			for i in 6:
 				_bit(b["x"], b["y"], mid, "dot", PackedColorArray([R[3], R[4], R[5]]), 1.2, 0.4, 40, 10, 40)
+			if key == "hornet:sting":
+				for i in 8:
+					_bit(b["x"], b["y"], mid, "dot", PackedColorArray([Color("#b4cc24"), R[4], R[5]]), 1.6, 0.5, 80, 10, 50)
+		# (THE SECOND CHECK OF THE WEAKEST MELDS, 27 Nov 2026, by his Art Rulebook's Animations 1: as big as each can be)
+		"hornet:barb", "hornet:foe":
+			for i in 10:
+				_bit(b["x"], b["y"], mid if key == "hornet:barb" else 4, "dot", PackedColorArray([Color("#b4cc24"), R[4], R[5]]), 1.8, 0.5, 90, 10, 50)
+		"lifeline:beat", "lifeline:foe":
+			var at := Vector2(b["x1"], b["y1"]) if key == "lifeline:beat" else Vector2(b["x"], b["y"])
+			for i in 10:
+				_bit(at.x, at.y, mid, "dot", PackedColorArray([R[3], R[4], R[5]]), 1.4, 0.6, 30, 10, 40)
+		"staccato:tick", "staccato:quick", "staccato:foe":
+			for i in 10:
+				_bit(b["x"], b["y"], mid, "streak", PackedColorArray([R[4], R[5], Color.WHITE]), 3.6, 0.25, 40, 10, 40)
+			fx.kick(1.2)
+		"aftermath:bite":
+			for i in 10:
+				_bit(b["x"], b["y"], 3, "stone", PackedColorArray(STONE), 1.8, 0.6, 260, 40, 100)
+			fx.kick(1.4)
+		"rampage:swell", "rampage:splash":
+			var n: int = clampi(int(b.get("n", 1)), 1, 5)
+			for i in 6 + 2 * n:
+				_bit(b["x"], b["y"], 3, "stone", PackedColorArray(STONE), 1.6 + 0.3 * n, 0.7, 260, 40, 110)
+			fx.kick(1.2 + 0.3 * n)
+		"feedingfrenzy:jaws":
+			fx.kick(1.0 + 0.3 * mini(5, int(b["n"])))
 		"glide:skate":
 			var hh := _hero_at(b)
 			for i in 8:
@@ -123,7 +149,8 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 			for i in 6:
 				_bit(b["x"], b["y"], 4, "dot", PackedColorArray([FIRE[3], FIRE[4], FIRE[5]]), 0.4, 0.6, -20, 10, 30)
 		"whipcrack:crack", "whipcrack:snap", "whipcrack:foe":
-			fx.kick(2.0)
+			fx.kick(2.8)
+			fx.hold(0.06)
 		"cluster:pop", "detonator:burst", "detonator:boom", "mayhem:burst", "minefield:mine", "timebomb:boom", "hairtrigger:trigger", "blastwave:wave":
 			# (under OWN: each goes up in Volatile's own blast)
 			if OWN and BLASTS.has(key):
@@ -290,11 +317,53 @@ func paint_floor(b: Dictionary) -> void:
 			_ring(hh.x, hh.y, rr)
 			_fs(R[2])
 			_ring(hh.x, hh.y, rr * 0.92, 2)
-		"redoubt:inner", "sanctuary:ward", "parry:ward", "aegis:wide", "minefield:ward", "riposte:ward", "shieldwall:ward", "carapace:ward", "shieldwall:pulse":
+		"parry:ward":
+			# (the ward circle, a ring of parrying blades standing on its edge, flashing as it forms and fading fast: not a plain ring,
+			# How art is made 9; the check of 27 Nov 2026)
+			var rr: float = float(b["r"]) * (0.5 + 0.5 * _ease(u * 1.6))
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"])
+			var nb := 14
+			for k in nb:
+				var a := float(k) / nb * TAU + bt * 1.2
+				var x := cx + cos(a) * rr * 22.6
+				var y := cy + sin(a) * rr * 11.3
+				var tx := -sin(a)
+				var ty := cos(a) * 0.5
+				var flash := 1.0 - _c01((bt - float(k) * 0.02) / 0.25)
+				_ga(0.9 * fade)
+				_fs(R[1])
+				_line(x - tx * 5.0, y - ty * 5.0 + 1.0, x + tx * 5.0, y + ty * 5.0 - 5.0, 3)
+				_fs(R[4] if flash < 0.5 else Color.WHITE)
+				_line(x - tx * 5.0, y - ty * 5.0, x + tx * 5.0, y + ty * 5.0 - 6.0, 1)
+				_fs(R[5])
+				_fill(_ri(x + tx * 5.0), _ri(y + ty * 5.0 - 6.0), 1, 1)
+			_front(b["x"], b["y"], rr, [R[1], R[2], R[3], R[4], R[5]], sd, 0.6 * fade * (1.0 - _ease(u * 2.0)), "sound")
+		"rampage:splash":
+			# (its splash swelling with the frenzy: grit kicked out along a front, a second hard behind it at a full frenzy)
+			for k in (2 if int(b.get("n", 1)) >= 3 else 1):
+				var v := _ease(_c01((bt - k * 0.1) / 0.45))
+				_front(b["x"], b["y"], float(b["r"]) * v, [R[1], R[2], R[3], R[4], R[5]], sd + k, 0.95 * (1.0 - v), "shock")
+			_glow(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]), 26.0 * float(b["r"]), R[4], 0.5 * fade)
+		"aftermath:bite":
+			# (the lingering ground biting: jagged teeth of grit snapping up round what stepped in, shut, and sinking back)
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"])
+			var shut := _ease(_c01(bt / 0.12))
+			for k in 10:
+				var a := float(k) / 10.0 * TAU + _rh(sd, k) * 0.3
+				var rr := 16.0 - 6.0 * shut
+				var lift := (6.0 + 5.0 * _rh(sd, k + 5)) * (1.0 - _c01((bt - 0.25) / 0.3))
+				_shard(cx + cos(a) * rr, cy + sin(a) * rr * 0.5, 4.0, lift, [DUST[0], DUST[1], R[1], R[2], R[3], R[4]], sd + k, fade)
+			_front(b["x"], b["y"], 0.3 + 0.6 * _ease(u), [R[1], R[2], R[3], R[4], R[5]], sd, 0.8 * fade, "shock")
+		"redoubt:inner", "sanctuary:ward", "aegis:wide", "minefield:ward", "riposte:ward", "shieldwall:ward", "carapace:ward", "shieldwall:pulse":
+			# (its own edge rising round it as it is laid, a front going out under it: not a plain ring, How art is made 9; his
+			# “Give the 7 shields their own rings (Recommended)”, 27 Nov 2026)
 			var rr: float = float(b["r"]) * (0.4 + 0.6 * _ease(u))
-			_ga(0.8 * fade)
-			_fs(R[4])
-			_ring(b["x"], b["y"], rr)
+			var eid: String = "redoubt_in" if b["what"] == "inner" else str(b["id"])
+			_shell_edge(eid, _wx(b["x"], b["y"]), _wy(b["x"], b["y"]), rr, bt, sd, 0.95 * fade, R, _ease(_c01(u * 1.6)))
+			_front(b["x"], b["y"], rr, [R[1], R[2], R[3], R[4], R[5]], sd, 0.55 * fade * (1.0 - _ease(_c01(u * 2.0))),
+				"shock" if eid in ["redoubt", "redoubt_in", "shieldwall"] else "sound")
 		"reverb:ring", "reverb:foe":
 			# (the blow ringing out again and again: broken sound-waves going out, each fainter)
 			for k in 3:
@@ -306,6 +375,11 @@ func paint_floor(b: Dictionary) -> void:
 			# (a wave going out: Ripple's water, the others' blast kicking grit out along its front)
 			var rr: float = float(b["r"]) * _ease(u)
 			_front(b["x"], b["y"], rr, [R[1], R[2], R[3], R[4], R[5]], sd, 0.9 * fade, "water" if b["id"] == "ripple" else "shock")
+			# (Rampage's grows with the frenzy: a second front hard behind the first, its glow under it; the check of 27 Nov 2026)
+			if b["id"] == "rampage":
+				var v := _ease(_c01((bt - 0.1) / maxf(0.1, float(b["end"]) - 0.1)))
+				_front(b["x"], b["y"], float(b["r"]) * 0.8 * v, [R[1], R[2], R[3], R[4], R[5]], sd + 7, 0.8 * (1.0 - v), "shock")
+				_glow(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]), 18.0 * float(b["r"]), R[4], 0.45 * fade)
 		"bullseye:ring", "bullseye:foe":
 			# (rings closing on the one at its heart)
 			# (a target's sight closing on the one at its heart)
@@ -314,11 +388,19 @@ func paint_floor(b: Dictionary) -> void:
 			var C: Array = [R[0], R[2], R[3], R[4], R[5]] if b["what"] != "foe" else [Color("#3a0c1c"), Color("#c0206a"), Color("#ff4f8a"), Color("#ffb070"), Color("#fff0a0")]
 			_reticle(b["x"], b["y"], rr, C, 0.95 * fade)
 		"aftermath:smoke", "aftermath:linger":
-			# (smoke rolling out over the struck ground, in curls)
+			# (smoke rolling out over the struck ground in big curls, embers glinting in it as it goes; the check of 27 Nov 2026:
+			# bigger and lit, Animations 1)
 			var rr: float = float(b["r"]) * _ease(u * 1.5)
-			for i in 7:
-				var a := float(i) / 7.0 * TAU + _rh(sd, i) * 0.5
-				_curl(_wx(b["x"], b["y"]) + cos(a) * rr * 22.6, _wy(b["x"], b["y"]) + sin(a) * rr * 11.3, 8.0 + 4.0 * _rh(sd, i + 3), [R[1], R[2], R[4]], sd + i, 0.75 * fade)
+			for i in 10:
+				var a := float(i) / 10.0 * TAU + _rh(sd, i) * 0.5
+				var x := _wx(b["x"], b["y"]) + cos(a) * rr * 22.6
+				var y := _wy(b["x"], b["y"]) + sin(a) * rr * 11.3 - 10.0 * u * _rh(sd, i + 8)
+				_curl(x, y, 12.0 + 7.0 * _rh(sd, i + 3), [R[2], R[3], R[5]], sd + i, 0.85 * fade)
+				if (i + int(bt * 12.0)) % 3 == 0:
+					_ga(fade)
+					_fs(FIRE[4])
+					_fill(_ri(x + (_rh(sd, i + 30) - 0.5) * 10.0), _ri(y - 4.0), 2, 2)
+			_front(b["x"], b["y"], rr * 0.9, [R[1], R[2], R[3], R[4], R[5]], sd, 0.7 * (1.0 - _ease(u)), "shock")
 		"whipcrack:crack", "whipcrack:snap", "whipcrack:foe":
 			# (the whole area snapping at once: a sand-coloured crack across it)
 			var cx := _wx(b["x"], b["y"])
@@ -388,26 +470,33 @@ func paint_air(b: Dictionary) -> void:
 			_glow(p.x, p.y, 24.0, R[4], fade)
 			_glow(p.x, p.y, 10.0, Color.WHITE, 0.7 * fade)
 		"hornet:barb", "hornet:foe":
-			# (barbs standing in it, dripping venom)
+			# (barbs standing in it, striped like the hornet, dripping venom: bigger, the check of 27 Nov 2026; on him, beside him and
+			# not over him, his Art Rulebook's Animations 4)
 			var n := int(b["n"]) if b["what"] != "foe" else 2
-			var q := p if b["what"] != "foe" else Vector2(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 14.0)
+			var q := p if b["what"] != "foe" else Vector2(_wx(b["x"], b["y"]) + 14.0, _wy(b["x"], b["y"]) + 2.0)
 			for k in maxi(1, n):
 				var a := -1.2 + float(k) * 0.9 + (_rh(sd, k) - 0.5) * 0.4
-				var bx := q.x + cos(a) * 6.0
-				var by := q.y + sin(a) * 4.0
-				var tx := bx + cos(a - 0.6) * 12.0
-				var ty := by - 11.0
+				var bx := q.x + cos(a) * 7.0
+				var by := q.y + sin(a) * 5.0
+				var tx := bx + cos(a - 0.6) * 18.0
+				var ty := by - 16.0
 				_ga(minf(1.0, fade * 1.5))
 				_fs(R[0])
-				_line(bx, by + 1.0, tx, ty + 1.0, 4)
+				_line(bx, by + 1.0, tx, ty + 1.0, 5)
 				_fs(R[4])
-				_line(bx, by, tx, ty, 2)
+				_line(bx, by, tx, ty, 3)
+				# (its black bands)
+				for j in 2:
+					var v := 0.3 + 0.3 * j
+					_fs(R[0])
+					_fill(_ri(lerpf(bx, tx, v)) - 1, _ri(lerpf(by, ty, v)), 3, 1)
 				_fs(ramp("hornet")[5])
 				_fill(_ri(tx) - 1, _ri(ty) - 1, 3, 3)
 				var drip := fmod(bt * 2.0 + _rh(sd, k + 5), 1.0)
 				_fs(Color("#b4cc24"))
-				_fill(_ri(bx), _ri(by + drip * 6.0), 1, 2)
-			_glow(q.x, q.y, 12.0, R[3], 0.4 * fade)
+				_fill(_ri(bx), _ri(by + drip * 8.0), 2, 2)
+			_glow(q.x, q.y, 22.0, R[3], 0.6 * fade)
+			_glow(q.x, q.y, 10.0, R[5], 0.5 * (1.0 - _c01(bt / 0.2)))
 		"glide:skate":
 			var hh := _hero_at(b)
 			_wisps(b["x"], b["y"], hh.x, hh.y, _ease(u * 1.6), 2, PackedColorArray([ICE[0], ICE[2], ICE[3], ICE[4], ICE[5], Color.WHITE]), sd, 1, 4.0, 2.0)
@@ -495,22 +584,44 @@ func paint_air(b: Dictionary) -> void:
 					_fs(R[5])
 					_fill(_ri(p.x + cos(a) * 7.0), _ri(p.y + sin(a) * 4.0), 2, 2)
 			if key == "lancet:cut" or key == "lancet:markcut":
-				_ga(1.0 - _c01(bt / 0.3))
+				# (a long, fine cut opening across it, drops of red off its line: the check of 27 Nov 2026, Animations 1)
+				var c := 1.0 - _c01(bt / 0.4)
+				var open := _ease(_c01(bt / 0.08))
+				_ga(c)
+				_fs(R[1])
+				_line(p.x - 15.0 * open, p.y - 10.0 * open + 1.0, p.x + 15.0 * open, p.y + 10.0 * open + 1.0, 3)
 				_fs(R[5])
-				_line(p.x - 9.0, p.y - 6.0, p.x + 9.0, p.y + 6.0, 2)
+				_line(p.x - 15.0 * open, p.y - 10.0 * open, p.x + 15.0 * open, p.y + 10.0 * open, 2)
 				_fs(Color.WHITE)
-				_line(p.x - 7.0, p.y - 5.0, p.x + 7.0, p.y + 5.0, 1)
-			if key == "feedingfrenzy:jaws" and int(b["n"]) >= 5:
+				_line(p.x - 11.0 * open, p.y - 7.0 * open, p.x + 11.0 * open, p.y + 7.0 * open, 1)
+				for k in 4:
+					var v := (float(k) + 0.5) / 4.0
+					var dy := 10.0 * _c01((bt - 0.06 - k * 0.03) / 0.3)
+					_fs(Color("#c0202c"))
+					_fill(_ri(p.x - 15.0 + 30.0 * v), _ri(p.y - 10.0 + 20.0 * v + dy), 2, 2)
+				_glow(p.x, p.y, 24.0, R[4], 0.7 * c)
+			if key == "feedingfrenzy:jaws" and int(b["n"]) >= 1:
+				# (jaws snapping shut on it, the bigger the fuller the frenzy: from the first step now, not only at five; the check of
+				# 27 Nov 2026, Animations 1)
+				var nn := mini(5, int(b["n"]))
+				var wj := 10.0 + 3.0 * nn
 				var close := _ease(_c01(bt / 0.2))
 				for k in 2:
 					var sgn := -1.0 if k == 0 else 1.0
-					var y0 := p.y + sgn * (12.0 - 9.0 * close)
+					var y0 := p.y + sgn * ((8.0 + 1.5 * nn) - (6.0 + 1.2 * nn) * close)
 					_ga(fade)
 					_fs(R[1])
-					_fill(_ri(p.x - 10.0), _ri(y0) - 1, 21, 3)
+					_fill(_ri(p.x - wj), _ri(y0) - 1, _ri(wj * 2.0) + 1, 3)
 					_fs(R[4])
-					for j in 5:
-						_fill(_ri(p.x - 9.0 + j * 4.0), _ri(y0) + (1 if k == 0 else -3), 2, 3)
+					var teeth := 3 + nn
+					for j in teeth:
+						var tx := p.x - wj + 1.0 + j * (wj * 2.0 - 2.0) / float(teeth - 1) - 1.0
+						_fill(_ri(tx), _ri(y0) + (1 if k == 0 else -3), 2, 3)
+						_fs(Color.WHITE)
+						_fill(_ri(tx), _ri(y0) + (3 if k == 0 else -3), 1, 1)
+						_fs(R[4])
+				if close >= 1.0:
+					_glow(p.x, p.y, 18.0 + 3.0 * nn, R[4], 0.8 * fade)
 			if key == "bloodbloom:bloom":
 				for k in 8:
 					var a := float(k) / 8.0 * TAU + bt
@@ -520,26 +631,28 @@ func paint_air(b: Dictionary) -> void:
 					_fill(_ri(p.x + cos(a) * rr) - 1, _ri(p.y + sin(a) * rr * 0.6) - 1, 3, 3)
 				_glow(p.x, p.y, 20.0, R[4], fade)
 			if key == "lifeline:beat":
-				# (a pink heartbeat line pulsing across him)
+				# (below half life, twice as much: a pink heartbeat over his head, twice the size it was, its spike running along it,
+				# a pulse going out from what he struck; the check of 27 Nov 2026, Animations 1)
 				var hh := _hero_at(b)
-				var cx := _wx(hh.x, hh.y)
-				var cy := _wy(hh.x, hh.y) - 34.0
-				var pts := [Vector2(-12, 0), Vector2(-5, 0), Vector2(-3, -6), Vector2(0, 5), Vector2(2, -3), Vector2(4, 0), Vector2(12, 0)]
-				for k in range(1, pts.size()):
-					var a2: Vector2 = pts[k - 1]
-					var b2: Vector2 = pts[k]
-					_ga(fade)
-					_fs(R[1])
-					_line(cx + a2.x, cy + a2.y + 1.0, cx + b2.x, cy + b2.y + 1.0, 3)
-					_fs(R[4])
-					_line(cx + a2.x, cy + a2.y, cx + b2.x, cy + b2.y, 1)
-				_glow(cx, cy, 16.0, R[4], 0.6 * fade)
+				_heartbeat(_wx(hh.x, hh.y), _wy(hh.x, hh.y) - 40.0, 2.0, u, R, fade)
+				var sx := _wx(b["x1"], b["y1"])
+				var sy := _wy(b["x1"], b["y1"]) - 14.0
+				_glow(sx, sy, 26.0, R[4], 0.8 * (1.0 - _c01(bt / 0.35)))
+				for k in 2:
+					var v := _c01((bt - k * 0.18) / 0.4)
+					if v > 0.0 and v < 1.0:
+						_front(b["x1"], b["y1"], 0.3 + 0.9 * v, [R[1], R[2], R[3], R[4], R[5]], sd + k, 0.8 * (1.0 - v), "sound")
 		"lamprey:foe", "lancet:foe", "feedingfrenzy:foe", "transfusion:foe":
 			var hh := _hero_at(b)
 			if not LEECH_SAME:
 				_wisps(hh.x, hh.y, b["x1"], b["y1"], _ease(u * 1.4), 2, R, sd, 2 if b["id"] == "lamprey" else 1)
 		"lifeline:foe", "bloodbloom:foe", "bloodtide:foe":
 			_glow(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 14.0, 22.0, R[4], 0.7 * fade)
+			# (Lifeline's: its heartbeat over it, beating twice as hard below half life; the check of 27 Nov 2026)
+			if b["id"] == "lifeline":
+				var who = b["m"]
+				_heartbeat(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - (_mid(who) * 2.0 + 14.0 if who != null else 40.0), 1.6, u, R, fade)
+				_glow(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 14.0, 30.0, R[4], 0.5 * fade)
 		"cluster:bomblets":
 			# (two small bomblets arcing out to where they land)
 			for s in b["e"].get("to", []):
@@ -625,18 +738,34 @@ func paint_air(b: Dictionary) -> void:
 			# (two sharp ticks side by side, where the blow lands: never on him, his Art Rulebook's Animations 4)
 			var q := p
 			var hh = fx.hero()
+			# (a monster's two blows on him: beside him, not over him; the check of 27 Nov 2026, Animations 4)
+			if b["what"] == "foe":
+				q = Vector2(_wx(b["x"], b["y"]) + 22.0, _wy(b["x"], b["y"]) - 14.0)
 			if hh != null and b["what"] != "foe":
 				var hp := Vector2(_wx(hh.world.x, hh.world.y), _wy(hh.world.x, hh.world.y) - 16.0)
 				if q.distance_to(hp) < 22.0:
 					var f: Vector2 = hh.face
 					q = hp + Vector2((f.x - f.y) * 16.0, (f.x + f.y) * 8.0).normalized() * 30.0
+			# (bigger, the second sharp at once on the first, a click of sound off each: the check of 27 Nov 2026, Animations 1)
 			for k in 2:
-				var x := q.x - 7.0 + k * 14.0
-				_ga(fade)
-				_fs(R[1])
-				_line(x - 5.0, q.y + 10.0, x + 5.0, q.y - 10.0, 5)
-				_fs(R[4])
-				_line(x - 5.0, q.y + 10.0, x + 5.0, q.y - 10.0, 3)
+				var x := q.x - 10.0 + k * 20.0
+				var on := _c01((bt - k * 0.05) / 0.06)
+				_ga(fade * on)
+				_fs(R[3])
+				_line(x - 7.0, q.y + 14.0, x + 7.0, q.y - 14.0, 5)
+				_fs(R[5])
+				_line(x - 7.0, q.y + 14.0, x + 7.0, q.y - 14.0, 3)
+				_fs(Color.WHITE)
+				_line(x - 6.0, q.y + 12.0, x + 6.0, q.y - 12.0, 1)
+				_glow(x, q.y, 18.0, R[4], 0.7 * fade * on)
+				var v := _c01((bt - k * 0.05) / 0.25)
+				for j in 6:
+					var a := float(j) / 6.0 * TAU + 0.3
+					var r0 := 8.0 + 10.0 * v
+					_ga((1.0 - v) * on)
+					_fs(Color.WHITE if j % 2 == 0 else R[5])
+					_line(x + cos(a) * r0, q.y + sin(a) * r0 * 0.7, x + cos(a) * (r0 + 5.0), q.y + sin(a) * (r0 + 5.0) * 0.7, 1)
+				_ga(fade * on)
 				_fs(Color.WHITE)
 				_line(x - 4.0, q.y + 8.0, x + 4.0, q.y - 8.0, 1)
 			_glow(q.x, q.y, 24.0, R[4], fade)
@@ -827,7 +956,8 @@ func paint_air(b: Dictionary) -> void:
 			var q := p if b["what"] != "foe" else Vector2(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 14.0)
 			_hourglass(q.x, q.y - 22.0, u, R, fade, b["what"] == "foe")
 		"aftermath:bite":
-			_glow(p.x, p.y, 14.0, R[4], fade)
+			_glow(p.x, p.y, 26.0, R[4], fade)
+			_glow(p.x, p.y, 10.0, FIRE[4], 0.6 * fade)
 		"whipcrack:crack", "whipcrack:snap", "whipcrack:foe":
 			# (a lash thrown from him across the whole area, its wave running out and snapping straight, and the crack at its tip:
 			# a white star of a flash, sound-lines thrown off it)
@@ -870,23 +1000,266 @@ func paint_air(b: Dictionary) -> void:
 				px = x
 				py = y
 			if bt >= 0.1:
-				var c := 1.0 - _c01((bt - 0.1) / 0.2)
-				_glow(px, py, 30.0, R[5], c)
-				_glow(px, py, 12.0, Color.WHITE, c)
-				for k in 8:
-					var a := float(k) / 8.0 * TAU + _rh(sd, k) * 0.3
-					var r0 := 4.0 + 10.0 * (1.0 - c)
-					var r1 := r0 + 6.0 + 8.0 * _rh(sd, k + 9)
+				# (the crack: a big white star, its sound-lines thrown far; the check of 27 Nov 2026, Animations 1)
+				var c := 1.0 - _c01((bt - 0.1) / 0.25)
+				_glow(px, py, 44.0, R[5], c)
+				_glow(px, py, 18.0, Color.WHITE, c)
+				for k in 12:
+					var a := float(k) / 12.0 * TAU + _rh(sd, k) * 0.3
+					var r0 := 5.0 + 16.0 * (1.0 - c)
+					var r1 := r0 + 9.0 + 12.0 * _rh(sd, k + 9)
 					_ga(c)
 					_fs(Color.WHITE if k % 2 == 0 else R[5])
 					_line(px + cos(a) * r0, py + sin(a) * r0 * 0.7, px + cos(a) * r1, py + sin(a) * r1 * 0.7, 1)
 		"onrush:hold", "hornet:sting", "lifeline:pull", "transfusion:drip", "transfusion:orb", "carapace:motes", "bloodbloom:orb", "feedingfrenzy:orb", "tempo:hold", "tempo:foe", "fulgurite:bolt", "mire:seep", "charge:bump":
 			if key == "fulgurite:bolt":
 				_bolt(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]), _wx(b["x1"], b["y1"]), _wy(b["x1"], b["y1"]) - 8.0, R, sd, fade, 1)
+			elif key == "lifeline:pull":
+				# (the orbs flying straight in to him: pink streaks drawn in from all round, a heartbeat over him as they land)
+				var hh := _hero_at(b)
+				var cx := _wx(hh.x, hh.y)
+				var cy := _wy(hh.x, hh.y) - 12.0
+				for k in 5:
+					var a := float(k) / 5.0 * TAU + _rh(sd, k)
+					var d := 44.0 * (1.0 - _ease(u * 1.4))
+					var x0 := cx + cos(a) * (d + 12.0)
+					var y0 := cy + sin(a) * (d + 12.0) * 0.6
+					var x1 := cx + cos(a) * d
+					var y1 := cy + sin(a) * d * 0.6
+					_ga(fade)
+					_fs(R[3])
+					_line(x0, y0, x1, y1, 2)
+					_fs(R[5])
+					_fill(_ri(x1) - 1, _ri(y1) - 1, 3, 3)
+				_glow(cx, cy + 12.0, 26.0, R[4], 0.6 * fade)
+				if u > 0.5:
+					_heartbeat(cx, cy - 28.0, 1.4, (u - 0.5) * 2.0, R, fade)
 			else:
 				var hh := _hero_at(b) if key in ["onrush:hold", "lifeline:pull", "carapace:motes", "tempo:hold"] else Vector2(b["x"], b["y"])
 				_glow(_wx(hh.x, hh.y), _wy(hh.x, hh.y) - 12.0, 14.0, R[4], 0.5 * fade)
+				if key == "hornet:sting":
+					# (a hit while his speed lasts poisoning too: a barb jabbed into it, its venom flashing)
+					var q := Vector2(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - _mid(b["m"]))
+					var jab := _ease(_c01(bt / 0.1))
+					_ga(fade)
+					_fs(R[0])
+					_line(q.x + 18.0 - 12.0 * jab, q.y - 14.0 + 9.0 * jab, q.x + 4.0, q.y - 3.0, 4)
+					_fs(R[4])
+					_line(q.x + 18.0 - 12.0 * jab, q.y - 14.0 + 9.0 * jab, q.x + 4.0, q.y - 3.0, 2)
+					_glow(q.x, q.y, 22.0, Color("#b4cc24"), 0.7 * fade)
 	_ga(1.0)
+
+
+## THE SHELLS' EDGES: each ward circle drawn as its own edge standing round it, not a plain ring (How art is made 9; his “Give
+## the 7 shields their own rings (Recommended)”, 27 Nov 2026). (cx, cy) its middle on the screen, `r` in tiles, `t` the time,
+## `rise` how far up it has come as it is laid (0 to 1).
+##   redoubt     a wall of battlements; redoubt_in, the inner wall, brighter
+##   sanctuary   a ring of candles of its light, lit one after another, flickering
+##   aegis       interlocking hex plates, a shimmer running round them
+##   minefield   a fuse round it, a spark running along it, burnt behind
+##   riposte     crossed blades standing round it, glinting in turn
+##   shieldwall  round shields standing rim to rim, each with its boss
+##   carapace    overlapping shell plates, lit on their tops
+func _shell_edge(id: String, cx: float, cy: float, r: float, t: float, sd: int, a: float, R: PackedColorArray, rise := 1.0) -> void:
+	var rx := r * 22.6
+	var ry := r * 11.3
+	var around := TAU * sqrt((rx * rx + ry * ry) * 0.5)
+	if a <= 0.0 or rx < 2.0:
+		return
+	match id:
+		"redoubt", "redoubt_in":
+			var n := maxi(12, int(around / 4.0))
+			var inner := id == "redoubt_in"
+			for i in n:
+				var an := float(i) / n * TAU
+				var px := _ri(cx + cos(an) * rx)
+				var py := _ri(cy + sin(an) * ry)
+				var hh := (4.0 if i % 2 == 0 else 2.0) * rise
+				_ga(a)
+				_fs(R[1])
+				_fill(px - 2, py - _ri(hh), 4, _ri(hh) + 1)
+				_fs(R[3])
+				_fill(px - 2, py - _ri(hh) + 1, 1, maxi(1, _ri(hh) - 1))
+				_fs(R[5] if inner else R[4])
+				_fill(px - 2, py - _ri(hh), 4, 1)
+			_glow(cx, cy, rx, R[3], (0.3 if inner else 0.2) * a)
+		"sanctuary":
+			var n := maxi(8, int(around / 14.0))
+			for i in n:
+				var an := float(i) / n * TAU + 0.2
+				var px := _ri(cx + cos(an) * rx)
+				var py := _ri(cy + sin(an) * ry)
+				var lit := _c01(rise * float(n) * 1.2 - float(i))
+				var fl := sin(t * 9.0 + float(i) * 1.7) * 0.5 + 0.5
+				# (a short candle, its wax in shadow, so that its flame is what shines)
+				_ga(a)
+				_fs(R[0])
+				_fill(px - 2, py - 4, 4, 5)
+				_fs(R[2])
+				_fill(px - 1, py - 4, 2, 4)
+				_fs(R[3])
+				_fill(px - 1, py - 4, 1, 3)
+				if lit > 0.0:
+					_ga(a * lit)
+					_fs(R[4])
+					_fill(px - 2, py - 8, 4, 4)
+					_fs(R[5])
+					_fill(px - 1 + (1 if fl > 0.5 else 0), py - 10, 2, 5)
+					_fs(Color.WHITE)
+					_fill(px, py - 8 - (1 if fl > 0.5 else 0), 1, 3)
+					_glow(px, py - 7, 12.0, R[4], 0.9 * a * lit)
+					_glow(px, py - 7, 5.0, R[5], 0.8 * a * lit)
+		"aegis":
+			var n := maxi(10, int(around / 8.0))
+			var run := fmod(t * 0.5, 1.0)
+			for i in n:
+				var an := float(i) / n * TAU
+				if float(i) / n > rise:
+					continue
+				var px := cx + cos(an) * rx
+				var py := cy + sin(an) * ry
+				var near := absf(fmod(float(i) / n - run + 1.5, 1.0) - 0.5)
+				var shine := 1.0 - _c01(near / 0.06)
+				for k in 6:
+					var a0 := float(k) / 6.0 * TAU
+					var a1 := float(k + 1) / 6.0 * TAU
+					_ga(a)
+					_fs(R[1])
+					_line(px + cos(a0) * 4.5, py - 2.0 + sin(a0) * 3.0, px + cos(a1) * 4.5, py - 2.0 + sin(a1) * 3.0, 2)
+					_fs(Color.WHITE if shine > 0.3 else R[5])
+					_line(px + cos(a0) * 4.5, py - 3.0 + sin(a0) * 3.0, px + cos(a1) * 4.5, py - 3.0 + sin(a1) * 3.0, 1)
+				_ga(a * 0.7)
+				_fs(R[3])
+				_fill(_ri(px) - 2, _ri(py) - 4, 4, 2)
+				_fs(R[5])
+				_fill(_ri(px) - 1, _ri(py) - 4, 1, 1)
+				if shine > 0.3:
+					_glow(px, py - 3.0, 8.0, R[5], 0.7 * a * shine)
+			_glow(cx, cy, rx, R[3], 0.2 * a)
+		"minefield":
+			var n := maxi(24, int(around / 3.0))
+			var head := fmod(t * 0.35, 1.0)
+			for i in n:
+				var f0 := float(i) / n
+				var an0 := f0 * TAU
+				var an1 := float(i + 1) / n * TAU
+				var w0 := 1.0 + 0.04 * sin(an0 * 9.0 + float(sd % 5))
+				var w1 := 1.0 + 0.04 * sin(an1 * 9.0 + float(sd % 5))
+				var behind := fmod(head - f0 + 1.0, 1.0)
+				var burnt := behind < 0.3
+				# (a twisted cord: dark under, its strands lit in turn; black and ashen where the spark has been)
+				_ga(a)
+				_fs(DUST[0] if burnt else R[0])
+				_line(cx + cos(an0) * rx * w0, cy + sin(an0) * ry * w0 + 1.0, cx + cos(an1) * rx * w1, cy + sin(an1) * ry * w1 + 1.0, 3)
+				_fs(DUST[1] if burnt else (R[4] if i % 2 == 0 else R[2]))
+				_line(cx + cos(an0) * rx * w0, cy + sin(an0) * ry * w0, cx + cos(an1) * rx * w1, cy + sin(an1) * ry * w1, 1)
+			var ha := head * TAU
+			var hx := cx + cos(ha) * rx * (1.0 + 0.04 * sin(ha * 9.0 + float(sd % 5)))
+			var hy := cy + sin(ha) * ry * (1.0 + 0.04 * sin(ha * 9.0 + float(sd % 5)))
+			_ga(a)
+			_fs(FIRE[3])
+			_fill(_ri(hx) - 2, _ri(hy) - 2, 5, 4)
+			_fs(FIRE[5])
+			_fill(_ri(hx) - 1, _ri(hy) - 2, 3, 3)
+			_fs(Color.WHITE)
+			_fill(_ri(hx), _ri(hy) - 2, 1, 2)
+			for k in 7:
+				var sa := _rh(sd + int(t * 20.0), k) * TAU
+				var sr := 2.0 + 6.0 * _rh(sd + int(t * 20.0), k + 4)
+				_fs(FIRE[5] if k % 2 == 0 else FIRE[3])
+				_fill(_ri(hx + cos(sa) * sr), _ri(hy - 2.0 + sin(sa) * sr * 0.6), 1, 1)
+			_glow(hx, hy, 16.0, FIRE[3], 0.9 * a)
+			_glow(hx, hy, 6.0, FIRE[5], 0.8 * a)
+		"riposte":
+			var n := maxi(6, int(around / 16.0))
+			for i in n:
+				var an := float(i) / n * TAU
+				var px := cx + cos(an) * rx
+				var py := cy + sin(an) * ry
+				var hh := 11.0 * rise
+				var glint := fmod(t * 1.2 + float(i) / n, 1.0) < 0.1
+				_ga(a)
+				_fs(R[0])
+				_line(px - 4.0, py + 1.0, px + 4.0, py - hh + 1.0, 3)
+				_line(px + 4.0, py + 1.0, px - 4.0, py - hh + 1.0, 3)
+				_fs(R[4])
+				_line(px - 4.0, py, px + 4.0, py - hh, 1)
+				_line(px + 4.0, py, px - 4.0, py - hh, 1)
+				# (their hilts in the floor, a cross-guard on each)
+				_fs(R[2])
+				_fill(_ri(px - 5.0), _ri(py - 2.0), 3, 1)
+				_fill(_ri(px + 3.0), _ri(py - 2.0), 3, 1)
+				_fs(Color.WHITE if glint else R[5])
+				_fill(_ri(px + 4.0), _ri(py - hh), 1, 1)
+				_fill(_ri(px - 4.0), _ri(py - hh), 1, 1)
+				if glint:
+					_glow(px, py - hh, 5.0, R[5], 0.8 * a)
+		"shieldwall":
+			var n := maxi(10, int(around / 8.0))
+			for i in n:
+				var an := float(i) / n * TAU
+				# (a heater shield standing on its point: flat top, straight sides, tapering to the floor; a band down it and
+				# its rim lit along the top; not a ball)
+				var px := _ri(cx + cos(an) * rx)
+				var py := _ri(cy + sin(an) * ry - 2.0 * rise)
+				var top := py - _ri(9.0 * rise)
+				_ga(a)
+				var rows := [7, 7, 7, 7, 5, 5, 3, 1]
+				var hgt := py - top
+				for j in hgt:
+					var w: int = rows[mini(7, int(float(j) / maxf(1.0, float(hgt)) * 8.0))]
+					_fs(R[0])
+					_fill(px - (w + 1) / 2 - 1, top + j, w + 2, 1)
+					_fs(R[2] if j > hgt / 2 else R[3])
+					_fill(px - (w + 1) / 2, top + j, w, 1)
+				if hgt >= 3:
+					_fs(R[4])
+					_fill(px - 3, top, 7, 1)
+					_fs(R[5])
+					_fill(px, top + 1, 1, maxi(1, hgt - 3))
+					_fs(Color.WHITE)
+					_fill(px - 2, top, 2, 1)
+		"carapace":
+			var n := maxi(10, int(around / 5.0))
+			for i in n:
+				var an := float(i) / n * TAU
+				var px := _ri(cx + cos(an) * rx)
+				var py := _ri(cy + sin(an) * ry)
+				# (an arched plate like a beetle's, each lapping over the last: domed, a lit curve along its back, a dark seam)
+				var hh := 5.0 * rise
+				var widths := [3, 5, 7, 7, 7, 7]
+				_ga(a)
+				for j in 6:
+					var w: int = widths[j]
+					var yy := _ri(py - hh + float(j) * hh / 6.0)
+					_fs(R[0])
+					_fill(px - w / 2 - 1, yy, w + 2, 1)
+					_fs(R[3] if j < 2 else R[2])
+					_fill(px - w / 2, yy, w, 1)
+				_fs(R[5])
+				_fill(px - 1, _ri(py - hh), 2, 1)
+				_fs(R[4])
+				_fill(px - 3, _ri(py - hh) + 2, 1, 2)
+				_fill(px - 2, _ri(py - hh) + 1, 1, 1)
+			_glow(cx, cy, rx, R[3], 0.2 * a)
+
+
+## Lifeline's heartbeat at (cx, cy), `s` times its first size: a pink trace with its spike, its bright head running along it as `u`
+## goes 0 to 1, a glow behind it.
+func _heartbeat(cx: float, cy: float, s: float, u: float, R: PackedColorArray, fade: float) -> void:
+	var pts := [Vector2(-12, 0), Vector2(-5, 0), Vector2(-3, -6), Vector2(0, 5), Vector2(2, -3), Vector2(4, 0), Vector2(12, 0)]
+	var head := -12.0 + 24.0 * _ease(_c01(u * 1.6))
+	for k in range(1, pts.size()):
+		var a2: Vector2 = pts[k - 1] * s
+		var b2: Vector2 = pts[k] * s
+		var lit: bool = pts[k].x <= head + 1.0
+		_ga(fade)
+		_fs(R[2])
+		_line(cx + a2.x, cy + a2.y + 1.0, cx + b2.x, cy + b2.y + 1.0, 3)
+		_fs(R[5] if lit else R[4])
+		_line(cx + a2.x, cy + a2.y, cx + b2.x, cy + b2.y, 2)
+	_glow(cx + head * s, cy, 12.0, Color.WHITE, 0.7 * fade)
+	_glow(cx, cy, 16.0 * s, R[4], 0.6 * fade)
 
 
 ## A shell round (cx, cy), `rx` by `ry` px, in meld `id`'s colour and way, `fade` its strength; `n` Shieldwall's bands.
@@ -1019,7 +1392,8 @@ func paint_air_more() -> void:
 	var hx := _wx(h.world.x, h.world.y)
 	var hy := _wy(h.world.x, h.world.y)
 	# (his shell, one of these in front, while it holds)
-	if h.shield > 0.0 or h.barrier > 0.0:
+	# (only while a shield holds: a barrier is shown on his life globe, no shell round him; his words, 27 Nov 2026)
+	if h.shield > 0.0:
 		for i in 3:
 			var f: String = h.m52.fid(i)
 			if SHELLS.has(f):
@@ -1163,8 +1537,27 @@ func paint_floor_more() -> void:
 				var pulse := 0.6 + 0.4 * sin(t * 3.0)
 				_ga(0.7 * life * (pulse if id == "sanctuary" else 1.0))
 				_fs(R[4])
-				_ring(x, y, r)
+				# (Parry's not a plain ring but its blades, standing on its edge: the second check of the weakest melds, 27 Nov 2026,
+				# How art is made 9; and the seven others each an edge of its own, his “Give the 7 shields their own rings
+				# (Recommended)”, 27 Nov 2026: _shell_edge)
+				if id != "parry":
+					_shell_edge("redoubt_in" if id == "redoubt" and z.get("inner", false) else id, cx, cy, r, t, sd,
+						0.85 * life * ((0.8 + 0.2 * pulse) if id == "sanctuary" else 1.0), R)
 				match id:
+					"parry":
+						var nb := 14
+						for i in nb:
+							var a := float(i) / nb * TAU + t * 0.6
+							var bx := cx + cos(a) * r * 22.6
+							var by := cy + sin(a) * r * 11.3
+							var tx := -sin(a)
+							var ty := cos(a) * 0.5
+							var flash := fmod(t * 1.5 + float(i) / nb, 1.0) < 0.12
+							_ga(0.85 * life)
+							_fs(R[1])
+							_line(bx - tx * 4.0, by - ty * 4.0 + 1.0, bx + tx * 4.0, by + ty * 4.0 - 4.0, 3)
+							_fs(Color.WHITE if flash else R[4])
+							_line(bx - tx * 4.0, by - ty * 4.0, bx + tx * 4.0, by + ty * 4.0 - 5.0, 1)
 					"minefield":
 						for i in 6:
 							var a := float(i) / 6.0 * TAU + _rh(sd, i) * 0.4
@@ -1175,21 +1568,11 @@ func paint_floor_more() -> void:
 							_fill(_ri(cx + cos(a) * d * 22.6) - 1, _ri(cy + sin(a) * d * 11.3) - 1, 3, 3)
 							_fs(FIRE[4] if on else R[4])
 							_fill(_ri(cx + cos(a) * d * 22.6), _ri(cy + sin(a) * d * 11.3), 1, 1)
-					"riposte":
-						for i in 8:
-							var a := float(i) / 8.0 * TAU
-							_ga(life)
-							_fs(R[5])
-							_line(cx + cos(a) * r * 22.6, cy + sin(a) * r * 11.3, cx + cos(a) * (r * 22.6 - 5.0), cy + sin(a) * (r * 11.3 - 2.5), 1)
 					"carapace":
 						if randf() < 0.2:
 							var a := randf() * TAU
 							bits.append({"x": x + cos(a) * r * 0.6, "y": y + sin(a) * r * 0.6, "z": 0.0, "vx": 0.0, "vy": 0.0, "vz": 14.0, "fall": 0.0, "t": 0.0,
 								"life": 0.8, "ramp": PackedColorArray([R[3], R[4], R[5]]), "kind": "dot", "size": 1.0})
-					"redoubt":
-						if z.get("inner", false):
-							_fs(R[5])
-							_ring(x, y, r * 0.98, 2, t)
 					"sanctuary":
 						if randf() < 0.15:
 							var a := randf() * TAU

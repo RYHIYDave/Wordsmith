@@ -21,6 +21,11 @@
 ## steam the thicker the more it is hurt; Blur's streaks while it is a blur. And (the check of 26 Nov 2026: these never played on a
 ## monster) Whiteout's blow whipping snow round him, the thicker the more hurt it is; Overcharge's bolt reaching out to him from it,
 ## its sparks spattering round his feet.
+## THE SECOND CHECK OF THE WEAKEST MELDS (27 Nov 2026, his “I’d like you to do another 20 weak meld checks”), by his Art Rulebook:
+## Juggernaut's own moment, none before: each blow coming down as a slam, slabs heaving round it, the heavier the fuller the frenzy;
+## at a full frenzy its cracked ground tearing open twice as wide. Pressure Point's needles more and longer, a star of light where
+## they meet, and behind, the needles left standing in the staggered one it marks. Seeker's sight crackling, small bolts leaping off
+## it to the weakest.
 extends "res://scripts/fx_m52kit.gd"
 
 const IDS := ["duelist", "needle", "brand", "seeker", "quickdraw", "pressurepoint", "berserk", "fever", "whiteout", "overcharge", "blur", "juggernaut"]
@@ -53,15 +58,35 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 			for i in 10:
 				_bit(b["x"], b["y"], mid, "streak", PackedColorArray([FIRE[3], FIRE[4], FIRE[5]]), 2.0, 0.35, 120, 20, 80)
 		"seeker:seek":
-			b["end"] = 0.3
-		"quickdraw:draw":
+			b["end"] = 0.45
+			for i in 10:
+				_bit(b["x"], b["y"], mid, "streak", PackedColorArray([R[3], R[4], R[5], Color.WHITE]), 3.0, 0.3, 60, 10, 50)
+		"juggernaut:slam":
+			# (scaled by the frenzy: the fuller, the heavier)
+			var n: int = clampi(int(b.get("n", 0)), 0, 5)
+			b["end"] = 0.75
+			b["r"] = 1.0 + 0.16 * n
+			for i in 10 + 2 * n:
+				_bit(b["x"], b["y"], 4, "stone", PackedColorArray(STONE), 2.0 + 0.3 * n, 0.8, 300, 60, 130)
+			for i in 8:
+				_bit(b["x"], b["y"], 3, "puff", PackedColorArray(DUST), 1.6, 0.8, -6, 4, 12)
+			fx.kick(2.2 + 0.25 * n)
+			fx.hold(0.08 if n < 3 else 0.11)
+		"juggernaut:wide":
+			b["end"] = 0.9
+			for i in 16:
+				_bit(b["x"], b["y"], 3, "stone", PackedColorArray(STONE), 2.4, 0.8, 280, 60, 120)
+			fx.kick(2.4)
 			b["end"] = 0.35
 		"quickdraw:crack":
 			b["end"] = 0.3
 			for i in 10:
 				_bit(b["x"], b["y"], 10, "streak", PackedColorArray([R[4], R[5], Color.WHITE]), 4.2, 0.25, 0, 0, 10)
 		"pressurepoint:point":
-			b["end"] = 0.45
+			b["end"] = 0.55
+			fx.hold(0.06)
+		"pressurepoint:mark":
+			b["end"] = 1.1
 		"duelist:foe", "needle:foe", "brand:foe", "seeker:foe", "quickdraw:foe", "pressurepoint:foe":
 			b["end"] = 0.7
 		"berserk:stack", "overcharge:charge":
@@ -90,9 +115,14 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 		"blur:gust":
 			b["end"] = 0.5
 		"juggernaut:foe":
-			b["end"] = 0.5
+			# (its blow knocking him back: the floor heaving under him in slabs as he goes, not only dust; the check of 27 Nov 2026)
+			b["end"] = 0.75
+			b["r"] = 0.9
 			for i in 10:
 				_bit(b["x"], b["y"], 2, "puff", PackedColorArray(DUST), 1.4, 0.7, -6, 4, 10)
+			for i in 8:
+				_bit(b["x"], b["y"], 3, "stone", PackedColorArray(STONE), 1.8, 0.7, 260, 40, 100)
+			fx.kick(2.2)
 		_:
 			return false
 	return true
@@ -251,7 +281,46 @@ func paint_floor(b: Dictionary) -> void:
 					_fs(Color.WHITE)
 					_fill(px, py - hh, 1, 1)
 			_glow(cx, cy, 30.0, SNOW[4], 0.6 * fade)
-		"juggernaut:step", "juggernaut:foe":
+		"juggernaut:slam", "juggernaut:wide", "juggernaut:foe":
+			# (the blow coming down: slabs of floor heaving up round it, grit kicked out along a front, cracks torn out from it)
+			var sd: int = b["seed"]
+			var u := _ease(bt / 0.25)
+			var fade := _c01((float(b["end"]) - bt) / 0.35)
+			var rr: float = float(b["r"]) * (0.4 + 0.6 * u)
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"])
+			var n := 10 if b["what"] == "slam" else 16
+			for k in n:
+				var a := float(k) / n * TAU + _rh(sd, k) * 0.35
+				var x := cx + cos(a) * rr * 22.6 * 0.8
+				var y := cy + sin(a) * rr * 11.3 * 0.8
+				var lift := (5.0 + 7.0 * _rh(sd, k + 20)) * (1.0 - _c01((bt - 0.3) / 0.4)) * (0.5 if sin(a) > 0.3 else 1.0)
+				_shard(x, y, 5.0 + 3.0 * _rh(sd, k + 40), lift, [DUST[0], DUST[1], R[1], R[2], R[3], R[4]], sd + k, fade)
+			for k in 7:
+				var a := float(k) / 7.0 * TAU + _rh(sd, k + 60) * 0.6
+				var px := cx
+				var py := cy
+				for j in 4:
+					var v := float(j + 1) / 4.0
+					var qa := a + (_rh(sd, k * 7 + j) - 0.5) * 0.6
+					var qx := cx + cos(qa) * rr * 22.6 * 1.2 * v
+					var qy := cy + sin(qa) * rr * 11.3 * 1.2 * v
+					_ga(fade)
+					_fs(DUST[0])
+					_line(px, py, qx, qy, 2)
+					_fs(R[4] if bt < 0.3 else R[2])
+					_line(px, py - 1.0, qx, qy - 1.0, 1)
+					px = qx
+					py = qy
+			_front(b["x"], b["y"], float(b["r"]) * 1.3 * u, [DUST[0], DUST[1], R[3], R[4], R[5]], sd, 0.95 * (1.0 - u), "shock")
+			_glow(cx, cy, 30.0 * float(b["r"]), R[4], 0.5 * fade * (1.0 - u))
+		"pressurepoint:mark":
+			# (where it marked the staggered one, the floor under it lit in a small cross of its colour)
+			var fade := _c01((1.1 - bt) / 0.3)
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"])
+			_glow(cx, cy, 20.0, R[4], 0.5 * fade)
+		"juggernaut:step":
 			var sd: int = b["seed"]
 			# (each heavy step kicking the floor's grit out in a wave, cracks running out ahead of it)
 			var u := _ease(bt / 0.3)
@@ -314,7 +383,15 @@ func paint_air(b: Dictionary) -> void:
 		"duelist:mark", "needle:mark", "brand:mark", "seeker:mark", "quickdraw:mark":
 			_sight(p.x, p.y, _c01(bt / 0.18), R, _c01((0.3 - bt) / 0.12))
 		"seeker:seek":
-			_sight(p.x, p.y, _c01(bt / 0.12), R, _c01((0.3 - bt) / 0.12))
+			# (the sight closing on the weakest, crackling: small bolts leaping off it, a white flash as it is found)
+			var fade := _c01((0.45 - bt) / 0.15)
+			_sight(p.x, p.y, _c01(bt / 0.12), R, fade)
+			for k in 5:
+				var a := float(k) / 5.0 * TAU + bt * 3.0 + _rh(sd, k)
+				var r0 := 12.0
+				var r1 := 22.0 + 8.0 * _rh(sd, k + int(bt * 20.0))
+				_bolt(p.x + cos(a) * r0, p.y + sin(a) * r0 * 0.8, p.x + cos(a) * r1, p.y + sin(a) * r1 * 0.8, R, sd + k + int(bt * 20.0), fade, 1)
+			_glow(p.x, p.y, 30.0, R[4], 0.6 * fade)
 			if bt > 0.1:
 				_glow(p.x, p.y, 20.0, Color.WHITE, 0.7 * (1.0 - _c01((bt - 0.1) / 0.2)))
 		"needle:three":
@@ -343,7 +420,8 @@ func paint_air(b: Dictionary) -> void:
 			_glow(p.x, p.y, 28.0, FIRE[4], 0.9 * (1.0 - _c01(bt / 0.35)))
 		"quickdraw:draw":
 			var hh := _hero_at(b)
-			_glint(_wx(hh.x, hh.y) + 7.0, _wy(hh.x, hh.y) - 18.0, 1.0 + 2.0 * (1.0 - _c01(bt / 0.35)), R)
+			_glint(_wx(hh.x, hh.y) + 7.0, _wy(hh.x, hh.y) - 18.0, 2.0 + 3.0 * (1.0 - _c01(bt / 0.35)), R)
+			_glow(_wx(hh.x, hh.y) + 7.0, _wy(hh.x, hh.y) - 18.0, 16.0, R[4], 0.6 * (1.0 - _c01(bt / 0.35)))
 		"quickdraw:crack":
 			# (the draw: a long white needle out along the way he faces)
 			var hh := _hero_at(b)
@@ -351,26 +429,37 @@ func paint_air(b: Dictionary) -> void:
 			var f: Vector2 = h.face if h != null else Vector2(1, 0)
 			var sx := _wx(hh.x, hh.y)
 			var sy := _wy(hh.x, hh.y) - 14.0
-			var ex := _wx(hh.x + f.x * 3.0, hh.y + f.y * 3.0)
-			var ey := _wy(hh.x + f.x * 3.0, hh.y + f.y * 3.0) - 12.0
+			# (longer and brighter, a star of light at its point: the second check of the weakest melds, 27 Nov 2026, Animations 1)
+			var ex := _wx(hh.x + f.x * 4.0, hh.y + f.y * 4.0)
+			var ey := _wy(hh.x + f.x * 4.0, hh.y + f.y * 4.0) - 12.0
 			var u := _c01(bt / 0.3)
 			_ga(1.0 - u)
+			_fs(R[1])
+			_line(sx, sy + 2, ex, ey + 2, 3)
 			_fs(R[4])
 			_line(sx, sy + 1, ex, ey + 1, 2)
 			_fs(Color.WHITE)
 			_line(sx, sy, ex, ey, 1)
-			_glow(ex, ey, 18.0, Color.WHITE, 0.8 * (1.0 - u))
-		"pressurepoint:point":
-			# (four small white needles closing in on it from four sides, then a pin of light)
+			for k in 8:
+				var a := float(k) / 8.0 * TAU
+				var l := (5.0 if k % 2 else 12.0) * (1.0 - u * 0.5)
+				_fs(Color.WHITE if k % 2 == 0 else R[5])
+				_line(ex, ey, ex + cos(a) * l, ey + sin(a) * l * 0.8, 1)
+			_glow(ex, ey, 28.0, R[4], 0.8 * (1.0 - u))
+			_glow(ex, ey, 14.0, Color.WHITE, 0.8 * (1.0 - u))
+		"pressurepoint:point", "pressurepoint:mark":
+			# (six long white needles closing in on it from all round, then a star of light where they meet; behind, on the one it
+			# marks, the needles left standing in it, glinting)
+			var mark: bool = b["what"] == "mark"
 			var u := _ease(bt / 0.14)
-			var fade := _c01((0.45 - bt) / 0.2)
-			for k in 4:
-				var a := float(k) * PI * 0.5 + PI * 0.25
-				var d := lerpf(26.0, 5.0, u)
+			var fade := _c01((float(b["end"]) - bt) / 0.25)
+			for k in 6:
+				var a := float(k) * TAU / 6.0 + PI / 6.0
+				var d := lerpf(34.0, 5.0, u) if not mark else 5.0
 				var x0 := p.x + cos(a) * d
 				var y0 := p.y + sin(a) * d * 0.8
-				var x1 := p.x + cos(a) * (d + 13.0)
-				var y1 := p.y + sin(a) * (d + 13.0) * 0.8
+				var x1 := p.x + cos(a) * (d + (20.0 if not mark else 12.0))
+				var y1 := p.y + sin(a) * (d + (20.0 if not mark else 12.0)) * 0.8
 				_ga(fade)
 				_fs(R[1])
 				_line(x0, y0, x1, y1, 3)
@@ -378,11 +467,23 @@ func paint_air(b: Dictionary) -> void:
 				_line(x0, y0, x1, y1, 2)
 				_fs(Color.WHITE)
 				_line(x0, y0, lerpf(x0, x1, 0.5), lerpf(y0, y1, 0.5), 1)
-			if u >= 1.0:
+			if u >= 1.0 and not mark:
+				# (the star of light where they meet)
+				var v := _c01((bt - 0.14) / 0.25)
+				for k in 8:
+					var a := float(k) * TAU / 8.0
+					var l := (6.0 + 12.0 * float(k % 2 == 0)) * (1.0 - v * 0.5)
+					_ga(fade)
+					_fs(Color.WHITE if k % 2 == 0 else R[5])
+					_line(p.x, p.y, p.x + cos(a) * l, p.y + sin(a) * l * 0.8, 1)
+				_glow(p.x, p.y, 30.0, R[4], 0.8 * fade)
 				_glow(p.x, p.y, 18.0, Color.WHITE, 0.8 * fade)
 				_ga(fade)
 				_fs(Color.WHITE)
 				_fill(_ri(p.x) - 1, _ri(p.y) - 1, 3, 3)
+			if mark:
+				var pulse := 0.5 + 0.5 * sin(bt * 12.0)
+				_glow(p.x, p.y, 16.0 + 6.0 * pulse, R[4], 0.7 * fade)
 		"duelist:foe", "needle:foe", "brand:foe", "seeker:foe", "quickdraw:foe", "pressurepoint:foe":
 			if b["id"] != "duelist":
 				var hh := _hero_at(b)

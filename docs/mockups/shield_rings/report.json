@@ -1,0 +1,77 @@
+{
+ "asked": "Give the 7 shields their own rings (Recommended)",
+ "picked": "The ward circle each of these seven leaves rose as a plain ring, which your Art Rulebook rules out (How art is made 9). Now each rises as an edge of its own, the way Parry's ring of blades does.",
+ "checks": [
+  "The game's rules check on the seven and Parry: 0 wrong. Each in front of the Strike and behind it, 16 cases, its twist seen in all 16.",
+  "All seven filmed: no script errors. Nothing covers your hero for a run of frames in any of them.",
+  "The game's own Guarding ward (its dotted ring and little shield marks) is still drawn under each: that is the rune's own look, as Heavy's stun ring is."
+ ],
+ "weakest": [
+  {
+   "id": "redoubt",
+   "why": [
+    "Its two ward circles rose as two plain rings."
+   ],
+   "done": [
+    "A wall of battlements rises round each, merlons and gaps lit along the top; the inner wall brighter. A grit front goes out under it."
+   ]
+  },
+  {
+   "id": "sanctuary",
+   "why": [
+    "Its ward circle rose as a plain ring."
+   ],
+   "done": [
+    "A ring of candles stands round it, lit one after another, their flames flickering, for as long as the ward lasts."
+   ]
+  },
+  {
+   "id": "aegis",
+   "why": [
+    "Its much bigger ward circle rose as a plain ring."
+   ],
+   "done": [
+    "Interlocking hex plates rise round it, a shimmer running round them."
+   ]
+  },
+  {
+   "id": "minefield",
+   "why": [
+    "Its ward circle rose as a plain ring."
+   ],
+   "done": [
+    "A fuse runs round it, a spark racing along it throwing sparks, the cord burnt black behind it."
+   ]
+  },
+  {
+   "id": "riposte",
+   "why": [
+    "Its ward circle was a plain ring with little ticks on it."
+   ],
+   "done": [
+    "Crossed blades stand round it, hilts in the floor, glinting one after another."
+   ]
+  },
+  {
+   "id": "shieldwall",
+   "why": [
+    "Its ward circle rose as a plain ring."
+   ],
+   "done": [
+    "Heater shields stand rim to rim round it, each with a band down it, its rim lit along the top. A grit front goes out under it."
+   ]
+  },
+  {
+   "id": "carapace",
+   "why": [
+    "Its ward circle rose as a plain ring."
+   ],
+   "done": [
+    "Arched shell plates rise round it, each lapping over the last like a beetle's, lit along their backs."
+   ]
+  }
+ ],
+ "found": [
+  "The film tool skipped any list that began with Redoubt (it took “redo…” for its own redo mode). Fixed in the check (check_melds52.gd); nothing in the game changed."
+ ]
+}

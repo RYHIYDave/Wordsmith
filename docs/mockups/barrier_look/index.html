@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Barrier: No Bubble, a Glow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* The game's night indigo and friendly cyan; each film on the dark it was shot on. */
+:root {
+  --bg: #f2f3fb; --panel: #ffffff; --line: #d4d8ef; --fg: #161a3a; --muted: #5a618c; --accent: #0c8fa3; --stage: #0e0c24; --stagefg: #e4e7ff;
+  --display: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1030; --panel: #161a44; --line: #2c3274; --fg: #e9ecff; --muted: #a3abd8; --accent: #28dcf0; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #0d1030; --panel: #161a44; --line: #2c3274; --fg: #e9ecff; --muted: #a3abd8; --accent: #28dcf0; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; margin: 0; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 24px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+.wrap > * { min-width: 0; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 7vw, 38px); line-height: 1.1; margin: 4px 0 8px; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 20px; margin: 0 0 12px; }
+p { margin: 0; max-width: 70ch; }
+p + p { margin-top: 10px; }
+.lead { color: var(--muted); }
+ul.list { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6px; max-width: 75ch; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 14px; }
+.card { background: var(--stage); color: var(--stagefg); border-radius: 8px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
+.card header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.card b { font-family: var(--display); font-weight: 600; font-size: 18px; }
+.card header span { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #7af8f0; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+figure { margin: 0; display: grid; gap: 4px; min-width: 0; }
+figcaption { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: #a3abd8; }
+video { width: 100%; height: auto; aspect-ratio: 10 / 7; border-radius: 4px; background: #05040f; display: block; }
+.does { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: 13.5px; line-height: 1.45; }
+.does dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #7af8f0; padding-top: 2px; }
+.does dd { margin: 0; color: #e4e7ff; }
+.does ul { margin: 0; padding-left: 16px; display: grid; gap: 2px; }
+.ask { background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 16px; display: grid; gap: 8px; }
+.ask b { font-family: var(--display); font-size: 17px; }
+@media (max-width: 520px) { .pair { grid-template-columns: 1fr; } }
+.pics { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.pic { background: var(--stage); color: var(--stagefg); border-radius: 8px; padding: 10px; display: grid; gap: 8px; }
+.pic img { width: 100%; height: auto; image-rendering: pixelated; border-radius: 4px; display: block; }
+.pic .two { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pic b { font-family: var(--display); font-size: 16px; }
+.pic p { font-size: 13.5px; color: #e4e7ff; }
+.wide img { width: 100%; height: auto; border-radius: 6px; display: block; }
+</style></head><body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Wordsmith · the three defences · 27 Nov 2026</div>
+    <h1>Barrier: no bubble, a glow when you have a lot</h1>
+    <p class="lead">Your words: “I need barrier changed. Not the same shape as Guardian, so people just have 2 bubble shields on them for no reason. So I don't think there needs to be anything if you have barrier. It's around your health globe in the corner of the screen. But I do think that once barrier, the amount of barrier you have exceeds your health pool, you get like a blue glow around your character. And then once it's like double your health, you get something else.”</p>
+  </header>
+  <section class="ask">
+    <b>What I need from you</b>
+    <p>A yes to this look, or what to change. Nothing here is in the game until you say yes.</p>
+  </section>
+  <section>
+    <h2>What changed</h2>
+    <ul class="list">
+      <li>No bubble for barrier. It shows only on your health globe and the thin cyan line over your life bar.</li>
+      <li>On the globe: the globe's own iron band lights up cyan as far as your barrier is full, and its number sits inside the globe under your life. Nothing runs under the potion or over your level any more.</li>
+      <li>A Guarding meld with a barrier no longer keeps its shell on you. Its moment still plays as it tops your barrier up.</li>
+      <li>More barrier than life: a soft glow round your hero and a pool of light at your feet. It's cyan, not blue, because your rulebook keeps friendly glows cyan, and it matches the barrier on your globe.</li>
+      <li>Double your life or more: the glow is brighter and wider, and motes of light rise off your hero.</li>
+      <li>No barrier: Guarding's own shield keeps its own bubble, as before.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>Before and after</h2>
+    <div class="pics">
+      <div class="pic"><b>A little more barrier than life (1.3 times)</b><div class="two"><img src="before_glow1.png" alt="before"><img src="glow1.png" alt="after"></div><p>Left before: the bubble. Right after: a soft cyan glow.</p></div>
+      <div class="pic"><b>Double your life (2.2 times)</b><div class="two"><img src="before_glow2.png" alt="before"><img src="glow2.png" alt="after"></div><p>Right: brighter and wider, with motes of light rising.</p></div>
+      <div class="pic"><b>Sanctuary in front, with a barrier</b><div class="two"><img src="before_sanct.png" alt="before"><img src="sanct.png" alt="after"></div><p>Left: two bubbles. Right: none, just the glow from her barrier.</p></div>
+      <div class="pic"><b>Your barrier, on your globe</b><div class="two"><img src="globe_before.png" alt="before"><img src="globe.png" alt="after"></div><p>Your words: “can you make it look nicer in the UI around the life globe? It behind the potion widget and overlapping the player level”. Left before: the ring stood out past the globe, under the potion, and its number sat on your level. Right after: the globe's own iron band lights up cyan, and the barrier number sits inside the globe under your life.</p></div>
+      <div class="pic"><b>Part spent, and on a phone</b><div class="two"><img src="globe_part.png" alt="part spent"><img src="globe_phone.png" alt="phone"></div><p>The band lights only as far as your barrier is full, with a spark at its end; the rest stays iron. On a phone the globe sits at the top, just as tidy.</p></div>
+    </div>
+  </section>
+  <section class="wide">
+    <h2>All six, side by side</h2>
+    <img src="sheet.png" alt="before and after">
+  </section>
+</div>
+</body></html>

@@ -196,6 +196,9 @@ func paint_floor(b: Dictionary) -> void:
 		"foe":
 			var hostile: bool = b["id"] in ["refrain", "bloodcurse", "hexblast", "evileye", "delirium", "talisman", "grudge", "omen", "pall", "rewind", "sap", "slowfuse", "stillpoint", "quickening", "respite", "eternity", "stutter", "doldrums"]
 			_front(x, y, 0.3 + 0.8 * _ease(u), _A5(PackedColorArray(ENEMY) if hostile else R), sd, fade, "shock")
+			# (Eddy's: a vortex turning at his feet, under him, not over; the check of 27 Nov 2026)
+			if b["id"] == "eddy":
+				_swirl(x, y, 0.9 * (0.5 + 0.5 * _ease(u)), R, fade, -float(b["t"]) * 7.0, 4, 3)
 		"leave":
 			# (the ground it lays, laid: its edge rolling out to where it will stand, the light of it rising, sparks off it)
 			var lr := float(b["e"].get("r", b.get("r", 1.2)))
@@ -214,7 +217,14 @@ func paint_floor(b: Dictionary) -> void:
 				var ex := _wx(pq.x, pq.y)
 				var ey := _wy(pq.x, pq.y)
 				var v := _ease(u)
-				_streak(sx + (ex - sx) * maxf(0.0, v - 0.25), sy + (ey - sy) * maxf(0.0, v - 0.25) - sin(maxf(0.0, v - 0.25) * PI) * 10.0, sx + (ex - sx) * v, sy + (ey - sy) * v - sin(v * PI) * 10.0, R, fade, 2)
+				_streak(sx + (ex - sx) * maxf(0.0, v - 0.25), sy + (ey - sy) * maxf(0.0, v - 0.25) - sin(maxf(0.0, v - 0.25) * PI) * 10.0, sx + (ex - sx) * v, sy + (ey - sy) * v - sin(v * PI) * 10.0, R, fade, 3 if b["id"] == "swarm" else 2)
+				# (Swarm's: each a red shard at the head of its streak, glowing: the third check of the weakest melds, 27 Nov 2026,
+				# Animations 1)
+				if b["id"] == "swarm":
+					var hx2 := sx + (ex - sx) * v
+					var hy2 := sy + (ey - sy) * v - sin(v * PI) * 10.0
+					_shard(hx2, hy2 + 3.0, 4.0, 7.0, [R[0], R[1], R[2], R[3], R[4], R[5]], sd, fade)
+					_glow(hx2, hy2, 10.0, R[4], 0.6 * fade)
 	_ga(1.0)
 
 
@@ -262,7 +272,13 @@ func paint_air(b: Dictionary) -> void:
 		"stagger", "stun", "yank":
 			_stars(top.x, top.y - 4.0, 3, R, fade, bt * 8.0)
 		"drink", "drain":
-			_drops(mp.x, mp.y - _mid(b["m"]), x1px, y1px, u, 5, R, fade, sd)
+			# (Swarm's copies' drink: a thicker stream, its life landing on him in a glow; the third check of the weakest melds)
+			var swarm: bool = b["id"] == "swarm"
+			_drops(mp.x, mp.y - _mid(b["m"]), x1px, y1px, u, 9 if swarm else 5, R, fade, sd)
+			if swarm:
+				_drops(mp.x + 4.0, mp.y - _mid(b["m"]) + 2.0, x1px + 3.0, y1px, u, 6, R, fade * 0.8, sd + 5)
+				_glow(x1px, y1px, 14.0 * _ease(u), R[4], 0.7 * fade)
+				_glow(mp.x, mp.y - _mid(b["m"]), 10.0, R[3], 0.5 * fade)
 		"orb":
 			_glow(ax, ay, 14.0, R[3], 0.7 * fade)
 			_drops(ax - 6.0, ay + 8.0, ax, ay - 16.0, u, 4, R, fade, sd)
@@ -336,7 +352,14 @@ func paint_air(b: Dictionary) -> void:
 		elif slowing:
 			_hand(hx, hy - 31.0, 11.0, -PI * 0.5 + u * PI, C, fade)
 		match b["id"]:
-			"backwash", "gullet", "harpoon", "whirlpool", "haven", "eddy", "whiplash", "maelstrom":
+			"eddy":
+				# (dragged toward it, and kept drawn there: a vortex turning at his feet, its arms reaching toward it, the pull
+				# streaming along them; the second check of the weakest melds, 27 Nov 2026, Animations 1)
+				for k in 2:
+					var off := (float(k) - 0.5) * 8.0
+					_streak(x1px, y1px + off * 0.4, hx + off, hy + 12.0, R, fade, 2)
+				_glow(hx, hy + 14.0, 24.0, R[4], 0.5 * fade)
+			"backwash", "gullet", "harpoon", "whirlpool", "haven", "whiplash", "maelstrom":
 				_streak(x1px, y1px, hx, hy, R, fade, 2)
 			"fetters", "thrall", "tripwire", "pin", "mauler", "stockade", "manacle", "snag", "dragnet":
 				if b["id"] in ["manacle", "fetters"]:

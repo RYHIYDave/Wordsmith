@@ -71,7 +71,8 @@ const KILL_BEHIND := ["bloodlust", "coldblood", "secondwind", "berserk", "fever"
 const LONGER := {"rekindle:front": 2.6, "rekindle:behind": 2.0, "bloat:front": 1.6, "jolt:behind": 1.2, "smoulder:front": 1.0,
 	"timebomb:front": 1.2, "timebomb:behind": 2.0, "detonator:front": 1.0, "cluster:front": 0.6, "fury:front": 1.5, "redoubt:front": 1.0, "transfusion:front": 1.0,
 	"hourglass:behind": 1.6, "frostbite:front": 2.4}
-const STUNNED := ["pressurepoint", "daze", "charge", "mire", "anvil"]
+## (Gravity: the stunned it drags in stunned longer, its moment, the third check of the weakest melds, 27 Nov 2026)
+const STUNNED := ["pressurepoint", "daze", "charge", "mire", "anvil", "gravity"]
 ## THE CITY'S MELDS (meldscity_rules.gd): what one Strike shows of each, in front (behind: its shards flying, or what it left), and
 ## what its twist waits on made so on the pack before the Strike: cursed, slowed in time, held, chilled, frozen. "" in front: seen
 ## only over quick uses (the films strike twice) or nothing told (Amber's longer hold).
@@ -441,7 +442,8 @@ func film(only := "") -> void:
 	M52.HIGH_ON = true
 	# (`redo`: ALL MELDS, THE LEAST EXCITING REDONE, every round's; `redo:round=1`, one round's: their new moments with them)
 	var was_redo: bool = M52.REDO_ON
-	if only.begins_with("redo"):
+	# (`redo` or `redo:...`, not a word that begins so: Redoubt)
+	if only == "redo" or only.begins_with("redo:"):
 		M52.REDO_ON = true
 		var rounds: Array = T.get("redoRounds", [])
 		var span := only.trim_prefix("redo").trim_prefix(":")
@@ -483,7 +485,12 @@ func film(only := "") -> void:
 			var whirl: bool = id == "purge" and side == "front"
 			M._w_set(h, 1 if whirl else 0, side, [id, "guarding"] if id == "hourglass" and side == "behind" else [id])
 			for m in M._w_pack:
-				if (KILL.has(id) and side == "front") or (KILL_BEHIND.has(id) and side == "behind"):
+				# (Detonator behind: marked on the first blow and falling to the second, so its going up twice as big is seen; the
+				# third check of the weakest melds, 27 Nov 2026)
+				if id == "detonator" and side == "behind":
+					m.max_life = FOE_LIFE
+					m.life = FOE_LIFE
+				elif (KILL.has(id) and side == "front") or (KILL_BEHIND.has(id) and side == "behind"):
 					# (a monster's life, not the test pack's million: what bursts for a share of it bursts as in a fight)
 					m.max_life = FOE_LIFE
 					m.life = 1.0
@@ -518,6 +525,10 @@ func film(only := "") -> void:
 			if FRENZY.has(id):
 				h.frenzy = int(preload("res://scripts/words.gd").data()["frenzy"]["max"]) - 1
 				h.frenzy_t = 1.2 if id == "fury" else 5.0
+			# (Juggernaut behind waits on a full frenzy, which a use behind it does not add to: made full; the second check of the
+			# weakest melds, 27 Nov 2026)
+			if id == "juggernaut" and side == "behind":
+				h.frenzy = int(preload("res://scripts/words.gd").data()["frenzy"]["max"])
 			if HASTE.has(id):
 				h.haste = 30.0
 				h.haste_t = 6.0
@@ -559,6 +570,10 @@ func film(only := "") -> void:
 				await CH._after(id, side)
 			if CR != null:
 				await CR._after(id, side)
+			if id == "detonator" and side == "behind":
+				for m in M._w_pack:
+					if bool(m.m52.get("det_mark", false)) or str(m.m52.get("mark", "")) == "detonator":
+						m.life = 1.0
 			if not whirl:
 				M._w_strike(h)
 			# (Doom and Grudge in front wait on a third blow on what they curse; Vendetta and Bloodtide behind on a third)

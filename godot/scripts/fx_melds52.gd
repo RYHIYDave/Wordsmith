@@ -325,7 +325,8 @@ func update(dt: float) -> void:
 				py = float(z["y"]) + sin(a) * float(z["r"])
 			fx.mote(px, py, ramp(id))
 	# (his shield, a Guarding meld in front: its own)
-	var sh: bool = h.shield > 0.0 or h.barrier > 0.0
+	# (only while a shield holds: a barrier is shown on his life globe, nothing round him; his words, 27 Nov 2026)
+	var sh: bool = h.shield > 0.0
 	if sh:
 		for i in 3:
 			var f: String = h.m52.fid(i)
