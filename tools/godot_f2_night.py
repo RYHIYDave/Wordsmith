@@ -52,13 +52,36 @@ def cover() -> None:
     img = Image.fromarray((np.clip(small, 0.0, 1.0) * 255).astype(np.uint8), 'L')
     img.save(LOOKS + 'floor2_cover.png')
     # (THE SKYLINE, his “You see the massive problem in the lower left quadrant here right?”: the sky seen under the prison made
-    # it float. The sky is seen only over the place's farthest tops; under that line, past the place's own pictures, plain dark
-    # ground. For each column of the cover, in game pixels, the second row from its top that something of the place covers)
-    covered = small > 0.5
+    # it float. The sky is seen only over the prison's far side: over the line of its farthest ground (the top edges of its
+    # tiles, the map's own), lifted by a wall's height less a little so that its far walls stand against the sky, as the
+    # courtyards' own skies stood over their far walls (render/grounds.ts drawSky, `up` 84); under that line, past the place's
+    # own pictures, plain dark ground. For each column of the cover, in game pixels)
+    L = json.load(open('godot/assets/floor2/layout.json'))
+    tw, th, tiles = L['w'], L['h'], L['tiles']
+    cols = W // step
+    INF = 10 ** 9
+    far = [INF] * cols
+    for ty in range(th):
+        for tx in range(tw):
+            if tiles[ty * tw + tx] == 0:
+                continue
+            cx = (tx - ty) * 16
+            y0 = (tx + ty) * 8
+            for i in range(max(0, (cx - 16 - lx // 2) // GRAIN), min(cols, (cx + 16 - lx // 2) // GRAIN + 1)):
+                x = lx // 2 + (i + 0.5) * GRAIN
+                if abs(x - cx) <= 16:
+                    far[i] = min(far[i], int(y0 + abs(x - cx) * 0.5))
+    UP = 60
+    have = [i for i in range(cols) if far[i] < INF]
+    i0, i1 = have[0], have[-1]
     top = []
-    for cx in range(covered.shape[1]):
-        rows = np.nonzero(covered[:, cx])[0]
-        top.append(int(ly // 2 + (int(rows[0]) + 1) * GRAIN) if rows.size else None)
+    for i in range(cols):
+        if far[i] < INF:
+            top.append(far[i] - UP)
+        elif i < i0:
+            top.append(far[i0] - UP + (i0 - i) * GRAIN // 2)
+        else:
+            top.append(far[i1] - UP + (i - i1) * GRAIN // 2)
     json.dump({'x': lx // 2, 'y': ly // 2, 'grain': GRAIN, 'w': W // step, 'h': H // step, 'top': top}, open(LOOKS + 'floor2_cover.json', 'w'))
     print('cover', img.size, 'origin game px', lx // 2, ly // 2)
 

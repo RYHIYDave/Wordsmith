@@ -2036,8 +2036,8 @@ class _Sky extends Node2D:
 
 
 ## F2_SKY's ground: bare dark earth (floor2_ground.png, repeating where it lies) under the sky's line (floor2_cover.json `top`:
-## for each column of the cover, the place's farthest top), out to the screen's edge whichever way he looks; drawn once, behind
-## everything of the place.
+## for each column of the cover, the prison's farthest ground lifted a wall's height less a little), out past the screen's edge
+## whichever way he looks; drawn once, behind everything of the place.
 class _NightGround extends Node2D:
 	var tex: Texture2D
 	var info: Dictionary
@@ -2049,17 +2049,21 @@ class _NightGround extends Node2D:
 		var far := 60000.0
 		var tw := float(tex.get_width())
 		var th := float(tex.get_height())
-		var quad := func(x0: float, x1: float, y: float) -> void:
-			var pts := PackedVector2Array([Vector2(x0, y), Vector2(x1, y), Vector2(x1, far), Vector2(x0, far)])
+		var deep := far * 2.0
+		var poly := func(pts: PackedVector2Array) -> void:
 			var uv := PackedVector2Array()
 			for q in pts:
 				uv.append(Vector2(q.x / tw, q.y / th))
 			draw_polygon(pts, PackedColorArray([Color.WHITE]), uv, tex)
-		quad.call(-far, ox, float(tops[0]) * 2.0)
 		for i in tops.size():
-			if tops[i] != null:
-				quad.call(ox + i * g, ox + (i + 1) * g, float(tops[i]) * 2.0)
-		quad.call(ox + tops.size() * g, far, float(tops[tops.size() - 1]) * 2.0)
+			var y := float(tops[i]) * 2.0
+			poly.call(PackedVector2Array([Vector2(ox + i * g, y), Vector2(ox + (i + 1) * g, y), Vector2(ox + (i + 1) * g, deep), Vector2(ox + i * g, deep)]))
+		# (past the place each way, the line goes on down as its far edges do, half a pixel down to one across)
+		var y0 := float(tops[0]) * 2.0
+		var x1 := ox + tops.size() * g
+		var y1 := float(tops[tops.size() - 1]) * 2.0
+		poly.call(PackedVector2Array([Vector2(ox - far, y0 + far * 0.5), Vector2(ox, y0), Vector2(ox, deep), Vector2(ox - far, deep)]))
+		poly.call(PackedVector2Array([Vector2(x1, y1), Vector2(x1 + far, y1 + far * 0.5), Vector2(x1 + far, deep), Vector2(x1, deep)]))
 
 
 ## F2_SKY's night sky, held to the screen: its picture (game pixels, drawn two picture pixels to one) laid end to end across it,
