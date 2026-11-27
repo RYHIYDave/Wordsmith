@@ -1609,6 +1609,8 @@ func _build(where: String, arrive: String) -> void:
 	if looked:
 		look = Look.new()
 		look.place = files_of(where)
+		# (floor 2 under one night sky, look.gd F2_SKY; `--f2sky=1` for its pictures)
+		look.f2_sky = look.F2_SKY or _arg("f2sky") == "1"
 		look.back_layer = back
 		look.floor_layer = floor_layer
 		look.flat_layer = look_flats
@@ -1995,6 +1997,9 @@ func _build(where: String, arrive: String) -> void:
 		_place.add_child(sight)
 		if looked:
 			look.sight = sight
+			# (F2_SKY: the prison's grounds drawn whole from the first; the small map still fills as he goes)
+			if look.f2_sky and look.place == "floor2":
+				look.reveal_all()
 
 	town = null
 	if is_home(where):

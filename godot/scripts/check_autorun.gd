@@ -575,7 +575,7 @@ func _probe(spec: String) -> void:
 
 
 ## (A WALK, to film a floor's look as he goes: `WS_AUTORUN_WALK=f;x,y;x,y;...`: floor f, its monsters put out of the way, and he
-## walks from one point to the next by the way a body can go, at his own pace; each point reached is told)
+## walks from one point to the next by the way a body can go, at his own pace; each point reached is told and pictured)
 func _walk(spec: String) -> void:
 	var parts := spec.split(";")
 	var f := int(parts[0])
@@ -616,6 +616,8 @@ func _walk(spec: String) -> void:
 			await M.get_tree().process_frame
 			spent += M.get_process_delta_time()
 		h.auto_dir = Vector2.ZERO
+		await M._wait(0.3)
+		M._snap(dir + "/walk_%02d.png" % i)
 		print("AUTORUN   walk: at %s (%.1f s)" % [h.world, (Time.get_ticks_msec() - t0) / 1000.0])
 	await M._wait(1.0)
 	print("AUTORUN walk done")

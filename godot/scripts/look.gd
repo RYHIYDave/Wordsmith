@@ -35,6 +35,14 @@ const Glow := preload("res://scripts/figure_glow.gd")
 const HideClip := preload("res://scripts/hide_clip.gd")
 const HH := 16.0  # picture pixels in half a tile's height: a depth of d sorts at y = d * 16
 const DARK_GRAIN := 4.0  # game pixels to a pixel of the dark's picture
+## FLOOR 2 UNDER ONE NIGHT SKY (his words, 27 Nov 2026: “The art is good. Look at all the black empty space. I don't like that”;
+## “I really like just the night sky. Drawing the whole thing I think will fix it.”): the prison's grounds drawn whole from the
+## first (main.gd reveals the look; the small map still fills as he goes), its night sky behind everything, held to the screen
+## and sliding slowly as he goes (`_NightSky`: assets/looks/floor2_nightsky.png, tools/godot_f2_night.py); the dark laid only
+## where the place's own pictures stand (floor2_cover.png), so that the sky is seen wherever nothing is; nothing hidden in the
+## yard, and the courtyards' own skies no longer shown one at a time. OFF until his yes to its pictures (`--f2sky=1` for them).
+const F2_SKY := false
+var f2_sky := F2_SKY
 
 var place := ""
 ## (THE CULT'S GATES AT THE MAP'S EDGE, act1/altar_rooms.gd: a hall of the Wilds laid past another floor's edge, this many tiles from
@@ -297,6 +305,8 @@ func _ready() -> void:
 			for sp in D["sprites"]:
 				_fog_sprite1(sp, t)
 	_make_skies()
+	if f2_sky and place == "floor2":
+		_make_night_sky()
 	if data.has("waypoint") and _way_node != null:
 		var w: Dictionary = data["waypoint"]
 		_motes = Sprite2D.new()
@@ -395,6 +405,40 @@ func _make_skies() -> void:
 		_skies.append(clip)
 
 
+## F2_SKY: the night sky behind everything (a screen's layer under the world's, as the Ledge Road's), and the moon in it.
+func _make_night_sky() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = -10
+	var sky := _NightSky.new()
+	sky.tex = load(DIR + "floor2_nightsky.png")
+	layer.add_child(sky)
+	add_child(layer)
+	_sky_node = sky
+
+
+## F2_SKY: the dark's veil laid only where the place's own pictures stand (floor2_cover.png, a pixel to every DARK_GRAIN game
+## pixels, white where something is drawn); past them its alpha is nothing, and the night sky is seen as it is.
+func _veil_to_cover(alpha: PackedFloat32Array, lo: Vector2, w: int, h: int) -> void:
+	var info: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "floor2_cover.json"))
+	var tex: Texture2D = load(DIR + "floor2_cover.png")
+	var img := tex.get_image()
+	if img.is_compressed():
+		img.decompress()
+	var g := float(info["grain"])
+	var ox := float(info["x"])
+	var oy := float(info["y"])
+	var cw := img.get_width()
+	var ch := img.get_height()
+	for y in h:
+		var cy := floori((lo.y + (y + 0.5) * DARK_GRAIN - oy) / g)
+		for x in w:
+			var cx := floori((lo.x + (x + 0.5) * DARK_GRAIN - ox) / g)
+			var c := 0.0
+			if cx >= 0 and cy >= 0 and cx < cw and cy < ch:
+				c = img.get_pixel(cx, cy).r
+			alpha[y * w + x] = c
+
+
 ## Where the hero is, for floor 2's zones (render/grounds.ts skyOver; render/yard.ts heroIn): in the yard; else indoors; else the
 ## courtyard he is in, or the last he was in while he is in the ways on its near side.
 func _step_zone(at: Vector2) -> void:
@@ -437,12 +481,13 @@ func _step_zone(at: Vector2) -> void:
 		return
 	_zone_set = true
 	# (what lies beyond the yard's walls, not drawn from in it)
-	if first or was["yard"] != in_yard:
+	# (F2_SKY: nothing hidden from the yard, and no courtyard's own sky: one night sky over all)
+	if (first or was["yard"] != in_yard) and not f2_sky:
 		for n in _yh_nodes:
 			if is_instance_valid(n):
 				n.visible = not in_yard
 	for k in _skies.size():
-		_skies[k].visible = (k == sky) if k < Z["skies"].size() else in_yard
+		_skies[k].visible = false if f2_sky else ((k == sky) if k < Z["skies"].size() else in_yard)
 	# (the dark, its sky's light, and the vignette)
 	var dark: float = float(Z["yard"]["dark"]) if in_yard else float(Z["indoors"]["dark"]) if indoors else float(Z["out"]["dark"])
 	vignette_now = float(Z["yard"]["vignette"]) if in_yard else float(Z["indoors"]["vignette"]) if indoors else float(Z["out"]["vignette"])
@@ -450,7 +495,7 @@ func _step_zone(at: Vector2) -> void:
 		var m: ShaderMaterial = _dark.material
 		m.set_shader_parameter("dark_a", dark)
 		var lifted = Z["yard"] if in_yard else (Z["skies"][sky] if sky >= 0 else null)
-		if lifted == null:
+		if lifted == null or f2_sky:
 			m.set_shader_parameter("lift", 0.0)
 		else:
 			var line: Array = lifted["line"]
@@ -887,6 +932,8 @@ func lighting(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 	var alpha := PackedFloat32Array()
 	alpha.resize(w * h)
 	alpha.fill(1.0)
+	if f2_sky and place == "floor2":
+		_veil_to_cover(alpha, lo, w, h)
 	for hole in holes:
 		var c: Vector2 = (hole[0] - lo) / DARK_GRAIN
 		var rx: float = hole[1] / DARK_GRAIN
@@ -1978,6 +2025,33 @@ class _Sky extends Node2D:
 			draw_texture(town, Vector2(float(tw["x"]) + ox / 2.0, top + float(tw["y"]) + float(S["horizon"])))
 		if top + h < size.y:
 			draw_rect(Rect2(0, top + h, size.x, size.y - top - h), Color(str(S["haze"])))
+
+
+## F2_SKY's night sky, held to the screen: its picture (game pixels, drawn two picture pixels to one) laid end to end across it,
+## sliding a tenth of the way he goes across (held still up and down); below it, its lowest colour.
+class _NightSky extends Node2D:
+	var tex: Texture2D
+
+	func _process(_dt: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		var vp := get_viewport()
+		var size := vp.get_visible_rect().size
+		var cam := vp.get_camera_2d()
+		var c: Vector2 = cam.get_screen_center_position() if cam != null else Vector2.ZERO
+		var tw := float(tex.get_width()) * 2.0
+		var th := float(tex.get_height()) * 2.0
+		var low := tex.get_image().get_pixel(0, tex.get_height() - 1) if _low == Color(0, 0, 0, 0) else _low
+		_low = low
+		draw_rect(Rect2(Vector2.ZERO, size), low)
+		var top := 0.0
+		var x := -fposmod(c.x * 0.1, tw)
+		while x < size.x:
+			draw_texture_rect(tex, Rect2(x, top, tw, th), false)
+			x += tw
+
+	var _low := Color(0, 0, 0, 0)
 
 
 ## A stretch of the recorded ground's still pictures, drawn in one go in the renderer's order.
