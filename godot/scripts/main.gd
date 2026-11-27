@@ -3482,17 +3482,17 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_glows.gd").new().demonfilm(self, hero, dir)
 		get_tree().quit()
 		return
+	# (HIS BARRIER'S LOOK, PICTURED: --only=barrierlook: check_barrierlook.gd; his words of 27 Nov 2026)
+	if _arg("only") == "barrierlook":
+		await preload("res://scripts/check_barrierlook.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "smooth":
 		await preload("res://scripts/check_glows.gd").new().smooth(self, hero, dir)
 		get_tree().quit()
 		return
 	if _arg("only") == "defence":
 		await preload("res://scripts/check_defence.gd").new().run(self, hero, dir)
-		get_tree().quit()
-		return
-	# (HIS BARRIER'S LOOK, PICTURED: --only=barrierlook: check_barrierlook.gd; his words of 27 Nov 2026)
-	if _arg("only") == "barrierlook":
-		await preload("res://scripts/check_barrierlook.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (EVERY UNIQUE WEAPON ON ITS HERO, PICTURED: --only=skinsheet: check_skinsheet.gd)
