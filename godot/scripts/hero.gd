@@ -294,6 +294,11 @@ var last_blow := {}
 ## (defs.ts TUNE.poisonTime: how long a monster's poison works on him; PACKS.minion: a minion's share of its leader's words)
 const POISON_TIME := 4.0
 const PACK_MINION := 0.5
+## (how many times Guarding in front has topped his barrier up, and by how much the last time: the Guarding melds that wait on a
+## fresh shield (Sanctuary, Parry, Aegis, Shieldwall) count a top-up as one; melds46_rules.gd step. His “Fix it (Recommended)”,
+## 27 Nov 2026, to: with any barrier they did nothing)
+var guard_ups := 0
+var guard_up_by := 0.0
 
 ## Shot mode (main.gd): a screen direction held as if pressed, attacks asked for, and blows that flash but do not harm.
 var auto_dir := Vector2.ZERO
@@ -968,7 +973,9 @@ func _boons(i: int) -> void:
 	# GUARDING in front: each use gives a shield (a new one never weaker than what is left of the last)
 	# (THE THREE DEFENCES' WORDS: with a barrier, Guarding tops it up: words.gd DEFENCE_WORDS)
 	if r["shield"] > 0.0 and Words.DEFENCE_WORDS and max_barrier > 0.0:
-		barrier = minf(max_barrier, barrier + roundf(max_life * float(r["shield"])))
+		guard_up_by = roundf(max_life * float(r["shield"]))
+		barrier = minf(max_barrier, barrier + guard_up_by)
+		guard_ups += 1
 		boost_by["shield"] = i
 		_tell({"t": "shield", "x": world.x, "y": world.y, "secs": 0.6})
 	elif r["shield"] > 0.0:
