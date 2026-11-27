@@ -36,7 +36,7 @@ static func run_of(main) -> Dictionary:
 		# (and the fight's lesson: what it has seen done, game.ts save `guide` met, low, quick, slow, evade, flask)
 		"guide": {"met": main.guide.met, "low": main.guide.low, "quick": main.guide.quick, "slow": main.guide.slow, "evade": main.guide.evade, "flask": main.guide.flask},
 		"depth": main.last_floor, "cleared": loot.cleared, "way": main.way_depth,
-		"body": loot.body_searched, "asked": loot.quest_given, "ring": loot.ring_lit, "quest": loot.quest,
+		"body": loot.body_searched, "asked": loot.quest_given, "ring": loot.ring_lit, "quest": loot.quest, "caved": loot.stairs_caved,
 		"furnace": loot.furnace, "meld": loot.meld, "meldAsk": loot.meld_ask, "toldCarrier": loot.told_carrier,
 		"chainedBeaten": loot.chained_beaten.duplicate(),
 		"dust": q.dust if q != null else 0, "feather": q.feather if q != null else "", "citySeen": q.city_seen if q != null else false,
@@ -213,6 +213,7 @@ static func restore_run(main, s: Dictionary) -> void:
 	main.final_open = s.get("finalOpen") == true
 	main.plan = (s.get("plan") as Array).filter(func(w): return w is String) if s.get("plan") is Array else []
 	loot.body_searched = s.get("body", false) == true
+	loot.stairs_caved = s.get("caved", false) == true
 	loot.quest_given = s.get("asked", false) == true
 	loot.ring_lit = s.get("ring", false) == true
 	loot.quest = "heart" if s.get("quest", "") == "heart" else ""

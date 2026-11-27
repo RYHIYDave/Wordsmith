@@ -1050,7 +1050,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "demonfilm", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "runebag", "companions", "endless", "rim", "shards", "final", "fanfare", "packs", "finalmusic", "memfloors", "smooth"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "demonfilm", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "cavein", "cavein_film", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "runebag", "companions", "endless", "rim", "shards", "final", "fanfare", "packs", "finalmusic", "memfloors", "smooth"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -1597,6 +1597,9 @@ func _build(where: String, arrive: String) -> void:
 		look.floor_layer = floor_layer
 		look.flat_layer = look_flats
 		look.stands = stands
+		# (THE STAIRS CAVED IN: floor 1's stairwell's daylight out, its light and the pool of it on the floor: cave_in.gd)
+		if where == "floor1" and cave_in_on() and loot.stairs_caved:
+			look.lights_out = [Vector2(-1758.4, 1234.8), Vector2(-1758.0, 1241.0)]
 		_place.add_child(look)
 
 	hero.map = map
@@ -2006,6 +2009,12 @@ func _build(where: String, arrive: String) -> void:
 	else:
 		if not looked and where == "floor1":
 			_floor_gate(flats)
+		# (THE STAIRS CAVE IN behind him, the first time he comes down them; after that the rubble lies there: cave_in.gd)
+		if where == "floor1" and cave_in_on() and (loot.stairs_caved or arrive == "stairs"):
+			_cave_in(flats, stands, not loot.stairs_caved)
+		# (the stone carried below with the stairs caved in: the quest's line again on each floor he comes into)
+		if loot.quest != "" and cave_in_on() and loot.stairs_caved:
+			loot.prompt_t = 6.0
 		var n := depth_of(where)
 		# (no loop under it, WORLD_LOOPS off: its own sounds now and then, world_sounds.ts AMBIENT_FLOORS)
 		sfx.ambient(sfx.AMBIENT_FLOORS.get(n, []))
@@ -2047,6 +2056,58 @@ func _build(where: String, arrive: String) -> void:
 
 
 ## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.
+## THE STAIRS CAVE IN (cave_in.gd), his ask of 26 Nov 2026, 22:06, and his picks: the first time he comes down them, after that the
+## rubble lying there; the town's stairs still lead down. ON at his yes to its third film, 26 Nov 2026, by 22:55: “Yes, switch it on
+## (Recommended)”. `--cavein=0` off, `--cavein=1` on; not in the checks' runs (`--only` set) unless asked for.
+static var CAVE_IN := true
+
+
+func cave_in_on() -> bool:
+	if _arg("cavein") != "":
+		return _arg("cavein") == "1"
+	return CAVE_IN and _arg("only") == ""
+
+
+## Below ground with the stairs up caved in and no waypoint up reached yet: the quest's "Push deeper into the prison".
+func caved_below() -> bool:
+	return cave_in_on() and loot.stairs_caved and way_depth < 2 and not is_home(place) and not _caving
+
+
+## (while the cave-in's film plays: the quest's line waits for it to settle)
+var _caving := false
+
+
+## The heap in floor 1's stairwell (and, the first time, the film of its fall), its dust over everything; the gate's tiles shut to
+## him.
+func _cave_in(flats: Node2D, stands: Node2D, film: bool) -> void:
+	var cave := preload("res://scripts/cave_in.gd").new()
+	cave.sfx = sfx
+	cave.shaker = hero
+	cave.hero = hero
+	cave.stands = stands
+	cave.film = film
+	# (the roof gives way as the floor's name goes: hud.gd floor_card, 3.4 s)
+	cave.delay = CURTAIN + 2.0
+	cave.position = Iso.to_screen(22.0, 132.375)
+	flats.add_child(cave)
+	_place.add_child(cave.dust_layer())
+	# (the doorway, and the floor the mound lies on, shut to him)
+	var shut: Array = (_gate["tiles"] as Array).duplicate()
+	for p in cave.mound_tiles:
+		shut.append([floori(p.x), floori(p.y)])
+	for t in shut:
+		var i := int(t[1]) * map.w + int(t[0])
+		if i >= 0 and i < map.walk.size():
+			map.walk[i] = 0
+	_caving = film
+	if film:
+		loot.stairs_caved = true
+		cave.fell.connect(func() -> void: loot.say("The stairs cave in behind you.", Loot.MSG_QUEST))
+		cave.settled.connect(func() -> void:
+			_caving = false
+			loot.prompt_t = 6.0)
+
+
 func _floor_gate(flats: Node2D) -> void:
 	var data: Dictionary = {}
 	for p in JSON.parse_string(FileAccess.get_file_as_string(TOWN_DIR + "/pics.json")):
@@ -2110,8 +2171,9 @@ func _process(dt: float) -> void:
 		if _save_t > 5.0:
 			_save_t = 0.0
 			save_now()
-	# FLOOR 1'S GATE: walking into its doorway takes him up to the town (game.ts leave('gateOut'), enterTown('stairs'))
-	if place == "floor1" and hero.alive and not _going:
+	# FLOOR 1'S GATE: walking into its doorway takes him up to the town (game.ts leave('gateOut'), enterTown('stairs')); not once
+	# its stairs have caved in (cave_in.gd)
+	if place == "floor1" and hero.alive and not _going and not (cave_in_on() and loot.stairs_caved):
 		var tx := floori(hero.world.x)
 		var ty := floori(hero.world.y)
 		for t in _gate["tiles"]:
@@ -3784,6 +3846,20 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await _town_shots(hero, dir)
 		get_tree().quit()
 		return
+	if _arg("only") == "cavein":
+		await _cavein_shots(hero, dir)
+		get_tree().quit()
+		return
+	if _arg("only") == "cavein_film":
+		# (the film of it alone, for Godot's own recording: in town a moment, down the stairs, the cave-in, its line and banner)
+		await _wait(1.0)
+		loot.quest_given = true
+		loot.taught = true
+		hero.walked = 5.0
+		go_to("floor1", "stairs")
+		await _wait(10.5)
+		get_tree().quit()
+		return
 	if _arg("only") == "loot":
 		await _loot_shots(hero, dir)
 		get_tree().quit()
@@ -5272,6 +5348,64 @@ func _loot_shots(hero: Hero, dir: String) -> void:
 ## SHOT MODE, THE TOWN AND THE FIRST QUEST: the town as he comes into it; up to the wordsmith, and what he asks; down the
 ## stairs to floor 1; the fallen wordsmith searched; up through the gate; the stone given and the ring lighting; the word
 ## given and the gear screen opened on it; the armourer's shelf, and a piece bought.
+## THE STAIRS CAVE IN, pictured and checked (`--only=cavein --cavein=1 --shots=<dir>`; Godot's own film of it with
+## `--write-movie <file.avi> --fixed-fps 30`): sent for the stone, down the town's stairs to floor 1, the film at its moments; the
+## line said, the stairs marked fallen and kept by the save, the banner his words, his way up shut (in the gate's doorway, still on
+## floor 1); then up by the waypoint and down the stairs again: the heap lying there, no second film.
+func _cavein_shots(h: Hero, dir: String) -> void:
+	var bad := 0
+	var check := func(ok: bool, what: String) -> int:
+		print(("CAVEIN ok   " if ok else "CAVEIN FAIL ") + what)
+		return 0 if ok else 1
+	await _wait(1.0)
+	loot.quest_given = true
+	h.walked = 5.0
+	# (a hero who has had the fight's lesson: its rows not in the way of the quest's line)
+	loot.taught = true
+	go_to("floor1", "stairs")
+	var t0 := Time.get_ticks_msec()
+	for at in [3.0, 3.6, 3.95, 4.25, 4.6, 5.0, 5.6, 6.6, 8.2]:
+		await _wait(maxf(0.0, at - float(Time.get_ticks_msec() - t0) / 1000.0))
+		await _snap(dir + "/cave_%03.1f.png" % at)
+	# (the film settled, the quest's line up)
+	var until := Time.get_ticks_msec() + 6000
+	while _caving and Time.get_ticks_msec() < until:
+		await get_tree().process_frame
+	await _wait(0.4)
+	bad += check.call(loot.stairs_caved, "the stairs marked fallen (loot.stairs_caved)")
+	bad += check.call(_wu_said("The stairs cave in behind you.") != "", "the line said: %s" % _wu_said("The stairs cave in"))
+	bad += check.call(Save.run_of(self).get("caved", false) == true, "the save keeps it (\"caved\": %s)" % Save.run_of(self).get("caved"))
+	var line: Dictionary = guide.banner()
+	bad += check.call(line.get("text", "") == "Push deeper into the prison", "the banner: %s / %s" % [line.get("text", ""), line.get("sub", "")])
+	await _snap(dir + "/cave_banner.png")
+	var t1: Array = _gate["tiles"][1]
+	bad += check.call(not map.walkable(int(t1[0]), int(t1[1])), "the gate's doorway shut to him")
+	h.world = Vector2(float(t1[0]) + 0.5, float(t1[1]) + 0.5)
+	await _wait(1.4)
+	bad += check.call(place == "floor1", "set in the gate's doorway, still on floor 1 (%s)" % place)
+	# the stone found: the banner his words again, the stone carried
+	var b = loot._body
+	if b != null:
+		h.world = b["at"] + Vector2(0.5, 0.5)
+		await _wait(0.6)
+		line = guide.banner()
+		bad += check.call(loot.quest == "heart" and line.get("text", "") == "Push deeper into the prison", "the stone taken: %s / %s (quest '%s', searched %s, prompt %.1f)" % [line.get("text", ""), line.get("sub", ""), loot.quest, loot.body_searched, loot.prompt_t])
+		await _snap(dir + "/cave_stone_carried.png")
+	# up (as by floor 2's waypoint) and down the town's stairs again: the heap there, no film
+	way_depth = 2
+	go_to("town", "way")
+	await _wait(1.4)
+	line = guide.banner()
+	bad += check.call(place == "town", "in town by the waypoint: %s / %s" % [line.get("text", ""), line.get("sub", "")])
+	var said := loot.msgs.filter(func(m): return str(m["text"]).begins_with("The stairs cave in")).size()
+	go_to("floor1", "stairs")
+	await _wait(3.5)
+	var again := loot.msgs.filter(func(m): return str(m["text"]).begins_with("The stairs cave in")).size()
+	bad += check.call(place == "floor1" and again == said, "down the stairs again: no second cave-in (said %d, then %d)" % [said, again])
+	await _snap(dir + "/cave_again.png")
+	print("CAVEIN %s" % ("OK" if bad == 0 else "%d FAILED" % bad))
+
+
 func _town_shots(h: Hero, dir: String) -> void:
 	await _wait(1.2)
 	await _snap(dir + "/30_town.png")
