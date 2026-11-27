@@ -599,7 +599,25 @@ func _thing(sign: String, cx: float, cy: float, R: PackedColorArray, a: float, u
 			_shield_face(cx, cy - 14.0, 22.0, R, a)
 			_flames(cx, cy - 24.0, 1, 2.0, 6.0, a, PackedColorArray(FIRE), int(b["seed"]))
 		"shieldon":
-			_shield_face(cx, cy - 12.0, 18.0, R, a)
+			# (Gravewarden's shade: a shade circling the one it guards, its shield face beside it, not over him; on a risen monster,
+			# circling it: the second check of the weakest melds, 27 Nov 2026, his Art Rulebook's Animations 4 and 7)
+			if str(b["id"]) == "gravewarden":
+				var who = b.get("m")
+				# (a risen monster's: round it, where it stands, not round him)
+				if b.get("foe", false) and b.has("x1"):
+					cx = _wx(b["x1"], b["y1"])
+					cy = _wy(b["x1"], b["y1"]) - 12.0
+					who = null
+				var mine: bool = not b.get("foe", false)
+				var rr := (_half(who) + 10.0) if who != null else (22.0 if mine else 18.0)
+				var ang := t * 3.0 + float(b["seed"] % 7)
+				var sx := cx + cos(ang) * rr
+				# (his: circling above his head, never across him, Animations 4)
+				var sy := (cy - 30.0 + sin(ang) * 5.0) if mine else (cy - 10.0 + sin(ang) * rr * 0.45)
+				_shade_figure(sx, sy, R, a, u)
+				_shield_face(sx, sy - 22.0, 12.0, R, a * 0.9)
+			else:
+				_shield_face(cx, cy - 12.0, 18.0, R, a)
 		"harden":
 			_shield_face(cx, cy - 14.0, 22.0, BLOOD, a)
 		"eyeup":
@@ -614,7 +632,15 @@ func _thing(sign: String, cx: float, cy: float, R: PackedColorArray, a: float, u
 		"hand":
 			_hand_up(cx, cy, a, u)
 		"wail":
-			_wail(cx, cy, R, a, u)
+			# (a monster's risen ghost following him, wailing: the ghost itself at his shoulder, its wail going out at him, not a mouth
+			# over him; the check of 27 Nov 2026, Animations 4 and 7)
+			if b.get("foe", false):
+				var gx := cx + 20.0
+				var gy := cy - 22.0 + sin(t * 4.0) * 2.0
+				_shade_figure(gx, gy, R, a, u)
+				_wail(gx, gy + 14.0, R, a, u)
+			else:
+				_wail(cx, cy, R, a, u)
 		"whirl":
 			_whirl(cx, cy, R, a, u, float(b.get("r", 1.8)))
 		"hood":
@@ -1119,6 +1145,53 @@ func _wail(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> voi
 	_fs(SOUL[0])
 	_fill(_ri(cx) - 2, _ri(cy) - 12, 5, gape)
 	_glow(cx, cy - 10.0, 12.0, SOUL[4], 0.5 * a)
+	_ga(1.0)
+
+
+## A shade: a hooded ghost at (cx, cy) (its middle): a peaked hood rounding into its shoulders, lit from the upper left and outlined
+## dark on its far side, a dark oval of a face with two eyes burning in R, its robe hanging into three tattered strands that sway
+## behind it. In SOUL, the eyes and glow in R.
+func _shade_figure(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
+	cy += sin(t * 5.0) * 1.0
+	var top := -11
+	var bottom := 8
+	for dy in range(top, bottom + 1):
+		var v := float(dy - top) / float(bottom - top)
+		# (the hood's peak rounding out into the shoulders, the robe widening a little to its hem)
+		var half := 6.5 * sqrt(clampf(v / 0.45, 0.0, 1.0)) if v < 0.45 else lerpf(6.5, 7.5, (v - 0.45) / 0.55)
+		var lean := (1.0 - v) * 1.5
+		var x0 := _ri(cx - half + lean)
+		var x1 := _ri(cx + half + lean)
+		for x in range(x0, x1 + 1):
+			var side := (float(x) - (cx + lean)) / maxf(1.0, half)
+			var c: Color = SOUL[4] if side < -0.35 else (SOUL[3] if side < 0.4 else SOUL[2])
+			if x == x1 or (dy == top + 1 and x == x0):
+				c = SOUL[1]
+			_ga(a * (0.95 - v * 0.15))
+			_fs(c)
+			_fill(x, _ri(cy) + dy, 1, 1)
+	# (the hem torn into three strands, swaying)
+	for k in 3:
+		var sx := cx + (float(k) - 1.0) * 5.0
+		for j in 7:
+			var v := float(j) / 6.0
+			var sway := sin(t * 7.0 + float(k) * 1.3 + v * 3.0) * 2.0 * v
+			_ga(a * (0.85 - v * 0.6))
+			_fs(SOUL[3] if j < 3 else SOUL[2])
+			_fill(_ri(sx + sway) - (1 if j < 3 else 0), _ri(cy) + bottom + 1 + j, 2 if j < 3 else 1, 1)
+	# (the dark of its face, and its eyes burning in it)
+	_ga(a)
+	_fs(SOUL[0])
+	_fill(_ri(cx) - 2, _ri(cy) - 7, 5, 6)
+	_fill(_ri(cx) - 3, _ri(cy) - 6, 7, 4)
+	_fs(R[4])
+	_fill(_ri(cx) - 2, _ri(cy) - 5, 2, 2)
+	_fill(_ri(cx) + 1, _ri(cy) - 5, 2, 2)
+	_fs(Color.WHITE)
+	_fill(_ri(cx) - 2, _ri(cy) - 5, 1, 1)
+	_fill(_ri(cx) + 1, _ri(cy) - 5, 1, 1)
+	_glow(cx, cy - 4.0, 14.0, R[4], 0.5 * a)
+	_glow(cx, cy, 26.0, SOUL[4], 0.35 * a)
 	_ga(1.0)
 
 

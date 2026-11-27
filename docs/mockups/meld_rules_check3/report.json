@@ -1,0 +1,218 @@
+{
+ "asked": "I’d like you to do another 20 weak meld checks",
+ "date": "27 Nov 2026",
+ "picked": "I took the next 20 smallest by my measure, none of them worked on before.",
+ "checks": [
+  "The game's rules check on the 20: 0 wrong. Each in front of the Strike and behind it, 40 cases, its twist seen in all 40.",
+  "All 20 filmed again: no script errors; each one's own moment on a monster seen in all 20.",
+  "Your hero kept in sight (Animations 4): nothing covers him for a run of frames in any of the 20; at most a quarter of him for a blink as a blow lands, as before."
+ ],
+ "weakest": [
+  {
+   "id": "juggernaut",
+   "why": [
+    "Its slam on each blow never played: the game never told the painter it happened.",
+    "Behind, its ground tearing open at a full frenzy never showed in the film."
+   ],
+   "done": [
+    "Each blow now comes down with slabs of floor heaving up round it, grit thrown out along a front and cracks torn out from it, a screen kick that grows with the frenzy, and a freeze.",
+    "At a full frenzy the ground tears open twice as wide.",
+    "On a monster, the floor heaves under you in slabs as it knocks you back."
+   ]
+  },
+  {
+   "id": "pressurepoint",
+   "why": [
+    "Its needles were thin and short.",
+    "Behind, the mark it leaves on the staggered one never played: the game never told the painter."
+   ],
+   "done": [
+    "Six long white needles close in from all round, then a star of light where they meet, with a freeze.",
+    "Behind, the needles stay standing in the staggered one, pulsing, with a cross of light on the floor under it."
+   ]
+  },
+  {
+   "id": "rampage",
+   "why": [
+    "Behind, nothing of its own showed: its splash as the frenzy builds was never told to the painter."
+   ],
+   "done": [
+    "Its splash now plays: grit kicked out along a front, bigger the fuller the frenzy, a second front hard behind it at a full frenzy, stones and a screen kick.",
+    "In front, its swell grows a second front with the frenzy too."
+   ]
+  },
+  {
+   "id": "conduit",
+   "why": [
+    "It drew nothing of its own: the arc it rides is drawn as Lightning's own, and the life it wins had no look."
+   ],
+   "done": [
+    "Where its arc strikes, an amber flash with small bolts leaping off it and bits of the life it wins.",
+    "On a monster, that flash is at the monster it heals, not on you."
+   ]
+  },
+  {
+   "id": "marrow",
+   "why": [
+    "It drew little of its own: a faint glow on the stunned one."
+   ],
+   "done": [
+    "The stunned one's bone-white glow cracks open, three pulses going out, stones kicked up and a screen kick.",
+    "As it drains, a bone-white flare and splinters of light rising.",
+    "On a monster, bone-white swells on it and a ring of splinters closes in."
+   ]
+  },
+  {
+   "id": "parry",
+   "why": [
+    "Its guard on the floor was a plain ring (How art is made 9)."
+   ],
+   "done": [
+    "Its guard is now a ring of parrying blades standing on its edge, flashing one after another as it forms, a sound front going out."
+   ]
+  },
+  {
+   "id": "haunting",
+   "why": [
+    "Its ghost looked like a grey box.",
+    "On a monster, a wailing mouth was drawn over you."
+   ],
+   "done": [
+    "A proper ghost: a hood rounding into shoulders, lit from one side, its torn hem in three swaying strands, eyes burning in a dark face.",
+    "On a monster the ghost follows at your shoulder, its wail going out at you, not over you."
+   ]
+  },
+  {
+   "id": "gravewarden",
+   "why": [
+    "Its shade was the same grey box, and it passed across you as it circled.",
+    "On a risen monster, nothing circled it."
+   ],
+   "done": [
+    "The same ghost, with a small shield face, circling above your head, never across you.",
+    "On a risen monster it circles the monster where it stands."
+   ]
+  },
+  {
+   "id": "lifeline",
+   "why": [
+    "Its heartbeat over you was small and a dull brown, and nothing went out from what you struck."
+   ],
+   "done": [
+    "A pink heartbeat over your head, twice the size, beating twice as hard below half life, a pulse going out from what you struck.",
+    "Its life orbs streak in to you from all round.",
+    "On a monster, its heartbeat beats over the monster."
+   ]
+  },
+  {
+   "id": "secondwind",
+   "why": [
+    "Its gust was a thin loop of wind, gone in a blink."
+   ],
+   "done": [
+    "A wider gust of green wind whipping round you, curls of wind thrown off it and streaks all round, held a little longer. The same round a monster."
+   ]
+  },
+  {
+   "id": "hornet",
+   "why": [
+    "Its barbs were tiny.",
+    "On a monster they floated in the air beside you."
+   ],
+   "done": [
+    "Bigger barbs, banded black like a hornet, dripping venom, and a barb jabbed in as a hit poisons.",
+    "On a monster they stand in the floor beside you."
+   ]
+  },
+  {
+   "id": "aftermath",
+   "why": [
+    "Its smoke was small, and its ground biting was a faint flicker."
+   ],
+   "done": [
+    "Smoke rolls out over the struck ground in big curls, embers glinting in it, a shock front under it.",
+    "Where something steps in, jagged teeth of grit snap up, shut and sink back, with stones and a screen kick."
+   ]
+  },
+  {
+   "id": "staccato",
+   "why": [
+    "Its two ticks were small and greyish.",
+    "On a monster they were drawn over you."
+   ],
+   "done": [
+    "Two bigger ticks in its own pink with a white core, the second sharp on the first, sparks and a click of sound off each, and a screen kick.",
+    "On a monster they land beside you, not over you."
+   ]
+  },
+  {
+   "id": "whipcrack",
+   "why": [
+    "Its crack was a small flash."
+   ],
+   "done": [
+    "A big white star with twelve rays, its sound lines thrown far, a hard screen kick and a freeze."
+   ]
+  },
+  {
+   "id": "feedingfrenzy",
+   "why": [
+    "Its jaws showed only at a full frenzy of five."
+   ],
+   "done": [
+    "Jaws snap shut on what you strike from the first step of the frenzy, bigger the fuller it is, with a screen kick."
+   ]
+  },
+  {
+   "id": "quickdraw",
+   "why": [
+    "Its crack and its glint were small."
+   ],
+   "done": [
+    "A longer crack, four tiles, in three lines, with a star at its point and a glow. Its draw glints brighter."
+   ]
+  },
+  {
+   "id": "seeker",
+   "why": [
+    "Its sight finding the weakest was a small, short flash."
+   ],
+   "done": [
+    "The sight closes on the weakest crackling, small bolts leaping off it, a white flash as it is found, held longer."
+   ]
+  },
+  {
+   "id": "lancet",
+   "why": [
+    "Its cut was a thin line."
+   ],
+   "done": [
+    "A long, fine cut opens across it in its own colours, drops of red falling off its line."
+   ]
+  },
+  {
+   "id": "riptide",
+   "why": [
+    "On a monster, its pull on you had almost no look, and its swirl sat in the air over your feet."
+   ],
+   "done": [
+    "Currents race from you to the monster as it drags you, a rip of water swirling on the floor under your feet, then streaks behind it as it rushes in."
+   ]
+  },
+  {
+   "id": "eddy",
+   "why": [
+    "On a monster, its pull on you had almost no look, and its swirl sat in the air over your feet."
+   ],
+   "done": [
+    "A vortex turning on the floor at your feet, its arms reaching toward the monster, the pull streaming along them."
+   ]
+  }
+ ],
+ "found": [
+  "A gameplay fault, not changed: with a barrier, Guarding tops up the barrier instead of giving a shield (words.gd DEFENCE_WORDS, hero.gd). Parry, Sanctuary, Aegis and Shieldwall wait for a fresh shield (melds46_rules.gd step), so with any barrier they do nothing at all, and none of their looks plays.",
+  "Seven other shields (Redoubt, Sanctuary, Aegis, Minefield, Riposte, Shieldwall, Carapace) still lay a plain ring on the floor under their marks. Not among these 20; left as they are."
+ ],
+ "correction": "Mid-way I said Gravewarden, Quickdraw and Hornet covered your hero. The measure says none of the 20 did for more than a blink. What was really wrong: Gravewarden's shade passed across you, and Hornet's barbs floated off you on a monster. Both are fixed; Quickdraw needed nothing for this.",
+ "picked_how": "The 20 smallest in ranking_pass2.json (../meld_rules_check2) not among the 30 weakest, the second pass's 12, or the 26 monster moments of 26 Nov."
+}

@@ -518,6 +518,10 @@ func film(only := "") -> void:
 			if FRENZY.has(id):
 				h.frenzy = int(preload("res://scripts/words.gd").data()["frenzy"]["max"]) - 1
 				h.frenzy_t = 1.2 if id == "fury" else 5.0
+			# (Juggernaut behind waits on a full frenzy, which a use behind it does not add to: made full; the second check of the
+			# weakest melds, 27 Nov 2026)
+			if id == "juggernaut" and side == "behind":
+				h.frenzy = int(preload("res://scripts/words.gd").data()["frenzy"]["max"])
 			if HASTE.has(id):
 				h.haste = 30.0
 				h.haste_t = 6.0

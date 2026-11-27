@@ -1,0 +1,762 @@
+{
+ "lifeline": {
+  "front": {
+   "before": {
+    "sum": 1889,
+    "peak": 2228,
+    "cover": 0.13
+   },
+   "after": {
+    "sum": 2090,
+    "peak": 2678,
+    "cover": 0.12
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 2652,
+    "peak": 2260,
+    "cover": 0.14
+   },
+   "after": {
+    "sum": 2312,
+    "peak": 2084,
+    "cover": 0.13
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 1197,
+    "peak": 825,
+    "cover": 0.13
+   },
+   "after": {
+    "sum": 918,
+    "peak": 938,
+    "cover": 0.14
+   }
+  }
+ },
+ "secondwind": {
+  "front": {
+   "before": {
+    "sum": 1821,
+    "peak": 2128,
+    "cover": 0.18
+   },
+   "after": {
+    "sum": 1623,
+    "peak": 1984,
+    "cover": 0.17
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 2828,
+    "peak": 2745,
+    "cover": 0.21
+   },
+   "after": {
+    "sum": 2628,
+    "peak": 2446,
+    "cover": 0.19
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 1305,
+    "peak": 960,
+    "cover": 0.14
+   },
+   "after": {
+    "sum": 1136,
+    "peak": 828,
+    "cover": 0.1
+   }
+  }
+ },
+ "juggernaut": {
+  "front": {
+   "before": {
+    "sum": 2686,
+    "peak": 3330,
+    "cover": 0.19
+   },
+   "after": {
+    "sum": 2677,
+    "peak": 2900,
+    "cover": 0.23
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 2760,
+    "peak": 2380,
+    "cover": 0.18
+   },
+   "after": {
+    "sum": 3197,
+    "peak": 2806,
+    "cover": 0.17
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 1475,
+    "peak": 785,
+    "cover": 0.09
+   },
+   "after": {
+    "sum": 1396,
+    "peak": 735,
+    "cover": 0.11
+   }
+  }
+ },
+ "marrow": {
+  "front": {
+   "before": {
+    "sum": 2332,
+    "peak": 2778,
+    "cover": 0.15
+   },
+   "after": {
+    "sum": 2306,
+    "peak": 2724,
+    "cover": 0.12
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 2573,
+    "peak": 2456,
+    "cover": 0.15
+   },
+   "after": {
+    "sum": 2535,
+    "peak": 2395,
+    "cover": 0.14
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 3205,
+    "peak": 1150,
+    "cover": 0.14
+   },
+   "after": {
+    "sum": 3137,
+    "peak": 1190,
+    "cover": 0.14
+   }
+  }
+ },
+ "hornet": {
+  "front": {
+   "before": {
+    "sum": 1924,
+    "peak": 2181,
+    "cover": 0.22
+   },
+   "after": {
+    "sum": 1978,
+    "peak": 2308,
+    "cover": 0.14
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 4494,
+    "peak": 3127,
+    "cover": 0.19
+   },
+   "after": {
+    "sum": 4476,
+    "peak": 3268,
+    "cover": 0.2
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 2862,
+    "peak": 1179,
+    "cover": 0.11
+   },
+   "after": {
+    "sum": 2888,
+    "peak": 1164,
+    "cover": 0.1
+   }
+  }
+ },
+ "aftermath": {
+  "front": {
+   "before": {
+    "sum": 2278,
+    "peak": 2841,
+    "cover": 0.13
+   },
+   "after": {
+    "sum": 2116,
+    "peak": 2844,
+    "cover": 0.12
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 3866,
+    "peak": 3092,
+    "cover": 0.17
+   },
+   "after": {
+    "sum": 3401,
+    "peak": 2711,
+    "cover": 0.17
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 2755,
+    "peak": 1065,
+    "cover": 0.2
+   },
+   "after": {
+    "sum": 2338,
+    "peak": 842,
+    "cover": 0.13
+   }
+  }
+ },
+ "staccato": {
+  "front": {
+   "before": {
+    "sum": 2561,
+    "peak": 3536,
+    "cover": 0.17
+   },
+   "after": {
+    "sum": 2560,
+    "peak": 3308,
+    "cover": 0.16
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 3267,
+    "peak": 3751,
+    "cover": 0.22
+   },
+   "after": {
+    "sum": 3056,
+    "peak": 3780,
+    "cover": 0.17
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 1431,
+    "peak": 1125,
+    "cover": 0.18
+   },
+   "after": {
+    "sum": 1162,
+    "peak": 812,
+    "cover": 0.16
+   }
+  }
+ },
+ "whipcrack": {
+  "front": {
+   "before": {
+    "sum": 2694,
+    "peak": 3186,
+    "cover": 0.15
+   },
+   "after": {
+    "sum": 2109,
+    "peak": 3014,
+    "cover": 0.13
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 4204,
+    "peak": 3282,
+    "cover": 0.12
+   },
+   "after": {
+    "sum": 3418,
+    "peak": 3170,
+    "cover": 0.12
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 2879,
+    "peak": 1020,
+    "cover": 0.08
+   },
+   "after": {
+    "sum": 2378,
+    "peak": 1209,
+    "cover": 0.21
+   }
+  }
+ },
+ "pressurepoint": {
+  "front": {
+   "before": {
+    "sum": 2937,
+    "peak": 2704,
+    "cover": 0.13
+   },
+   "after": {
+    "sum": 2781,
+    "peak": 2892,
+    "cover": 0.14
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 3303,
+    "peak": 2726,
+    "cover": 0.13
+   },
+   "after": {
+    "sum": 3574,
+    "peak": 2949,
+    "cover": 0.12
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 4266,
+    "peak": 1408,
+    "cover": 0.11
+   },
+   "after": {
+    "sum": 3996,
+    "peak": 1391,
+    "cover": 0.19
+   }
+  }
+ },
+ "conduit": {
+  "front": {
+   "before": {
+    "sum": 3772,
+    "peak": 3776,
+    "cover": 0.14
+   },
+   "after": {
+    "sum": 3937,
+    "peak": 4192,
+    "cover": 0.14
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 4599,
+    "peak": 2731,
+    "cover": 0.17
+   },
+   "after": {
+    "sum": 4706,
+    "peak": 2842,
+    "cover": 0.15
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 1989,
+    "peak": 839,
+    "cover": 0.12
+   },
+   "after": {
+    "sum": 2383,
+    "peak": 1241,
+    "cover": 0.1
+   }
+  }
+ },
+ "rampage": {
+  "front": {
+   "before": {
+    "sum": 2895,
+    "peak": 3620,
+    "cover": 0.22
+   },
+   "after": {
+    "sum": 2530,
+    "peak": 3526,
+    "cover": 0.2
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 3718,
+    "peak": 3146,
+    "cover": 0.19
+   },
+   "after": {
+    "sum": 3177,
+    "peak": 2917,
+    "cover": 0.16
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 2769,
+    "peak": 1287,
+    "cover": 0.12
+   },
+   "after": {
+    "sum": 1894,
+    "peak": 1064,
+    "cover": 0.15
+   }
+  }
+ },
+ "parry": {
+  "front": {
+   "before": {
+    "sum": 2048,
+    "peak": 2457,
+    "cover": 0.11
+   },
+   "after": {
+    "sum": 2097,
+    "peak": 2461,
+    "cover": 0.16
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 3461,
+    "peak": 2529,
+    "cover": 0.15
+   },
+   "after": {
+    "sum": 2862,
+    "peak": 2336,
+    "cover": 0.12
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 4073,
+    "peak": 2546,
+    "cover": 0.08
+   },
+   "after": {
+    "sum": 3968,
+    "peak": 2604,
+    "cover": 0.13
+   }
+  }
+ },
+ "haunting": {
+  "front": {
+   "before": {
+    "sum": 3616,
+    "peak": 2796,
+    "cover": 0.22
+   },
+   "after": {
+    "sum": 3522,
+    "peak": 2718,
+    "cover": 0.22
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 5380,
+    "peak": 2602,
+    "cover": 0.14
+   },
+   "after": {
+    "sum": 5237,
+    "peak": 2626,
+    "cover": 0.14
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 3332,
+    "peak": 1062,
+    "cover": 0.15
+   },
+   "after": {
+    "sum": 3267,
+    "peak": 856,
+    "cover": 0.15
+   }
+  }
+ },
+ "gravewarden": {
+  "front": {
+   "before": {
+    "sum": 3808,
+    "peak": 2817,
+    "cover": 0.14
+   },
+   "after": {
+    "sum": 3696,
+    "peak": 2794,
+    "cover": 0.11
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 5495,
+    "peak": 2808,
+    "cover": 0.13
+   },
+   "after": {
+    "sum": 5369,
+    "peak": 2838,
+    "cover": 0.13
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 2957,
+    "peak": 944,
+    "cover": 0.17
+   },
+   "after": {
+    "sum": 2666,
+    "peak": 862,
+    "cover": 0.14
+   }
+  }
+ },
+ "feedingfrenzy": {
+  "front": {
+   "before": {
+    "sum": 4186,
+    "peak": 3594,
+    "cover": 0.23
+   },
+   "after": {
+    "sum": 4009,
+    "peak": 3392,
+    "cover": 0.2
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 5250,
+    "peak": 3014,
+    "cover": 0.19
+   },
+   "after": {
+    "sum": 5225,
+    "peak": 2966,
+    "cover": 0.18
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 1723,
+    "peak": 800,
+    "cover": 0.08
+   },
+   "after": {
+    "sum": 1875,
+    "peak": 805,
+    "cover": 0.15
+   }
+  }
+ },
+ "quickdraw": {
+  "front": {
+   "before": {
+    "sum": 3330,
+    "peak": 2737,
+    "cover": 0.2
+   },
+   "after": {
+    "sum": 3165,
+    "peak": 2540,
+    "cover": 0.2
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 4859,
+    "peak": 3560,
+    "cover": 0.19
+   },
+   "after": {
+    "sum": 4701,
+    "peak": 3478,
+    "cover": 0.19
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 2774,
+    "peak": 1212,
+    "cover": 0.13
+   },
+   "after": {
+    "sum": 2510,
+    "peak": 1214,
+    "cover": 0.1
+   }
+  }
+ },
+ "riptide": {
+  "front": {
+   "before": {
+    "sum": 2955,
+    "peak": 4228,
+    "cover": 0.18
+   },
+   "after": {
+    "sum": 2782,
+    "peak": 4164,
+    "cover": 0.16
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 5007,
+    "peak": 3221,
+    "cover": 0.24
+   },
+   "after": {
+    "sum": 4660,
+    "peak": 2923,
+    "cover": 0.25
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 2352,
+    "peak": 916,
+    "cover": 0.13
+   },
+   "after": {
+    "sum": 2347,
+    "peak": 856,
+    "cover": 0.08
+   }
+  }
+ },
+ "eddy": {
+  "front": {
+   "before": {
+    "sum": 3252,
+    "peak": 4284,
+    "cover": 0.13
+   },
+   "after": {
+    "sum": 3173,
+    "peak": 4294,
+    "cover": 0.11
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 5545,
+    "peak": 2646,
+    "cover": 0.25
+   },
+   "after": {
+    "sum": 5332,
+    "peak": 2414,
+    "cover": 0.23
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 2444,
+    "peak": 912,
+    "cover": 0.16
+   },
+   "after": {
+    "sum": 2332,
+    "peak": 898,
+    "cover": 0.13
+   }
+  }
+ },
+ "seeker": {
+  "front": {
+   "before": {
+    "sum": 3594,
+    "peak": 3778,
+    "cover": 0.14
+   },
+   "after": {
+    "sum": 4217,
+    "peak": 4298,
+    "cover": 0.13
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 4635,
+    "peak": 3158,
+    "cover": 0.17
+   },
+   "after": {
+    "sum": 4892,
+    "peak": 3139,
+    "cover": 0.17
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 2307,
+    "peak": 1144,
+    "cover": 0.12
+   },
+   "after": {
+    "sum": 2266,
+    "peak": 1030,
+    "cover": 0.15
+   }
+  }
+ },
+ "lancet": {
+  "front": {
+   "before": {
+    "sum": 3874,
+    "peak": 2787,
+    "cover": 0.2
+   },
+   "after": {
+    "sum": 3926,
+    "peak": 2962,
+    "cover": 0.19
+   }
+  },
+  "behind": {
+   "before": {
+    "sum": 5148,
+    "peak": 3320,
+    "cover": 0.2
+   },
+   "after": {
+    "sum": 5032,
+    "peak": 3160,
+    "cover": 0.2
+   }
+  },
+  "foe": {
+   "before": {
+    "sum": 2722,
+    "peak": 1126,
+    "cover": 0.14
+   },
+   "after": {
+    "sum": 2371,
+    "peak": 1058,
+    "cover": 0.13
+   }
+  }
+ }
+}

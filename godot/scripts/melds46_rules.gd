@@ -134,6 +134,9 @@ func used(i: int, echo: bool, at: Vector2) -> void:
 		if not r.has("vast46"):
 			r["vast46"] = float(r["vast"])
 		r["vast"] = float(r["vast46"]) * (1.0 + float(_t("rampage")["splash"]) * h.frenzy)
+		# (seen: its splash swelling with the frenzy, the check of 27 Nov 2026: nothing of its own showed behind)
+		if h.frenzy > 0:
+			_tell({"id": "rampage", "what": "splash", "n": h.frenzy, "x": h.world.x + h.face.x * 1.6, "y": h.world.y + h.face.y * 1.6, "r": 1.0 + 0.4 * h.frenzy})
 	# SHIELDWALL: the shield this use gives, thicker for each step of the frenzy (step: as it comes)
 	if f == "shieldwall":
 		_wall_due = true

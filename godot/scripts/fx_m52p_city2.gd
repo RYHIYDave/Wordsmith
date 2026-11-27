@@ -196,6 +196,9 @@ func paint_floor(b: Dictionary) -> void:
 		"foe":
 			var hostile: bool = b["id"] in ["refrain", "bloodcurse", "hexblast", "evileye", "delirium", "talisman", "grudge", "omen", "pall", "rewind", "sap", "slowfuse", "stillpoint", "quickening", "respite", "eternity", "stutter", "doldrums"]
 			_front(x, y, 0.3 + 0.8 * _ease(u), _A5(PackedColorArray(ENEMY) if hostile else R), sd, fade, "shock")
+			# (Eddy's: a vortex turning at his feet, under him, not over; the check of 27 Nov 2026)
+			if b["id"] == "eddy":
+				_swirl(x, y, 0.9 * (0.5 + 0.5 * _ease(u)), R, fade, -float(b["t"]) * 7.0, 4, 3)
 		"leave":
 			# (the ground it lays, laid: its edge rolling out to where it will stand, the light of it rising, sparks off it)
 			var lr := float(b["e"].get("r", b.get("r", 1.2)))
@@ -336,7 +339,14 @@ func paint_air(b: Dictionary) -> void:
 		elif slowing:
 			_hand(hx, hy - 31.0, 11.0, -PI * 0.5 + u * PI, C, fade)
 		match b["id"]:
-			"backwash", "gullet", "harpoon", "whirlpool", "haven", "eddy", "whiplash", "maelstrom":
+			"eddy":
+				# (dragged toward it, and kept drawn there: a vortex turning at his feet, its arms reaching toward it, the pull
+				# streaming along them; the second check of the weakest melds, 27 Nov 2026, Animations 1)
+				for k in 2:
+					var off := (float(k) - 0.5) * 8.0
+					_streak(x1px, y1px + off * 0.4, hx + off, hy + 12.0, R, fade, 2)
+				_glow(hx, hy + 14.0, 24.0, R[4], 0.5 * fade)
+			"backwash", "gullet", "harpoon", "whirlpool", "haven", "whiplash", "maelstrom":
 				_streak(x1px, y1px, hx, hy, R, fade, 2)
 			"fetters", "thrall", "tripwire", "pin", "mauler", "stockade", "manacle", "snag", "dragnet":
 				if b["id"] in ["manacle", "fetters"]:

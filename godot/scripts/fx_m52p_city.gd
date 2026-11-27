@@ -520,6 +520,9 @@ func paint_floor(b: Dictionary) -> void:
 		_front(x, y, 0.2 + float(STATUS[key][0]) * 1.0 * _ease(u), _A5(R), sd + 7, fade * 0.7, "water" if str(STATUS[key][1]) != "water" else "sound")
 	if b["what"] == "foe":
 		_front(x, y, 0.3 + 0.8 * _ease(u), _A5(PackedColorArray(ENEMY) if b["id"] in ["doom", "plague", "hoarfrost", "brimstone", "jinx", "whisper", "burden", "beckon", "coven", "torpor", "witchknot"] else R), sd, fade, "shock")
+		# (Riptide's: a rip swirling at his feet as it drags him, under him, not over; the check of 27 Nov 2026)
+		if b["id"] == "riptide":
+			_swirl(x, y, 0.8 * (0.4 + 0.6 * _ease(u)), R, fade, -float(b["t"]) * 8.0, 4, 2)
 	if b["what"] == "shards":
 		var lands = b["e"].get("lands", [])
 		for q in lands:
@@ -752,7 +755,15 @@ func paint_air(b: Dictionary) -> void:
 		if cursing:
 			_thorns(hx, hy - 24.0, 5, C, fade, sd)
 		match b["id"]:
-			"maw", "sump", "drift", "firewhirl", "lodestone", "riptide", "gravity", "confluence", "beckon", "reel":
+			"riptide":
+				# (dragged toward it on a rip of water: currents racing from him to it, a swirl at his feet; then it rushes in, streaks
+				# torn off behind it. The second check of the weakest melds, 27 Nov 2026, Animations 1)
+				for k in 3:
+					var off := (float(k) - 1.0) * 7.0
+					var v := _ease(_c01((bt - k * 0.04) / 0.3))
+					_streak(lerpf(hx, x1px, v * 0.3) + off * 0.3, lerpf(hy + 10.0, y1px, v * 0.3) + off, lerpf(hx, x1px, v) + off * 0.3, lerpf(hy + 10.0, y1px, v) + off, R, fade, 3 if k == 1 else 2)
+				_glow(x1px, y1px, 20.0, R[4], 0.6 * fade)
+			"maw", "sump", "drift", "firewhirl", "lodestone", "gravity", "confluence", "beckon", "reel":
 				_streak(x1px, y1px, hx, hy, R, fade, 2)
 			"shackle", "anchor", "strangler", "icebound", "firetrap", "tether", "web", "witchknot", "amber", "lasso":
 				if b["id"] in ["shackle", "anchor"]:

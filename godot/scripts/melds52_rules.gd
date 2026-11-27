@@ -367,6 +367,11 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_burnin
 	if f == "haymaker" and not quiet and time - float(_throttle.get("haymaker", -9.0)) > 0.2:
 		_throttle["haymaker"] = time
 		_tell({"id": "haymaker", "what": "snap", "x": at.x, "y": at.y, "m": m})
+	# JUGGERNAUT: each use's blow coming down as a slam, the heavier the fuller the frenzy (the second check of the weakest melds
+	# against his Art Rulebook, 27 Nov 2026: it had no moment of its own, Animations 7)
+	if f == "juggernaut" and not quiet and time - float(_throttle.get("juggernaut", -9.0)) > 0.3:
+		_throttle["juggernaut"] = time
+		_tell({"id": "juggernaut", "what": "slam", "x": at.x, "y": at.y, "m": m, "n": h.frenzy})
 	if f == "miasma" and not quiet and time - float(_throttle.get("miasma", -9.0)) > 0.3:
 		_throttle["miasma"] = time
 		_tell({"id": "miasma", "what": "haze", "x": at.x, "y": at.y, "r": 1.2 * float(r["size"]) + 1.0})
@@ -787,6 +792,8 @@ func wake(i: int, at: Vector2, rad: float, from: int) -> void:
 				for z in laid:
 					if str(z["kind"]) == "cracks":
 						z["r"] = float(z["r"]) * float(_tune("juggernaut")["wide"])
+						# (seen: the ground tearing open twice as wide, the check of 27 Nov 2026)
+						_tell({"id": "juggernaut", "what": "wide", "x": z["x"], "y": z["y"], "r": z["r"]})
 		"earthquake":
 			for z in laid:
 				if str(z["kind"]) == "cracks":
@@ -966,6 +973,8 @@ func _grounds(dt: float) -> void:
 					if _alive(o) and o.stagger_t > 0.0 and o.mark_t <= 0.0 and o.world.distance_to(at) <= rad + o.r:
 						o.mark_t = float(Words.data()["precise"]["markTime"])
 						h._tell({"t": "markOn", "id": o.id, "x": o.world.x, "y": o.world.y, "secs": o.mark_t})
+						# (seen: its pressure point found on the staggered one, the check of 27 Nov 2026: nothing of its own showed behind)
+						_tell({"id": "pressurepoint", "what": "mark", "x": o.world.x, "y": o.world.y, "m": o})
 			"daze":
 				if tick:
 					z["m52_t"] = float(_tune("daze")["pulse"])

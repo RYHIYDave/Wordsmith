@@ -15,6 +15,11 @@
 ##              star blown apart at once over Volatile's blast (the check of 26 Nov 2026: that moment never played on a monster).
 ##   CONCUSSION a violet blast with a heavy bronze shock ring; its rune behind leaving cracks glowing violet; on a monster, its
 ##              dying blast's ring round him.
+## THE SECOND CHECK OF THE WEAKEST MELDS (27 Nov 2026, his “I’d like you to do another 20 weak meld checks”), by his Art Rulebook's
+## Animations 1 and 7: Second Wind's gust bigger, curls of wind thrown off it, leaves of light streaming up; Marrow's own twist, which
+## drew little but Leech's own wisps: the stunned one's bone-white glow cracking, three pulses of it going out (three times the heal),
+## splinters thrown; on a monster, its knock-back healing it a chunk, bone-white swelling on it; Conduit's own, which drew nothing
+## but Lightning's bolt and Leech's drain: each one its arc strikes flashing amber, small bolts leaping off it.
 extends "res://scripts/fx_m52kit.gd"
 
 const IDS := ["bloodlust", "coldblood", "conduit", "secondwind", "marrow", "quickfuse", "concussion"]
@@ -59,22 +64,28 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 			b["end"] = 1.0
 			for i in 10:
 				_bit(b["x"], b["y"], 30, "streak", PackedColorArray([PALE[4], PALE[5]]), 0.6, 0.7, 60, -30, 0)
-		"coldblood:foe", "marrow:foe", "conduit:foe":
+		"coldblood:foe":
 			b["end"] = 0.6
+		"marrow:foe", "conduit:foe":
+			b["end"] = 0.7
+			var at := Vector2(b["x1"], b["y1"])
+			for i in 10:
+				_bit(at.x, at.y, 14, "streak" if b["id"] == "conduit" else "dot", PackedColorArray([R[3], R[4], R[5], Color.WHITE]), 2.0, 0.4, 40, 10, 40)
 		"conduit:bead":
-			b["end"] = 0.42
-		"secondwind:wind":
-			b["end"] = 0.6
+			b["end"] = 0.5
 			for i in 8:
-				_bit(b["x"], b["y"], 6, "streak", PackedColorArray([R[3], R[4], R[5]]), 2.6, 0.35, 0, 4, 12)
-		"secondwind:orb":
-			b["end"] = 0.9
-		"secondwind:foe":
-			b["end"] = 0.5
+				_bit(b["x"], b["y"], 12, "streak", PackedColorArray([R[3], R[4], R[5], Color.WHITE]), 2.6, 0.3, 60, 10, 50)
+		"secondwind:wind", "secondwind:orb", "secondwind:foe":
+			b["end"] = 0.8 if b["what"] != "orb" else 1.0
+			for i in 18:
+				_bit(b["x"], b["y"], 4 + randf() * 16.0, "streak", PackedColorArray([R[3], R[4], R[5]]), 2.8, 0.45, 40, 30, 70)
 		"marrow:drink":
-			b["end"] = 0.6
+			b["end"] = 0.8
+			for i in 12:
+				_bit(b["x"], b["y"], mid, "stone", PackedColorArray([BONE[0], BONE[1], BONE[2], BONE[3], BONE[4], BONE[5]]), 2.2, 0.6, 260, 30, 90)
+			fx.kick(1.2)
 		"marrow:drain":
-			b["end"] = 0.5
+			b["end"] = 0.6
 		"quickfuse:pop", "quickfuse:foe":
 			b["end"] = 0.5
 			# (under OWN: what it killed goes up in Volatile's own blast, a moment after; the meld draws none of its own. On a monster
@@ -193,6 +204,17 @@ func paint_air(b: Dictionary) -> void:
 			var ey := _wy(b["x1"], b["y1"]) - 14.0
 			var fade := 1.0 - _c01((u - 0.7) / 0.3)
 			_bolt(ax, ay, ex, ey, PackedColorArray([R[0], R[1], R[2], R[3], R[4], R[5]]), sd, 0.6 * fade, 2)
+			# (its own: where its arc strikes, an amber flash, small bolts leaping off it, the life won from it; the check of
+			# 27 Nov 2026: under OWN it drew nothing of its own)
+			var c := 1.0 - _c01(bt / 0.35)
+			# (on a monster, at the monster its arc heals, not on him)
+			var qx := ax if b["what"] != "foe" else ex
+			var qy := ay if b["what"] != "foe" else ey
+			_glow(qx, qy, 30.0, R[4], 0.8 * c)
+			_glow(qx, qy, 12.0, Color.WHITE, 0.7 * c)
+			for k in 5:
+				var a := float(k) / 5.0 * TAU + _rh(sd, k)
+				_bolt(qx + cos(a) * 6.0, qy + sin(a) * 5.0, qx + cos(a) * 22.0, qy + sin(a) * 15.0, R, sd + k, c, 1)
 			# (under OWN: the life comes as Leech's own drain, begun with the beat)
 			if OWN:
 				return
@@ -208,7 +230,7 @@ func paint_air(b: Dictionary) -> void:
 			_glow(bx, by, 20.0, R[4], 1.0)
 			_glow(bx, by, 10.0, Color.WHITE, 0.6)
 		"secondwind:wind", "secondwind:orb", "secondwind:foe":
-			# (a gust of green wind whipping round him, or round it)
+			# (a gust of green wind whipping round him, or round it: wider, curls of wind thrown off it; the check of 27 Nov 2026)
 			var at: Vector2 = Vector2(b["x"], b["y"]) if b["what"] == "foe" else hh
 			var dur: float = b["end"]
 			var fade := _c01((dur - bt) / (dur * 0.5))
@@ -216,8 +238,12 @@ func paint_air(b: Dictionary) -> void:
 			var cy := _wy(at.x, at.y) - 10.0
 			var rise := 1.0 if b["what"] != "orb" else 1.0 + bt * 2.0
 			for k in 4:
-				var a0 := bt * 10.0 + float(k) * TAU / 4.0
-				var rr := 14.0 + 4.0 * k
+				var a := float(k) / 4.0 * TAU + bt * 4.0
+				var cr := 26.0 + 10.0 * _ease(_c01(bt / dur))
+				_curl(cx + cos(a) * cr, cy + 6.0 + sin(a) * cr * 0.45, 9.0, [R[2], R[3], R[5]], sd + k, 0.75 * fade)
+			for k in 5:
+				var a0 := bt * 10.0 + float(k) * TAU / 5.0
+				var rr := 15.0 + 5.0 * k
 				for i in 14:
 					var v := float(i) / 13.0
 					var a := a0 - v * 1.8
@@ -232,14 +258,60 @@ func paint_air(b: Dictionary) -> void:
 		"marrow:drink":
 			if not LEECH_SAME:
 				_wisps(b["x"], b["y"], hh.x, hh.y, _c01(bt / 0.5), 3, PackedColorArray(BONE), sd, 3, _mid(b["m"]), 14.0)
+			# (the stunned one's bone-white glow cracking open, three pulses of it going out, three times the heal; the check of
+			# 27 Nov 2026: it drew little of its own)
 			var p := _mid_px(b)
-			_glow(p.x, p.y, 24.0, BONE[4], 0.7 * (1.0 - _c01(bt / 0.3)))
+			var fade := 1.0 - _c01((bt - 0.4) / 0.4)
+			_glow(p.x, p.y, 36.0, BONE[4], 0.8 * (1.0 - _c01(bt / 0.4)))
+			_glow(p.x, p.y, 14.0, Color.WHITE, 0.7 * (1.0 - _c01(bt / 0.2)))
+			for k in 6:
+				var a := float(k) / 6.0 * TAU + _rh(sd, k) * 0.5
+				var l := 8.0 + 10.0 * _ease(_c01(bt / 0.15))
+				var px := p.x
+				var py := p.y
+				for j in 3:
+					var qa := a + (_rh(sd, k * 5 + j) - 0.5) * 0.7
+					var qx := p.x + cos(qa) * l * float(j + 1) / 3.0
+					var qy := p.y + sin(qa) * l * 0.8 * float(j + 1) / 3.0
+					_ga(fade)
+					_fs(BONE[1])
+					_line(px, py + 1.0, qx, qy + 1.0, 2)
+					_fs(BONE[4])
+					_line(px, py, qx, qy, 1)
+					px = qx
+					py = qy
 		"marrow:drain":
 			if not LEECH_SAME:
 				_wisps(b["x"], b["y"], b["x1"], b["y1"], _c01(bt / 0.45), 1, PackedColorArray(BONE), sd, 2, 4.0, 14.0)
+			# (the cracks drawing from the staggered one: a bone-white flare on it, splinters of light rising)
+			var fade := 1.0 - _c01(bt / 0.6)
+			var cx := _wx(b["x"], b["y"])
+			var cy := _wy(b["x"], b["y"]) - 10.0
+			_glow(cx, cy, 24.0, BONE[4], 0.7 * fade)
+			for k in 4:
+				var x := cx + (float(k) - 1.5) * 6.0
+				var y := cy - 6.0 - 16.0 * _ease(_c01((bt - k * 0.06) / 0.5))
+				_ga(fade)
+				_fs(BONE[4])
+				_fill(_ri(x), _ri(y), 1, 3)
+				_fs(Color.WHITE)
+				_fill(_ri(x), _ri(y), 1, 1)
 		"marrow:foe":
 			if not LEECH_SAME:
 				_wisps(b["x"], b["y"], b["x1"], b["y1"], _c01(bt / 0.5), 1, PackedColorArray(BONE), sd, 2, 14.0, 14.0)
+			# (knocking him back healing it a chunk: bone-white swelling on it, a ring of splinters round it closing in)
+			var fade := 1.0 - _c01((bt - 0.35) / 0.35)
+			var cx := _wx(b["x1"], b["y1"])
+			var cy := _wy(b["x1"], b["y1"]) - 16.0
+			_glow(cx, cy, 34.0 * _ease(_c01(bt / 0.3)), BONE[4], 0.8 * fade)
+			for k in 8:
+				var a := float(k) / 8.0 * TAU + bt * 2.0
+				var d := 30.0 * (1.0 - _ease(_c01(bt / 0.4))) + 6.0
+				_ga(fade)
+				_fs(BONE[3])
+				_fill(_ri(cx + cos(a) * d) - 1, _ri(cy + sin(a) * d * 0.7), 3, 2)
+				_fs(Color.WHITE)
+				_fill(_ri(cx + cos(a) * d), _ri(cy + sin(a) * d * 0.7), 1, 1)
 		"quickfuse:pop", "quickfuse:foe":
 			# (a violet star blown apart at once, its spikes thrown out)
 			var u := _c01(bt / 0.3)
