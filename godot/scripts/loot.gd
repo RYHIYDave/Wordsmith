@@ -604,7 +604,9 @@ func derive() -> void:
 		hero.stats["dodge"] = roundf((g.call("dodge") + more_dodge) * (1.0 + Words.eff_attr(dex) * DEX_DODGE / 100.0) * (U.dodge_more() if U != null else 1.0))
 		# (THE THREE DEFENCES EVENED, DEFENCE_EVEN: every point of Dexterity his own dodge too, as every point of Strength is his own
 		# life: so that a hero built on it is as hard to kill as one built on Strength)
-		if DEFENCE_EVEN:
+		# (but only with a dodge on his gear to begin with, as Intelligence's barrier below: his words, 27 Nov 2026, asked whether
+		# Dodge should go as Barrier had, “does strength give armor?  i dont think so”: Strength gives no armour of its own)
+		if DEFENCE_EVEN and hero.stats["dodge"] > 0.0:
 			hero.stats["dodge"] += roundf(dex * EVEN_DEX_DODGE)
 		# (THE THREE DEFENCES' WORDS: a chance to block gone; a piece that had one burned into it before, its barrier: ten a point)
 		var from_block := 0.0

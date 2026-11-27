@@ -24,6 +24,7 @@ func run(M, h, dir: String) -> void:
 	M.loot.derive()
 	var intel: float = float(h.stats["int"])
 	_line(h.max_barrier == 0.0 and intel > 0.0, "no barrier on his gear, Intelligence %d: barrier %d" % [intel, h.max_barrier])
+	_line(float(h.stats["dodge"]) == 0.0 and float(h.stats["dex"]) > 0.0, "no dodge on his gear, Dexterity %d: dodge %d (“does strength give armor?  i dont think so”)" % [h.stats["dex"], h.stats["dodge"]])
 	# (a cloth piece of the floor's own, a Cowl, laid on his head)
 	var it := _cloth("res://assets/loot/depth/1.json")
 	if not it.is_empty():

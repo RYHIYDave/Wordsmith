@@ -106,10 +106,10 @@ func run(main, hero, d: String) -> void:
 	h.life = h.max_life
 	var on5: float = h.dodge_chance()
 	var jerkin: Array = M.loot.implicit_lines(M.loot.gear["chest"])
-	# (no barrier from his gear: with DEFENCE_EVEN on, only his Intelligence's own, 2.5 a point)
-	var int_only: float = roundf(M.loot.attrs["int"] * Loot.EVEN_INT_BARRIER) if Loot.DEFENCE_EVEN else 0.0
+	# (no barrier from his gear: none, his Intelligence's own only with a barrier on his gear, his word of 27 Nov 2026)
+	var int_only := 0.0
 	_line(on5 > 0.0 and h.max_barrier == int_only and jerkin.any(func(l): return str(l).ends_with("Dodge")),
-		"a Ranger of level 20 (Dexterity %d) in a studded jerkin, a mail hood, studded boots: dodge %d, a %.0f%% chance on floor 5; barrier %d (his Intelligence's own); the jerkin: %s" % [h.stats["dex"], h.stats["dodge"], on5 * 100.0, h.max_barrier, ", ".join(jerkin)])
+		"a Ranger of level 20 (Dexterity %d) in a studded jerkin, a mail hood, studded boots: dodge %d, a %.0f%% chance on floor 5; barrier %d (none from his Intelligence with none on his gear); the jerkin: %s" % [h.stats["dex"], h.stats["dodge"], on5 * 100.0, h.max_barrier, ", ".join(jerkin)])
 	h.unhurt = false
 	h._invuln = 0.0
 	var dodged := 0
@@ -172,18 +172,8 @@ func run(main, hero, d: String) -> void:
 	M.loot.derive()
 	h.shield = 0.0
 	h._boons(0)
-	# (with DEFENCE_EVEN on every hero has a barrier, his Intelligence's own: Guarding tops that up; without it, the shield as before)
-	if Loot.DEFENCE_EVEN:
-		var had: float = h.max_barrier
-		var shield: float = h.shield
-		Loot.DEFENCE_EVEN = false
-		M.loot.derive()
-		var without: float = h.max_barrier
-		Loot.DEFENCE_EVEN = true
-		M.loot.derive()
-		_line(had > 0.0 and without == 0.0 and shield == 0.0, "with no barrier from his gear: his Intelligence's own, %d (none without it), topped up by Guarding, no shield" % had)
-	else:
-		_line(h.max_barrier == 0.0 and h.shield > 0.0, "with no barrier: a shield of %d for a while, as before" % h.shield)
+	# (no barrier on his gear, none from his Intelligence either (his word of 27 Nov 2026): Guarding's shield, as before)
+	_line(h.max_barrier == 0.0 and h.shield > 0.0, "with no barrier on his gear (his Intelligence giving none without it): a shield of %d for a while, as before" % h.shield)
 	await M._wait(0.3)
 	await M._snap(dir + "/def08_guarding_shield.png")
 	# (a chance to block gone: one burned into gear before, barrier)
