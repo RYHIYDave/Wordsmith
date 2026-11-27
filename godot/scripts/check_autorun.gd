@@ -209,7 +209,8 @@ func _play(f: int, life_k: float) -> Dictionary:
 		var to: Vector2 = target.world - h.world
 		var dlen: float = to.length()
 		var see: bool = M._monsters.sees(h.world, target.world)
-		if dlen <= (0.4 if target is Spot else reach) + float(target.r) and see:
+		# (a thing to take is walked onto, not stood off from: a key is taken from 0.6 tiles, a lever from 1.5)
+		if dlen <= (0.1 if target is Spot else reach + float(target.r)) and see:
 			h.auto_dir = Vector2.ZERO
 			if to.length() > 0.01:
 				h._turn(to.normalized())
