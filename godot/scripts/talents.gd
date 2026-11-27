@@ -78,7 +78,7 @@ const DEFENCE := {
 	],
 	"warlock": [
 		{"id": "soulward", "name": "Soul Ward", "path": "pact", "from": "souldebt", "at": [4.0, 1.45],
-			"text": "Each cursed enemy that dies restores 10% of your barrier, overcharging it up to 150%. Your barrier is at least 20% of your life."},
+			"text": "Each cursed enemy that dies restores 10% of your barrier, overcharging it up to 150%."},
 		{"id": "hellhide", "name": "Hellhide", "path": "demon", "from": "feast", "at": [2.6, 0.1],
 			"text": "In demon form: +100% armour and immune to knockback."},
 	],
@@ -106,7 +106,7 @@ const DEF_TUNE := {
 	"countershot": {"far": 1.4},
 	"iceshell": {"life": 0.2, "r": 2.2, "secs": 2.0},
 	"wardingwarp": 0.25,
-	"soulward": {"fill": 0.1, "over": 1.5, "life": 0.2},
+	"soulward": {"fill": 0.1, "over": 1.5},
 	"hellhide": 2.0,
 	"bodyguard": {"near": 3.0, "share": 0.5},
 	"smokescreen": {"r": 1.8, "secs": 3.0, "floor": 0.5},

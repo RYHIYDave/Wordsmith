@@ -886,11 +886,14 @@ func on_kill(m) -> void:
 		# his life his barrier's measure, if he wears no cloth)
 		if Talents.DEFENCE_TALENTS and h.has("soulward"):
 			var SW: Dictionary = Talents.def("soulward")
-			var most: float = maxf(h.max_barrier, roundf(h.max_life * float(SW["life"])))
+			# (only the barrier his cloth gives: no barrier of its own. His words, 27 Nov 2026, 10:53: “Also Soul Ward seems
+			# very strong”; asked how to tone it down, by 10:55: “Cut the free barrier”)
+			var most: float = h.max_barrier
 			var was: float = h.barrier
-			h.barrier = maxf(h.barrier, minf(most * float(SW["over"]), h.barrier + most * float(SW["fill"])))
+			if most > 0.0:
+				h.barrier = maxf(h.barrier, minf(most * float(SW["over"]), h.barrier + most * float(SW["fill"])))
 			if h.barrier > was:
-				h._tell({"t": "barrierHit", "x": h.world.x, "y": h.world.y, "left": h.barrier, "most": maxf(h.max_barrier, most)})
+				h._tell({"t": "barrierHit", "x": h.world.x, "y": h.world.y, "left": h.barrier, "most": most})
 		if h.has("souldebt"):
 			pact = minf(float(P["full"]), pact + float(P["full"]) * float(T["soulDebt"]["share"]))
 		if h.has("pyre"):

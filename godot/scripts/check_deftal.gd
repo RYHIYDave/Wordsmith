@@ -154,15 +154,19 @@ func run(main, hero, d: String) -> void:
 	_take(["hunger", "terribleroar", "blazingarm", "souldebt", "soulward", "feast", "hellhide"])
 	kit = h.kit
 	h.barrier = 0.0
-	var base: float = maxf(h.max_barrier, roundf(h.max_life * 0.2))
 	m = _foes([[2.0, 0.0]], true)[0]
 	m.curse_t = 3.0
+	kit.on_kill(m)
+	var none: float = h.barrier
+	# (in cloth: a barrier of 140, say)
+	h.max_barrier = 140.0
+	var base: float = h.max_barrier
 	kit.on_kill(m)
 	var one: float = h.barrier
 	for k in 30:
 		kit.on_kill(m)
-	_line(absf(one - base * 0.1) < 1.0 and absf(h.barrier - base * 1.5) < 1.0,
-		"Soul Ward: in no cloth, a fifth of his life his barrier's measure (%d); a cursed one dying gave him %d; thirty more, %d (half again past full, %d)" % [base, one, h.barrier, base * 1.5])
+	_line(none == 0.0 and absf(one - base * 0.1) < 1.0 and absf(h.barrier - base * 1.5) < 1.0,
+		"Soul Ward: in no cloth, nothing (%d); in cloth (a barrier of %d), a cursed one dying gave him %d; thirty more, %d (half again past full, %d)" % [none, base, one, h.barrier, base * 1.5])
 	await _run(0.2)
 	await _snap("warlock_soul_ward")
 	h.stats["armor"] = 120.0
