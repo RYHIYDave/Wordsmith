@@ -3330,6 +3330,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		get_tree().quit()
 		return
 	# (STRONGHOLDS ON ANY ENDLESS LEVEL, THE ALTAR ROOM: check_altar_rooms.gd)
+	if _arg("only") == "sweep":
+		await preload("res://scripts/check_sweep.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "movenames":
 		await preload("res://scripts/check_move_names.gd").new().run(self, hero, dir)
 		get_tree().quit()
