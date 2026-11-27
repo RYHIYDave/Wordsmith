@@ -9,7 +9,7 @@
 ##   MOMENTUM (Jump): every flying blow that lands lights a new globe of its kind, so he can fly again, a jump each time. (In place of
 ##     Stepping Stones, a flying blow springing on to the next: his “So using a jump swipe move now just makes him jump two more
 ##     times?  Kind of a seriously long animation chain to locked into”; made to chain on a swipe again, his “Nah I don’t like it.
-##     Something else”; asked which in its place, “Momentum”, 27 Nov 2026.)
+##     Something else”; asked which in its place, “Momentum”; its film seen, by 12:50: “Yes, ship it all (Recommended)”, 27 Nov 2026.)
 ##   CANNON KICK (Kick): his push kick, the second kick in a row, sends the one it kicks flying (CANNON): everything it flies into is
 ##     struck and knocked aside; with Wall Slam it is stunned too, as one driven into another.
 ## And a STANCE, the element he fights in: three stones, one in the middle of each globe, only one of them his:
