@@ -900,6 +900,9 @@ func _ready() -> void:
 	if _arg("deftal") != "":
 		preload("res://scripts/talents.gd").DEFENCE_TALENTS = _arg("deftal") == "1"
 		preload("res://scripts/talents.gd").D = {}
+	# (NIGHT IN THE TOWN AND ON FLOOR 1, night.gd: `--night=1` on for a run, `--night=0` off)
+	if _arg("night") != "":
+		preload("res://scripts/night.gd").on = _arg("night") == "1"
 	# (THE TINKERER'S BUILDS, heroes/tinkerer_builds.gd: `--tbuilds=1` on for a run, the trees made again)
 	if _arg("tbuilds") != "":
 		preload("res://scripts/heroes/tinkerer_builds.gd").on = _arg("tbuilds") == "1"
@@ -1066,7 +1069,7 @@ func _ready() -> void:
 	# (a new game begins in town: game.ts constructor, enterTown; shot mode's fights begin on floor 1)
 	var first := _arg("place")
 	if first == "":
-		first = "floor2" if _arg("only") in ["floor2", "demonfilm", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "cavein", "cavein_film", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "runebag", "companions", "endless", "rim", "shards", "final", "fanfare", "packs", "finalmusic", "memfloors", "smooth"] else "town"
+		first = "floor2" if _arg("only") in ["floor2", "demonfilm", "f2moves", "f2ways", "glows", "fxleft", "yardgate", "bossrage", "veil", "lairfetch", "voices", "wallsee", "behind", "touch", "speech", "uniques", "uniquesdo", "uniqueslook", "uniqueswar", "uniquescls", "lesson", "upright", "pad", "foemelds", "sounds14", "skins"] else "floor1" if shots != "" and not _arg("only") in ["town", "night", "cavein", "cavein_film", "music", "floors", "descent", "title", "title_live", "trial", "practice", "townnames", "compare", "menus", "runebag", "companions", "endless", "rim", "shards", "final", "fanfare", "packs", "finalmusic", "memfloors", "smooth"] else "town"
 	# (THE SAVED GAME: the Lexicon and the stash, and the run in progress, read back; he comes back in his town: game.ts restore)
 	saving = (_arg("only") == "" and shots == "" and _arg("place") == "") or _arg("only") in ["save_write", "save_read", "fall_live", "title_live"]
 	var fresh := new_hero.duplicate()
@@ -3576,6 +3579,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 	# (DEFENCE IN EVERY TREE: --only=deftal --deftal=1, check_deftal.gd)
 	if _arg("only") == "deftal":
 		await preload("res://scripts/check_deftal.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (NIGHT IN THE TOWN AND ON FLOOR 1: --only=night, its pictures, check_night.gd)
+	if _arg("only") == "night":
+		await preload("res://scripts/check_night.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (THE TINKERER'S BUILDS: --only=tbuilds --tbuilds=1, check_tbuilds.gd)

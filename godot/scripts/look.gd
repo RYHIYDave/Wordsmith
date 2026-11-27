@@ -32,6 +32,8 @@ extends Node2D
 
 const DIR := "res://assets/looks/"
 const Glow := preload("res://scripts/figure_glow.gd")
+## (NIGHT IN THE TOWN AND ON FLOOR 1: night.gd, its switch; its dark and moonlight laid over the look as it is laid out)
+const Night := preload("res://scripts/night.gd")
 const HideClip := preload("res://scripts/hide_clip.gd")
 const HH := 16.0  # picture pixels in half a tile's height: a depth of d sorts at y = d * 16
 const DARK_GRAIN := 4.0  # game pixels to a pixel of the dark's picture
@@ -176,6 +178,10 @@ func _ready() -> void:
 		if data.has("lights"):
 			data["lights"] = (data["lights"] as Array).filter(func(l): return not out.call(float(l["x"]), float(l["y"])))
 		data["items"] = (data["items"] as Array).filter(func(it): return not (str(it.get("layer", "")) == "flat_add" and out.call(float(it.get("x", 0)), float(it.get("y", 0)))))
+	# (NIGHT: its dark, its daylight moonlight: night.gd)
+	Night.fall(place, data)
+	var moon = Night.moon(place)
+	var beyond = Night.beyond(place)
 	_add = CanvasItemMaterial.new()
 	_add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	var pics: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + place + "_pics.json"))
@@ -196,6 +202,8 @@ func _ready() -> void:
 		_ready2()
 		return
 	_sheet = load(DIR + place + ".png")
+	# (NIGHT: the glass of the windows the moon's blue, not the sun's cream: night.gd)
+	_sheet = Night.glass(place, _sheet, pics)
 	for k in pics:
 		var p: Array = pics[k]
 		_pics[k] = {"rect": Rect2(p[0], p[1], p[2], p[3]), "anchor": Vector2(p[4], p[5])}
@@ -213,7 +221,9 @@ func _ready() -> void:
 			continue
 		# (WHAT IS SEEN WHEN, on a floor: the tile this stands on, by its place on the screen; what is behind everything is always drawn)
 		var tile := _tile1(it) if place != "town" and place != "camp" and layer != "back" else -1
-		if still.has(layer) and frames.size() == 1 and not it.has("stair") and not it.has("waypoint"):
+		# (NIGHT: the way out through the town's gate, night beyond it: drawn alone, to be darkened)
+		var night_beyond: bool = beyond != null and it.get("what", "") == "the way out through the gate"
+		if still.has(layer) and frames.size() == 1 and not it.has("stair") and not it.has("waypoint") and not night_beyond:
 			(still_yh if it.has("yh") else still)[layer].append([frames[0], at, tile])
 			continue
 		var s := Sprite2D.new()
@@ -223,6 +233,11 @@ func _ready() -> void:
 		_pic_on(s, frames[0])
 		if layer.ends_with("_add"):
 			s.material = _add
+			# (NIGHT: the sun and the daylight, moonlight)
+			if moon != null:
+				s.modulate = moon
+		if night_beyond:
+			s.modulate = beyond
 		if layers.has(layer):
 			s.position = at
 			layers[layer].add_child(s)

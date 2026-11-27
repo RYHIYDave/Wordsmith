@@ -36,6 +36,8 @@ extends Node2D
 const Iso := preload("res://scripts/iso.gd")
 const Loot := preload("res://scripts/loot.gd")
 const Perils := preload("res://scripts/perils.gd")
+## (NIGHT IN THE TOWN: the gate in wood, night.gd)
+const Night := preload("res://scripts/night.gd")
 ## (game/ways.ts: the gate rises within GATE_RISE_AT tiles of its middle and falls past GATE_FALL_AT; its unbarring seen within
 ## UNBAR_SEEN and as long as its film, UNBAR_SECS; game/doors.ts GATE_RISE, GATE_FALL: how long it takes to go up and to come
 ## down)
@@ -693,7 +695,7 @@ func _lay_gate() -> void:
 	if tg == null or not Perils._fx.get("films", {}).has("tg_bars_1"):
 		return
 	for k in tg["port"].size():
-		if tg["port"][k] != null and Perils._fx["films"].has("tg_port_%d" % k):
+		if tg["port"][k] != null and Perils._fx["films"].has(Night.port_film(k)):
 			_port[k] = _strip(tg["port"][k])
 	for k in tg["bars"].size():
 		if tg["bars"][k] != null and Perils._fx["films"].has("tg_bars_%d" % k):
@@ -771,7 +773,7 @@ func _show_gate() -> void:
 	var step := clampi(roundi(gate_open * float(tg["up"]) / 2.0), 0, int(tg["heights"]) - 1)
 	for k in _port:
 		var p: Dictionary = _port[k]
-		p["pic"].put("tg_port_%d" % k, step, p["at"], p["d"])
+		p["pic"].put(Night.port_film(k), step, p["at"], p["d"])
 	var film := "tg_unbar_%d"
 	var f := 77
 	if unbar != null and unbar >= 0.0:
