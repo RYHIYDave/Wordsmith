@@ -513,6 +513,12 @@ func release_charge(m, at: Vector2) -> void:
 ## along the way; Storm Warp's lightning where she arrives.
 func _talent_warp(x0: Vector2, x1: Vector2) -> void:
 	var T := _TT()
+	# (DEFENCE IN EVERY TREE: Warding Warp, every warp fills a quarter of her barrier)
+	if Talents.DEFENCE_TALENTS and h.has("wardingwarp") and h.max_barrier > 0.0 and h.barrier < h.max_barrier:
+		h.barrier = minf(h.max_barrier, h.barrier + h.max_barrier * float(Talents.def("wardingwarp")))
+		h._tell({"t": "barrierHit", "x": x1.x, "y": x1.y, "left": h.barrier, "most": h.max_barrier})
+		if h.fx != null:
+			h.fx.float_text(x1.x, x1.y - 0.6, "WARD", Color("#7af8f0"), false, 26.0)
 	if h.has("frostwarp") and h.monsters != null:
 		var rr: float = T["frostWarp"]["r"]
 		_say({"t": "burst", "x": x0.x, "y": x0.y, "r": rr, "el": "frost", "style": "nova"})

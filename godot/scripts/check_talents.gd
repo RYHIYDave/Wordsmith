@@ -8,6 +8,8 @@
 extends RefCounted
 
 const Talents := preload("res://scripts/talents.gd")
+## (THE TINKERER'S BUILDS: her new stones, for the twigs' check)
+const TBu := preload("res://scripts/heroes/tinkerer_builds.gd")
 
 var M
 var h
@@ -113,15 +115,23 @@ func run(main, hero, d: String) -> void:
 			var mn: String = Talents.TWIGS[c][id]["from"]
 			var t: Dictionary = Talents.of(c, id)
 			var others := false
+			# (THE TINKERER'S BUILDS: Tesla Fence, a leaf on Contraption's own twig, leading nowhere itself: the twig still a dead end)
+			var leaves: Array = []
+			if c == "tinkerer" and TBu.on:
+				for lid in TBu.NODES:
+					if TBu.NODES[lid]["from"] == [id]:
+						leaves.append(lid)
 			for o in Talents.tree(c)["talents"]:
-				if o["id"] != id and o["id"] != mn and ((o["from"] as Array).has(id) or (o["joined"] as Array).has(id)):
+				if o["id"] != id and o["id"] != mn and not leaves.has(o["id"]) and ((o["from"] as Array).has(id) or (o["joined"] as Array).has(id)):
 					others = true
-			if t["from"] != [mn] or t["joined"] != [mn] or t["big"] or not (Talents.of(c, mn)["joined"] as Array).has(id) or others \
+			var joined_rest: Array = (t["joined"] as Array).filter(func(x): return not leaves.has(x))
+			if t["from"] != [mn] or joined_rest != [mn] or t["big"] or not (Talents.of(c, mn)["joined"] as Array).has(id) or others \
 					or Talents.take_problem(c, 50, [], id) == "" or Talents.take_problem(c, 50, [mn], id) != "":
 				bad.append("%s %s" % [c, id])
 	var mk := Talents.take_problem("tinkerer", 50, ["bombsaway", "lightningrod", "shrapnel"], "markii")
 	var pr := Talents.take_problem("tinkerer", 50, ["bombsaway", "lightningrod", "shrapnel", "markii"], "prospector")
-	var ring: bool = Talents.of("tinkerer", "markii")["at"] == [0, 2] and Talents.of("tinkerer", "fortune")["joined"] == ["bombsaway"]
+	var ring: bool = Talents.of("tinkerer", "markii")["at"] == [0, 2] and (Talents.of("tinkerer", "fortune")["joined"] == ["bombsaway"] \
+		or (TBu.on and Talents.of("tinkerer", "fortune")["joined"] == ["bombsaway", "cointoss"]))
 	_line(bad.is_empty() and n_tw == 8 and mk == "" and pr == "" and ring,
 		"every class's attack swaps a twig off its path (%d: Snare, Snipe, Rally, Ball, Beam, Spear, Contraption, Gun Arm; wrong %s); Mark II on the Golem's ring after Shrapnel '%s', Prospector after it '%s', Fortune off Bombs Away alone (%s)" % [n_tw, bad, mk, pr, ring])
 	# UNDOING, AND A LIST MADE SAFE
@@ -273,7 +283,11 @@ func _warrior() -> void:
 	var g_low: float = h._talent_guard()
 	h.life = h.max_life
 	var g_high: float = h._talent_guard()
-	_line(absf(g_low - 0.7 * g_high) < 0.001 and g_high <= 1.0 and g_high >= 0.7, "Thick Skin: below half his life 30%% less (%.2f of %.2f); Bulwark: %.0f%% less for those close round him now" % [g_low, g_high, (1.0 - g_high) * 100.0])
+	if Talents.DEFENCE_TALENTS:
+		# (with the defence talents on, Thick Skin and Bulwark work through his armour instead: check_deftal.gd tries them)
+		_line(g_low == 1.0 and g_high == 1.0, "Thick Skin and Bulwark: no flat cut now (%.2f, %.2f); they work through his armour" % [g_low, g_high])
+	else:
+		_line(absf(g_low - 0.7 * g_high) < 0.001 and g_high <= 1.0 and g_high >= 0.7, "Thick Skin: below half his life 30%% less (%.2f of %.2f); Bulwark: %.0f%% less for those close round him now" % [g_low, g_high, (1.0 - g_high) * 100.0])
 	# Master Stroke: every fourth hit landed a certain critical
 	h.talents = ["greatsword", "sweepingcut", "drilledleap", "footwork", "mastertop"]
 	h._strokes = 0

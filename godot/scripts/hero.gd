@@ -244,6 +244,9 @@ var shield_t := 0.0
 ## again when nothing has touched him for a while (BARRIER_WAIT, then BARRIER_FILL of it a second).
 var barrier := 0.0
 var max_barrier := 0.0
+## (DEFENCE IN EVERY TREE: Evasive, the seconds left after a roll; Counter Shot, a blow dodged, the next arrow ready: talents.gd)
+var evasive_t := 0.0
+var counter_ready := false
 var _barrier_wait := 0.0
 const DODGE_K := 0.75
 const BARRIER_WAIT := 3.0
@@ -445,7 +448,7 @@ func _ready() -> void:
 ## His most life (loot.gd derive): what he had more of comes with it, as the game's derive does.
 func set_max_barrier(v: float) -> void:
 	var was := max_barrier
-	max_barrier = maxf(0.0, v)
+	max_barrier = maxf(0.0, v) + _talent_barrier()
 	barrier = max_barrier if barrier >= was else minf(barrier, max_barrier)
 
 
@@ -458,9 +461,65 @@ func dodge_chance() -> float:
 	# (THE THREE DEFENCES' WORDS: Swift behind, his haste is dodge too while it lasts: words.gd SWIFT_DODGE)
 	if Words.DEFENCE_WORDS and haste_t > 0.0 and haste > 0.0:
 		d += haste * Words.SWIFT_DODGE
-	if d <= 0.0:
-		return m52.dodge()
-	return DODGE_K * d / (d + 40.0 + 20.0 * maxf(1.0, _power_depth())) + m52.dodge()
+	var c: float = m52.dodge()
+	if d > 0.0:
+		c += DODGE_K * d / (d + 40.0 + 20.0 * maxf(1.0, _power_depth()))
+	# (DEFENCE IN EVERY TREE: Evasive after a roll, Smoke Screen in her smoke: one blow in two at least)
+	return maxf(c, dodge_floor())
+
+
+## DEFENCE IN EVERY TREE (talents.gd DEFENCE): the least chance a blow misses him: Evasive, for a while after a roll; Smoke
+## Screen, standing in the smoke her Blast Jump left.
+func dodge_floor() -> float:
+	if not Talents.DEFENCE_TALENTS:
+		return 0.0
+	var f := 0.0
+	if evasive_t > 0.0 and has("evasive"):
+		f = maxf(f, float(Talents.def("evasive")["floor"]))
+	if has("smokescreen") and wakes != null and is_instance_valid(wakes) and wakes.patch_at("smoke", world) != null:
+		f = maxf(f, float(Talents.def("smokescreen")["floor"]))
+	return f
+
+
+## DEFENCE IN EVERY TREE: what his talents make of his armour: Thick Skin, double below half his life; Bulwark, a fifth more for
+## each awake one close round him, double at most; Hellhide, double while the demon has him (heroes/warlock.gd).
+func _talent_armour() -> float:
+	if not Talents.DEFENCE_TALENTS:
+		return 1.0
+	var k := 1.0
+	if has("thickskin") and life < max_life * float(Talents.D["tune"]["thickSkin2"]["below"]):
+		k *= float(Talents.def("thickskin"))
+	if has("bulwark") and monsters != null:
+		var near: float = float(Talents.D["tune"]["bulwark2"]["near"])
+		var n := 0
+		for m in monsters.list:
+			if is_instance_valid(m) and not m.dead and m.state != "sleep" and m.world.distance_to(world) <= m.r + RADIUS + near:
+				n += 1
+		var B: Dictionary = Talents.def("bulwark")
+		k *= minf(float(B["most"]), 1.0 + float(B["each"]) * n)
+	if kit != null and kit.has_method("hellhide") and kit.hellhide():
+		k *= float(Talents.def("hellhide"))
+	return k
+
+
+## DEFENCE IN EVERY TREE: Ice Shell, a barrier of a share of his life on top of his gear's.
+func _talent_barrier() -> float:
+	if Talents.DEFENCE_TALENTS and has("iceshell"):
+		return roundf(max_life * float(Talents.def("iceshell")["life"]))
+	return 0.0
+
+
+## DEFENCE IN EVERY TREE: Ice Shell, his barrier broken: everything near him frozen.
+func _ice_shell() -> void:
+	var I: Dictionary = Talents.def("iceshell")
+	_tell({"t": "burst", "x": world.x, "y": world.y, "r": I["r"], "el": "frost", "style": "nova"})
+	sfx.play("frost", linear_to_db(0.9))
+	if monsters == null:
+		return
+	for m in monsters.list:
+		if is_instance_valid(m) and not m.dead and not m.boss and not monsters.shut_in(m) and m.world.distance_to(world) <= float(I["r"]) + m.r:
+			m.freeze_now()
+			m.frozen_t = maxf(m.frozen_t, float(I["secs"]) * (0.5 if m.elite else 1.0))
 
 
 ## (game.ts power) The depth his armour and dodge are reckoned against: on an endless level, its level's (loot.gd power), not the
@@ -488,6 +547,9 @@ func _through_barrier(dmg: float) -> float:
 	# (THE SKILL TREES: Shieldwall, his barrier breaking bursts outward, as Guarding's shield did)
 	if barrier <= 0.0 and has("shieldwall"):
 		_shield_burst()
+	# (DEFENCE IN EVERY TREE: Ice Shell, his barrier breaking freezes everything near him)
+	if barrier <= 0.0 and Talents.DEFENCE_TALENTS and has("iceshell"):
+		_ice_shell()
 	return dmg - took
 
 
@@ -699,6 +761,12 @@ func hit_monster(m, i: int, frac: float, quiet: bool, sure := false) -> void:
 	# (THE SKILL TREES REMADE: Keen Eye, the first arrow at an enemy that has not noticed him a certain critical)
 	if m.state == "sleep" and has("keeneye") and str(Words.skill(loadout.id(i)).get("kind", "")) in ["projectile", "volley"]:
 		crit = true
+	# (DEFENCE IN EVERY TREE: Counter Shot, the arrow after a blow dodged a certain critical that knocks back)
+	if counter_ready and has("countershot") and str(Words.skill(loadout.id(i)).get("kind", "")) in ["projectile", "volley"]:
+		counter_ready = false
+		crit = true
+		if not m.dead and not m.boss:
+			m.throw_from(world, float(Talents.def("countershot")["far"]))
 	# (THE SKILL TREES: Master Stroke, every fourth hit landed on its own target a certain critical)
 	if not quiet and has("mastertop"):
 		_strokes += 1
@@ -1363,6 +1431,8 @@ func _process(dt: float) -> void:
 			_back()
 		return
 	life = minf(max_life, life + stats["life_regen"] * dt * heal_k())
+	# (DEFENCE IN EVERY TREE: Evasive's while after a roll)
+	evasive_t = maxf(0.0, evasive_t - dt)
 	# (THE THREE DEFENCES: his barrier fills again when nothing has touched him for a while)
 	if max_barrier > 0.0:
 		_barrier_wait = maxf(0.0, _barrier_wait - dt)
@@ -1900,6 +1970,9 @@ func knock(way: Vector2, dist: float) -> void:
 	# (UNIQUE ITEMS: The Standing Stone, nothing shoves him while he stands still)
 	if _act == "lunge" or has("resolute") or (uniques != null and uniques.rooted()) or m52.planted():
 		return
+	# (DEFENCE IN EVERY TREE: Hellhide, nothing knocks the demon back: heroes/warlock.gd)
+	if kit != null and kit.has_method("hellhide") and kit.hellhide():
+		return
 	_knock = way * dist
 	_knock_t = 0.12
 
@@ -1933,6 +2006,8 @@ func armour_cut(ignored := 0.0) -> float:
 	# (PRECISE, on a monster: its blows find the gaps in his armour, so much of it as if it were not there)
 	# (THE FIFTEEN OF THE THREE DEFENCES: Workhardened, more armour for each blow lately taken)
 	var a: float = stats.get("armor", 0.0) * (1.0 - ignored) * (uniques.armour_k() if uniques != null else 1.0)
+	# (DEFENCE IN EVERY TREE: Thick Skin, Bulwark, Hellhide)
+	a *= _talent_armour()
 	if a <= 0.0:
 		return 0.0
 	return minf(0.75, a / (a + 40.0 + 20.0 * maxf(1.0, _power_depth())))
@@ -1999,6 +2074,14 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 		# (THE FIFTEEN OF THE THREE DEFENCES: Feint, Afterimage, Close Call: what a blow dodged does)
 		if uniques != null:
 			uniques.dodged()
+		# (DEFENCE IN EVERY TREE: Counter Shot, his next arrow readied; Guard Up, the Brawler's next punch: heroes/brawler.gd)
+		if Talents.DEFENCE_TALENTS:
+			if has("countershot") and not counter_ready:
+				counter_ready = true
+				if fx != null:
+					fx.float_text(world.x, world.y - 0.6, "COUNTER", Color("#7af8f0"), false, 26.0)
+			if kit != null and kit.has_method("dodged"):
+				kit.dodged()
 		return
 	# (THE LAST FLOOR 1–10 MELDS: Parry, his brief shell or its ward, and nothing gets through: melds46_rules.gd)
 	if m52.parried(by):
@@ -2089,6 +2172,9 @@ func hurt_by(raw: float, el := "phys", words: Array = [], half := {}, src = null
 	# while (a minion, of its leader's words, at half)
 	_city_words(k, by)
 	_last_words(k, src)
+	# (DEFENCE IN EVERY TREE: Bodyguard, her Golem near takes half the blow: heroes/tinkerer.gd)
+	if Talents.DEFENCE_TALENTS and has("bodyguard") and kit != null and kit.has_method("bodyguard"):
+		dmg = kit.bodyguard(dmg)
 	# GUARDING in front: his shield takes the blow first; all of it taken, nothing reaches him
 	var soaked := 0.0
 	if shield > 0.0:
@@ -2938,14 +3024,14 @@ func _talent_hit_mult(m) -> float:
 func _talent_guard() -> float:
 	var k := 1.0
 	var T: Dictionary = Talents.D["tune"]
-	if has("bulwark") and monsters != null:
+	if has("bulwark") and monsters != null and not Talents.DEFENCE_TALENTS:
 		var B: Dictionary = T["bulwark2"]
 		var n := 0
 		for m in monsters.list:
 			if is_instance_valid(m) and not m.dead and m.state != "sleep" and m.world.distance_to(world) <= m.r + RADIUS + float(B["near"]):
 				n += 1
 		k *= 1.0 - minf(float(B["most"]), float(B["each"]) * n)
-	if has("thickskin") and life < max_life * float(T["thickSkin2"]["below"]):
+	if has("thickskin") and life < max_life * float(T["thickSkin2"]["below"]) and not Talents.DEFENCE_TALENTS:
 		k *= 1.0 - float(T["thickSkin2"]["less"])
 	# (THE WARLOCK'S DEMON MADE TERRIBLE: the demon takes less: heroes/warlock.gd)
 	if kit != null and kit.has_method("demon_guard"):

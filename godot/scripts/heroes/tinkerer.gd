@@ -24,6 +24,8 @@ extends "res://scripts/heroes/kit.gd"
 ## (his word, 21 Nov 2026: the Golem only shoots) Its small shot's wait after each: the punch's, so that it fires about as often as
 ## it punched and hits about as hard (the game's cannon waited TINKER_TUNE.golem.cannon.wait, 3 s, beside its fists). His to change.
 const SHOT_WAIT := 0.5
+## (THE TINKERER'S BUILDS, heroes/tinkerer_builds.gd: her vials her bombs; off, as she was)
+const TB := preload("res://scripts/heroes/tinkerer_builds.gd")
 
 ## (assets/heroes/golem.json: tools/godot_tinkerer.ts, her tune and its rocket jump's frames, as the game has them)
 ## THE BIG ONE NOW AND THEN (his pick, 26 Nov 2026, “Fix the balance (Recommended)”, after the speed and tank test found her
@@ -97,6 +99,7 @@ func _init(hero) -> void:
 	TT = G["tune"]
 	GT = TT["golem"]
 	RK = G["rocket"]
+	TB.words(Words.data()["skills"])
 
 
 func step(dt: float, way: Vector2, hooked: bool) -> bool:
@@ -177,8 +180,12 @@ func _deliver(i: int, from: Vector2, to: Vector2, frac: float, primary: bool) ->
 	if primary:
 		h._time_word_sound(i)
 	if kind == "vialtoss":
-		for k in (1 if echo else int(r["count"])):
-			_toss_vial(i, from, to, each, k, echo)
+		# (THE TINKERER'S BUILDS: Coin Toss, a fan of gold coins in her bomb's place while she has the gold for it)
+		if TB.on and h.has("cointoss") and _coins_paid(echo):
+			_toss_coins(i, from, to, each, echo)
+		else:
+			for k in (1 if echo else int(r["count"])):
+				_toss_vial(i, from, to, each, k, echo)
 	elif kind == "golem":
 		# (the first whistle brings her Golem out; each after has it charge its big shot. Twin, a second shot after the first; "of
 		# Echoes", a weaker one after that: each Golem charging keeps it for when it fires)
@@ -219,9 +226,9 @@ func _toss_vial(i: int, from: Vector2, to: Vector2, frac: float, n: int, echo: b
 	var v := {"x0": from.x, "y0": from.y, "x1": x1, "y1": y1, "t": 0.0, "flight": float(T["flight"]), "skill": i, "frac": frac, "wake": n == 0 and not echo, "n": n}
 	_brew(v)
 	vials.append(v)
-	_say({"t": "vial", "id": -1, "x0": from.x, "y0": from.y, "x1": x1, "y1": y1, "flight": float(T["flight"]), "n": n, "echo": echo, "big": v.get("big", false)})
+	_say(_bombed({"t": "vial", "id": -1, "x0": from.x, "y0": from.y, "x1": x1, "y1": y1, "flight": float(T["flight"]), "n": n, "echo": echo, "big": v.get("big", false)}))
 	if n == 0:
-		_sfx("vial", 0.3 if echo else 0.5)
+		_sfx("swing" if TB.on else "vial", 0.3 if echo else 0.5)
 	# (UNIQUE ITEMS: the Foreman's Wrench, whenever she tosses a vial each of her Golems lobs one as well, at the same spot)
 	if n == 0 and not echo and h.uniques != null and h.uniques.wears("foremanswrench"):
 		for g in _up():
@@ -231,8 +238,94 @@ func _toss_vial(i: int, from: Vector2, to: Vector2, frac: float, n: int, echo: b
 				"frac": frac * float(h.uniques.ut["foreman"]["share"]), "wake": false, "foreman": true}
 			_brew(gv)
 			vials.append(gv)
-			_say({"t": "vial", "id": -1, "x0": g["x"], "y0": g["y"], "x1": x1, "y1": y1, "flight": float(T["flight"]), "n": 0, "big": gv.get("big", false)})
+			_say(_bombed({"t": "vial", "id": -1, "x0": g["x"], "y0": g["y"], "x1": x1, "y1": y1, "flight": float(T["flight"]), "n": 0, "big": gv.get("big", false)}))
 			h.uniques._say({"id": "foremanswrench", "what": "lob"})
+
+
+# =====================================================================================================================
+# THE TINKERER'S BUILDS (heroes/tinkerer_builds.gd)
+
+var _fence_t := 0.0
+
+
+## (Tesla Fence) Lightning between every two of her Contraptions set up within FENCE span of each other: every enemy within FENCE near
+## of the line between them struck, once a lash, for FENCE share of a shot of theirs.
+func _fence() -> void:
+	var C := _C()
+	var F: Dictionary = TB.FENCE
+	var up: Array = contraptions.filter(func(q): return float(q["broke"]) < 0.0 and float(q["t"]) >= float(C["set"]))
+	if up.size() < 2 or h.monsters == null:
+		return
+	var struck: Array = []
+	var lashed := false
+	for a in up.size():
+		for b in range(a + 1, up.size()):
+			var p0 := Vector2(up[a]["x"], up[a]["y"])
+			var p1 := Vector2(up[b]["x"], up[b]["y"])
+			if p0.distance_to(p1) > float(F["span"]):
+				continue
+			lashed = true
+			h._tell({"t": "arc", "x0": p0.x, "y0": p0.y, "x1": p1.x, "y1": p1.y})
+			var i: int = up[a]["skill"]
+			for m in h.monsters.list:
+				if not is_instance_valid(m) or m.dead or m.state == "rise" or struck.has(m) or h.monsters.shut_in(m):
+					continue
+				var q: Vector2 = Geometry2D.get_closest_point_to_segment(m.world, p0, p1)
+				if q.distance_to(m.world) <= float(F["near"]) + m.r:
+					struck.append(m)
+					h.hit_monster(m, i, float(up[a]["frac"]) * float(C["boltShare"]) * float(F["share"]), struck.size() > 3)
+	if lashed:
+		_sfx("zap", 0.25)
+
+
+## (Coin Toss) Whether she has the gold for a toss of coins, and if so it paid (an echo's coins are free).
+func _coins_paid(echo: bool) -> bool:
+	var L = h.monsters.loot if h.monsters != null else null
+	if L == null:
+		return false
+	if echo:
+		return true
+	var cost: int = int(TB.COIN["n"]) * int(TB.COIN["cost"])
+	if int(L.gold) < cost:
+		return false
+	L.gold -= cost
+	return true
+
+
+## (Coin Toss) How much harder her coins strike for the gold she carries.
+func coin_k() -> float:
+	var L = h.monsters.loot if h.monsters != null else null
+	var g: float = float(L.gold) if L != null else 0.0
+	return minf(float(TB.COIN["most"]), 1.0 + g / float(TB.COIN["per"]))
+
+
+## (Coin Toss) A fan of gold coins from her hand toward where she aimed, each a shot of her tap's (kit.gd shots): it strikes the first
+## it meets.
+func _toss_coins(i: int, from: Vector2, to: Vector2, frac: float, echo: bool) -> void:
+	var Co: Dictionary = TB.COIN
+	var r: Dictionary = h.loadout.r(i)
+	var way := to - from
+	way = way / way.length() if way.length() >= 0.01 else h.face
+	var base := atan2(way.y, way.x)
+	var n: int = 1 if echo else int(Co["n"])
+	var hit_each: float = frac * float(Co["share"]) * coin_k()
+	for k in n:
+		var a := base + (0.0 if n == 1 else (float(k) / float(n - 1) - 0.5) * float(Co["spread"]))
+		var u := Vector2(cos(a), sin(a))
+		shots.append({"x": from.x + u.x * 0.4, "y": from.y + u.y * 0.4, "vx": u.x * float(Co["speed"]), "vy": u.y * float(Co["speed"]),
+			"r": 0.3, "dist": float(Co["range"]), "dmg": hit_each, "element": r["element"], "pierce": false, "hit": [], "volley": n > 1,
+			"skill": i, "trail": 0.0, "words": h.loadout.wfronts(i), "age": 0.0, "n": k, "flown": 0.0, "look": "coin"})
+	if not echo:
+		_sfx("coin", 0.6)
+		h._tell({"t": "text", "x": h.world.x, "y": h.world.y - 0.6, "text": "-%d gold" % (int(Co["n"]) * int(Co["cost"])), "color": "#ffd27a"})
+
+
+## (THE TINKERER'S BUILDS) A thing she lobs, as her look is told of it: with her bombs on, a lit bomb (her Contraption's), going off
+## as it lands.
+func _bombed(e: Dictionary) -> Dictionary:
+	if TB.on and not e.has("bomb"):
+		e["bomb"] = 0.0
+	return e
 
 
 ## (game.ts vialBursts) A vial of hers bursting where it comes down, hurting all within the move's radius.
@@ -252,8 +345,9 @@ func _vial_bursts(v: Dictionary) -> void:
 	if big:
 		rad *= float(T["bigOne"]["wide"])
 	var at := Vector2(v["x1"], v["y1"])
-	_say({"t": "vialBurst", "x": at.x, "y": at.y, "r": rad, "little": little, "big": big, "brew": brew, "bomb": v.get("bomb", false)})
-	_sfx("shatter", 0.2 if little else 0.35)
+	_say({"t": "vialBurst", "x": at.x, "y": at.y, "r": rad, "little": little, "big": big, "brew": brew, "bomb": v.get("bomb", false) or TB.on,
+		"k": float(TB.BLAST["little"] if little else (TB.BLAST["big"] if big else TB.BLAST["plain"])) if TB.on else 1.0})
+	_sfx("explode" if TB.on else "shatter", (0.15 if little else 0.3) if TB.on else (0.2 if little else 0.35))
 	if big:
 		_shake(4.0)
 		_sfx("slam", 0.8)
@@ -308,7 +402,7 @@ func _cluster_of(v: Dictionary) -> void:
 		if v.get("brew", "") != "":
 			l["brew"] = v["brew"]
 		vials.append(l)
-		_say({"t": "vial", "id": -1, "x0": c.x, "y0": c.y, "x1": e.x, "y1": e.y, "flight": float(K["flight"]), "n": n, "little": true})
+		_say(_bombed({"t": "vial", "id": -1, "x0": c.x, "y0": c.y, "x1": e.x, "y1": e.y, "flight": float(K["flight"]), "n": n, "little": true}))
 
 
 ## (Mad Mixture) A vial's brew on those it burst on: burning, freezing (a chill: on one chilled already, frozen) or poisoning.
@@ -417,6 +511,10 @@ func _move_step(dt: float) -> void:
 				if g.get("towed", false) or g["act"] == "jump":
 					continue
 				_pounds(int(g["skill"]), Vector2(g["x"], g["y"]), float(h.loadout.r(int(g["skill"]))["count_dmg"]) * float(h.uniques.ut["tow"]["share"]), 0, false, g)
+		# (DEFENCE IN EVERY TREE: Smoke Screen, smoke where she lands, and in it one blow in two misses her: hero.gd dodge_floor)
+		if Talents.DEFENCE_TALENTS and h.has("smokescreen") and h.wakes != null:
+			var SS: Dictionary = Talents.def("smokescreen")
+			h.wakes.add_patch(-1, "smoke", h.world, float(SS["r"]), float(SS["secs"]), 0.0, "phys")
 		# (her tree's BOMBS AWAY: a second bomb goes off where she lands)
 		if h.has("bombsaway"):
 			var B: Dictionary = _T()["bombsAway"]
@@ -434,6 +532,21 @@ func _move_step(dt: float) -> void:
 
 # =====================================================================================================================
 # HER GOLEM (game.ts whistle, holdJump, golemPounds, stepGolem, stepRocket)
+
+## DEFENCE IN EVERY TREE: Bodyguard, a Golem of hers standing near her takes half of a blow meant for her (hero.gd hurt_by): what
+## is left for her.
+func bodyguard(dmg: float) -> float:
+	var B: Dictionary = Talents.def("bodyguard")
+	for g in _up():
+		var at := Vector2(g["x"], g["y"])
+		if at.distance_to(h.world) <= float(B["near"]):
+			var took := roundf(dmg * float(B["share"]))
+			_say({"t": "guarded", "x": at.x, "y": at.y, "fromX": h.world.x, "fromY": h.world.y})
+			if h.fx != null and took > 0.0:
+				h.fx.float_text(at.x, at.y - 0.8, "GUARD", Color("#7af8f0"), false, 24.0)
+			return dmg - took
+	return dmg
+
 
 ## Her Golems out and not winding down.
 func _up() -> Array:
@@ -1285,6 +1398,12 @@ func _break_contraption(c: Dictionary) -> void:
 ## they fall apart. Her tap's Swift and her Frenzied pace quicken their shots.
 func _step_contraptions(dt: float) -> void:
 	var C := _C()
+	# (THE TINKERER'S BUILDS: Tesla Fence, lightning between every two set up near each other)
+	if TB.on and h.has("teslafence"):
+		_fence_t -= dt
+		if _fence_t <= 0.0:
+			_fence_t = float(TB.FENCE["every"])
+			_fence()
 	for k in range(contraptions.size() - 1, -1, -1):
 		var c: Dictionary = contraptions[k]
 		c["t"] = float(c["t"]) + dt

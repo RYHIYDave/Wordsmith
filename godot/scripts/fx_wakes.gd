@@ -33,7 +33,9 @@ const Volatile3 := preload("res://scripts/fx_volatile3.gd")
 static func _owned(z: Dictionary) -> bool:
 	return Melds3.owns_zone(z) or Volatile3.owns_zone(z)
 
-const KINDS := ["burn", "ice", "storm", "venom", "cracks"]
+const KINDS := ["burn", "ice", "storm", "venom", "cracks", "smoke"]
+## (DEFENCE IN EVERY TREE: the Tinkerer's Smoke Screen, grey smoke where her Blast Jump came down, hiding her: talents.gd)
+const SMOKE := [Color("#4a4856"), Color("#6c6a78"), Color("#8e8c9a"), Color("#b4b2be")]
 
 var fx
 ## The patches handed over in the last pass of drawing, and which frame that was.
@@ -126,6 +128,10 @@ func laid(kind: String, x: float, y: float, r: float, told: bool) -> void:
 			# the cloud billows out from where the attack hit
 			fx.ring(x, y, r, 0.4, L.rest(L.VENOM), true)
 			fx.bubbles(x, y, r * 0.8, mini(16, fx._round(6.0 + r * 4.0)))
+		"smoke":
+			# the smoke bursts out round where she came down
+			fx.ring(x, y, r, 0.45, PackedColorArray([SMOKE[1], SMOKE[2], SMOKE[3]]), true)
+			fx.ring(x, y, r * 0.6, 0.35, PackedColorArray([SMOKE[2], SMOKE[3]]), true)
 		# (cracked ground is the new words' look: nothing more as it is laid than its cracks tearing open)
 
 
@@ -312,6 +318,11 @@ func draw(c: CanvasItem, p: Dictionary) -> void:
 				var gx0: float = x + cos(qa) * d
 				var gy0: float = y + sin(qa) * d
 				fx.rect(c, floorf(fx.gx(gx0, gy0) + 0.5), floorf(fx.gy(gx0, gy0) + 0.5), 2, 1, Color(P["white"], fade))
+		"smoke":
+			# Smoke Screen: the floor dimmed under the smoke (the smoke itself is drawn in the air)
+			var a := fade * minf(1.0, zt / 0.2)
+			fx.floor_oval(c, px, py, r, SMOKE[0], 0.3 * a)
+			fx.floor_oval(c, px, py, r * 0.7, SMOKE[1], 0.18 * a)
 		"storm":
 			# Lightning behind: the ground under a thundercloud (the cloud itself is drawn in the air): its shadow, a rim
 			# that flickers
@@ -420,3 +431,35 @@ func draw_air(c: CanvasItem) -> void:
 			var py: float = floorf(fx.gy(qx, qy) + 0.5) - 6.0 - floorf(L.hash2(i, seed, 3) * 8.0 + sin(t * 1.3 + i) * 2.0 + 0.5)
 			var rr := 5.0 + L.hash2(i, seed, 4) * 5.0
 			fx.oval(c, px, py, rr * 1.5, rr * 0.8, Color(P["vn4"] if i % 3 == 0 else P["vn3"], (0.2 + L.hash2(i, seed, 5) * 0.14) * fade))
+	for z: Dictionary in _list:
+		if str(z.get("kind", "")) != "smoke":
+			continue
+		# Smoke Screen: billows of grey smoke rolling slowly over where she came down, as tall as she is and taller, so she is half
+		# lost in it; it thins at the end
+		var x: float = z["x"]
+		var y: float = z["y"]
+		var zr: float = z["r"]
+		var zt: float = z["t"]
+		var fade := minf(1.0, minf(zt / 0.2, (float(z["dur"]) - zt) * 1.6))
+		var grow := minf(1.0, 0.45 + zt / 0.4)
+		var seed := _seed(x, y)
+		var n: int = fx._round(7.0 + zr * 3.0)
+		for i in n:
+			var a := float(i) / n * TAU + t * (0.2 + L.hash2(i, seed, 1) * 0.25) * (1.0 if i % 2 == 0 else -1.0)
+			var d := zr * (0.15 + L.hash2(i, seed, 2) * 0.6) * grow
+			var qx := x + cos(a) * d
+			var qy := y + sin(a) * d
+			var px: float = floorf(fx.gx(qx, qy) + 0.5)
+			var py: float = floorf(fx.gy(qx, qy) + 0.5) - 8.0 - floorf(L.hash2(i, seed, 3) * 22.0 + sin(t * 1.1 + i) * 2.5 + zt * 3.0 + 0.5)
+			var rr := (5.0 + L.hash2(i, seed, 4) * 7.0) * grow
+			var al := (0.3 + L.hash2(i, seed, 6) * 0.16) * fade
+			# (each billow round: a dark belly, its body, and its top catching the light from the upper left)
+			fx.oval(c, px, py + 2.0, rr * 1.35, rr * 0.8, Color(SMOKE[0], al * 0.8))
+			fx.oval(c, px, py, rr * 1.3, rr * 0.78, Color(SMOKE[1 + (i % 2)], al))
+			fx.oval(c, px - floorf(rr * 0.25), py - floorf(rr * 0.25), rr * 0.8, rr * 0.45, Color(SMOKE[3], al * 0.7))
+		# (and a few wisps curling up off its top)
+		for i in 3:
+			var ph := fmod(t * 0.6 + L.hash2(i, seed, 8), 1.0)
+			var wx: float = floorf(fx.gx(x, y) + (L.hash2(i, seed, 9) - 0.5) * zr * 26.0 + sin(t * 2.0 + i) * 3.0 + 0.5)
+			var wy: float = floorf(fx.gy(x, y) - 30.0 - ph * 26.0 + 0.5)
+			fx.oval(c, wx, wy, 4.0 + ph * 4.0, 2.5 + ph * 2.0, Color(SMOKE[2], 0.22 * (1.0 - ph) * fade))

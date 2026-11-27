@@ -28,14 +28,14 @@ const PORTED := {
 	"warrior": ["greatsword", "gswhirlwind", "sweepingcut", "drilledleap", "footwork", "thickskin", "shieldwall", "secondwind", "bulwark",
 		"honededge", "giantslayer", "resolute", "executioner", "mastertop", "unbreakable",
 		"battleaxe", "twinaxes", "rend", "redmist", "headlong", "warhammer", "tremors", "heavyhead", "bulldozer", "wideswing"],
-	"ranger": ["fleet", "windrunner", "keeneye", "steadyaim", "quickdraw", "longshot", "lightstep", "huntersmark", "widetraps",
+	"ranger": ["evasive", "countershot", "fleet", "windrunner", "keeneye", "steadyaim", "quickdraw", "longshot", "lightstep", "huntersmark", "widetraps",
 		"minefield", "splitshot", "hail", "piercing", "farsight", "venom", "snare", "snipe", "rally",
 		"huntcompanion", "wildcompanion"],
-	"mage": ["kindling", "searing", "flamewarp", "fuel", "inferno", "charged", "forking", "stormwarp", "overload", "stormcaller",
+	"mage": ["iceshell", "wardingwarp", "kindling", "searing", "flamewarp", "fuel", "inferno", "charged", "forking", "stormwarp", "overload", "stormcaller",
 		"bittercold", "deepfreeze", "frostwarp", "rime", "shatter", "aura", "lasting", "ball", "beam", "spear"],
-	"warlock": ["hunger", "feast", "bloodlust", "branded", "hexchain", "phantomstep", "withering", "pyre", "blazingarm", "souldebt",
+	"warlock": ["soulward", "hellhide", "hunger", "feast", "bloodlust", "branded", "hexchain", "phantomstep", "withering", "pyre", "blazingarm", "souldebt",
 		"lastrites", "terribleroar", "hellwave", "damnedsouls", "bounddemon"],
-	"tinkerer": ["bombsaway", "fortune", "clustervials", "tar", "madmixture", "alchemy", "thebigone", "lightningrod", "shrapnel",
+	"tinkerer": ["bodyguard", "smokescreen", "bombsaway", "fortune", "clustervials", "tar", "madmixture", "alchemy", "thebigone", "lightningrod", "shrapnel",
 		"prospector", "overdrive", "markii", "growthserum", "gunarm", "contraptions"],
 	"brawler": ["vstiffjab", "vviperjab", "vguardup", "vknockdown", "vlauncher", "vlightfeet", "vfirestarter", "vstoke", "vhangtime",
 		"vfullset", "vswitchkick", "vlonglegs", "vwallslam", "vaftershock", "vthunderknee"],
@@ -48,6 +48,169 @@ static func ready_up() -> void:
 		_own_words()
 		_twigs()
 		_godot_tune()
+		_defence()
+		_wbuilds()
+		_tbuilds()
+
+
+## DEFENCE IN EVERY TREE (his ask, 27 Nov 2026, 10:02: “Can you look at the classes we have, find the ones that don’t have any
+## defensive options in their talent tree and put some in.  And then look at our new defenses and make the classes defensive options
+## include these new systems”; the plan shown him, his pick: “Build it as written (Recommended)”). The Ranger, the Mage, the Warlock
+## and the Tinkerer had none: two each, a short twig off one of their paths, each something new (his rule: never only a number),
+## each on one of THE THREE DEFENCES (loot.gd DEFENCE_LAYERS): the Ranger's dodge, the Mage's and the Warlock's barrier (and the
+## demon's armour), the Tinkerer's Golem and dodge. The Warrior's Iron and the Brawler's Guard Up made to work on them too: Thick
+## Skin and Bulwark on his armour, Shieldwall's words its barrier's (as its rule already is), Guard Up's dodged blows answered.
+## Their rules: hero.gd (dodge_floor, armour_cut, _through_barrier, the blow's way), heroes/ranger.gd, mage.gd, warlock.gd,
+## tinkerer.gd, brawler.gd; wakes.gd and fx_wakes.gd (the smoke). OFF until he has seen them (pictures first): `--deftal=1` on.
+## Their cards in game words, numbers as numbers: his words, 27 Nov 2026, asked whether to switch them on: “Can you use more
+## gamified language in the descriptions?  1 in every two is 50%, that sort of thing”.
+## Switched on at his word, 27 Nov 2026, by 10:56, asked after the cards were reworded: “Yes, switch them on (Recommended)”.
+static var DEFENCE_TALENTS := true
+const DEFENCE := {
+	"ranger": [
+		{"id": "evasive", "name": "Evasive", "path": "wind", "from": "windrunner", "at": [1.55, 1.25],
+			"text": "After a roll: at least 50% dodge chance for 2 seconds."},
+		{"id": "countershot", "name": "Counter Shot", "path": "wind", "from": "evasive", "at": [2.3, 1.25],
+			"text": "Dodge a hit: your next arrow is a 100% critical hit and knocks the enemy back."},
+	],
+	"mage": [
+		{"id": "iceshell", "name": "Ice Shell", "path": "frost", "from": "frostwarp", "at": [3.6, 4.75],
+			"text": "+20% of your life as barrier. When your barrier breaks, nearby enemies are frozen for 2 seconds."},
+		{"id": "wardingwarp", "name": "Warding Warp", "path": "frost", "from": "iceshell", "at": [2.85, 4.75],
+			"text": "Each Warp restores 25% of your barrier."},
+	],
+	"warlock": [
+		{"id": "soulward", "name": "Soul Ward", "path": "pact", "from": "souldebt", "at": [4.0, 1.45],
+			"text": "Each cursed enemy that dies restores 10% of your barrier, overcharging it up to 150%."},
+		{"id": "hellhide", "name": "Hellhide", "path": "demon", "from": "feast", "at": [2.6, 0.1],
+			"text": "In demon form: +100% armour and immune to knockback."},
+	],
+	"tinkerer": [
+		{"id": "bodyguard", "name": "Bodyguard", "path": "golem", "from": "overdrive", "at": [1.15, 0.6],
+			"text": "While your Golem is close to you, it takes 50% of the damage meant for you."},
+		{"id": "smokescreen", "name": "Smoke Screen", "path": "works", "from": "growthserum", "at": [1.15, -0.6],
+			"text": "Blast Jump leaves a smoke cloud for 3 seconds. While inside the smoke cloud: at least 50% dodge chance."},
+	],
+}
+## (the Warrior's and the Brawler's defence, on the three defences: their cards' words)
+const DEFENCE_WORDS := {
+	"warrior": {
+		"thickskin": "Below 50% life: +100% armour.",
+		"bulwark": "+20% armour for each enemy near you, up to +100%.",
+		"shieldwall": "When your barrier breaks, it explodes: nearby enemies are knocked back and stunned for 1 second.",
+	},
+	"brawler": {
+		"vguardup": "Fists up between punches: 50% less damage from the front. Dodge a hit: your next punch deals +100% damage.",
+	},
+}
+## (their numbers)
+const DEF_TUNE := {
+	"evasive": {"secs": 2.0, "floor": 0.5},
+	"countershot": {"far": 1.4},
+	"iceshell": {"life": 0.2, "r": 2.2, "secs": 2.0},
+	"wardingwarp": 0.25,
+	"soulward": {"fill": 0.1, "over": 1.5},
+	"hellhide": 2.0,
+	"bodyguard": {"near": 3.0, "share": 0.5},
+	"smokescreen": {"r": 1.8, "secs": 3.0, "floor": 0.5},
+	"thickskin": 2.0,
+	"bulwark": {"each": 0.2, "most": 2.0},
+	"guardup": 2.0,
+}
+
+
+## A defence talent's numbers (DEF_TUNE).
+static func def(id: String):
+	return DEF_TUNE[id]
+
+
+## DEFENCE IN EVERY TREE: its talents laid in, each a twig off its own path (as the attacks changed are: _twigs), and the
+## Warrior's and the Brawler's cards worded for the three defences; while DEFENCE_TALENTS is on.
+## THE TINKERER'S BUILDS (heroes/tinkerer_builds.gd, on): her vials her bombs, in her tree's words.
+const TB := preload("res://scripts/heroes/tinkerer_builds.gd")
+static func _tbuilds() -> void:
+	if not TB.on or not D["trees"].has("tinkerer"):
+		return
+	var tree: Dictionary = D["trees"]["tinkerer"]
+	for t in tree["talents"]:
+		if TB.NAMES.has(t["id"]):
+			t["name"] = TB.NAMES[t["id"]]
+		if TB.TEXT.has(t["id"]):
+			t["text"] = TB.TEXT[t["id"]]
+	for p in tree["paths"]:
+		if TB.PATH.has(p["id"]):
+			p["name"] = TB.PATH[p["id"]]
+	var by := {}
+	for t in tree["talents"]:
+		by[t["id"]] = t
+	if by.has("contraptions"):
+		by["contraptions"]["text"] = str(by["contraptions"]["text"]) + TB.CONTRAPTION_ONE
+	for id in TB.NODES:
+		var N: Dictionary = TB.NODES[id]
+		if by.has(id):
+			continue
+		var t := {"id": id, "name": N["name"], "text": N["text"], "word": null, "big": N["big"], "path": N["path"],
+			"at": (N["at"] as Array).duplicate(), "from": (N["from"] as Array).duplicate(), "joined": (N["from"] as Array).duplicate(),
+			"mods": [], "remade": false, "pick": null, "works": true}
+		(tree["talents"] as Array).append(t)
+		by[id] = t
+		for f in N["from"]:
+			by[f]["joined"].append(id)
+
+
+## THE WARLOCK'S BUILDS (heroes/warlock_builds.gd, on): Embrace, Devour and Soul Link in his tree, and his tree laid out as a claw.
+const WB := preload("res://scripts/heroes/warlock_builds.gd")
+static func _wbuilds() -> void:
+	if not WB.on or not D["trees"].has("warlock"):
+		return
+	var tree: Dictionary = D["trees"]["warlock"]
+	var all: Array = tree["talents"]
+	var by := {}
+	for t in all:
+		by[t["id"]] = t
+	for id in WB.NODES:
+		var N: Dictionary = WB.NODES[id]
+		if by.has(id):
+			continue
+		var t := {"id": id, "name": N["name"], "text": N["text"], "word": null, "big": N["big"], "path": N["path"],
+			"at": (WB.AT[id] as Array).duplicate(), "from": (N["from"] as Array).duplicate(), "joined": (N["from"] as Array).duplicate(),
+			"mods": [], "remade": false, "pick": null, "works": true}
+		all.append(t)
+		by[id] = t
+		for f in N["from"]:
+			by[f]["joined"].append(id)
+	for id in WB.AT:
+		if by.has(id):
+			by[id]["at"] = (WB.AT[id] as Array).duplicate()
+	tree["room"] = WB.ROOM.duplicate()
+	tree["figures"] = WB.FIGURES.duplicate(true)
+
+
+static func _defence() -> void:
+	if not DEFENCE_TALENTS:
+		return
+	for cls in DEFENCE:
+		if not D["trees"].has(cls):
+			continue
+		var all: Array = D["trees"][cls]["talents"]
+		var by := {}
+		for t in all:
+			by[t["id"]] = t
+		for d in DEFENCE[cls]:
+			if by.has(d["id"]) or not by.has(d["from"]):
+				continue
+			var t := {"id": d["id"], "name": d["name"], "text": d["text"], "word": null, "big": false, "path": d["path"],
+				"at": (d["at"] as Array).duplicate(), "from": [d["from"]], "joined": [d["from"]], "mods": [], "remade": false,
+				"pick": null, "works": true}
+			all.append(t)
+			by[d["id"]] = t
+			by[d["from"]]["joined"].append(d["id"])
+	for cls in DEFENCE_WORDS:
+		if not D["trees"].has(cls):
+			continue
+		for t in D["trees"][cls]["talents"]:
+			if DEFENCE_WORDS[cls].has(t["id"]):
+				t["text"] = DEFENCE_WORDS[cls][t["id"]]
 
 
 ## THE ATTACKS CHANGED, A TWIG EACH (his word of 22 Nov 2026: “the different weapon attacks are choices not mandatory in the
@@ -192,15 +355,49 @@ static func _brawler2() -> Dictionary:
 			"joined": ["vstiffjab"], "big": false}, true)
 		(t["talents"] as Array).append(n)
 		(by["vstiffjab"]["joined"] as Array).append(id)
+	# (THE BRAWLER'S BUILDS, heroes/brawler3.gd on: Flurry, Stepping Stones and the Cannon Kick under the globes, a stance in each)
+	if B3.on:
+		for id in B3.TEXT:
+			if by.has(id):
+				by[id]["text"] = B3.TEXT[id]
+		for id in B3.NODES:
+			var N: Dictionary = B3.NODES[id]
+			var from: Array = N["from"]
+			var n: Dictionary = (by[from[0]] as Dictionary).duplicate(true)
+			n.merge({"id": id, "name": N["name"], "text": N["text"], "path": N["path"], "at": N["at"], "from": from.duplicate(),
+				"joined": from.duplicate(), "big": N["big"], "word": null, "pick": null, "remade": false, "works": true}, true)
+			if N.has("rune"):
+				n["rune"] = N["rune"]
+			(t["talents"] as Array).append(n)
+			for f in from:
+				(by[f]["joined"] as Array).append(id)
+		for p in t["paths"]:
+			if B3.LABELS.has(p["id"]):
+				p["label"] = {"node": B3.LABELS[p["id"]], "side": "below"}
+		var room: Array = (t["room"] as Array).duplicate()
+		room[3] = maxf(float(room[3]), B3.ROOM_FOOT)
+		t["room"] = room
 	_b2_tree = t
 	return t
 
 
+## THE BRAWLER'S BUILDS (heroes/brawler3.gd)
+const B3 := preload("res://scripts/heroes/brawler3.gd")
+
+
 ## (THE BRAWLER REMADE) Whether the other side of his fork is taken: only one of Quick Hands and Heavy Hands.
 static func _fork_other(cls: String, id: String, taken: Array) -> bool:
-	if cls != "brawler" or not B2.on or not B2.FORK.has(id):
+	# (THE TINKERER'S BUILDS: Contraption or Coin Toss, her tap's, only one)
+	if cls == "tinkerer" and TB.on and TB.ONE_TAP.has(id):
+		for o in TB.ONE_TAP:
+			if o != id and taken.has(o):
+				return true
 		return false
-	for o in B2.FORK:
+	if cls != "brawler" or not B2.on:
+		return false
+	# (THE BRAWLER'S BUILDS: his stances, only one of the three)
+	var group: Array = B2.FORK.keys() if B2.FORK.has(id) else (B3.STANCES if B3.on and B3.STANCES.has(id) else [])
+	for o in group:
 		if o != id and taken.has(o):
 			return true
 	return false
@@ -214,7 +411,8 @@ static func of(cls: String, id: String) -> Dictionary:
 
 
 static func ported(cls: String, id: String) -> bool:
-	return (PORTED.get(cls, []) as Array).has(id) or (cls == "brawler" and B2.on and B2.FORK.has(id))
+	return (PORTED.get(cls, []) as Array).has(id) or (cls == "brawler" and B2.on and (B2.FORK.has(id) or (B3.on and B3.NODES.has(id)))) \
+		or (cls == "warlock" and WB.on and WB.NODES.has(id)) or (cls == "tinkerer" and TB.on and TB.NODES.has(id))
 
 
 ## How many points a hero of `level` has had in all (talentPoints).
@@ -335,7 +533,7 @@ static func take_problem(cls: String, level: int, taken: Array, id: String) -> S
 	if not _way_open(t, taken):
 		return "Take one joined to it first"
 	if _fork_other(cls, id, taken):
-		return "Quick Hands or Heavy Hands: only one"
+		return "One stance only" if B3.STANCES.has(id) else ("Contraption or Coin Toss: only one" if TB.ONE_TAP.has(id) else "Quick Hands or Heavy Hands: only one")
 	var out := swap_out(cls, taken, id)
 	if out.begins_with("!"):
 		return out.substr(1)

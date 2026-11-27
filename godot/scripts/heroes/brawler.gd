@@ -44,6 +44,8 @@ const PUNCHES := ["jab", "cross", "hook", "elbow", "uppercut", "hammerfist"]
 const KICKS := ["roundkick", "push", "spinkick", "spinkickClose", "knee", "flyknee"]
 ## (THE BRAWLER REMADE, his ideas of 26 Nov 2026: heroes/brawler2.gd, its switch and its numbers; off, he is as he was)
 const B2 := preload("res://scripts/heroes/brawler2.gd")
+## (THE BRAWLER'S BUILDS, his ask of 27 Nov 2026: heroes/brawler3.gd, its switch and its numbers; off, he is as the remake made him)
+const B3 := preload("res://scripts/heroes/brawler3.gd")
 const Loot := preload("res://scripts/loot.gd")
 ## (the bake's lists: his moves after every other hero's, art/heroes3.ts HERO_PICKS)
 const VET_LIST0 := 58
@@ -65,6 +67,24 @@ func _has(id: String) -> bool:
 
 func _T() -> Dictionary:
 	return Talents.D["vetTalents"]
+
+
+## THE BRAWLER'S BUILDS (heroes/brawler3.gd): `id` his, with its switch on (and the remake's).
+func _b3(id: String) -> bool:
+	return B3.on and B2.on and _has(id)
+
+
+## (THE BRAWLER'S BUILDS) The element he fights in: "fire", "lightning", "poison", or "" with no stance.
+func stance() -> String:
+	if not (B3.on and B2.on):
+		return ""
+	if _has("vfirestance"):
+		return "fire"
+	if _has("vlightningstance"):
+		return "lightning"
+	if _has("vpoisonstance"):
+		return "poison"
+	return ""
 
 
 func _init(hero) -> void:
@@ -355,21 +375,28 @@ func _press2(kind: String, at: Vector2, before: Array) -> bool:
 			var sprung: bool = float(mv["f"]) >= float(R["dodge"]["air"][0]) and h.uniques != null and h.uniques.wears("sprungheels")
 			if not sprung:
 				return false
-		if charges[2] < 1:
-			if _deny <= 0.0:
-				_deny = 0.8
-				h.sfx.play("deny")
-				h._tell({"t": "text", "x": h.world.x, "y": h.world.y, "text": "No jump", "color": "#8c8090"})
-			return true
-		if h.mana < float(h.loadout.r(2)["mana"]):
-			h.no_mana()
-			return true
-		h.mana -= float(h.loadout.r(2)["mana"])
-		charges[2] -= 1
-		h.uses[2] += 1
-		if cd[2] <= 0.0:
-			cd[2] = float(h.loadout.r(2)["cooldown"]) * (float(_T()["lightFeet"]["wait"]) if _has("vlightfeet") else 1.0)
-			full[2] = maxf(0.01, cd[2])
+		# (THE BRAWLER'S BUILDS: The Last Round, a swipe with three globes lit costs no jump)
+		var free: bool = B3.on and globes.size() >= 3 and h.uniques != null and h.uniques.wears("lastround")
+		if free:
+			h.uses[2] += 1
+			h.uniques._say({"id": "lastround", "what": "free"})
+			h._tell({"t": "text", "x": h.world.x, "y": h.world.y - 0.6, "text": "FREE JUMP", "color": "#ffb040"})
+		else:
+			if charges[2] < 1:
+				if _deny <= 0.0:
+					_deny = 0.8
+					h.sfx.play("deny")
+					h._tell({"t": "text", "x": h.world.x, "y": h.world.y, "text": "No jump", "color": "#8c8090"})
+				return true
+			if h.mana < float(h.loadout.r(2)["mana"]):
+				h.no_mana()
+				return true
+			h.mana -= float(h.loadout.r(2)["mana"])
+			charges[2] -= 1
+			h.uses[2] += 1
+			if cd[2] <= 0.0:
+				cd[2] = float(h.loadout.r(2)["cooldown"]) * (float(_T()["lightFeet"]["wait"]) if _has("vlightfeet") else 1.0)
+				full[2] = maxf(0.01, cd[2])
 		fire_ready = false
 		if not mv.is_empty() and mv["id"] == "dodge":
 			h.uniques._say({"id": "sprungheels", "what": "again"})
@@ -399,6 +426,16 @@ func _press2(kind: String, at: Vector2, before: Array) -> bool:
 		return true
 	if queue.size() >= B2.WAITING:
 		return false
+	# (THE BRAWLER'S BUILDS: Flurry, a tap throws three quick punches, each lighter)
+	if kind == "tap" and _b3("vflurry"):
+		var seq: Array = before.duplicate()
+		for k in int(B3.FLURRY["n"]):
+			var fq := {"id": move_for(kind, seq), "globe": -1, "flurry": true}
+			seq.append(fq["id"])
+			fq.merge(_aim_of(kind))
+			queue.append(fq)
+		idle = 0.0
+		return true
 	var q := {"id": move_for(kind, before), "globe": -1}
 	q.merge(_aim_of(kind))
 	queue.append(q)
@@ -472,6 +509,9 @@ func _start() -> void:
 		f0 = floorf(float(R["roundkick"]["strike"]["from"]) * float(_T()["switchKick"]["skip"]))
 	mv = {"id": id, "f": f0, "x0": h.world.x, "y0": h.world.y, "fx": f.x, "fy": f.y, "ax": a.x, "ay": a.y, "carried": Vector2.ZERO, "hit": [], "globe": q["globe"],
 		"wx": 0.0, "wy": 0.0, "props": false, "n": _plays, "tid": null}
+	# (THE BRAWLER'S BUILDS: a Flurry punch)
+	if q.get("flurry", false):
+		mv["flurry"] = true
 	# (THE BRAWLER REMADE: a punch thrown toward the next punch globe, the third lighting it (Quick Hands: each); a kick lighting a kick
 	# globe; a flying move going as far past its own carry as reaches its enemy, LEAP at most, before its blow)
 	if B2.on and id != "dodge":
@@ -592,7 +632,7 @@ func _play(dt: float, way: Vector2) -> void:
 	var id: String = mv["id"]
 	var m: Dictionary = R[id]
 	var f0: float = mv["f"]
-	mv["f"] = f0 + dt * float(V["fps"]) * _pace(id)
+	mv["f"] = f0 + dt * float(V["fps"]) * _pace(id) * (float(B3.FLURRY["pace"]) if mv.get("flurry", false) else 1.0)
 	var f: float = mv["f"]
 	var want := way.length()
 	if want > 0.1 and _walkable(id, f):
@@ -636,6 +676,10 @@ func _play(dt: float, way: Vector2) -> void:
 		h._invuln = maxf(h._invuln, 0.06)
 	if S != null and f >= float(S["at"]):
 		_strike(m)
+		# (THE BRAWLER'S BUILDS: Fire Stance, a flying blow leaves the floor burning where he comes down)
+		if B2.FLYING.has(id) and not mv.get("burned", false) and stance() == "fire":
+			mv["burned"] = true
+			_burn_floor(id)
 	if f >= float(m["long"]):
 		done.append(id)
 		mv = {}
@@ -772,6 +816,9 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	var rc: Dictionary = V["react"][m["force"]["react"]]
 	var first: bool = (mv["hit"] as Array).size() == 1
 	var share: float = m["share"]
+	# (THE BRAWLER'S BUILDS: a Flurry punch, lighter)
+	if mv.get("flurry", false):
+		share *= float(B3.FLURRY["share"])
 	var T := _T()
 	var fire: bool = m.get("globe") == "punchFire" or m.get("globe") == "kickFire" or (B2.on and B2.FLYING.has(id))
 	var kicked: bool = m["strike"]["kind"] == "kick"
@@ -788,6 +835,10 @@ func _hit(o, m: Dictionary, n: int) -> void:
 		finisher = int(mv.get("set", 0)) >= most() and _has("vfullset")
 	if finisher:
 		share *= float(T["fullSet"]["mult"])
+	# (DEFENCE IN EVERY TREE: Guard Up, a blow dodged answered: his next punch twice as hard)
+	if answer and i == 0:
+		answer = false
+		share *= float(Talents.def("guardup"))
 	# (TWIN in front, as his move's card has it, “hits twice, each for” its share: each blow lands twice, the second a moment after;
 	# his punches did not read it, the damage check found: words.gd, Twin)
 	var tw: Dictionary = h.loadout.r(i)
@@ -822,9 +873,16 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	# (Stoke: a fire move that lands takes two seconds off his jump's wait)
 	if first and fire and _has("vstoke") and charges[2] < 1:
 		cd[2] = maxf(0.01, cd[2] - float(T["stoke"]["secs"]))
+	# (THE BRAWLER'S BUILDS: Momentum, a flying blow that lands lights a new globe of its kind)
+	if first and B2.FLYING.has(id) and _b3("vmomentum") and globes.size() < most():
+		globes.append("punch" if id == "hammerfist" else "kick")
 	# (Thunder Knee: his flying knee and spinning jump kicks crack with lightning, on to three more near each one they hit)
 	if id in ["knee", "spinkick", "spinkickClose", "flyknee"] and _has("vthunderknee"):
 		_thunder(o, m)
+	# (THE BRAWLER'S BUILDS: Lightning Stance, every kick that lands arcs on to the two nearest)
+	if kicked and first and stance() == "lightning":
+		var struck: Array = (mv["hit"] as Array).duplicate()
+		_arcs(o, share, int(B3.LIGHTNING["n"]), struck, int(B3.LIGHTNING["on"]))
 	if finisher:
 		_shake(5.0)
 		if not o.dead:
@@ -849,6 +907,11 @@ func _hit(o, m: Dictionary, n: int) -> void:
 		o.dose(hit * float(T["viperJab"]["dose"]) / secs, secs)
 	if id == "jab" and _has("vstiffjab") and not o.boss:
 		o.break_off()
+	# (THE BRAWLER'S BUILDS: Poison Stance, every punch poisons)
+	if i == 0 and stance() == "poison":
+		var ph: float = (float(h.stats["dmg_min"]) + float(h.stats["dmg_max"])) / 2.0 * float(h.loadout.r(0)["dmg_mult"]) * share
+		var psecs: float = Words.data()["poison"]["time"]
+		o.dose(ph * float(B3.POISON["dose"]) / psecs, psecs)
 	# (Aftershock: every kick that lands knocks down everything near the one it hit)
 	if kicked and _has("vaftershock"):
 		_aftershock(o)
@@ -859,10 +922,19 @@ func _hit(o, m: Dictionary, n: int) -> void:
 		o.stun_t = float(V["up"]["up"]) + float(rc.get("stun", 0.0))
 		return
 	var from := _origin()
+	# (THE BRAWLER'S BUILDS: the Cannon Kick, his push kick sends the first it kicks flying through the rest)
+	if id == "push" and first and _b3("vcannonkick") and not o.boss and not finisher:
+		_cannon(o, share)
+		return
 	if rc.has("back") and not finisher:
 		# (Wall Slam: one his kick drives into a wall or into another enemy is stunned)
 		if kicked and _has("vwallslam") and _slams(o, from, float(rc["back"])) and not o.boss:
 			o.stun_for(float(T["wallSlam"]["stun"]))
+		# (THE BRAWLER'S BUILDS: Viper Jab in Poison Stance, a poisoned one driven into another passes its poison on)
+		if stance() == "poison" and _has("vviperjab") and o.poison_t > 0.0:
+			var into = _driven_into(o, from, float(rc["back"]))
+			if into != null:
+				_spread_poison(o, into)
 		o.throw_from(from, float(rc["back"]), float(TUNE["driveSecs"]))
 	# (no boss is staggered nor stunned by his blows, as by no one's (monster.gd stun_for, stagger_from): every punch held one, and the
 	# Warped Wordsmith stood held half his fight: the bug hunt's third round, 25 Nov 2026)
@@ -916,13 +988,109 @@ func _thunder(o, m: Dictionary) -> void:
 		if q.world.distance_to(o.world) <= float(K["far"]):
 			near.append(q)
 	near.sort_custom(func(a, b): return a.world.distance_to(o.world) < b.world.distance_to(o.world))
+	var struck: Array = (mv["hit"] as Array).duplicate()
+	struck.append_array(near.slice(0, int(K["n"])))
 	for q in near.slice(0, int(K["n"])):
 		h._tell({"t": "arc", "x0": o.world.x, "y0": o.world.y, "x1": q.world.x, "y1": q.world.y})
 		h.hit_monster(q, 1, float(m["share"]) * float(K["share"]), true)
 		if not q.dead and not q.boss:
 			q.stun_for(float(K["stun"]))
+		# (THE BRAWLER'S BUILDS: in Lightning Stance, what his lightning kills passes it on)
+		elif q.dead and stance() == "lightning":
+			_arcs(q, float(m["share"]), 1, struck, int(B3.LIGHTNING["on"]))
 	if not o.dead and not o.boss:
 		o.stun_for(float(K["stun"]))
+
+
+# =====================================================================================================================
+# THE BRAWLER'S BUILDS (heroes/brawler3.gd)
+
+## (Fire Stance) The floor burning where his flying blow comes down.
+func _burn_floor(id: String) -> void:
+	if h.wakes == null or not is_instance_valid(h.wakes):
+		return
+	var i := 0 if is_punch(id) else 1
+	var F: Dictionary = B3.FIRE
+	h.wakes.add_patch(i, "burn", _origin(), float(F["r"]), float(F["secs"]), h.talent_hit("fire", float(F["share"]), i), "fire")
+
+
+## (Cannon Kick) The one his push kick struck sent flying from where the kick went out: each it flies into struck and knocked aside
+## (monster.gd _fly, `touch`); with Wall Slam, flying into a wall or another, stunned; in Poison Stance with Viper Jab, poisoned, its
+## poison passed on to each.
+func _cannon(o, share: float) -> void:
+	var C: Dictionary = B3.CANNON
+	var from := _origin()
+	var each: float = share * float(C["share"])
+	if _has("vwallslam") and _slams(o, from, float(C["far"])):
+		o.stun_for(float(_T()["wallSlam"]["stun"]))
+	o.throw_from(from, float(C["far"]), float(C["secs"]))
+	if o.thrown.is_empty():
+		return
+	_shake(2.5)
+	var ball = o
+	o.thrown["touched"] = [o]
+	o.thrown["touch"] = func(q) -> void:
+		if not is_instance_valid(q) or q.dead:
+			return
+		h.hit_monster(q, 1, each, false)
+		if is_instance_valid(ball) and ball.poison_t > 0.0 and stance() == "poison" and _has("vviperjab"):
+			_spread_poison(ball, q)
+		if is_instance_valid(q) and not q.dead:
+			q.throw_from(ball.world if is_instance_valid(ball) else h.world, float(C["aside"]), 0.2)
+		_sfx("heavyKick", 0.5)
+
+
+## (Lightning Stance) Lightning off `o` on to the `n` nearest it has not struck: each struck for its share of the kick; with Thunder
+## Knee, one it kills passing it on to the next, `left` times more at most.
+func _arcs(o, share: float, n: int, struck: Array, left: int) -> void:
+	if h.monsters == null or not is_instance_valid(o):
+		return
+	var L: Dictionary = B3.LIGHTNING
+	var from: Vector2 = o.world
+	var near: Array = []
+	for q in h.monsters.list:
+		if not is_instance_valid(q) or q == o or q.dead or struck.has(q) or h.monsters.shut_in(q):
+			continue
+		if q.world.distance_to(from) <= float(L["far"]):
+			near.append(q)
+	near.sort_custom(func(a, b): return a.world.distance_to(from) < b.world.distance_to(from))
+	near = near.slice(0, n)
+	struck.append_array(near)
+	for q in near:
+		h._tell({"t": "arc", "x0": from.x, "y0": from.y, "x1": q.world.x, "y1": q.world.y})
+		h.hit_monster(q, 1, share * float(L["share"]), true)
+		if q.dead and left > 0 and _has("vthunderknee"):
+			_arcs(q, share, 1, struck, left - 1)
+
+
+## (Viper Jab in Poison Stance) The first other one in the way `o` is driven, within `back`; null none (as _slams looks).
+func _driven_into(o, from: Vector2, back: float):
+	var d: Vector2 = o.world - from
+	var u := d / d.length() if d.length() > 0.0 else Vector2(1, 0)
+	var dd := 0.25
+	while dd <= back + 0.01:
+		var p: Vector2 = o.world + u * dd
+		for q in h.monsters.list:
+			if is_instance_valid(q) and q != o and not q.dead and q.world.distance_to(p) < q.r + o.r * 0.8:
+				return q
+		dd += 0.25
+	return null
+
+
+## (Viper Jab in Poison Stance) `o`'s poison passed on to `q`: its share of it, for the poison's time.
+func _spread_poison(o, q) -> void:
+	if not is_instance_valid(q) or q.dead or o.poison_dps <= 0.0:
+		return
+	q.dose(o.poison_dps * float(B3.POISON["spread"]), float(Words.data()["poison"]["time"]))
+
+
+## DEFENCE IN EVERY TREE: Guard Up, a blow he dodges is answered: his next punch lands twice as hard (hero.gd hurt_by).
+var answer := false
+func dodged() -> void:
+	if Talents.DEFENCE_TALENTS and _has("vguardup") and not answer:
+		answer = true
+		if h.fx != null:
+			h.fx.float_text(h.world.x, h.world.y - 0.6, "COUNTER", Color("#7af8f0"), false, 26.0)
 
 
 ## (Guard Up) Between his blows his fists are up: a blow from in front of him does half harm (game.ts hurtHero). What is left.

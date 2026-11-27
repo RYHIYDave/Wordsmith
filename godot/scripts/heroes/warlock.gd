@@ -21,6 +21,10 @@
 extends "res://scripts/heroes/kit.gd"
 
 const PF := preload("res://scripts/pixel_font.gd")
+## (THE WARLOCK'S BUILDS, heroes/warlock_builds.gd: Embrace, Devour, Soul Link; off, he is as he was)
+const WB := preload("res://scripts/heroes/warlock_builds.gd")
+var _devouring := false
+var _link_t := 0.0
 
 ## THE DEMON MADE TERRIBLE (his words of 22 Nov 2026: “The warlock's demon form is one of the weaker character identities in terms of
 ## performance, impact, and fun.  Love his look, but something about his attacks don't give off massive threatening menacing demon.
@@ -355,6 +359,12 @@ func on_hit(m, i: int, dmg: float) -> void:
 		_hex_chain(m, i)
 	if bolt and (_by == "" or _by == "chain") and not splashing and form != "demon" and bound.is_empty() and pact >= float(W["pact"]["full"]) and h.has("blazingarm"):
 		_blaze(m, i, dmg)
+	# (THE WARLOCK'S BUILDS: Soul Link, a share of his hit on one cursed dealt to every other cursed; Devour, the demon's rake on one
+	# low devouring it)
+	if WB.on and h.has("soullink") and not m.dead and m.curse_t > 0.0 and dmg > 0.0:
+		_soul_link(m, i, dmg)
+	if WB.on and h.has("devour") and form == "demon" and id == "rake" and _by == "" and not _devouring and is_instance_valid(m) and not m.dead:
+		_devour(m, i, dmg)
 	var full: float = W["pact"]["full"]
 	var was := pact
 	if form == "demon" or _by == "bound":
@@ -869,6 +879,9 @@ func _blaze(m, i: int, dmg: float) -> void:
 func on_kill(m) -> void:
 	var T := _T()
 	var P: Dictionary = W["pact"]
+	# (THE WARLOCK'S BUILDS: Embrace, as the demon every kill fills the pact back to full)
+	if form == "demon" and change.is_empty() and WB.on and h.has("embrace"):
+		pact = float(P["full"])
 	# (the demon's kills: everything that dies while he is the demon, and what the Bound Demon's own rakes kill)
 	if form == "demon" or _by == "bound":
 		if h.has("hunger"):
@@ -882,6 +895,18 @@ func on_kill(m) -> void:
 		if h.has("damnedsouls"):
 			_raise_soul(m)
 	if m.curse_t > 0.0:
+		# (DEFENCE IN EVERY TREE: Soul Ward, a cursed one dying fills a tenth of his barrier, past full, up to half again; a fifth of
+		# his life his barrier's measure, if he wears no cloth)
+		if Talents.DEFENCE_TALENTS and h.has("soulward"):
+			var SW: Dictionary = Talents.def("soulward")
+			# (only the barrier his cloth gives: no barrier of its own. His words, 27 Nov 2026, 10:53: “Also Soul Ward seems
+			# very strong”; asked how to tone it down, by 10:55: “Cut the free barrier”)
+			var most: float = h.max_barrier
+			var was: float = h.barrier
+			if most > 0.0:
+				h.barrier = maxf(h.barrier, minf(most * float(SW["over"]), h.barrier + most * float(SW["fill"])))
+			if h.barrier > was:
+				h._tell({"t": "barrierHit", "x": h.world.x, "y": h.world.y, "left": h.barrier, "most": most})
 		if h.has("souldebt"):
 			pact = minf(float(P["full"]), pact + float(P["full"]) * float(T["soulDebt"]["share"]))
 		if h.has("pyre"):
@@ -1188,6 +1213,12 @@ func dread_pace(m) -> float:
 	return float(D2["dread"]["pace"])
 
 
+## DEFENCE IN EVERY TREE: Hellhide, while the demon has him his armour counts double and nothing knocks him back (hero.gd
+## _talent_armour, knock).
+func hellhide() -> bool:
+	return Talents.DEFENCE_TALENTS and h.has("hellhide") and form == "demon"
+
+
 ## What a blow on him comes to while he is the demon (hero.gd _talent_guard).
 func demon_guard() -> float:
 	return 1.0 - float(D2["dread"]["less"]) if demon2() and form == "demon" else 1.0
@@ -1205,3 +1236,52 @@ func _rake_landed() -> void:
 	h.get_tree().create_timer(float(D2["hitStop"]), true, false, true).timeout.connect(func() -> void:
 		Engine.time_scale = 1.0
 		_stopped = false)
+
+
+# =====================================================================================================================
+# THE WARLOCK'S BUILDS (heroes/warlock_builds.gd)
+
+## (Soul Link) LINK share of his hit on `m`, cursed, dealt to every other cursed one within LINK far that the floor lets him reach;
+## smoke chains from it to them, no oftener than LINK show.
+func _soul_link(m, i: int, dmg: float) -> void:
+	if h.monsters == null:
+		return
+	var L: Dictionary = WB.LINK
+	var to: Array = []
+	var them: Array = []
+	for q in h.monsters.list:
+		if not is_instance_valid(q) or q == m or q.dead or q.curse_t <= 0.0 or h.monsters.shut_in(q) or q.world.distance_to(m.world) > float(L["far"]):
+			continue
+		them.append(q)
+		to.append({"id": q.id, "x": q.world.x, "y": q.world.y})
+	if them.is_empty():
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - _link_t >= float(L["show"]):
+		_link_t = now
+		_say({"t": "curse", "x": m.world.x, "y": m.world.y, "r": 0.0, "to": to, "n": 1, "echo": true})
+	for q in them:
+		if is_instance_valid(q) and not q.dead:
+			q.damage(dmg * float(L["share"]), "fire", false, false, [], false, false, i)
+
+
+## (Devour) The demon's rake on one below DEVOUR below of its life: it dies at once, he heals, the pact gets DEVOUR secs back; a boss
+## is not devoured: it takes the rake DEVOUR boss times over.
+func _devour(m, i: int, dmg: float) -> void:
+	var Dv: Dictionary = WB.DEVOUR
+	if m.life > m.max_life * float(Dv["below"]):
+		return
+	_devouring = true
+	if m.boss:
+		m.damage(dmg * (float(Dv["boss"]) - 1.0), "phys", false, true, [], false, false, i)
+	else:
+		h._tell({"t": "burst", "x": m.world.x, "y": m.world.y, "r": 0.9, "el": "fire", "style": "nova"})
+		h._tell({"t": "text", "x": m.world.x, "y": m.world.y - 0.5, "text": "DEVOURED", "color": "#ff6a3c"})
+		m.damage(m.life + 1.0, "phys", false, true, [], false, false, i)
+		var n: float = h.max_life * float(Dv["heal"])
+		h.heal_flat(n)
+		_say({"t": "heal", "amount": roundi(n)})
+		var P: Dictionary = W["pact"]
+		pact = minf(float(P["full"]), pact + float(Dv["secs"]) * float(P["full"]) / float(P["demonSecs"]))
+		h.kick(3.0)
+	_devouring = false

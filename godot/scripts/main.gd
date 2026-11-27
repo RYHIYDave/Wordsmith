@@ -896,6 +896,22 @@ func _ready() -> void:
 	levels2_arg = _arg("levels2") == "1"
 	# (the checks written for the Warrior's Whirlwind give him its talent; `--whirl1`, his one-spin Whirl as he starts: talents.gd)
 	preload("res://scripts/talents.gd").checks_whirlwind = _arg("shots") != "" and _arg("whirl1") == ""
+	# (DEFENCE IN EVERY TREE, off till his yes: `--deftal=1` on: talents.gd DEFENCE_TALENTS; the trees read again with it)
+	if _arg("deftal") != "":
+		preload("res://scripts/talents.gd").DEFENCE_TALENTS = _arg("deftal") == "1"
+		preload("res://scripts/talents.gd").D = {}
+	# (THE TINKERER'S BUILDS, heroes/tinkerer_builds.gd: `--tbuilds=1` on for a run, the trees made again)
+	if _arg("tbuilds") != "":
+		preload("res://scripts/heroes/tinkerer_builds.gd").on = _arg("tbuilds") == "1"
+		preload("res://scripts/talents.gd").D = {}
+	# (THE WARLOCK'S BUILDS, heroes/warlock_builds.gd: `--wbuilds=1` on for a run, the trees made again)
+	if _arg("wbuilds") != "":
+		preload("res://scripts/heroes/warlock_builds.gd").on = _arg("wbuilds") == "1"
+		preload("res://scripts/talents.gd").D = {}
+	# (THE BRAWLER'S BUILDS, heroes/brawler3.gd: `--bbuilds=1` on for a run, his tree made again)
+	if _arg("bbuilds") != "":
+		preload("res://scripts/heroes/brawler3.gd").on = _arg("bbuilds") == "1"
+		preload("res://scripts/talents.gd")._b2_tree = {}
 	# (THE THREE DEFENCES, on at his yes: `--defence=0` to run without them: loot.gd DEFENCE_LAYERS)
 	if _arg("defence") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_LAYERS = false
@@ -3550,6 +3566,26 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "defence":
 		await preload("res://scripts/check_defence.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (DEFENCE IN EVERY TREE: --only=deftal --deftal=1, check_deftal.gd)
+	if _arg("only") == "deftal":
+		await preload("res://scripts/check_deftal.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE TINKERER'S BUILDS: --only=tbuilds --tbuilds=1, check_tbuilds.gd)
+	if _arg("only") == "tbuilds":
+		await preload("res://scripts/check_tbuilds.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE WARLOCK'S BUILDS: --only=wbuilds --wbuilds=1, check_wbuilds.gd)
+	if _arg("only") == "wbuilds":
+		await preload("res://scripts/check_wbuilds.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (THE BRAWLER'S BUILDS: --only=bbuilds --bbuilds=1, check_bbuilds.gd)
+	if _arg("only") == "bbuilds":
+		await preload("res://scripts/check_bbuilds.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (EVERY UNIQUE WEAPON ON ITS HERO, PICTURED: --only=skinsheet: check_skinsheet.gd)
