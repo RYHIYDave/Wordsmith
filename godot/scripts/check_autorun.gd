@@ -94,6 +94,8 @@ func _play(f: int, life_k: float) -> Dictionary:
 	var stranded := 0.0
 	var ldist := PackedInt32Array()
 	var spots := {}
+	var e_at := -99.0
+	var chains := 0
 	var offers := 0
 	var hit_life := INF
 	var hit_since := 0.0
@@ -211,7 +213,14 @@ func _play(f: int, life_k: float) -> Dictionary:
 		# (in sight, or within his reach whatever lies between: across the Swamp Colossus's water, which sight does not cross)
 		var see: bool = M._monsters.sees(h.world, target.world) or (not (target is Spot) and dlen <= minf(reach, 2.0) + float(target.r))
 		# (a thing to take is walked onto, not stood off from: a key is taken from 0.6 tiles, a lever from 1.5)
-		if dlen <= (0.1 if target is Spot and not target.strike else (1.0 if target is Spot else reach + float(target.r))) and see:
+		# (A CHAINED RARE, held: nothing reaches him till his chains are broken, E within 2.4 tiles; a player after his word goes up
+		# to him and breaks them)
+		var chain = _held_chain(target)
+		if chain != null and dlen <= 2.2 and see and t - e_at > 1.5:
+			e_at = t
+			chains += 1
+			M._key(KEY_E)
+		if dlen <= (0.1 if target is Spot and not target.strike else (1.0 if target is Spot else (minf(reach, 2.0) if chain != null else reach) + float(target.r))) and see:
 			h.auto_dir = Vector2.ZERO
 			if to.length() > 0.01:
 				h._turn(to.normalized())
@@ -287,6 +296,9 @@ func _play(f: int, life_k: float) -> Dictionary:
 	var way := "not looked for"
 	if M._stairs != null:
 		way = "open" if M._stairs.opened >= 0 else "shut"
+	if chains > 0:
+		var freed: int = M.chained_rares.filter(func(cr): return is_instance_valid(cr) and cr.phase != "held").size()
+		print("AUTORUN   chained rares on floor %d: %d, freed %d (E pressed %d times)" % [f, M.chained_rares.size(), freed, chains])
 	if offers > 0:
 		print("AUTORUN   the gear screen opened on its own %d times on floor %d (a word come by, none at work)" % [offers, f])
 	return {"t": t, "dead": dead, "all": all, "boss": boss, "stalls": stalls, "way": way}
@@ -296,6 +308,16 @@ func _play(f: int, life_k: float) -> Dictionary:
 func _on_stone_itself(st) -> bool:
 	var F = preload("res://scripts/act1/colossus_fight.gd")
 	return F.on_stone(F.world_to_stone(st.stone, h.world.x, h.world.y))
+
+
+## (the chained rare whose monster `m` is, while he is held; or null)
+func _held_chain(m):
+	if m == null or m is Spot:
+		return null
+	for cr in M.chained_rares:
+		if is_instance_valid(cr) and cr.m == m and cr.held():
+			return cr
+	return null
 
 
 ## (the nearest of `list` he can reach, and how far by the way: [spot or null, steps])
