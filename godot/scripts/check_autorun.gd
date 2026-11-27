@@ -137,9 +137,10 @@ func _play(f: int, life_k: float) -> Dictionary:
 			h.auto_whirl = false
 			while path.size() > 1 and h.world.distance_to(path[0]) < 0.6:
 				path.pop_front()
-			var aim: Vector2 = target.world if see else (path[0] if not path.is_empty() else target.world)
+			# (straight for it only where a body could walk the line: sight passes over a torch's tile, he does not)
+			var aim: Vector2 = target.world if see and _walkable_line(h.world, target.world) else (path[0] if not path.is_empty() else target.world)
 			for kk in range(mini(3, path.size()) - 1, 0, -1):
-				if M._monsters.sees(h.world, path[kk]):
+				if _walkable_line(h.world, path[kk]):
 					aim = path[kk]
 					break
 			var wd: Vector2 = (aim - h.world).normalized()
@@ -176,6 +177,16 @@ func _play(f: int, life_k: float) -> Dictionary:
 	if M._stairs != null:
 		way = "open" if M._stairs.opened >= 0 else "shut"
 	return {"t": t, "dead": dead, "all": all, "boss": boss, "stalls": stalls, "way": way}
+
+
+## (whether a body could walk straight from a to b: the map lets it stand all along the line)
+func _walkable_line(a: Vector2, b: Vector2) -> bool:
+	var n := maxi(1, ceili(a.distance_to(b) / 0.2))
+	for i in range(1, n + 1):
+		var p := a.lerp(b, float(i) / n)
+		if not M.map.fits(p.x, p.y, h.RADIUS):
+			return false
+	return true
 
 
 ## (the way to a monster as a player walks it: a shut door is no wall, it opens as he walks into it (doors.gd); a gate still down is,
