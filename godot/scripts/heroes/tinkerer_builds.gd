@@ -16,7 +16,8 @@
 ## OFF (`--tbuilds=0`): as she was. Checked and pictured: check_tbuilds.gd, `--only=tbuilds`.
 extends RefCounted
 
-static var on := false
+## Switched on at his word, 27 Nov 2026, by 14:25, asked after the film and the cards: “Yes, switch them on (Recommended)”.
+static var on := true
 
 ## Her tree's words (talents.gd _tbuilds): names, cards, and the path's name.
 const NAMES := {"clustervials": "Cluster Bombs"}
@@ -50,7 +51,7 @@ const COIN := {"n": 5, "spread": 0.5, "cost": 1, "share": 0.45, "range": 7.0, "s
 const NODES := {
 	"teslafence": {"name": "Tesla Fence", "path": "vials", "from": ["contraptions"], "at": [-0.55, -1.15], "big": false,
 		"text": "Lightning arcs between your Contraptions, striking every enemy that crosses the line between two of them."},
-	"cointoss": {"name": "Coin Toss", "path": "gold", "from": ["fortune"], "at": [0.0, 1.0], "big": true,
+	"cointoss": {"name": "Coin Toss", "path": "gold", "from": ["fortune"], "at": [0.0, 1.0], "big": false,
 		"text": "Your tap throws a fan of 5 gold coins instead of a bomb, each costing 1 gold. Coins hit harder the more gold you carry: +100% per 1,000 gold, up to +200%. (Contraption or Coin Toss: only one.)"},
 }
 const ONE_TAP := ["contraptions", "cointoss"]
