@@ -4,6 +4,7 @@
 #   godot/assets/looks/floor2_cover.png (+ .json): where the prison's own pictures stand, a pixel to every 4 game pixels, as
 #     look.gd's dark lays its veil (DARK_GRAIN): white where something of the place is drawn, black where nothing is. The dark is
 #     laid only where the place is; past it the night sky is seen.
+#   godot/assets/looks/floor2_ground.png: the plain dark ground under the sky's line, round and under the prison.
 #   godot/assets/looks/floor2_nightsky.png: the night sky itself, in the colours of the courtyards' own sky (the look's
 #     'night sky' picture: render/grounds.ts), stars and drifting cloud bands, its moon, wrapping round end to end; as dark as
 #     the courtyards' sky is seen through their dark (the yard's dark 0.42, lifted 0.55 over the far walls).
@@ -50,7 +51,15 @@ def cover() -> None:
     # (a body standing on the place's edge: its dark a little past where the pictures end, as the veil was)
     img = Image.fromarray((np.clip(small, 0.0, 1.0) * 255).astype(np.uint8), 'L')
     img.save(LOOKS + 'floor2_cover.png')
-    json.dump({'x': lx // 2, 'y': ly // 2, 'grain': GRAIN, 'w': W // step, 'h': H // step}, open(LOOKS + 'floor2_cover.json', 'w'))
+    # (THE SKYLINE, his “You see the massive problem in the lower left quadrant here right?”: the sky seen under the prison made
+    # it float. The sky is seen only over the place's farthest tops; under that line, past the place's own pictures, plain dark
+    # ground. For each column of the cover, in game pixels, the second row from its top that something of the place covers)
+    covered = small > 0.5
+    top = []
+    for cx in range(covered.shape[1]):
+        rows = np.nonzero(covered[:, cx])[0]
+        top.append(int(ly // 2 + (int(rows[0]) + 1) * GRAIN) if rows.size else None)
+    json.dump({'x': lx // 2, 'y': ly // 2, 'grain': GRAIN, 'w': W // step, 'h': H // step, 'top': top}, open(LOOKS + 'floor2_cover.json', 'w'))
     print('cover', img.size, 'origin game px', lx // 2, ly // 2)
 
 
@@ -140,6 +149,28 @@ def sky() -> None:
     print('sky', out.size, 'below', tuple(int(v) for v in img[H - 1, 0]))
 
 
+def ground() -> None:
+    # (the plain dark ground round the prison at night: bare earth, a few shades speckled, nothing standing on it; a tile that
+    # repeats, two picture pixels to a game pixel)
+    rng = random.Random(5)
+    N = 64
+    base = np.array([18, 17, 30], float)
+    img = np.tile(base, (N, N, 1))
+    for _ in range(420):
+        x = rng.randrange(N)
+        y = rng.randrange(N)
+        img[y, x] = rng.choice([(22, 21, 36), (15, 14, 25), (25, 23, 38), (13, 12, 22)])
+    for _ in range(40):
+        x = rng.randrange(N)
+        y = rng.randrange(N)
+        img[y, x] = (30, 28, 44)
+        img[y, (x + 1) % N] = (22, 21, 36)
+    out = Image.fromarray(img.astype(np.uint8), 'RGB').resize((N * 2, N * 2), Image.NEAREST)
+    out.save(LOOKS + 'floor2_ground.png')
+    print('ground', out.size)
+
+
 if __name__ == '__main__':
     cover()
     sky()
+    ground()

@@ -414,6 +414,14 @@ func _make_night_sky() -> void:
 	layer.add_child(sky)
 	add_child(layer)
 	_sky_node = sky
+	# (the plain dark ground under the sky's line: the sky only over the place's farthest tops, as the courtyards had it over
+	# their far walls; his “You see the massive problem in the lower left quadrant here right?”, of the sky seen under the walls)
+	var ground := _NightGround.new()
+	ground.tex = load(DIR + "floor2_ground.png")
+	ground.info = JSON.parse_string(FileAccess.get_file_as_string(DIR + "floor2_cover.json"))
+	ground.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	back_layer.add_child(ground)
+	back_layer.move_child(ground, 0)
 
 
 ## F2_SKY: the dark's veil laid only where the place's own pictures stand (floor2_cover.png, a pixel to every DARK_GRAIN game
@@ -2025,6 +2033,33 @@ class _Sky extends Node2D:
 			draw_texture(town, Vector2(float(tw["x"]) + ox / 2.0, top + float(tw["y"]) + float(S["horizon"])))
 		if top + h < size.y:
 			draw_rect(Rect2(0, top + h, size.x, size.y - top - h), Color(str(S["haze"])))
+
+
+## F2_SKY's ground: bare dark earth (floor2_ground.png, repeating where it lies) under the sky's line (floor2_cover.json `top`:
+## for each column of the cover, the place's farthest top), out to the screen's edge whichever way he looks; drawn once, behind
+## everything of the place.
+class _NightGround extends Node2D:
+	var tex: Texture2D
+	var info: Dictionary
+
+	func _draw() -> void:
+		var tops: Array = info["top"]
+		var g := float(info["grain"]) * 2.0
+		var ox := float(info["x"]) * 2.0
+		var far := 60000.0
+		var tw := float(tex.get_width())
+		var th := float(tex.get_height())
+		var quad := func(x0: float, x1: float, y: float) -> void:
+			var pts := PackedVector2Array([Vector2(x0, y), Vector2(x1, y), Vector2(x1, far), Vector2(x0, far)])
+			var uv := PackedVector2Array()
+			for q in pts:
+				uv.append(Vector2(q.x / tw, q.y / th))
+			draw_polygon(pts, PackedColorArray([Color.WHITE]), uv, tex)
+		quad.call(-far, ox, float(tops[0]) * 2.0)
+		for i in tops.size():
+			if tops[i] != null:
+				quad.call(ox + i * g, ox + (i + 1) * g, float(tops[i]) * 2.0)
+		quad.call(ox + tops.size() * g, far, float(tops[tops.size() - 1]) * 2.0)
 
 
 ## F2_SKY's night sky, held to the screen: its picture (game pixels, drawn two picture pixels to one) laid end to end across it,
