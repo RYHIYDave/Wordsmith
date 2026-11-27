@@ -62,7 +62,7 @@ for (const id of VET_LISTS) {
     const heavy = s.cone ? false : s.heavy;
     const big = s.cone ? 0.9 : (s.burst ?? 1);
     const o = s.force ? forceGeo(m, s).o : null;
-    return { from: s.from, at: s.at, last: vetLastHit(s), kind: s.kind, heavy, big, under: !!s.under, ring: heavy && react !== 'shove' ? (react === 'fly' || react === 'launch' ? 1.4 : 1) : 0, o: o ? [r3(o[0]), r3(o[1]), r3(o[2])] : null };
+    return { from: s.from, at: s.at, last: vetLastHit(s), kind: s.kind, heavy, big, under: !!s.under, ring: heavy && react !== 'shove' && react !== 'floored' ? (react === 'fly' || react === 'launch' ? 1.4 : 1) : 0, o: o ? [r3(o[0]), r3(o[1]), r3(o[2])] : null };
   });
   // (the bursts of its first strike, as render/veteran_fx.ts burstOn makes them: four seeds, 7 frames each)
   const s0 = strikes[0];
