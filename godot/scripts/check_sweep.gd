@@ -26,10 +26,12 @@ func run(main, hero, d: String) -> void:
 	h = hero
 	dir = d
 	h.unhurt = true
-	if OS.get_environment("WS_SWEEP_PART") != "levels":
+	if OS.get_environment("WS_SWEEP_PART") in ["", "arrivals"]:
 		await _arrivals()
-	if OS.get_environment("WS_SWEEP_PART") != "arrivals":
+	if OS.get_environment("WS_SWEEP_PART") in ["", "levels"]:
 		await _levels()
+	if OS.get_environment("WS_SWEEP_PART") in ["", "town"]:
+		await _services()
 	print("SWEEP: %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else " " + str(bad)])
 
 
@@ -102,3 +104,52 @@ func _levels() -> void:
 			if not M.move_toast.is_empty():
 				toast = str(Words.skill(h.own_move_id(int(M.move_toast["skill"])))["name"]).to_upper()
 			_line(said.contains(plate) and (toast == plate or int(M.move_toast.get("skill", -1)) != i), "%s, level %d: the news \"%s\", NEW MOVE %s, its plate %s" % [h.cls, lv, said, toast, plate])
+
+
+## TOWN SERVICES: in each town (the prison's, the camp, the Shaft's Rim), stood by each of its services as a player walks up to one:
+## its prompt shown, E pressed: its screen open (the gear screen beside its half, or the gate's page); closed again: he walks off.
+func _services() -> void:
+	for place in ["town", "camp", "rim"]:
+		await M.go_to(place, "start")
+		await M._wait(1.2)
+		var T = M.town
+		if T == null:
+			_line(false, "%s: no town node" % place)
+			continue
+		var stations: Array = (T.data.get("stations", []) as Array).duplicate(true)
+		for st in stations:
+			var kind := str(st["kind"])
+			if kind == "gate" and place != "rim":
+				continue
+			while M._going:
+				await M._wait(0.2)
+			if M.place != place or M.town == null:
+				await M.go_to(place, "start")
+				await M._wait(1.2)
+				while M._going:
+					await M._wait(0.2)
+			T = M.town
+			var at := Vector2(float(st["x"]), float(st["y"]))
+			# (in the middle of the open tile nearest the service, where a player walking up stands)
+			var p: Vector2 = M._open_floor_near(at + Vector2(0.9, 0.9))
+			h.world = Vector2(floorf(p.x) + 0.5, floorf(p.y) + 0.5)
+			h._place()
+			await M._wait(0.5)
+			var prompt: Array = T.prompt.duplicate()
+			var said: int = M.loot.msgs.size()
+			var asked: bool = M.loot.quest_given
+			await M._key(KEY_E)
+			await M._wait(0.8)
+			var opened: bool = M._inv.visible or M._mini.open != "" or M.loot.msgs.size() != said or M.loot.quest_given != asked or (M.town != null and M.town.get("given_at") != null and float(M.town.given_at) >= 0.0)
+			M._snap(dir + "/svc_%s_%s.png" % [place, kind])
+			await M._wait(0.2)
+			# (closed as a player closes it: Esc; a word from someone is read on with E)
+			if M._inv.visible or M._mini.open != "":
+				await M._key(KEY_ESCAPE)
+			await M._wait(0.4)
+			if M._inv.visible:
+				_line(false, "%s, the %s: Esc did not close its screen" % [place, kind])
+				M._inv.toggle()
+			await M._wait(0.3)
+			var went := await _walks()
+			_line(str(prompt[0]) != "" and opened and went > 0.3, "%s, the %s: prompt '%s', E answered %s, closed and walked off %.2f tiles" % [place, kind, prompt[0], opened, went])
