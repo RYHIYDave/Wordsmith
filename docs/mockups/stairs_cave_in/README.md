@@ -11,6 +11,11 @@ with a black gap left under the crown, a mound of it spilling out over the floor
 arch's piers and with him), a burst of dust along the floor and up out of the arch, the stairwell's daylight put out on the floor
 too, and he turns to look.
 
+Shown the second, his word: “Eh it looks like they just appear in the ceiling, not dropping from the shadowed stairwell”. So, the
+third: the stairwell's shadow deepens from the top of the opening as the roof groans, and everything that falls is seen only within
+the arch's opening (drawn column by column below its curve), coming down out of that dark, dark itself and lit by the room as it
+lands; the pieces that spill out over the floor fall the same way in the arch before they slide out.
+
 ## What it is (branch `game/stairs-cave-in`, from `main` b8427ed2)
 
 - `godot/scripts/cave_in.gd`: floor 1's stairwell up, in its arch behind him where he comes in. The first time, as the floor's
@@ -32,12 +37,12 @@ too, and he turns to look.
 
 ## Checked
 
-`--only=cavein --cavein=1 --shots=<dir>` (in Godot 4.7.2, the second): 9 of 9: the stairs marked fallen; the line said; the save keeps it; the
+`--only=cavein --cavein=1 --shots=<dir>` (in Godot 4.7.2, the third): 9 of 9: the stairs marked fallen; the line said; the save keeps it; the
 banner his words; the gate's doorway shut to him; set in it, still on floor 1; the stone taken, the banner his words with the stone;
 up by the waypoint; down the town's stairs again, no second cave-in. And its pictures at its moments.
 
 ## Pictures
 
-`stairs_cave_in.mp4` (the second): Godot's own recording (`--only=cavein_film --cavein=1 --shots=<dir>`, `--write-movie
+`stairs_cave_in.mp4` (the third): Godot's own recording (`--only=cavein_film --cavein=1 --shots=<dir>`, `--write-movie
 <file.avi> --fixed-fps 30`), with its sound, 11.5 s: down the town's stairs, the floor's name, the cave-in, its line and the banner.
 `stairs_before_after.png`: the stairwell as he comes in, and after it has fallen.

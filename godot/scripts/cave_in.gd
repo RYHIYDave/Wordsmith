@@ -252,7 +252,8 @@ func _lay_mound(rng: RandomNumberGenerator) -> void:
 		var end := foot + Vector2(1.0, 0.5) * (out * 32.0) + Vector2(rng.randf_range(-3, 3), rng.randf_range(-1, 2))
 		var start := foot + Vector2(0, -_high(u) * rng.randf_range(0.6, 1.0))
 		var land := lerpf(LAND_FROM + 0.1, LAND_TO + 0.1, rng.randf())
-		_mound.append({"node": s, "start": (position + start).round(), "foot": (position + foot).round(), "end": (position + end).round(), "land": land, "slide": 0.18 + out * 0.3})
+		_mound.append({"node": s, "start": (position + start).round(), "foot": (position + foot).round(), "end": (position + end).round(), "land": land, "slide": 0.18 + out * 0.3,
+			"start_l": start.round(), "foot_l": foot.round(), "tex": tex})
 		s.position = (position + start).round()
 		s.visible = false
 		stands.add_child(s)
@@ -262,14 +263,12 @@ func _lay_mound(rng: RandomNumberGenerator) -> void:
 ## Where a piece of the mound is at this moment: falling in the arch, then sliding out over the floor and coming to rest.
 func _mound_at(m: Dictionary) -> Vector2:
 	var land: float = m["land"]
-	var fall := sqrt(2.0 * maxf(1.0, float(m["foot"].y - m["start"].y)) / G)
-	if t < land - fall:
-		m["node"].visible = false
-		return m["start"]
-	m["node"].visible = true
+	# (while it falls it is drawn in the arch, out of the stairwell's dark (_draw); the picture standing on the floor takes it from
+	# the foot of the arch as it lands)
 	if t < land:
-		var k := (t - (land - fall)) / fall
-		return m["start"].lerp(m["foot"], k * k).round()
+		m["node"].visible = false
+		return m["foot"]
+	m["node"].visible = true
 	var s := clampf((t - land) / float(m["slide"]), 0.0, 1.0)
 	var e := 1.0 - pow(1.0 - s, 3.0)
 	return m["foot"].lerp(m["end"], e).round()
@@ -393,24 +392,88 @@ func _draw() -> void:
 	var dark := clampf((t - GIVE) / (DARK_TO - GIVE), 0.0, 1.0)
 	if dark > 0.0:
 		draw_colored_polygon(_opening(), Color(HOLE, 0.95 * dark))
+	# the stairwell's shadow deepening from its top as the roof groans: what falls comes down out of it
+	var gloom := clampf((t - (GIVE - 0.6)) / 0.6, 0.0, 1.0)
+	if gloom > 0.0:
+		_draw_gloom(gloom)
 	# grit pouring from the arch's crown while the roof groans
 	for g in _grit_now():
 		draw_rect(Rect2(g, Vector2(2, 2)), DUST)
 	# the heap, each piece falling to its place by its moment, or lying there
-	for s in _heap:
-		var land: float = s["land"]
-		if t < land - sqrt(2.0 * float(s["from"]) / G):
+	for h in _heap:
+		var land: float = h["land"]
+		var fall := sqrt(2.0 * float(h["from"]) / G)
+		if t < land - fall:
 			continue
-		var at: Vector2 = s["at"]
+		var at: Vector2 = h["at"]
+		var k: float = h["shade"]
 		if t < land:
 			var left := land - t
 			at.y -= 0.5 * G * left * left
-		else:
-			var since := t - land
-			if since < 0.08:
-				at.y -= roundf(2.0 * (1.0 - since / 0.08))
-		var k: float = s["shade"]
-		draw_texture_rect(s["tex"], Rect2((at / 2.0).floor() * 2.0, s["size"]), false, Color(k, k, k))
+			# (dark as it comes out of the stairwell, lit by the room as it lands)
+			var p := 1.0 - left / fall
+			k = lerpf(0.28, k, p * p)
+			_draw_in_opening(h["tex"], (at / 2.0).floor() * 2.0, h["size"], k)
+			continue
+		var since := t - land
+		if since < 0.08:
+			at.y -= roundf(2.0 * (1.0 - since / 0.08))
+		draw_texture_rect(h["tex"], Rect2((at / 2.0).floor() * 2.0, h["size"]), false, Color(k, k, k))
+	# the mound's pieces, falling in the arch before they spill out over the floor
+	for m in _mound:
+		var land: float = m["land"]
+		var a: Vector2 = m["start_l"]
+		var b: Vector2 = m["foot_l"]
+		var fall := sqrt(2.0 * maxf(1.0, b.y - a.y) / G)
+		if t < land - fall or t >= land:
+			continue
+		var kk := (t - (land - fall)) / fall
+		var at: Vector2 = a.lerp(b, kk * kk)
+		var tex: ImageTexture = m["tex"]
+		var size := Vector2(tex.get_width(), tex.get_height()) * 2.0
+		_draw_in_opening(tex, ((at - Vector2(size.x / 2.0, size.y - 2.0)) / 2.0).floor() * 2.0, size, lerpf(0.28, 0.9, kk * kk))
+
+
+## The top of the opening over its foot at screen x `x` (picture pixels from this node), or INF outside the opening.
+func _top_at(x: float) -> float:
+	var u := (x - FOOT_L.x) / (FOOT_R.x - FOOT_L.x)
+	if u < 0.0 or u > 1.0:
+		return INF
+	return _foot(u).y - _high(u)
+
+
+## A falling piece drawn only where it is within the arch's opening, column by column (two picture pixels each): what is above the
+## arch's curve, still up in the stairwell, not seen.
+func _draw_in_opening(tex: Texture2D, at: Vector2, size: Vector2, k: float) -> void:
+	var cols := int(size.x / 2.0)
+	var col := Color(k, k, k)
+	for c in cols:
+		var x := at.x + float(c) * 2.0
+		var top := _top_at(x + 1.0)
+		if top == INF:
+			continue
+		var y0 := maxf(at.y, ceilf(top / 2.0) * 2.0)
+		var y1 := at.y + size.y
+		if y1 <= y0:
+			continue
+		var src_y := (y0 - at.y) / 2.0
+		draw_texture_rect_region(tex, Rect2(x, y0, 2.0, y1 - y0), Rect2(float(c), src_y, 1.0, (y1 - y0) / 2.0), col)
+
+
+## The stairwell's shadow in the top of the opening: dark under the arch's curve, thinning down to nothing two fifths of the way down.
+func _draw_gloom(a: float) -> void:
+	var pts := PackedVector2Array()
+	var cols := PackedColorArray()
+	var n := 16
+	for i in range(n + 1):
+		var u := float(i) / float(n)
+		pts.append(_foot(u) + Vector2(0, -_high(u)))
+		cols.append(Color(HOLE, 0.92 * a))
+	for i in range(n, -1, -1):
+		var u := float(i) / float(n)
+		pts.append(_foot(u) + Vector2(0, -_high(u) * 0.58))
+		cols.append(Color(HOLE, 0.0))
+	draw_polygon(pts, cols)
 
 
 func _grit_now() -> Array:
