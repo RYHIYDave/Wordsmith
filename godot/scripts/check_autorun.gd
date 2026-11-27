@@ -128,6 +128,9 @@ func _play(f: int, life_k: float) -> Dictionary:
 			h.auto_whirl = true
 			since = 0.0
 		else:
+			# (walking: his attacks let go, as a player's are, so that a held Whirlwind does not keep him spinning where he stands)
+			h.auto_attack = false
+			h.auto_whirl = false
 			while path.size() > 1 and h.world.distance_to(path[0]) < 0.6:
 				path.pop_front()
 			var aim: Vector2 = target.world if see else (path[0] if not path.is_empty() else target.world)
@@ -167,3 +170,17 @@ func _play(f: int, life_k: float) -> Dictionary:
 	if M._stairs != null:
 		way = "open" if M._stairs.opened >= 0 else "shut"
 	return {"t": t, "dead": dead, "all": all, "boss": boss, "stalls": stalls, "way": way}
+
+
+## (the way to a monster as a player walks it: a shut door is no wall, it opens as he walks into it (doors.gd); a gate still down is,
+## and so stands in his way as it does in the game)
+func _flood(from: Vector2i) -> Array:
+	var mp = M.map
+	var saved: PackedByteArray = mp.shut.duplicate()
+	for d in mp.doors:
+		if str(d.get("kind", "")) == "door":
+			for t in d.get("way", []):
+				mp.shut[int(t)] = 0
+	var out := super._flood(from)
+	mp.shut = saved
+	return out
