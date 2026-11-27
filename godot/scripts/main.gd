@@ -1592,6 +1592,9 @@ func _build(where: String, arrive: String) -> void:
 		look.floor_layer = floor_layer
 		look.flat_layer = look_flats
 		look.stands = stands
+		# (THE STAIRS CAVED IN: floor 1's stairwell's daylight out, its light and the pool of it on the floor: cave_in.gd)
+		if where == "floor1" and cave_in_on() and loot.stairs_caved:
+			look.lights_out = [Vector2(-1758.4, 1234.8), Vector2(-1758.0, 1241.0)]
 		_place.add_child(look)
 
 	hero.map = map
@@ -2003,7 +2006,7 @@ func _build(where: String, arrive: String) -> void:
 			_floor_gate(flats)
 		# (THE STAIRS CAVE IN behind him, the first time he comes down them; after that the rubble lies there: cave_in.gd)
 		if where == "floor1" and cave_in_on() and (loot.stairs_caved or arrive == "stairs"):
-			_cave_in(flats, not loot.stairs_caved)
+			_cave_in(flats, stands, not loot.stairs_caved)
 		# (the stone carried below with the stairs caved in: the quest's line again on each floor he comes into)
 		if loot.quest != "" and cave_in_on() and loot.stairs_caved:
 			loot.prompt_t = 6.0
@@ -2071,17 +2074,23 @@ var _caving := false
 
 ## The heap in floor 1's stairwell (and, the first time, the film of its fall), its dust over everything; the gate's tiles shut to
 ## him.
-func _cave_in(flats: Node2D, film: bool) -> void:
+func _cave_in(flats: Node2D, stands: Node2D, film: bool) -> void:
 	var cave := preload("res://scripts/cave_in.gd").new()
 	cave.sfx = sfx
 	cave.shaker = hero
+	cave.hero = hero
+	cave.stands = stands
 	cave.film = film
 	# (the roof gives way as the floor's name goes: hud.gd floor_card, 3.4 s)
 	cave.delay = CURTAIN + 2.0
 	cave.position = Iso.to_screen(22.0, 132.375)
 	flats.add_child(cave)
 	_place.add_child(cave.dust_layer())
-	for t in _gate["tiles"]:
+	# (the doorway, and the floor the mound lies on, shut to him)
+	var shut: Array = (_gate["tiles"] as Array).duplicate()
+	for p in cave.mound_tiles:
+		shut.append([floori(p.x), floori(p.y)])
+	for t in shut:
 		var i := int(t[1]) * map.w + int(t[0])
 		if i >= 0 and i < map.walk.size():
 			map.walk[i] = 0
@@ -3822,7 +3831,7 @@ func _shoot(hero: Hero, dir: String) -> void:
 		loot.taught = true
 		hero.walked = 5.0
 		go_to("floor1", "stairs")
-		await _wait(9.0)
+		await _wait(10.5)
 		get_tree().quit()
 		return
 	if _arg("only") == "loot":
@@ -5329,10 +5338,14 @@ func _cavein_shots(h: Hero, dir: String) -> void:
 	loot.taught = true
 	go_to("floor1", "stairs")
 	var t0 := Time.get_ticks_msec()
-	for at in [2.6, 3.35, 3.6, 3.85, 4.15, 4.6, 5.3, 6.6]:
+	for at in [3.0, 3.6, 3.95, 4.25, 4.6, 5.0, 5.6, 6.6, 8.2]:
 		await _wait(maxf(0.0, at - float(Time.get_ticks_msec() - t0) / 1000.0))
 		await _snap(dir + "/cave_%03.1f.png" % at)
-	await _wait(1.6)
+	# (the film settled, the quest's line up)
+	var until := Time.get_ticks_msec() + 6000
+	while _caving and Time.get_ticks_msec() < until:
+		await get_tree().process_frame
+	await _wait(0.4)
 	bad += check.call(loot.stairs_caved, "the stairs marked fallen (loot.stairs_caved)")
 	bad += check.call(_wu_said("The stairs cave in behind you.") != "", "the line said: %s" % _wu_said("The stairs cave in"))
 	bad += check.call(Save.run_of(self).get("caved", false) == true, "the save keeps it (\"caved\": %s)" % Save.run_of(self).get("caved"))

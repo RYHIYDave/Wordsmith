@@ -5,6 +5,12 @@ to have it say "push deeper into the prison"”. Asked, his picks: “First time
 the rubble already there) and, asked whether the town's stairs should still take him down to floor 1, “Yes, still lead down
 (Recommended)” (so a hero who falls there before finding the stone can always go back for it).
 
+Shown its first film, his word: “Eh I feel like you can do better.” So, the second: a harder fall, real masonry (three great blocks of
+the stairwell's roof first, then a cascade of broken cut stone and rough rubble), the heap darker the deeper it lies in the stairwell
+with a black gap left under the crown, a mound of it spilling out over the floor (each piece standing in the depth's order with the
+arch's piers and with him), a burst of dust along the floor and up out of the arch, the stairwell's daylight put out on the floor
+too, and he turns to look.
+
 ## What it is (branch `game/stairs-cave-in`, from `main` b8427ed2)
 
 - `godot/scripts/cave_in.gd`: floor 1's stairwell up, in its arch behind him where he comes in. The first time, as the floor's
@@ -26,12 +32,12 @@ the rubble already there) and, asked whether the town's stairs should still take
 
 ## Checked
 
-`--only=cavein --cavein=1 --shots=<dir>` (in Godot 4.7.2): 9 of 9: the stairs marked fallen; the line said; the save keeps it; the
+`--only=cavein --cavein=1 --shots=<dir>` (in Godot 4.7.2, the second): 9 of 9: the stairs marked fallen; the line said; the save keeps it; the
 banner his words; the gate's doorway shut to him; set in it, still on floor 1; the stone taken, the banner his words with the stone;
 up by the waypoint; down the town's stairs again, no second cave-in. And its pictures at its moments.
 
 ## Pictures
 
-`stairs_cave_in.mp4`: Godot's own recording (`--only=cavein_film --cavein=1`, `--write-movie <file.avi> --fixed-fps 30`), with its
-sound, 10 s: down the town's stairs, the floor's name, the cave-in, its line and the banner. `stairs_before_after.png`: the
-stairwell as he comes in today, and after.
+`stairs_cave_in.mp4` (the second): Godot's own recording (`--only=cavein_film --cavein=1 --shots=<dir>`, `--write-movie
+<file.avi> --fixed-fps 30`), with its sound, 11.5 s: down the town's stairs, the floor's name, the cave-in, its line and the banner.
+`stairs_before_after.png`: the stairwell as he comes in, and after it has fallen.

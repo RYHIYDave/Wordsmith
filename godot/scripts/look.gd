@@ -46,6 +46,9 @@ var floor_layer: Node2D
 var flat_layer: Node2D
 var stands  # stands.gd (y-sorted; it fades the walls round the hero)
 var data: Dictionary = {}
+## Lights and pools of light left out, by where they are (game pixels, within 3 of these): main.gd, floor 1's stairwell's daylight
+## once its stairs have caved in (cave_in.gd)
+var lights_out: Array = []
 
 var _sheet: Texture2D
 ## (a recorded look: its sheets, and which each picture is on)
@@ -167,6 +170,12 @@ func _ready() -> void:
 	# glow and its light, not drawn)
 	if place in ["town", "camp", "rim"] and preload("res://scripts/town.gd").LEXICON_IN_STASH:
 		_lexicon_out()
+	if not lights_out.is_empty():
+		var out := func(x: float, y: float) -> bool:
+			return lights_out.any(func(p): return absf(x - p.x) <= 3.0 and absf(y - p.y) <= 3.0)
+		if data.has("lights"):
+			data["lights"] = (data["lights"] as Array).filter(func(l): return not out.call(float(l["x"]), float(l["y"])))
+		data["items"] = (data["items"] as Array).filter(func(it): return not (str(it.get("layer", "")) == "flat_add" and out.call(float(it.get("x", 0)), float(it.get("y", 0)))))
 	_add = CanvasItemMaterial.new()
 	_add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	var pics: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + place + "_pics.json"))
