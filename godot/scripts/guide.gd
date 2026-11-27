@@ -103,7 +103,8 @@ func _lesson() -> Dictionary:
 	var loot = main.loot
 	var town: bool = main.is_home(main.place)
 	var L = hero.loadout
-	if use_t > 0.0 and (not L.fronts(at).is_empty() or not L.behinds(at).is_empty()):
+	# (and till the move is used, the armourer's task waiting on it: loot.gd word_tried)
+	if (use_t > 0.0 or not loot.word_tried) and (not L.fronts(at).is_empty() or not L.behinds(at).is_empty()):
 		# (what the word is doing there, in the word's own plain line)
 		var f: Array = L.fronts(at)
 		var says: String = Words.word(f[0])["frontText"] if not f.is_empty() else Words.word(L.behinds(at)[0])["behindText"]

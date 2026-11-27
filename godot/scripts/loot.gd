@@ -370,6 +370,12 @@ var chained_beaten: Array = []
 ## A NEW PLAYER'S FIRST WORD HAS BEEN SET IN AN ATTACK (game.ts guide.set, endGuide): the lesson of the first word is over.
 ## Until then a word he holds is pressed on him (guide.gd), and goes on an attack and nowhere else.
 var taught := false
+## THE FIRST WORD TRIED (his words, 27 Nov 2026: “i want the speak to the armorer quest to fire after everything is done with the
+## wordsmith (inserting the rune, getting the word, using the attack”): false from the moment a new player's first word is set (the
+## lesson's end, inventory.gd) till the move it is on is used (main.gd _process: `word_uses_from`, that move's uses then); the
+## armourer has no task till it is. Not kept in the save: a hero come back to has tried it.
+var word_tried := true
+var word_uses_from := 0
 ## ABILITIES: COOLDOWNS or MANA (main.ts meta.limit, flipLimit; the start screen's options and the pause panel): what limits his
 ## moves that wait, the device's own choice, kept with the Lexicon
 var limit := "cooldown"
@@ -2325,7 +2331,7 @@ func armourer_due() -> String:
 		return ""
 	if furnace == "out":
 		return "reward"
-	if furnace == "" and furnace_burns():
+	if furnace == "" and furnace_burns() and word_tried:
 		return "furnace"
 	return ""
 

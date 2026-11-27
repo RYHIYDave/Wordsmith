@@ -766,6 +766,10 @@ func place(i: int, side: String, k: int, w: String) -> String:
 		if first:
 			_coached = true
 			main.word_placed()
+			# (the armourer's task waits till the move it is on is used: loot.gd word_tried)
+			if main.hero != null:
+				loot.word_tried = false
+				loot.word_uses_from = int(main.hero.uses[i])
 	loot.taught = true
 	return ""
 

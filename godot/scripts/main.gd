@@ -2115,6 +2115,9 @@ func _process(dt: float) -> void:
 				break
 	if guide.use_t > 0.0:
 		guide.use_t -= dt
+	# (THE FIRST WORD TRIED: the move it is on used, the armourer's task comes: loot.gd word_tried)
+	if not loot.word_tried and hero != null and int(hero.uses[clampi(guide.at, 0, 2)]) > loot.word_uses_from:
+		loot.word_tried = true
 	# (floor 2: the vignette goes by where he is, under the open sky or indoors: look.gd zones)
 	if look != null and look.vignette_now >= 0.0:
 		_veil.material.set_shader_parameter("deep", look.vignette_now)
