@@ -6,8 +6,10 @@
 ## WITH IT ON (the Brawler remade, heroes/brawler2.gd, on as well): three new talents that change how he fights, one hung under each
 ## globe's first stone, as the Mage's Ball, Beam and Spear hang under hers:
 ##   FLURRY (Punch): every tap throws three quick punches, not one, each lighter (FLURRY): the fast build's, with Quick Hands.
-##   STEPPING STONES (Jump): a flying blow that lands springs off what it hit onto the next nearest one for another, up to STEP n in
-##     all, for the one jump.
+##   STEPPING STONES (Jump): a swipe made during a flying blow springs off what it hits onto the one nearest where the swipe points,
+##     for another flying blow, free, twice as quick, up to STEP n in all for the one jump; no swipe, he comes down as ever. (First it
+##     sprang on by itself, all three; his “So using a jump swipe move now just makes him jump two more times?  Kind of a seriously
+##     long animation chain to locked into”, then “Swipe again to chain (Recommended)”, 27 Nov 2026.)
 ##   CANNON KICK (Kick): his push kick, the second kick in a row, sends the one it kicks flying (CANNON): everything it flies into is
 ##     struck and knocked aside; with Wall Slam it is stunned too, as one driven into another.
 ## And a STANCE, the element he fights in: three stones, one in the middle of each globe, only one of them his:
@@ -17,15 +19,17 @@
 ##   POISON (Punch's): every punch poisons (POISON); VIPER JAB builds on it: a poisoned one he drives into another passes its poison on.
 ## THE LAST ROUND (his unique wraps), that did nothing since the remake took the fire globes away: a swipe with three globes lit
 ## costs no jump.
-## OFF: he is as the remake made him. Pictures first: check_bbuilds.gd, `--only=bbuilds --bbuilds=1`.
+## OFF (`--bbuilds=0`): he is as the remake made him. Checked: check_bbuilds.gd, `--only=bbuilds`.
 extends RefCounted
 
-static var on := false
+## Switched on at his word, 27 Nov 2026, by 12:32, asked after the film and the cards: “Yes, switch them on (Recommended)”.
+static var on := true
 
 ## (Flurry) punches a tap throws; how much faster each is played; each one's share of a punch
 const FLURRY := {"n": 3, "pace": 2.0, "share": 0.6}
-## (Stepping Stones) enemies in all, the first included; how far from where he lands the next may be, tiles
-const STEP := {"n": 3, "far": 4.5}
+## (Stepping Stones) enemies in all, the first included; how far from where he lands the next may be, tiles; how much quicker a
+## spring on is played
+const STEP := {"n": 3, "far": 4.5, "pace": 2.0}
 ## (Cannon Kick) how far the one kicked flies, tiles, and in how long; the share of the kick each it flies into takes; how far
 ## those are knocked aside
 const CANNON := {"far": 5.0, "secs": 0.45, "share": 0.6, "aside": 1.0}
@@ -44,7 +48,7 @@ const NODES := {
 	"vflurry": {"name": "Flurry", "path": "punch", "from": ["vstiffjab"], "at": [0.0, 4.25], "big": true,
 		"text": "Every tap throws 3 quick punches instead of 1, each for 60% damage."},
 	"vsteppingstones": {"name": "Stepping Stones", "path": "jump", "from": ["vlightfeet"], "at": [3.3, 4.25], "big": true,
-		"text": "Your flying blow springs off the enemy it hits onto the next nearest one for another flying blow: up to 3 enemies for 1 jump."},
+		"text": "Swipe again during a flying blow to spring off the enemy it hits onto another, free and twice as fast: up to 3 enemies for 1 jump."},
 	"vcannonkick": {"name": "Cannon Kick", "path": "kick", "from": ["vswitchkick"], "at": [6.6, 4.25], "big": true,
 		"text": "Your push kick (the second kick in a row) sends the enemy flying like a cannonball: everything it hits on the way takes 60% damage and is knocked aside."},
 	"vpoisonstance": {"name": "Poison Stance", "path": "punch", "from": ["vviperjab", "vguardup"], "at": [0.0, 2.0], "big": true, "rune": "poison",

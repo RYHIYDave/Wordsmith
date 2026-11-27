@@ -375,6 +375,10 @@ func _press2(kind: String, at: Vector2, before: Array) -> bool:
 			var sprung: bool = float(mv["f"]) >= float(R["dodge"]["air"][0]) and h.uniques != null and h.uniques.wears("sprungheels")
 			if not sprung:
 				return false
+		# (THE BRAWLER'S BUILDS: Stepping Stones, a swipe during a flying blow springs on from it when it lands, free)
+		if not mv.is_empty() and B2.FLYING.has(mv["id"]) and _b3("vsteppingstones") and int(mv.get("hops", 0)) < int(B3.STEP["n"]) - 1:
+			mv["spring"] = at
+			return true
 		# (THE BRAWLER'S BUILDS: The Last Round, a swipe with three globes lit costs no jump)
 		var free: bool = B3.on and globes.size() >= 3 and h.uniques != null and h.uniques.wears("lastround")
 		if free:
@@ -635,7 +639,8 @@ func _play(dt: float, way: Vector2) -> void:
 	var id: String = mv["id"]
 	var m: Dictionary = R[id]
 	var f0: float = mv["f"]
-	mv["f"] = f0 + dt * float(V["fps"]) * _pace(id) * (float(B3.FLURRY["pace"]) if mv.get("flurry", false) else 1.0)
+	mv["f"] = f0 + dt * float(V["fps"]) * _pace(id) * (float(B3.FLURRY["pace"]) if mv.get("flurry", false) else 1.0) \
+		* (float(B3.STEP["pace"]) if int(mv.get("hops", 0)) > 0 else 1.0)
 	var f: float = mv["f"]
 	var want := way.length()
 	if want > 0.1 and _walkable(id, f):
@@ -686,8 +691,8 @@ func _play(dt: float, way: Vector2) -> void:
 	if f >= float(m["long"]):
 		# (THE BRAWLER'S BUILDS: Stepping Stones, a flying blow that landed springs on to the next)
 		var bounce := {}
-		if B2.FLYING.has(id) and _b3("vsteppingstones"):
-			bounce = _next_stone()
+		if B2.FLYING.has(id) and _b3("vsteppingstones") and mv.has("spring"):
+			bounce = _next_stone(mv["spring"])
 		done.append(id)
 		mv = {}
 		idle = 0.0
@@ -1020,9 +1025,9 @@ func _burn_floor(id: String) -> void:
 	h.wakes.add_patch(i, "burn", _origin(), float(F["r"]), float(F["secs"]), h.talent_hit("fire", float(F["share"]), i), "fire")
 
 
-## (Stepping Stones) The next flying blow of the chain, springing off what this one struck onto the nearest it has not struck, in
-## reach and sight; {} none (the chain at its end, nothing struck, or none near).
-func _next_stone() -> Dictionary:
+## (Stepping Stones) The next flying blow of the chain, springing off what this one struck onto the one nearest `aim` (where his swipe
+## pointed) it has not struck, in reach and sight; {} none (the chain at its end, nothing struck, or none near).
+func _next_stone(aim: Vector2) -> Dictionary:
 	var hops: int = int(mv.get("hops", 0))
 	if hops >= int(B3.STEP["n"]) - 1 or (mv["hit"] as Array).is_empty() or h.monsters == null:
 		return {}
@@ -1034,14 +1039,15 @@ func _next_stone() -> Dictionary:
 		if is_instance_valid(c):
 			chain.append(c)
 	var best = null
-	var bd: float = B3.STEP["far"]
+	var bd := INF
 	for o in h.monsters.list:
 		if not is_instance_valid(o) or o.dead or o.state == "rise" or chain.has(o) or h.monsters.shut_in(o):
 			continue
 		var d: float = o.world.distance_to(h.world) - o.r
-		if d < bd and h.monsters.sees(h.world, o.world):
+		var da: float = o.world.distance_to(aim)
+		if d < float(B3.STEP["far"]) and da < bd and h.monsters.sees(h.world, o.world):
 			best = o
-			bd = d
+			bd = da
 	if best == null:
 		return {}
 	return {"id": mv["id"], "globe": -1, "leap": true, "set": 1, "tx": best.world.x, "ty": best.world.y, "aimed": true, "tid": best,
