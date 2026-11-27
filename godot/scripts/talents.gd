@@ -84,9 +84,9 @@ const DEFENCE := {
 	],
 	"tinkerer": [
 		{"id": "bodyguard", "name": "Bodyguard", "path": "golem", "from": "overdrive", "at": [1.15, 0.6],
-			"text": "While your Golem is within 3 tiles, it takes 50% of the damage meant for you."},
+			"text": "While your Golem is close to you, it takes 50% of the damage meant for you."},
 		{"id": "smokescreen", "name": "Smoke Screen", "path": "works", "from": "growthserum", "at": [1.15, -0.6],
-			"text": "Blast Jump leaves smoke for 3 seconds. Inside it: at least 50% dodge chance."},
+			"text": "Blast Jump leaves a smoke cloud for 3 seconds. While inside the smoke cloud: at least 50% dodge chance."},
 	],
 }
 ## (the Warrior's and the Brawler's defence, on the three defences: their cards' words)
