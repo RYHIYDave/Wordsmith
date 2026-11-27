@@ -39,6 +39,9 @@ func run(main, hero, d: String) -> void:
 	if OS.has_environment("WS_AUTORUN_PROBE"):
 		await _probe(OS.get_environment("WS_AUTORUN_PROBE"))
 		return
+	if OS.has_environment("WS_AUTORUN_WALK"):
+		await _walk(OS.get_environment("WS_AUTORUN_WALK"))
+		return
 	# (ENDLESS, his word, 27 Nov 2026, after “run through the whole game, all 20 levels”: “And endless”: WS_AUTORUN_ENDLESS=N, the
 	# endless levels 1 to N one after another, as the game makes each (game.ts nextEndless: a floor at random, never the one just
 	# beaten, stronger each level), from the hero made ready for floor 20 (`--trial=20`))
@@ -569,3 +572,50 @@ func _probe(spec: String) -> void:
 		print("PROBE   walking for %s: at %s; auto_dir %s, scene_pace %s, act '%s', paused %s" % [aim, h.world, h.auto_dir, h.scene_pace, h._act, M.get_tree().paused])
 	h.auto_dir = Vector2.ZERO
 	M._snap(dir + "/probe_%d.png" % f)
+
+
+## (A WALK, to film a floor's look as he goes: `WS_AUTORUN_WALK=f;x,y;x,y;...`: floor f, its monsters put out of the way, and he
+## walks from one point to the next by the way a body can go, at his own pace; each point reached is told)
+func _walk(spec: String) -> void:
+	var parts := spec.split(";")
+	var f := int(parts[0])
+	if M.place != "floor%d" % f:
+		await M.go_to("floor%d" % f, "down" if f > 1 else "stairs")
+	await M._wait(2.0)
+	for m in M._monsters.list:
+		if is_instance_valid(m):
+			m.world = Vector2(-500, -500)
+			m.state = "sleep"
+	var t0 := Time.get_ticks_msec()
+	for i in range(1, parts.size()):
+		var xy := parts[i].split(",")
+		var goal := Vector2(float(xy[0]), float(xy[1]))
+		var gt := _tile_of(goal)
+		var fl := _flood(_tile_of(h.world))
+		var dist: PackedInt32Array = fl[0]
+		var came: PackedInt32Array = fl[1]
+		var at: int = gt.y * M.map.w + gt.x
+		if dist[at] < 0:
+			print("AUTORUN   walk: %s cannot be reached from %s" % [goal, h.world])
+			continue
+		var path: Array = []
+		while at >= 0:
+			path.push_front(Vector2(at % M.map.w + 0.5, at / M.map.w + 0.5))
+			at = came[at]
+		var spent := 0.0
+		while h.world.distance_to(goal) > 0.4 and spent < 60.0:
+			while path.size() > 1 and h.world.distance_to(path[0]) < 0.6:
+				path.pop_front()
+			var aim: Vector2 = path[0] if path.size() > 0 else goal
+			for kk in range(mini(3, path.size()) - 1, 0, -1):
+				if _walkable_line(h.world, path[kk]):
+					aim = path[kk]
+					break
+			var wd: Vector2 = (aim - h.world).normalized()
+			h.auto_dir = Iso.to_screen(wd.x, wd.y).normalized()
+			await M.get_tree().process_frame
+			spent += M.get_process_delta_time()
+		h.auto_dir = Vector2.ZERO
+		print("AUTORUN   walk: at %s (%.1f s)" % [h.world, (Time.get_ticks_msec() - t0) / 1000.0])
+	await M._wait(1.0)
+	print("AUTORUN walk done")
