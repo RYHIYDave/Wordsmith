@@ -1513,22 +1513,23 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   what is near her can strike again (before, she threw so fast that nothing near her was ever up: she could not fall). Her
   toughness before and after and every class's: `docs/tests/speed_tank_2026-11-26.txt` (AFTER THE FIXES); measured by
   `--only=speed` with `WS_BIG_WAIT=0|1` and `WS_DEF_EVEN=0|1` to set either switch for a run.
-- **The Brawler remade** (`heroes/brawler2.gd`, its switch `on`, OFF until his yes to the film and the numbers; his ideas, 26 Nov
+- **The Brawler remade** (`heroes/brawler2.gd`, its switch `on`, ON at his “Can you just update the game?”; his ideas, 26 Nov
   2026: “it takes three taps to fill one of his globes with a punch.  Then have a branching talent tree where one way has a single
   tap fills a globe, and the other has attack speed modifiers now affect crit damage at 200% or something like that”, and “his
   swipe can be something like an interrupt to the combo, but whatever globe is next is now added to the swipe, so either a flying
   double hamerfist or a flying knee”; a kick globe from one hold, his pick “One hold fills it (Recommended)”). Every tap a punch as
   before, every third lighting a punch globe; every hold a kick, lighting a kick globe; lit globes kept till spent or 3 s with no
   blow. A swipe breaks off what he is doing and spends his jump: a globe lit, he flies up to 3.5 tiles past the move's own carry at
-  the enemy where it points with the first (a punch globe the flying double hammerfist, a round blow knocking down all round where
-  he lands; a kick globe the flying knee); none lit, the hop as before. No fire globes. The fork off Stiff Jab, one side only:
+  the enemy where it points with the first (a punch globe the flying double hammerfist, a round blow driving back and staggering all round where
+  he lands, none knocked down (his “Just don’t have them fall over?”); a kick globe the flying knee); none lit, the hop as before. No fire globes. The fork off Stiff Jab, one side only:
   Quick Hands (every punch a globe) or Heavy Hands (no faster; each 1% of attack speed 2% more critical damage). Knockdown, Launcher,
   Fire Starter, Stoke, Hang Time, The Full Set, Thunder Knee and Light Feet bent to fit (`brawler2.gd` TEXT; `talents.gd` tree).
   THE TWO FLYING MOVES' ART is the art chat's, at his word: “Send the hammer fist and flying knee to the queue and art chat.  I don’t
-  trust you to do it” (the queue's `draw-brawler-hammerfist-and-flying-knee`); till it comes the uppercut's and the knee's frames
-  stand in (`brawler2.gd` ART). Check: `--only=brawler2` (`check_brawler2.gd`, the switch on for it alone); the speed test with
+  trust you to do it” (the queue's `draw-brawler-hammerfist-and-flying-knee`); drawn by the art chat (his “Yes, both are right (Recommended)”)
+  and baked in (bake 3f38aadafd8f, his groups alone; `tools/godot_veteran.ts`: 13 moves); without them the uppercut's and the knee's
+  frames stand in (`brawler2.gd` ART). Check: `--only=brawler2` (`check_brawler2.gd`, the switch on for it alone); the speed test with
   `WS_BRAWLER2=1 WS_B2_FORK=vquickhands|vheavyhands`.
-- **Stuns made rare** (`monster.gd` STUNS_RARE, OFF until his yes; his words, 26 Nov 2026: “Looks for instances of stun.  Only the
+- **Stuns made rare** (`monster.gd` STUNS_RARE, ON at his “Both on (Recommended)”; his words, 26 Nov 2026: “Looks for instances of stun.  Only the
   biggest and strongest hits should stun.  Stagger is something that can be more common.”; stuns on the hero too, “Yes, both
   ways”). Every stun on a monster is a stagger (its attack broken off, half a second at most, an elite half that, not again for
   a second and a half after) but the biggest hits' (`big`): The Big One, the Warlock's demon landing and its roar, the Bulldozer, the
@@ -1538,6 +1539,26 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
 - **The critical Brawler** (`check_crit.gd`, `--only=crit` with `WS_DMG_GEAR`; his words: “Now build a Brawler that gets 100% crit
   chance through items and gear and maximizes crit damage.”): the damage check's chooser going by his critical chance first, then
   its damage, Heavy Hands taken; and beside him the remade Brawler with Quick Hands and the Brawler as he is, chosen by damage.
+- **Critical hits 2.5 times a regular hit** (`loot.gd` CRIT_DOUBLE, ON with the stuns at “Both on (Recommended)”; his words, 26 Nov
+  2026: “See there's the problem.  A crit should be at least double a regular hit”, then “Maybe 2.5x”): a critical's base is 150%
+  more (1 + 1.5 times a regular hit) where it was 50%, his gear's critical damage added to that.
+- **Heavy Hands three ways** (`brawler2.gd` HEAVY_MODE, "add" as first written until his word; his idea, 26 Nov 2026: “That would
+  take a normal crit 2.5 times your regular damage up to 5 times your regular damage. Then you're multiplying that by your crit
+  damage percent”). k his attack speed's pace (2 at +100%, the most): "add", each 1% of attack speed 2% more critical damage, added;
+  "whole", his whole critical k times as hard; "base" (his), the base critical k times as big and his gear's critical damage
+  multiplying it. Fought (`--only=heavy`, `check_heavy.gd`, with `WS_DMG_GEAR`; `WS_HEAVY_FULL=1` everything he has, punches, kicks
+  and flying blows, 18 s into one elite): his way 2.42 times Quick Hands, the main chat's 1.26, as written 0.66
+  (`docs/tests/heavy_hands_full_2026-11-27.txt`, its bar graph `heavy_hands_full_fight.png`; the math as a film,
+  `docs/mockups/heavy_hands/heavy_hands_math.mp4`, `tools/heavy_hands_video.py`).
+- **The cloth Cowl and Slippers** (the art chat's pictures, his “Yes, both are right (Recommended)”): the Barrier gear's head and
+  feet (Linen, Silk and Velvet Cowl for the helm, Linen, Silk and Velvet Slippers for the boots: `src/game/items.ts`), cloth by
+  their names (`loot.gd base_family`), so Barrier and a little cooldown recovery built in; the loot baked again
+  (`tools/godot_loot.ts`).
+- **The Hannar Manor Games splash** (`scripts/splash.gd`, `main.gd` SPLASH; the art chat's; his ask, 26 Nov 2026: “I’d like a title
+  splash screen before the wordsmith title screen.  I’d like it to fade up from black.”, his pick “White”): the film
+  (`assets/splash/hannar_manor_splash.ogv`, 6.6 s) over black as the game begins, the game held still behind it, a tap skipping it,
+  the start screen coming up from its black; not in the checks' runs, `--splash=0` to begin without it. Check: `godot --headless
+  --path godot -s res://checks/splash_check.gd`.
 - **Six enemies made livelier** (the browser art's `src/art/enemies8.ts` ENEMIES8, ON at his yes to the second pictures, 26 Nov
   2026: “Yes, put them in (Recommended)”; his words: “Next Find the 8 weakest enemies and work on them.  Weakest in terms of their
   animations and look.”). The skeleton marksman breathes as he waits and swings more in his stride; the Shade rises, sinks and
