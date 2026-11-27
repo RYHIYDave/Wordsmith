@@ -7,7 +7,8 @@
 ## dead, whether its way on opened. Pictured where he stalls. One line a floor, AUTORUN, and the sum.
 extends "res://scripts/check_speed.gd"
 
-const CAP := 300.0
+## (how long a floor is played at most, in seconds of the game: WS_AUTORUN_CAP)
+var CAP := float(OS.get_environment("WS_AUTORUN_CAP")) if OS.has_environment("WS_AUTORUN_CAP") else 300.0
 
 
 ## (a place he walks to that is no monster: a lever, a thing of a quest lying where it fell, the forge crank, the temple door)
