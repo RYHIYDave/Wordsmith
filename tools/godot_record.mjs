@@ -115,7 +115,7 @@ console.log(`${name}: ${where.w}x${where.h}, ${ready.props} props, ${ready.doors
 
 // (is this the level the Godot side has laid out? tools/godot_export.ts, the same seed: its tiles, doors and props held to it)
 {
-  const layoutFile = path.resolve(ROOT, `godot/assets/${depth <= 0 ? name : `floor${depth}`}/layout.json`);
+  const layoutFile = path.resolve(ROOT, `godot/assets/${depth <= 0 ? name : `floor${depth}${suffix}`}/layout.json`);
   if (fs.existsSync(layoutFile)) {
     const lay = JSON.parse(fs.readFileSync(layoutFile, 'utf8'));
     let hash = 0;
