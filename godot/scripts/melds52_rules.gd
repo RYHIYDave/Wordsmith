@@ -274,7 +274,7 @@ func _crit52(m, i: int, c: bool, quiet: bool) -> bool:
 			if qd_ready[i]:
 				return true
 		"pressurepoint":
-			if m.stun_t > 0.0:
+			if m.held_still():
 				if not quiet:
 					_tell({"id": "pressurepoint", "what": "point", "x": m.world.x, "y": m.world.y, "m": m})
 				return true
@@ -309,7 +309,7 @@ func more(m, i: int, quiet: bool) -> float:
 				momentum = 0
 			k *= 1.0 + float(_tune("momentum")["each"]) * momentum
 		"daze":
-			if m.stun_t > 0.0:
+			if m.held_still():
 				k *= 1.0 + float(_tune("daze")["more"])
 				if not quiet:
 					_tell({"id": "daze", "what": "thud", "x": m.world.x, "y": m.world.y, "m": m})
@@ -339,7 +339,7 @@ func heal_k(m, i: int) -> float:
 				k *= float(_tune("coldblood")["heal"])
 				_tell({"id": "coldblood", "what": "drink", "x": m.world.x, "y": m.world.y, "m": m})
 		"marrow":
-			if m.stun_t > 0.0:
+			if m.held_still():
 				k *= float(_tune("marrow")["heal"])
 				_tell({"id": "marrow", "what": "drink", "x": m.world.x, "y": m.world.y, "m": m})
 		"secondwind":

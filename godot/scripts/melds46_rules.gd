@@ -299,16 +299,16 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_frozen
 				_burst(at, float(F["bloomR"]), dmg * float(F["bloom"]), "fire", i, m)
 				_tell({"id": "firewalk", "what": "bloom", "x": at.x, "y": at.y, "r": float(F["bloomR"])})
 		"charge":
-			if m.stun_t > 0.0 and not quiet:
+			if m.held_still() and not quiet:
 				h.cool_by(float(r["cooldown"]) * float(_t("charge")["cut"]))
 				_tell({"id": "charge", "what": "ram", "x": at.x, "y": at.y, "m": m, "dx": h.face.x, "dy": h.face.y})
 		"mire":
-			if m.stun_t > 0.0 and m.poison_t > 0.0 and not m.dead and not bool(m.m52.get("mired", false)):
+			if m.held_still() and m.poison_t > 0.0 and not m.dead and not bool(m.m52.get("mired", false)):
 				p._tag(m)
 				m.m52["mired"] = true
 				m.poison_dps *= float(_t("mire")["faster"])
 				m.poison_t /= float(_t("mire")["faster"])
-			if m.stun_t > 0.0 and not quiet:
+			if m.held_still() and not quiet:
 				_tell({"id": "mire", "what": "mud", "x": at.x, "y": at.y, "m": m})
 		"icebreaker":
 			if was_frozen and not quiet:
@@ -321,7 +321,7 @@ func struck(m, i: int, dmg: float, c: bool, at: Vector2, quiet: bool, was_frozen
 						o.stagger_from(at)
 				_tell({"id": "icebreaker", "what": "shatter", "x": at.x, "y": at.y, "m": m, "r": float(I["r"])})
 		"anvil":
-			if m.stun_t > 0.0 and not m.dead:
+			if m.held_still() and not m.dead:
 				if m.burn_t > 0.0 and not m.m52.has("hot_anvil"):
 					p._tag(m)
 					m.hotter("anvil", float(_t("anvil")["hot"]))

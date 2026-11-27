@@ -917,8 +917,9 @@ func step(dt: float) -> void:
 			if float(mm.get("stag_told", -99.0)) < p.time - 0.9:
 				mm["stag_told"] = p.time
 				_tell({"id": "stagnation", "what": "hold", "x": m.world.x, "y": m.world.y, "m": m})
-		# (Standstill, Anchor, Gravity: the stunned held, slowed or dragged in, stunned longer; Burden: the stunned cursed longer)
-		if m.stun_t > 0.0:
+		# (Standstill, Anchor, Gravity: the stunned held, slowed or dragged in, stunned longer; Burden: the stunned cursed longer;
+		# stuns being rare, the staggered too, the stagger made longer, never a stun: his “Work on staggers too (Recommended)”)
+		if m.held_still():
 			if not mm.get("stun_long", false):
 				var k := 1.0
 				if mm.has("standstill") and m.still_t > 0.0:
@@ -929,9 +930,12 @@ func step(dt: float) -> void:
 					k = maxf(k, float(_t("gravity")["stun"]))
 				if k > 1.0:
 					mm["stun_long"] = true
-					m.stun_t *= k
+					if m.stun_t > 0.0:
+						m.stun_t *= k
+					else:
+						m.stagger_t *= k
 					var who: String = "anchor" if mm.has("anchor") and m.bind_t > 0.0 else ("standstill" if mm.has("standstill") else "gravity")
-					_tell({"id": who, "what": "stun", "x": m.world.x, "y": m.world.y, "m": m, "secs": m.stun_t})
+					_tell({"id": who, "what": "stun", "x": m.world.x, "y": m.world.y, "m": m, "secs": maxf(m.stun_t, m.stagger_t)})
 			if mm.has("burden") and m.hex_t > 0.0 and not mm.get("burden_long", false):
 				mm["burden_long"] = true
 				m.hex_t *= float(_t("burden")["longer"])

@@ -1842,6 +1842,13 @@ func stun_for(secs: float, meld := "", big := false) -> void:
 	_tell(e)
 
 
+## (STUNS MADE RARE) Held where it stands: stunned, or, stuns being rare, staggered. What the melds that work on the stunned wait on
+## (Standstill, Anchor, Gravity, Burden, Charge, Mire, Anvil, Pressure Point, Daze, Marrow), his “Work on staggers too
+## (Recommended)”, 27 Nov 2026: with stuns rare they would almost never have done anything.
+func held_still() -> bool:
+	return stun_t > 0.0 or (STUNS_RARE and stagger_t > 0.0)
+
+
 ## (STUNS MADE RARE) A stun not of the biggest hits, a stagger instead: its attack broken off, held a moment.
 func rare_stagger(secs: float) -> void:
 	if dead or boss or stagger_cd > 0.0 or stun_t > 0.0:
