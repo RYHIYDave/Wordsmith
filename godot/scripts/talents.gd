@@ -60,42 +60,44 @@ static func ready_up() -> void:
 ## Skin and Bulwark on his armour, Shieldwall's words its barrier's (as its rule already is), Guard Up's dodged blows answered.
 ## Their rules: hero.gd (dodge_floor, armour_cut, _through_barrier, the blow's way), heroes/ranger.gd, mage.gd, warlock.gd,
 ## tinkerer.gd, brawler.gd; wakes.gd and fx_wakes.gd (the smoke). OFF until he has seen them (pictures first): `--deftal=1` on.
+## Their cards in game words, numbers as numbers: his words, 27 Nov 2026, asked whether to switch them on: “Can you use more
+## gamified language in the descriptions?  1 in every two is 50%, that sort of thing”.
 static var DEFENCE_TALENTS := false
 const DEFENCE := {
 	"ranger": [
 		{"id": "evasive", "name": "Evasive", "path": "wind", "from": "windrunner", "at": [1.55, 1.25],
-			"text": "For two seconds after a roll, at least one blow in two misses you."},
+			"text": "After a roll: at least 50% dodge chance for 2 seconds."},
 		{"id": "countershot", "name": "Counter Shot", "path": "wind", "from": "evasive", "at": [2.3, 1.25],
-			"text": "Every blow you dodge makes your next arrow a certain critical that knocks back."},
+			"text": "Dodge a hit: your next arrow is a 100% critical hit and knocks the enemy back."},
 	],
 	"mage": [
 		{"id": "iceshell", "name": "Ice Shell", "path": "frost", "from": "frostwarp", "at": [3.6, 4.75],
-			"text": "You carry a barrier of a fifth of your life, even without cloth; when it breaks, everything near you freezes for two seconds."},
+			"text": "+20% of your life as barrier. When your barrier breaks, nearby enemies are frozen for 2 seconds."},
 		{"id": "wardingwarp", "name": "Warding Warp", "path": "frost", "from": "iceshell", "at": [2.85, 4.75],
-			"text": "Every Warp fills a quarter of your barrier."},
+			"text": "Each Warp restores 25% of your barrier."},
 	],
 	"warlock": [
 		{"id": "soulward", "name": "Soul Ward", "path": "pact", "from": "souldebt", "at": [4.0, 1.45],
-			"text": "Every cursed enemy that dies fills a tenth of his barrier, even past full, up to half again (a fifth of his life, if he wears no cloth)."},
+			"text": "Each cursed enemy that dies restores 10% of your barrier, overcharging it up to 150%. Your barrier is at least 20% of your life."},
 		{"id": "hellhide", "name": "Hellhide", "path": "demon", "from": "feast", "at": [2.6, 0.1],
-			"text": "While the demon has him, his armour counts double and nothing knocks him back."},
+			"text": "In demon form: +100% armour and immune to knockback."},
 	],
 	"tinkerer": [
 		{"id": "bodyguard", "name": "Bodyguard", "path": "golem", "from": "overdrive", "at": [1.15, 0.6],
-			"text": "While the Golem stands near her, it takes half of every blow meant for her."},
+			"text": "While your Golem is within 3 tiles, it takes 50% of the damage meant for you."},
 		{"id": "smokescreen", "name": "Smoke Screen", "path": "works", "from": "growthserum", "at": [1.15, -0.6],
-			"text": "Her Blast Jump leaves smoke for three seconds: in it, at least one blow in two misses her."},
+			"text": "Blast Jump leaves smoke for 3 seconds. Inside it: at least 50% dodge chance."},
 	],
 }
 ## (the Warrior's and the Brawler's defence, on the three defences: their cards' words)
 const DEFENCE_WORDS := {
 	"warrior": {
-		"thickskin": "Below half your life, your armour counts double.",
-		"bulwark": "Each enemy close round you adds a fifth to your armour, up to double.",
-		"shieldwall": "When your barrier breaks, it bursts outward: everything near is thrown back and stunned for a second.",
+		"thickskin": "Below 50% life: +100% armour.",
+		"bulwark": "+20% armour for each enemy near you, up to +100%.",
+		"shieldwall": "When your barrier breaks, it explodes: nearby enemies are knocked back and stunned for 1 second.",
 	},
 	"brawler": {
-		"vguardup": "Between blows he keeps his fists up: a blow from in front of him does half harm, and a blow he dodges is answered: his next punch lands twice as hard.",
+		"vguardup": "Fists up between punches: 50% less damage from the front. Dodge a hit: your next punch deals +100% damage.",
 	},
 }
 ## (their numbers)

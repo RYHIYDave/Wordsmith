@@ -68,6 +68,7 @@ func run(main, hero, d: String) -> void:
 	# --- THE RANGER: EVASIVE, COUNTER SHOT ---
 	_bare("ranger")
 	await _page("evasive", ["fleet", "windrunner"], "ranger_tree_evasive")
+	await _page("countershot", ["fleet", "windrunner", "evasive"], "ranger_tree_counter_shot")
 	_take(["fleet", "windrunner", "evasive", "countershot"])
 	var kit = h.kit
 	var c0: float = h.dodge_chance()
@@ -123,6 +124,7 @@ func run(main, hero, d: String) -> void:
 	_bare("mage")
 	var b0: float = h.max_barrier
 	await _page("iceshell", ["bittercold", "deepfreeze", "aura", "frostwarp"], "mage_tree_ice_shell")
+	await _page("wardingwarp", ["bittercold", "deepfreeze", "aura", "frostwarp", "iceshell"], "mage_tree_warding_warp")
 	_take(["bittercold", "deepfreeze", "aura", "frostwarp", "iceshell", "wardingwarp"])
 	M.loot.derive()
 	h.barrier = h.max_barrier
@@ -239,6 +241,8 @@ func run(main, hero, d: String) -> void:
 	var five: float = h.armour_cut()
 	_line(five > full, "Bulwark: five close round him, 100 armour takes %.0f%% (as 200: double, the most), alone %.0f%%" % [five * 100.0, full * 100.0])
 	await _page("thickskin", ["greatsword"], "warrior_tree_thick_skin")
+	await _page("shieldwall", ["greatsword", "thickskin"], "warrior_tree_shieldwall")
+	await _page("bulwark", ["greatsword", "thickskin", "shieldwall", "secondwind"], "warrior_tree_bulwark")
 	# --- THE BRAWLER: GUARD UP ---
 	_bare("brawler")
 	_take(["vstiffjab", "vguardup"])
