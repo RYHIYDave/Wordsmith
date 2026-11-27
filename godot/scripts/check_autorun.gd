@@ -370,6 +370,12 @@ func _spots(kept: Dictionary) -> Array:
 		if not kept.has("stone"):
 			kept["stone"] = Spot.new("the stone", st.stone, func(): return _on_stone_itself(st))
 		out.append(kept["stone"])
+	# (floor 20: up the Quiet Tower's stair to its top, where the Moth waits)
+	var tw = M.tower
+	if tw != null and tw.on() and not tw.on_top(h.world) and tw._moth() != null and not tw._moth().dead:
+		if not kept.has("stair"):
+			kept["stair"] = Spot.new("the tower's stair", Vector2(float(tw.plan["stair"]["x"]), float(tw.plan["stair"]["y"])), func(): return tw.on_top(h.world))
+		out.append(kept["stair"])
 	var te = M.temple
 	if te != null and not te.open and te.keys >= te.need and not te._door.is_empty():
 		if not kept.has("temple"):
