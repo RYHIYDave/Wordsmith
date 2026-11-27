@@ -4,6 +4,8 @@
 ## these from its own moments: a blow's weight (harder), what a blow leaves (after_blow), its turn (tick), its pace (rage), its
 ## shield struck (shield), its death (death), its dying blast (blast). Numbers melds52.json `tune` (their `foe…` keys).
 ## Its warnings of what to step out of are the game's own (perils.gd warn): the enemy's pink and gold.
+## (THE 26 WHOSE OWN MOMENT NEVER PLAYED ON A MONSTER, the check of 26 Nov 2026 against his Art Rulebook's Animations 7, “Every word
+## has its look”; his “Fix them now (Recommended)”: each twist below tells its moment, "foe", and its painter draws it in its look)
 extends RefCounted
 
 const M52 := preload("res://scripts/melds52.gd")
@@ -103,6 +105,8 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 	if s.call("aftershock") > 0.0 and alive_by:
 		var A := _t("aftershock")
 		F._warn(h.world, float(A["foeR"]), float(A["foeDelay"]), F._avg(by) * float(A["foeShare"]), "phys", by)
+		# (the ground where he stood answering as the warning runs out: drawn there, not on him)
+		h.m52._tell({"id": "aftershock", "what": "foe", "x": h.world.x, "y": h.world.y, "r": float(A["foeR"]), "wait": float(A["foeDelay"])})
 	if s.call("coldblood") > 0.0 and alive_by and h.chill_t > 0.0:
 		by.life = minf(by.max_life, by.life + by.max_life * 0.03)
 		h.m52._tell({"id": "coldblood", "what": "foe", "x": h.world.x, "y": h.world.y, "x1": by.world.x, "y1": by.world.y})
@@ -132,12 +136,16 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 		by.m52["foe_last"] = F.clock
 		if s.call("flurry") > 0.0:
 			by.m52["foe_flurry"] = minf(float(_t("flurry")["foeMost"]), float(by.m52.get("foe_flurry", 0.0)) + float(_t("flurry")["foeFaster"]))
+			h.m52._tell({"id": "flurry", "what": "foe", "x": by.world.x, "y": by.world.y, "m": by, "n": int(roundf(float(by.m52["foe_flurry"]) / maxf(0.01, float(_t("flurry")["foeFaster"]))))})
 	if s.call("fever") > 0.0 and alive_by and h.poison_t > 0.0:
 		h.worse("poison", "fever", 1.0 + 0.5 * _hurt_k(by) * float(_t("fever")["foeFaster"]))
 	if s.call("whiteout") > 0.0 and alive_by and h.chill_t > 0.0:
 		h.chill_k = minf(0.85, h.chill_k + float(_t("whiteout")["foeSlow"]) * _hurt_k(by))
+		if _hurt_k(by) > 0.05:
+			h.m52._tell({"id": "whiteout", "what": "foe", "x": h.world.x, "y": h.world.y, "r": _hurt_k(by), "x1": by.world.x, "y1": by.world.y, "foe": true})
 	if s.call("overcharge") > 0.0 and alive_by and parts.any(func(p): return p[0] == "lightning") and _hurt_k(by) > 0.4:
 		F._warn(h.world, 1.0 + float(_t("overcharge")["foeReach"]) * _hurt_k(by), 0.5, F._avg(by) * 0.4, "lightning", by)
+		h.m52._tell({"id": "overcharge", "what": "foe", "x": h.world.x, "y": h.world.y, "x1": by.world.x, "y1": by.world.y, "r": _hurt_k(by), "foe": true})
 	if s.call("juggernaut") > 0.0 and alive_by:
 		h.knock(away, 0.6 * _hurt_k(by))
 		h.m52._tell({"id": "juggernaut", "what": "foe", "x": h.world.x, "y": h.world.y, "r": 0.8 + 1.2 * _hurt_k(by), "foe": true})
@@ -150,18 +158,24 @@ static func after_blow(F, k: Callable, by, dmg: float, parts: Array) -> void:
 	if s.call("coldsnap") > 0.0 and h.chill_t > 0.0:
 		h.chill_t = minf(h.chill_t, 1.2)
 		h.chill_k = minf(0.85, h.chill_k * 1.5)
+		h.m52._tell({"id": "coldsnap", "what": "foe", "x": h.world.x, "y": h.world.y, "foe": true})
 	if s.call("flashfire") > 0.0 and h.burn_t > 0.0:
 		h.worse("burn", "flashfire", 1.5)
 		h.burn_t = minf(h.burn_t, 1.5)
 		h.m52.on_him["flare"] = F._avg(by) if alive_by else dmg
 	if s.call("jolt") > 0.0 and parts.any(func(p): return p[0] == "lightning"):
+		h.m52._tell({"id": "jolt", "what": "foe", "x": h.world.x, "y": h.world.y, "foe": true})
 		h.hurt_by(dmg * float(_t("jolt")["foeJolt"]) * 0.3, "lightning", [], {}, null, h.world)
+	# (each one's ground laid where its blow landed, rolling out from under him as it is laid: drawn there, not on him)
 	if s.call("miasma") > 0.0 and alive_by:
 		F._ground(h.world, 1.2, float(_t("miasma")["foeHaze"]), "venom", "poison", F._avg(by) * float(_t("miasma")["foeDps"]), [], by, "miasma")
+		h.m52._tell({"id": "miasma", "what": "foe", "x": h.world.x, "y": h.world.y, "r": 1.2})
 	if s.call("glacier") > 0.0 and alive_by:
 		F._ground(h.world, 1.2, float(_t("glacier")["foeFrost"]), "ice", "frost", F._avg(by) * 0.1, [], by, "glacier")
+		h.m52._tell({"id": "glacier", "what": "foe", "x": h.world.x, "y": h.world.y, "r": 1.2})
 	if s.call("inferno") > 0.0 and alive_by:
 		F._ground(h.world, 1.0, float(_t("inferno")["foeFire"]), "burn", "fire", F._avg(by) * 0.15, [], by, "inferno")
+		h.m52._tell({"id": "inferno", "what": "foe", "x": h.world.x, "y": h.world.y, "r": 1.0})
 	if s.call("stormfront") > 0.0 and alive_by and parts.any(func(p): return p[0] == "lightning"):
 		F._warn(h.world, 1.4 + float(_t("stormfront")["foeWider"]), 0.6, F._avg(by) * 0.3, "lightning", by)
 		h.m52._tell({"id": "stormfront", "what": "foe", "x": h.world.x, "y": h.world.y, "r": 1.4 + float(_t("stormfront")["foeWider"]), "foe": true})
@@ -191,17 +205,23 @@ static func tick(F, m, dt: float, dist: float) -> void:
 	var h = F.main.hero
 	if m.word_share("permafrost") > 0.0 and dist <= 2.5 and h.chill_t > 0.0:
 		h.chill_k = minf(float(_t("permafrost")["foeMost"]), h.chill_k + float(_t("permafrost")["foeDeeper"]) * dt)
+		# (seen: the frost thickening round his feet, told now and then while it deepens)
+		if F.clock - float(m.m52.get("foe_perma_told", -99.0)) > 1.0:
+			m.m52["foe_perma_told"] = F.clock
+			h.m52._tell({"id": "permafrost", "what": "foe", "x": h.world.x, "y": h.world.y, "r": h.chill_k, "foe": true})
 	if m.word_share("tempest") > 0.0 and dist <= 6.0 and h.shock_t > 0.0:
 		m.m52["foe_zap"] = float(m.m52.get("foe_zap", 0.0)) - dt
 		if float(m.m52["foe_zap"]) <= 0.0:
 			m.m52["foe_zap"] = 0.8
 			F._tell({"t": "arc", "x0": h.world.x, "y0": h.world.y - 1.0, "x1": h.world.x, "y1": h.world.y, "meld": "tempest", "foe": true})
+			h.m52._tell({"id": "tempest", "what": "foe", "x": h.world.x, "y": h.world.y, "foe": true})
 			h.hurt_by(F._avg(m) * float(_t("tempest")["foeZap"]) * 4.0, "lightning", [], {}, null, h.world)
 	if m.word_share("cinderward") > 0.0:
 		var had: float = float(m.m52.get("foe_shield", 0.0))
 		if had > 0.0 and m.shield <= 0.0:
 			F._warn(m.world, 1.6, 0.35, F._avg(m), "fire", m)
 			F._say(m.world, "Its shield bursts", "#ffb070")
+			h.m52._tell({"id": "cinderward", "what": "foe", "x": m.world.x, "y": m.world.y, "m": m, "r": 1.6})
 		m.m52["foe_shield"] = m.shield
 	for key in ["foe_wind_t", "foe_blur_t"]:
 		if m.m52.has(key):
@@ -250,10 +270,12 @@ static func shield(F, m, soaked: float) -> void:
 		h.poison_t = maxf(h.poison_t, 3.0)
 		h.poison_dps = maxf(h.poison_dps, F._avg(m) * 0.15)
 		F._say(h.world, "Poisoned", "#9be36a")
+		h.m52._tell({"id": "hemlock", "what": "foe", "x": h.world.x, "y": h.world.y, "x1": m.world.x, "y1": m.world.y, "foe": true})
 	if m.word_share("static") > 0.0 and F.clock - float(m.m52.get("foe_sta", -99.0)) > 0.8:
 		m.m52["foe_sta"] = F.clock
 		F._tell({"t": "arc", "x0": m.world.x, "y0": m.world.y, "x1": h.world.x, "y1": h.world.y, "meld": "static", "foe": true})
 		h.shock_t = maxf(h.shock_t, 2.0)
+		h.m52._tell({"id": "static", "what": "foe", "x": h.world.x, "y": h.world.y, "x1": m.world.x, "y1": m.world.y, "foe": true})
 		h.hurt_by(F._avg(m) * 0.3, "lightning", [], {}, null, m.world)
 
 
@@ -262,6 +284,10 @@ static func death(F, m) -> void:
 	var h = F.main.hero
 	if m.word_share("smoulder") > 0.0:
 		F._ground(m.world, 1.2, 4.0, "burn", "fire", F._avg(m) * 0.25, [], m, "smoulder")
+		h.m52._tell({"id": "smoulder", "what": "foe", "x": m.world.x, "y": m.world.y, "r": 1.2})
+	# (Quickfuse's fuse burnt to nothing at once as it dies: its blast at once, monster.gd blast)
+	if m.word_share("quickfuse") > 0.0:
+		h.m52._tell({"id": "quickfuse", "what": "foe", "x": m.world.x, "y": m.world.y, "r": 1.8})
 	if m.word_share("concussion") > 0.0 and h.world.distance_to(m.world) <= 2.2:
 		var away: Vector2 = (h.world - m.world).normalized() if h.world.distance_to(m.world) > 0.01 else Vector2(1, 0)
 		h.knock(away, float(_t("concussion")["foeShove"]))

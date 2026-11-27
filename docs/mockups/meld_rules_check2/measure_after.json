@@ -1,0 +1,310 @@
+{
+"amber": {
+"score": 0.825,
+"front": 0.6,
+"behind": 0.79,
+"foe": 1.33,
+"before": 0.763
+},
+"anchor": {
+"score": 0.554,
+"front": 0.5,
+"behind": 0.55,
+"foe": 0.67,
+"before": 0.529
+},
+"bedrock": {
+"score": 0.837,
+"front": 0.72,
+"behind": 0.79,
+"foe": 1.18,
+"before": 0.926
+},
+"condemn": {
+"score": 0.801,
+"front": 0.65,
+"behind": 0.63,
+"foe": 1.44,
+"before": 0.804
+},
+"crusher": {
+"score": 0.973,
+"front": 0.68,
+"behind": 0.86,
+"foe": 1.79,
+"before": 0.975
+},
+"deathwatch": {
+"score": 0.812,
+"front": 0.57,
+"behind": 0.81,
+"foe": 1.3,
+"before": 0.977
+},
+"doldrums": {
+"score": 0.609,
+"front": 0.53,
+"behind": 0.6,
+"foe": 0.79,
+"before": 0.558
+},
+"doom": {
+"score": 1.042,
+"front": 0.97,
+"behind": 0.92,
+"foe": 1.43,
+"before": 1.083
+},
+"duelist": {
+"score": 0.841,
+"front": 0.42,
+"behind": 1.09,
+"foe": 1.19,
+"before": 0.695
+},
+"eternity": {
+"score": 0.647,
+"front": 0.59,
+"behind": 0.66,
+"foe": 0.74,
+"before": 0.586
+},
+"fetch": {
+"score": 0.733,
+"front": 0.62,
+"behind": 0.66,
+"foe": 1.11,
+"before": 0.66
+},
+"gravebind": {
+"score": 0.711,
+"front": 0.65,
+"behind": 0.65,
+"foe": 0.95,
+"before": 0.696
+},
+"gullet": {
+"score": 0.699,
+"front": 0.79,
+"behind": 0.63,
+"foe": 0.66,
+"before": 0.663
+},
+"harpoon": {
+"score": 0.688,
+"front": 0.75,
+"behind": 0.66,
+"foe": 0.63,
+"before": 0.669
+},
+"haven": {
+"score": 0.769,
+"front": 0.82,
+"behind": 0.7,
+"foe": 0.81,
+"before": 0.692
+},
+"lasso": {
+"score": 0.525,
+"front": 0.35,
+"behind": 0.61,
+"foe": 0.72,
+"before": 0.498
+},
+"limbo": {
+"score": 0.699,
+"front": 0.64,
+"behind": 0.69,
+"foe": 0.85,
+"before": 0.679
+},
+"omen": {
+"score": 0.503,
+"front": 0.45,
+"behind": 0.49,
+"foe": 0.63,
+"before": 0.421
+},
+"pall": {
+"score": 0.585,
+"front": 0.48,
+"behind": 0.61,
+"foe": 0.75,
+"before": 0.526
+},
+"pinpoint": {
+"score": 0.727,
+"front": 0.61,
+"behind": 0.87,
+"foe": 0.68,
+"before": 0.67
+},
+"pitchfork": {
+"score": 1.134,
+"front": 0.9,
+"behind": 1.16,
+"foe": 1.55,
+"before": 1.156
+},
+"plague": {
+"score": 0.654,
+"front": 0.46,
+"behind": 0.65,
+"foe": 1.03,
+"before": 0.659
+},
+"quickening": {
+"score": 0.687,
+"front": 0.74,
+"behind": 0.65,
+"foe": 0.66,
+"before": 0.638
+},
+"respite": {
+"score": 0.547,
+"front": 0.49,
+"behind": 0.54,
+"foe": 0.68,
+"before": 0.454
+},
+"rewind": {
+"score": 0.715,
+"front": 0.6,
+"behind": 0.81,
+"foe": 0.74,
+"before": 0.639
+},
+"sap": {
+"score": 0.488,
+"front": 0.47,
+"behind": 0.48,
+"foe": 0.54,
+"before": 0.434
+},
+"scatter": {
+"score": 0.636,
+"front": 0.54,
+"behind": 0.76,
+"foe": 0.58,
+"before": 0.668
+},
+"snag": {
+"score": 0.521,
+"front": 0.44,
+"behind": 0.57,
+"foe": 0.58,
+"before": 0.542
+},
+"stagnation": {
+"score": 0.678,
+"front": 0.55,
+"behind": 0.75,
+"foe": 0.78,
+"before": 0.585
+},
+"standstill": {
+"score": 0.62,
+"front": 0.51,
+"behind": 0.57,
+"foe": 0.94,
+"before": 0.553
+},
+"stasis": {
+"score": 0.731,
+"front": 0.68,
+"behind": 0.82,
+"foe": 0.66,
+"before": 0.669
+},
+"stockade": {
+"score": 0.52,
+"front": 0.48,
+"behind": 0.54,
+"foe": 0.57,
+"before": 0.564
+},
+"stutter": {
+"score": 0.536,
+"front": 0.47,
+"behind": 0.54,
+"foe": 0.66,
+"before": 0.439
+},
+"sunder": {
+"score": 0.847,
+"front": 0.81,
+"behind": 0.94,
+"foe": 0.73,
+"before": 0.857
+},
+"talisman": {
+"score": 0.681,
+"front": 0.48,
+"behind": 0.49,
+"foe": 1.46,
+"before": 0.631
+},
+"thrall": {
+"score": 0.576,
+"front": 0.54,
+"behind": 0.6,
+"foe": 0.61,
+"before": 0.467
+},
+"torpor": {
+"score": 0.528,
+"front": 0.45,
+"behind": 0.48,
+"foe": 0.8,
+"before": 0.515
+},
+"transfusion": {
+"score": 0.85,
+"front": 1.03,
+"behind": 0.73,
+"foe": 0.74,
+"before": 0.755
+},
+"undying": {
+"score": 0.701,
+"front": 0.58,
+"behind": 0.74,
+"foe": 0.87,
+"before": 0.661
+},
+"vendetta": {
+"score": 0.64,
+"front": 0.54,
+"behind": 0.76,
+"foe": 0.6,
+"before": 0.62
+},
+"whiplash": {
+"score": 0.664,
+"front": 0.73,
+"behind": 0.62,
+"foe": 0.64,
+"before": 0.658
+},
+"whisper": {
+"score": 0.567,
+"front": 0.43,
+"behind": 0.58,
+"foe": 0.81,
+"before": 0.442
+},
+"witchknot": {
+"score": 0.563,
+"front": 0.45,
+"behind": 0.55,
+"foe": 0.81,
+"before": 0.562
+},
+"wraithstep": {
+"score": 0.68,
+"front": 0.55,
+"behind": 0.75,
+"foe": 0.79,
+"before": 0.711
+}
+}

@@ -49,6 +49,23 @@ const MID := ["doom:thorn", "hoarfrost:frozen", "brimstone:flare", "jinx:mark", 
 	"sleet:sliver", "constellation:star", "web:wrap", "lasso:loop", "reel:hook", "amber:set", "strangler:thorns", "strangler:vines",
 	"shackle:clank", "torpor:drowse", "lodestone:tug", "beckon:wisp", "drift:pack", "stasis:hold", "anchor:stun", "standstill:stun",
 	"gravity:stun", "burden:stun", "binding2:caught"]
+## (A CURSE, A SLOW OR A HOLD LAID IS A MOMENT OF ITS OWN, his Art Rulebook's Animations 1, as big and wild as it will go: the check of 26 Nov
+## 2026 found these the weakest of all the melds, only a small mark showing what they did. Each now flashes in its colour where it
+## lands, throws its sparks wide and rolls out a front of its kind (the curse's jagged, slowed time's rippling, a hold's ringing),
+## under its mark; how big, tiles, and which front. Those laid on him are drawn without the flash, so he stays in sight.)
+const STATUS := {"jinx:mark": [1.0, "shock"], "coven:mark": [1.0, "shock"], "coven:twice": [1.3, "shock"], "witchknot:knot": [1.1, "sound"],
+	"witchknot:tie": [1.1, "shock"], "torpor:drowse": [1.2, "water"], "stasis:hold": [1.1, "water"], "stagnation:hold": [1.1, "water"],
+	"slowburn:slow": [1.0, "water"], "timeslip:hand": [0.9, "water"], "frostlock:lock": [1.0, "water"], "hoarfrost:frozen": [1.0, "water"],
+	"lasso:loop": [1.0, "sound"], "lasso:snare": [1.2, "sound"], "web:wrap": [1.0, "sound"], "reel:hook": [0.9, "sound"], "reel:snare": [1.0, "sound"],
+	"web:snare": [1.0, "sound"], "binding2:caught": [1.0, "sound"], "shackle:clank": [1.0, "shock"], "anchor:stun": [1.1, "shock"],
+	"standstill:stun": [1.2, "shock"], "gravity:stun": [1.0, "shock"], "burden:stun": [1.0, "shock"], "whisper:wisp": [0.9, "shock"],
+	"whisper:pass": [1.0, "shock"], "plague:pass": [1.0, "shock"], "doom:thorn": [1.0, "shock"], "brimstone:flare": [1.0, "shock"],
+	"scatter:flick": [0.9, "shock"], "beckon:wisp": [0.9, "sound"], "strangler:vines": [1.0, "shock"], "strangler:thorns": [1.0, "shock"],
+	"icebound:climb": [1.0, "water"], "amber:set": [1.2, "water"], "constellation:star": [0.9, "sound"], "sleet:sliver": [0.9, "shock"],
+	"splinter:jolt": [0.9, "shock"], "spore:puff": [0.9, "water"], "lodestone:tug": [0.9, "sound"], "drift:pack": [1.0, "water"],
+	"scatter:quick": [0.8, "sound"], "riptide:quick": [0.8, "sound"], "lasso:quick": [0.8, "sound"], "timeslip:quick": [0.8, "sound"]}
+## (on him: no flash over him)
+const STATUS_ON_HIM := ["scatter:quick", "riptide:quick", "lasso:quick", "timeslip:quick"]
 ## (the heavy landings, which kick the screen)
 const KICKS := {"maw:crash": 2.5, "maw:collapse": 3.0, "gravity:crater": 3.0, "stasis:snap": 2.0, "shackle:bite": 2.0, "anchor:sink": 3.0,
 	"firetrap:blaze": 2.0, "rubble:thud": 1.5, "burden:weight": 2.5, "gravity:pulse": 1.0, "standstill:pulse": 1.0, "embers:burst": 1.5}
@@ -81,9 +98,27 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 		fx.flash(b["x"], b["y"], 10.0, big, 0.22, flare)
 		fx.spray(b["x"], b["y"], int(10 + big * 8.0), PackedColorArray([R[5], R[4], R[3]]), 3.0 + big * 2.0, 14.0)
 		fx.glow(b["x"], b["y"], 2.0 + big, 0.5)
+	elif STATUS.has(key) and fx != null and not b.get("minor", false):
+		# (a notch too high rather than a notch too low, his Art Rulebook's Animations 1)
+		var sz: float = float(STATUS[key][0]) * 1.5
+		if not STATUS_ON_HIM.has(key):
+			fx.flash(b["x"], b["y"], mid, sz, 0.2, PackedColorArray([Color.WHITE, R[5], R[4], R[3]]))
+			fx.glow(b["x"], b["y"], 1.5 + sz, 0.45)
+		fx.spray(b["x"], b["y"], int(12 + sz * 10.0), PackedColorArray([R[5], R[4], R[3]]), 3.0 + sz * 2.0, 16.0, mid)
+		if STATUS[key][1] == "shock":
+			fx.kick(0.8)
 	elif MID.has(key) and fx != null and not b.get("minor", false):
 		fx.flash(b["x"], b["y"], mid, 0.7, 0.16, PackedColorArray([Color.WHITE, R[5], R[4]]))
 		fx.spray(b["x"], b["y"], 8, PackedColorArray([R[5], R[4], R[3]]), 2.5, 10.0, mid)
+	if b["what"] == "leave" and fx != null:
+		var lr0 := float(e.get("r", b.get("r", 1.2)))
+		fx.flash(b["x"], b["y"], 4.0, maxf(1.0, lr0), 0.2, PackedColorArray([Color.WHITE, R[5], R[4], R[3]]))
+		fx.spray(b["x"], b["y"], 18, PackedColorArray([R[5], R[4], R[3]]), 3.0 + lr0, 14.0)
+		fx.glow(b["x"], b["y"], 2.0 + lr0, 0.5)
+	# (on him from a monster: its sparks thrown off him, in the enemy's colours where it curses or slows him)
+	if b["what"] == "foe" and fx != null:
+		var EC := PackedColorArray([ENEMY[5], ENEMY[4], ENEMY[3]]) if b["id"] in ["doom", "plague", "hoarfrost", "brimstone", "jinx", "whisper", "burden", "beckon", "coven", "torpor", "witchknot"] else PackedColorArray([R[5], R[4], R[3]])
+		fx.spray(b["x"], b["y"], 14, EC, 3.0, 16.0, 22.0)
 	match key:
 		"spore:puff", "sump:drip":
 			for i in 7:
@@ -218,7 +253,7 @@ func _chain(ax: float, ay: float, bx: float, by: float, R: PackedColorArray, a: 
 func _thorns(cx: float, cy: float, n: int, R: PackedColorArray, a: float, sd: int) -> void:
 	for i in n:
 		var ang := -PI * 0.5 + (float(i) - (n - 1) * 0.5) * 0.7 + (_rh(sd, i) - 0.5) * 0.2
-		var l := 10.0 + 3.0 * _rh(sd, i + 5)
+		var l := 14.0 + 6.0 * _rh(sd, i + 5)
 		var ox := cos(ang)
 		var oy := sin(ang)
 		_ga(a)
@@ -230,7 +265,7 @@ func _thorns(cx: float, cy: float, n: int, R: PackedColorArray, a: float, sd: in
 		_line(cx + ox * (l * 0.5), cy + oy * (l * 0.5), cx + ox * l, cy + oy * l, 1)
 		_fs(R[5])
 		_fill(_ri(cx + ox * l), _ri(cy + oy * l), 1, 1)
-	_glow(cx, cy, 8.0 + n * 2.0, R[3], 0.4 * a)
+	_glow(cx, cy, 12.0 + n * 2.0, R[3], 0.5 * a)
 	_ga(1.0)
 
 
@@ -388,15 +423,30 @@ func _weight(cx: float, cy: float, s: float, R: PackedColorArray, a: float) -> v
 
 ## A clock hand sweeping round (cx, cy) on the screen.
 func _hand(cx: float, cy: float, r: float, ang: float, R: PackedColorArray, a: float) -> void:
+	# (as big as it will go, his Art Rulebook's Animations 1: never under eleven pixels across the face)
+	r = maxf(r, 11.0)
 	_ga(a)
-	_fs(R[1])
-	_line(cx, cy + 1.0, cx + cos(ang) * r, cy + sin(ang) * r + 1.0, 2)
-	_fs(R[4])
-	_line(cx, cy, cx + cos(ang) * r, cy + sin(ang) * r, 1)
+	# (its rim, doubled, the quarters bold)
+	var n := maxi(24, _ri(r * 2.6))
+	for k in n:
+		var q := float(k) / n * TAU
+		_fs(R[1])
+		_fill(_ri(cx + cos(q) * (r + 3.0)), _ri(cy + sin(q) * (r + 3.0)) + 1, 2, 1)
+		_fs(R[3])
+		_fill(_ri(cx + cos(q) * (r + 3.0)), _ri(cy + sin(q) * (r + 3.0)), 2, 1)
 	for k in 12:
 		var q := float(k) / 12.0 * TAU
-		_fs(R[3])
-		_fill(_ri(cx + cos(q) * (r + 2.0)), _ri(cy + sin(q) * (r + 2.0)), 1, 1)
+		_fs(R[5] if k % 3 == 0 else R[4])
+		_fill(_ri(cx + cos(q) * (r - 0.5)), _ri(cy + sin(q) * (r - 0.5)), 2 if k % 3 == 0 else 1, 2 if k % 3 == 0 else 1)
+	_fs(R[1])
+	_line(cx, cy + 1.0, cx + cos(ang) * r, cy + sin(ang) * r + 1.0, 3)
+	_fs(R[4])
+	_line(cx, cy, cx + cos(ang) * r, cy + sin(ang) * r, 2)
+	_fs(Color.WHITE)
+	_line(cx, cy, cx + cos(ang) * r * 0.7, cy + sin(ang) * r * 0.7, 1)
+	_fs(R[5])
+	_fill(_ri(cx) - 1, _ri(cy) - 1, 3, 3)
+	_glow(cx, cy, r + 6.0, R[4], 0.5 * a)
 	_ga(1.0)
 
 
@@ -464,6 +514,12 @@ func paint_floor(b: Dictionary) -> void:
 				_vine(_wx(x, y) + (float(k) - 1.5) * 5.0, _wy(x, y), 16.0, R, fade, sd + k, _ease(u * 1.5))
 		"coven:twice", "witchknot:tie":
 			pass
+	# (a curse, a slow or a hold laid: its front rolling out from it)
+	if STATUS.has(key):
+		_front(x, y, 0.3 + float(STATUS[key][0]) * 1.6 * _ease(u), _A5(R), sd, fade, str(STATUS[key][1]))
+		_front(x, y, 0.2 + float(STATUS[key][0]) * 1.0 * _ease(u), _A5(R), sd + 7, fade * 0.7, "water" if str(STATUS[key][1]) != "water" else "sound")
+	if b["what"] == "foe":
+		_front(x, y, 0.3 + 0.8 * _ease(u), _A5(PackedColorArray(ENEMY) if b["id"] in ["doom", "plague", "hoarfrost", "brimstone", "jinx", "whisper", "burden", "beckon", "coven", "torpor", "witchknot"] else R), sd, fade, "shock")
 	if b["what"] == "shards":
 		var lands = b["e"].get("lands", [])
 		for q in lands:
@@ -475,6 +531,13 @@ func paint_floor(b: Dictionary) -> void:
 			var v := _ease(u)
 			_streak(sx + (ex - sx) * maxf(0.0, v - 0.25), sy + (ey - sy) * maxf(0.0, v - 0.25) - sin(maxf(0.0, v - 0.25) * PI) * 10.0, sx + (ex - sx) * v, sy + (ey - sy) * v - sin(v * PI) * 10.0, R, fade, 2)
 	if b["what"] == "leave":
+		# (the ground it lays, laid: its edge rolling out to where it will stand, the light of it rising, sparks off it)
+		var lr := float(b["e"].get("r", b.get("r", 1.2)))
+		_front(x, y, lr * (0.3 + 0.8 * _ease(u)), _A5(R), sd, fade, "water")
+		_front(x, y, lr * (0.15 + 0.55 * _ease(u)), _A5(R), sd + 3, fade * 0.7, "sound")
+		for k in 6:
+			var la := float(k) / 6.0 * TAU + 0.4
+			_glint(_wx(x, y) + cos(la) * lr * 14.0 * (0.4 + 0.6 * u), _wy(x, y) - 4.0 - u * 16.0 + sin(la) * lr * 5.0, 3.0, R, fade)
 		_glow(_wx(x, y), _wy(x, y), 22.0, R[3], 0.5 * fade)
 	_ga(1.0)
 
@@ -492,6 +555,14 @@ func paint_air(b: Dictionary) -> void:
 	var top := Vector2(mp.x, mp.y - _mid(b["m"]) - 6.0)
 	var x1px := _wx(b["x1"], b["y1"])
 	var y1px := _wy(b["x1"], b["y1"]) - 12.0
+	# (WORDSMITHING GLOWS, his Art Rulebook's Pillar 5: as a curse, a slow or a hold is laid, the meld's own symbol (its stone's) flares
+	# over what it struck and rises off it; and over the ground it lays)
+	if STATUS.has(key) and not STATUS_ON_HIM.has(key):
+		_glow(top.x, top.y - 44.0 - u * 10.0, 14.0, R[4], 0.55 * fade)
+		_glyph(b["id"], top.x, top.y - 44.0 - u * 10.0, 2, R[3], R[5], minf(1.0, fade * 2.0))
+	if b["what"] == "leave":
+		_glow(_wx(x, y), _wy(x, y) - 22.0 - u * 16.0, 14.0, R[4], 0.55 * fade)
+		_glyph(b["id"], _wx(x, y), _wy(x, y) - 22.0 - u * 16.0, 2, R[3], R[5], minf(1.0, fade * 2.0))
 	match key:
 		# --- marks on what it struck ---
 		"doom:thorn":
@@ -503,10 +574,11 @@ func paint_air(b: Dictionary) -> void:
 			_flames(mp.x, mp.y + _mid(b["m"]), 4, _half(b["m"]) * 1.6, 18.0, fade, R, sd)
 			_thorns(top.x, top.y, 2, R, fade * 0.8, sd)
 		"jinx:mark", "coven:mark", "witchknot:tie":
-			_thorns(top.x, top.y, 3, R, fade, sd)
+			_thorns(top.x, top.y, 5, R, fade, sd)
+			_glint(top.x, top.y - 2.0, 4.0, R, fade)
 		"coven:twice":
-			_thorns(top.x, top.y, 3, R, fade, sd)
-			_glint(top.x, top.y - 3.0, 4.0, R, fade)
+			_thorns(top.x, top.y, 6, R, fade, sd)
+			_glint(top.x, top.y - 3.0, 6.0, R, fade)
 		"plague:pass", "beckon:wisp", "whisper:wisp", "timeslip:hand", "confluence:drag", "confluence:return", "drift:slide", "reel:hook":
 			var ax := _wx(x, y)
 			var ay := _wy(x, y) - 12.0
@@ -541,15 +613,15 @@ func paint_air(b: Dictionary) -> void:
 			else:
 				_bolt(ax, ay, x1px, y1px, R, sd, fade, 2)
 		"stasis:hold":
-			_glow(mp.x, mp.y, 12.0, R[3], 0.6 * fade)
-			_hand(mp.x, mp.y - _mid(b["m"]) - 8.0, 5.0, -PI * 0.5, R, fade)
+			_glow(mp.x, mp.y, 18.0, R[3], 0.7 * fade)
+			_hand(mp.x, mp.y - _mid(b["m"]) - 16.0, 12.0, -PI * 0.5 + u * 0.6, R, fade)
 		"stasis:snap":
 			_glint(mp.x, mp.y, 9.0 * (1.0 - u * 0.5), R, fade)
 			_front(x, y, 0.3 + 0.9 * _ease(u), _A5(R), sd, fade, "shock")
 		"frostlock:lock", "frostlock:ice", "drift:pack", "icebound:seal":
 			_spikes(x, y, 0.3, 6, R, fade, sd, _mid(b["m"]) * 1.2)
 			if key == "frostlock:lock":
-				_hand(top.x, top.y, 5.0, -PI * 0.5 + u * 1.2, R, fade)
+				_hand(top.x, top.y - 10.0, 11.0, -PI * 0.5 + u * 1.2, R, fade)
 		"slowburn:slow":
 			# (flames in slow motion: the same tongues, their sway a fifth as fast)
 			var tw := t
@@ -573,9 +645,11 @@ func paint_air(b: Dictionary) -> void:
 			_glint(mp.x, mp.y - 4.0, 5.0, R, fade)
 		"anchor:stun", "standstill:stun", "gravity:stun", "burden:stun":
 			# (the stars spinning slow: the stun held longer)
-			for k in 3:
-				var ang := bt * 3.0 + float(k) / 3.0 * TAU
-				_glint(top.x + cos(ang) * 9.0, top.y + sin(ang) * 3.0, 2.0, R, fade)
+			for k in 5:
+				var ang := bt * 3.0 + float(k) / 5.0 * TAU
+				_glint(top.x + cos(ang) * 14.0, top.y - 2.0 + sin(ang) * 5.0, 4.0 + (1.0 if sin(ang) > 0.0 else 0.0), R, fade)
+			if key == "standstill:stun":
+				_hand(top.x, top.y - 18.0, 11.0, -PI * 0.5 + u * 0.5, R, fade)
 		"burden:weight":
 			var drop := (1.0 - _ease(minf(1.0, u * 3.0))) * 30.0
 			_weight(top.x, top.y - drop, 9.0, R, fade)
@@ -590,9 +664,12 @@ func paint_air(b: Dictionary) -> void:
 		"amber:set", "amber:hold":
 			_amber(mp.x, mp.y, _half(b["m"]) + 4.0, R, fade, sd)
 		"stagnation:hold":
-			for k in 5:
-				_glint(mp.x + (_rh(sd, k) - 0.5) * 22.0, top.y + 4.0 - _rh(sd, k + 9) * 10.0, 1.5, R, fade)
-			_curl(mp.x, mp.y + 4.0, 10.0, [R[1], R[2], R[3]], sd, fade * 0.6)
+			# (the poison held as time stops: its bubbles hanging still round it, its fumes curling slow, a dial over it)
+			for k in 6:
+				_glint(mp.x + (_rh(sd, k) - 0.5) * 30.0, top.y + 6.0 - _rh(sd, k + 9) * 16.0, 3.5, R, fade)
+			_curl(mp.x - 6.0, mp.y + 4.0, 14.0, [R[1], R[2], R[3]], sd, fade * 0.8)
+			_curl(mp.x + 7.0, mp.y + 2.0, 12.0, [R[1], R[2], R[3]], sd + 3, fade * 0.7)
+			_hand(top.x, top.y - 14.0, 11.0, -PI * 0.5 + u * 0.3, R, fade)
 		"web:thread", "web:wrap":
 			_ga(fade)
 			_fs(R[4])
@@ -600,30 +677,54 @@ func paint_air(b: Dictionary) -> void:
 			if key == "web:wrap":
 				_web(mp.x, mp.y, _half(b["m"]) + 6.0, R, fade, sd)
 		"lasso:loop":
+			# (the rope flung from him, its loop dropping over it and drawing tight)
 			_ga(fade)
+			_fs(R[1])
+			_line(x1px, y1px + 1.0, mp.x, mp.y + 1.0, 2)
 			_fs(R[3])
-			_line(x1px, y1px, mp.x, mp.y, 1)
-			_rope(mp.x, mp.y + _mid(b["m"]) * 0.5, _half(b["m"]) + 3.0, 4.0, R, fade, sd)
+			_line(x1px, y1px, mp.x, mp.y, 2)
+			var tight := 1.0 - 0.35 * _ease(minf(1.0, u * 2.0))
+			_rope(mp.x, mp.y + _mid(b["m"]) * 0.5, (_half(b["m"]) + 9.0) * tight, 6.0 * tight, R, fade, sd)
+			_rope(mp.x, mp.y + _mid(b["m"]) * 0.5 - 4.0, (_half(b["m"]) + 7.0) * tight, 5.0 * tight, R, fade * 0.8, sd + 1)
 		"torpor:drowse":
-			for k in 3:
-				_curl(mp.x + (float(k) - 1.0) * 6.0, mp.y - 6.0 - u * 10.0, 6.0, [R[1], R[2], R[3]], sd + k, fade * 0.7)
+			# (a heavy drowse settling on it: its haze curling off it slow, the curse's thorns and a dial over it)
+			for k in 4:
+				_curl(mp.x + (float(k) - 1.5) * 9.0, mp.y - 6.0 - u * 12.0, 11.0, [R[1], R[2], R[3]], sd + k, fade * 0.85)
+			_thorns(top.x, top.y, 4, R, fade, sd)
+			_hand(top.x, top.y - 22.0, 11.0, -PI * 0.5 + u * 0.4, R, fade)
 		"witchknot:knot":
-			_rope(mp.x, mp.y + _mid(b["m"]) * 0.6, _half(b["m"]) + 2.0, 3.0, R, fade, sd)
-			_thorns(mp.x + _half(b["m"]) + 2.0, mp.y + _mid(b["m"]) * 0.6, 2, R, fade, sd)
+			# (a knotted cord binding it, thorns growing out of the knot)
+			_rope(mp.x, mp.y + _mid(b["m"]) * 0.6, _half(b["m"]) + 8.0, 6.0, R, fade, sd)
+			_rope(mp.x, mp.y + _mid(b["m"]) * 0.1, _half(b["m"]) + 6.0, 5.0, R, fade * 0.8, sd + 2)
+			_thorns(mp.x + _half(b["m"]) + 8.0, mp.y + _mid(b["m"]) * 0.6, 4, R, fade, sd)
 		"binding2:caught", "web:snare", "lasso:snare", "reel:snare":
-			_glint(_wx(x, y), _wy(x, y) - 4.0, 4.0, R, fade)
+			_glint(_wx(x, y), _wy(x, y) - 8.0, 6.0, R, fade)
+			_rope(_wx(x, y), _wy(x, y) - 6.0, 12.0 * (1.0 - u * 0.4), 9.0 * (1.0 - u * 0.4), R, fade, sd + 4)
 		"spore:puff":
 			_curl(mp.x, mp.y, 10.0 * (0.6 + 0.4 * u), [R[1], R[2], R[3]], sd, fade)
 		"sump:drip":
 			for k in int(b["n"]):
 				_shard(mp.x + (float(k) - 1.0) * 4.0, top.y + 6.0 + u * 14.0, 2.0, 3.0, [R[0], R[1], R[2], R[3], R[4], R[5]], sd + k, fade)
 		"whisper:pass":
-			_thorns(top.x, top.y, 2, R, fade, sd)
+			# (a whisper as he passes: a wisp curling from him to it, the curse's thorns rising on it)
+			_wisps(b["x1"], b["y1"], x, y, u, 3, R, sd, 2)
+			_thorns(top.x, top.y, 4, R, fade, sd)
 		"timeslip:quick", "riptide:quick", "scatter:quick", "lasso:quick":
+			# (each quick use counted over him: chevrons of speed, and streaks off him)
 			var hx := _wx(x, y)
-			var hy := _wy(x, y) - 30.0
+			var hy := _wy(x, y) - 36.0
 			for k in int(b["n"]):
-				_glint(hx + (float(k) - (b["n"] - 1) * 0.5) * 6.0, hy, 2.0, R, fade)
+				var qx: float = hx + (float(k) - (float(b["n"]) - 1.0) * 0.5) * 10.0
+				_ga(fade)
+				_fs(R[1])
+				_line(qx - 3.0, hy - 3.0, qx + 1.0, hy + 1.0, 3)
+				_line(qx + 1.0, hy + 1.0, qx - 3.0, hy + 5.0, 3)
+				_fs(R[4])
+				_line(qx - 3.0, hy - 4.0, qx + 1.0, hy, 2)
+				_line(qx + 1.0, hy, qx - 3.0, hy + 4.0, 2)
+				_glint(qx, hy, 3.0, R, fade)
+			for k in 4:
+				_streak(hx - 18.0 - u * 10.0, hy + 14.0 + k * 5.0, hx - 6.0, hy + 14.0 + k * 5.0, R, fade * 0.8, 1)
 	# (a split of one of these: copies flying, Constellation's hanging first)
 	if b["what"] == "split":
 		var hang: float = float(b["e"].get("hang", 0.0))
@@ -649,19 +750,27 @@ func paint_air(b: Dictionary) -> void:
 		var cursing: bool = b["id"] in ["doom", "plague", "hoarfrost", "brimstone", "jinx", "whisper", "burden", "beckon", "coven", "torpor", "witchknot"]
 		var C: PackedColorArray = PackedColorArray(ENEMY) if cursing else R
 		if cursing:
-			_thorns(hx, hy - 22.0, 3, C, fade, sd)
+			_thorns(hx, hy - 24.0, 5, C, fade, sd)
 		match b["id"]:
 			"maw", "sump", "drift", "firewhirl", "lodestone", "riptide", "gravity", "confluence", "beckon", "reel":
 				_streak(x1px, y1px, hx, hy, R, fade, 2)
 			"shackle", "anchor", "strangler", "icebound", "firetrap", "tether", "web", "witchknot", "amber", "lasso":
 				if b["id"] in ["shackle", "anchor"]:
 					_shackle(hx, hy + 16.0, R, fade)
+					_shackle(hx + 8.0, hy + 17.0, R, fade * 0.8)
 				else:
-					_rope(hx, hy + 14.0, 8.0, 3.0, R, fade, sd)
-			"stasis", "stagnation", "slowburn", "stormglass", "constellation":
-				_hand(hx, hy - 14.0, 5.0, -PI * 0.5 + u * PI, R, fade)
+					_rope(hx, hy + 14.0, 13.0, 5.0, R, fade, sd)
+					_rope(hx, hy + 10.0, 11.0, 4.0, R, fade * 0.8, sd + 1)
+			"stasis", "stagnation", "slowburn", "stormglass", "constellation", "standstill", "timeslip", "frostlock":
+				_hand(hx, hy - 31.0, 11.0, -PI * 0.5 + u * PI, C, fade)
+			"scatter", "splinter", "spore", "sleet", "embers", "fractal", "rubble":
+				# (a Splitting one's: shards of it bursting off him)
+				for k in 6:
+					var ang := float(k) / 6.0 * TAU + 0.3
+					_shard(hx + cos(ang) * (6.0 + u * 16.0), hy + 8.0 + sin(ang) * (3.0 + u * 8.0), 4.0, 8.0, [R[0], R[1], R[2], R[3], R[4], R[5]], sd + k, fade)
+				_glint(hx, hy, 6.0, R, fade)
 			_:
-				_glow(hx, hy, 12.0, R[3], 0.5 * fade)
+				_glint(hx, hy - 4.0, 7.0, C, fade)
 	if b["what"] == "foeSplit":
 		_glint(_wx(x, y), _wy(x, y) - 14.0, 6.0 * (1.0 - u), R, fade)
 		_front(x, y, 0.3 + 0.7 * _ease(u), _A5(R), sd, fade, "shock")
@@ -703,9 +812,9 @@ func paint_floor_more() -> void:
 				elif id in ["hoarfrost"]:
 					_spikes(x, y, rr, 10, R, 0.6 * left, sd, 5.0)
 				elif id in ["doom", "coven", "burden", "witchknot", "plague", "torpor", "beckon", "jinx"]:
-					_spikes(x, y, rr, 8, R, 0.55 * left, sd, 6.0, 2.0)
+					_spikes(x, y, rr, 12, R, 0.7 * left, sd, 10.0, 2.0)
 			"bubble":
-				_hand(_wx(x, y), _wy(x, y) - 18.0, 6.0, t * (0.6 if id != "timeslip" else 3.0), R, 0.7 * left)
+				_hand(_wx(x, y), _wy(x, y) - 22.0, 12.0, t * (0.6 if id != "timeslip" else 3.0), R, 0.8 * left)
 				if id == "stormglass":
 					var ang := t * 9.0
 					_bolt(_wx(x, y), _wy(x, y) - 22.0, _wx(x, y) + cos(ang) * rr * 14.0, _wy(x, y) - 4.0 + sin(ang) * rr * 5.0, R, int(t * 15.0), 0.6 * left, 1)
@@ -713,7 +822,7 @@ func paint_floor_more() -> void:
 					_spikes(x, y, rr * 0.8, 8, R, 0.5 * left, sd, 5.0)
 				elif id == "stagnation":
 					for q in 4:
-						_glint(_wx(x, y) + (_rh(sd, q) - 0.5) * rr * 30.0, _wy(x, y) - 6.0 - _rh(sd, q + 9) * 12.0, 1.0, R, 0.6 * left)
+						_glint(_wx(x, y) + (_rh(sd, q) - 0.5) * rr * 30.0, _wy(x, y) - 6.0 - _rh(sd, q + 9) * 12.0, 3.0, R, 0.7 * left)
 			"snare":
 				var cx := _wx(x, y)
 				var cy := _wy(x, y)
@@ -728,9 +837,10 @@ func paint_floor_more() -> void:
 					"firetrap":
 						_flames(cx, cy, 3, 8.0, 6.0, 0.7 * left, R, sd)
 					"anchor":
-						_anchor(cx, cy, 10.0, R, 0.8 * left)
+						_anchor(cx, cy, 16.0, R, 0.85 * left)
 					"witchknot", "lasso", "reel", "amber":
-						_rope(cx, cy, 9.0, 4.0, R, 0.8 * left, sd)
+						_rope(cx, cy, 13.0, 6.0, R, 0.85 * left, sd)
+						_rope(cx, cy - 3.0, 10.0, 4.0, R, 0.6 * left, sd + 1)
 					"web":
 						_web(cx, cy, 11.0, R, 0.8 * left, sd)
 					"tether":

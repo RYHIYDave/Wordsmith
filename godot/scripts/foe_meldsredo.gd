@@ -119,7 +119,11 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 		h.knock(away, 1.2)
 		h.hold_by_meld(0.3)
 		_tell(h, "onrush", "bowl", h.world)
-	if s.call("pin") and n % 2 == 1 and h.root_by_meld(maxf(h.root_t, 0.5) + 0.6):
+	# (Pin's spike and Amber's seal work on the root its Binding has just laid: since monster melds root him with a wait
+	# (hero.gd root_by_meld), their own root was refused and their moment never came; found by the check of 26 Nov 2026 against his
+	# Art Rulebook, their moment on a monster never seen)
+	if s.call("pin") and n % 2 == 1 and (h.root_t > 0.0 or h.root_by_meld(0.5)):
+		h.root_t = maxf(h.root_t, 0.5) + 0.6
 		_tell(h, "pin", "spike", h.world)
 	if s.call("reverb"):
 		var ec: Array = h.foe_hi.get("rd_echo", [])
@@ -135,12 +139,17 @@ static func after_blow(F, k: Callable, by, dmg: float, _parts: Array) -> void:
 	if s.call("vendetta") and n % 3 == 0:
 		h.foe_hi["rd_vend"] = F.clock + 4.0
 		_tell(h, "vendetta", "sigil", h.world, {"secs": 4.0})
-	if s.call("amber") and h.root_by_meld(0.8):
+	if s.call("amber") and (h.root_t > 0.0 or h.root_by_meld(0.8)):
 		h.foe_hi["rd_amber"] = true
 		_tell(h, "amber", "amber", h.world, {"secs": h.root_t})
 	# --- ROUND 3
-	if s.call("bedrock") and n % 2 == 0 and h.hold_by_meld(0.4):
-		_tell(h, "bedrock", "rock", h.world)
+	# (the rock staggers him AGAIN, as its words say: Bedrock's own stagger on each blow (foe_melds52.gd) has already set his wait
+	# before the next hold, which kept this from ever happening; found by the check of 26 Nov 2026 against his Art Rulebook, its
+	# moment on a monster never seen)
+	if s.call("bedrock") and n % 2 == 0:
+		h.hold_again = 0.0
+		if h.hold_by_meld(0.4):
+			_tell(h, "bedrock", "rock", h.world)
 	if s.call("bloodtide"):
 		for o in F.main._monsters.list:
 			if o != by and _alive(F, o) and o.world.distance_to(by.world) <= 3.0:

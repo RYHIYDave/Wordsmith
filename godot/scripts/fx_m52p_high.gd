@@ -43,11 +43,12 @@ const GROUNDS := {"cloud": 0.8, "ice": 0.8, "fire": 0.8, "storm": 0.9, "vortex":
 	"well": 1.0, "circle": 0.8, "bell": 1.2, "pair": 0.8, "watch": 0.8, "thicket": 0.9, "quick": 0.6, "long": 0.6, "briar": 0.8, "culling": 0.8,
 	"grown": 0.9, "rime": 0.8, "burning": 0.8, "charged": 0.9, "cracked": 1.0, "spring": 0.7, "mark": 0.6, "thorns": 0.6, "spirit": 0.6,
 	"blow": 0.4, "hold": 0.8, "lances": 0.8, "pool": 0.9, "flurry": 0.8, "spill": 0.8, "throb": 0.9}
-## (the heavy ones: the screen kicked, how hard)
-const KICK := {"quake": 0.5, "slam": 0.55, "blade": 0.45, "thud": 0.4, "pyre": 0.35, "burst": 0.3, "land": 0.3, "shatter": 0.3, "go": 0.3,
-	"roll": 0.4, "cracked": 0.35, "again": 0.3, "toll": 0.25, "gore": 0.3, "spend": 0.3, "end": 0.3, "bell": 0.3,
-	"heap": 0.45, "stake": 0.4, "price": 0.3, "rupture": 0.2, "taken": 0.3, "maw": 0.25, "flood": 0.45, "sweep": 0.3, "whirl": 0.25,
-	"hand": 0.25, "scythe": 0.25}
+## (the heavy ones: the screen kicked, how hard, in game pixels, as the game's own melds kick theirs: Volatile's 3 to 11, the city's
+## 1.5 to 3; his Art Rulebook's Animations: “the screen kicks on big casts and hits”)
+const KICK := {"quake": 3.0, "slam": 3.3, "blade": 2.7, "thud": 2.4, "pyre": 2.1, "burst": 1.8, "land": 1.8, "shatter": 1.8, "go": 1.8,
+	"roll": 2.4, "cracked": 2.1, "again": 1.8, "toll": 1.5, "gore": 1.8, "spend": 1.8, "end": 1.8, "bell": 1.8,
+	"heap": 2.7, "stake": 2.4, "price": 1.8, "rupture": 1.2, "taken": 1.8, "maw": 1.5, "flood": 2.7, "sweep": 1.8, "whirl": 1.5,
+	"hand": 1.5, "scythe": 1.5}
 ## (the melds named for a thing: their own moment drawn as that thing, over what its kind draws)
 const SIGN := {"guillotine:blade": "guillotine", "tombstone:thud": "tomb", "gallows:hang": "noose", "noose:tighten": "noose",
 	"fishhook:hook": "hook", "gaff:haul": "hook", "pitchfork:prong": "fork", "scissors:snip": "scissors", "fangs:bite": "fangs",
@@ -114,6 +115,16 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 	# (what stands a while, a wall or a row of spears, is drawn for as long as it stands)
 	if b.has("secs") and what in ["wall", "spears"]:
 		b["end"] = float(b["secs"])
+	# (an after-image is of him as he stood when it began)
+	if SIGN.get(str(b["id"]) + ":" + what, "") == "image":
+		_catch_ghost(b)
+	# (Pitchfork's fork is driven down where its second prong goes, ahead of him, never over him: Animations 4)
+	if str(b["id"]) == "pitchfork" and what == "prong" and fx != null and fx.hero() != null:
+		var hh = fx.hero()
+		var at: Vector2 = hh.world + (hh.face as Vector2) * 1.6
+		b["x"] = at.x
+		b["y"] = at.y
+		b["stay"] = true
 	if fx == null:
 		return true
 	var R := _R(b)
@@ -122,6 +133,10 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 	var minor: bool = b.get("minor", false)
 	if KICK.has(what) and not minor:
 		fx.kick(float(KICK[what]))
+		# (HEAVY BLOWS LAND WITH A FREEZE, his Art Rulebook's Movement 7: a Heavy or Volatile meld's landing or blast holds a tenth of
+		# a second, as the game's own Heavy and Volatile melds do: fx_melds52.gd HOLDS)
+		if _heavy(str(b["id"])):
+			fx.hold(0.12 if what in ["quake", "slam", "heap", "flood", "roll"] else 0.1)
 	if line:
 		# (where it goes: a flash at its end, sparks thrown along it)
 		fx.flash(b["x1"], b["y1"], 10.0, 0.8, 0.14, PackedColorArray([Color.WHITE, R[5], R[4]]))
@@ -210,7 +225,8 @@ func paint_air(b: Dictionary) -> void:
 			_ga(0.4 * fade)
 			_fs(R[3])
 			_line(cx, cy, px, py, 2)
-			_shard(px - 2.0, py - 3.0, 5.0, 7.0, R, sd, fade)
+			_shard(px - 3.0, py - 5.0, 7.0, 11.0, R, sd, fade)
+			_glow(px, py - 4.0, 8.0, R[4], 0.5 * fade)
 		else:
 			# (a spear's line flashing: white heart, its colour round it, thinning as it goes)
 			var w := 5 if what in ["beam", "rush", "road", "wide", "lance", "line", "carry", "javelin", "breach", "thrust"] else (1 if what == "sight" else 3)
@@ -254,25 +270,44 @@ func paint_air(b: Dictionary) -> void:
 		"counted", "take", "killmark", "hang", "taken":
 			_skull(cx, cy - 18.0, R, fade)
 		"haste", "fast", "rush", "dance", "blur", "dash":
-			for k in 4:
-				_ga(fade * 0.7)
-				_fs(R[4])
-				var sy := cy - 6.0 + k * 4.0
-				_line(cx - 14.0 - u * 10.0, sy, cx - 4.0 - u * 6.0, sy, 1)
+			# (speed lines streaming off it, white at their heads)
+			for k in 5:
+				var sy := cy - 16.0 + k * 5.0
+				var ln := 16.0 + u * 14.0 + _rh(sd, k) * 8.0
+				var hx := cx - 6.0 - u * 6.0 - _rh(sd, k + 7) * 4.0
+				_ga(fade * 0.85)
+				_fs(R[3])
+				_line(hx - ln, sy, hx, sy, 2)
+				_fs(R[5])
+				_line(hx - 6.0, sy, hx, sy, 1)
+				_fs(Color.WHITE)
+				_fill(_ri(hx), _ri(sy), 1, 1)
 		"heal", "feed", "draw", "orb", "drop":
-			for k in 4:
-				var a2 := k * TAU / 4.0 + t * 3.0
-				_drop(cx + cos(a2) * 8.0 * fade, cy - 8.0 + sin(a2) * 4.0 * fade - u * 10.0, BLOOD if what != "draw" else R, fade)
+			for k in 6:
+				var a2 := k * TAU / 6.0 + t * 3.0
+				_drop(cx + cos(a2) * 14.0 * fade, cy - 8.0 + sin(a2) * 6.0 * fade - u * 12.0, BLOOD if what != "draw" else R, fade)
+			_glow(cx, cy - 8.0 - u * 12.0, 12.0, (BLOOD if what != "draw" else R)[4], 0.4 * fade)
 		"frenzy", "keep", "grow", "rage":
-			_flames(cx, cy + 4.0, 4, 14.0, 14.0, fade, R, sd)
+			_flames(cx, cy + 6.0, 6, 20.0, 22.0, fade, R, sd)
 		"shield", "guard", "ward":
-			_shield_face(cx, cy - 10.0, 14.0, R, fade)
+			# (over its head, clear of him or what it guards: Animations 4)
+			_shield_face(cx, cy - 34.0, 20.0, R, fade)
 		"soul", "bright", "second", "longer", "fetch", "rise", "spirit", "two", "short", "well", "circle", "blink":
-			_wisps(b["x"], b["y"], b["x"], b["y"] - 0.0001, u, 3, SOUL, sd, 2, 6.0, 26.0)
-			_glow(cx, cy - 10.0 - u * 14.0, 10.0, SOUL[4], fade * 0.7)
-		"dose", "fester", "cloud", "rot", "seep", "shroud":
+			# (a soul going up off it: wisps of it rising and turning, its light going up with them)
+			_wisps(b["x"], b["y"], b["x"], b["y"] - 0.0001, u, 5, SOUL, sd, 2, 6.0, 36.0)
+			_glow(cx, cy - 10.0 - u * 18.0, 15.0, SOUL[4], fade * 0.8)
 			for k in 3:
-				_glow(cx + (_rh(sd, k) - 0.5) * 14.0, cy - u * 10.0 - k * 3.0, 6.0, R[4], fade * 0.6)
+				var ang := t * 5.0 + k * TAU / 3.0
+				_fs(SOUL[5])
+				_ga(fade)
+				_fill(_ri(cx + cos(ang) * (6.0 + u * 6.0)), _ri(cy - 14.0 - u * 18.0 + sin(ang) * 3.0), 2, 2)
+		"dose", "fester", "cloud", "rot", "seep", "shroud":
+			# (its cloud billowing up off it: curls of it rolling, lit on top, and its sickly light)
+			for k in 4:
+				var bx := cx + (_rh(sd, k) - 0.5) * 22.0
+				var by := cy + 4.0 - u * 14.0 - k * 4.0
+				_curl(bx, by, 9.0 + 4.0 * _rh(sd, k + 3) + u * 4.0, [R[1], R[3], R[4]], sd + k, fade * 0.9)
+			_glow(cx, cy - u * 10.0, 14.0, R[4], fade * 0.45)
 		"charge", "drive", "go", "runes", "rune":
 			_glyph(b["id"], cx, cy - 16.0, 2, R[3], R[5], fade)
 		"bell", "toll":
@@ -282,107 +317,253 @@ func paint_air(b: Dictionary) -> void:
 
 # --- shapes these add ---
 
-## A drop of blood: a point above, round below, its glint.
+## A drop of blood: its point above, swelling round below, lit on its left, a glint on its shoulder, its dark side to the lower right.
 func _drop(x: float, y: float, R: PackedColorArray, a: float) -> void:
+	var ix := _ri(x)
+	var iy := _ri(y)
+	var rows := [1, 1, 3, 3, 5, 5, 3]
 	_ga(a)
+	for k in rows.size():
+		var w: int = rows[k]
+		var x0 := ix - w / 2
+		var yy := iy - 5 + k
+		_fs(R[3])
+		_fill(x0, yy, w, 1)
+		if w >= 3:
+			_fs(R[4])
+			_fill(x0, yy, 1, 1)
+			_fs(R[2])
+			_fill(x0 + w - 1, yy, 1, 1)
 	_fs(R[2])
-	_fill(_ri(x), _ri(y) - 2, 1, 1)
-	_fill(_ri(x) - 1, _ri(y) - 1, 3, 3)
-	_fs(R[4])
-	_fill(_ri(x) - 1, _ri(y) - 1, 1, 1)
+	_fill(ix - 1, iy + 2, 3, 1)
+	_fs(R[5])
+	_fill(ix - 1, iy - 1, 1, 1)
 	_ga(1.0)
 
 
-## Stars of a stagger turning round over a head.
+## Stars of a stagger turning round over a head: four-pointed, twinkling, each with its glint and its light.
 func _stars(cx: float, cy: float, n: int, R: PackedColorArray, a: float, spin: float) -> void:
 	for k in n:
 		var ang := spin + float(k) / n * TAU
-		var px := cx + cos(ang) * 8.0
-		var py := cy + sin(ang) * 3.0
-		_ga(a)
+		var px := _ri(cx + cos(ang) * 13.0)
+		var py := _ri(cy + sin(ang) * 5.0)
+		# (the near half of the circle brighter than the far)
+		var near := sin(ang) > 0.0
+		var arm := 3 + int(1.5 + 1.5 * sin(t * 12.0 + k * 1.7))
+		_ga(a * (1.0 if near else 0.7))
+		_fs(R[4])
+		_fill(px, py - arm, 1, arm * 2 + 1)
+		_fill(px - arm, py, arm * 2 + 1, 1)
+		_fs(R[3])
+		_fill(px - 1, py - 1, 1, 1)
+		_fill(px + 1, py + 1, 1, 1)
+		_fill(px + 1, py - 1, 1, 1)
+		_fill(px - 1, py + 1, 1, 1)
 		_fs(R[5])
-		_fill(_ri(px), _ri(py) - 1, 1, 3)
-		_fill(_ri(px) - 1, _ri(py), 3, 1)
-		_glow(px, py, 3.0, R[4], 0.5 * a)
+		_fill(px - 1, py, 3, 1)
+		_fill(px, py - 1, 1, 3)
+		_fs(Color.WHITE)
+		_fill(px, py, 1, 1)
+		_glow(px, py, 5.0, R[4], 0.6 * a)
+	_ga(1.0)
 
 
-## A curse's eye: lids, the iris, its pupil.
+## A curse's eye opening over it: its lids and lashes, the dark within, the iris lit from the upper left, a slit of a pupil, a glint.
 func _eye(cx: float, cy: float, R: PackedColorArray, a: float) -> void:
+	var ix := _ri(cx)
+	var iy := _ri(cy)
 	_ga(a)
+	for k in range(-10, 11):
+		var h := int(round(5.0 * sqrt(maxf(0.0, 1.0 - float(k * k) / 110.0))))
+		# (the dark within)
+		if h > 0:
+			_fs(R[0])
+			_fill(ix + k, iy - h + 1, 1, maxi(1, h * 2 - 1))
+		# (the upper lid, heavy; the lower, lit)
+		_fs(R[1])
+		_fill(ix + k, iy - h - 1, 1, 1)
+		_fs(R[2])
+		_fill(ix + k, iy - h, 1, 1)
+		_fs(R[3])
+		_fill(ix + k, iy + h, 1, 1)
+	# (its lashes, flicking up off the lid)
 	_fs(R[2])
-	for k in range(-5, 6):
-		var h := int(round(2.5 * sqrt(maxf(0.0, 1.0 - (k * k) / 30.0))))
-		_fill(_ri(cx) + k, _ri(cy) - h, 1, 1)
-		_fill(_ri(cx) + k, _ri(cy) + h, 1, 1)
-	_fs(R[4])
-	_fill(_ri(cx) - 1, _ri(cy) - 1, 3, 3)
+	for k in 5:
+		var lx := ix - 8 + k * 4
+		var lh := int(round(5.0 * sqrt(maxf(0.0, 1.0 - float((lx - ix) * (lx - ix)) / 110.0))))
+		_line(lx, iy - lh - 2, lx + (lx - ix) * 0.25, iy - lh - 5, 1)
+	# (the iris)
+	for dy in range(-3, 4):
+		var hw := int(round(sqrt(maxf(0.0, 12.25 - float(dy * dy)))))
+		for dx in range(-hw, hw + 1):
+			_fs(R[5] if dx + dy < -3 else (R[4] if dx + dy < 2 else R[3]))
+			_fill(ix + dx, iy + dy, 1, 1)
 	_fs(R[0])
-	_fill(_ri(cx), _ri(cy), 1, 1)
-	_glow(cx, cy, 8.0, R[4], 0.4 * a)
+	_fill(ix, iy - 2, 1, 5)
+	_fs(Color.WHITE)
+	_fill(ix - 2, iy - 2, 1, 1)
+	_glow(cx, cy, 14.0, R[4], 0.5 * a)
+	_ga(1.0)
 
 
-## A clock's hand going round on its dial (Stilling's slowed time).
+## A clock's dial over it, its hand going round (Stilling's slowed time): the rim, the hours (the quarters bolder), a hand and a
+## sweeping second hand, its light.
 func _hand(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
-	_ga(a * 0.6)
+	var r := 11.0
+	_ga(a * 0.85)
 	_fs(R[2])
+	for k in 28:
+		var ang := k * TAU / 28.0
+		_fill(_ri(cx + cos(ang) * r), _ri(cy + sin(ang) * r), 2, 1)
 	for k in 12:
 		var ang := k * TAU / 12.0
-		_fill(_ri(cx + cos(ang) * 6.0), _ri(cy + sin(ang) * 6.0), 1, 1)
+		var q := k % 3 == 0
+		_fs(R[4] if q else R[3])
+		_fill(_ri(cx + cos(ang) * (r - 2.5)), _ri(cy + sin(ang) * (r - 2.5)), 2 if q else 1, 2 if q else 1)
 	_ga(a)
-	_fs(R[5])
 	var ang2 := -PI * 0.5 + u * TAU * 0.4
-	_line(cx, cy, cx + cos(ang2) * 5.0, cy + sin(ang2) * 5.0, 1)
-
-
-## A cuff and the chain from it, over its feet.
-func _chain(cx: float, cy: float, R: PackedColorArray, a: float) -> void:
-	_ga(a)
-	for k in 4:
-		_fs(R[3] if k % 2 == 0 else R[4])
-		var lx := cx - 9.0 + k * 5.0
-		_fill(_ri(lx), _ri(cy) - 1, 4, 1)
-		_fill(_ri(lx), _ri(cy) + 1, 4, 1)
-		_fill(_ri(lx), _ri(cy), 1, 1)
-		_fill(_ri(lx) + 3, _ri(cy), 1, 1)
-
-
-## The doomed one's skull, grinning over it.
-func _skull(cx: float, cy: float, R: PackedColorArray, a: float) -> void:
-	_ga(a)
+	_fs(R[5])
+	_line(cx, cy, cx + cos(ang2) * 8.0, cy + sin(ang2) * 8.0, 2)
+	_fs(Color.WHITE)
+	_line(cx, cy, cx + cos(ang2) * 7.0, cy + sin(ang2) * 7.0, 1)
+	var ang3 := -PI * 0.5 + u * TAU * 2.4
 	_fs(R[4])
-	_fill(_ri(cx) - 3, _ri(cy) - 3, 7, 4)
-	_fill(_ri(cx) - 2, _ri(cy) + 1, 5, 2)
+	_line(cx, cy, cx + cos(ang3) * 9.0, cy + sin(ang3) * 9.0, 1)
+	_fs(R[5])
+	_fill(_ri(cx) - 1, _ri(cy) - 1, 2, 2)
+	_glow(cx, cy, 13.0, R[4], 0.45 * a)
+	_ga(1.0)
+
+
+## A cuff and the chain from it, over its feet: links lying flat and links on their edge, one through the next, each lit on top, and
+## the iron cuff with its rivet.
+func _chain(cx: float, cy: float, R: PackedColorArray, a: float) -> void:
+	var ix := _ri(cx)
+	var iy := _ri(cy)
+	_ga(a)
+	for k in 5:
+		var lx := ix - 16 + k * 6
+		if k % 2 == 0:
+			# (a link lying flat: an oval of iron, its hole dark)
+			_fs(R[3])
+			_fill(lx + 1, iy - 2, 6, 1)
+			_fill(lx + 1, iy + 2, 6, 1)
+			_fill(lx, iy - 1, 1, 3)
+			_fill(lx + 7, iy - 1, 1, 3)
+			_fs(R[5])
+			_fill(lx + 1, iy - 2, 3, 1)
+			_fs(R[1])
+			_fill(lx + 3, iy + 2, 4, 1)
+		else:
+			# (a link on its edge: a bar)
+			_fs(R[4])
+			_fill(lx, iy - 1, 8, 1)
+			_fs(R[2])
+			_fill(lx, iy, 8, 1)
+	# (the cuff)
+	_fs(R[1])
+	_fill(ix + 14, iy - 5, 5, 10)
+	_fs(R[3])
+	_fill(ix + 14, iy - 5, 2, 10)
+	_fs(R[5])
+	_fill(ix + 16, iy - 1, 1, 1)
+	_ga(1.0)
+
+
+## The doomed one's skull, grinning over it: its dome lit from the upper left, deep sockets with a spark in each, the hole of its
+## nose, its teeth and jaw.
+func _skull(cx: float, cy: float, R: PackedColorArray, a: float) -> void:
+	var ix := _ri(cx)
+	var top := _ri(cy) - 8
+	var widths := [5, 9, 11, 13, 13, 13, 13, 11, 9, 9, 7, 7]
+	_ga(a)
+	for row in widths.size():
+		var w: int = widths[row]
+		var x0 := ix - w / 2
+		_fs(R[4])
+		_fill(x0, top + row, w, 1)
+		_fs(R[5])
+		_fill(x0, top + row, mini(2, w), 1)
+		_fs(R[3])
+		_fill(x0 + w - 2, top + row, 2, 1)
+	# (its sockets, its nose, its teeth)
 	_fs(R[0])
-	_fill(_ri(cx) - 2, _ri(cy) - 2, 2, 2)
-	_fill(_ri(cx) + 1, _ri(cy) - 2, 2, 2)
-	_fill(_ri(cx) - 1, _ri(cy) + 2, 1, 1)
-	_fill(_ri(cx) + 1, _ri(cy) + 2, 1, 1)
-	_glow(cx, cy, 9.0, R[4], 0.4 * a)
+	_fill(ix - 5, top + 4, 4, 3)
+	_fill(ix + 2, top + 4, 4, 3)
+	_fill(ix - 4, top + 7, 2, 1)
+	_fill(ix + 3, top + 7, 2, 1)
+	_fill(ix, top + 7, 1, 2)
+	_fs(R[1])
+	for k in 4:
+		_fill(ix - 3 + k * 2, top + 9, 1, 2)
+	_fs(R[2])
+	_fill(ix - 4, top + 11, 9, 1)
+	_fs(Color.WHITE)
+	_fill(ix - 4, top + 5, 1, 1)
+	_fill(ix + 3, top + 5, 1, 1)
+	_glow(cx, cy, 13.0, R[4], 0.5 * a)
+	_ga(1.0)
 
 
-## A shield's face, its boss glinting.
+## A shield's face: a heater shield, dark-rimmed, its face lit from the upper left, a stripe down it and its boss glinting.
 func _shield_face(cx: float, cy: float, s: float, R: PackedColorArray, a: float) -> void:
 	var w := s * 0.8
-	for row in int(s):
+	var rows := int(s)
+	for row in rows:
 		var v := float(row) / s
 		var half: float = w * 0.5 * (1.0 if v < 0.55 else (1.0 - (v - 0.55) / 0.45))
+		var x0 := _ri(cx - half)
+		var ww := maxi(1, _ri(half * 2.0))
 		_ga(a)
-		_fs(R[1] if row == 0 or row == int(s) - 1 else (R[3] if v < 0.5 else R[2]))
-		_fill(_ri(cx - half), _ri(cy - s * 0.5 + row), maxi(1, _ri(half * 2.0)), 1)
-	_glow(cx, cy - s * 0.15, 6.0, R[5], 0.5 * a)
-
-
-## A bell swinging as it tolls.
-func _bell(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
-	var sw := sin(u * TAU * 2.0) * 3.0
-	_ga(a)
-	for row in 9:
-		var half := 1.0 + row * 0.55
-		_fs(R[4] if row < 3 else R[3])
-		_fill(_ri(cx + sw * (row / 9.0) - half), _ri(cy + row), _ri(half * 2.0), 1)
+		_fs(R[1] if row == 0 or row == rows - 1 else (R[3] if v < 0.5 else R[2]))
+		_fill(x0, _ri(cy - s * 0.5 + row), ww, 1)
+		if row > 0 and row < rows - 1 and ww > 3:
+			_fs(R[0])
+			_fill(x0 + ww - 1, _ri(cy - s * 0.5 + row), 1, 1)
+			_fs(R[4])
+			_fill(x0, _ri(cy - s * 0.5 + row), 1, 1)
+			_fs(R[4] if v < 0.5 else R[3])
+			_fill(_ri(cx), _ri(cy - s * 0.5 + row), 1, 1)
 	_fs(R[5])
-	_fill(_ri(cx + sw) - 1, _ri(cy) + 9, 2, 2)
-	_glow(cx, cy + 5.0, 12.0, R[4], 0.5 * a)
+	_fill(_ri(cx) - 1, _ri(cy - s * 0.15) - 1, 3, 3)
+	_fs(Color.WHITE)
+	_fill(_ri(cx) - 1, _ri(cy - s * 0.15) - 1, 1, 1)
+	_glow(cx, cy - s * 0.15, s * 0.6, R[5], 0.55 * a)
+
+
+## A bell swinging as it tolls: its crown, its shoulder lit, its body flaring to the lip, the clapper striking, and its sound going out.
+func _bell(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
+	var sw := sin(u * TAU * 2.0) * 4.0
+	_ga(a)
+	_fs(R[2])
+	_fill(_ri(cx) - 1, _ri(cy) - 3, 3, 3)
+	for row in 15:
+		var half := 2.0 + row * 0.45
+		if row >= 11:
+			half += (row - 10) * 1.1
+		var x0 := _ri(cx + sw * (row / 15.0) - half)
+		var ww := _ri(half * 2.0)
+		_fs(R[4] if row < 4 else R[3])
+		_fill(x0, _ri(cy + row), ww, 1)
+		_fs(R[5])
+		_fill(x0 + 1, _ri(cy + row), 1, 1)
+		_fs(R[1])
+		_fill(x0 + ww - 1, _ri(cy + row), 1, 1)
+	_fs(R[1])
+	_fill(_ri(cx + sw - 8.5), _ri(cy) + 14, 17, 1)
+	_fs(R[5])
+	_fill(_ri(cx + sw * 1.4) - 1, _ri(cy) + 14, 3, 3)
+	# (its toll going out, either side)
+	for k in 2:
+		var rr := 14.0 + (u * 20.0 + k * 8.0)
+		_ga(a * (1.0 - u) * (1.0 - k * 0.35))
+		_fs(R[4])
+		for j in 9:
+			var ang := -0.7 + j * 0.175
+			_fill(_ri(cx + cos(ang) * rr), _ri(cy + 6.0 + sin(ang) * rr * 0.6), 2, 1)
+			_fill(_ri(cx - cos(ang) * rr), _ri(cy + 6.0 + sin(ang) * rr * 0.6), 2, 1)
+	_glow(cx, cy + 6.0, 16.0, R[4], 0.55 * a)
+	_ga(1.0)
 
 
 # --- the named things ---
@@ -415,12 +596,12 @@ func _thing(sign: String, cx: float, cy: float, R: PackedColorArray, a: float, u
 		"spikes":
 			_spikes(cx, cy, R, a, u)
 		"rites":
-			_shield_face(cx, cy - 12.0, 16.0, R, a)
+			_shield_face(cx, cy - 14.0, 22.0, R, a)
 			_flames(cx, cy - 24.0, 1, 2.0, 6.0, a, PackedColorArray(FIRE), int(b["seed"]))
 		"shieldon":
-			_shield_face(cx, cy - 10.0, 12.0, R, a)
+			_shield_face(cx, cy - 12.0, 18.0, R, a)
 		"harden":
-			_shield_face(cx, cy - 10.0, 16.0, BLOOD, a)
+			_shield_face(cx, cy - 14.0, 22.0, BLOOD, a)
 		"eyeup":
 			_eye(cx, cy - 26.0, R, a)
 			_eye(cx, cy - 26.0, R, a * 0.5)
@@ -429,7 +610,7 @@ func _thing(sign: String, cx: float, cy: float, R: PackedColorArray, a: float, u
 		"cuts":
 			_slashes(cx, cy, R, a, u, int(b.get("n", 1)))
 		"image":
-			_afterimage(cx, cy, a, u)
+			_afterimage(cx, cy, a, u, b, R)
 		"hand":
 			_hand_up(cx, cy, a, u)
 		"wail":
@@ -558,134 +739,182 @@ func _hook(cx: float, cy: float, R: PackedColorArray, a: float, u: float, b: Dic
 	_ga(1.0)
 
 
-## A pitchfork's head: three tines driven in, the cross piece and the haft.
+## A pitchfork driven down onto it: its haft from above, the crossbar, three tines tapering to bright points, and the sparks where
+## they bite.
 func _fork(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
-	var push := minf(1.0, u / 0.25) * 6.0
-	var top := cy - 22.0 + push
+	var push := minf(1.0, u / 0.2)
+	var top := _ri(cy - 30.0 + push * 12.0)
+	var ix := _ri(cx)
 	_ga(a)
-	_fs(DUST6[3])
-	_fill(_ri(cx), _ri(top) - 14, 2, 14)
-	_fs(R[3])
-	_fill(_ri(cx) - 6, _ri(top), 14, 2)
+	_fs(DUST6[2])
+	_fill(ix - 1, top - 26, 3, 26)
+	_fs(DUST6[4])
+	_fill(ix - 1, top - 26, 1, 26)
+	_fs(R[2])
+	_fill(ix - 11, top, 23, 3)
+	_fs(R[4])
+	_fill(ix - 11, top, 23, 1)
 	for k in 3:
-		var tx := cx - 6.0 + k * 6.0
-		_fs(R[4])
-		_fill(_ri(tx), _ri(top) + 2, 2, 12)
+		var tx := ix - 10 + k * 10
+		for row in 18:
+			var w := 3 if row < 10 else (2 if row < 15 else 1)
+			_fs(R[4] if row < 15 else R[5])
+			_fill(tx, top + 3 + row, w, 1)
+			if w > 1:
+				_fs(R[2])
+				_fill(tx + w - 1, top + 3 + row, 1, 1)
+		_fs(Color.WHITE)
+		_fill(tx, top + 20, 1, 1)
+	if push >= 1.0:
 		_fs(R[5])
-		_fill(_ri(tx), _ri(top) + 13, 2, 2)
-	_glow(cx, top + 14.0, 10.0, R[4], a * 0.5)
+		for k in 6:
+			var ang := -PI * 0.5 + (k - 2.5) * 0.45
+			var d := 4.0 + (u - 0.2) * 20.0
+			_fill(_ri(cx + cos(ang) * d * 1.6), _ri(top + 20 + sin(ang) * d), 1, 1)
+	_glow(cx, top + 18.0, 16.0, R[4], a * 0.6)
 	_ga(1.0)
 
 
-## A pair of shears snapping shut on it: two blades crossing at their pivot, their rings behind.
+## A pair of shears snapping shut on it: two long blades crossing at their pivot, each with an edge of light, their rings behind.
 func _scissors(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
-	var open := 0.55 * (1.0 - minf(1.0, u / 0.3))
-	var px := cx - 4.0
-	var py := cy - 6.0
+	var open := 0.6 * (1.0 - minf(1.0, u / 0.3))
+	var px := cx - 6.0
+	var py := cy - 8.0
 	_ga(a)
 	for s2 in [-1.0, 1.0]:
 		var ang: float = s2 * open
-		var ex := px + cos(ang) * 14.0
-		var ey := py + sin(ang) * 14.0
+		var ex := px + cos(ang) * 24.0
+		var ey := py + sin(ang) * 24.0
+		_fs(R[2])
+		_line(px, py + 1.0, ex, ey + 1.0, 3)
 		_fs(R[4])
 		_line(px, py, ex, ey, 2)
 		_fs(Color.WHITE)
-		_line(px, py, ex, ey, 1)
+		_line(px + cos(ang) * 6.0, py + sin(ang) * 6.0 - 1.0, ex, ey - 1.0, 1)
 		# (its ring)
-		var rx := px - cos(ang) * 6.0
-		var ry := py - sin(ang) * 6.0
-		_fs(R[3])
-		for k in 10:
-			var a2 := k * TAU / 10.0
-			_fill(_ri(rx + cos(a2) * 2.5), _ri(ry + sin(a2) * 2.5), 1, 1)
+		var rx := px - cos(ang) * 9.0
+		var ry := py - sin(ang) * 9.0
+		for k in 16:
+			var a2 := k * TAU / 16.0
+			_fs(R[3] if sin(a2) > 0.0 else R[4])
+			_fill(_ri(rx + cos(a2) * 4.0), _ri(ry + sin(a2) * 4.0), 2, 1)
 	_fs(R[5])
-	_fill(_ri(px) - 1, _ri(py) - 1, 2, 2)
+	_fill(_ri(px) - 1, _ri(py) - 1, 3, 3)
 	if u >= 0.3:
-		_glow(px + 12.0, py, 10.0, R[4], a * 0.7)
+		_glow(px + 18.0, py, 16.0, R[4], a * 0.8)
+		_fs(Color.WHITE)
+		_ga(a * (1.0 - (u - 0.3)))
+		_fill(_ri(px) + 14, _ri(py) - 5, 1, 11)
+		_fill(_ri(px) + 9, _ri(py), 11, 1)
 	_ga(1.0)
 
 
-## Jaws closing on it: an upper and a lower row of fangs meeting.
+## Jaws closing on it: gums and two rows of long fangs meeting, the bite flashing.
 func _fangs(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
-	var gap := 9.0 * (1.0 - minf(1.0, u / 0.3))
-	var mid := cy - 6.0
+	var gap := 13.0 * (1.0 - minf(1.0, u / 0.3))
+	var mid := cy - 8.0
 	_ga(a)
 	for s2 in [-1.0, 1.0]:
-		var jaw: float = mid + s2 * (gap + 3.0)
-		_fs(R[2])
-		_fill(_ri(cx) - 9, _ri(jaw) - (2 if s2 < 0.0 else 0), 19, 2)
-		# (its teeth, pointing at the other jaw)
+		var jaw: float = mid + s2 * (gap + 4.0)
+		_fs(BLOOD[1])
+		_fill(_ri(cx) - 15, _ri(jaw) - (3 if s2 < 0.0 else 0), 31, 3)
+		_fs(BLOOD[2])
+		_fill(_ri(cx) - 15, _ri(jaw) - (3 if s2 < 0.0 else 0), 31, 1)
 		var toward: float = -s2
-		for k in 4:
-			var tx := cx - 8.0 + k * 5.0
-			for row in 4:
-				var w2 := 3 - int(row * 0.75)
+		for k in 6:
+			var tx := cx - 14.0 + k * 5.5
+			var long := 7 if k == 1 or k == 4 else 5
+			for row in long:
+				var w2 := maxi(1, 3 - int(row * 3.0 / long))
 				var ty: float = jaw + (0.0 if s2 < 0.0 else -1.0) + toward * float(row)
-				_fs(R[5] if row >= 2 else R[4])
-				_fill(_ri(tx) + (3 - w2) / 2, _ri(ty), maxi(1, w2), 1)
+				_fs(Color("#fff4e0") if row < 2 else R[5] if row < long - 1 else R[4])
+				_fill(_ri(tx) + (3 - w2) / 2, _ri(ty), w2, 1)
 	if u >= 0.3:
-		_glow(cx, mid, 10.0, R[4], a * 0.6)
+		_glow(cx, mid, 16.0, R[4], a * 0.7)
 	_ga(1.0)
 
 
-## A spear-shaft driven into the ground, its haft quivering, the ground cracked round its foot.
+## A spear-shaft driven into the ground: its iron head buried, the haft quivering, the ground cracked round its foot.
 func _stake(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
 	var f := minf(1.0, u / 0.15)
-	var foot := cy + 10.0
-	var top := foot - 30.0 * f
-	var q := sin(u * 40.0) * (1.0 - u) * 2.0
+	var foot := cy + 12.0
+	var top := foot - 42.0 * f - (1.0 - f) * 40.0
+	var q := sin(u * 40.0) * (1.0 - u) * 3.0
 	_ga(a)
-	_fs(DUST6[3])
-	_line(cx + q, top, cx, foot - 4.0, 2)
-	_fs(R[4])
-	_fill(_ri(cx) - 1, _ri(foot) - 6, 3, 6)
+	_fs(DUST6[2])
+	_line(cx + q + 1.0, top, cx + 1.0, foot - 6.0, 2)
+	_fs(DUST6[4])
+	_line(cx + q, top, cx, foot - 6.0, 1)
+	for row in 8:
+		var hw := 3 - absi(row - 3) if row < 7 else 1
+		_fs(R[4] if row < 4 else R[3])
+		_fill(_ri(cx) - hw, _ri(foot) - 8 + row, hw * 2 + 1, 1)
 	_fs(Color.WHITE)
-	_fill(_ri(cx), _ri(foot) - 6, 1, 6)
+	_fill(_ri(cx) - 1, _ri(foot) - 7, 1, 4)
 	if f >= 1.0:
-		_fs(DUST6[1])
-		for k in 5:
-			var ang := k * TAU / 5.0 + 0.4
-			_line(cx, foot, cx + cos(ang) * (6.0 + u * 8.0), foot + sin(ang) * (3.0 + u * 4.0), 1)
-	_glow(cx, foot - 3.0, 12.0, R[4], a * 0.6)
+		for k in 7:
+			var ang := k * TAU / 7.0 + 0.4
+			_fs(DUST6[1])
+			_line(cx, foot, cx + cos(ang) * (9.0 + u * 12.0), foot + sin(ang) * (4.0 + u * 6.0), 2)
+			_fs(R[3])
+			_fill(_ri(cx + cos(ang) * (9.0 + u * 12.0)), _ri(foot + sin(ang) * (4.0 + u * 6.0)), 1, 1)
+	_glow(cx, foot - 4.0, 16.0, R[4], a * 0.65)
 	_ga(1.0)
 
 
-## A black needle pinning it, its eye and the thread from it.
+## A black needle pinning it: driven down, its eye at the top, a gleam down its length and the thread curling off it.
 func _needle(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
 	var f := minf(1.0, u / 0.2)
-	var tip := cy + 6.0
-	var top := tip - 22.0
-	var off := (1.0 - f) * 14.0
+	var tip := cy + 8.0
+	var top := tip - 34.0
+	var off := (1.0 - f) * 22.0
 	_ga(a)
-	_fs(R[1])
-	_line(cx + 3.0, top - off, cx, tip - off, 2)
-	_fs(R[4])
-	_line(cx + 3.0, top - off, cx + 2.0, top + 4.0 - off, 1)
 	_fs(R[0])
-	_fill(_ri(cx + 3.0), _ri(top + 1.0 - off), 1, 1)
-	_glow(cx, tip, 8.0, R[3], a * 0.5)
+	_line(cx + 5.0, top - off, cx, tip - off, 3)
+	_fs(R[2])
+	_line(cx + 4.0, top - off, cx, tip - off, 1)
+	_fs(R[5])
+	_line(cx + 4.0, top + 2.0 - off, cx + 3.0, top + 10.0 - off, 1)
+	# (its eye, and the thread through it)
+	_fs(R[0])
+	_fill(_ri(cx + 4.0), _ri(top + 1.0 - off), 2, 3)
+	_fs(R[4])
+	var px := cx + 5.0
+	var py := top + 2.0 - off
+	for k in 10:
+		var nx := px + 2.0 + sin(k * 0.9 + t * 6.0) * 2.0
+		var ny := py - 2.0 + k * 0.2
+		_line(px, py, nx, ny, 1)
+		px = nx
+		py = ny
+	if f >= 1.0:
+		_fs(Color.WHITE)
+		_fill(_ri(cx) - 2, _ri(tip) - 1, 5, 1)
+	_glow(cx, tip, 13.0, R[3], a * 0.6)
 	_ga(1.0)
 
 
-## A ghoul's maw opening in the ground: a ring of teeth closing.
+## A ghoul's maw opening in the ground: a gullet of dark, a ring of long fangs round it, closing.
 func _maw(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
-	var open := 14.0 * (1.0 - minf(1.0, u / 0.35)) + 4.0
+	var open := 20.0 * (1.0 - minf(1.0, u / 0.35)) + 6.0
 	var y := cy + 10.0
-	_ga(a * 0.7)
-	_fs(BLOOD[0])
-	for k in 24:
-		var ang := k * TAU / 24.0
-		_fill(_ri(cx + cos(ang) * open * 0.9), _ri(y + sin(ang) * open * 0.4), 2, 1)
+	_ga(a * 0.85)
+	for dy in range(-_ri(open * 0.4), _ri(open * 0.4) + 1):
+		var hw := _ri(open * 0.9 * sqrt(maxf(0.0, 1.0 - pow(dy / (open * 0.4), 2.0))))
+		_fs(BLOOD[0] if absi(dy) < open * 0.25 else BLOOD[1])
+		_fill(_ri(cx) - hw, _ri(y) + dy, hw * 2, 1)
 	_ga(a)
-	for k in 10:
-		var ang := k * TAU / 10.0
+	for k in 14:
+		var ang := k * TAU / 14.0
 		var px := cx + cos(ang) * open
 		var py := y + sin(ang) * open * 0.45
-		var tx := cx + cos(ang) * (open - 5.0)
-		var ty := y + sin(ang) * (open - 5.0) * 0.45
-		_fs(Color("#f0e6d0"))
-		_line(px, py, tx, ty, 1)
-	_glow(cx, y, open, BLOOD[3], a * 0.4)
+		var tx := cx + cos(ang) * (open - 8.0)
+		var ty := y + sin(ang) * (open - 8.0) * 0.45 - 2.0
+		_fs(Color("#c8bca4"))
+		_line(px, py, tx, ty, 2)
+		_fs(Color("#fff4e0"))
+		_line(px, py - 1.0, (px + tx) * 0.5, (py + ty) * 0.5 - 1.0, 1)
+	_glow(cx, y, open * 1.2, BLOOD[3], a * 0.5)
 	_ga(1.0)
 
 
@@ -702,20 +931,27 @@ func _dance(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> vo
 	_ga(1.0)
 
 
-## Thorns bursting out all round: spikes shooting outward.
+## Thorns bursting out all round: spikes shooting outward, thick at their roots, their points bright.
 func _spikes(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
-	var reach := 6.0 + 22.0 * minf(1.0, u / 0.3)
-	for k in 12:
-		var ang := k * TAU / 12.0 + 0.13
-		var x0 := cx + cos(ang) * reach * 0.35
-		var y0 := cy + sin(ang) * reach * 0.18
-		var x1 := cx + cos(ang) * reach
-		var y1 := cy + sin(ang) * reach * 0.5
+	var reach := 8.0 + 34.0 * minf(1.0, u / 0.3)
+	for k in 14:
+		var ang := k * TAU / 14.0 + 0.13
+		var len := reach * (0.8 + 0.3 * _rh(19, k))
+		var x0 := cx + cos(ang) * len * 0.3
+		var y0 := cy + sin(ang) * len * 0.15
+		var xm := cx + cos(ang) * len * 0.7
+		var ym := cy + sin(ang) * len * 0.35
+		var x1 := cx + cos(ang) * len
+		var y1 := cy + sin(ang) * len * 0.5
 		_ga(a)
+		_fs(R[1])
+		_line(x0, y0 + 1.0, xm, ym + 1.0, 3)
 		_fs(R[2])
-		_line(x0, y0, x1, y1, 2)
+		_line(x0, y0, xm, ym, 3)
+		_fs(R[3])
+		_line(xm, ym, x1, y1, 2)
 		_fs(R[5])
-		_fill(_ri(x1), _ri(y1), 1, 1)
+		_line((xm + x1) * 0.5, (ym + y1) * 0.5, x1, y1, 1)
 	_ga(1.0)
 
 
@@ -739,156 +975,251 @@ func _thread(ax: float, ay: float, bx: float, by: float, R: PackedColorArray, a:
 	_ga(1.0)
 
 
-## A barb left in it, swelling green before it bursts.
+## A barb left in it, swelling green before it bursts: its hooked shaft, the swelling round it, lit, glistening.
 func _barb(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
-	var sw := 2.0 + u * 5.0
+	var sw := 3.0 + u * 7.0
 	_ga(a)
 	_fs(R[1])
-	_line(cx - 5.0, cy - 12.0, cx, cy - 4.0, 1)
-	_fs(R[3])
+	_line(cx - 9.0, cy - 18.0, cx, cy - 5.0, 2)
+	_fs(R[4])
+	_line(cx - 9.0, cy - 18.0, cx - 5.0, cy - 15.0, 1)
 	for row in int(sw * 2.0):
 		var half := sw * sqrt(maxf(0.0, 1.0 - pow((row - sw) / sw, 2.0)))
+		_fs(R[3] if row > sw * 0.6 else R[4])
 		_fill(_ri(cx - half), _ri(cy - 4.0 - sw + row), maxi(1, _ri(half * 2.0)), 1)
+		_fs(R[2])
+		_fill(_ri(cx + half) - 1, _ri(cy - 4.0 - sw + row), 1, 1)
 	_fs(R[5])
-	_fill(_ri(cx) - 1, _ri(cy - 4.0 - sw) + 1, 1, 1)
-	_glow(cx, cy - 4.0, 6.0 + sw, R[4], a * (0.3 + u * 0.4))
+	_fill(_ri(cx - sw * 0.4), _ri(cy - 4.0 - sw) + 2, 2, 1)
+	_glow(cx, cy - 4.0, 8.0 + sw, R[4], a * (0.35 + u * 0.4))
 	_ga(1.0)
 
 
-## Slash marks on it, one for each cut, raked across.
+## Slash marks on it, one for each cut, raked across: each deep, dark-edged, with its gleam.
 func _slashes(cx: float, cy: float, R: PackedColorArray, a: float, u: float, n: int) -> void:
 	var f := minf(1.0, u / 0.2)
 	for k in clampi(n, 1, 3):
-		var ox := (k - (clampi(n, 1, 3) - 1) * 0.5) * 4.0
-		var x0 := cx + ox - 5.0
-		var y0 := cy - 16.0
-		var x1 := x0 + 10.0 * f
-		var y1 := y0 + 12.0 * f
+		var ox := (k - (clampi(n, 1, 3) - 1) * 0.5) * 7.0
+		var x0 := cx + ox - 9.0
+		var y0 := cy - 26.0
+		var x1 := x0 + 18.0 * f
+		var y1 := y0 + 22.0 * f
 		_ga(a)
+		_fs(R[1])
+		_line(x0 + 1.0, y0 + 1.0, x1 + 1.0, y1 + 1.0, 3)
 		_fs(R[3])
 		_line(x0, y0, x1, y1, 2)
 		_fs(Color.WHITE)
-		_line(x0, y0, x1, y1, 1)
+		_line(x0, y0, x0 + (x1 - x0) * 0.6, y0 + (y1 - y0) * 0.6, 1)
+	_glow(cx, cy - 16.0, 14.0, R[4], a * 0.5)
 	_ga(1.0)
 
 
-## A grey afterimage of him where he stood, fading.
-func _afterimage(cx: float, cy: float, a: float, u: float) -> void:
+## An after-image of him where he stood, fading: his own picture, pixel for pixel, in the meld's light (as Blink's are), a second
+## one a step on, and a wisp of it trailing; without his picture caught, a grey shape of him.
+func _afterimage(cx: float, cy: float, a: float, u: float, b := {}, R = null) -> void:
+	var g: Dictionary = b.get("ghost", {})
+	if not g.is_empty() and _canvas != null:
+		var C: PackedColorArray = R if R != null else SOUL
+		var tones := [C[2], C[4], C[5]]
+		var runs := _ghost_runs(g["tex"])
+		var inv := _canvas.get_global_transform().affine_inverse()
+		var xf: Transform2D = inv * (g["xf"] as Transform2D)
+		var off: Vector2 = g["off"]
+		# (two of him: where he stood, and the first, a little drifted, fainter)
+		for k in 2:
+			var drift := Vector2(-6.0 * u - 3.0 * k, -2.0 * u) * 2.0
+			var fade := a * (1.0 - 0.45 * k)
+			for i in range(0, runs.size(), 4):
+				var y := float(runs[i])
+				_ga((0.5 if runs[i + 3] == 0 else 0.72) * fade)
+				_fs(tones[runs[i + 3]])
+				_gbox(xf * (off + Vector2(float(runs[i + 1]), y)) + drift, xf * (off + Vector2(float(runs[i + 2]) + 1.0, y + 1.0)) + drift)
+		_glow(cx, cy - 10.0, 14.0, C[4], a * 0.45)
+		_ga(1.0)
+		return
 	_ga(a * 0.55)
 	_fs(SOUL[3])
 	_fill(_ri(cx) - 3, _ri(cy) - 18, 6, 6)
 	_fill(_ri(cx) - 4, _ri(cy) - 12, 8, 10)
 	_fill(_ri(cx) - 4, _ri(cy) - 2, 3, 8)
 	_fill(_ri(cx) + 1, _ri(cy) - 2, 3, 8)
-	_fs(SOUL[5])
-	_fill(_ri(cx) - 1, _ri(cy) - 16, 1, 1)
-	_fill(_ri(cx) + 1, _ri(cy) - 16, 1, 1)
 	_glow(cx, cy - 8.0, 12.0, SOUL[4], a * 0.4)
 	_ga(1.0)
 
 
-## A dead hand bursting up from the ground, its fingers clawing, then closing.
+## A dead hand bursting up from the ground: the earth thrown up round it, its forearm, its palm lit on the left, four bony fingers
+## clawing, then closing, and its thumb.
 func _hand_up(cx: float, cy: float, a: float, u: float) -> void:
 	var f := minf(1.0, u / 0.25)
-	var base := cy + 10.0
-	var top := base - 16.0 * f
-	_ga(a)
-	_fs(SOUL[2])
-	_fill(_ri(cx) - 3, _ri(top) + 6, 7, _ri(base - top) - 6)
+	var base := _ri(cy + 10.0)
+	var top := base - _ri(24.0 * f)
+	var ix := _ri(cx)
 	var close := minf(1.0, maxf(0.0, (u - 0.35) / 0.3))
-	for k in 4:
-		var fx := cx - 4.0 + k * 3.0
-		var tip := top - 5.0 + close * 4.0
+	_ga(a)
+	# (the forearm)
+	for y in range(top + 10, base):
+		var w := 6
+		_fs(SOUL[2])
+		_fill(ix - 3, y, w, 1)
 		_fs(SOUL[3])
-		_line(fx, top + 6.0, fx + (cx - fx) * close * 0.6, tip, 1)
+		_fill(ix - 3, y, 2, 1)
+		_fs(SOUL[0])
+		_fill(ix + 2, y, 1, 1)
+	# (the palm)
+	for y in range(top + 4, top + 10):
+		_fs(SOUL[3])
+		_fill(ix - 5, y, 10, 1)
+		_fs(SOUL[4])
+		_fill(ix - 5, y, 3, 1)
+		_fs(SOUL[1])
+		_fill(ix + 4, y, 1, 1)
+	# (the fingers: two joints each, bending in as it closes)
+	for k in 4:
+		var fx0 := float(ix - 4 + k * 3)
+		var mid := Vector2(fx0 + (ix - fx0) * close * 0.3, float(top + 4) - 4.0 + close * 1.0)
+		var tip := Vector2(mid.x + (ix - fx0) * close * 0.5 + (k - 1.5) * (1.0 - close) * 0.8, mid.y - 4.0 + close * 6.0)
+		_fs(SOUL[3])
+		_line(fx0, top + 4, mid.x, mid.y, 2)
+		_fs(SOUL[4])
+		_line(mid.x, mid.y, tip.x, tip.y, 1)
+		_fs(SOUL[5])
+		_fill(_ri(mid.x), _ri(mid.y), 1, 1)
+	# (the thumb)
 	_fs(SOUL[3])
-	_line(cx + 4.0, top + 9.0, cx + 7.0 - close * 3.0, top + 4.0, 1)
+	_line(ix + 5, top + 8, ix + 9 - close * 4.0, top + 3 + close * 2.0, 2)
+	# (the earth thrown up)
 	_fs(DUST6[1])
-	_fill(_ri(cx) - 7, _ri(base), 15, 2)
-	_glow(cx, top + 4.0, 9.0, SOUL[4], a * 0.4)
+	_fill(ix - 10, base, 21, 2)
+	for k in 7:
+		var dx := (k - 3) * 4.0 * (1.0 + u)
+		var up := (1.0 - absf(k - 3) / 4.0) * 10.0 * sin(minf(1.0, u * 2.0) * PI)
+		_fs(DUST6[2 + k % 2])
+		_fill(_ri(cx + dx), base - _ri(up) - 1, 2, 2)
+	_glow(cx, top + 6.0, 13.0, SOUL[4], a * 0.45)
 	_ga(1.0)
 
 
-## A ghost's wail: rings of sound spreading from it, a gaping mouth.
+## A ghost's wail: its mouth gaping, and the cry going out from it either way in breaking waves.
 func _wail(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
 	for k in 3:
-		var rr := 6.0 + (u * 18.0 + k * 6.0)
+		var rr := 8.0 + (u * 26.0 + k * 7.0)
 		_ga(a * (1.0 - k * 0.25) * (1.0 - u))
-		_fs(SOUL[4])
-		for j in 18:
-			var ang := j * TAU / 18.0
-			_fill(_ri(cx + cos(ang) * rr), _ri(cy - 8.0 + sin(ang) * rr * 0.5), 1, 1)
+		for j in 11:
+			var ang := -0.85 + j * 0.17
+			var wob := sin(j * 1.7 + t * 14.0) * 1.2
+			var w := 2 if j > 2 and j < 8 else 1
+			_fs(SOUL[4] if j % 3 else SOUL[5])
+			_fill(_ri(cx + cos(ang) * (rr + wob)), _ri(cy - 8.0 + sin(ang) * (rr + wob) * 0.6), w, w)
+			_fill(_ri(cx - cos(ang) * (rr + wob)), _ri(cy - 8.0 + sin(ang) * (rr + wob) * 0.6), w, w)
 	_ga(a)
-	_fs(SOUL[1])
-	_fill(_ri(cx) - 2, _ri(cy) - 12, 4, 6)
+	var gape := 5 + int(3.0 * sin(minf(1.0, u * 3.0) * PI * 0.5))
+	_fs(SOUL[2])
+	_fill(_ri(cx) - 3, _ri(cy) - 13, 7, gape + 2)
+	_fs(SOUL[0])
+	_fill(_ri(cx) - 2, _ri(cy) - 12, 5, gape)
+	_glow(cx, cy - 10.0, 12.0, SOUL[4], 0.5 * a)
 	_ga(1.0)
 
 
-## A whirl of blades round him, spinning out.
+## A whirl of blades round him, spinning out: each a long blade with an edge of light and a trail behind.
 func _whirl(cx: float, cy: float, R: PackedColorArray, a: float, u: float, r: float) -> void:
-	var rr := r * 16.0 * (0.4 + u * 0.8)
+	var rr := r * 18.0 * (0.4 + u * 0.8)
 	for k in 6:
 		var ang := t * 14.0 + k * TAU / 6.0
 		var px := cx + cos(ang) * rr
 		var py := cy + sin(ang) * rr * 0.5
+		_ga(a * 0.5)
+		_fs(R[3])
+		for j in 4:
+			var ta := ang - (j + 1) * 0.12
+			_fill(_ri(cx + cos(ta) * rr), _ri(cy + sin(ta) * rr * 0.5), 2, 1)
 		_ga(a)
-		_fs(R[4])
-		_line(px, py, px + cos(ang + 1.6) * 7.0, py + sin(ang + 1.6) * 3.5, 2)
+		_fs(R[3])
+		_line(px, py + 1.0, px + cos(ang + 1.6) * 12.0, py + 1.0 + sin(ang + 1.6) * 6.0, 3)
+		_fs(R[5])
+		_line(px, py, px + cos(ang + 1.6) * 12.0, py + sin(ang + 1.6) * 6.0, 2)
 		_fs(Color.WHITE)
-		_line(px, py, px + cos(ang + 1.6) * 7.0, py + sin(ang + 1.6) * 3.5, 1)
+		_line(px, py, px + cos(ang + 1.6) * 8.0, py + sin(ang + 1.6) * 4.0, 1)
 	_ga(1.0)
 
 
-## A reaper's hooded shadow standing over it, watching.
+## A reaper's hooded shadow standing over it, watching: its hood, its eyes burning, its robe falling in tatters.
 func _hood(cx: float, cy: float, a: float, u: float) -> void:
-	var top := cy - 34.0
-	_ga(a * 0.75)
-	for row in 26:
-		var half := 3.0 + row * 0.28 if row > 6 else 3.0 + row * 0.5
-		_fs(Color("#0c0a12") if row % 5 != 0 else Color("#1c1826"))
-		_fill(_ri(cx - half), _ri(top + row), _ri(half * 2.0), 1)
+	var top := cy - 46.0
+	_ga(a * 0.85)
+	for row in 38:
+		var half := 3.0 + row * 0.6 if row < 9 else 8.0 + (row - 9) * 0.32
+		var x0 := _ri(cx - half)
+		var w := _ri(half * 2.0)
+		_fs(Color("#0c0a12"))
+		_fill(x0, _ri(top + row), w, 1)
+		_fs(Color("#262034"))
+		_fill(x0, _ri(top + row), 1, 1)
+		if row > 32 and row % 2 == 0:
+			_fs(Color("#0c0a12"))
+			for k in 4:
+				_fill(x0 + _ri(_rh(23, row + k) * w), _ri(top + row) + 1, 1, 2)
+	_fs(Color("#060408"))
+	_fill(_ri(cx) - 4, _ri(top) + 5, 9, 6)
+	_ga(a)
 	_fs(Color("#e8e0ff"))
-	_fill(_ri(cx) - 2, _ri(top) + 5, 1, 1)
-	_fill(_ri(cx) + 1, _ri(top) + 5, 1, 1)
+	_fill(_ri(cx) - 3, _ri(top) + 7, 2, 1)
+	_fill(_ri(cx) + 2, _ri(top) + 7, 2, 1)
+	_glow(cx, top + 7.0, 9.0, Color("#c8c0ff"), a * 0.6)
 	_ga(1.0)
 
 
-## A scythe's blade sweeping round, its arc of light behind it.
+## A scythe's blade sweeping round: its long curved blade with an edge of light, the arc it leaves, the snath behind it.
 func _scythe(cx: float, cy: float, R: PackedColorArray, a: float, u: float) -> void:
 	var sweep := minf(1.0, u / 0.35) * PI * 1.2
-	var rr := 22.0
+	var rr := 30.0
 	_ga(a * 0.6)
-	_fs(R[3])
-	var n := 16
+	var n := 22
 	for k in n:
 		var ang := -PI * 0.6 + sweep * float(k) / n
-		_fill(_ri(cx + cos(ang) * rr), _ri(cy - 6.0 + sin(ang) * rr * 0.5), 2, 1)
+		_fs(R[3] if k < n - 4 else R[5])
+		_fill(_ri(cx + cos(ang) * rr), _ri(cy - 6.0 + sin(ang) * rr * 0.5), 2, 2 if k > n / 2 else 1)
 	var ang2 := -PI * 0.6 + sweep
 	var bx := cx + cos(ang2) * rr
 	var by := cy - 6.0 + sin(ang2) * rr * 0.5
 	_ga(a)
 	_fs(DUST6[2])
-	_line(cx, cy - 6.0, bx, by, 1)
-	_fs(Color.WHITE)
-	_line(bx, by, bx + cos(ang2 + 1.9) * 9.0, by + sin(ang2 + 1.9) * 5.0, 2)
-	_fs(R[4])
-	_line(bx, by + 1.0, bx + cos(ang2 + 1.9) * 9.0, by + 1.0 + sin(ang2 + 1.9) * 5.0, 1)
+	_line(cx, cy - 6.0, bx, by, 2)
+	for k in 8:
+		var f := float(k) / 7.0
+		var ba := ang2 + 1.9 - f * 0.5
+		var l := 16.0 * f
+		_fs(Color.WHITE if k > 5 else R[4])
+		_fill(_ri(bx + cos(ba) * l), _ri(by + sin(ba) * l * 0.6), 2, 1)
+		_fs(R[2])
+		_fill(_ri(bx + cos(ba) * l), _ri(by + sin(ba) * l * 0.6) + 1, 2, 1)
 	_ga(1.0)
 
 
-## A white light flooding out from him, far and wide.
+## A white light flooding out from him, far and wide: its front rolling out jagged, and rays of it thrown out ahead.
 func _flood(cx: float, cy: float, a: float, u: float, r: float) -> void:
 	var rr := r * 16.0 * minf(1.0, u / 0.4)
 	_glow(cx, cy, rr, Color("#fffbe8"), a * 0.5 * (1.0 - u))
 	_ga(a * (1.0 - u))
-	_fs(Color.WHITE)
 	for k in 48:
-		var ang := k * TAU / 48.0
-		_fill(_ri(cx + cos(ang) * rr), _ri(cy + sin(ang) * rr * 0.5), 2, 1)
+		var ang := k * TAU / 48.0 + _rh(7, k) * 0.05
+		var l := 3.0 + 5.0 * _rh(11, k)
+		var px := cx + cos(ang) * rr
+		var py := cy + sin(ang) * rr * 0.5
+		_fs(Color("#e8dcb0"))
+		_line(px, py + 1.0, px + cos(ang) * l, py + sin(ang) * l * 0.5 + 1.0, 2)
+		_fs(Color.WHITE)
+		_line(px, py, px + cos(ang) * l, py + sin(ang) * l * 0.5, 1)
+	for k in 12:
+		var ang := k * TAU / 12.0 + 0.2
+		_fs(Color("#fffbe8"))
+		_ga(a * (1.0 - u) * 0.8)
+		_line(cx + cos(ang) * rr * 0.3, cy + sin(ang) * rr * 0.15, cx + cos(ang) * rr * 0.85, cy + sin(ang) * rr * 0.42, 1)
 	_ga(1.0)
 
 
-## A row of spears standing up across a line, their points catching the light.
+## A row of spears standing up across a line: shafts, their iron heads catching the light.
 func _spear_row(ax: float, ay: float, bx: float, by: float, R: PackedColorArray, a: float, u: float) -> void:
 	var f := minf(1.0, u / 0.12)
 	var n := 9
@@ -896,10 +1227,90 @@ func _spear_row(ax: float, ay: float, bx: float, by: float, R: PackedColorArray,
 		var g := float(k) / (n - 1)
 		var x := ax + (bx - ax) * g
 		var y := ay + (by - ay) * g + 12.0
-		var h := 14.0 * f
+		var h := 22.0 * f
 		_ga(a)
-		_fs(DUST6[3])
+		_fs(DUST6[2])
+		_line(x + 1.0, y, x + 2.0, y - h, 1)
+		_fs(DUST6[4])
 		_line(x, y, x + 1.0, y - h, 1)
-		_fs(R[5])
-		_fill(_ri(x + 1.0), _ri(y - h) - 2, 1, 2)
+		for row in 5:
+			var hw := 1 if row == 0 or row == 4 else 2
+			_fs(R[5] if row < 2 else R[4])
+			_fill(_ri(x + 1.0) - hw + 1, _ri(y - h) - 5 + row, hw * 2 - 1, 1)
+		_glow(x + 1.0, y - h - 2.0, 5.0, R[4], a * 0.5)
 	_ga(1.0)
+
+
+## (his picture as he stood, caught as a beat begins, for an after-image of him: fx_m52p_last.gd's Blink)
+func _catch_ghost(b: Dictionary) -> void:
+	if fx == null:
+		return
+	var h = fx.hero()
+	if h == null:
+		return
+	var sp = h.get("_sprite")
+	if sp == null or sp.texture == null:
+		return
+	b["ghost"] = {"tex": sp.texture, "xf": sp.get_global_transform(), "off": sp.offset}
+
+
+## His picture `tex` made ready to be drawn as an after-image: its pixels in runs along each row, each run one of three tones by
+## how light it is, flat [row, first, last, tone, ...] (drawn pixel for pixel, as crisp as he is).
+func _ghost_runs(tex: Texture2D) -> PackedInt32Array:
+	var key := tex.get_instance_id()
+	if _ghost_cache.has(key):
+		return _ghost_cache[key]
+	var runs := PackedInt32Array()
+	var img := tex.get_image()
+	if img != null:
+		if img.is_compressed():
+			img.decompress()
+		img.convert(Image.FORMAT_RGBA8)
+		var w := img.get_width()
+		for y in img.get_height():
+			var x := 0
+			while x < w:
+				var c := img.get_pixel(x, y)
+				if c.a < 0.5:
+					x += 1
+					continue
+				var lv := _ghost_tone(c)
+				var x1 := x
+				while x1 + 1 < w:
+					var d := img.get_pixel(x1 + 1, y)
+					if d.a < 0.5 or _ghost_tone(d) != lv:
+						break
+					x1 += 1
+				runs.append_array([y, x, x1, lv])
+				x = x1 + 1
+	_ghost_cache[key] = runs
+	return runs
+
+
+static func _ghost_tone(c: Color) -> int:
+	var l := c.r * 0.3 + c.g * 0.59 + c.b * 0.11
+	return 0 if l < 0.22 else (1 if l < 0.45 else 2)
+
+
+var _ghost_cache := {}
+
+
+## A box on the screen in the layer's own units (two to a game pixel), from `p` to `q`.
+func _gbox(p: Vector2, q: Vector2) -> void:
+	if _alpha <= 0.0:
+		return
+	var x0 := minf(p.x, q.x)
+	var x1 := maxf(p.x, q.x)
+	var y0 := minf(p.y, q.y)
+	var y1 := maxf(p.y, q.y)
+	var n := _pts.size()
+	_pts.append_array([Vector2(x0, y0), Vector2(x1, y0), Vector2(x1, y1), Vector2(x0, y1)])
+	var col := Color(_style.r * _alpha, _style.g * _alpha, _style.b * _alpha, _alpha)
+	_cols.append_array([col, col, col, col])
+	_idx.append_array([n, n + 1, n + 2, n, n + 2, n + 3])
+
+
+## (is it a Heavy or a Volatile meld? its landings and blasts hold)
+func _heavy(id: String) -> bool:
+	var of: Array = M52.T()["of"].get(id, [])
+	return of.has("heavy") or of.has("volatile")

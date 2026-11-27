@@ -42,10 +42,10 @@ static func set_own(on: bool) -> void:
 
 ## Its colours, darkest to brightest (as the game's meld ramps run): its deep, its dark, its mid, itself, its light, its glint.
 func ramp(id: String) -> PackedColorArray:
-	var key := id + "~foe" if _foe_now and ICY.has(id) else id
+	var key := id + "~foe" if _foe_now and (ICY.has(id) or SEA.has(id)) else id
 	if _ramps.has(key):
 		return _ramps[key]
-	var c := Color(FROST_DEEP) if key != id else Color(str(M52.T()["color"].get(id, "#ffffff")))
+	var c := Color(FROST_DEEP if ICY.has(id) else SEA_DEEP) if key != id else Color(str(M52.T()["color"].get(id, "#ffffff")))
 	var out := PackedColorArray([c.darkened(0.82), c.darkened(0.62), c.darkened(0.35), c, c.lerp(Color.WHITE, 0.45), c.lerp(Color.WHITE, 0.82)])
 	_ramps[key] = out
 	return out
@@ -53,8 +53,14 @@ func ramp(id: String) -> PackedColorArray:
 
 ## (FRIEND CYAN IS THE HERO'S ALONE, his Art Rulebook's Pillar 4 and Monsters 6, and his yes of 23 Nov 2026 to drawing them so: the
 ## icy melds, whose own colours sit near the friend's cyan, drawn in Frost's deeper blue when they are a monster's)
-const ICY := ["glide", "flashfreeze", "doubletap", "ripple", "quicksilver", "frostlock", "constellation"]
+## (and Cold Snap, Glacier and Permafrost, in Flash Freeze's pale blue, now that their moments on a monster are drawn: the check of
+## 26 Nov 2026)
+const ICY := ["glide", "flashfreeze", "doubletap", "ripple", "quicksilver", "frostlock", "constellation", "haven", "hydra", "coldsnap", "glacier", "permafrost"]
 const FROST_DEEP := "#2e6cc8"
+## (the same for the sea-green ones, whose own colours sit near the friend's cyan too: drawn in a deep green when a monster's; the
+## check of 26 Nov 2026 against his Art Rulebook)
+const SEA := ["pitchfork", "tremor", "lastrites", "revenants", "rewind", "scissors"]
+const SEA_DEEP := "#2a8a5c"
 ## (is the beat being begun or painted now a monster's?)
 var _foe_now := false
 

@@ -8,7 +8,9 @@
 ##   STATIC     his shell crackling; what strikes it struck back by a bolt; its ward's edge crackling.
 ##   WINDWARD   his shell with wind streaming over it, streaks trailing his steps; its ward with wind swirling in it.
 ##   FORTRESS   his shell thick as stone, in blocks; blows clanging off it in sparks; its ward with a standing stone at each quarter.
-## On a monster carrying one, its shield dressed the same while it holds.
+## On a monster carrying one, its shield dressed the same while it holds; and (the check of 26 Nov 2026: these never played on a
+## monster) Hemlock's thorns lashing out of it at him as he strikes it, venom spattering him; Static's bolt out of it into him, its
+## shell flaring; Cinderward's shell bursting outward in a ring of flame as it breaks.
 extends "res://scripts/fx_m52kit.gd"
 
 const IDS := ["bulwark", "hemlock", "cinderward", "static", "windward", "fortress"]
@@ -28,12 +30,16 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 			b["end"] = 0.4
 			for i in 12:
 				_bit(b["x"], b["y"], 12, "dot", PackedColorArray([R[3], R[4], R[5]]), 1.8, 0.5, 120, 20, 60)
-		"cinderward:burst":
+		"hemlock:foe":
+			b["end"] = 0.45
+			for i in 12:
+				_bit(b["x"], b["y"], 12, "dot", PackedColorArray([R[3], R[4], R[5]]), 1.6, 0.5, 120, 20, 60)
+		"cinderward:burst", "cinderward:foe":
 			b["end"] = 0.6
 			for i in 22:
 				_bit(b["x"], b["y"], 8, "streak", PackedColorArray([FIRE[2], FIRE[3], FIRE[4], FIRE[5]]), 4.0, 0.5, -20, 30, 90)
 			fx.kick(2.0)
-		"static:zap":
+		"static:zap", "static:foe":
 			b["end"] = 0.25
 		"fortress:clang":
 			b["end"] = 0.3
@@ -148,7 +154,7 @@ func _shell(id: String, cx: float, cy: float, rx: float, ry: float, sd: int) -> 
 
 
 func paint_floor(b: Dictionary) -> void:
-	if b["id"] == "cinderward" and b["what"] == "burst":
+	if b["id"] == "cinderward" and b["what"] in ["burst", "foe"]:
 		var u := _ease(float(b["t"]) / 0.45)
 		var fade := _c01((0.6 - float(b["t"])) / 0.25)
 		var r: float = b["r"]
@@ -173,6 +179,44 @@ func paint_air(b: Dictionary) -> void:
 				_glow(p.x, p.y, 14.0, Color.WHITE, 0.6 * (1.0 - bt / 0.25))
 		"static:zap":
 			_bolt(_wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 14.0, _wx(b["x1"], b["y1"]), _wy(b["x1"], b["y1"]) - 12.0, R, int(b["seed"]), 1.0 - _c01((bt - 0.12) / 0.13), 2)
+		"static:foe":
+			# (out of its shell into him: the bolt, and its shell flaring where it leapt from)
+			var fade := 1.0 - _c01((bt - 0.12) / 0.13)
+			var sx := _wx(b["x1"], b["y1"])
+			var sy := _wy(b["x1"], b["y1"]) - 14.0
+			_bolt(sx, sy, _wx(b["x"], b["y"]), _wy(b["x"], b["y"]) - 8.0, R, int(b["seed"]), fade, 2)
+			_glow(sx, sy, 22.0, R[4], 0.8 * fade)
+			_glow(sx, sy, 10.0, Color.WHITE, 0.6 * fade)
+			for k in 5:
+				var a := _rh(int(b["seed"]), k + int(bt * 30.0)) * TAU
+				_ga(fade)
+				_fs(R[5])
+				_line(sx + cos(a) * 6.0, sy + sin(a) * 5.0, sx + cos(a) * 12.0, sy + sin(a) * 9.0, 1)
+		"hemlock:foe":
+			# (thorns lashing out of its shell at him, venom dripping off their points)
+			var u := _ease(bt / 0.15)
+			var fade := _c01((0.45 - bt) / 0.2)
+			var sx := _wx(b["x1"], b["y1"])
+			var sy := _wy(b["x1"], b["y1"]) - 14.0
+			var hx := _wx(b["x"], b["y"])
+			var hy := _wy(b["x"], b["y"]) - 8.0
+			for k in 3:
+				var side := (float(k) - 1.0) * 6.0
+				var ex := lerpf(sx, hx, 0.75 * u) + side
+				var ey := lerpf(sy, hy, 0.75 * u) + side * 0.4
+				_ga(fade)
+				_fs(R[1])
+				_line(sx + side * 0.5, sy + 1.0, ex, ey + 1.0, 3)
+				_fs(R[3])
+				_line(sx + side * 0.5, sy, ex, ey, 2)
+				_fs(R[5])
+				_line(lerpf(sx, ex, 0.6), lerpf(sy, ey, 0.6), ex, ey, 1)
+				_glow(ex, ey, 7.0, R[4], 0.6 * fade)
+				# (a drop of venom falling from its point)
+				var dy := 10.0 * _c01((bt - 0.15 - k * 0.04) / 0.25)
+				_fs(R[4])
+				_fill(_ri(ex), _ri(ey + dy), 2, 2)
+			_glow(sx, sy, 18.0, R[4], 0.5 * fade)
 		"fortress:clang":
 			var hh := _hero_at(b)
 			_glow(_wx(hh.x, hh.y), _wy(hh.x, hh.y) - 14.0, 26.0, Color("#fff4c8"), 0.8 * (1.0 - bt / 0.3))

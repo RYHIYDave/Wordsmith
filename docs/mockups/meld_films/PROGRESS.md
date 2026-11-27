@@ -66,3 +66,12 @@ and Hydra's second strike made to split again). Filmed with `--cases=m52film:cit
 On one page for his yes, each card its stone, its idea, what it does and its film: https://claude.ai/artifact/9u1bUEVM4YdrjRZq5SHHeG
 (`python3 page.py <films> <out> city2`). Off (`Melds52.CITY2_ON`) until he says yes. Still to come: the High City's seven runes with
 every other rune (168 melds and their 7 level 2 runes).
+
+## Every meld not yet checked, against his Art Rulebook (26 Nov 2026)
+
+His “find which are weakest compared to our art and animation ruleset.  Then bring them up to our standard”: all 263 not checked on
+23 Nov filmed and measured against a plain Strike's film, the painters read for the rest of the rulebook, the 30 weakest (the city's
+melds that slow, curse or hold) brought up and fixes made for whole groups (the High City's and the redone melds' kicks, holds, marks
+and things; the city's marks and grounds; cyan on monsters; Bedrock's, Pin's and Amber's monster moments). How, what it found and what
+was done: ../meld_rules_check2/README.md. The page of before and after for his yes: https://claude.ai/artifact/Btyxz18G72p7ZHf1kVU6rp
+(`python3 ../meld_rules_check2/page.py <before films> <after films> <out>`). The check-melds52 films now write `<id>.json` beside each.

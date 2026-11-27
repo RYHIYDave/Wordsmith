@@ -30,6 +30,14 @@ const BIG2 := {"boom": 1.6, "burst": 1.2, "pop": 0.9, "snap": 1.4, "went": 1.2, 
 ## (the lesser: a flash on what it struck)
 const MID2 := ["stagger", "mark", "aim", "pierce", "true", "deeper", "brand", "fall", "glare", "eye", "turn", "loop", "catch",
 	"deep", "still", "cuff", "lock", "hook", "stun", "yank", "veil"]
+## (A CURSE, A SLOW OR A HOLD LAID IS A MOMENT OF ITS OWN, as the city's 45: fx_m52p_city.gd STATUS; by its kind: how big, tiles, and its front)
+const STATUS2 := {"deeper": [1.0, "shock"], "brand": [1.0, "shock"], "fall": [1.1, "shock"], "veil": [1.2, "shock"], "glare": [0.9, "shock"],
+	"eye": [1.0, "shock"], "turn": [1.0, "water"], "loop": [1.0, "water"], "catch": [1.1, "water"], "still": [1.0, "water"], "deep": [1.0, "water"],
+	"cuff": [1.0, "shock"], "lock": [1.0, "shock"], "hook": [0.9, "sound"], "snare": [1.1, "sound"], "drink": [0.9, "water"], "drain": [0.9, "water"],
+	"stagger": [1.0, "shock"], "stun": [1.0, "shock"], "mark": [0.9, "sound"], "aim": [0.9, "sound"], "true": [1.0, "sound"], "pierce": [0.9, "shock"],
+	"ward": [1.0, "sound"], "shield": [0.9, "sound"], "plate": [0.9, "sound"], "orb": [0.9, "water"], "step": [0.8, "sound"], "fever": [0.8, "shock"]}
+## (on him: no flash over him)
+const STATUS2_ON_HIM := ["shield", "step", "fever", "plate"]
 ## (the heavy landings, which kick the screen; and the holds a tenth of a second: fx_melds52.gd HOLDS)
 const KICKS2 := {"boom": 2.5, "snap": 2.0, "burst": 1.5, "went": 1.5, "pop": 1.0, "net": 1.0}
 ## (the moments that are a curse on what it struck, in the curse's thorns)
@@ -56,9 +64,27 @@ func begin(b: Dictionary, e: Dictionary) -> bool:
 		fx.flash(b["x"], b["y"], 10.0, big, 0.22, PackedColorArray([Color.WHITE, R[5], R[4], R[3]]))
 		fx.spray(b["x"], b["y"], int(10 + big * 8.0), PackedColorArray([R[5], R[4], R[3]]), 3.0 + big * 2.0, 14.0)
 		fx.glow(b["x"], b["y"], 2.0 + big, 0.5)
+	elif STATUS2.has(what) and fx != null and not b.get("minor", false):
+		# (a notch too high rather than a notch too low, his Art Rulebook's Animations 1)
+		var sz: float = float(STATUS2[what][0]) * 1.5
+		if not STATUS2_ON_HIM.has(what):
+			fx.flash(b["x"], b["y"], mid, sz, 0.2, PackedColorArray([Color.WHITE, R[5], R[4], R[3]]))
+			fx.glow(b["x"], b["y"], 1.5 + sz, 0.45)
+		fx.spray(b["x"], b["y"], int(12 + sz * 10.0), PackedColorArray([R[5], R[4], R[3]]), 3.0 + sz * 2.0, 16.0, mid)
+		if STATUS2[what][1] == "shock":
+			fx.kick(0.8)
 	elif what in MID2 and fx != null:
 		fx.flash(b["x"], b["y"], mid, 0.7, 0.16, PackedColorArray([Color.WHITE, R[5], R[4]]))
 		fx.spray(b["x"], b["y"], 8, PackedColorArray([R[5], R[4], R[3]]), 2.5, 10.0, mid)
+	if what == "leave" and fx != null:
+		var lr0 := float(e.get("r", 1.2))
+		fx.flash(b["x"], b["y"], 4.0, maxf(1.0, lr0), 0.2, PackedColorArray([Color.WHITE, R[5], R[4], R[3]]))
+		fx.spray(b["x"], b["y"], 18, PackedColorArray([R[5], R[4], R[3]]), 3.0 + lr0, 14.0)
+		fx.glow(b["x"], b["y"], 2.0 + lr0, 0.5)
+	# (on him from a monster: its sparks thrown off him, in the enemy's colours where it curses or slows him)
+	if what == "foe" and fx != null:
+		var hostile: bool = b["id"] in ["refrain", "bloodcurse", "hexblast", "evileye", "delirium", "talisman", "grudge", "omen", "pall", "rewind", "sap", "slowfuse", "stillpoint", "quickening", "respite", "eternity", "stutter", "doldrums"]
+		fx.spray(b["x"], b["y"], 14, PackedColorArray([ENEMY[5], ENEMY[4], ENEMY[3]]) if hostile else PackedColorArray([R[5], R[4], R[3]]), 3.0, 16.0, 22.0)
 	match what:
 		"boom", "burst", "pop":
 			for i in 12:
@@ -87,20 +113,30 @@ func _shield_face(cx: float, cy: float, s: float, R: PackedColorArray, a: float)
 	_fs(R[0])
 	_fill(_ri(cx - w * 0.5), _ri(cy - s * 0.5), 1, _ri(s * 0.55))
 	_fill(_ri(cx + w * 0.5) - 1, _ri(cy - s * 0.5), 1, _ri(s * 0.55))
-	_glint(cx, cy - s * 0.15, 2.0, R, a)
+	_fs(R[4])
+	_fill(_ri(cx - w * 0.5) + 1, _ri(cy - s * 0.5) + 1, 1, _ri(s * 0.45))
+	_glint(cx, cy - s * 0.15, maxf(3.0, s * 0.2), R, a)
 
 
 ## Stars of a stagger turning round over a head.
 func _stars(cx: float, cy: float, n: int, R: PackedColorArray, a: float, spin: float) -> void:
+	# (as big as they go, his Art Rulebook's Animations 1: five four-pointed stars, the near ones brighter, twinkling)
+	n = maxi(n, 5)
 	for k in n:
 		var ang := spin + float(k) / n * TAU
-		var px := cx + cos(ang) * 7.0
-		var py := cy + sin(ang) * 2.5
-		_ga(a)
+		var px := _ri(cx + cos(ang) * 13.0)
+		var py := _ri(cy + sin(ang) * 5.0)
+		var arm := 3 + int(1.5 + 1.5 * sin(t * 12.0 + k * 1.7))
+		_ga(a * (1.0 if sin(ang) > 0.0 else 0.7))
+		_fs(R[4])
+		_fill(px, py - arm, 1, arm * 2 + 1)
+		_fill(px - arm, py, arm * 2 + 1, 1)
 		_fs(R[5])
-		_fill(_ri(px), _ri(py) - 1, 1, 3)
-		_fill(_ri(px) - 1, _ri(py), 3, 1)
-		_glow(px, py, 3.0, R[4], 0.5 * a)
+		_fill(px - 1, py, 3, 1)
+		_fill(px, py - 1, 1, 3)
+		_fs(Color.WHITE)
+		_fill(px, py, 1, 1)
+		_glow(px, py, 5.0, R[4], 0.6 * a)
 
 
 ## Drops running from (ax, ay) to (bx, by) on the screen, `u` of the way.
@@ -113,11 +149,12 @@ func _drops(ax: float, ay: float, bx: float, by: float, u: float, n: int, R: Pac
 		var py := ay + (by - ay) * v - sin(v * PI) * 12.0
 		_ga(a)
 		_fs(R[1])
-		_fill(_ri(px), _ri(py) + 1, 2, 2)
+		_fill(_ri(px) - 1, _ri(py) + 1, 4, 3)
 		_fs(R[3])
-		_fill(_ri(px), _ri(py), 2, 2)
+		_fill(_ri(px) - 1, _ri(py) - 1, 4, 4)
+		_fill(_ri(px), _ri(py) - 2, 2, 1)
 		_fs(R[5])
-		_fill(_ri(px), _ri(py), 1, 1)
+		_fill(_ri(px) - 1, _ri(py) - 1, 1, 1)
 
 
 # --- the moments ---
@@ -132,6 +169,10 @@ func paint_floor(b: Dictionary) -> void:
 	var x: float = b["x"]
 	var y: float = b["y"]
 	var rr: float = float(b["e"].get("r", 1.2))
+	# (a curse, a slow or a hold laid: its front rolling out from it)
+	if STATUS2.has(what):
+		_front(x, y, 0.3 + float(STATUS2[what][0]) * 1.6 * _ease(u), _A5(R), sd, fade, str(STATUS2[what][1]))
+		_front(x, y, 0.2 + float(STATUS2[what][0]) * 1.0 * _ease(u), _A5(R), sd + 7, fade * 0.7, "water" if str(STATUS2[what][1]) != "water" else "sound")
 	match what:
 		"again", "spin", "maw", "eddy":
 			if b["id"] in ["refrain", "rewind", "fetters"]:
@@ -152,7 +193,17 @@ func paint_floor(b: Dictionary) -> void:
 			_shield_face(_wx(x, y), _wy(x, y) - 6.0 - 4.0 * _ease(u), 10.0, R, fade)
 		"yank":
 			_front(x, y, 0.3 + 0.8 * _ease(u), _A5(R), sd, fade, "shock")
+		"foe":
+			var hostile: bool = b["id"] in ["refrain", "bloodcurse", "hexblast", "evileye", "delirium", "talisman", "grudge", "omen", "pall", "rewind", "sap", "slowfuse", "stillpoint", "quickening", "respite", "eternity", "stutter", "doldrums"]
+			_front(x, y, 0.3 + 0.8 * _ease(u), _A5(PackedColorArray(ENEMY) if hostile else R), sd, fade, "shock")
 		"leave":
+			# (the ground it lays, laid: its edge rolling out to where it will stand, the light of it rising, sparks off it)
+			var lr := float(b["e"].get("r", b.get("r", 1.2)))
+			_front(x, y, lr * (0.3 + 0.8 * _ease(u)), _A5(R), sd, fade, "water")
+			_front(x, y, lr * (0.15 + 0.55 * _ease(u)), _A5(R), sd + 3, fade * 0.7, "sound")
+			for k in 6:
+				var la := float(k) / 6.0 * TAU + 0.4
+				_glint(_wx(x, y) + cos(la) * lr * 14.0 * (0.4 + 0.6 * u), _wy(x, y) - 4.0 - u * 16.0 + sin(la) * lr * 5.0, 3.0, R, fade)
 			_glow(_wx(x, y), _wy(x, y), 22.0, R[3], 0.5 * fade)
 		"shards":
 			# (its shards flying out, each a streak in its colour)
@@ -182,11 +233,27 @@ func paint_air(b: Dictionary) -> void:
 	var y1px := _wy(b["x1"], b["y1"]) - 12.0
 	var ax := _wx(x, y)
 	var ay := _wy(x, y) - 12.0
+	# (WORDSMITHING GLOWS, his Art Rulebook's Pillar 5: the meld's own symbol flares over what it struck and rises off it; and over the
+	# ground it lays: fx_m52p_city.gd)
+	if STATUS2.has(what) and not STATUS2_ON_HIM.has(what):
+		_glow(top.x, top.y - 44.0 - u * 10.0, 14.0, R[4], 0.55 * fade)
+		_glyph(b["id"], top.x, top.y - 44.0 - u * 10.0, 2, R[3], R[5], minf(1.0, fade * 2.0))
+	if what == "leave":
+		_glow(ax, ay - 10.0 - u * 16.0, 14.0, R[4], 0.55 * fade)
+		_glyph(b["id"], ax, ay - 10.0 - u * 16.0, 2, R[3], R[5], minf(1.0, fade * 2.0))
 	if what in CURSE:
-		_thorns(top.x, top.y, 3 + (int(b["e"].get("n", 0)) if what == "veil" else 0), R, fade, sd)
+		_thorns(top.x, top.y, 5 + (int(b["e"].get("n", 0)) if what == "veil" else 0), R, fade, sd)
 		if what == "fall":
+			# (the curse falling on it from above like a stroke of ill luck)
 			var v := _ease(u)
-			_streak(top.x + 14.0 - 14.0 * v + 4.0, top.y - 30.0 + 30.0 * v - 4.0, top.x + 14.0 - 14.0 * v, top.y - 30.0 + 30.0 * v, R, fade, 2)
+			_streak(top.x + 22.0 - 22.0 * v + 6.0, top.y - 44.0 + 44.0 * v - 6.0, top.x + 22.0 - 22.0 * v, top.y - 44.0 + 44.0 * v, R, fade, 3)
+			if u > 0.5:
+				_glint(top.x, top.y, 7.0 * (1.0 - u), R, fade)
+		elif what == "veil":
+			# (a veil of shadow drawn over it: dark folds hanging round it)
+			for k in 5:
+				var vx := mp.x + (float(k) - 2.0) * 6.0
+				_curl(vx, top.y + 6.0 + u * 6.0, 10.0, [R[0], R[1], R[2]], sd + k, fade * 0.8)
 		elif what == "glare" or what == "eye":
 			_sight(top.x, top.y - 4.0, u, R, fade)
 		elif what == "brand":
@@ -197,8 +264,9 @@ func paint_air(b: Dictionary) -> void:
 		"drink", "drain":
 			_drops(mp.x, mp.y - _mid(b["m"]), x1px, y1px, u, 5, R, fade, sd)
 		"orb":
-			_glow(ax, ay, 8.0, R[3], 0.6 * fade)
-			_drops(ax, ay + 6.0, ax, ay - 10.0, u, 3, R, fade, sd)
+			_glow(ax, ay, 14.0, R[3], 0.7 * fade)
+			_drops(ax - 6.0, ay + 8.0, ax, ay - 16.0, u, 4, R, fade, sd)
+			_drops(ax + 6.0, ay + 8.0, ax, ay - 16.0, u, 4, R, fade, sd + 3)
 		"mark", "aim", "true":
 			_sight(top.x, top.y - 2.0, u, R, fade)
 			if what == "true":
@@ -215,11 +283,13 @@ func paint_air(b: Dictionary) -> void:
 				_flames(hx, hy + 10.0, 3, 8.0, 10.0 + 2.0 * float(b["e"].get("n", 1)), fade, R, sd)
 		"shield", "ward":
 			var sx := _wx(x, y)
-			var sy := _wy(x, y) - 30.0
-			_shield_face(sx, sy - 4.0 * _ease(u), 11.0, R, fade)
+			# (over his head, clear of him: his Art Rulebook's Animations 4)
+			var sy := _wy(x, y) - 46.0
+			_shield_face(sx, sy - 4.0 * _ease(u), 18.0, R, fade)
 			if what == "ward":
 				if b["id"] == "talisman":
-					_thorns(top.x, top.y, 2, R, fade, sd)
+					_thorns(sx, sy - 12.0, 4, R, fade, sd)
+					_thorns(top.x, top.y, 4, R, fade, sd)
 				else:
 					_hand(top.x, top.y - 4.0, 4.0, -PI * 0.5 + u, R, fade)
 		"heads":
@@ -235,11 +305,14 @@ func paint_air(b: Dictionary) -> void:
 				_hand(top.x, top.y - 4.0, 3.0, u * TAU * 0.25, R, fade * 0.8)
 		"fuse":
 			# (the fuse burning down on the slowed one, a spark at its end, slowly)
-			var fl := 10.0 * (1.0 - u)
+			var fl := 18.0 * (1.0 - u)
 			_ga(1.0)
+			_fs(R[1])
+			_line(top.x, top.y + 1.0, top.x + fl, top.y - fl * 0.6 + 1.0, 2)
 			_fs(R[2])
-			_line(top.x, top.y, top.x + fl, top.y - fl * 0.6, 1)
-			_glow(top.x + fl, top.y - fl * 0.6, 4.0 + 2.0 * sin(bt * 20.0), R[5], 0.8)
+			_line(top.x, top.y, top.x + fl, top.y - fl * 0.6, 2)
+			_glint(top.x + fl, top.y - fl * 0.6, 3.0 + 1.5 * sin(bt * 20.0), R, 1.0)
+			_glow(top.x + fl, top.y - fl * 0.6, 7.0 + 2.0 * sin(bt * 20.0), R[5], 0.8)
 		"cuff", "lock", "hook":
 			_shackle(mp.x, mp.y + 2.0, R, fade)
 			if what == "lock":
@@ -247,7 +320,8 @@ func paint_air(b: Dictionary) -> void:
 			elif what == "hook":
 				_chain(mp.x - 10.0, mp.y - 14.0, mp.x, mp.y, R, fade)
 		"snare":
-			_rope(ax, ay + 12.0, 9.0 * (1.0 - u * 0.4), 4.0, R, fade, sd)
+			_rope(ax, ay + 12.0, 14.0 * (1.0 - u * 0.4), 6.0, R, fade, sd)
+			_rope(ax, ay + 9.0, 11.0 * (1.0 - u * 0.4), 5.0, R, fade * 0.8, sd + 1)
 		"spread":
 			_hand(ax, ay - 10.0, 6.0, -PI * 0.5 + u * PI, R, fade)
 	# (on him, from a monster carrying one: its twist in its colour; a curse or a slow it lays in the enemy's pink and gold)
@@ -258,20 +332,28 @@ func paint_air(b: Dictionary) -> void:
 		var slowing: bool = b["id"] in ["rewind", "sap", "slowfuse", "stillpoint", "quickening", "respite", "eternity", "stutter", "doldrums"]
 		var C: PackedColorArray = PackedColorArray(ENEMY) if cursing or slowing else R
 		if cursing:
-			_thorns(hx, hy - 22.0, 3, C, fade, sd)
+			_thorns(hx, hy - 24.0, 5, C, fade, sd)
 		elif slowing:
-			_hand(hx, hy - 14.0, 5.0, -PI * 0.5 + u * PI, C, fade)
+			_hand(hx, hy - 31.0, 11.0, -PI * 0.5 + u * PI, C, fade)
 		match b["id"]:
 			"backwash", "gullet", "harpoon", "whirlpool", "haven", "eddy", "whiplash", "maelstrom":
 				_streak(x1px, y1px, hx, hy, R, fade, 2)
 			"fetters", "thrall", "tripwire", "pin", "mauler", "stockade", "manacle", "snag", "dragnet":
 				if b["id"] in ["manacle", "fetters"]:
 					_shackle(hx, hy + 16.0, R, fade)
+					_shackle(hx + 8.0, hy + 17.0, R, fade * 0.8)
 				else:
-					_rope(hx, hy + 14.0, 8.0, 3.0, R, fade, sd)
+					_rope(hx, hy + 14.0, 13.0, 5.0, R, fade, sd)
+					_rope(hx, hy + 10.0, 11.0, 4.0, R, fade * 0.8, sd + 1)
+			"hydra", "swarm", "shellburst", "pinpoint", "rebound", "flechette", "starburst":
+				# (a Splitting one's: shards of it bursting off him)
+				for k in 6:
+					var ang := float(k) / 6.0 * TAU + 0.3
+					_shard(hx + cos(ang) * (6.0 + u * 16.0), hy + 8.0 + sin(ang) * (3.0 + u * 8.0), 4.0, 8.0, [R[0], R[1], R[2], R[3], R[4], R[5]], sd + k, fade)
+				_glint(hx, hy, 6.0, R, fade)
 			_:
 				if not cursing and not slowing:
-					_glow(hx, hy, 12.0, R[3], 0.5 * fade)
+					_glint(hx, hy - 4.0, 7.0, R, fade)
 	if what == "foeSplit":
 		_glint(_wx(x, y), _wy(x, y) - 14.0, 6.0 * (1.0 - u), R, fade)
 		_front(x, y, 0.3 + 0.7 * _ease(u), _A5(R), sd, fade, "shock")
@@ -304,7 +386,7 @@ func paint_floor_more() -> void:
 				if id == "haven" or id == "gullet":
 					_glow(cx, cy, rr * 8.0, R[2], 0.4 * left)
 			"hex":
-				_spikes(x, y, rr, 8 if id != "pall" else 14, R, 0.55 * left, sd, 6.0, 2.0)
+				_spikes(x, y, rr, 12 if id != "pall" else 18, R, 0.7 * left, sd, 10.0, 2.0)
 			"bubble":
 				_hand(cx, cy - 18.0, 6.0, t * (0.6 if id != "quickening" else 3.0), R, 0.7 * left)
 				if id == "eternity":
@@ -327,10 +409,10 @@ func paint_floor_more() -> void:
 					_:
 						_rope(cx, cy, 9.0, 4.0, R, 0.8 * left, sd)
 			"ward":
-				_shield_face(cx, cy - 10.0 + sin(t * 2.0) * 1.5, 9.0, R, 0.7 * left)
+				_shield_face(cx, cy - 14.0 + sin(t * 2.0) * 1.5, 15.0, R, 0.8 * left)
 			"rune":
 				if id in ["hexblast", "slowfuse", "shellburst"]:
-					_glint(cx, cy - 4.0, 3.0 + sin(t * 9.0), R, 0.8 * left)
+					_glint(cx, cy - 6.0, 5.0 + 1.5 * sin(t * 9.0), R, 0.9 * left)
 	_ga(1.0)
 
 
@@ -345,7 +427,7 @@ func paint_air_more() -> void:
 		var cx := _wx(o.world.x, o.world.y)
 		var cy := _wy(o.world.x, o.world.y) - _mid(o) * 2.0 - 10.0
 		if bool(o.m52.get("grudge", false)) and o.hex_t > 0.0:
-			_thorns(cx, cy, 2, ramp("grudge"), 0.7, o.id)
+			_thorns(cx, cy, 4, ramp("grudge"), 0.8, o.id)
 		if bool(o.m52.get("eternity", false)) and o.still_t > 0.0:
 			_hand(cx, cy, 4.0, t * 0.3, ramp("eternity"), 0.7)
 		if o.m52.has("stutter") and o.still_t > 0.0:

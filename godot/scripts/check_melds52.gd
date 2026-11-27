@@ -37,11 +37,19 @@ const BEHIND := {"flashfreeze": "flashfreeze:sheet", "aftershock": "aftershock:q
 ## (THE FILMS' THIRD STEP, the carrier: a monster's life; how low it starts, for what its twist waits on; those it dies for;
 ## the numbers of the twist made certain for the film; how long to wait after his blows, for what comes back after)
 const FOE_LIFE := 600.0
-const FOE_LOW := {"lifeline": 0.4, "rampage": 0.5, "rapier": 0.4, "hairtrigger": 0.3, "shieldwall": 0.7, "fury": 0.5}
+const FOE_LOW := {"lifeline": 0.4, "rampage": 0.5, "rapier": 0.4, "hairtrigger": 0.3, "shieldwall": 0.7, "fury": 0.5, "overcharge": 0.4, "whiteout": 0.5}
+## (THE 26 WHOSE OWN MOMENT NEVER PLAYED ON A MONSTER, the check of 26 Nov 2026 against his Art Rulebook, his “Fix them now
+## (Recommended)”: what each one's twist waits on made so on him as the monster comes: him chilled, shocked, burning or poisoned)
+const FOE_ON_HIM := {"coldsnap": "chill", "permafrost": "chill", "whiteout": "chill", "tempest": "shock", "rekindle": "burn", "flashfire": "burn", "bloat": "poison"}
+## (those whose twist waits on its blows landing on him: blows made sure of, up to three, until it is seen; what it is seen by, where
+## that is not its "foe" moment: Papercut's cuts opening again, and what Rekindle, Flashfire and Bloat leave on him)
+const FOE_BLOWS := ["aftershock", "coldsnap", "flurry", "glacier", "inferno", "jolt", "miasma", "overcharge", "whiteout", "carapace", "papercut",
+	"rekindle", "flashfire", "bloat"]
+const FOE_SEEN := {"papercut": "papercut:cuts", "rekindle": "~rekindle", "flashfire": "~flare", "bloat": "~bloat"}
 const FOE_DIES := ["cluster", "bloodbloom", "blastwave", "mayhem", "timebomb", "minefield", "quickfuse", "concussion", "smoulder"]
 const FOE_TUNE := {"needle": {"foeCrit": 1.0}, "brand": {"foeCrit": 1.0}, "hornet": {"foeWindow": 99.0}, "rapier": {"foeEach": 10.0}, "doubletap": {"foeCrit": 1.0}, "vendetta": {"foeCrit": 1.0},
 	"detonator": {"foeCrit": 1.0}, "lancet": {"foeCrit": 1.0}, "bullseye": {"foeCrit": 1.0}}
-const FOE_TAIL := {"sanctuary": 3.6, "timebomb": 2.4, "detonator": 1.8}
+const FOE_TAIL := {"sanctuary": 3.6, "timebomb": 2.4, "detonator": 1.8, "rekindle": 1.8, "aftershock": 1.6}
 ## (whose twist is seen on a kill, or on one stunned already)
 const KILL := ["quickfuse", "concussion", "smoulder", "cluster", "bloodbloom", "mayhem", "timebomb", "blastwave", "minefield"]
 ## (whose twist wants one alone, certain criticals, a frenzy built up: the film makes it so)
@@ -204,6 +212,7 @@ func run(only := "") -> void:
 			cases += 1
 			h.m52.forget()
 			h.m52.told = {}
+			h.m52.told_foe = {}
 			for m in M._w_pack:
 				m.m52 = {}
 				m.dead = false
@@ -283,6 +292,12 @@ func run(only := "") -> void:
 # <shots>/film/<id>.mp4 (ffmpeg) as each is done, its frames then let go.
 
 var _dir := ""
+## (each film's marks, for its look to be measured: the frame each side starts on, and the frame each moment its rules told was
+## first seen on; written beside the film as <id>.json)
+var _marks := {}
+var _told_at := {}
+## (and the frame each moment of the monster carrying it was first seen on)
+var _foe_told_at := {}
 
 
 ## The film waiting `secs`; for a meld seen only as he moves (MOVES), him darting aside (`way` 1 one way, -1 back) as the blow
@@ -305,6 +320,12 @@ func _frames(k: int, secs: float) -> int:
 		await M.get_tree().process_frame
 		await RenderingServer.frame_post_draw
 		M.get_viewport().get_texture().get_image().save_jpg("%s/%04d.jpg" % [_dir, k], 0.92)
+		for told in h.m52.told:
+			if not _told_at.has(told):
+				_told_at[told] = k
+		for told in h.m52.told_foe:
+			if not _foe_told_at.has(told):
+				_foe_told_at[told] = k
 		k += 1
 		t += M.get_process_delta_time()
 	return k
@@ -450,7 +471,12 @@ func film(only := "") -> void:
 		M.fx.clear()
 		var k := 0
 		h.m52.told = {}
+		h.m52.told_foe = {}
+		_marks = {}
+		_told_at = {}
+		_foe_told_at = {}
 		for side in ["front", "behind"]:
+			_marks[side] = k
 			_fresh()
 			# (Hourglass behind works on the ground the blow leaves: Guarding beside it, for the film, leaves a ward)
 			# (Purge in front waits on one blow culling three: the Whirl's, as its check makes it)
@@ -521,6 +547,13 @@ func film(only := "") -> void:
 			else:
 				M._w_strike(h)
 				k = await _walk(k, 0.6, id, 1.0)
+			# (Talisman and Respite in front wait on a blow on his shield: one of the pack strikes it, so their moment is seen)
+			if side == "front" and id in ["talisman", "respite"] and not M._w_pack.is_empty():
+				var by = M._w_pack[0]
+				h.blow_by = by
+				h.hurt_by(20.0, "phys", by.words, {}, by, by.world)
+				h.blow_by = null
+				k = await _frames(k, 0.3)
 			# (what its new moment waits on after the first blow, as its check makes it: a blow on him, one dying in its circle)
 			if CH != null:
 				await CH._after(id, side)
@@ -564,6 +597,7 @@ func film(only := "") -> void:
 					h.frenzy_t = minf(h.frenzy_t, 0.3)
 			k = await _walk(k, rest, id, -1.0)
 		# (carried by one of the pack, which comes for him: its two runes and the meld, as an altar lays them)
+		_marks["foe"] = k
 		_fresh()
 		# (a Guarding meld: his shield up as the monster comes, to show what it does to what strikes it)
 		M._w_put(h, 0, "front", [id] if SHIELD.has(id) else [])
@@ -600,6 +634,18 @@ func film(only := "") -> void:
 			h.poison_dps = 2.0
 		if id == "quicksilver":
 			h.shock_t = 6.0
+		match str(FOE_ON_HIM.get(id, "")):
+			"chill":
+				h.chill_t = 6.0
+				h.chill_k = 0.3
+			"shock":
+				h.shock_t = 6.0
+			"burn":
+				h.burn_t = 6.0
+				h.burn_dps = 2.0
+			"poison":
+				h.poison_t = 6.0
+				h.poison_dps = 2.0
 		m.state = "chase"
 		m._t = 0.0
 		m._cd = 0.0
@@ -617,6 +663,26 @@ func film(only := "") -> void:
 				h.hurt_by(20.0, str(by.get("el", "phys")), m.words, {}, m, m.world)
 				h.blow_by = null
 				k = await _frames(k, 0.35)
+		# (THE 26: blows on him, up to three, until its twist is seen; his shield down first, so they land (Carapace's heals on a blow
+		# that lands); and then what it left on him going out, so what comes of it is seen: Rekindle's burn lighting again, Flashfire's
+		# flare, Bloat's burst)
+		if FOE_BLOWS.has(id) and not m.dead:
+			var see: String = str(FOE_SEEN.get(id, id + ":foe"))
+			var seen := func() -> bool: return h.m52.on_him.has(see.substr(1)) if see.begins_with("~") else h.m52.told_foe.has(see)
+			h.shield = 0.0
+			h.shield_t = 0.0
+			var by: Dictionary = m.blow()
+			for _j in 3:
+				if m.dead or seen.call():
+					break
+				h.blow_by = m
+				h.hurt_by(20.0, str(by.get("el", "phys")), m.words, {}, m, m.world, true)
+				h.blow_by = null
+				k = await _frames(k, 0.35)
+			if id in ["rekindle", "flashfire"]:
+				h.burn_t = minf(h.burn_t, 0.3)
+			if id == "bloat":
+				h.poison_t = minf(h.poison_t, 0.3)
 		# (Fervor redone, on a monster: a kin dies near it, and feeds it)
 		if CRF != null and id == "fervor" and M._w_pack.size() > 1 and not M._w_pack[1].dead:
 			var kin = M._w_pack[1]
@@ -632,6 +698,9 @@ func film(only := "") -> void:
 		# (he strikes back: its shield struck and broken, it hurt and brought low, or killed, for what each waits on)
 		if FOE_DIES.has(id) or M52.is_reap(id) or (CHF != null and CHF.foe_dies(id)) or ((M52.is_city(id) or M52.is_city2(id)) and not M52.is_new_rank(id) and (M52.T()["of"][id] as Array).has("splitting")) or id in ["hexblast", "slowfuse", "tripwire"]:
 			m.life = 1.0
+		# (Minefield's twist waits on it dying with its shield still up: what is left of the shield, less than his blow)
+		if id == "minefield":
+			m.shield = minf(m.shield, 10.0)
 		M._w_strike(h)
 		k = await _frames(k, 0.6)
 		if not m.dead:
@@ -656,10 +725,17 @@ func film(only := "") -> void:
 		for f in DirAccess.get_files_at(_dir):
 			DirAccess.remove_absolute(_dir + "/" + f)
 		DirAccess.remove_absolute(_dir)
+		_marks["end"] = k
+		var mf := FileAccess.open(root + "/" + id + ".json", FileAccess.WRITE)
+		if mf != null:
+			mf.store_string(JSON.stringify({"sides": _marks, "told": _told_at, "foe_told": _foe_told_at}))
+			mf.close()
 		print("MELDS52 FILM %s: %d frames, ffmpeg %d" % [id, k, code])
 		print("MELDS52 TOLD %s: %s" % [id, ", ".join(PackedStringArray(h.m52.told.keys()))])
 		var want: Array = preload("res://scripts/check_high.gd").EXPECT.get(id, {}).get("foe", []) + (preload("res://scripts/check_redo.gd").EXPECT.get(id, {}).get("foe", []) if M52.is_redo(id) else [])
-		print("MELDS52 FOE %s: %s" % [id, "shown" if h.m52.told.keys().any(func(t): return str(t).ends_with(":foe") or str(t).ends_with(":foeSplit") or (M52.is_reap(id) and str(t).ends_with(":rise")) or want.any(func(w): return str(t) == id + ":" + w)) else "NOT SHOWN"])
+		# (shown: its "foe" moment, or a moment of its own told as the monster's: h.m52.told_foe)
+		print("MELDS52 FOE %s: %s" % [id, "shown" if h.m52.told.keys().any(func(t): return str(t).ends_with(":foe") or str(t).ends_with(":foeSplit") or (M52.is_reap(id) and str(t).ends_with(":rise")) or want.any(func(w): return str(t) == id + ":" + w)) or h.m52.told_foe.keys().any(func(t): return str(t).begins_with(id + ":")) else "NOT SHOWN"])
+		print("MELDS52 FOE-TOLD %s: %s" % [id, str(_foe_told_at)])
 	M52.ON = was
 	M52.REAP_ON = was_reap
 	M52.HIGH_ON = was_high

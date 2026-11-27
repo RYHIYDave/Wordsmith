@@ -124,12 +124,17 @@ func _tune(id: String) -> Dictionary:
 
 ## (what each has been seen to do, "id:what", for its check: check_melds52.gd)
 var told := {}
+## (and of those, what a monster carrying one did: told with `foe`, or its "foe" moment; the check of 26 Nov 2026 against his Art
+## Rulebook, which found 26 melds whose own moment never played on a monster)
+var told_foe := {}
 
 
 func _tell(e: Dictionary) -> void:
 	e["t"] = "m52"
 	var k := "%s:%s" % [e.get("id", ""), e.get("what", "")]
 	told[k] = int(told.get(k, 0)) + 1
+	if bool(e.get("foe", false)) or str(e.get("what", "")) == "foe":
+		told_foe[k] = int(told_foe.get(k, 0)) + 1
 	h._tell(e)
 
 
