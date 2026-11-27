@@ -5,7 +5,7 @@ own rings (Recommended)”. Branch `art/shield-rings`, from `art/meld-rules-chec
 builds on it: Parry's ring of blades and the same painter).
 
 The page for his yes: https://claude.ai/artifact/1eQ6j6gft1UinPKybQY7qY (`page.py`, then `poster.py` for stills that show the ring;
-`report.json`, `page.html`). NOTHING HERE IS LIVE WITHOUT HIS YES (pictures first).
+`report.json`, `page.html`). HIS YES TO THE PAGE, 27 Nov 2026: “Yes, bring them in (Recommended)”.
 
 ## What
 
