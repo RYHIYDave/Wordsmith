@@ -10,16 +10,21 @@ extends "res://scripts/check_speed.gd"
 const CAP := 300.0
 
 
-## (a place he walks to that is no monster: a lever)
+## (a place he walks to that is no monster: a lever, a thing of a quest lying where it fell, the forge crank, the temple door)
 class Spot:
 	var world: Vector2
 	var r := 0.3
 	var dead := false
-	var def := {"name": "lever"}
-	var prop: Dictionary
-	func _init(at: Vector2, p: Dictionary) -> void:
+	var def := {}
+	var done: Callable
+	func _init(what: String, at: Vector2, is_done: Callable) -> void:
+		def = {"name": what}
 		world = at
-		prop = p
+		done = is_done
+
+
+const GEAR = preload("res://scripts/stoker.gd").Gear
+const KEY = preload("res://scripts/keybearers.gd").TempleKey
 var n_bad := 0
 
 
@@ -105,12 +110,11 @@ func _play(f: int, life_k: float) -> Dictionary:
 					pick_d = dd
 					pick = m
 			if pick == null and unreached > 0:
-				# (all he can reach are dead: a lever he can reach, walked to, as a player pulls it to raise its gate)
+				# (all he can reach are dead: what a player goes to next, the nearest he can reach: a lever to raise its gate, a gear or
+				# key lying where its bearer fell, the forge crank with its gear, the temple door with its keys)
 				var lv_d := 1 << 30
-				for p in M.map.props:
-					if p["kind"] != "lever" or int(p["state"]) != 0 or p.get("name", "") == "crank":
-						continue
-					var lt := Vector2i(floori(float(p["x"])), floori(float(p["y"])))
+				for sp in _spots(spots):
+					var lt := Vector2i(floori(sp.world.x), floori(sp.world.y))
 					for oy in range(-1, 2):
 						for ox in range(-1, 2):
 							var tx: int = lt.x + ox
@@ -120,9 +124,7 @@ func _play(f: int, life_k: float) -> Dictionary:
 							var v: int = dist[ty * M.map.w + tx]
 							if v >= 0 and v < lv_d:
 								lv_d = v
-								if not spots.has(int(p["i"])):
-									spots[int(p["i"])] = Spot.new(Vector2(float(p["x"]), float(p["y"])), p)
-								pick = spots[int(p["i"])]
+								pick = sp
 				if pick != null:
 					pick_d = lv_d
 				elif stranded == 0.0:
@@ -162,8 +164,8 @@ func _play(f: int, life_k: float) -> Dictionary:
 			while at >= 0:
 				path.push_front(Vector2(at % M.map.w + 0.5, at / M.map.w + 0.5))
 				at = came[at]
-		if target is Spot and int(target.prop["state"]) != 0:
-			print("AUTORUN   a lever pulled on floor %d at %s" % [f, target.world])
+		if target is Spot and target.done.call():
+			print("AUTORUN   %s done on floor %d at %s" % [target.def["name"], f, target.world])
 			target.dead = true
 			continue
 		var to: Vector2 = target.world - h.world
@@ -222,6 +224,38 @@ func _play(f: int, life_k: float) -> Dictionary:
 	if M._stairs != null:
 		way = "open" if M._stairs.opened >= 0 else "shut"
 	return {"t": t, "dead": dead, "all": all, "boss": boss, "stalls": stalls, "way": way}
+
+
+## (the places a player would go to next that are not yet done, each kept by its key so that the same one is gone for)
+func _spots(kept: Dictionary) -> Array:
+	var out: Array = []
+	for p in M.map.props:
+		if p["kind"] == "lever" and int(p["state"]) == 0 and p.get("name", "") != "crank":
+			var k := "lever%d" % int(p["i"])
+			if not kept.has(k):
+				kept[k] = Spot.new("lever", Vector2(float(p["x"]), float(p["y"])), func(): return int(p["state"]) != 0)
+			out.append(kept[k])
+	for holder in [M._monsters.perils, M._monsters.stands]:
+		if holder == null:
+			continue
+		for n in holder.get_children():
+			if (n is GEAR or n is KEY) and not n.is_queued_for_deletion():
+				var k := "item%d" % n.get_instance_id()
+				if not kept.has(k):
+					var node = n
+					kept[k] = Spot.new("gear" if n is GEAR else "key", n.at, func(): return not is_instance_valid(node) or node.is_queued_for_deletion())
+				out.append(kept[k])
+	var fu = M.furnace
+	if fu != null and fu.step == "gear" and not fu._crank.is_empty():
+		if not kept.has("crank"):
+			kept["crank"] = Spot.new("crank", Vector2(float(fu._crank["x"]), float(fu._crank["y"])), func(): return fu.step != "gear")
+		out.append(kept["crank"])
+	var te = M.temple
+	if te != null and not te.open and te.keys >= te.need and not te._door.is_empty():
+		if not kept.has("temple"):
+			kept["temple"] = Spot.new("temple door", Vector2(float(te._door["middle"]["x"]), float(te._door["middle"]["y"])), func(): return te.open)
+		out.append(kept["temple"])
+	return out
 
 
 ## (whether a body could walk straight from a to b: the map lets it stand all along the line)
