@@ -208,7 +208,8 @@ func _play(f: int, life_k: float) -> Dictionary:
 			continue
 		var to: Vector2 = target.world - h.world
 		var dlen: float = to.length()
-		var see: bool = M._monsters.sees(h.world, target.world)
+		# (in sight, or within his reach whatever lies between: across the Swamp Colossus's water, which sight does not cross)
+		var see: bool = M._monsters.sees(h.world, target.world) or (not (target is Spot) and dlen <= minf(reach, 2.0) + float(target.r))
 		# (a thing to take is walked onto, not stood off from: a key is taken from 0.6 tiles, a lever from 1.5)
 		if dlen <= (0.1 if target is Spot and not target.strike else (1.0 if target is Spot else reach + float(target.r))) and see:
 			h.auto_dir = Vector2.ZERO
