@@ -3,8 +3,8 @@
 His pick, in the Godot cloud chat, 27 Nov 2026, asked whether to start a new task after the seven shields: “Check 20 more weak melds
 (Recommended)”. Branch `art/meld-rules-check-20b`, from `art/shield-rings` at f977e59f (on the ship list; this builds on it).
 
-The page for his yes: https://claude.ai/artifact/YHujE9qdEGeNP2fFa19ccD (`page.py`, `page.html`, `report.json`). NOTHING HERE IS
-LIVE WITHOUT HIS YES (pictures first).
+The page for his yes: https://claude.ai/artifact/YHujE9qdEGeNP2fFa19ccD (`page.py`, `page.html`, `report.json`). HIS YES TO THE PAGE,
+27 Nov 2026: “Yes, bring them in (Recommended)”.
 
 ## Which 20
 
