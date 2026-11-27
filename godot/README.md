@@ -1572,7 +1572,11 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   the device. A COPY NOT IMPORTED (`main.gd` _not_imported, IMPORT_SAMPLE): run from the project's files before Godot has imported
   them, or after an update without importing again (a few key files checked against what Godot last imported of them), the game
   says so plainly over everything and how to put it right, in place of an all but empty game (his: “floor 1 has nothing except
-  torch glow”, “i dont think i heard an music or sounds at all”).
+  torch glow”, “i dont think i heard an music or sounds at all”). THE WINDOW FITS HIS SCREEN (`main.gd` _ready, _fit_window,
+  _watch_window; his “k it runs but the aspect ratio is off”, asked how, “Cut off”, and “i cangt minimize, theres no line or e x in
+  the top right”: a 1920 by 1080 window on his screen, its title bar off the top): on a computer the game opens maximized, or, where
+  the system will not, no bigger than the room the screen has for it; and it is fitted again (fit_screen) whenever its window
+  changes size, the splash and the start screen holding the game or not.
 - **The weakest melds brought up to the art rules** (the art chat's `art/meld-rules-check-all`, his “Bring them in
   (Recommended)”; his ask, 26 Nov 2026: “I’d like you to look at all our melds and find which are weakest compared to our art and
   animation ruleset.  Then bring them up to our standard”). The 30 weakest (the city's melds that slow, curse or hold) and 14 more

@@ -790,6 +790,19 @@ static func has_floor(n: int) -> bool:
 ## A COPY NOT YET IMPORTED (his computer, 27 Nov 2026: a fresh download run before Godot had imported its pictures and sounds, the game
 ## all but empty: “floor 1 has nothing except torch glow”, “i dont think i heard an music or sounds at all”): said plainly, over
 ## everything, in place of a game that looks broken.
+## (the window maximized where the system lets it be; where it does not, and the window is bigger than the room the screen has
+## for it, made just that big, at its top left: so nothing of the game is ever cut off)
+func _fit_window() -> void:
+	if DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED:
+		return
+	var r: Rect2i = DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen())
+	var win: Vector2i = DisplayServer.window_get_size()
+	if r.size.x <= 0 or r.size.y <= 0 or (win.x <= r.size.x and win.y + 40 <= r.size.y):
+		return
+	DisplayServer.window_set_size(Vector2i(mini(win.x, r.size.x), mini(win.y, r.size.y - 40)))
+	DisplayServer.window_set_position(r.position + Vector2i(0, 32))
+
+
 func _not_imported() -> bool:
 	if load("res://assets/hud/hud.png") == null:
 		return true
@@ -843,6 +856,13 @@ func _say_not_imported() -> void:
 
 
 func _ready() -> void:
+	# (ON A COMPUTER THE WINDOW FITS THE SCREEN: opened maximized, its title bar and the taskbar given their room; the game fitted to
+	# it as to any window (fit_screen). His words, 27 Nov 2026, the game opened 1920 by 1080 on his computer: “k it runs but the
+	# aspect ratio is off”, asked how: “Cut off”. Not in the checks' runs, nor a phone's.)
+	if not OS.has_feature("mobile") and DisplayServer.get_name() != "headless" and _arg("shots") == "" and _arg("only") == "" \
+			and _arg("phone") == "" and _arg("upright") == "":
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MAXIMIZED)
+		_fit_window.call_deferred()
 	if _not_imported():
 		_say_not_imported()
 		return
@@ -1242,6 +1262,7 @@ func _screen_start() -> void:
 			DisplayServer.window_set_size(Vector2i(int(wh[0]), int(wh[1])))
 	_turn()
 	get_tree().root.size_changed.connect(fit_screen)
+	get_tree().process_frame.connect(_watch_window)
 	fit_screen()
 
 
@@ -2031,6 +2052,18 @@ func _notification(what: int) -> void:
 	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT] and _arg("shots") == "" and _mini != null \
 			and _mini.open == "" and hero != null and hero.alive and not is_home(place) and not get_tree().paused:
 		_mini.show_panel("pause")
+
+
+## (the window's size as last fitted to: fit_screen again whenever it changes, maximized, dragged or restored, as the root's own
+## size_changed does not always say so; looked at every frame, the game held or not (the splash and the start screen hold it))
+var _win_seen := Vector2i.ZERO
+
+
+func _watch_window() -> void:
+	var win_now: Vector2i = DisplayServer.window_get_size()
+	if win_now != _win_seen:
+		_win_seen = win_now
+		fit_screen()
 
 
 func _process(dt: float) -> void:
