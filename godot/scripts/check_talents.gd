@@ -536,6 +536,31 @@ func _arms() -> void:
 	h._strike(0, h.world, h.face, 1.0, 0, false, 1.4)
 	_line(m.life < m.max_life and absf(pushed - 0.4) < 0.01 and absf(daze1 - 0.6) < 0.01 and m.stun_t > 0.0 and m.daze == 0.0,
 		"Smash: the one on its spot struck, knocked %.2f tiles back, dazed %.2f; a second blow soon after stuns it (%.1f s)" % [pushed, daze1, m.stun_t])
+	# SMASH ON ONE RIGHT BESIDE HIM, AND ON ONE A LITTLE TO HIS SIDE (his pick, 26 Nov 2026, "Hit what's in front (Recommended)",
+	# after "the hammer has a weird range to hit from.  like i cant hit something when im standing right next to it"); another
+	# parked well away, not struck
+	_open_ground()
+	var pair: Array = _foes([[0.5, 0.0], [5.0, 3.0]])
+	h._strike(0, h.world, h.face, 1.0, 0, false, 1.4)
+	var beside: bool = pair[0].life < pair[0].max_life and pair[1].life == pair[1].max_life
+	_open_ground()
+	pair = _foes([[1.1, 0.7], [5.0, 3.0]])
+	h._strike(0, h.world, h.face, 1.0, 0, false, 1.4)
+	var aside: bool = pair[0].life < pair[0].max_life and pair[1].life == pair[1].max_life
+	_line(beside and aside,
+		"Smash comes down on the nearest in front: one right beside him struck (%s), one a little to his side struck (%s), one far off not" % [beside, aside])
+	# IN TOWN, his hammer's moves shown from his dungeon pictures, the maul in his hands (his words, 26 Nov 2026: "the warrior can
+	# attack in town but it doesnt show the model move"); standing about, his town pictures, the maul on his back
+	var was_town: bool = h.in_town
+	var was_art = h.art
+	h.in_town = true
+	h.art = h.arts["town"]
+	var swing_art = h._town_moves(0, 14)
+	var stand_art = h._town_moves(0, 0)
+	_line(h.art.count(0, 14) == 0 and swing_art == h.arts["dungeon"] and swing_art.count(0, 14) > 0 and stand_art == h.arts["town"],
+		"in town his hammer's pictures have no swing (%d frames); a Smash there is shown from his dungeon pictures (%d frames), standing about from his town ones" % [h.art.count(0, 14), swing_art.count(0, 14)])
+	h.in_town = was_town
+	h.art = was_art
 	# HEAVY HEAD: Smash stuns half a second; WIDE SWING: the half circle before him
 	_take(["warhammer", "heavyhead"])
 	m = _foes([[1.4, 0.0]])[0]

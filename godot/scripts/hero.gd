@@ -1166,12 +1166,19 @@ func _strike(i: int, from: Vector2, way: Vector2, frac: float, n := 0, echo := f
 	var wide: bool = sid == "smash" and has("wideswing")
 	var spot := Vector4.ZERO
 	var spotted: bool = def.has("spot") and not wide
+	var min_dot: float = float(def["arcCos"]) if def.get("arcCos") != null else 0.35
 	if spotted:
 		var sp: Dictionary = def["spot"]
 		var c: Vector2 = from + way * float(sp["at"])
+		# (HIS PICK, 26 Nov 2026, "Hit what's in front (Recommended)", after "the hammer has a weird range to hit from.  like i cant
+		# hit something when im standing right next to it": the maul comes down on the nearest enemy in front of him within as far as
+		# its spot ever reached, one right beside him too, as a Strike finds its foe; on the spot before him only when there is none)
+		if monsters != null:
+			var under = monsters.strike_target(from, way, (float(sp["at"]) + float(sp["r"])) * float(r["size"]), min_dot)
+			if under != null:
+				c = under.world
 		spot = Vector4(c.x, c.y, float(sp["r"]) * maxf(1.0, float(r["size"])), 0.0)
 		_tell({"t": "burst", "x": spot.x, "y": spot.y, "r": spot.z + 0.3, "el": r["element"], "style": "land", "words": front, "n": n, "echo": echo})
-	var min_dot: float = float(def["arcCos"]) if def.get("arcCos") != null else 0.35
 	var best = null
 	var arc: Array = []
 	if spotted:
@@ -2562,15 +2569,21 @@ func _show() -> void:
 			side = 1 if toward < -0.2 else 0
 			_flip = across < 0.0
 		var own: Array = kit.picture(side)
-		if not own.is_empty() and art.count(side, own[0]) > 0:
-			var g := art.frame(side, own[0], clampi(own[1], 0, art.count(side, own[0]) - 1))
+		var own_art: BakedHero = art
+		if not own.is_empty() and own_art.count(side, own[0]) == 0:
+			own_art = _town_moves(side, own[0])
+		if not own.is_empty() and own_art.count(side, own[0]) > 0:
+			var g := own_art.frame(side, own[0], clampi(own[1], 0, own_art.count(side, own[0]) - 1))
 			_sprite.texture = g["tex"]
 			_sprite.offset = g["offset"]
 			_sprite.scale = Vector2(-1.0 if _flip else 1.0, 1.0) * float(g["scale"])
 			_sprite.self_modulate = Color(2.0, 0.7, 0.7) if _flash > 0.0 else Color.WHITE
 			_with(g, side)
 			return
-	var n := art.count(side, _list)
+	var shown: BakedHero = art
+	if shown.count(side, _list) == 0:
+		shown = _town_moves(side, _list)
+	var n := shown.count(side, _list)
 	if n == 0:
 		return
 	var i := 0
@@ -2587,12 +2600,24 @@ func _show() -> void:
 		i = mini(int(_t * CLIP_FPS), n - 1)
 	else:
 		i = int(_t * (IDLE_FPS if _list == BakedHero.IDLE else RUN_FPS)) % n
-	var f := art.frame(side, _list, i)
+	var f := shown.frame(side, _list, i)
 	_sprite.texture = f["tex"]
 	_sprite.offset = f["offset"]
 	_sprite.scale = Vector2.ONE * float(f["scale"])
 	_sprite.self_modulate = Color(2.0, 0.7, 0.7) if _flash > 0.0 else Color.WHITE
 	_with(f, side)
+
+
+## IN TOWN his axe's, his hammer's or a skin's pictures have the weapon on his back and none of its moves, so a move made there
+## (list `list`, from side `side`) is shown from his dungeon pictures, the weapon in his hands as he swings it; anywhere else, or
+## a list his town pictures do have, his pictures as they are. His words, 26 Nov 2026: "the warrior can attack in town but it
+## doesnt show the model move".
+func _town_moves(side: int, list: int) -> BakedHero:
+	if in_town and art.count(side, list) == 0 and arts.has("dungeon"):
+		var d: BakedHero = arts["dungeon"]
+		if side < d.sides() and d.count(side, list) > 0:
+			return d
+	return art
 
 
 ## What is drawn with the frame shown (render.ts: drawAura, then the tails behind, the picture, the tails in front): the pool of
