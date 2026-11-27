@@ -16,6 +16,27 @@ const PF := preload("res://scripts/pixel_font.gd")
 const PrizeCarry := preload("res://scripts/prize_carry.gd")
 const FloorMap := preload("res://scripts/floor_map.gd")
 
+## ICONS FOR WHAT HE FINDS (his pick, 27 Nov 2026, asked how the map should grow, “It's really a relic of insanely early builds of
+## this game.  It can have way more functionality”: “Icons for what you find”): small pictures in place of the dots, on the small map
+## and the large one, a legend of them under the large one: a chest, the waypoint, the way down, the way home, a stronghold (its
+## gate, where its altar is), a bell (the Muffled Bell, the bells to ring), the fallen wordsmith, a boss (a skull), a rare pack (a crown), a
+## prize carrier (a gem). PICTURES FIRST: off until his yes.
+static var MAP_ICONS := false
+## (each 5 by 5: "#" the mark's own colour, "." nothing; drawn on a dark shadow a pixel down and right)
+const ICONS := {
+	"chest": ["#####", "#...#", "##.##", "#...#", "#####"],
+	"way": [".###.", "#...#", "#.#.#", "#...#", ".###."],
+	"down": ["....#", "...##", "..###", ".####", "#####"],
+	"home": [".###.", "##.##", "#...#", "#...#", "#...#"],
+	"hold": ["#.#.#", "#####", ".#.#.", ".###.", ".#.#."],
+	"bell": ["..#..", ".###.", ".###.", "#####", "..#.."],
+	"body": ["...##", "..##.", ".##..", "##...", "#...."],
+	"boss": [".###.", "#.#.#", "#####", ".#.#.", "....."],
+	"rare": ["#.#.#", "#####", "#####", ".....", "....."],
+	"prize": ["..#..", ".###.", "#####", ".###.", "..#.."],
+}
+const ICON_NAMES := {"chest": "chest", "way": "waypoint", "down": "way down", "home": "way home", "hold": "stronghold", "bell": "bell", "body": "fallen wordsmith", "boss": "boss", "rare": "rare pack", "prize": "prize carrier"}
+
 ## (hud.ts minimap: how far round him the small map looks, in tiles; its height)
 const R := 36
 const MH := 46.0
@@ -282,26 +303,37 @@ func _marks() -> Array:
 	if town and main.town != null:
 		for s in main.town.data.get("stations", []):
 			if s["kind"] == "gate":
-				out.append([floori(s["x"]), floori(s["y"]) - 1, P["tl4"], 2, 4, false])
+				out.append([floori(s["x"]), floori(s["y"]) - 1, P["tl4"], 2, 4, false, "home"])
 	# (wayMarks: the waypoint, the stairwell once it is open, floor 1's gate home)
 	if main._way != null and _seen_at(floori(main._way.at.x), floori(main._way.at.y)):
-		out.append([floori(main._way.at.x), floori(main._way.at.y), P["tl4"] if main._way.awake else P["tl2"], 2, 4, false])
+		out.append([floori(main._way.at.x), floori(main._way.at.y), P["tl4"] if main._way.awake else P["tl2"], 2, 4, false, "way"])
 	if main._stairs != null and main._stairs.opened >= 0:
 		var st: Dictionary = map.stairs[main._stairs.opened]
 		if _seen_at(int(st["x"]), int(st["y"])):
-			out.append([int(st["x"]) + (1 if st["way"] == "x" else 0), int(st["y"]) + (0 if st["way"] == "x" else 1), P["bn3"], 2, 4, true])
+			out.append([int(st["x"]) + (1 if st["way"] == "x" else 0), int(st["y"]) + (0 if st["way"] == "x" else 1), P["bn3"], 2, 4, true, "down"])
 	if not town and map.ways is Dictionary and int(map.ways.get("gate", -1)) >= 0 and int(map.ways["gate"]) < map.doors.size():
 		var mid: Dictionary = map.doors[int(map.ways["gate"])]["middle"]
 		if _seen_at(floori(mid["x"]), floori(mid["y"])):
-			out.append([floori(mid["x"]), floori(mid["y"]), P["tl4"], 2, 4, false])
+			out.append([floori(mid["x"]), floori(mid["y"]), P["tl4"], 2, 4, false, "home"])
 	# (chests that have been seen and not yet opened, so that a vault left for later can be found again; and the fallen
 	# wordsmith, until his satchel has been searched)
 	for p in map.props:
 		if p["kind"] == "chest" and int(p["state"]) == 0 and _seen_at(int(p["tx"]), int(p["ty"])):
-			out.append([int(p["tx"]), int(p["ty"]), P["gd4"], 2, 3, false])
+			out.append([int(p["tx"]), int(p["ty"]), P["gd4"], 2, 3, false, "chest"])
 	var body = main.loot._body if main.loot != null else null
 	if not town and body != null and not body["searched"] and _seen_at(floori(body["at"].x), floori(body["at"].y)):
-		out.append([floori(body["at"].x), floori(body["at"].y), P["tl5"], 3, 4, false])
+		out.append([floori(body["at"].x), floori(body["at"].y), P["tl5"], 3, 4, false, "body"])
+	# (ICONS: the cult's strongholds, story or endless, at their gate once seen: the cult's red while its altar waits at the
+	# gate, grey once the hall is taken; the altar stands at the gate, so one icon is both)
+	if MAP_ICONS and not town and main.holds != null:
+		var H = main.holds
+		for q in H.data.get("holds", []):
+			var n := int(q["n"])
+			var gx := floori(float(q["gx"]))
+			var gy := floori(float(q["gy"]))
+			if _seen_at(gx, gy):
+				var won: bool = n < H.st.size() and bool(H.st[n]["won"])
+				out.append([gx, gy, P["st6"] if won else P["bl4"], 2, 4, false, "hold"])
 	if main._monsters != null:
 		for m in main._monsters.list:
 			if not is_instance_valid(m) or m.dead or not m.seen:
@@ -310,17 +342,37 @@ func _marks() -> Array:
 			var ty := floori(m.world.y)
 			# (THE PRIZE CARRIERS: one carrying Plundering or Greed, a larger mark in the prize's colour: prize_carry.gd)
 			if PrizeCarry.ON and PrizeCarry.prize_of(m) != "":
-				out.append([tx, ty, PrizeCarry.color_of(m), 3, 4, false])
+				out.append([tx, ty, PrizeCarry.color_of(m), 3, 4, false, "prize"])
 				continue
 			if m.boss:
-				out.append([tx, ty, P["bl4"], 3, 4, false])
+				out.append([tx, ty, P["bl4"], 3, 4, false, "boss"])
 			elif m.champion:
-				out.append([tx, ty, P["fr5"], 3, 4, false])
+				out.append([tx, ty, P["fr5"], 3, 4, false, "rare"])
 			elif m.elite:
 				out.append([tx, ty, P["fr4"], 2, 3, false])
 			elif m.state != "sleep":
 				out.append([tx, ty, P["bl3"], 1, 0, false])
 	return out
+
+
+## (ICONS) An icon `name` with its middle at (cx, cy), each of its pixels `k` across, in `c`, on a dark shadow.
+func _icon(name: String, cx: float, cy: float, k: int, c: Color) -> void:
+	var rows: Array = ICONS[name]
+	var x0 := cx - 2 * k
+	var y0 := cy - 2 * k
+	for pass_ in 2:
+		for r in 5:
+			var row: String = rows[r]
+			for q in 5:
+				if row[q] == "#":
+					if pass_ == 0:
+						_rect(x0 + q * k + 1, y0 + r * k + 1, k, k, Color(P["black"], 0.9))
+					else:
+						_rect(x0 + q * k, y0 + r * k, k, k, c)
+
+
+func _has_icon(m: Array) -> bool:
+	return MAP_ICONS and m.size() > 6 and ICONS.has(str(m[6]))
 
 
 func _seen_at(tx: int, ty: int) -> bool:
@@ -353,12 +405,18 @@ func _small(x: float, y: float, w: float, h: float) -> void:
 			var py: float = cy + floorf(((tx + ty) - (hx + hy)) / 2.0)
 			if px >= x + 1 and py >= y + 1 and px < x + w - 1 and py < y + h - 1:
 				_rect(px, py, 1, 1, Color(c, a))
-		marks.append_array(main.bells.on_map(hx, hy, maxi(iw, ih), veil, _seen_at))
+		for bm in main.bells.on_map(hx, hy, maxi(iw, ih), veil, _seen_at):
+			marks.append(bm + ["bell"])
 	marks.append([hx, hy, P["white"], 2, 0, false])
 	for m in marks:
 		var s: float = m[3]
 		var px: float = cx + (m[0] - m[1]) - (hx - hy)
 		var py: float = cy + floorf(((m[0] + m[1]) - (hx + hy)) / 2.0)
+		if _has_icon(m):
+			if px - 2 < x + 1 or py - 2 < y + 1 or px + 4 >= x + w or py + 4 >= y + h:
+				continue
+			_icon(str(m[6]), px, py, 1, m[2])
+			continue
 		if px < x + 1 or py < y + 1 or px >= x + w - s or py >= y + h - s:
 			continue
 		_rect(px, py, s, s, m[2])
@@ -471,7 +529,8 @@ func _large(W: float, H: float) -> void:
 	if main.bells != null and main.bells.on() and not main.is_home(main.place):
 		var veil := func(tx: int, ty: int, c: Color, a: float) -> void:
 			_rect(ox + (tx - ty + map.h - 1) * k, oy + ((tx + ty) >> 1) * k, k, k, Color(c, a))
-		marks.append_array(main.bells.on_map(hx, hy, maxi(map.w, map.h), veil, _seen_at))
+		for bm in main.bells.on_map(hx, hy, maxi(map.w, map.h), veil, _seen_at):
+			marks.append(bm + ["bell"])
 	# (himself last: a dark square, and on it one that blinks)
 	marks.append([hx, hy, ink, 0, 6, false])
 	marks.append([hx, hy, P["white"] if int(floorf(_t * 3.0)) % 2 == 0 else P["tl5"], 0, 4, false])
@@ -479,6 +538,9 @@ func _large(W: float, H: float) -> void:
 		if m[5]:
 			down = true
 		if int(m[4]) <= 0:
+			continue
+		if _has_icon(m):
+			_icon(str(m[6]), ox + (m[0] - m[1] + map.h - 1) * k, oy + ((m[0] + m[1]) >> 1) * k, 2, m[2])
 			continue
 		var s: int = int(m[4]) + k - 1
 		_rect(ox + (m[0] - m[1] + map.h - 1) * k - (s >> 1), oy + ((m[0] + m[1]) >> 1) * k - (s >> 1), s, s, m[2])
@@ -488,13 +550,25 @@ func _large(W: float, H: float) -> void:
 	var items: Array = [[P["white"], "you"], [P["gd4"], "chest"], [P["fr5"], "guardian"], [P["bl4"], "boss"], [P["tl4"], "way home"]]
 	if down:
 		items.append([P["bn3"], "way down"])
+	# (ICONS: the legend is the icons on this map, each once, in their own colour)
+	if MAP_ICONS:
+		items = [[P["white"], "you"]]
+		var had := {}
+		for m in marks:
+			if _has_icon(m) and not had.has(str(m[6])):
+				had[str(m[6])] = true
+				items.append([m[2], ICON_NAMES[str(m[6])], str(m[6])])
 	var width := 0.0
 	for it in items:
-		width += 5 + PF.width(it[1], "small") + 7
+		width += (7 if it.size() > 2 else 5) + PF.width(it[1], "small") + 7
 	var lx := floorf((W - width) / 2.0)
 	for it in items:
-		_rect(lx, ly + 1, 3, 3, it[0])
-		lx += 5
+		if it.size() > 2:
+			_icon(it[2], lx + 2, ly + 2, 1, it[0])
+			lx += 7
+		else:
+			_rect(lx, ly + 1, 3, 3, it[0])
+			lx += 5
 		lx += _text(it[1], lx, ly, T["text"], {"font": "small", "shadow": ink}) + 7
 	_text("tap to close" if main._touch != null and main._touch.on else "click or M to close", floorf(W / 2.0), ly - 9, T["dim"], {"align": "center", "font": "small", "shadow": ink})
 

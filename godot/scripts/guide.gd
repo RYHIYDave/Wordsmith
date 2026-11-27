@@ -45,7 +45,7 @@ var _speak := {}
 var _givers: Array = []
 var _back := ""
 var _place := ""
-var _clock := 0.0
+var _frame := -1
 ## THE FIGHT'S LESSON (game.ts newGuide: met, low, quick, slow, evade, flask), kept in the save
 var met := false
 var low := false
@@ -68,9 +68,11 @@ var ask_at := -1
 ## The prompt for this moment: {caption, text, sub}, or empty. `seen`: it is on the screen (the boss's bar, or the news of a
 ## word, may be in its place): the quest's line counts only the time it is seen.
 func banner(seen := true) -> Dictionary:
-	var now := Time.get_ticks_msec() / 1000.0
-	var dt := clampf(now - _clock, 0.0, 0.1)
-	_clock = now
+	# (the game's own time, a frame's once however often it is asked in that frame: not the clock on the wall, so that a slow
+	# machine or a held game does not run a line's time out unseen)
+	var fr := Engine.get_process_frames()
+	var dt := 0.0 if fr == _frame else clampf(main.get_process_delta_time(), 0.0, 0.1)
+	_frame = fr
 	point = -1
 	gesture = {}
 	ask_at = -1
