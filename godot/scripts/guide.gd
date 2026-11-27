@@ -135,6 +135,12 @@ func _lesson() -> Dictionary:
 		if loot.prompt_t > 0.0:
 			if town:
 				return {"caption": "WORDSMITHING", "text": "Bring the MASTER RUNE-STONE to the wordsmith", "sub": _go_up()}
+			# (THE STAIRS CAVED IN behind him, his words: "push deeper into the prison", till a waypoint up is reached: main.gd
+			# caved_below; then the waypoint takes him up)
+			if main.caved_below():
+				return {"caption": "WORDSMITHING", "text": "Push deeper into the prison", "sub": "You carry the MASTER RUNE-STONE. The stairs up are gone."}
+			if main.cave_in_on() and loot.stairs_caved:
+				return {"caption": "WORDSMITHING", "text": "You carry the MASTER RUNE-STONE", "sub": "The waypoint takes you up to the wordsmith in town."}
 			return {"caption": "WORDSMITHING", "text": "You carry the MASTER RUNE-STONE", "sub": "Take it to the wordsmith in town."}
 		return {}
 	if town and not loot.ring_lit:
@@ -150,6 +156,9 @@ func _lesson() -> Dictionary:
 		return {"caption": "WORDSMITHING", "text": "Someone fell here", "sub": "Walk up to the body to search it, or tap it." if _touch() else "Walk up to the body to search it."}
 	if hero.walked < STEPS:
 		return _move_banner()
+	# (THE STAIRS CAVED IN behind him on floor 1, the stone not yet found: his words, "push deeper into the prison")
+	if not town and main.place == "floor1" and main.caved_below() and not loot.ring_lit and not loot.body_searched:
+		return {"caption": "WORDSMITHING", "text": "Push deeper into the prison", "sub": "Find the fallen wordsmith and the stone."}
 	return {}
 
 
