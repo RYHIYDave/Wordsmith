@@ -123,7 +123,7 @@ func run(main, hero, d: String) -> void:
 	_line(Talents.of("brawler", "vviperjab")["text"] == B3.TEXT["vviperjab"] and Talents.of("brawler", "vthunderknee")["text"] == B3.TEXT["vthunderknee"],
 		"Viper Jab and Thunder Knee build on their stances: \"%s\" / \"%s\"" % [Talents.of("brawler", "vviperjab")["text"], Talents.of("brawler", "vthunderknee")["text"]])
 	await _page("vflurry", ["vstiffjab"], "tree_flurry")
-	await _page("vsteppingstones", ["vlightfeet"], "tree_stepping_stones")
+	await _page("vmomentum", ["vlightfeet"], "tree_momentum")
 	await _page("vcannonkick", ["vswitchkick"], "tree_cannon_kick")
 	await _page("vpoisonstance", ["vstiffjab", "vviperjab"], "tree_poison_stance")
 	await _page("vfirestance", ["vlightfeet", "vfirestarter"], "tree_fire_stance")
@@ -210,71 +210,53 @@ func run(main, hero, d: String) -> void:
 		o["stagger"] = maxf(float(o["stagger"]), A.stagger_t)
 		return _played() and A.thrown.is_empty())
 	_line(float(o["stun"]) > 0.0 or float(o["stagger"]) > 0.0, "Cannon Kick with Wall Slam: the one sent flying into another held, as Wall Slam holds now that stuns are rare (stunned %.1f s, staggered %.1f s)" % [float(o["stun"]), float(o["stagger"])])
-	# --- STEPPING STONES: a swipe again during a flying blow springs on, free and quicker, up to three ---
-	h.talents = ["vlightfeet", "vsteppingstones"]
-	_lay([[4.0, 0.0], [7.5, 0.0], [11.2, 0.0], [17.0, 0.0]])
+	# --- MOMENTUM: a flying blow that lands lights a new globe of its kind ---
+	h.talents = ["vlightfeet", "vmomentum"]
+	_lay([[4.0, 0.0]])
 	K.globes = ["punch"]
 	await _run(0.2)
-	lives = [A.life, B.life, C.life, D.life]
-	var jumps0: int = h.uses[2]
+	a0 = A.life
 	await _press("swipe", A.world)
-	o = {"blows": 0, "last": -1, "asked": 0, "times": [], "t": 0.0, "hops": []}
-	await _run(8.0, func():
-		o["t"] = float(o["t"]) + M.get_process_delta_time()
-		if not K.mv.is_empty() and int(K.mv["n"]) != int(o["last"]) and B2.FLYING.has(K.mv["id"]):
-			o["last"] = K.mv["n"]
-			o["blows"] = int(o["blows"]) + 1
-			(o["times"] as Array).append(o["t"])
-			(o["hops"] as Array).append(int(K.mv.get("hops", 0)))
-		# (a swipe again once each blow is in the air, at the next one along)
-		if not K.mv.is_empty() and B2.FLYING.has(K.mv["id"]) and int(o["asked"]) < int(o["blows"]) and float(K.mv["f"]) > 2.0 and int(o["asked"]) < 2:
-			o["asked"] = int(o["asked"]) + 1
-			h.auto_lunge = [B, C][int(o["asked"]) - 1].world
-		return _played() and float(o["t"]) > 0.5)
-	var blows: int = o["blows"]
-	var tt: Array = o["times"]
-	var first_long: float = float(tt[1]) - float(tt[0]) if tt.size() >= 3 else 0.0
-	var second_long: float = float(tt[2]) - float(tt[1]) if tt.size() >= 3 else 0.0
-	_line(blows == 3 and A.life < float(lives[0]) and B.life < float(lives[1]) and C.life < float(lives[2]) and D.life == float(lives[3]) and h.uses[2] == jumps0 + 1 and o["hops"] == [0, 1, 2],
-		"Stepping Stones: a swipe, then two more as he flew, %d flying blows (%s); the three struck (%.0f, %.0f, %.0f lost), the one far off not (%.0f lost); one jump spent in all (%d)" % [blows, o["hops"], float(lives[0]) - A.life, float(lives[1]) - B.life, float(lives[2]) - C.life, float(lives[3]) - D.life, h.uses[2] - jumps0])
-	_line(second_long > 0.0 and second_long < first_long * 0.75, "Stepping Stones: a spring on played quicker (the first blow till the next %.2f s, the spring on till the third %.2f s)" % [first_long, second_long])
+	await _run(3.0, func(): return _played())
+	var lit_p: Array = K.globes.duplicate()
+	_lay([[4.0, 0.0]])
+	K.globes = ["kick"]
+	await _run(0.2)
+	await _press("swipe", A.world)
+	await _run(3.0, func(): return _played())
+	var lit_k: Array = K.globes.duplicate()
+	_line(lit_p == ["punch"] and lit_k == ["kick"] and A.life < a0, "Momentum: the hammerfist that landed lit a new punch globe (%s), the flying knee a kick globe (%s)" % [lit_p, lit_k])
+	h.talents = ["vlightfeet"]
+	_lay([[4.0, 0.0]])
+	K.globes = ["punch"]
+	await _run(0.2)
+	await _press("swipe", A.world)
+	await _run(3.0, func(): return _played())
+	var none_lit: Array = K.globes.duplicate()
+	h.talents = ["vlightfeet", "vmomentum"]
+	_lay([[4.0, 0.0]])
+	K.globes = ["punch"]
+	await _run(0.2)
+	await _press("swipe", home + Vector2(way.y, -way.x) * 0.0 - way * 3.0)
+	await _run(3.0, func(): return _played())
+	var missed: Array = K.globes.duplicate()
+	_line(none_lit.is_empty() and missed.is_empty(), "without Momentum no globe comes back (%s); with it, a flying blow that struck nothing lights none (%s)" % [none_lit, missed])
+	# (its pictures and film: three flying blows in a row, a jump each)
+	h.talents = ["vlightfeet", "vstoke", "vmomentum"]
 	_lay([[4.0, 0.0], [7.5, 0.0], [11.2, 0.0]])
 	K.globes = ["punch"]
+	K.charges[2] = 3
 	await _run(0.2)
-	var b0: float = B.life
-	await _press("swipe", A.world)
-	o = {"blows": 0, "last": -1}
-	await _run(6.0, func():
-		if not K.mv.is_empty() and int(K.mv["n"]) != int(o["last"]):
-			o["last"] = K.mv["n"]
-			o["blows"] = int(o["blows"]) + 1
-		return _played())
-	_line(int(o["blows"]) == 1 and B.life == b0, "Stepping Stones, no swipe again: the one blow, he comes down as ever (%d; the next one along untouched, %.0f lost)" % [int(o["blows"]), b0 - B.life])
-	_lay([[4.0, 0.0], [7.5, 0.0], [11.2, 0.0]])
-	K.globes = ["punch"]
-	await _run(0.2)
-	_mark("stones_in")
-	await _press("swipe", A.world)
-	o = {"blows": 0, "last": -1, "asked": 0, "snapped": false}
-	await _run(6.0, func():
-		if not K.mv.is_empty() and int(K.mv["n"]) != int(o["last"]) and B2.FLYING.has(K.mv["id"]):
-			o["last"] = K.mv["n"]
-			o["blows"] = int(o["blows"]) + 1
-		if not K.mv.is_empty() and B2.FLYING.has(K.mv["id"]) and int(o["asked"]) < int(o["blows"]) and float(K.mv["f"]) > 2.0 and int(o["asked"]) < 2:
-			o["asked"] = int(o["asked"]) + 1
-			h.auto_lunge = [B, C][int(o["asked"]) - 1].world
-		return int(o["blows"]) >= 2 and float(K.mv.get("f", 0.0)) > 3.0)
-	await _snap("stepping_stones_second")
-	await _run(6.0, func():
-		if not K.mv.is_empty() and int(K.mv["n"]) != int(o["last"]) and B2.FLYING.has(K.mv["id"]):
-			o["last"] = K.mv["n"]
-			o["blows"] = int(o["blows"]) + 1
-		if not K.mv.is_empty() and B2.FLYING.has(K.mv["id"]) and int(o["asked"]) < int(o["blows"]) and float(K.mv["f"]) > 2.0 and int(o["asked"]) < 2:
-			o["asked"] = int(o["asked"]) + 1
-			h.auto_lunge = [B, C][int(o["asked"]) - 1].world
-		return _played())
-	await _run(0.6)
-	_mark("stones_out")
+	_mark("momentum_in")
+	for k in 3:
+		var target = [A, B, C][k]
+		await _press("swipe", target.world)
+		await _run(3.0, func(): return _played())
+		if k == 0:
+			await _snap("momentum_globe_back")
+		await _run(0.15)
+	await _run(0.5)
+	_mark("momentum_out")
 	# --- FIRE STANCE: the floor burning where a flying blow comes down ---
 	h.talents = ["vlightfeet", "vfirestarter", "vfirestance"]
 	_lay([[4.0, 0.0]])

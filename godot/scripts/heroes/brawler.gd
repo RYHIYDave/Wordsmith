@@ -375,10 +375,6 @@ func _press2(kind: String, at: Vector2, before: Array) -> bool:
 			var sprung: bool = float(mv["f"]) >= float(R["dodge"]["air"][0]) and h.uniques != null and h.uniques.wears("sprungheels")
 			if not sprung:
 				return false
-		# (THE BRAWLER'S BUILDS: Stepping Stones, a swipe during a flying blow springs on from it when it lands, free)
-		if not mv.is_empty() and B2.FLYING.has(mv["id"]) and _b3("vsteppingstones") and int(mv.get("hops", 0)) < int(B3.STEP["n"]) - 1:
-			mv["spring"] = at
-			return true
 		# (THE BRAWLER'S BUILDS: The Last Round, a swipe with three globes lit costs no jump)
 		var free: bool = B3.on and globes.size() >= 3 and h.uniques != null and h.uniques.wears("lastround")
 		if free:
@@ -513,12 +509,9 @@ func _start() -> void:
 		f0 = floorf(float(R["roundkick"]["strike"]["from"]) * float(_T()["switchKick"]["skip"]))
 	mv = {"id": id, "f": f0, "x0": h.world.x, "y0": h.world.y, "fx": f.x, "fy": f.y, "ax": a.x, "ay": a.y, "carried": Vector2.ZERO, "hit": [], "globe": q["globe"],
 		"wx": 0.0, "wy": 0.0, "props": false, "n": _plays, "tid": null}
-	# (THE BRAWLER'S BUILDS: a Flurry punch; a Stepping Stones bounce, how many so far and all its chain has struck)
+	# (THE BRAWLER'S BUILDS: a Flurry punch)
 	if q.get("flurry", false):
 		mv["flurry"] = true
-	if q.has("hops"):
-		mv["hops"] = q["hops"]
-		mv["chain"] = q["chain"]
 	# (THE BRAWLER REMADE: a punch thrown toward the next punch globe, the third lighting it (Quick Hands: each); a kick lighting a kick
 	# globe; a flying move going as far past its own carry as reaches its enemy, LEAP at most, before its blow)
 	if B2.on and id != "dodge":
@@ -639,8 +632,7 @@ func _play(dt: float, way: Vector2) -> void:
 	var id: String = mv["id"]
 	var m: Dictionary = R[id]
 	var f0: float = mv["f"]
-	mv["f"] = f0 + dt * float(V["fps"]) * _pace(id) * (float(B3.FLURRY["pace"]) if mv.get("flurry", false) else 1.0) \
-		* (float(B3.STEP["pace"]) if int(mv.get("hops", 0)) > 0 else 1.0)
+	mv["f"] = f0 + dt * float(V["fps"]) * _pace(id) * (float(B3.FLURRY["pace"]) if mv.get("flurry", false) else 1.0)
 	var f: float = mv["f"]
 	var want := way.length()
 	if want > 0.1 and _walkable(id, f):
@@ -689,15 +681,9 @@ func _play(dt: float, way: Vector2) -> void:
 			mv["burned"] = true
 			_burn_floor(id)
 	if f >= float(m["long"]):
-		# (THE BRAWLER'S BUILDS: Stepping Stones, a flying blow that landed springs on to the next)
-		var bounce := {}
-		if B2.FLYING.has(id) and _b3("vsteppingstones") and mv.has("spring"):
-			bounce = _next_stone(mv["spring"])
 		done.append(id)
 		mv = {}
 		idle = 0.0
-		if not bounce.is_empty():
-			queue.push_front(bounce)
 		# (THE VETERAN'S TREE: Fire Starter, landed from his dodge jump: his next tap or hold is in fire; the Brawler remade: a punch
 		# globe lit)
 		if id == "dodge" and _has("vfirestarter"):
@@ -887,6 +873,9 @@ func _hit(o, m: Dictionary, n: int) -> void:
 	# (Stoke: a fire move that lands takes two seconds off his jump's wait)
 	if first and fire and _has("vstoke") and charges[2] < 1:
 		cd[2] = maxf(0.01, cd[2] - float(T["stoke"]["secs"]))
+	# (THE BRAWLER'S BUILDS: Momentum, a flying blow that lands lights a new globe of its kind)
+	if first and B2.FLYING.has(id) and _b3("vmomentum") and globes.size() < most():
+		globes.append("punch" if id == "hammerfist" else "kick")
 	# (Thunder Knee: his flying knee and spinning jump kicks crack with lightning, on to three more near each one they hit)
 	if id in ["knee", "spinkick", "spinkickClose", "flyknee"] and _has("vthunderknee"):
 		_thunder(o, m)
@@ -1023,35 +1012,6 @@ func _burn_floor(id: String) -> void:
 	var i := 0 if is_punch(id) else 1
 	var F: Dictionary = B3.FIRE
 	h.wakes.add_patch(i, "burn", _origin(), float(F["r"]), float(F["secs"]), h.talent_hit("fire", float(F["share"]), i), "fire")
-
-
-## (Stepping Stones) The next flying blow of the chain, springing off what this one struck onto the one nearest `aim` (where his swipe
-## pointed) it has not struck, in reach and sight; {} none (the chain at its end, nothing struck, or none near).
-func _next_stone(aim: Vector2) -> Dictionary:
-	var hops: int = int(mv.get("hops", 0))
-	if hops >= int(B3.STEP["n"]) - 1 or (mv["hit"] as Array).is_empty() or h.monsters == null:
-		return {}
-	var chain: Array = []
-	for c in mv.get("chain", []):
-		if is_instance_valid(c):
-			chain.append(c)
-	for c in mv["hit"]:
-		if is_instance_valid(c):
-			chain.append(c)
-	var best = null
-	var bd := INF
-	for o in h.monsters.list:
-		if not is_instance_valid(o) or o.dead or o.state == "rise" or chain.has(o) or h.monsters.shut_in(o):
-			continue
-		var d: float = o.world.distance_to(h.world) - o.r
-		var da: float = o.world.distance_to(aim)
-		if d < float(B3.STEP["far"]) and da < bd and h.monsters.sees(h.world, o.world):
-			best = o
-			bd = da
-	if best == null:
-		return {}
-	return {"id": mv["id"], "globe": -1, "leap": true, "set": 1, "tx": best.world.x, "ty": best.world.y, "aimed": true, "tid": best,
-		"hops": hops + 1, "chain": chain}
 
 
 ## (Cannon Kick) The one his push kick struck sent flying from where the kick went out: each it flies into struck and knocked aside
