@@ -14,20 +14,33 @@
 ##   THE TOWN GATE IN WOOD: its portcullis a solid gate of planks banded with iron (assets/fx/tg_wood.png, painted by
 ##     tools/wood_gate.py frame for frame with the iron's, so it rises and falls as that did: town.gd). The bars across it and
 ##     their striking off as they were.
+## THE MORNING: his words, 27 Nov 2026, by 18:00, on the first pictures: “Okay I kinda like the town, not quite night enough but
+## fine.  The floor one pictures look the same.  I want when you come up from floor 5 back to town in the elevator, it’s morning.
+## And then you go out to the wilds and it’s light out.  On second thought no, the town is not good enough as night”. So the night
+## lasts until the ride up from floor 5 (ways.gd, loot.morning, saved with the run); from then on the town and floor 1 are as by
+## day, the gate still wood.
 ## OFF: as it was by day. Pictured: check_night.gd, `--only=night` (`--night=1` on for a run).
 extends RefCounted
 
 static var on := false
+## (the ride up from floor 5 has brought the morning (loot.morning, set here as each place is laid: main.gd): from then on the town
+## and floor 1 are as by day; the gate stays wood)
+static var morning := false
+
+
+## Whether it is night now: on, and the morning not come.
+static func now() -> bool:
+	return on and not morning
 
 ## Each place's night: the dark (alpha, colour), its vignette, how deep the daylight's holes still cut (times as deep), its glows'
 ## colour and strength (times), its pictures of light tinted (and how strong).
 const PLACES := {
-	"town": {"dark": 0.72, "rgb": [8, 12, 34], "vignette": 0.45, "holes": 0.3, "glow": "#a9c2ff", "glow_k": 0.75,
-		"moon": Color(0.45, 0.6, 1.0, 0.75), "beyond": Color(0.22, 0.28, 0.52)},
-	"floor1v2": {"dark": 0.6, "rgb": [6, 9, 22], "vignette": 0.66, "holes": 0.75, "glow": "#9fb8f2", "glow_k": 0.8,
-		"moon": Color(0.5, 0.65, 1.0, 0.85)},
-	"floor1": {"dark": 0.6, "rgb": [6, 9, 22], "vignette": 0.66, "holes": 0.75, "glow": "#9fb8f2", "glow_k": 0.8,
-		"moon": Color(0.5, 0.65, 1.0, 0.85)},
+	"town": {"dark": 0.78, "rgb": [8, 12, 34], "vignette": 0.5, "holes": 0.25, "glow": "#a9c2ff", "glow_k": 0.6,
+		"moon": Color(0.45, 0.6, 1.0, 0.6), "beyond": Color(0.18, 0.22, 0.45), "grade": Color(0.5, 0.6, 0.95)},
+	"floor1v2": {"dark": 0.6, "rgb": [6, 9, 22], "vignette": 0.7, "holes": 0.6, "glow": "#9fb8f2", "glow_k": 1.0,
+		"moon": Color(0.55, 0.72, 1.0, 1.0), "grade": Color(0.5, 0.62, 1.0)},
+	"floor1": {"dark": 0.6, "rgb": [6, 9, 22], "vignette": 0.7, "holes": 0.6, "glow": "#9fb8f2", "glow_k": 1.0,
+		"moon": Color(0.55, 0.72, 1.0, 1.0), "grade": Color(0.5, 0.62, 1.0)},
 }
 ## THE GLASS OF THE TOWN'S WINDOWS: by day the sun's cream, at night the moon's blue. In the pictures whose names begin so (the
 ## hall's roof with its high windows, the walls' faces with theirs), each colour the glass is painted in -> its colour at night.
@@ -41,6 +54,10 @@ const FX_DIR := "res://assets/fx/"
 ## The night of place `place` laid over its look's data (look.gd _ready): its dark, its vignette, its daylight's holes and glows.
 static func fall(place: String, data: Dictionary) -> void:
 	if not on or not PLACES.has(place):
+		return
+	# (by day, the gate solid wood all the same: no light through it)
+	if morning:
+		data["lights"] = (data.get("lights", []) as Array).filter(func(l): return not GONE.has(str(l.get("of", ""))))
 		return
 	var N: Dictionary = PLACES[place]
 	data["dark"] = {"a": N["dark"], "rgb": N["rgb"]}
@@ -64,7 +81,7 @@ static func fall(place: String, data: Dictionary) -> void:
 ## `pics` its pictures by name ([x, y, w, h, ...] on the sheet). Made once a place.
 static var _glassed := {}
 static func glass(place: String, sheet: Texture2D, pics: Dictionary) -> Texture2D:
-	if not on or not GLASS.has(place) or sheet == null:
+	if not now() or not GLASS.has(place) or sheet == null:
 		return sheet
 	if _glassed.has(place):
 		return _glassed[place]
@@ -105,14 +122,19 @@ static func glass(place: String, sheet: Texture2D, pics: Dictionary) -> Texture2
 	return out
 
 
+## The moon's blue multiplied over all of place `place` (but its fires) at night, or null.
+static func grade(place: String):
+	return PLACES[place].get("grade") if now() and PLACES.has(place) else null
+
+
 ## The tint for place `place`'s pictures of light (added over it), or null: as by day.
 static func moon(place: String):
-	return PLACES[place]["moon"] if on and PLACES.has(place) else null
+	return PLACES[place]["moon"] if now() and PLACES.has(place) else null
 
 
 ## (the town) the way out through the gate, as seen at night: its tint, or null.
 static func beyond(place: String):
-	return PLACES[place].get("beyond") if on and PLACES.has(place) else null
+	return PLACES[place].get("beyond") if now() and PLACES.has(place) else null
 
 
 ## THE TOWN GATE IN WOOD: its films (tgw_port_<k>) put among the game's own (perils.gd's fx), once; the name of strip k's film.

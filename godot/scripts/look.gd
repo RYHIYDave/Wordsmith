@@ -89,6 +89,8 @@ var _anim: Array = []  # {node, frames, fps, t0, secs, dy}
 var _t := 0.0
 var _add: CanvasItemMaterial
 var _dark: Sprite2D
+## (NIGHT: the moon's blue multiplied over the place, the hero's own light round him kept: _night_grade)
+var _grade: Sprite2D = null
 ## THE HEADSMAN'S YARD'S OWN GATE AS IT FALLS (art/yard_gate.ts, YARD_GATE; render.ts standDoors; its pictures and beat from
 ## tools/godot_yard_gate.ts, assets/looks/floor2_gate.*): which of the doors it is, its frames, its sprites, its lights
 var _yg := {}
@@ -800,6 +802,8 @@ func _process(dt: float) -> void:
 		a["node"].offset = Vector2(-p["anchor"].x, a["dy"] - p["anchor"].y)
 	if _dark != null and _hero != null:
 		_dark.material.set_shader_parameter("hero", _hero.position)
+	if _grade != null and _hero != null:
+		_grade.material.set_shader_parameter("hero", _hero.position)
 	_step_warp(dt)
 	if _hero != null and data.has("zones"):
 		_step_zone(_hero.world)
@@ -820,6 +824,23 @@ func draw_still(c: CanvasItem, items: Array, fog := PackedByteArray()) -> void:
 
 # --- the dark and its lights ---
 
+## (NIGHT: the grade multiplied in, white (nothing) in the hero's own light, as much of his pool as GRADE_POOL)
+const GRADE_POOL := 0.6
+const GRADE_SHADER := """
+shader_type canvas_item;
+render_mode blend_mul;
+uniform vec2 origin;
+uniform vec2 extent;
+uniform vec2 hero;
+uniform float pool = 1.0;
+void fragment() {
+	vec2 world = origin + UV * extent;
+	vec2 d = (world - hero) / vec2(pool, pool * 0.62);
+	float cut = 1.0 - smoothstep(0.35, 1.0, clamp(length(d), 0.0, 1.0));
+	vec3 c = texture(TEXTURE, UV).rgb;
+	COLOR = vec4(mix(c, vec3(1.0), cut), 1.0);
+}
+"""
 const DARK_SHADER := """
 shader_type canvas_item;
 uniform vec2 origin;
@@ -875,10 +896,13 @@ func lighting(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 	# (every light there is: the look's own, and those the burning pictures carry where they stand)
 	var holes: Array = []
 	var glows: Array = []
+	var fires: Array = []  # (the holes of every light but the look's own: its fires, for the night's grade)
 	for l in data.get("lights", []):
 		if l.get("of", "") == "ring":
 			continue
 		(holes if l["type"] == "hole" else glows).append([Vector2(l["x"], l["y"]), float(l["r"]), float(l["a"]), l.get("color")])
+		if l["type"] == "hole" and str(l.get("of", "")) != "look":
+			fires.append(holes[-1])
 	var carried: Dictionary = data.get("pic_lights", {})
 	for it in data["items"]:
 		var f: Array = it["frames"]
@@ -888,6 +912,7 @@ func lighting(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 			var at := Vector2(float(it["x"]) + float(pl[0]), float(it["y"]) + float(pl[1]))
 			holes.append([at, float(pl[2]) * 2.0, float(pl[3]), null])
 			glows.append([at, float(pl[2]), float(pl[3]), pl[4]])
+			fires.append(holes[-1])
 	# (the dark's picture: over the whole place and a margin, a quarter of a game pixel to its pixel)
 	var lo := Vector2(INF, INF)
 	var hi := Vector2(-INF, -INF)
@@ -946,6 +971,10 @@ func lighting(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 	_dark.material = mat
 	root.add_child(_dark)
 	_hero = hero
+	# (NIGHT: the moon's blue over all the place, multiplied in, but not where its fires burn: night.gd)
+	var grade = Night.grade(place)
+	if grade != null:
+		_night_grade(root, grade, fires, lo, w, h, hero_pool)
 	# the glows, added over the dark
 	var tex := _glow_texture()
 	for g in glows:
@@ -963,6 +992,54 @@ func lighting(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 			var gp: Vector2 = g[0]
 			_fog_sprite1(s, _tile_at1(gp.x, gp.y + 8.0))
 	return null
+
+
+## (NIGHT) The moon's blue `tint` multiplied over the place under its dark (what is black stays black), each fire's hole cut in it
+## as its light is in the dark: the dark's grain, from `lo`, `w` by `h`.
+func _night_grade(root: Node2D, tint: Color, fires: Array, lo: Vector2, w: int, h: int, hero_pool: float) -> void:
+	var k := PackedFloat32Array()
+	k.resize(w * h)
+	k.fill(1.0)
+	for hole in fires:
+		var c: Vector2 = (hole[0] - lo) / DARK_GRAIN
+		var rx: float = hole[1] / DARK_GRAIN
+		var ry: float = hole[1] * 0.62 / DARK_GRAIN
+		var strength: float = clampf(hole[2], 0.0, 1.0)
+		for y in range(maxi(0, floori(c.y - ry)), mini(h, ceili(c.y + ry) + 1)):
+			for x in range(maxi(0, floori(c.x - rx)), mini(w, ceili(c.x + rx) + 1)):
+				var dx := (x - c.x) / rx
+				var dy := (y - c.y) / ry
+				var d := sqrt(dx * dx + dy * dy)
+				if d >= 1.0:
+					continue
+				k[y * w + x] *= 1.0 - strength * (1.0 - smoothstep(0.3, 1.0, d))
+	var bytes := PackedByteArray()
+	bytes.resize(w * h * 4)
+	for i in w * h:
+		var c := Color(1, 1, 1).lerp(tint, clampf(k[i], 0.0, 1.0))
+		bytes[i * 4] = int(c.r * 255.0)
+		bytes[i * 4 + 1] = int(c.g * 255.0)
+		bytes[i * 4 + 2] = int(c.b * 255.0)
+		bytes[i * 4 + 3] = 255
+	var s := Sprite2D.new()
+	s.texture = ImageTexture.create_from_image(Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, bytes))
+	s.centered = false
+	s.position = lo * 2.0
+	s.scale = Vector2.ONE * DARK_GRAIN * 2.0
+	s.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	s.z_index = 49
+	var mat := ShaderMaterial.new()
+	mat.shader = Shader.new()
+	mat.shader.code = GRADE_SHADER
+	mat.set_shader_parameter("origin", lo * 2.0)
+	mat.set_shader_parameter("extent", Vector2(w, h) * DARK_GRAIN * 2.0)
+	mat.set_shader_parameter("pool", hero_pool * 2.0 * GRADE_POOL)
+	if _hero != null:
+		mat.set_shader_parameter("hero", _hero.position)
+	s.material = mat
+	s.name = "night_grade"
+	root.add_child(s)
+	_grade = s
 
 
 func _glow_texture() -> GradientTexture2D:

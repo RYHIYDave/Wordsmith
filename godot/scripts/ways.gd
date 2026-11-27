@@ -385,6 +385,8 @@ func _go() -> void:
 			main.way_depth = 6
 			main.unbar_due = true
 		main.loot.say("%s cleared" % str(map.title.get("level", "")), good)
+		# (NIGHT, night.gd: up into the morning)
+		main.loot.morning = true
 		main.go_to("town", "cage")
 	elif main.get("quest1620") != null and main.quest1620.tower_shut():
 		# (QUESTS1620, game.ts takeWay 'on': from the Keep, the Quiet Tower's door opens only to the songbird's song: not mended, home

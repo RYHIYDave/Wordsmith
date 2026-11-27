@@ -355,6 +355,8 @@ var prompt_t := 0.0
 var body_searched := false
 ## THE STAIRS CAVE IN (main.gd _cave_in, cave_in.gd): floor 1's stairs up have fallen in behind him, once and for good
 var stairs_caved := false
+## (NIGHT, night.gd: the ride up from floor 5 has brought the morning: the town and floor 1 by day from then on)
+var morning := false
 ## (game.ts cleared, how many floors' ways on he has taken: here the deepest floor he has come into, less one)
 var cleared := 0
 ## THE ARMOURER'S QUEST, where he stands in it (quests15.ts FurnaceStep; game.ts hero.furnace): "" not asked, "asked", "gear"

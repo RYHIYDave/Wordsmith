@@ -32,7 +32,7 @@ func run(main, h, dir: String) -> void:
 		_line(is_equal_approx(float(dk["a"]), float(Night.PLACES["town"]["dark"])) and not gate_light, "the town at night: its dark %.2f, blue %s; the light through its gate gone (%s)" % [float(dk["a"]), dk["rgb"], not gate_light])
 		# (a pane of the windows' glass, cream by day: the moon's blue at night)
 		var pane: Color = L._sheet.get_image().get_pixel(1038, 1998)
-		_line(pane.to_html(false) == "aac4f6", "the windows' glass at night: %s (by day fff0c4)" % pane.to_html(false))
+		_line(pane.to_html(false) == "aac4f6" and L._grade != null, "the windows' glass at night: %s (by day fff0c4); the moon's blue over the town %s" % [pane.to_html(false), L._grade != null])
 	# (its gate, close: shut, barred)
 	var T = M.town
 	h.walked = 5.0
@@ -77,5 +77,26 @@ func run(main, h, dir: String) -> void:
 		await M._snap("%s/%s_5_floor1_pool.png" % [dir, tag])
 	if Night.on:
 		var dk2: Dictionary = L.data["dark"]
-		_line(is_equal_approx(float(dk2["a"]), float(Night.PLACES[L.place]["dark"])), "floor 1 at night (%s): its dark %.2f, blue %s" % [L.place, float(dk2["a"]), dk2["rgb"]])
+		_line(is_equal_approx(float(dk2["a"]), float(Night.PLACES[L.place]["dark"])) and L._grade != null, "floor 1 at night (%s): its dark %.2f, blue %s; the moon's blue over it %s" % [L.place, float(dk2["a"]), dk2["rgb"], L._grade != null])
+	# (THE MORNING: up the shaft from floor 5 (ways.gd), the town as by day, its gate still wood)
+	if Night.on:
+		M.loot.morning = true
+		M.go_to("town", "cage")
+		await M._wait(1.8)
+		L = M.look
+		await M._snap("%s/%s_6_morning_town.png" % [dir, tag])
+		var dk3: Dictionary = L.data["dark"]
+		var pane2: Color = L._sheet.get_image().get_pixel(1038, 1998)
+		var gate_light2 := false
+		for l in L.data["lights"]:
+			if str(l.get("of", "")) == "gate":
+				gate_light2 = true
+		_line(not Night.now() and float(dk3["a"]) < 0.3 and L._grade == null and pane2.to_html(false) == "fff0c4" and not gate_light2, "the morning, up from floor 5: the town's dark %.2f (by day), no moon's blue (%s), its glass %s, no light through the shut wooden gate (%s)" % [float(dk3["a"]), L._grade == null, pane2.to_html(false), not gate_light2])
+		T = M.town
+		mid = Vector2(T._gate["middle"]["x"], T._gate["middle"]["y"])
+		h.world = M._spot_near(mid + Vector2(2.5, 2.5), 1.2, h.world)
+		await M._wait(0.8)
+		await M._snap("%s/%s_7_morning_gate.png" % [dir, tag])
+		_line(T._port.size() > 0 and Night.port_film(6) == "tgw_port_6" and M.Save.run_of(M).get("morning") == true, "the morning: the gate still wood (%s); the save keeps the morning (%s)" % [Night.port_film(6), M.Save.run_of(M).get("morning")])
+		M.loot.morning = false
 	print("NIGHT DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else ": " + str(bad)])

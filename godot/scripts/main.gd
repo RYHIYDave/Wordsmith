@@ -1609,6 +1609,8 @@ func _build(where: String, arrive: String) -> void:
 		_hero_light.queue_free()
 		_hero_light = null
 	look = null
+	# (NIGHT, night.gd: night until the ride up from floor 5 brings the morning)
+	preload("res://scripts/night.gd").morning = loot.morning
 	if looked:
 		look = Look.new()
 		look.place = files_of(where)
