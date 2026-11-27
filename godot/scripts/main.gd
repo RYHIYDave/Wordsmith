@@ -1059,6 +1059,11 @@ func _ready() -> void:
 	var tf := trial_file.duplicate()
 	trial_file = {}
 	trial = int(fresh.get("trial", tf.get("trial", 0)))
+	# (THE AUTOPILOT RUN through every floor: `--trial=N`, the level select's test hero for floor N, so that he comes to it as ready
+	# for it as the game makes him: check_autorun.gd)
+	if trial == 0 and _arg("only") == "autorun" and int(_arg("trial")) > 0:
+		trial = int(_arg("trial"))
+		fresh = {"cls": _arg("cls") if _arg("cls") != "" else "warrior", "trial": trial}
 	practice = fresh.get("practice", false) == true
 	hero.practice = practice
 	# (THE FIRST LEVELS: in play, for a test hero, and in their own check; a check of anything else has every move open)

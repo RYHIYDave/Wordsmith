@@ -39,7 +39,8 @@ func run(main, hero, d: String) -> void:
 		return
 	var last := int(OS.get_environment("WS_AUTORUN_TO")) if OS.has_environment("WS_AUTORUN_TO") else 5
 	for f in range(int(OS.get_environment("WS_AUTORUN_FROM")) if OS.has_environment("WS_AUTORUN_FROM") else 1, last + 1):
-		await M.go_to("floor%d" % f, "down" if f > 1 else "stairs")
+		if M.place != "floor%d" % f:
+			await M.go_to("floor%d" % f, "down" if f > 1 else "stairs")
 		await M._wait(2.0)
 		var r := await _play(f, k)
 		var ok: bool = r["boss"] and r["stalls"] <= 3 and r["dead"] * 10 >= r["all"] * 8
