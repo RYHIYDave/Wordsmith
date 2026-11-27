@@ -60,6 +60,19 @@ func run(main, hero, d: String) -> void:
 		await M._wait(0.5)
 		await M._snap(dir + "/bl_%02d_barrier_%s.png" % [int(k * 10.0), str(k).replace(".", "_")])
 		print("BARRIERLOOK barrier %d of life %d (%.1f times)" % [h.barrier, h.max_life, h.barrier / h.max_life])
+	# (her barrier on her life globe, part spent: the globe's band lit as far as it is full, its number in the globe; and as a phone
+	# shows it, the globe at the top: his words of 27 Nov 2026, “can you make it look nicer in the UI around the life globe?”)
+	h.barrier = h.max_barrier * 0.6
+	h.life = h.max_life * 0.8
+	h._barrier_wait = 1e9
+	await M._wait(0.3)
+	await M._snap(dir + "/bl_25_globe_part.png")
+	if M._touch != null:
+		M._touch.on = true
+		await M._wait(0.3)
+		await M._snap(dir + "/bl_26_globe_touch.png")
+		M._touch.on = false
+	h.life = h.max_life
 	# (a Guarding meld in front, Sanctuary, and her barrier: a use tops it up; no bubble round her)
 	M._w_put(h, 0, "front", ["sanctuary"])
 	h.barrier = minf(h.max_barrier, h.max_life * 2.2)

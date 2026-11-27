@@ -20,9 +20,15 @@ NOTHING HERE IS LIVE WITHOUT HIS YES (pictures first).
 - The Guarding melds' shells (fx_m52p_guard.gd, fx_m52p_last110.gd) and the melds' motes (fx_melds52.gd) only while a shield holds,
   no longer while a barrier does. Their moments at a top-up still play.
 - Guarding's own shield with no barrier: its own bubble (fx_words610.gd), unchanged.
+- THE GLOBE (his words on seeing the first pictures, 27 Nov 2026: “Yeah can you make it look nicer in the UI around the life globe?
+  It behind the potion widget and overlapping the player level”): hud.gd `_barrier_band`: the barrier on the globe's own iron band,
+  lit cyan from the top round as far as it is full, a spark at its end, the rivets over it; its number inside the globe under his
+  life's (his life's raised a little). Nothing past the globe's edge any more: not under the flask, not over his level; the same on
+  a phone, the globe at the top.
 
 ## Checks
 
-- `--only=barrierlook --shots=<dir>` (check_barrierlook.gd, new): the pictures, 3 checks, 0 wrong. Before pictures taken with the
+- `--only=barrierlook --shots=<dir>` (check_barrierlook.gd, new): the pictures (the globe full, part spent, and as a phone
+  shows it among them), 3 checks, 0 wrong. Before pictures taken with the
   painters and hero.gd as at 3919ae5e.
 - `--only=defence`: 17 checks, 0 wrong.

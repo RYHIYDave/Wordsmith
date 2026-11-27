@@ -353,6 +353,47 @@ func _globe(cx: float, cy: float, r: float, frac: float, fill: Color, light: Col
 	_ci.draw_texture_rect(tex, Rect2(cx + 0.5 - half, cy + 0.5 - half, half * 2.0, half * 2.0), false)
 
 
+## His barrier on the life globe's iron band (radius `r` the glass's, as _globe draws it): the band lit cyan from the top round,
+## as full as `f`, lit toward the upper left and shaded away from it, a spark at its leading end; what is empty keeps its iron, its
+## rivets drawn over again. In half game pixels, as the globe's own picture is.
+func _barrier_band(cx: float, cy: float, r: float, f: float) -> void:
+	if f <= 0.0:
+		return
+	var inner := r + 0.5
+	var outer := r + 2.5
+	var C := [Color("#2a8c96"), Color("#4cc8cc"), Color("#7af8f0"), Color("#c8fffb")]
+	var n := int(ceilf(outer * 2.0))
+	for yy in range(-n, n + 1):
+		for xx in range(-n, n + 1):
+			var dx := (float(xx) + 0.5) * 0.5
+			var dy := (float(yy) + 0.5) * 0.5
+			var d := sqrt(dx * dx + dy * dy)
+			if d < inner or d > outer:
+				continue
+			var a := fposmod(atan2(dy, dx) + PI / 2.0, TAU) / TAU
+			if a > f:
+				continue
+			var away := (dx + dy) / (sqrt(2.0) * maxf(0.01, d))
+			var col: Color = C[3] if away < -0.6 and d < outer - 0.5 else (C[2] if away < 0.2 else (C[1] if away < 0.7 else C[0]))
+			if d > outer - 0.5:
+				col = C[0] if away > -0.2 else C[1]
+			_ci.draw_rect(Rect2(cx + 0.5 + dx - 0.25, cy + 0.5 + dy - 0.25, 0.5, 0.5), col)
+	# (the rivets, over it again)
+	var br := (r + 1.5) * sqrt(0.5)
+	for q in [[-1, -1], [1, -1], [1, 1], [-1, 1]]:
+		var rx: float = cx + 0.5 + q[0] * br - 0.75
+		var ry: float = cy + 0.5 + q[1] * br - 0.75
+		_ci.draw_rect(Rect2(rx, ry, 2.0, 2.0), GLOBE_IRON[0])
+		_ci.draw_rect(Rect2(rx, ry, 1.5, 1.5), GLOBE_IRON[3])
+		_ci.draw_rect(Rect2(rx + 0.5, ry + 0.5, 1.0, 1.0), GLOBE_IRON[2])
+	# (a spark at its leading end, while it is not full)
+	if f < 0.999:
+		var la := -PI / 2.0 + TAU * f
+		var sx := cx + 0.5 + cos(la) * (r + 1.5)
+		var sy := cy + 0.5 + sin(la) * (r + 1.5)
+		_ci.draw_rect(Rect2(sx - 0.75, sy - 0.75, 1.5, 1.5), Color.WHITE)
+
+
 ## hud.ts lifeRim: the thin ring round the life globe takes the colour of what ails him (burning, poisoned, chilled, shocked).
 func _life_rim() -> Color:
 	if hero.burn_t > 0.0:
@@ -402,16 +443,17 @@ func _draw() -> void:
 	# (with fingers: out from under the left thumb, below the name of the place: hud.ts TOP_GLOBE_Y)
 	var life_y := TOP_GLOBE_Y if _touching() else gy
 	_globe(life_x, life_y, 14, hero.life / hero.max_life, T["life"], T["lifeHi"], _life_rim())
-	_text("%d" % ceili(hero.life), life_x, life_y - 3, P["white"], {"align": "center", "font": "small", "shadow": ink})
-	# (THE THREE DEFENCES, loot.gd DEFENCE_LAYERS: his barrier, a ring of cyan round his life, as full as it is; its number at its top)
+	var barred: bool = hero.max_barrier > 0.0 or (Words.DEFENCE_WORDS and hero.shield > 0.0)
+	_text("%d" % ceili(hero.life), life_x, life_y - (6 if barred else 3), P["white"], {"align": "center", "font": "small", "shadow": ink})
+	# (THE THREE DEFENCES, loot.gd DEFENCE_LAYERS: his barrier, the globe's iron band lit cyan round his life, as full as it is, and
+	# its number in the globe under his life's. Inside the globe's own edge, so it runs under nothing and over nothing: his words,
+	# 27 Nov 2026, of the ring that stood out past the band: “can you make it look nicer in the UI around the life globe? It behind
+	# the potion widget and overlapping the player level”)
 	if hero.max_barrier > 0.0 or (Words.DEFENCE_WORDS and hero.shield > 0.0):
 		var held: float = hero.barrier + (hero.shield if Words.DEFENCE_WORDS else 0.0)
 		var bf := clampf(held / maxf(hero.max_barrier, held), 0.0, 1.0)
-		var cy := Color("#7af8f0")
-		draw_arc(Vector2(life_x, life_y), 18.5, -PI / 2.0, -PI / 2.0 + TAU, 48, Color(cy, 0.22), 2.0)
-		if bf > 0.0:
-			draw_arc(Vector2(life_x, life_y), 18.5, -PI / 2.0, -PI / 2.0 + TAU * bf, 48, cy, 2.0)
-		_text("%d" % ceili(held), life_x + 20, life_y - 20, cy, {"font": "small", "shadow": ink})
+		_barrier_band(life_x, life_y, 14.0, bf)
+		_text("%d" % ceili(held), life_x, life_y + 2, Color("#9afcf6"), {"align": "center", "font": "small", "shadow": ink})
 	# (mana is only there to be seen when it is what limits the slow abilities: hud.ts, its globe at the right)
 	var by_mana: bool = hero.by_mana()
 	if by_mana:
