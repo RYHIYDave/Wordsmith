@@ -18,6 +18,8 @@ class Spot:
 	var dead := false
 	var def := {}
 	var done: Callable
+	## (struck at, from within his reach, not walked onto)
+	var strike := false
 	func _init(what: String, at: Vector2, is_done: Callable) -> void:
 		def = {"name": what}
 		world = at
@@ -121,7 +123,13 @@ func _play(f: int, life_k: float) -> Dictionary:
 			var pick = null
 			var pick_d := 1 << 30
 			var unreached := 0
-			for m in M._monsters.list:
+			# (THE SWAMP COLOSSUS'S OBELISKS: while one burns he cannot be hurt; the nearest burning one struck down first, as a player
+			# who reads "Strike them down." does)
+			var urgent: Array = _nearest_spot(_burning(spots), dist)
+			if urgent[0] != null:
+				pick = urgent[0]
+				pick_d = urgent[1]
+			for m in (M._monsters.list if pick == null else []):
 				if not is_instance_valid(m) or m.dead or skip.get(m.get_instance_id(), -1.0) > t:
 					continue
 				var tl := _tile_of(m.world)
@@ -144,19 +152,9 @@ func _play(f: int, life_k: float) -> Dictionary:
 			if pick == null and unreached > 0:
 				# (all he can reach are dead: what a player goes to next, the nearest he can reach: a lever to raise its gate, a gear or
 				# key lying where its bearer fell, the forge crank with its gear, the temple door with its keys)
-				var lv_d := 1 << 30
-				for sp in _spots(spots):
-					var lt := Vector2i(floori(sp.world.x), floori(sp.world.y))
-					for oy in range(-1, 2):
-						for ox in range(-1, 2):
-							var tx: int = lt.x + ox
-							var ty: int = lt.y + oy
-							if tx < 0 or ty < 0 or tx >= M.map.w or ty >= M.map.h:
-								continue
-							var v: int = dist[ty * M.map.w + tx]
-							if v >= 0 and v < lv_d:
-								lv_d = v
-								pick = sp
+				var got: Array = _nearest_spot(_spots(spots), dist)
+				pick = got[0]
+				var lv_d: int = got[1]
 				if pick != null:
 					pick_d = lv_d
 				elif stranded == 0.0:
@@ -210,7 +208,7 @@ func _play(f: int, life_k: float) -> Dictionary:
 		var dlen: float = to.length()
 		var see: bool = M._monsters.sees(h.world, target.world)
 		# (a thing to take is walked onto, not stood off from: a key is taken from 0.6 tiles, a lever from 1.5)
-		if dlen <= (0.1 if target is Spot else reach + float(target.r)) and see:
+		if dlen <= (0.1 if target is Spot and not target.strike else (1.0 if target is Spot else reach + float(target.r))) and see:
 			h.auto_dir = Vector2.ZERO
 			if to.length() > 0.01:
 				h._turn(to.normalized())
@@ -291,6 +289,44 @@ func _play(f: int, life_k: float) -> Dictionary:
 	return {"t": t, "dead": dead, "all": all, "boss": boss, "stalls": stalls, "way": way}
 
 
+## (the nearest of `list` he can reach, and how far by the way: [spot or null, steps])
+func _nearest_spot(list: Array, dist: PackedInt32Array) -> Array:
+	var best = null
+	var bd := 1 << 30
+	for sp in list:
+		var lt := Vector2i(floori(sp.world.x), floori(sp.world.y))
+		for oy in range(-1, 2):
+			for ox in range(-1, 2):
+				var tx: int = lt.x + ox
+				var ty: int = lt.y + oy
+				if tx < 0 or ty < 0 or tx >= M.map.w or ty >= M.map.h:
+					continue
+				var v: int = dist[ty * M.map.w + tx]
+				if v >= 0 and v < bd:
+					bd = v
+					best = sp
+	return [best, bd]
+
+
+## (floor 10: the cult's obelisks burning on the Swamp Colossus's stone, each a place to strike at)
+func _burning(kept: Dictionary) -> Array:
+	var out: Array = []
+	var q = M.quest610
+	if q == null or q.pillars == null:
+		return out
+	for i in q.pillars.pillars.size():
+		var p: Dictionary = q.pillars.pillars[i]
+		if not p["lit"]:
+			continue
+		var k := "pillar%d" % i
+		if not kept.has(k):
+			var sp := Spot.new("obelisk", Vector2(float(p["x"]), float(p["y"])), func(): return not p["lit"])
+			sp.strike = true
+			kept[k] = sp
+		out.append(kept[k])
+	return out
+
+
 ## (the places a player would go to next that are not yet done, each kept by its key so that the same one is gone for)
 func _spots(kept: Dictionary) -> Array:
 	var out: Array = []
@@ -315,6 +351,11 @@ func _spots(kept: Dictionary) -> Array:
 		if not kept.has("crank"):
 			kept["crank"] = Spot.new("crank", Vector2(float(fu._crank["x"]), float(fu._crank["y"])), func(): return fu.step != "gear")
 		out.append(kept["crank"])
+	var st = M.stone
+	if st != null and st.landing != Vector2.INF and not st.on_stone() and st._boss() != null:
+		if not kept.has("landing"):
+			kept["landing"] = Spot.new("the landing", st.landing, func(): return st.on_stone())
+		out.append(kept["landing"])
 	var te = M.temple
 	if te != null and not te.open and te.keys >= te.need and not te._door.is_empty():
 		if not kept.has("temple"):
