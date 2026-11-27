@@ -168,7 +168,9 @@ func _play(f: int, life_k: float) -> Dictionary:
 				if unreached == 0:
 					break
 				stranded += 0.5
-				if stranded > 15.0:
+				# (on the Swamp Colossus's stone, his fight on: his tentacles come and go, and he waits for them, as a player does)
+				var fight_on: bool = M.stone != null and M.stone.on_stone() and M.stone._boss() != null
+				if stranded > 15.0 and not fight_on:
 					break
 				target = null
 				continue
@@ -289,6 +291,12 @@ func _play(f: int, life_k: float) -> Dictionary:
 	return {"t": t, "dead": dead, "all": all, "boss": boss, "stalls": stalls, "way": way}
 
 
+## (whether he stands on the Swamp Colossus's stone itself, not its jetty)
+func _on_stone_itself(st) -> bool:
+	var F = preload("res://scripts/act1/colossus_fight.gd")
+	return F.on_stone(F.world_to_stone(st.stone, h.world.x, h.world.y))
+
+
 ## (the nearest of `list` he can reach, and how far by the way: [spot or null, steps])
 func _nearest_spot(list: Array, dist: PackedInt32Array) -> Array:
 	var best = null
@@ -356,6 +364,11 @@ func _spots(kept: Dictionary) -> Array:
 		if not kept.has("landing"):
 			kept["landing"] = Spot.new("the landing", st.landing, func(): return st.on_stone())
 		out.append(kept["landing"])
+	# (set down on the jetty: up onto the stone itself, where the fight begins)
+	if st != null and st.stone != Vector2.INF and st.on_stone() and st._boss() != null and not _on_stone_itself(st):
+		if not kept.has("stone"):
+			kept["stone"] = Spot.new("the stone", st.stone, func(): return _on_stone_itself(st))
+		out.append(kept["stone"])
 	var te = M.temple
 	if te != null and not te.open and te.keys >= te.need and not te._door.is_empty():
 		if not kept.has("temple"):
