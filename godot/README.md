@@ -1579,7 +1579,11 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   changes size, the splash and the start screen holding the game or not. SET DOWN ON OPEN FLOOR (`main.gd` _open_floor_near; his
   “Coming back up the town from level 1 gets me stuck and I can't move”: the spot by the top of the town's stairs was the stash's
   tile): where an arrival's spot is not ground he may walk, the middle of the nearest tile that is. Check: `--only=townup`
-  (`check_town_up.gd`: up from floor 1 by its gate, then each way held a second).
+  (`check_town_up.gd`: up from floor 1 by its gate, then each way held a second). A MOVE OPENING WITH A LEVEL CALLED BY ITS OWN
+  NAME (`hero.gd own_move_id`, the news and the HUD's NEW MOVE; his “when i have the hammer selected form lvl1, when i level up it
+  says "unlocked whirlwind" when earthquake is unlocked and whirlwind isnt even what it unlocks with sword at lvl2”): his weapon's
+  or his tree's move in that place (the greatsword's Whirl, the axe's Axe Throw, the hammer's Earthquake), the Warlock's own while
+  he is the demon. Check: `--only=movenames` (`check_move_names.gd`).
 - **The weakest melds brought up to the art rules** (the art chat's `art/meld-rules-check-all`, his “Bring them in
   (Recommended)”; his ask, 26 Nov 2026: “I’d like you to look at all our melds and find which are weakest compared to our art and
   animation ruleset.  Then bring them up to our standard”). The 30 weakest (the city's melds that slow, curse or hold) and 14 more

@@ -2778,6 +2778,16 @@ func talents_changed() -> void:
 ## battle axe or the warhammer. The greatsword's moves are this script's own; the axe's and the hammer's are heroes/warrior_arms.gd,
 ## its three in his moves' places (the words in them stay where they are), and he is drawn with what he picked (the bake's `axe`
 ## and `hammer` sets, in his town and anywhere else). Nothing changes while he keeps the one he has.
+## THE MOVE IN PLACE i AS HE HAS IT: his weapon's or his tree's (the Warrior's warhammer, Earthquake; his greatsword's Whirl till
+## his tree makes it the Whirlwind), not the demon's while the Warlock is it. What a move opening with a level is called by (his
+## words, 27 Nov 2026: “when i have the hammer selected form lvl1, when i level up it says "unlocked whirlwind" when earthquake is
+## unlocked and whirlwind isnt even what it unlocks with sword at lvl2”).
+func own_move_id(i: int) -> String:
+	if kit != null and kit.get("form") == "demon":
+		return loadout.own_id(i)
+	return loadout.id(i)
+
+
 func arm() -> void:
 	# (THE TINKERER: her Gun Arm's tesla coil grows with Intelligence; her Contraption by her pick, its bombs with Dexterity, its
 	# energy with Intelligence: game.ts refresh `grows`)

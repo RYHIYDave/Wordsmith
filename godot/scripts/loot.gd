@@ -1668,7 +1668,7 @@ func gain_xp(n: float) -> void:
 				if int(opens[i]) == level:
 					now.append(i)
 					# (his own move, not the demon's while he is it: the bug hunt's sixth round)
-					say("A new move: %s." % str(Words.skill(hero.loadout.own_id(i))["name"]).to_upper(), MSG_WORD)
+					say("A new move: %s." % str(Words.skill(hero.own_move_id(i))["name"]).to_upper(), MSG_WORD)
 			# (two opening with one level, words.gd EVADE_AT: their moments one after the other)
 			if not now.is_empty():
 				main.move_toast = {"skill": now[0], "t": 0.0, "then": now.slice(1)}
