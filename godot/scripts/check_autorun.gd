@@ -16,7 +16,11 @@ func run(main, hero, d: String) -> void:
 	h = hero
 	dir = d
 	var k := float(OS.get_environment("WS_AUTORUN_LIFE")) if OS.has_environment("WS_AUTORUN_LIFE") else 0.2
-	for f in range(1, 6):
+	if OS.has_environment("WS_AUTORUN_PROBE"):
+		await _probe(OS.get_environment("WS_AUTORUN_PROBE"))
+		return
+	var last := int(OS.get_environment("WS_AUTORUN_TO")) if OS.has_environment("WS_AUTORUN_TO") else 5
+	for f in range(int(OS.get_environment("WS_AUTORUN_FROM")) if OS.has_environment("WS_AUTORUN_FROM") else 1, last + 1):
 		await M.go_to("floor%d" % f, "down" if f > 1 else "stairs")
 		await M._wait(2.0)
 		var r := await _play(f, k)
@@ -151,6 +155,8 @@ func _play(f: int, life_k: float) -> Dictionary:
 					if stalls <= 3:
 						M._snap(dir + "/stall_%s_f%d_%d.png" % [h.cls, f, stalls])
 					print("AUTORUN   stall on floor %d at %s going for %s at %s" % [f, h.world, target.def.get("name", "?") if target.get("def") is Dictionary else "?", target.world])
+					if stalls <= 3:
+						print("AUTORUN     aim %s, the way %s, auto_dir %s, act '%s', kit move %s, scene_pace %s, held %s, hp %s" % [aim, path.slice(0, 4), h.auto_dir, h._act, (h.kit.move if h.kit != null else {}), h.scene_pace, h.held, h.life])
 					skip[target.get_instance_id()] = t + 20.0
 					target = null
 					since = 0.0
@@ -181,6 +187,104 @@ func _flood(from: Vector2i) -> Array:
 		if str(d.get("kind", "")) == "door":
 			for t in d.get("way", []):
 				mp.shut[int(t)] = 0
-	var out := super._flood(from)
+	var out := _flood_heights(from)
 	mp.shut = saved
 	return out
+
+
+## (the shortest way as check_speed.gd floods it, and the heights kept: from one tile to the next only where the step grid lets a
+## body over, so that a ledge is gone round by its stairs, as he must, not walked into)
+func _flood_heights(from: Vector2i) -> Array:
+	var mp = M.map
+	if mp.step.is_empty():
+		return super._flood(from)
+	var n: int = mp.w * mp.h
+	var dist := PackedInt32Array()
+	dist.resize(n)
+	dist.fill(-1)
+	var came := PackedInt32Array()
+	came.resize(n)
+	came.fill(-1)
+	if not mp.passable(from.x, from.y):
+		var near := Vector2i(-1, -1)
+		for rr in range(1, 4):
+			for oy in range(-rr, rr + 1):
+				for ox in range(-rr, rr + 1):
+					if near.x < 0 and mp.passable(from.x + ox, from.y + oy):
+						near = Vector2i(from.x + ox, from.y + oy)
+			if near.x >= 0:
+				break
+		if near.x < 0:
+			return [dist, came]
+		from = near
+	var q := PackedInt32Array([from.y * mp.w + from.x])
+	dist[q[0]] = 0
+	var head := 0
+	while head < q.size():
+		var c: int = q[head]
+		head += 1
+		var cx: int = c % mp.w
+		var cy: int = c / mp.w
+		for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]:
+			var nx: int = cx + o.x
+			var ny: int = cy + o.y
+			if not mp.passable(nx, ny) or not mp.may_overlap(cx, cy, nx, ny):
+				continue
+			if o.x != 0 and o.y != 0 and (not mp.passable(cx + o.x, cy) or not mp.passable(cx, cy + o.y)):
+				continue
+			var j: int = ny * mp.w + nx
+			if dist[j] >= 0:
+				continue
+			dist[j] = dist[c] + 1
+			came[j] = c
+			q.append(j)
+	return [dist, came]
+
+
+## (A LOOK AT ONE STALL: `WS_AUTORUN_PROBE=f,x,y,tx,ty`: the hero set down at (x, y) on floor f, the way to (tx, ty) as the autopilot
+## would walk it, each of its first tiles with what the map says of it, and where he stands after walking for two seconds)
+func _probe(spec: String) -> void:
+	var a := spec.split(",")
+	var f := int(a[0])
+	await M.go_to("floor%d" % f, "down" if f > 1 else "stairs")
+	await M._wait(1.0)
+	h.unhurt = true
+	print("PROBE arrived at %s, kit %s, scene_pace %s, act '%s'" % [h.world, h.kit != null, h.scene_pace, h._act])
+	if float(a[1]) >= 0.0:
+		for m in M._monsters.list:
+			if is_instance_valid(m):
+				m.world = Vector2(-100, -100)
+		h.world = Vector2(float(a[1]), float(a[2]))
+	var goal := Vector2(float(a[3]), float(a[4]))
+	var mp = M.map
+	print("PROBE steps on this floor: %s; cut: %s" % [not mp.step.is_empty(), not mp.cut.is_empty()])
+	for ty in range(floori(h.world.y) - 2, floori(h.world.y) + 3):
+		var row := ""
+		for tx in range(floori(h.world.x) - 3, floori(h.world.x) + 4):
+			var i: int = ty * mp.w + tx
+			row += "%d/%s/%s " % [tx, "W" if mp.walkable(tx, ty) else "-", str(mp.step[i]) if not mp.step.is_empty() else "."]
+		print("PROBE row %d: %s" % [ty, row])
+	var fl := _flood(_tile_of(h.world))
+	var dist: PackedInt32Array = fl[0]
+	var came: PackedInt32Array = fl[1]
+	var at: int = floori(goal.y) * mp.w + floori(goal.x)
+	var path: Array = []
+	while at >= 0:
+		path.push_front(Vector2i(at % mp.w, at / mp.w))
+		at = came[at]
+	print("PROBE the way: %d tiles, first: %s" % [path.size(), path.slice(0, 10)])
+	for i in range(mini(6, path.size())):
+		var c := Vector2(path[i].x + 0.5, path[i].y + 0.5)
+		print("PROBE   %s fits %s flat %s sees %s" % [path[i], mp.fits(c.x, c.y, h.RADIUS), mp.fits(c.x, c.y, h.RADIUS, true), M._monsters.sees(h.world, c)])
+	var w0: Vector2 = h.world
+	for d in [Vector2(0.02, 0.0), Vector2(0.0, 0.02), Vector2(0.02, 0.0075)]:
+		print("PROBE   slide %s from %s -> %s; fits there %s, flat %s" % [d, w0, mp.slide(w0, h.RADIUS, d), mp.fits(w0.x + d.x, w0.y + d.y, h.RADIUS), mp.fits(w0.x + d.x, w0.y + d.y, h.RADIUS, true)])
+	print("PROBE   he fits where he stands: %s, flat %s" % [mp.fits(w0.x, w0.y, h.RADIUS), mp.fits(w0.x, w0.y, h.RADIUS, true)])
+	var aim := Vector2(path[2].x + 0.5, path[2].y + 0.5) if path.size() > 2 else goal
+	for k in range(4):
+		var wd: Vector2 = (aim - h.world).normalized()
+		h.auto_dir = Iso.to_screen(wd.x, wd.y).normalized()
+		await M._wait(0.5)
+		print("PROBE   walking for %s: at %s; auto_dir %s, scene_pace %s, act '%s', paused %s" % [aim, h.world, h.auto_dir, h.scene_pace, h._act, M.get_tree().paused])
+	h.auto_dir = Vector2.ZERO
+	M._snap(dir + "/probe_%d.png" % f)
