@@ -1034,10 +1034,28 @@ func _ready() -> void:
 			# (game.ts readyFor: what he is told)
 			loot.say("Test hero, level %d. Not saved. Your words are in the INVENTORY." % loot.level if trial >= 2 else "Test hero. Not saved.", Color("#7af8f0"))
 	elif saving and _arg("cls") == "" and _arg("only") in ["", "title_live"] and wake_note == "" and not woke:
-		title_up(first)
+		# (THE HANNAR MANOR GAMES SPLASH first, as the game begins for him: splash.gd; not in the checks' runs)
+		if SPLASH and _arg("only") == "" and _arg("splash") != "0":
+			_splash_up(first)
+		else:
+			title_up(first)
 	woke = false
 	if shots != "":
 		_shoot(hero, shots)
+
+
+## THE HANNAR MANOR GAMES SPLASH before the start screen (splash.gd), his ask and his pick (White), 26 Nov 2026: `--splash=0` to
+## begin without it.
+const SPLASH := true
+
+
+## The splash over everything, the game held still behind it; the start screen raised as it ends, coming up from its black.
+func _splash_up(first: String) -> Node:
+	get_tree().paused = true
+	var sp := preload("res://scripts/splash.gd").new()
+	add_child(sp)
+	sp.done.connect(func() -> void: title_up(first))
+	return sp
 
 
 ## THE START SCREEN over everything (title.gd), the game held behind it (main.ts mode 'title'), its theme playing: CONTINUE, where a
