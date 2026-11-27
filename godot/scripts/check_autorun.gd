@@ -263,6 +263,13 @@ func _play(f: int, life_k: float) -> Dictionary:
 					skip[target.get_instance_id()] = t + 20.0
 					target = null
 					since = 0.0
+	if t >= CAP:
+		# (TIME UP: what he was at, pictured)
+		var what := "nothing"
+		if target != null and is_instance_valid(target):
+			what = "%s at %s (%s), %.1f away, in sight %s, life %s" % [target.def.get("name", "?") if target.get("def") is Dictionary else "?", target.world, "a spot" if target is Spot else "a monster", h.world.distance_to(target.world), M._monsters.sees(h.world, target.world), str(target.get("life"))]
+		print("AUTORUN   time up on floor %d, he at %s going for %s; the way %s" % [f, h.world, what, path.slice(0, 4)])
+		M._snap(dir + "/timeup_%s_f%d.png" % [h.cls, f])
 	h.auto_dir = Vector2.ZERO
 	h.auto_whirl = false
 	h.auto_attack = false
