@@ -2052,9 +2052,9 @@ func _build(where: String, arrive: String) -> void:
 
 ## Floor 1's stairs up to the town, seen through its gate's arch (render.ts flatWays), drawn with the floor.
 ## THE STAIRS CAVE IN (cave_in.gd), his ask of 26 Nov 2026, 22:06, and his picks: the first time he comes down them, after that the
-## rubble lying there; the town's stairs still lead down. Off until he has seen it (pictures first): `--cavein=1` to see it on,
-## `--cavein=0` off; not in the checks' runs (`--only` set) unless asked for.
-static var CAVE_IN := false
+## rubble lying there; the town's stairs still lead down. ON at his yes to its third film, 26 Nov 2026, by 22:55: “Yes, switch it on
+## (Recommended)”. `--cavein=0` off, `--cavein=1` on; not in the checks' runs (`--only` set) unless asked for.
+static var CAVE_IN := true
 
 
 func cave_in_on() -> bool:

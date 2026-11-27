@@ -1,4 +1,4 @@
-# The stairs cave in behind him (pictures first)
+# The stairs cave in behind him (on, at his yes)
 
 His words, 26 Nov 2026, 22:06: “id like the stairs to cave in when you go down into the first level, then change the wordstone quest
 to have it say "push deeper into the prison"”. Asked, his picks: “First time only (Recommended)” (after that floor 1 begins with
@@ -16,6 +16,8 @@ third: the stairwell's shadow deepens from the top of the opening as the roof gr
 the arch's opening (drawn column by column below its curve), coming down out of that dark, dark itself and lit by the room as it
 lands; the pieces that spill out over the floor fall the same way in the arch before they slide out.
 
+Shown the third, asked whether to switch it on, his pick, 26 Nov 2026, by 22:55: “Yes, switch it on (Recommended)”: `CAVE_IN` on.
+
 ## What it is (branch `game/stairs-cave-in`, from `main` b8427ed2)
 
 - `godot/scripts/cave_in.gd`: floor 1's stairwell up, in its arch behind him where he comes in. The first time, as the floor's
@@ -25,7 +27,7 @@ lands; the pieces that spill out over the floor fall the same way in the arch be
   settles); the daylight from the town going out behind them; a cloud of dust rolling out into the room and clearing (4.2 s).
   Every time after: the heap and the dark behind it, no film. Drawn in the art's own grain (two picture pixels to a game pixel),
   each stone a little picture of its own in the stairwell's greens and greys, lit from the top left, its edge dark.
-- `godot/scripts/main.gd`: `CAVE_IN` (off until his yes; `--cavein=1` on, `--cavein=0` off; not in the checks' runs unless asked);
+- `godot/scripts/main.gd`: `CAVE_IN` (on at his yes; `--cavein=0` off, `--cavein=1` on; not in the checks' runs unless asked);
   `_cave_in` lays it (in `flats`, under the arch's piers and its frame; its dust over everything), shuts the gate's three tiles to
   him and his walk up through them; "The stairs cave in behind you." as the roof gives way; `caved_below()`: below ground, the
   stairs fallen, no waypoint up reached yet (way_depth under 2), the film settled.
