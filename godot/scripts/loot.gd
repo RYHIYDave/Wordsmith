@@ -611,8 +611,11 @@ func derive() -> void:
 		if Words.DEFENCE_WORDS:
 			from_block = g.call("blockChance") * 10.0
 			hero.stats["block_chance"] = 0.0
-		# (DEFENCE_EVEN: every point of Intelligence his own barrier too, as every point of Strength is his own life)
-		hero.set_max_barrier(roundf((g.call("barrier") + from_block + from_armour) * (1.0 + Words.eff_attr(int_) * INT_BARRIER / 100.0) + (int_ * EVEN_INT_BARRIER if DEFENCE_EVEN else 0.0)))
+		# (DEFENCE_EVEN: every point of Intelligence his own barrier too, as every point of Strength is his own life; but only with a
+		# barrier on his gear to begin with, his words, 27 Nov 2026: “if you have no barrier on gear i dont think you should have just
+		# because you have 1 point of int”)
+		var gear_barrier: float = g.call("barrier") + from_block + from_armour
+		hero.set_max_barrier(roundf(gear_barrier * (1.0 + Words.eff_attr(int_) * INT_BARRIER / 100.0) + (int_ * EVEN_INT_BARRIER if DEFENCE_EVEN and gear_barrier > 0.0 else 0.0)))
 	else:
 		hero.stats["dodge"] = 0.0
 		hero.set_max_barrier(0.0)

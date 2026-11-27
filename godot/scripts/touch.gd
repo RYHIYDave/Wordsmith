@@ -37,6 +37,11 @@ const LABEL := {"auto": "ATTACKS: AUTO AIM", "tap": "ATTACKS: WHERE YOU TAP", "f
 const SPOT_SIZE := {"way": [24, 26], "body": [22, 20], "wordsmith": [18, 54], "armourer": [18, 54], "mystic": [34, 40], "lexicon": [18, 44],
 	"stash": [20, 28], "stranger": [18, 54], "chained": [16, 42]}
 const KEEP := "user://touch.cfg"
+## AUTO AIM WITH A MOUSE (his words, 27 Nov 2026, playing on his computer: “and no options for targetting like auto aim”): the pause
+## panel's ATTACKS switch on a computer too, two ways: WHERE YOU POINT (the mouse, as before) or AUTO AIM (each blow at the enemy the
+## aim help locks onto, as on a phone, the gold ring round it; none locked, the mouse). Kept with the device.
+const MOUSE_LABEL := {"point": "ATTACKS: WHERE YOU POINT", "auto": "ATTACKS: AUTO AIM"}
+var mouse_aim := "point"
 ## (render.ts lockRing: its dots, dark under them)
 const RING := [Color("#120d18"), Color("#e8b030"), Color("#ffe070"), Color("#fff6c0")]
 
@@ -77,6 +82,10 @@ func _ready() -> void:
 		mode = str(cf.get_value("touch", "aim", "auto"))
 	if not MODES.has(mode):
 		mode = "auto"
+	if cf.load(KEEP) == OK:
+		mouse_aim = str(cf.get_value("mouse", "aim", "point"))
+	if not MOUSE_LABEL.has(mouse_aim):
+		mouse_aim = "point"
 
 
 ## The switch in the pause panel: the next way the attacks are aimed, kept with the device (main.ts setAim, flipAim).
@@ -96,6 +105,28 @@ func set_mode(m: String) -> void:
 
 func label() -> String:
 	return LABEL[mode]
+
+
+## (AUTO AIM WITH A MOUSE) The pause panel's switch on a computer, kept with the device.
+func flip_mouse_aim() -> void:
+	mouse_aim = "auto" if mouse_aim == "point" else "point"
+	lock = null
+	var h = _hero()
+	if h != null:
+		h.touch_aim = {}
+	var cf := ConfigFile.new()
+	cf.load(KEEP)
+	cf.set_value("mouse", "aim", mouse_aim)
+	cf.save(KEEP)
+
+
+func mouse_label() -> String:
+	return MOUSE_LABEL[mouse_aim]
+
+
+## (AUTO AIM WITH A MOUSE) Whether it is at work: on, no finger nor game controller playing, the game going.
+func _mouse_auto(h) -> bool:
+	return mouse_aim == "auto" and not on and not main.pad_live and h != null and _playing()
 
 
 func _hero():
@@ -408,11 +439,16 @@ func _placed(m, i: int) -> Vector2:
 func _process(dt: float) -> void:
 	var h = _hero()
 	if not on or h == null or not _playing():
-		if not _pressed.is_empty() or (h != null and not h.touch_aim.is_empty()):
+		var auto := _mouse_auto(h)
+		if not _pressed.is_empty() or (h != null and not h.touch_aim.is_empty() and not auto):
 			_release_all()
 		_tap = null
 		_poke = null
 		_flick = null
+		# (AUTO AIM WITH A MOUSE: each blow at the one locked onto, as a phone's AUTO AIM; none, the mouse)
+		if auto:
+			var locked = _lock_update(dt)
+			h.touch_aim = {0: _placed(locked, 0), 1: _placed(locked, 1)} if locked != null else {}
 		queue_redraw()
 		return
 	_begin()
@@ -694,7 +730,7 @@ func _spot_at(p: Vector2) -> Dictionary:
 func _draw() -> void:
 	var h = _hero()
 	# (the gold ring is drawn for a game controller's aim too: main.ts renderer.lockId)
-	if not (on or main.pad_live) or h == null or not _playing():
+	if not (on or main.pad_live or _mouse_auto(h)) or h == null or not _playing():
 		return
 	var cam := get_viewport().get_camera_2d()
 	var tl: Vector2 = cam.get_screen_center_position() - get_viewport_rect().size / 2.0 if cam != null else Vector2.ZERO

@@ -1563,6 +1563,15 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   (`node tools/godot_record.mjs 9`, `7 --suffix v2`, `10 --suffix v2` on pages built afresh; each the same level as its layout).
   Checks: `--only=altarrooms`; `--only=holdfronts` (`check_hold_fronts.gd`: each story stronghold on 7, 9 and 10 pictured from
   its yard).
+- **His computer's findings, 27 Nov 2026** (`check_pc_fixes.gd`, `--only=pcfixes`). BARRIER ONLY WITH BARRIER ON HIS GEAR
+  (`loot.gd` derive; his words: “if you have no barrier on gear i dont think you should have just because you have 1 point of
+  int”): Intelligence's own barrier (DEFENCE_EVEN) only when his gear has some. AUTO AIM WITH A MOUSE (`touch.gd` mouse_aim, the
+  pause panel's ATTACKS switch on a computer; his words: “and no options for targetting like auto aim”): WHERE YOU POINT (the
+  mouse, as before) or AUTO AIM (each blow at the enemy the aim help locks onto, the gold ring round it; none, the mouse), kept with
+  the device. A COPY NOT IMPORTED (`main.gd` _not_imported, IMPORT_SAMPLE): run from the project's files before Godot has imported
+  them, or after an update without importing again (a few key files checked against what Godot last imported of them), the game
+  says so plainly over everything and how to put it right, in place of an all but empty game (his: “floor 1 has nothing except
+  torch glow”, “i dont think i heard an music or sounds at all”).
 - **The weakest melds brought up to the art rules** (the art chat's `art/meld-rules-check-all`, his “Bring them in
   (Recommended)”; his ask, 26 Nov 2026: “I’d like you to look at all our melds and find which are weakest compared to our art and
   animation ruleset.  Then bring them up to our standard”). The 30 weakest (the city's melds that slow, curse or hold) and 14 more

@@ -167,6 +167,9 @@ func _press(what: String) -> void:
 		"aim":
 			if main._touch != null:
 				main._touch.flip_aim()
+		"maim":
+			if main._touch != null:
+				main._touch.flip_mouse_aim()
 		"turn":
 			main.flip_turn()
 
@@ -511,7 +514,8 @@ func _pause(W: float, H: float) -> void:
 	key_w += 8
 	var pw := minf(W - 8, 250.0)
 	# (PLAY UPRIGHT taken out at his word: main.gd UPRIGHT_ON; the aim's row alone over the three)
-	var rows: int = (2 if main.UPRIGHT_ON else 1) if touch else 0
+	# (AUTO AIM WITH A MOUSE: on a computer the ATTACKS switch too, its own two ways: touch.gd mouse_aim)
+	var rows: int = (2 if main.UPRIGHT_ON else 1) if touch else (1 if main._touch != null and not main.pad_live else 0)
 	var ph := minf(H - 6, 18 + help.size() * 7 + 8 + bh + 6 + (bh + 3) * rows)
 	var px := floorf((W - pw) / 2.0)
 	var py := maxf(3.0, floorf((H - ph) / 2.0))
@@ -541,6 +545,10 @@ func _pause(W: float, H: float) -> void:
 			var ty := ay - bh - 3
 			_hits.append([Rect2(px + 6, ty, pw - 12, bh), "turn"])
 			_button(px + 6, ty, pw - 12, bh, main.turn_label())
+	elif main._touch != null and not main.pad_live:
+		var ay := ly - bh - 3
+		_hits.append([Rect2(px + 6, ay, pw - 12, bh), "maim"])
+		_button(px + 6, ay, pw - 12, bh, main._touch.mouse_label())
 	_button(px + 6, by, bw, bh, "Resume", false, true)
 	_button(px + 8 + bw, by, bw, bh, "Sound off" if AudioServer.is_bus_mute(0) else "Sound on")
 	# (ui/panels.ts drawPause, its third: "End run" gives a hero of one's own up; a test hero's "Leave" leaves the save as it was)

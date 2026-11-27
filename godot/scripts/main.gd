@@ -787,7 +787,65 @@ static func has_floor(n: int) -> bool:
 	return FileAccess.file_exists("res://assets/floor%d/layout.json" % n)
 
 
+## A COPY NOT YET IMPORTED (his computer, 27 Nov 2026: a fresh download run before Godot had imported its pictures and sounds, the game
+## all but empty: “floor 1 has nothing except torch glow”, “i dont think i heard an music or sounds at all”): said plainly, over
+## everything, in place of a game that looks broken.
+func _not_imported() -> bool:
+	if load("res://assets/hud/hud.png") == null:
+		return true
+	# (or imported from an older copy and not since: a new download unzipped over the old and run without Godot's editor, the
+	# heroes' cards out of step with their numbers, the floors' new pictures missing. Run from the project's own files, each of a
+	# few the game leans on is checked against what Godot last imported of it; a built app has no such files, and is never stale.)
+	for f in IMPORT_SAMPLE:
+		var src: String = "res://" + str(f)
+		if not FileAccess.file_exists(src) or not FileAccess.file_exists(src + ".import"):
+			continue
+		var cf := ConfigFile.new()
+		if cf.load(src + ".import") != OK:
+			continue
+		var dest := str(cf.get_value("remap", "path", ""))
+		if dest == "":
+			continue
+		var md5_at := dest.get_basename() + ".md5"
+		if not FileAccess.file_exists(md5_at):
+			return true
+		var told := FileAccess.get_file_as_string(md5_at)
+		if not told.contains('source_md5="%s"' % FileAccess.get_md5(src)):
+			return true
+	return false
+
+
+## (the files a stale or missing import shows in at once: the HUD, the heroes' cards, the title, floor 1, the title's music)
+const IMPORT_SAMPLE := ["assets/hud/hud.png", "assets/heroes/cards-0.png", "assets/heroes/cards-1.png", "assets/title/ring.png",
+	"assets/looks/floor1v2.png", "assets/music/music_title.ogg"]
+
+
+func _say_not_imported() -> void:
+	set_process(false)
+	set_physics_process(false)
+	set_process_input(false)
+	set_process_unhandled_input(false)
+	var cl := CanvasLayer.new()
+	cl.layer = 100
+	add_child(cl)
+	var bg := ColorRect.new()
+	bg.color = Color(0.05, 0.04, 0.09)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cl.add_child(bg)
+	var l := Label.new()
+	l.text = "This copy of Wordsmith has not been imported yet, or not since it was updated.\n\nClose it. In Godot's project list, click Wordsmith, then EDIT (not Run).\nWait for the import bar to finish (a few minutes the first time),\nthen press Play (F5)."
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.add_theme_font_size_override("font_size", 14)
+	l.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cl.add_child(l)
+
+
 func _ready() -> void:
+	if _not_imported():
+		_say_not_imported()
+		return
 	# (THE FIVE WEAKEST FLOORS REMADE: `--levels2=1` for their checks and pictures, LEVELS2 off)
 	levels2_arg = _arg("levels2") == "1"
 	# (the checks written for the Warrior's Whirlwind give him its talent; `--whirl1`, his one-spin Whirl as he starts: talents.gd)
@@ -3203,6 +3261,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		get_tree().quit()
 		return
 	# (STRONGHOLDS ON ANY ENDLESS LEVEL, THE ALTAR ROOM: check_altar_rooms.gd)
+	if _arg("only") == "pcfixes":
+		await preload("res://scripts/check_pc_fixes.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "holdfronts":
 		await preload("res://scripts/check_hold_fronts.gd").new().run(self, hero, dir)
 		get_tree().quit()
