@@ -1554,6 +1554,15 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   feet (Linen, Silk and Velvet Cowl for the helm, Linen, Silk and Velvet Slippers for the boots: `src/game/items.ts`), cloth by
   their names (`loot.gd base_family`), so Barrier and a little cooldown recovery built in; the loot baked again
   (`tools/godot_loot.ts`).
+- **Every level's own stronghold front** (the art chat's, `src/art/hold_fronts.ts`, OWN_FRONTS; his words: “Endless mode is adding
+  strongholds to every level, and I need the facades of the strongholds that you go into to match each of the levels.”, then “Yes,
+  story and endless alike (Recommended)” and, 25 Nov, “Yes, switch them all on (Recommended)”). The endless strongholds' gate at the
+  map's edge is the front of the level it stands on (`act1/altar_rooms.gd` `_gate_key`; `tools/godot_altar_room.ts` front_<floor>
+  and its turned twin front_<floor>_y; 18 of them, 6 and 8 keeping the Quarry's gatehouse and the waystation's gate). The story's
+  strongholds on 7, 9 and 10 have theirs and their courts in their own stone in their floors' recorded looks
+  (`node tools/godot_record.mjs 9`, `7 --suffix v2`, `10 --suffix v2` on pages built afresh; each the same level as its layout).
+  Checks: `--only=altarrooms`; `--only=holdfronts` (`check_hold_fronts.gd`: each story stronghold on 7, 9 and 10 pictured from
+  its yard).
 - **The Hannar Manor Games splash** (`scripts/splash.gd`, `main.gd` SPLASH; the art chat's; his ask, 26 Nov 2026: “I’d like a title
   splash screen before the wordsmith title screen.  I’d like it to fade up from black.”, his pick “White”): the film
   (`assets/splash/hannar_manor_splash.ogv`, 6.6 s) over black as the game begins, the game held still behind it, a tap skipping it,
