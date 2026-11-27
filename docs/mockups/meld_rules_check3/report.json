@@ -210,7 +210,7 @@
   }
  ],
  "found": [
-  "A gameplay fault, not changed: with a barrier, Guarding tops up the barrier instead of giving a shield (words.gd DEFENCE_WORDS, hero.gd). Parry, Sanctuary, Aegis and Shieldwall wait for a fresh shield (melds46_rules.gd step), so with any barrier they do nothing at all, and none of their looks plays.",
+  "A gameplay fault, fixed at your word: with a barrier, Parry, Sanctuary, Aegis and Shieldwall did nothing at all, because Guarding tops up the barrier and they waited on a fresh shield. Now a top-up counts.",
   "Seven other shields (Redoubt, Sanctuary, Aegis, Minefield, Riposte, Shieldwall, Carapace) still lay a plain ring on the floor under their marks. Not among these 20; left as they are."
  ],
  "correction": "Mid-way I said Gravewarden, Quickdraw and Hornet covered your hero. The measure says none of the 20 did for more than a blink. What was really wrong: Gravewarden's shade passed across you, and Hornet's barbs floated off you on a monster. Both are fixed; Quickdraw needed nothing for this.",

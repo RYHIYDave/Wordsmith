@@ -5,7 +5,7 @@ His ask, in the Godot cloud chat, 27 Nov 2026: “I’d like you to do another 2
 Rulebook” and docs/art/RULEBOOK.md (Animations 1, 4, 5, 7, 8; How art is made 9; Movement 7; Pillar 4).
 
 The page for his yes: https://claude.ai/artifact/3efuV7xnu7FWuvGSR2jV79 (built by `page.py` from `report.json`, `page.html` and the
-films). NOTHING HERE IS LIVE WITHOUT HIS YES (pictures first).
+films). HIS YES TO THE PAGE, 27 Nov 2026: “Yes, bring them in (Recommended)”.
 
 ## Which 20
 
@@ -35,9 +35,13 @@ Conduit, Rampage, Parry, Haunting, Gravewarden, Feeding Frenzy, Quickdraw, Ripti
 
 ## Found, not changed (report.json `found`)
 
-- GAMEPLAY: with a barrier, Guarding in front tops up the barrier instead of giving a shield (hero.gd, words.gd DEFENCE_WORDS);
-  Parry, Sanctuary, Aegis and Shieldwall wait on a fresh shield (melds46_rules.gd `step`), so with any barrier they do nothing.
-  Asked him.
+- GAMEPLAY, FIXED AT HIS WORD (“Fix it (Recommended)”, 27 Nov 2026): with a barrier, Guarding in front tops up the barrier
+  instead of giving a shield (hero.gd, words.gd DEFENCE_WORDS); Parry, Sanctuary, Aegis and Shieldwall waited on a fresh shield
+  (melds46_rules.gd `step`), so with any barrier they did nothing. Now a top-up counts as a fresh shield (hero.gd `guard_ups`,
+  `guard_up_by`): Parry's moment where nothing gets through, Aegis's dome; a barrier does not run out by time, so Sanctuary's
+  “twice as long” is its top-up twice as big and Shieldwall's thicker is its top-up bigger with the frenzy, up to the barrier's
+  most. With no barrier, as before. Checked: `--only=defence`, 17 checks, 0 wrong (the four with a barrier, Sanctuary and Parry
+  without); `--cases=m52` on the eight shells, 0 wrong. Merges cleanly with the base and with game/defence-talents.
 - Seven other shells (Redoubt, Sanctuary, Aegis, Minefield, Riposte, Shieldwall, Carapace) still lay a plain ring under their marks.
 
 ## Correction told to him
