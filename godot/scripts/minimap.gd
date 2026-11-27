@@ -20,8 +20,8 @@ const FloorMap := preload("res://scripts/floor_map.gd")
 ## this game.  It can have way more functionality”: “Icons for what you find”): small pictures in place of the dots, on the small map
 ## and the large one, a legend of them under the large one: a chest, the waypoint, the way down, the way home, a stronghold (its
 ## gate, where its altar is), a bell (the Muffled Bell, the bells to ring), the fallen wordsmith, a boss (a skull), a rare pack (a crown), a
-## prize carrier (a gem). PICTURES FIRST: off until his yes.
-static var MAP_ICONS := false
+## prize carrier (a gem). ON at his yes to their pictures (docs/mockups/map_icons), 27 Nov 2026: “Yes, turn them on (Recommended)”.
+static var MAP_ICONS := true
 ## (each 5 by 5: "#" the mark's own colour, "." nothing; drawn on a dark shadow a pixel down and right)
 const ICONS := {
 	"chest": ["#####", "#...#", "##.##", "#...#", "#####"],

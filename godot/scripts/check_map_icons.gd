@@ -48,5 +48,5 @@ func run(M, h, dir: String) -> void:
 			M._snap(dir + "/map_%d_%s_large.png" % [f, "on" if on else "off"])
 			await M._wait(0.2)
 			M._mini.show_panel("")
-	Mini.MAP_ICONS = false
+	Mini.MAP_ICONS = true
 	print("MAPICONS DONE")

@@ -1584,6 +1584,15 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   says "unlocked whirlwind" when earthquake is unlocked and whirlwind isnt even what it unlocks with sword at lvl2”): his weapon's
   or his tree's move in that place (the greatsword's Whirl, the axe's Axe Throw, the hammer's Earthquake), the Warlock's own while
   he is the demon. Check: `--only=movenames` (`check_move_names.gd`).
+- **The map's icons for what he finds** (`minimap.gd` MAP_ICONS, ON at his yes to their pictures, “Yes, turn them on
+  (Recommended)”; his words, 27 Nov 2026: “And work on the minimap.  It's really a relic of insanely early builds of this game.  It
+  can have way more functionality”, his pick “Icons for what you find”): small pictures in place of the dots, on the small map and
+  the large one: a chest, the waypoint, the way down, the way home, a stronghold (the cult's red while its altar waits, grey once
+  taken), a bell (the Muffled Bell, the bells to ring), the fallen wordsmith, a boss (a skull), a rare pack (a crown), a prize
+  carrier (a gem); the large map's legend the icons on it. Pictures: `docs/mockups/map_icons`, `--only=mapicons`.
+- **The player's sweep** (`check_sweep.gd`, `--only=sweep`; his “K I need you to go through the game and find fixes like these I
+  made tonight”): every way into every place set down on open floor and able to walk off (51 of them; `WS_SWEEP_PART=arrivals`),
+  and from level 1 up each move opening named as its plate names it, for each class (`WS_SWEEP_PART=levels --cls=<class>`).
 - **The weakest melds brought up to the art rules** (the art chat's `art/meld-rules-check-all`, his “Bring them in
   (Recommended)”; his ask, 26 Nov 2026: “I’d like you to look at all our melds and find which are weakest compared to our art and
   animation ruleset.  Then bring them up to our standard”). The 30 weakest (the city's melds that slow, curse or hold) and 14 more
