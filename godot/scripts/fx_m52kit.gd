@@ -785,7 +785,7 @@ func _his_shell() -> Array:
 
 
 ## GUARDING's own shell round him, as fx_words610.gd draws it: emerald points, lit at the upper left, a light running round it,
-## faintly filled; for while a meld's shell holds and the game's is not drawn already (a barrier holds, not a shield).
+## faintly filled; for while a meld's shell holds and the game's is not drawn already.
 func _guard_shell(cx: float, cy: float, rx: float, ry: float) -> void:
 	var C: PackedColorArray = W610.RAMP.get("guarding", PackedColorArray())
 	if C.size() < 6:

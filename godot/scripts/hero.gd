@@ -2738,19 +2738,44 @@ func phase_in(secs: float) -> void:
 	_arrive_for = secs
 
 
+## A lot of barrier on him (`k`, his barrier over his life, above 1): a soft cyan glow round him, breathing, a pool of its light at
+## his feet; from twice his life, brighter, and motes of light rising off him. Drawn under him (his figure is drawn over).
+func _barrier_glow(k: float) -> void:
+	var c := Color(0.48, 0.97, 0.94)
+	var strong := k >= 2.0
+	var breathe := 0.8 + 0.2 * sin(_clock * 2.4)
+	var top := -46.0 - _lift
+	draw_set_transform(Vector2(0, top), 0.0, Vector2(1.0, 1.75))
+	for i in 7:
+		var r := (14.0 if strong else 12.0) + float(i) * (5.5 if strong else 4.0)
+		draw_circle(Vector2.ZERO, r, Color(c, (0.16 if strong else 0.1) * (1.0 - float(i) * 0.12) * breathe))
+	draw_set_transform(Vector2(0, -_lift), 0.0, Vector2(1.0, 0.42))
+	for i in 3:
+		draw_circle(Vector2.ZERO, 16.0 + float(i) * 8.0, Color(c, (0.26 if strong else 0.16) * (1.0 - float(i) * 0.3) * breathe))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if strong:
+		var lit := c.lerp(Color.WHITE, 0.55)
+		for i in 16:
+			var ph := fmod(_clock * 0.55 + float(i) * 0.0625, 1.0)
+			var x := sin(float(i) * 2.39996) * 20.0 + sin(_clock * 1.7 + float(i)) * 2.0
+			var y := -6.0 - ph * 90.0 - _lift
+			var s := 4.0 if i % 3 == 0 else 2.0
+			draw_rect(Rect2(roundf(x), roundf(y), s, s), Color(lit, (1.0 - ph)))
+
+
 ## His life over his head in a fight or when he is hurt (Version 11.2). Its edge takes the colour of what ails him (render.ts,
 ## the hero's life bar): burning P.fr4, poisoned P.vn4, chilled P.bu4, shocked P.lt3.
 func _draw() -> void:
 	if not alive:
 		return
-	# (THE THREE DEFENCES: while his barrier holds, a faint cyan shell shimmers round him, brighter the fuller it is)
-	if barrier + shield > 0.0 and (max_barrier > 0.0 or Words.DEFENCE_WORDS):
-		var bf := clampf((barrier + shield) / maxf(max_barrier, barrier + shield), 0.0, 1.0)
-		var shim := 0.5 + 0.5 * sin(_clock * 3.0)
-		draw_set_transform(Vector2(0, -46.0 - _lift), 0.0, Vector2(1.0, 1.9))
-		draw_circle(Vector2.ZERO, 24.0, Color(0.48, 0.97, 0.94, 0.05 + 0.04 * bf))
-		draw_arc(Vector2.ZERO, 24.0, 0.0, TAU, 40, Color(0.48, 0.97, 0.94, (0.18 + 0.14 * shim) * (0.4 + 0.6 * bf)), 1.5)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# (THE THREE DEFENCES: his barrier is shown round his life globe, not as a shell round him, so that he never wears two bubbles
+	# (his words, 27 Nov 2026: “Not the same shape as Guardian, so people just have 2 bubble shields on them for no reason. So I
+	# don't think there needs to be anything if you have barrier. It's around your health globe in the corner of the screen”).
+	# A lot of it shows on him: more barrier than life, a cyan glow round him; twice his life, brighter, with light rising off him:
+	# his “once barrier, the amount of barrier you have exceeds your health pool, you get like a blue glow around your character.
+	# And then once it's like double your health, you get something else”.)
+	if max_barrier > 0.0 and barrier > max_life:
+		_barrier_glow(barrier / maxf(1.0, max_life))
 	var fighting: bool = monsters != null and monsters.nearest(world, 9.0) != null
 	if not fighting and life >= max_life - 0.01 and (max_barrier <= 0.0 or barrier >= max_barrier - 0.01):
 		# (the Warlock's pact: always while it is full, he is the demon, or he changes: render.ts)

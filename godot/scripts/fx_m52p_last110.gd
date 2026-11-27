@@ -1392,7 +1392,8 @@ func paint_air_more() -> void:
 	var hx := _wx(h.world.x, h.world.y)
 	var hy := _wy(h.world.x, h.world.y)
 	# (his shell, one of these in front, while it holds)
-	if h.shield > 0.0 or h.barrier > 0.0:
+	# (only while a shield holds: a barrier is shown on his life globe, no shell round him; his words, 27 Nov 2026)
+	if h.shield > 0.0:
 		for i in 3:
 			var f: String = h.m52.fid(i)
 			if SHELLS.has(f):
