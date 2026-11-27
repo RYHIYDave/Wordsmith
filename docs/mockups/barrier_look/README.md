@@ -8,7 +8,7 @@ something else. I'm not sure. Just some sort of visual indicator that you have a
 
 Branch `game/barrier-look`, from `art/meld-rules-check-20b` at 3919ae5e (on the ship list; this builds on it: hero.gd and the
 painters). The page for his yes: https://claude.ai/artifact/F1TunxaBDgaZY6SDV2u9DK (this folder's index.html and pictures).
-NOTHING HERE IS LIVE WITHOUT HIS YES (pictures first).
+HIS YES, 27 Nov 2026, to the glow and the globe: “Yes, bring it in (Recommended)”.
 
 ## What
 
