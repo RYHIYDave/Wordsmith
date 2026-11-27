@@ -71,11 +71,17 @@ func _play(f: int, life_k: float) -> Dictionary:
 	var stranded := 0.0
 	var ldist := PackedInt32Array()
 	var spots := {}
+	var offers := 0
 	var hit_life := INF
 	var hit_since := 0.0
 	var vain := 0
 	while t < CAP:
 		await M.get_tree().process_frame
+		# (the gear screen opened on a word come by, as the game does for a hero with no word at work: DONE, as a player who
+		# plays on presses it; counted)
+		if M._inv != null and M._inv.visible:
+			M._inv.toggle()
+			offers += 1
 		var dt: float = M.get_process_delta_time()
 		t += dt
 		h.life = h.max_life
@@ -251,6 +257,8 @@ func _play(f: int, life_k: float) -> Dictionary:
 	var way := "not looked for"
 	if M._stairs != null:
 		way = "open" if M._stairs.opened >= 0 else "shut"
+	if offers > 0:
+		print("AUTORUN   the gear screen opened on its own %d times on floor %d (a word come by, none at work)" % [offers, f])
 	return {"t": t, "dead": dead, "all": all, "boss": boss, "stalls": stalls, "way": way}
 
 
