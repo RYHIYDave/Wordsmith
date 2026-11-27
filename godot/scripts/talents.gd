@@ -50,6 +50,7 @@ static func ready_up() -> void:
 		_godot_tune()
 		_defence()
 		_wbuilds()
+		_tbuilds()
 
 
 ## DEFENCE IN EVERY TREE (his ask, 27 Nov 2026, 10:02: “Can you look at the classes we have, find the ones that don’t have any
@@ -125,6 +126,38 @@ static func def(id: String):
 
 ## DEFENCE IN EVERY TREE: its talents laid in, each a twig off its own path (as the attacks changed are: _twigs), and the
 ## Warrior's and the Brawler's cards worded for the three defences; while DEFENCE_TALENTS is on.
+## THE TINKERER'S BUILDS (heroes/tinkerer_builds.gd, on): her vials her bombs, in her tree's words.
+const TB := preload("res://scripts/heroes/tinkerer_builds.gd")
+static func _tbuilds() -> void:
+	if not TB.on or not D["trees"].has("tinkerer"):
+		return
+	var tree: Dictionary = D["trees"]["tinkerer"]
+	for t in tree["talents"]:
+		if TB.NAMES.has(t["id"]):
+			t["name"] = TB.NAMES[t["id"]]
+		if TB.TEXT.has(t["id"]):
+			t["text"] = TB.TEXT[t["id"]]
+	for p in tree["paths"]:
+		if TB.PATH.has(p["id"]):
+			p["name"] = TB.PATH[p["id"]]
+	var by := {}
+	for t in tree["talents"]:
+		by[t["id"]] = t
+	if by.has("contraptions"):
+		by["contraptions"]["text"] = str(by["contraptions"]["text"]) + TB.CONTRAPTION_ONE
+	for id in TB.NODES:
+		var N: Dictionary = TB.NODES[id]
+		if by.has(id):
+			continue
+		var t := {"id": id, "name": N["name"], "text": N["text"], "word": null, "big": N["big"], "path": N["path"],
+			"at": (N["at"] as Array).duplicate(), "from": (N["from"] as Array).duplicate(), "joined": (N["from"] as Array).duplicate(),
+			"mods": [], "remade": false, "pick": null, "works": true}
+		(tree["talents"] as Array).append(t)
+		by[id] = t
+		for f in N["from"]:
+			by[f]["joined"].append(id)
+
+
 ## THE WARLOCK'S BUILDS (heroes/warlock_builds.gd, on): Embrace, Devour and Soul Link in his tree, and his tree laid out as a claw.
 const WB := preload("res://scripts/heroes/warlock_builds.gd")
 static func _wbuilds() -> void:
@@ -354,6 +387,12 @@ const B3 := preload("res://scripts/heroes/brawler3.gd")
 
 ## (THE BRAWLER REMADE) Whether the other side of his fork is taken: only one of Quick Hands and Heavy Hands.
 static func _fork_other(cls: String, id: String, taken: Array) -> bool:
+	# (THE TINKERER'S BUILDS: Contraption or Coin Toss, her tap's, only one)
+	if cls == "tinkerer" and TB.on and TB.ONE_TAP.has(id):
+		for o in TB.ONE_TAP:
+			if o != id and taken.has(o):
+				return true
+		return false
 	if cls != "brawler" or not B2.on:
 		return false
 	# (THE BRAWLER'S BUILDS: his stances, only one of the three)
@@ -373,7 +412,7 @@ static func of(cls: String, id: String) -> Dictionary:
 
 static func ported(cls: String, id: String) -> bool:
 	return (PORTED.get(cls, []) as Array).has(id) or (cls == "brawler" and B2.on and (B2.FORK.has(id) or (B3.on and B3.NODES.has(id)))) \
-		or (cls == "warlock" and WB.on and WB.NODES.has(id))
+		or (cls == "warlock" and WB.on and WB.NODES.has(id)) or (cls == "tinkerer" and TB.on and TB.NODES.has(id))
 
 
 ## How many points a hero of `level` has had in all (talentPoints).
@@ -494,7 +533,7 @@ static func take_problem(cls: String, level: int, taken: Array, id: String) -> S
 	if not _way_open(t, taken):
 		return "Take one joined to it first"
 	if _fork_other(cls, id, taken):
-		return "One stance only" if B3.STANCES.has(id) else "Quick Hands or Heavy Hands: only one"
+		return "One stance only" if B3.STANCES.has(id) else ("Contraption or Coin Toss: only one" if TB.ONE_TAP.has(id) else "Quick Hands or Heavy Hands: only one")
 	var out := swap_out(cls, taken, id)
 	if out.begins_with("!"):
 		return out.substr(1)

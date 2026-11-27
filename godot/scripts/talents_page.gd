@@ -262,6 +262,9 @@ func _fill(pts: PackedVector2Array, c: Color, alpha: float) -> void:
 			inv.draw_colored_polygon(PackedVector2Array([sp[tri[i]], sp[tri[i + 1]], sp[tri[i + 2]]]), col)
 
 
+const TB := preload("res://scripts/heroes/tinkerer_builds.gd")
+
+
 func _rune_of(tree: Dictionary, t: Dictionary) -> Dictionary:
 	var word = t["word"]
 	if word != null:
@@ -270,6 +273,9 @@ func _rune_of(tree: Dictionary, t: Dictionary) -> Dictionary:
 	for p in tree["paths"]:
 		if p["id"] == t["path"]:
 			color = Color(p["color"])
+	# (THE TINKERER'S BUILDS: her VIALS path her BOMBS, a bomb its rune)
+	if t["path"] == "vials" and TB.on and not MOVE_RUNE.has(t["id"]):
+		return {"rows": TB.BOMB_RUNE, "color": color, "glow": WHITE}
 	# (THE BRAWLER'S BUILDS: a stance's stone shows its element's rune)
 	if t.has("rune"):
 		return _word_rune(str(t["rune"]))

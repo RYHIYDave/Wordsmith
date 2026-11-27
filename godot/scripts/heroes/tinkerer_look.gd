@@ -239,7 +239,10 @@ func on_event(e: Dictionary, _fx) -> void:
 		"vialBurst":
 			# (her tree's CONTRAPTION, its pick BOMBS: her bomb going off, as her blast jump's does)
 			if e.get("bomb", false):
-				big_blasts.append({"x": e["x"], "y": e["y"], "t": 0.0, "r": "", "kind": "bomb"})
+				big_blasts.append({"x": e["x"], "y": e["y"], "t": 0.0, "r": "", "kind": "bomb", "k": float(e.get("k", 1.0))})
+				# (THE TINKERER'S BUILDS: a bomb with Mad Mixture's brew in it, its colours over the blast)
+				if str(e.get("brew", "")) != "":
+					bursts.append({"x": e["x"], "y": e["y"], "t": 0.0, "k": float(e.get("k", 1.0)), "brew": str(e["brew"])})
 				return
 			# (her tree's: little ones small; The Big One's twice the size, a ring of her cyan racing out and a thud of dust; Mad
 			# Mixture's in its brew's colours)
@@ -657,7 +660,7 @@ func _draw() -> void:
 			var view := "back" if float(g["fx"]) + float(g["fy"]) < -0.2 else "front"
 			gpiece(self, "%s:%s:chFloor:%d" % [gun, view, f], roundf(_gx(g["x"], g["y"])) * 2.0, roundf(_gy(g["x"], g["y"])) * 2.0, float(g["fx"]) - float(g["fy"]) < 0.0)
 	for b in big_blasts:
-		_piece(self, "%sF:%d" % [_blast_key(b), floori(float(b["t"]) * 30.0)], _gx(b["x"], b["y"]), _gy(b["x"], b["y"]))
+		_piece(self, "%sF:%d" % [_blast_key(b), floori(float(b["t"]) * 30.0)], _gx(b["x"], b["y"]), _gy(b["x"], b["y"]), 1.0, float(b.get("k", 1.0)))
 	# (her tree's CONTRAPTION: a ring of the friend's cyan round each set up: render.ts CON_SEEN; its lamp's ring as it is lit)
 	if kit != null:
 		for c in kit.contraptions:
@@ -692,7 +695,25 @@ func _draw() -> void:
 
 ## What is over everything (tinkerer_fx.ts drawAir): its rocket trail, her bomb's smoke along the way she flew, her bomb going off,
 ## her vials in the air and bursting, the pound's steam, its dropping in, its fist landing, its sparks and gears.
+## (THE TINKERER'S BUILDS, Coin Toss) Her coins in flight: little gold discs turning over as they go.
+func _draw_coins(c: CanvasItem) -> void:
+	if kit == null:
+		return
+	for s in kit.shots:
+		if s.get("look", "") != "coin":
+			continue
+		var x := roundf(_gx(s["x"], s["y"]))
+		var y := roundf(_gy(s["x"], s["y"])) - 12.0
+		var turn := absf(sin(float(s["age"]) * 22.0 + float(s.get("n", 0))))
+		var w := maxf(1.0, 4.0 * turn)
+		c.draw_rect(Rect2((x - w) * 2.0, (y - 4.0) * 2.0, w * 4.0, 16.0), Color("#8a5a12"))
+		c.draw_rect(Rect2((x - w + 1.0) * 2.0, (y - 3.0) * 2.0, maxf(2.0, w * 4.0 - 4.0), 12.0), Color("#ffd448"))
+		if turn > 0.5:
+			c.draw_rect(Rect2((x - 1.0) * 2.0, (y - 3.0) * 2.0, 4.0, 4.0), Color("#fff6c0"))
+
+
 func draw_air(c: CanvasItem) -> void:
+	_draw_coins(c)
 	# (its rocket trail, its puffs born out of its stacks' fire where it passed, hanging there)
 	for l in launches:
 		var k := floori(float(l["t"]) * 30.0)
@@ -735,7 +756,9 @@ func draw_air(c: CanvasItem) -> void:
 			var hop_t := float(CON["BOMB_FX"]["hop"]) / 30.0
 			var bup := 10.0 * (1.0 - bu) + 4.0 * 30.0 * bu * (1.0 - bu) if after < 0.0 else (6.0 * sin(after / hop_t * PI) if after < hop_t else 0.0)
 			var fr := floori(float(l["t"]) * 18.0) % 8 if after < 0.0 else floori(float(l["t"]) * 10.0) % 2
-			_piece(c, "bomb:%d" % fr, _gx(bx, by), _gy(bx, by) - bup)
+			# (THE TINKERER'S BUILDS: her own bomb, from her hand, bigger than her Contraption's little ones; The Big One's bigger still)
+			var bk := 1.0 if not l["hand"] else (0.9 if l.get("little", false) else (2.6 if l.get("big", false) else 1.7))
+			_piece(c, "bomb:%d" % fr, _gx(bx, by), _gy(bx, by) - bup, 1.0, bk)
 			continue
 		var u := float(l["t"]) / float(l["flight"])
 		var x := float(l["x0"]) + (float(l["x1"]) - float(l["x0"])) * u
@@ -926,7 +949,7 @@ func _draw_shots(c: CanvasItem) -> void:
 		var by := float(b["y"]) - float(b["uy"]) * back
 		_painted(c, _frame(b, k), _gx(bx, by), _gy(bx, by))
 	for b in big_blasts:
-		_piece(c, "%sA:%d" % [_blast_key(b), floori(float(b["t"]) * 30.0)], _gx(b["x"], b["y"]), _gy(b["x"], b["y"]))
+		_piece(c, "%sA:%d" % [_blast_key(b), floori(float(b["t"]) * 30.0)], _gx(b["x"], b["y"]), _gy(b["x"], b["y"]), 1.0, float(b.get("k", 1.0)))
 	# (her Contraption's bolts of energy, painted as they come)
 	for b in con_bolts:
 		_painted(c, _frame(b, floori(float(b["t"]) * 30.0)), _gx(b["x"], b["y"]), _gy(b["x"], b["y"]))

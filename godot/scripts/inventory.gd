@@ -39,6 +39,7 @@
 extends Control
 ## (THE BRAWLER'S BUILDS: The Last Round's card)
 const BRAWLER3 := preload("res://scripts/heroes/brawler3.gd")
+const TINKERER_B := preload("res://scripts/heroes/tinkerer_builds.gd")
 
 const RuneBag := preload("res://scripts/rune_bag.gd")
 const MeldStone := preload("res://scripts/meld_stone.gd")
@@ -1992,6 +1993,9 @@ func _draw_flash() -> void:
 static func does_of(it: Dictionary) -> Array:
 	if it.get("unique") == "lastround" and BRAWLER3.on:
 		return [BRAWLER3.LAST_ROUND]
+	# (THE TINKERER'S BUILDS: her uniques' words, her vials her bombs: heroes/tinkerer_builds.gd)
+	if TINKERER_B.on and TINKERER_B.DOES.has(str(it.get("unique", ""))):
+		return TINKERER_B.DOES[str(it["unique"])]
 	return it.get("does", [])
 
 
