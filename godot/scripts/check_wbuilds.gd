@@ -289,6 +289,4 @@ func run(main, hero, d: String) -> void:
 	await _snap("embrace_pact_full")
 	_mark("demon_out")
 	K.turn_man()
-	WB.on = false
-	Talents.D = {}
 	print("WBUILDS DONE %d checks, %d wrong%s" % [n, bad.size(), "" if bad.is_empty() else ": " + str(bad)])

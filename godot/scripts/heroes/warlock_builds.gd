@@ -16,7 +16,9 @@
 ## OFF (`--wbuilds=0`): as he was. Checked and pictured: check_wbuilds.gd, `--only=wbuilds`.
 extends RefCounted
 
-static var on := false
+## Switched on at his word, 27 Nov 2026, by 13:54, asked after the tree before and after, the cards and the film: “Yes, switch them
+## on (Recommended)”.
+static var on := true
 
 const EMBRACE := {}
 const DEVOUR := {"below": 0.2, "heal": 0.05, "secs": 2.0, "boss": 3.0}
