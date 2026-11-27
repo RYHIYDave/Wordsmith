@@ -1576,7 +1576,10 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   _watch_window; his “k it runs but the aspect ratio is off”, asked how, “Cut off”, and “i cangt minimize, theres no line or e x in
   the top right”: a 1920 by 1080 window on his screen, its title bar off the top): on a computer the game opens maximized, or, where
   the system will not, no bigger than the room the screen has for it; and it is fitted again (fit_screen) whenever its window
-  changes size, the splash and the start screen holding the game or not.
+  changes size, the splash and the start screen holding the game or not. SET DOWN ON OPEN FLOOR (`main.gd` _open_floor_near; his
+  “Coming back up the town from level 1 gets me stuck and I can't move”: the spot by the top of the town's stairs was the stash's
+  tile): where an arrival's spot is not ground he may walk, the middle of the nearest tile that is. Check: `--only=townup`
+  (`check_town_up.gd`: up from floor 1 by its gate, then each way held a second).
 - **The weakest melds brought up to the art rules** (the art chat's `art/meld-rules-check-all`, his “Bring them in
   (Recommended)”; his ask, 26 Nov 2026: “I’d like you to look at all our melds and find which are weakest compared to our art and
   animation ruleset.  Then bring them up to our standard”). The 30 weakest (the city's melds that slow, curse or hold) and 14 more

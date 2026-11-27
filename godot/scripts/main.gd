@@ -790,6 +790,32 @@ static func has_floor(n: int) -> bool:
 ## A COPY NOT YET IMPORTED (his computer, 27 Nov 2026: a fresh download run before Godot had imported its pictures and sounds, the game
 ## all but empty: “floor 1 has nothing except torch glow”, “i dont think i heard an music or sounds at all”): said plainly, over
 ## everything, in place of a game that looks broken.
+## WHERE HE IS SET DOWN, ALWAYS ON OPEN FLOOR (his words, 27 Nov 2026: “Coming back up the town from level 1 gets me stuck and I can't
+## move”: by the top of the town's stairs, the spot the game gives, 1.1 tiles off the stair, fell on a tile something in the hall
+## stands on): where an arrival's spot is not ground he may walk, the middle of the nearest tile that is.
+func _open_floor_near(at: Vector2) -> Vector2:
+	if map == null or map.walkable(floori(at.x), floori(at.y)):
+		return at
+	var best := at
+	var bd := INF
+	for r in range(1, 7):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) != r:
+					continue
+				var tx := floori(at.x) + dx
+				var ty := floori(at.y) + dy
+				if not map.walkable(tx, ty):
+					continue
+				var c := Vector2(tx + 0.5, ty + 0.5)
+				if c.distance_to(at) < bd:
+					bd = c.distance_to(at)
+					best = c
+		if bd < INF:
+			return best
+	return at
+
+
 ## (the window maximized where the system lets it be; where it does not, and the window is bigger than the room the screen has
 ## for it, made just that big, at its top left: so nothing of the game is ever cut off)
 func _fit_window() -> void:
@@ -1622,6 +1648,7 @@ func _build(where: String, arrive: String) -> void:
 				at = Vector2(float(g["a"]) + 1.5, float(g["face"]) - 1.0 + 2.2)
 			face = Vector2(0.7071, 0.7071)
 	came_in_gate = arrive == "in_gate"
+	at = _open_floor_near(at)
 	hero.world = at
 	hero.home = at
 	hero.face = face
@@ -3294,6 +3321,10 @@ func _shoot(hero: Hero, dir: String) -> void:
 		get_tree().quit()
 		return
 	# (STRONGHOLDS ON ANY ENDLESS LEVEL, THE ALTAR ROOM: check_altar_rooms.gd)
+	if _arg("only") == "townup":
+		await preload("res://scripts/check_town_up.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	if _arg("only") == "pcfixes":
 		await preload("res://scripts/check_pc_fixes.gd").new().run(self, hero, dir)
 		get_tree().quit()
