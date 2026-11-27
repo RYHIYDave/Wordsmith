@@ -62,7 +62,8 @@ static func ready_up() -> void:
 ## tinkerer.gd, brawler.gd; wakes.gd and fx_wakes.gd (the smoke). OFF until he has seen them (pictures first): `--deftal=1` on.
 ## Their cards in game words, numbers as numbers: his words, 27 Nov 2026, asked whether to switch them on: “Can you use more
 ## gamified language in the descriptions?  1 in every two is 50%, that sort of thing”.
-static var DEFENCE_TALENTS := false
+## Switched on at his word, 27 Nov 2026, by 10:56, asked after the cards were reworded: “Yes, switch them on (Recommended)”.
+static var DEFENCE_TALENTS := true
 const DEFENCE := {
 	"ranger": [
 		{"id": "evasive", "name": "Evasive", "path": "wind", "from": "windrunner", "at": [1.55, 1.25],
