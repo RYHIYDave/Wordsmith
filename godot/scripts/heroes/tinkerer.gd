@@ -417,6 +417,10 @@ func _move_step(dt: float) -> void:
 				if g.get("towed", false) or g["act"] == "jump":
 					continue
 				_pounds(int(g["skill"]), Vector2(g["x"], g["y"]), float(h.loadout.r(int(g["skill"]))["count_dmg"]) * float(h.uniques.ut["tow"]["share"]), 0, false, g)
+		# (DEFENCE IN EVERY TREE: Smoke Screen, smoke where she lands, and in it one blow in two misses her: hero.gd dodge_floor)
+		if Talents.DEFENCE_TALENTS and h.has("smokescreen") and h.wakes != null:
+			var SS: Dictionary = Talents.def("smokescreen")
+			h.wakes.add_patch(-1, "smoke", h.world, float(SS["r"]), float(SS["secs"]), 0.0, "phys")
 		# (her tree's BOMBS AWAY: a second bomb goes off where she lands)
 		if h.has("bombsaway"):
 			var B: Dictionary = _T()["bombsAway"]
@@ -434,6 +438,21 @@ func _move_step(dt: float) -> void:
 
 # =====================================================================================================================
 # HER GOLEM (game.ts whistle, holdJump, golemPounds, stepGolem, stepRocket)
+
+## DEFENCE IN EVERY TREE: Bodyguard, a Golem of hers standing near her takes half of a blow meant for her (hero.gd hurt_by): what
+## is left for her.
+func bodyguard(dmg: float) -> float:
+	var B: Dictionary = Talents.def("bodyguard")
+	for g in _up():
+		var at := Vector2(g["x"], g["y"])
+		if at.distance_to(h.world) <= float(B["near"]):
+			var took := roundf(dmg * float(B["share"]))
+			_say({"t": "guarded", "x": at.x, "y": at.y, "fromX": h.world.x, "fromY": h.world.y})
+			if h.fx != null and took > 0.0:
+				h.fx.float_text(at.x, at.y - 0.8, "GUARD", Color("#7af8f0"), false, 24.0)
+			return dmg - took
+	return dmg
+
 
 ## Her Golems out and not winding down.
 func _up() -> Array:

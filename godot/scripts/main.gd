@@ -896,6 +896,10 @@ func _ready() -> void:
 	levels2_arg = _arg("levels2") == "1"
 	# (the checks written for the Warrior's Whirlwind give him its talent; `--whirl1`, his one-spin Whirl as he starts: talents.gd)
 	preload("res://scripts/talents.gd").checks_whirlwind = _arg("shots") != "" and _arg("whirl1") == ""
+	# (DEFENCE IN EVERY TREE, off till his yes: `--deftal=1` on: talents.gd DEFENCE_TALENTS; the trees read again with it)
+	if _arg("deftal") != "":
+		preload("res://scripts/talents.gd").DEFENCE_TALENTS = _arg("deftal") == "1"
+		preload("res://scripts/talents.gd").D = {}
 	# (THE THREE DEFENCES, on at his yes: `--defence=0` to run without them: loot.gd DEFENCE_LAYERS)
 	if _arg("defence") == "0":
 		preload("res://scripts/loot.gd").DEFENCE_LAYERS = false
@@ -3479,6 +3483,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		return
 	if _arg("only") == "defence":
 		await preload("res://scripts/check_defence.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
+	# (DEFENCE IN EVERY TREE: --only=deftal --deftal=1, check_deftal.gd)
+	if _arg("only") == "deftal":
+		await preload("res://scripts/check_deftal.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
 	# (EVERY UNIQUE WEAPON ON ITS HERO, PICTURED: --only=skinsheet: check_skinsheet.gd)

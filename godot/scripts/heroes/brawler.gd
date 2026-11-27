@@ -788,6 +788,10 @@ func _hit(o, m: Dictionary, n: int) -> void:
 		finisher = int(mv.get("set", 0)) >= most() and _has("vfullset")
 	if finisher:
 		share *= float(T["fullSet"]["mult"])
+	# (DEFENCE IN EVERY TREE: Guard Up, a blow dodged answered: his next punch twice as hard)
+	if answer and i == 0:
+		answer = false
+		share *= float(Talents.def("guardup"))
 	# (TWIN in front, as his move's card has it, “hits twice, each for” its share: each blow lands twice, the second a moment after;
 	# his punches did not read it, the damage check found: words.gd, Twin)
 	var tw: Dictionary = h.loadout.r(i)
@@ -923,6 +927,15 @@ func _thunder(o, m: Dictionary) -> void:
 			q.stun_for(float(K["stun"]))
 	if not o.dead and not o.boss:
 		o.stun_for(float(K["stun"]))
+
+
+## DEFENCE IN EVERY TREE: Guard Up, a blow he dodges is answered: his next punch lands twice as hard (hero.gd hurt_by).
+var answer := false
+func dodged() -> void:
+	if Talents.DEFENCE_TALENTS and _has("vguardup") and not answer:
+		answer = true
+		if h.fx != null:
+			h.fx.float_text(h.world.x, h.world.y - 0.6, "COUNTER", Color("#7af8f0"), false, 26.0)
 
 
 ## (Guard Up) Between his blows his fists are up: a blow from in front of him does half harm (game.ts hurtHero). What is left.

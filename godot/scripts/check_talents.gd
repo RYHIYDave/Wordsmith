@@ -273,7 +273,11 @@ func _warrior() -> void:
 	var g_low: float = h._talent_guard()
 	h.life = h.max_life
 	var g_high: float = h._talent_guard()
-	_line(absf(g_low - 0.7 * g_high) < 0.001 and g_high <= 1.0 and g_high >= 0.7, "Thick Skin: below half his life 30%% less (%.2f of %.2f); Bulwark: %.0f%% less for those close round him now" % [g_low, g_high, (1.0 - g_high) * 100.0])
+	if Talents.DEFENCE_TALENTS:
+		# (with the defence talents on, Thick Skin and Bulwark work through his armour instead: check_deftal.gd tries them)
+		_line(g_low == 1.0 and g_high == 1.0, "Thick Skin and Bulwark: no flat cut now (%.2f, %.2f); they work through his armour" % [g_low, g_high])
+	else:
+		_line(absf(g_low - 0.7 * g_high) < 0.001 and g_high <= 1.0 and g_high >= 0.7, "Thick Skin: below half his life 30%% less (%.2f of %.2f); Bulwark: %.0f%% less for those close round him now" % [g_low, g_high, (1.0 - g_high) * 100.0])
 	# Master Stroke: every fourth hit landed a certain critical
 	h.talents = ["greatsword", "sweepingcut", "drilledleap", "footwork", "mastertop"]
 	h._strokes = 0

@@ -282,6 +282,9 @@ func _process(dt: float) -> void:
 		# monsters' time: monster.gd time_of; a rune waits, and goes off)
 		if z["kind"] == "ward" or z["kind"] == "hex" or z["kind"] == "bubble":
 			continue
+		# (DEFENCE IN EVERY TREE: Smoke Screen's smoke does its work in hero.gd dodge_floor, for as long as it lasts)
+		if z["kind"] == "smoke":
+			continue
 		if z["kind"] == "vortex":
 			_vortex(z, dt)
 			continue

@@ -28,14 +28,14 @@ const PORTED := {
 	"warrior": ["greatsword", "gswhirlwind", "sweepingcut", "drilledleap", "footwork", "thickskin", "shieldwall", "secondwind", "bulwark",
 		"honededge", "giantslayer", "resolute", "executioner", "mastertop", "unbreakable",
 		"battleaxe", "twinaxes", "rend", "redmist", "headlong", "warhammer", "tremors", "heavyhead", "bulldozer", "wideswing"],
-	"ranger": ["fleet", "windrunner", "keeneye", "steadyaim", "quickdraw", "longshot", "lightstep", "huntersmark", "widetraps",
+	"ranger": ["evasive", "countershot", "fleet", "windrunner", "keeneye", "steadyaim", "quickdraw", "longshot", "lightstep", "huntersmark", "widetraps",
 		"minefield", "splitshot", "hail", "piercing", "farsight", "venom", "snare", "snipe", "rally",
 		"huntcompanion", "wildcompanion"],
-	"mage": ["kindling", "searing", "flamewarp", "fuel", "inferno", "charged", "forking", "stormwarp", "overload", "stormcaller",
+	"mage": ["iceshell", "wardingwarp", "kindling", "searing", "flamewarp", "fuel", "inferno", "charged", "forking", "stormwarp", "overload", "stormcaller",
 		"bittercold", "deepfreeze", "frostwarp", "rime", "shatter", "aura", "lasting", "ball", "beam", "spear"],
-	"warlock": ["hunger", "feast", "bloodlust", "branded", "hexchain", "phantomstep", "withering", "pyre", "blazingarm", "souldebt",
+	"warlock": ["soulward", "hellhide", "hunger", "feast", "bloodlust", "branded", "hexchain", "phantomstep", "withering", "pyre", "blazingarm", "souldebt",
 		"lastrites", "terribleroar", "hellwave", "damnedsouls", "bounddemon"],
-	"tinkerer": ["bombsaway", "fortune", "clustervials", "tar", "madmixture", "alchemy", "thebigone", "lightningrod", "shrapnel",
+	"tinkerer": ["bodyguard", "smokescreen", "bombsaway", "fortune", "clustervials", "tar", "madmixture", "alchemy", "thebigone", "lightningrod", "shrapnel",
 		"prospector", "overdrive", "markii", "growthserum", "gunarm", "contraptions"],
 	"brawler": ["vstiffjab", "vviperjab", "vguardup", "vknockdown", "vlauncher", "vlightfeet", "vfirestarter", "vstoke", "vhangtime",
 		"vfullset", "vswitchkick", "vlonglegs", "vwallslam", "vaftershock", "vthunderknee"],
@@ -48,6 +48,104 @@ static func ready_up() -> void:
 		_own_words()
 		_twigs()
 		_godot_tune()
+		_defence()
+
+
+## DEFENCE IN EVERY TREE (his ask, 27 Nov 2026, 10:02: “Can you look at the classes we have, find the ones that don’t have any
+## defensive options in their talent tree and put some in.  And then look at our new defenses and make the classes defensive options
+## include these new systems”; the plan shown him, his pick: “Build it as written (Recommended)”). The Ranger, the Mage, the Warlock
+## and the Tinkerer had none: two each, a short twig off one of their paths, each something new (his rule: never only a number),
+## each on one of THE THREE DEFENCES (loot.gd DEFENCE_LAYERS): the Ranger's dodge, the Mage's and the Warlock's barrier (and the
+## demon's armour), the Tinkerer's Golem and dodge. The Warrior's Iron and the Brawler's Guard Up made to work on them too: Thick
+## Skin and Bulwark on his armour, Shieldwall's words its barrier's (as its rule already is), Guard Up's dodged blows answered.
+## Their rules: hero.gd (dodge_floor, armour_cut, _through_barrier, the blow's way), heroes/ranger.gd, mage.gd, warlock.gd,
+## tinkerer.gd, brawler.gd; wakes.gd and fx_wakes.gd (the smoke). OFF until he has seen them (pictures first): `--deftal=1` on.
+static var DEFENCE_TALENTS := false
+const DEFENCE := {
+	"ranger": [
+		{"id": "evasive", "name": "Evasive", "path": "wind", "from": "windrunner", "at": [1.55, 1.25],
+			"text": "For two seconds after a roll, at least one blow in two misses you."},
+		{"id": "countershot", "name": "Counter Shot", "path": "wind", "from": "evasive", "at": [2.3, 1.25],
+			"text": "Every blow you dodge makes your next arrow a certain critical that knocks back."},
+	],
+	"mage": [
+		{"id": "iceshell", "name": "Ice Shell", "path": "frost", "from": "frostwarp", "at": [3.6, 4.75],
+			"text": "You carry a barrier of a fifth of your life, even without cloth; when it breaks, everything near you freezes for two seconds."},
+		{"id": "wardingwarp", "name": "Warding Warp", "path": "frost", "from": "iceshell", "at": [2.85, 4.75],
+			"text": "Every Warp fills a quarter of your barrier."},
+	],
+	"warlock": [
+		{"id": "soulward", "name": "Soul Ward", "path": "pact", "from": "souldebt", "at": [4.0, 1.45],
+			"text": "Every cursed enemy that dies fills a tenth of his barrier, even past full, up to half again (a fifth of his life, if he wears no cloth)."},
+		{"id": "hellhide", "name": "Hellhide", "path": "demon", "from": "feast", "at": [2.6, 0.1],
+			"text": "While the demon has him, his armour counts double and nothing knocks him back."},
+	],
+	"tinkerer": [
+		{"id": "bodyguard", "name": "Bodyguard", "path": "golem", "from": "overdrive", "at": [1.15, 0.6],
+			"text": "While the Golem stands near her, it takes half of every blow meant for her."},
+		{"id": "smokescreen", "name": "Smoke Screen", "path": "works", "from": "growthserum", "at": [1.15, -0.6],
+			"text": "Her Blast Jump leaves smoke for three seconds: in it, at least one blow in two misses her."},
+	],
+}
+## (the Warrior's and the Brawler's defence, on the three defences: their cards' words)
+const DEFENCE_WORDS := {
+	"warrior": {
+		"thickskin": "Below half your life, your armour counts double.",
+		"bulwark": "Each enemy close round you adds a fifth to your armour, up to double.",
+		"shieldwall": "When your barrier breaks, it bursts outward: everything near is thrown back and stunned for a second.",
+	},
+	"brawler": {
+		"vguardup": "Between blows he keeps his fists up: a blow from in front of him does half harm, and a blow he dodges is answered: his next punch lands twice as hard.",
+	},
+}
+## (their numbers)
+const DEF_TUNE := {
+	"evasive": {"secs": 2.0, "floor": 0.5},
+	"countershot": {"far": 1.4},
+	"iceshell": {"life": 0.2, "r": 2.2, "secs": 2.0},
+	"wardingwarp": 0.25,
+	"soulward": {"fill": 0.1, "over": 1.5, "life": 0.2},
+	"hellhide": 2.0,
+	"bodyguard": {"near": 3.0, "share": 0.5},
+	"smokescreen": {"r": 1.8, "secs": 3.0, "floor": 0.5},
+	"thickskin": 2.0,
+	"bulwark": {"each": 0.2, "most": 2.0},
+	"guardup": 2.0,
+}
+
+
+## A defence talent's numbers (DEF_TUNE).
+static func def(id: String):
+	return DEF_TUNE[id]
+
+
+## DEFENCE IN EVERY TREE: its talents laid in, each a twig off its own path (as the attacks changed are: _twigs), and the
+## Warrior's and the Brawler's cards worded for the three defences; while DEFENCE_TALENTS is on.
+static func _defence() -> void:
+	if not DEFENCE_TALENTS:
+		return
+	for cls in DEFENCE:
+		if not D["trees"].has(cls):
+			continue
+		var all: Array = D["trees"][cls]["talents"]
+		var by := {}
+		for t in all:
+			by[t["id"]] = t
+		for d in DEFENCE[cls]:
+			if by.has(d["id"]) or not by.has(d["from"]):
+				continue
+			var t := {"id": d["id"], "name": d["name"], "text": d["text"], "word": null, "big": false, "path": d["path"],
+				"at": (d["at"] as Array).duplicate(), "from": [d["from"]], "joined": [d["from"]], "mods": [], "remade": false,
+				"pick": null, "works": true}
+			all.append(t)
+			by[d["id"]] = t
+			by[d["from"]]["joined"].append(d["id"])
+	for cls in DEFENCE_WORDS:
+		if not D["trees"].has(cls):
+			continue
+		for t in D["trees"][cls]["talents"]:
+			if DEFENCE_WORDS[cls].has(t["id"]):
+				t["text"] = DEFENCE_WORDS[cls][t["id"]]
 
 
 ## THE ATTACKS CHANGED, A TWIG EACH (his word of 22 Nov 2026: “the different weapon attacks are choices not mandatory in the

@@ -882,6 +882,15 @@ func on_kill(m) -> void:
 		if h.has("damnedsouls"):
 			_raise_soul(m)
 	if m.curse_t > 0.0:
+		# (DEFENCE IN EVERY TREE: Soul Ward, a cursed one dying fills a tenth of his barrier, past full, up to half again; a fifth of
+		# his life his barrier's measure, if he wears no cloth)
+		if Talents.DEFENCE_TALENTS and h.has("soulward"):
+			var SW: Dictionary = Talents.def("soulward")
+			var most: float = maxf(h.max_barrier, roundf(h.max_life * float(SW["life"])))
+			var was: float = h.barrier
+			h.barrier = maxf(h.barrier, minf(most * float(SW["over"]), h.barrier + most * float(SW["fill"])))
+			if h.barrier > was:
+				h._tell({"t": "barrierHit", "x": h.world.x, "y": h.world.y, "left": h.barrier, "most": maxf(h.max_barrier, most)})
 		if h.has("souldebt"):
 			pact = minf(float(P["full"]), pact + float(P["full"]) * float(T["soulDebt"]["share"]))
 		if h.has("pyre"):
@@ -1186,6 +1195,12 @@ func dread_pace(m) -> float:
 	if not demon2() or form != "demon" or m.boss or m.world.distance_to(h.world) > float(D2["dread"]["r"]) + m.r:
 		return 1.0
 	return float(D2["dread"]["pace"])
+
+
+## DEFENCE IN EVERY TREE: Hellhide, while the demon has him his armour counts double and nothing knocks him back (hero.gd
+## _talent_armour, knock).
+func hellhide() -> bool:
+	return Talents.DEFENCE_TALENTS and h.has("hellhide") and form == "demon"
 
 
 ## What a blow on him comes to while he is the demon (hero.gd _talent_guard).

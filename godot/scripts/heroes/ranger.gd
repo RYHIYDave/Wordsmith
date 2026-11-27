@@ -209,6 +209,9 @@ func _use_evasive(at: Vector2, way: Vector2) -> void:
 	var x0: Vector2 = h.world
 	var dir: Vector2 = (at - h.world).normalized()
 	h._cast(2, "roll", x0, dir)
+	# (DEFENCE IN EVERY TREE: Evasive, a while after a roll when one blow in two misses him: hero.gd dodge_floor)
+	if Talents.DEFENCE_TALENTS and h.has("evasive"):
+		h.evasive_t = float(Talents.def("evasive")["secs"])
 	h._boons(2)
 	h._time_word_sound(2)
 	h.last.dodge_surge(x0)
