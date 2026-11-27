@@ -2630,8 +2630,14 @@ func _wordsui_shots(h: Hero, dir: String) -> void:
 		_wu(loot.burn_problem("power", loot.bag.size() - 1) == "A unique piece takes no word" and loot.room(unique) == 0, "%s, a unique piece, in his bag: POWER into it: '%s'" % [unique["name"], loot.burn_problem("power", loot.bag.size() - 1)])
 	_inv.toggle()
 
-	# --- the armourer's task
-	await _wait(0.4)
+	# --- the armourer's task: none yet, till the move his first word is on has been used (loot.gd word_tried, his word of 27 Nov
+	# 2026); then used, as a player tries it
+	_wu(loot.armourer_due() == "" and not loot.word_tried, "his first word set and not yet tried: the armourer has no task yet ('%s')" % loot.armourer_due())
+	var try_act: String = ["attack", "whirl", "lunge"][clampi(guide.at, 0, 2)]
+	Input.action_press(try_act)
+	await _wait(0.5)
+	Input.action_release(try_act)
+	await _wait(1.2)
 	var line: Dictionary = guide.banner()
 	await _snap(dir + "/w17_speak_to_the_armourer.png")
 	_wu(line.get("text", "") == "Speak to the ARMOURER" and line.get("sub", "") == "He works at his forge." and loot.armourer_due() == "furnace", "the ring lit and his first word set: the line at the top says '%s' / '%s' (the armourer has: %s)" % [line.get("text", ""), line.get("sub", ""), loot.armourer_due()])
