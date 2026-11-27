@@ -270,6 +270,9 @@ func _rune_of(tree: Dictionary, t: Dictionary) -> Dictionary:
 	for p in tree["paths"]:
 		if p["id"] == t["path"]:
 			color = Color(p["color"])
+	# (THE BRAWLER'S BUILDS: a stance's stone shows its element's rune)
+	if t.has("rune"):
+		return _word_rune(str(t["rune"]))
 	if MOVE_RUNE.has(t["id"]):
 		return {"rows": MOVE_RUNE[t["id"]], "color": T["text"], "glow": WHITE}
 	if t["id"] == "huntcompanion" or t["id"] == "wildcompanion":

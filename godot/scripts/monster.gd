@@ -1719,6 +1719,20 @@ func _fly(dt: float) -> void:
 		for o in mgr.list:
 			if is_instance_valid(o) and o != self and not o.dead and not o.boss and o.frozen_t <= 0.0 and not mgr.shut_in(o) and o.world.distance_to(world) <= o.r + r:
 				o.freeze_now()
+	# (THE BRAWLER'S BUILDS, the Cannon Kick: each it flies into, once, handed to his kit: heroes/brawler.gd _cannon)
+	if thrown.has("touch"):
+		var touched: Array = thrown["touched"]
+		var met: Array = []
+		for o in mgr.list:
+			if is_instance_valid(o) and o != self and not o.dead and not touched.has(o) and not mgr.shut_in(o) and o.world.distance_to(world) <= o.r + r + 0.1:
+				met.append(o)
+		var touch: Callable = thrown["touch"]
+		for o in met:
+			touched.append(o)
+			touch.call(o)
+	if thrown.is_empty():
+		_place()
+		return
 	var meant := Vector2(thrown["vx"], thrown["vy"]).length() * k
 	if float(thrown["t"]) <= 0.0 or (meant > 0.01 and world.distance_to(x0) < meant * 0.3):
 		thrown = {}

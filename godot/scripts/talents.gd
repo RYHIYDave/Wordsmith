@@ -293,15 +293,43 @@ static func _brawler2() -> Dictionary:
 			"joined": ["vstiffjab"], "big": false}, true)
 		(t["talents"] as Array).append(n)
 		(by["vstiffjab"]["joined"] as Array).append(id)
+	# (THE BRAWLER'S BUILDS, heroes/brawler3.gd on: Flurry, Stepping Stones and the Cannon Kick under the globes, a stance in each)
+	if B3.on:
+		for id in B3.TEXT:
+			if by.has(id):
+				by[id]["text"] = B3.TEXT[id]
+		for id in B3.NODES:
+			var N: Dictionary = B3.NODES[id]
+			var from: Array = N["from"]
+			var n: Dictionary = (by[from[0]] as Dictionary).duplicate(true)
+			n.merge({"id": id, "name": N["name"], "text": N["text"], "path": N["path"], "at": N["at"], "from": from.duplicate(),
+				"joined": from.duplicate(), "big": N["big"], "word": null, "pick": null, "remade": false, "works": true}, true)
+			if N.has("rune"):
+				n["rune"] = N["rune"]
+			(t["talents"] as Array).append(n)
+			for f in from:
+				(by[f]["joined"] as Array).append(id)
+		for p in t["paths"]:
+			if B3.LABELS.has(p["id"]):
+				p["label"] = {"node": B3.LABELS[p["id"]], "side": "below"}
+		var room: Array = (t["room"] as Array).duplicate()
+		room[3] = maxf(float(room[3]), B3.ROOM_FOOT)
+		t["room"] = room
 	_b2_tree = t
 	return t
 
 
+## THE BRAWLER'S BUILDS (heroes/brawler3.gd)
+const B3 := preload("res://scripts/heroes/brawler3.gd")
+
+
 ## (THE BRAWLER REMADE) Whether the other side of his fork is taken: only one of Quick Hands and Heavy Hands.
 static func _fork_other(cls: String, id: String, taken: Array) -> bool:
-	if cls != "brawler" or not B2.on or not B2.FORK.has(id):
+	if cls != "brawler" or not B2.on:
 		return false
-	for o in B2.FORK:
+	# (THE BRAWLER'S BUILDS: his stances, only one of the three)
+	var group: Array = B2.FORK.keys() if B2.FORK.has(id) else (B3.STANCES if B3.on and B3.STANCES.has(id) else [])
+	for o in group:
 		if o != id and taken.has(o):
 			return true
 	return false
@@ -315,7 +343,7 @@ static func of(cls: String, id: String) -> Dictionary:
 
 
 static func ported(cls: String, id: String) -> bool:
-	return (PORTED.get(cls, []) as Array).has(id) or (cls == "brawler" and B2.on and B2.FORK.has(id))
+	return (PORTED.get(cls, []) as Array).has(id) or (cls == "brawler" and B2.on and (B2.FORK.has(id) or (B3.on and B3.NODES.has(id))))
 
 
 ## How many points a hero of `level` has had in all (talentPoints).
@@ -436,7 +464,7 @@ static func take_problem(cls: String, level: int, taken: Array, id: String) -> S
 	if not _way_open(t, taken):
 		return "Take one joined to it first"
 	if _fork_other(cls, id, taken):
-		return "Quick Hands or Heavy Hands: only one"
+		return "One stance only" if B3.STANCES.has(id) else "Quick Hands or Heavy Hands: only one"
 	var out := swap_out(cls, taken, id)
 	if out.begins_with("!"):
 		return out.substr(1)

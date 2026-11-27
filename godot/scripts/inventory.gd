@@ -37,6 +37,8 @@
 ## while he melds, the bag stands on this panel's half and his half is the MELDING STONE (meld_stone.gd), the meld played out on
 ## it. docs/mockups/rune_bag is the picture he said yes to.
 extends Control
+## (THE BRAWLER'S BUILDS: The Last Round's card)
+const BRAWLER3 := preload("res://scripts/heroes/brawler3.gd")
 
 const RuneBag := preload("res://scripts/rune_bag.gd")
 const MeldStone := preload("res://scripts/meld_stone.gd")
@@ -1986,6 +1988,13 @@ func _draw_flash() -> void:
 
 # --- a piece's card ---
 
+## What a unique does, its card's lines (THE BRAWLER'S BUILDS: The Last Round's as it works now, heroes/brawler3.gd).
+static func does_of(it: Dictionary) -> Array:
+	if it.get("unique") == "lastround" and BRAWLER3.on:
+		return [BRAWLER3.LAST_ROUND]
+	return it.get("does", [])
+
+
 func _card(it: Dictionary, at: Vector2, fixed := false) -> float:
 	# (ui/panels.ts itemCard: its name in its rarity's colour; its rarity and kind, small; a weapon's damage and pace; what it was
 	# made with, in the plain colour; its properties in the magic blue; the words burned in, each under its word's name and in its
@@ -2013,7 +2022,7 @@ func _card(it: Dictionary, at: Vector2, fixed := false) -> float:
 	# (UNIQUE ITEMS, game/uniques.ts uniqueLines: under its ordinary stats, what it does in its own orange, its price, whose it is;
 	# it takes no word)
 	if int(it["rarity"]) == 3 and it.get("unique") != null:
-		for l in it.get("does", []):
+		for l in does_of(it):
 			rows.append([l, loot.RARITY_COLOR[3], false])
 		if it.get("price") != null:
 			rows.append([str(it["price"]), BAD, false])
