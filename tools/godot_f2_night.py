@@ -4,12 +4,13 @@
 #   godot/assets/looks/floor2_cover.png (+ .json): where the prison's own pictures stand, a pixel to every 4 game pixels, as
 #     look.gd's dark lays its veil (DARK_GRAIN): white where something of the place is drawn, black where nothing is. The dark is
 #     laid only where the place is; past it the night sky is seen.
-#   godot/assets/looks/floor2_cliff_l.png, floor2_cliff_r.png: the rock the prison stands on, a cliff face falling from every
-#     edge of its ground toward the eye into the night sky (floor2_cover.json `cliff`: those edges).
+#   godot/assets/looks/floor2_cliff_l.png, floor2_cliff_r.png: the rock the prison stands on, a cliff face hanging from every
+#     edge of its ground toward the eye further down than a screen (floor2_cover.json `cliff`: those edges), in the Ledge
+#     Road's own rock (tools/godot_f2_cliff.ts paints it: run that first).
 #   godot/assets/looks/floor2_nightsky.png: the night sky itself, in the colours of the courtyards' own sky (the look's
 #     'night sky' picture: render/grounds.ts), stars and drifting cloud bands, its moon, wrapping round end to end; as dark as
 #     the courtyards' sky is seen through their dark (the yard's dark 0.42, lifted 0.55 over the far walls).
-# python3 tools/godot_f2_night.py
+# npx tsx tools/godot_f2_cliff.ts && python3 tools/godot_f2_night.py
 import json
 import math
 import random
@@ -162,65 +163,19 @@ def sky() -> None:
     print('sky', out.size, 'below', tuple(int(v) for v in img[H - 1, 0]))
 
 
-CLIFF_W, CLIFF_H = 64, 150  # game pixels: a cliff face's picture, repeating along it, and how far it falls
-
-
 def cliffs() -> None:
-    # (the rock under the walls, the prison's own stone as the night leaves it: a lit lip, layers of rock a shade apart with
-    # dark seams, cracks down them; the face to the left in the moon's light, the one to the right in shadow; going down into
-    # the night, dithered away into the sky below over its lower half)
-    bayer = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16.0
-    for side, base, lip in ((0, (40, 39, 62), (72, 72, 106)), (1, (28, 27, 45), (48, 48, 72))):
-        rng = random.Random(11 + side)
-        W, H = CLIFF_W, CLIFF_H
-        img = np.zeros((H, W, 4), float)
-        img[:, :, 3] = 255
-        # (rock in broken blocks, taller than wide as a cliff's are: each pixel the block of its nearest seed, wrapping end to
-        # end; each block its own shade; dark crevices where blocks meet; a lit upper-left rim on each and a shaded foot)
-        seeds = [(rng.uniform(0, W), rng.uniform(-6, H), rng.uniform(-6, 6)) for _ in range(34)]
-        yy, xx = np.mgrid[0:H, 0:W].astype(float)
-        best = np.full((H, W), 1e9)
-        second = np.full((H, W), 1e9)
-        owner = np.zeros((H, W), int)
-        for k, (sx, sy, _) in enumerate(seeds):
-            dx = np.minimum(np.abs(xx - sx), W - np.abs(xx - sx)) * 1.0
-            dy = (yy - sy) * 0.55
-            d = np.sqrt(dx * dx + dy * dy)
-            closer = d < best
-            second = np.where(closer, best, np.minimum(second, d))
-            owner = np.where(closer, k, owner)
-            best = np.where(closer, d, best)
-        shade = np.array([seeds[k][2] for k in range(len(seeds))])[owner]
-        img[:, :, :3] = np.array(base)[None, None, :] + shade[:, :, None]
-        edge = (second - best) < 1.1
-        img[edge, :3] = np.array(base) * 0.5
-        # (the rim: just below and right of a crevice, lit; just above and left of one, shaded)
-        rim = np.roll(edge, 1, axis=0) & ~edge
-        img[rim, :3] = np.minimum(255, np.array(base) * 1.28)
-        foot = np.roll(edge, -1, axis=0) & ~edge & ~rim
-        img[foot, :3] = np.array(base) * 0.78
-        # (a few specks of the moon's light on the rock)
-        for _ in range(60):
-            x = rng.randrange(W)
-            y = rng.randrange(H // 2)
-            if not edge[y, x]:
-                img[y, x, :3] = np.minimum(255, np.array(base) * 1.4)
-        # the lip, a pixel or two of moonlit edge, and its shadow under it
-        img[0:2, :, :3] = lip
-        img[2, :, :3] = np.array(base) * 0.7
-        # down into the night: dithered away over the lower half, the sky's own colour coming into it as it goes
-        sky_low = np.array([14, 18, 43], float)
-        for yy in range(H):
-            t = (yy - H * 0.45) / (H * 0.55)
-            if t <= 0:
-                continue
-            img[yy, :, :3] = img[yy, :, :3] * (1 - 0.6 * t) + sky_low * 0.6 * t
-            for xx in range(W):
-                if bayer[yy % 4, xx % 4] < t:
-                    img[yy, xx, 3] = 0
-        out = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), 'RGBA').resize((W * 2, H * 2), Image.NEAREST)
-        out.save(LOOKS + ('floor2_cliff_l.png' if side == 0 else 'floor2_cliff_r.png'))
-    print('cliffs', CLIFF_W * 2, CLIFF_H * 2)
+    # (the cliffs' rock is the Ledge Road's own, painted by tools/godot_f2_cliff.ts as two raw pictures the width of the floor:
+    # here made PNG, and the raw let go)
+    import os
+    info = json.load(open(LOOKS + 'floor2_cliff.json'))
+    for side in ('l', 'r'):
+        raw = LOOKS + 'floor2_cliff_%s.raw' % side
+        if not os.path.exists(raw):
+            continue
+        img = Image.frombytes('RGB', (info['w'], info['h']), open(raw, 'rb').read())
+        img.save(LOOKS + 'floor2_cliff_%s.png' % side, optimize=True)
+        os.remove(raw)
+    print('cliffs', info)
 
 
 if __name__ == '__main__':

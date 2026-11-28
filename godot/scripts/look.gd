@@ -421,7 +421,7 @@ func _make_night_sky() -> void:
 	cliffs.left = load(DIR + "floor2_cliff_l.png")
 	cliffs.right = load(DIR + "floor2_cliff_r.png")
 	cliffs.edges = (JSON.parse_string(FileAccess.get_file_as_string(DIR + "floor2_cover.json")) as Dictionary)["cliff"]
-	cliffs.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	cliffs.span = JSON.parse_string(FileAccess.get_file_as_string(DIR + "floor2_cliff.json"))
 	back_layer.add_child(cliffs)
 	back_layer.move_child(cliffs, 0)
 
@@ -2038,23 +2038,28 @@ class _Sky extends Node2D:
 
 
 ## F2_SKY's cliffs: from each edge of the prison's ground with nothing past it toward the eye (floor2_cover.json `cliff`: x1, y1,
-## x2, y2 in game pixels and which way it faces), its rock hanging straight down, the face to the left in the moon's light and
-## the one to the right in shadow, its picture repeating along it and fading into the sky at its foot; farthest first, behind
-## everything of the place.
+## x2, y2 in game pixels and which way it faces), the rock hanging straight down further than a screen, in the Ledge Road's own
+## rock (floor2_cliff_l/r.png, tools/godot_f2_cliff.ts: the face to the left in the moon's light, the one to the right in
+## shadow; each the width of the whole floor, `span` where it begins), each strip of it the rock that lies there; farthest
+## first, behind everything of the place.
 class _NightCliffs extends Node2D:
 	var left: Texture2D
 	var right: Texture2D
 	var edges: Array
+	var span: Dictionary
 
 	func _draw() -> void:
+		var x0 := float(span["x0"])
+		var w := float(span["w"])
+		var h := float(span["h"])
 		for e in edges:
 			var tex: Texture2D = left if int(e[4]) == 0 else right
-			var tw := float(tex.get_width())
-			var th := float(tex.get_height())
 			var p1 := Vector2(float(e[0]), float(e[1])) * 2.0
 			var p2 := Vector2(float(e[2]), float(e[3])) * 2.0
-			var pts := PackedVector2Array([p1, p2, p2 + Vector2(0, th), p1 + Vector2(0, th)])
-			var uv := PackedVector2Array([Vector2(p1.x / tw, 0.0), Vector2(p2.x / tw, 0.0), Vector2(p2.x / tw, 1.0), Vector2(p1.x / tw, 1.0)])
+			var pts := PackedVector2Array([p1, p2, p2 + Vector2(0, h), p1 + Vector2(0, h)])
+			var u1 := (p1.x - x0) / w
+			var u2 := (p2.x - x0) / w
+			var uv := PackedVector2Array([Vector2(u1, 0.0), Vector2(u2, 0.0), Vector2(u2, 1.0), Vector2(u1, 1.0)])
 			draw_polygon(pts, PackedColorArray([Color.WHITE]), uv, tex)
 
 
