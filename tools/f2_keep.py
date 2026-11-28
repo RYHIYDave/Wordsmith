@@ -3,20 +3,24 @@ block of cells stories high (his idea, 27 Nov 2026: "the little room you come ou
 so maybe when you walk out of that room you should see a huge wall behind you as the wall of the prisons main building").
 
 The building is the block of tiles x 1 to 13, y 68 to 75 (godot/assets/floor2/layout.json): the start room, the passage out of
-it, and the walls round them. Seen from outside, it stands whole (the art rulebook, Places 9): its two faces toward the eye run
-up STORIES stories higher than the prison's other walls, and a hipped slate roof closes it over the top. Once he steps inside,
-the whole of it fades clear in a third of a second and the room is as it was (look.gd, F2_KEEP).
+it, and the walls round them. Seen from outside, it stands whole (the art rulebook, Places 9), a fortress keep: its two faces
+toward the eye run up in plain ashlar far higher than the prison's other walls, few openings in them but narrow arrow slits,
+battlements along its top round a flat stone roof, and a tower over the gate at its corner standing higher again. Once he
+steps inside, the whole of it fades clear in a third of a second and the room is as it was (look.gd, F2_KEEP). His word on
+the first pictures (a cell block of barred windows under a slate roof): "Different top, Less like an apartment block".
 
-Made from the look's own pictures (godot/assets/looks/floor2.png), so it is the prison's own stone:
-  THE FACES. One column a tile wide for each tile along the south face (y 75, facing +y) and the east face (x 13, facing +x),
-    each from one of the prison's windowed wall faces: its foot as the look has it, then a story of it (its upper row of barred
-    windows, the band 88 to 43 picture pixels above its anchor) laid in again STORIES times, each story from one of the faces of
-    that side, some windows lit; then its coping. Where the look's own face stands on a tile, its own picture is used, so its
-    lit windows keep their glow. Over the passage's door on the east face (y 70 to 74) the face begins above the gatehouse's
-    gable, which stands in front of it as the look draws it.
-  THE ROOF. Hipped, in the slate the look's walls carry on their tops (the same slates, the same pitch: 27 picture pixels a
-    tile), the face toward +y lit as the left-facing slates are and the hip toward +x as the right-facing ones; a ridge and the
-    hip between them capped and catching the moon.
+Made in the look's own stone (godot/assets/looks/floor2.png):
+  THE FACES. One column a tile wide for each tile along the south face (y 75, facing +y) and the east face (x 13, facing +x):
+    at its foot the look's own face of that tile (the room's two rows of windows, as the look has them) or the prison's outer
+    wall; above, RISE picture pixels of ashlar laid course by course as the outer walls are (courses 12 pixels, a lit top row,
+    a dark joint, blocks of their lengths and tones), a string course where it meets the windowed foot and another under the
+    battlements, arrow slits here and there (a few with a light in them); at its top the outer wall's own top and merlon.
+    Over the passage's door on the east face (y 70 to 74) the face begins above the gatehouse's gable, which stands in front
+    of it as the look draws it.
+  THE ROOF. Flat, in the courtyards' own flagstones, at the battlements' level; along its far edges the tops and merlons of
+    the walls (the outer walls' own).
+  THE TOWER over the gate: the keep's corner tiles x 11 to 13, y 73 to 75, TOWER picture pixels higher, its own battlements and
+    roof.
 Writes godot/assets/looks/floor2_keep.png (the pieces side by side) and floor2_keep.json:
   {"sheet", "pieces": [[sheet x, y, w, h, screen x, y (picture pixels, its top left), depth]], "inside": [x0, y0, x1, y1] (the
    hero's tiles in which it fades), "lights": [[x, y]] (game pixels: the lights inside it, hidden while it stands whole),
@@ -31,16 +35,26 @@ import numpy as np
 from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "godot", "assets", "looks")
-STORY = 45          # a story of the wall, picture pixels (the windows' rows are 45 apart)
-STORIES = 6         # how many stories higher than the prison's walls
-BAND_TOP = 88       # the story laid in again: from this many picture pixels above the face's anchor, STORY down
-PITCH = 27          # the slate's rise, picture pixels a tile (the look's own slates)
+RISE = 276          # how much higher than the prison's outer walls, picture pixels (23 courses)
+TOWER = 144         # the tower over the gate, how much higher again (12 courses)
+COURSE = 12         # the outer walls' courses, picture pixels
+WALL = 150          # the outer walls' height (their faces), picture pixels
+CUT = 88            # where a face is cut: this many picture pixels above its anchor (the look's faces' foot below it)
 SEED = 271127
 X0T, X1T, Y0T, Y1T = 1, 14, 68, 76     # the building's tiles: x 1 to 13, y 68 to 75 (edges 1..14, 68..76)
 DOOR = (70, 75)     # the east face's tiles that the gatehouse stands on (its gable in front)
+TOWER_AT = (11, 73) # the tower's tiles: x 11 to 13, y 73 to 75
 LEFT = ["face left 10", "face left 11", "face left 12", "face left 13", "face left 14"]
 RIGHT = ["face right 10", "face right 11", "face right 12", "face right 13"]
-LIT_STORY = []      # the faces whose story (upper window) is lit: found from the pictures (main)
+OUTER_L = ["face left", "face left 1", "face left 2", "face left 3"]
+OUTER_R = ["face right", "face right 1", "face right 2", "face right 3"]
+# the outer walls' stone (read off their pictures): for each side, a block's tones (its lit top row, its body, its foot) as the
+# most of them are, and a lighter and a darker block; the joint
+STONE = {"L": [((52, 56, 103), (38, 40, 80), (27, 28, 54)), ((86, 96, 144), (52, 56, 103), (38, 40, 80)),
+               ((38, 40, 80), (27, 28, 54), (20, 20, 44))],
+         "R": [((38, 40, 80), (27, 28, 54), (14, 12, 36)), ((52, 56, 103), (38, 40, 80), (27, 28, 54)),
+               ((27, 28, 54), (20, 20, 44), (14, 12, 36))]}
+JOINT = (14, 12, 36)
 
 
 def main() -> None:
@@ -53,14 +67,7 @@ def main() -> None:
         x, y, w, h, _ax, _ay = pics[name]
         return np.array(sheet.crop((x, y, x + w, y + h)))
 
-    # the faces whose story's window burns (orange in it)
-    for n in LEFT + RIGHT:
-        x, y, w, h, _ax, ay = pics[n]
-        band = np.array(sheet.crop((x, y + ay - BAND_TOP, x + w, y + ay - BAND_TOP + STORY)))
-        if ((band[..., 0] > 180) & (band[..., 1] < 150) & (band[..., 3] > 0)).sum() > 10:
-            LIT_STORY.append(n)
-    print("lit stories:", LIT_STORY)
-    # the look's own faces on the building's tiles
+    # the look's own windowed faces on the building's tiles (their feet kept, so the room's windows and their glow stay)
     own = {}
     for it in d["items"]:
         if it.get("layer") == "stand" and it.get("kind") == "wall" and it.get("frames"):
@@ -70,57 +77,171 @@ def main() -> None:
                 ty = round((it["y"] / 8 - it["x"] / 16) / 2)
                 own[(tx, ty, "L" if n in LEFT else "R")] = n
 
-    def face_mask(h: int, side: str) -> np.ndarray:
-        """The face's own pixels in a face picture (its slates on top taken off): left faces x < 32 under the eave (0, 45) to
-        (32, 61); right faces x >= 32 under the eave (64, 45) to (32, 61)."""
+    def face_mask(h: int, side: str, top: int) -> np.ndarray:
+        """A face's own pixels in a face picture, under its top edge (`top` picture pixels down at the face's high end)."""
         yy, xx = np.mgrid[0:h, 0:64]
         if side == "L":
-            return (xx < 32) & (yy >= 45 + xx * 0.5)
-        return (xx >= 32) & (yy >= 45 + (63 - xx) * 0.5)
+            return (xx < 32) & (yy >= top + xx * 0.5)
+        return (xx >= 32) & (yy >= top + (64 - xx) * 0.5)
 
-    def column(side: str, name: str) -> np.ndarray:
-        """A face STORIES stories higher: its top (the coping), STORIES stories from the faces of its side, its own foot."""
-        base = pic(name)
-        h = base.shape[0]
-        ay = pics[name][5]
-        s = ay - BAND_TOP
-        m = face_mask(h, side)
-        out = np.zeros((h + STORY * STORIES, 64, 4), np.uint8)
-        top = base[:s].copy()
-        top[~m[:s]] = 0
-        out[:s] = top
-        names = LEFT if side == "L" else RIGHT
-        for k in range(STORIES):
-            # (mostly its own face's story; now and then another of its side; a window lit in few of them)
-            src = name if rng.random() < 0.5 else str(rng.choice([n for n in names if n not in LIT_STORY]))
-            if rng.random() < 0.08:
-                src = str(rng.choice([n for n in names if n in LIT_STORY] or names))
-            elif src in LIT_STORY:
-                src = str(rng.choice([n for n in names if n not in LIT_STORY]))
-            b = pic(src)[s:s + STORY].copy()
-            b[~m[s:s + STORY]] = 0
-            out[s + k * STORY:s + (k + 1) * STORY] = b
-        foot = base[s:].copy()
-        foot[~m[s:]] = 0
-        out[s + STORY * STORIES:] = foot
+    def shear(side: str, x: int) -> int:
+        return x // 2 if side == "L" else (63 - x) // 2
+
+    def phase(side: str, name: str) -> int:
+        """Where the courses of an outer wall's face lie: the row of their lit tops, less the shear, modulo COURSE."""
+        a = pic(name).astype(int)
+        lit = np.array(STONE[side][0][0])
+        votes = []
+        for x in (range(4, 28) if side == "L" else range(36, 60)):
+            for y in range(60, 180):
+                if np.abs(a[y, x, :3] - lit).sum() < 6:
+                    votes.append((y - shear(side, x)) % COURSE)
+        return int(np.bincount(votes, minlength=COURSE).argmax()) if votes else 0
+
+    def ashlar(side: str, h: int, ph: int) -> np.ndarray:
+        """`h` rows of the outer walls' ashlar for a face of side `side` (64 wide, the face's half), courses at phase `ph`."""
+        out = np.zeros((h, 64, 4), np.uint8)
+        xs = range(0, 32) if side == "L" else range(32, 64)
+        tones = STONE[side]
+        ncourse = h // COURSE + 3
+        # (each course: its joints along it, and each block's tone)
+        for c in range(-1, ncourse):
+            cuts = []
+            x = int(rng.integers(-14, 0))
+            while x < 64:
+                cuts.append(x)
+                x += int(rng.choice([8, 10, 12, 12, 14, 16, 18]))
+            for bi in range(len(cuts)):
+                x0, x1 = cuts[bi], (cuts[bi + 1] if bi + 1 < len(cuts) else 64)
+                r = rng.random()
+                tone = tones[1] if r < 0.06 else tones[2] if r < 0.15 else tones[0]
+                speck = (int(rng.integers(x0 + 2, max(x0 + 3, x1 - 1))), int(rng.integers(2, 9))) if rng.random() < 0.5 else None
+                for x in range(max(x0, 0), min(x1, 64)):
+                    if x not in xs:
+                        continue
+                    for k in range(COURSE):
+                        y = ph + shear(side, x) + c * COURSE + k - COURSE * 2
+                        if not 0 <= y < h:
+                            continue
+                        if x == x0 or k == COURSE - 1:
+                            col = JOINT
+                        elif k == 0:
+                            col = tone[0]
+                        elif k == COURSE - 2:
+                            col = tone[2]
+                        else:
+                            col = tone[1]
+                        if speck and x == speck[0] and k == speck[1]:
+                            col = tone[2]
+                        out[y, x, :3] = col
+                        out[y, x, 3] = 255
         return out
+
+    def string_course(img: np.ndarray, side: str, row: int) -> None:
+        """A string course along the face: a ledge of stone one course high, unbroken, its top catching the light."""
+        tone = STONE[side][0]
+        for x in (range(0, 32) if side == "L" else range(32, 64)):
+            for k, col in enumerate((STONE[side][1][0], tone[0], tone[1], tone[1], tone[2], JOINT)):
+                y = row + shear(side, x) + k
+                if 0 <= y < img.shape[0] and img[y, x, 3] > 0:
+                    img[y, x, :3] = col
+
+    def slit(img: np.ndarray, side: str, x: int, row: int, lit: bool) -> None:
+        """An arrow slit at column `x`, its top `row` rows down (on the face's shear): dark and narrow, its left side lit and its
+        right in shadow, a stone over it and a sill under it; a light in a few of them."""
+        tone = STONE[side][0]
+        y0 = row + shear(side, x)
+        for k in range(-1, 21):
+            y = y0 + k
+            for dx, col in ((-1, tone[0]), (0, (8, 8, 20)), (1, (8, 8, 20)), (2, tone[2])):
+                c = col
+                if k in (-1, 20):
+                    c = STONE[side][1][0] if dx in (0, 1) else tone[0]
+                elif lit and dx in (0, 1) and 5 <= k <= 15:
+                    c = (196, 110, 52) if dx == 0 else (140, 70, 36)
+                if 0 <= y < img.shape[0] and img[y, x + dx, 3] > 0:
+                    img[y, x + dx, :3] = c
+
+    def quoins(img: np.ndarray, side: str, edge: str, rows: tuple) -> None:
+        """Quoins up a corner of the keep (`edge` "lo": the face's left end in the picture, "hi": its right end): long and short
+        stones by turns, lighter than the wall, their joints dark; between the rows `rows` (from the top)."""
+        tone = STONE[side][1]
+        x_end = (0 if side == "L" else 32) if edge == "lo" else (31 if side == "L" else 63)
+        step = 1 if edge == "lo" else -1
+        for c in range(-2, img.shape[0] // COURSE + 3):
+            width = 9 if c % 2 == 0 else 5
+            for i in range(width + 1):
+                x = x_end + step * i
+                for k in range(COURSE):
+                    y = (rows[0] // COURSE) * COURSE + c * COURSE + k + shear(side, x) + ph_of[id(img)]
+                    if not rows[0] <= y < rows[1] or not 0 <= y < img.shape[0] or img[y, x, 3] == 0:
+                        continue
+                    if i == width or k == COURSE - 1:
+                        col = JOINT
+                    elif k == 0:
+                        col = tone[0]
+                    elif k == COURSE - 2:
+                        col = tone[2]
+                    else:
+                        col = tone[1]
+                    img[y, x, :3] = col
+
+    ph_of = {}
+
+    def column(side: str, tx: int, ty: int, rise: int, courses: list, edges=()) -> np.ndarray:
+        """A face of the keep: the outer wall's top (its merlon), `rise` picture pixels of ashlar, the look's own foot or the
+        outer wall's; string courses at the rows `courses` (from the top), arrow slits."""
+        outer = (OUTER_L if side == "L" else OUTER_R)[(tx * 3 + ty) % 4]
+        top = pic(outer)[:CUT]
+        foot_name = own.get((tx, ty, side))
+        if foot_name:
+            fb = pic(foot_name)
+            ay = pics[foot_name][5]
+            foot = fb[ay - CUT:].copy()
+            foot[~face_mask(fb.shape[0], side, 45)[ay - CUT:]] = 0
+        else:
+            foot = pic(outer)[CUT:]
+        ph = phase(side, outer)
+        mid = ashlar(side, rise, (ph - CUT) % COURSE)
+        img = np.concatenate([top, mid, foot], 0).copy()
+        ph_of[id(img)] = ph % COURSE
+        for e in edges:
+            quoins(img, side, e, (CUT, CUT + rise))
+        for r in courses:
+            string_course(img, side, r)
+        # (arrow slits: a few, between the courses)
+        lo, hi = CUT + COURSE * 2, CUT + rise - COURSE * 3
+        r = lo + int(rng.integers(0, COURSE * 3))
+        while r < hi:
+            if rng.random() < 0.3:
+                x = int(rng.integers(8, 22)) if side == "L" else int(rng.integers(42, 56))
+                slit(img, side, x, r + 2 - shear(side, x) + shear(side, x), rng.random() < 0.12)
+            r += COURSE * 4
+        return img
+
+    def in_tower(tx: int, ty: int) -> bool:
+        return tx >= TOWER_AT[0] and ty >= TOWER_AT[1]
 
     pieces = []      # (image, screen x, screen y, depth)
     # THE SOUTH FACE: the tiles (x, 75), facing +y
     for tx in range(X0T, X1T):
-        name = own.get((tx, Y1T - 1, "L")) or LEFT[int(rng.integers(0, len(LEFT)))]
-        col = column("L", name)
-        ax, ay = 32, pics[name][5] + STORY * STORIES
-        gx, gy = (tx - (Y1T - 1)) * 16, (tx + Y1T - 1) * 8
-        pieces.append((col, gx * 2 - ax, gy * 2 - ay, tx + Y1T + 0.9))
+        ty = Y1T - 1
+        rise = RISE + (TOWER if in_tower(tx, ty) else 0)
+        courses = [CUT, CUT + rise - COURSE] + ([CUT + TOWER] if rise > RISE else [])
+        edges = (("lo",) if tx in (X0T, TOWER_AT[0]) else ()) + (("hi",) if tx == X1T - 1 else ())
+        col = column("L", tx, ty, rise, courses, edges)
+        gx, gy = (tx - ty) * 16, (tx + ty) * 8
+        pieces.append((col, gx * 2 - 32, gy * 2 - (176 + rise), tx + Y1T + 0.9))
     # THE EAST FACE: the tiles (13, y), facing +x
     arch = gatehouse(d, pics, sheet)
     for ty in range(Y0T, Y1T):
-        name = own.get((X1T - 1, ty, "R")) or RIGHT[int(rng.integers(0, len(RIGHT)))]
-        col = column("R", name)
-        ax, ay = 32, pics[name][5] + STORY * STORIES
-        gx, gy = (X1T - 1 - ty) * 16, (X1T - 1 + ty) * 8
-        sx, sy = gx * 2 - ax, gy * 2 - ay
+        tx = X1T - 1
+        rise = RISE + (TOWER if in_tower(tx, ty) else 0)
+        courses = [CUT, CUT + rise - COURSE] + ([CUT + TOWER] if rise > RISE else [])
+        edges = (("hi",) if ty in (Y0T, TOWER_AT[1]) else ()) + (("lo",) if ty == Y1T - 1 else ())
+        col = column("R", tx, ty, rise, courses, edges)
+        gx, gy = (tx - ty) * 16, (tx + ty) * 8
+        sx, sy = gx * 2 - 32, gy * 2 - (176 + rise)
         depth = X1T + ty + 0.05
         if DOOR[0] <= ty < DOOR[1]:
             # (over the door: the face only above the gatehouse's gable, which stands in front of it)
@@ -130,9 +251,39 @@ def main() -> None:
                     col[max(0, top - sy):, x] = 0
             depth = X1T + ty + 0.1
         pieces.append((col, sx, sy, depth))
-    # THE ROOF
-    roof, rx, ry = make_roof(pic, rng, 121 + STORY * STORIES)
+    # THE ROOF, and the tower's
+    def cap(side: str, name: str) -> np.ndarray:
+        a = pic(name).copy()
+        a[face_mask(a.shape[0], side, 42)] = 0
+        return a
+
+    flags = [n for n in pics if n.startswith("grounds flags")]
+
+    def top(tiles_flag, caps_l, caps_r, rise):
+        layers = []   # (order, image, screen x, screen y)
+        for (u, v) in tiles_flag:
+            f = pic(flags[(u * 7 + v * 3) % len(flags)])
+            layers.append(((u + v) * 2, f, (u - v) * 32 - 32, (u + v) * 16 - (WALL + rise)))
+        for (u, v) in caps_l:
+            layers.append(((u + v) * 2 + 1, cap("L", OUTER_L[(u * 3 + v) % 4]), (u - v) * 32 - 32, (u + v) * 16 - 176 - rise))
+        for (u, v) in caps_r:
+            layers.append(((u + v) * 2 + 1, cap("R", OUTER_R[(u * 3 + v) % 4]), (u - v) * 32 - 32, (u + v) * 16 - 176 - rise))
+        x0 = min(l[2] for l in layers)
+        y0 = min(l[3] for l in layers)
+        x1 = max(l[2] + l[1].shape[1] for l in layers)
+        y1 = max(l[3] + l[1].shape[0] for l in layers)
+        img = Image.new("RGBA", (x1 - x0, y1 - y0), (0, 0, 0, 0))
+        for _o, im, sx, sy in sorted(layers, key=lambda l: l[0]):
+            img.alpha_composite(Image.fromarray(im), (sx - x0, sy - y0))
+        return np.array(img), x0, y0
+
+    inner = [(u, v) for u in range(X0T + 1, X1T - 1) for v in range(Y0T + 1, Y1T - 1) if not in_tower(u, v)]
+    roof, rx, ry = top(inner, [(u, Y0T) for u in range(X0T, X1T - 1)], [(X0T, v) for v in range(Y0T + 1, Y1T - 1)], RISE)
     pieces.append((roof, rx, ry, 81.5))
+    t0x, t0y = TOWER_AT
+    troof, tx_, ty_ = top([(u, v) for u in range(t0x + 1, X1T - 1) for v in range(t0y + 1, Y1T - 1)],
+                          [(u, t0y) for u in range(t0x, X1T - 1)], [(t0x, v) for v in range(t0y + 1, Y1T - 1)], RISE + TOWER)
+    pieces.append((troof, tx_, ty_, 86.95))
 
     # the sheet, and the outline for the night sky's dark
     W = sum(p[0].shape[1] + 1 for p in pieces)
@@ -161,7 +312,7 @@ def main() -> None:
             "lights": inside_lights(d),
             "cover": {"x": lo_x / 2, "y": lo_y / 2, "grain": G / 2, "file": "floor2_keep_cover.png"}}
     json.dump(info, open(os.path.join(ROOT, "floor2_keep.json"), "w"))
-    print("keep: %d pieces, %d stories higher, the sheet %dx%d; %d lights inside" % (len(out), STORIES, W, H, len(info["lights"])))
+    print("keep: %d pieces, %d picture pixels higher (the tower %d more), the sheet %dx%d; %d lights inside" % (len(out), RISE, TOWER, W, H, len(info["lights"])))
 
 
 def gatehouse(d: dict, pics: dict, sheet: Image.Image) -> dict:
@@ -184,78 +335,6 @@ def gatehouse(d: dict, pics: dict, sheet: Image.Image) -> dict:
                     t = sy + int(rows.min())
                     top[sx + c] = min(top.get(sx + c, t), t)
     return top
-
-
-def make_roof(pic, rng, Hf: int):
-    """The hipped roof over the building at Hf picture pixels above the ground: its picture and its top left on the screen."""
-    SL = [pic(n) for n in LEFT]
-    SR = [pic(n) for n in RIGHT]
-    half = (Y1T - Y0T) / 2.0
-    ridge_v = Y0T + half
-    rise = half * PITCH
-    corners = [(X0T, Y1T, 0), (X1T, Y1T, 0), (X1T, Y0T, 0), (X0T, Y0T, 0),
-               (X0T + half, ridge_v, rise), (X1T - half, ridge_v, rise)]
-    xs = [(u - v) * 32 for u, v, z in corners]
-    ys = [(u + v) * 16 - Hf - z for u, v, z in corners]
-    x0, x1 = int(min(xs)) - 2, int(max(xs)) + 2
-    y0, y1 = int(min(ys)) - 2, int(max(ys)) + 2
-    W, H = x1 - x0, y1 - y0
-    img = np.zeros((H, W, 4), np.uint8)
-    yy, xx = np.mgrid[0:H, 0:W]
-    X = (xx + x0).astype(float)
-    Y = (yy + y0).astype(float)
-    # the south face of the roof: z = Hf + PITCH * (Y1T - v)
-    v = (Y - X / 2 + Hf + PITCH * Y1T) / (32 + PITCH)
-    u = v + X / 32
-    bs = Y1T - v
-    south = (bs >= 0) & (bs <= X1T - u) & (bs <= u - X0T) & (bs <= half)
-    # the east hip: z = Hf + PITCH * (X1T - u)
-    u2 = (Y + X / 2 + Hf + PITCH * X1T) / (32 + PITCH)
-    v2 = u2 - X / 32
-    be = X1T - u2
-    east = (be >= 0) & (be < Y1T - v2) & (be <= v2 - Y0T) & ~south
-    var = rng.integers(0, 1000, (64, 64))
-    for mask, U, V, B, side in ((south, u, v, bs, "L"), (east, u2, v2, be, "R")):
-        ys_, xs_ = np.nonzero(mask)
-        uu, vv, bb = U[ys_, xs_], V[ys_, xs_], B[ys_, xs_]
-        a = (uu if side == "L" else vv) % 1.0
-        b = bb % 1.0
-        a = 0.04 + a * 0.92
-        b = 0.14 + b * 0.72
-        px = 32 * a + 32 * b if side == "L" else 64 - 32 * a - 32 * b
-        py = 45 + 16 * a - 43 * b
-        src = SL if side == "L" else SR
-        k = var[np.floor(uu if side == "L" else vv).astype(int) % 64, np.floor(bb).astype(int) % 64] % len(src)
-        for i in range(len(src)):
-            m = k == i
-            col = src[i][np.clip(py[m].astype(int), 0, src[i].shape[0] - 1), np.clip(px[m].astype(int), 0, 63)]
-            img[ys_[m], xs_[m]] = col
-        # (the eave's drip: under the slates, their shadow)
-        drip = bb < 0.05
-        img[ys_[drip], xs_[drip], :3] = (img[ys_[drip], xs_[drip], :3] * 0.55).astype(np.uint8)
-    hole = (south | east) & (img[..., 3] == 0)
-    img[hole] = (30, 31, 56, 255)
-
-    # (the ridge, and the hip between the two faces: capped, catching the moon; the far hips an edge)
-    def line(p, q, cols):
-        (pu, pv, pz), (qu, qv, qz) = p, q
-        n = int(max(abs((pu - pv) - (qu - qv)) * 32, abs((pu + pv) - (qu + qv)) * 16 + abs(pz - qz)) * 2) + 2
-        for t in np.linspace(0, 1, n):
-            uu = pu + (qu - pu) * t
-            vv = pv + (qv - pv) * t
-            zz = pz + (qz - pz) * t
-            sx = int(round((uu - vv) * 32 - x0))
-            sy = int(round((uu + vv) * 16 - Hf - zz - y0))
-            for k, c in enumerate(cols):
-                if 0 <= sy + k < H and 0 <= sx < W:
-                    img[sy + k, sx] = (*c, 255)
-    rw = (X0T + half, ridge_v, rise)
-    re = (X1T - half, ridge_v, rise)
-    line(rw, re, [(118, 120, 164), (88, 90, 132), (40, 41, 72)])
-    line((X1T, Y1T, 0), re, [(104, 106, 150), (60, 62, 100)])
-    line((X0T, Y1T, 0), rw, [(78, 80, 120)])
-    line((X1T, Y0T, 0), re, [(44, 45, 78)])
-    return img, x0, y0
 
 
 def inside_lights(d: dict) -> list:
