@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b5p5ah5cjm8qn"
-path="res://.godot/imported/floor2_ground.png-b52a7e5a099ae3b3899e21d515b447c7.ctex"
+uid="uid://dvo0mgxpclthx"
+path="res://.godot/imported/floor2_cliff_r.png-5e7b9d304b9b1f897cb1ee47167af92e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/looks/floor2_ground.png"
-dest_files=["res://.godot/imported/floor2_ground.png-b52a7e5a099ae3b3899e21d515b447c7.ctex"]
+source_file="res://assets/looks/floor2_cliff_r.png"
+dest_files=["res://.godot/imported/floor2_cliff_r.png-5e7b9d304b9b1f897cb1ee47167af92e.ctex"]
 
 [params]
 

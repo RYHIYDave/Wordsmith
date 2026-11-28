@@ -414,14 +414,16 @@ func _make_night_sky() -> void:
 	layer.add_child(sky)
 	add_child(layer)
 	_sky_node = sky
-	# (the plain dark ground under the sky's line: the sky only over the place's farthest tops, as the courtyards had it over
-	# their far walls; his “You see the massive problem in the lower left quadrant here right?”, of the sky seen under the walls)
-	var ground := _NightGround.new()
-	ground.tex = load(DIR + "floor2_ground.png")
-	ground.info = JSON.parse_string(FileAccess.get_file_as_string(DIR + "floor2_cover.json"))
-	ground.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-	back_layer.add_child(ground)
-	back_layer.move_child(ground, 0)
+	# (THE CLIFFS: his “You see the massive problem in the lower left quadrant here right?”, of the sky seen under the walls,
+	# and “A for sure.  If you put a cliff edge under the walls maybe it will look better”: the prison on its rock, a cliff
+	# face falling from every edge of its ground toward the eye down into the night)
+	var cliffs := _NightCliffs.new()
+	cliffs.left = load(DIR + "floor2_cliff_l.png")
+	cliffs.right = load(DIR + "floor2_cliff_r.png")
+	cliffs.edges = (JSON.parse_string(FileAccess.get_file_as_string(DIR + "floor2_cover.json")) as Dictionary)["cliff"]
+	cliffs.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	back_layer.add_child(cliffs)
+	back_layer.move_child(cliffs, 0)
 
 
 ## F2_SKY: the dark's veil laid only where the place's own pictures stand (floor2_cover.png, a pixel to every DARK_GRAIN game
@@ -2035,35 +2037,25 @@ class _Sky extends Node2D:
 			draw_rect(Rect2(0, top + h, size.x, size.y - top - h), Color(str(S["haze"])))
 
 
-## F2_SKY's ground: bare dark earth (floor2_ground.png, repeating where it lies) under the sky's line (floor2_cover.json `top`:
-## for each column of the cover, the prison's farthest ground lifted a wall's height less a little), out past the screen's edge
-## whichever way he looks; drawn once, behind everything of the place.
-class _NightGround extends Node2D:
-	var tex: Texture2D
-	var info: Dictionary
+## F2_SKY's cliffs: from each edge of the prison's ground with nothing past it toward the eye (floor2_cover.json `cliff`: x1, y1,
+## x2, y2 in game pixels and which way it faces), its rock hanging straight down, the face to the left in the moon's light and
+## the one to the right in shadow, its picture repeating along it and fading into the sky at its foot; farthest first, behind
+## everything of the place.
+class _NightCliffs extends Node2D:
+	var left: Texture2D
+	var right: Texture2D
+	var edges: Array
 
 	func _draw() -> void:
-		var tops: Array = info["top"]
-		var g := float(info["grain"]) * 2.0
-		var ox := float(info["x"]) * 2.0
-		var far := 60000.0
-		var tw := float(tex.get_width())
-		var th := float(tex.get_height())
-		var deep := far * 2.0
-		var poly := func(pts: PackedVector2Array) -> void:
-			var uv := PackedVector2Array()
-			for q in pts:
-				uv.append(Vector2(q.x / tw, q.y / th))
+		for e in edges:
+			var tex: Texture2D = left if int(e[4]) == 0 else right
+			var tw := float(tex.get_width())
+			var th := float(tex.get_height())
+			var p1 := Vector2(float(e[0]), float(e[1])) * 2.0
+			var p2 := Vector2(float(e[2]), float(e[3])) * 2.0
+			var pts := PackedVector2Array([p1, p2, p2 + Vector2(0, th), p1 + Vector2(0, th)])
+			var uv := PackedVector2Array([Vector2(p1.x / tw, 0.0), Vector2(p2.x / tw, 0.0), Vector2(p2.x / tw, 1.0), Vector2(p1.x / tw, 1.0)])
 			draw_polygon(pts, PackedColorArray([Color.WHITE]), uv, tex)
-		for i in tops.size():
-			var y := float(tops[i]) * 2.0
-			poly.call(PackedVector2Array([Vector2(ox + i * g, y), Vector2(ox + (i + 1) * g, y), Vector2(ox + (i + 1) * g, deep), Vector2(ox + i * g, deep)]))
-		# (past the place each way, the line goes on down as its far edges do, half a pixel down to one across)
-		var y0 := float(tops[0]) * 2.0
-		var x1 := ox + tops.size() * g
-		var y1 := float(tops[tops.size() - 1]) * 2.0
-		poly.call(PackedVector2Array([Vector2(ox - far, y0 + far * 0.5), Vector2(ox, y0), Vector2(ox, deep), Vector2(ox - far, deep)]))
-		poly.call(PackedVector2Array([Vector2(x1, y1), Vector2(x1 + far, y1 + far * 0.5), Vector2(x1 + far, deep), Vector2(x1, deep)]))
 
 
 ## F2_SKY's night sky, held to the screen: its picture (game pixels, drawn two picture pixels to one) laid end to end across it,
