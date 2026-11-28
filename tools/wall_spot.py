@@ -1,7 +1,7 @@
 import json, sys
 from PIL import Image, ImageDraw
-f = int(sys.argv[1]); out = sys.argv[2]; spots = [tuple(map(float, s.split(','))) for s in sys.argv[3:]]
-d = '/tmp/wall%d' % f
+f = int(sys.argv[1]); out = sys.argv[2]; spots = [tuple(map(float, s.split(','))) for s in sys.argv[3:] if not s.startswith('/')]
+d = (sys.argv[-1] if sys.argv[-1].startswith('/') else '/tmp/wall') + str(f)
 J = json.load(open('%s/walls_f%d.json' % (d, f)))
 vw, vh = J['view']
 z = Image.open('%s/walls_f%d_0_0.png' % (d, f)).size[0] / vw

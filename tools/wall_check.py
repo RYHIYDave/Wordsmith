@@ -1,11 +1,15 @@
-"""Every wall face of floors 1 to 5 in their whole-floor pictures (`--only=walls --floor=N --shots=/tmp/wallN`, check_walls.gd), sampled just above its foot; one that shows only the empty background there is missing. Run: python3 tools/wall_check.py 1 2 3 4 5
+"""Every wall face of floors 1 to 5 in their whole-floor pictures (check_walls.gd: `--only=walls --floor=N --shots=<dir>N`), sampled
+just above its foot; one that shows only the empty background there is missing. Run: python3 tools/wall_check.py <dir> 1 2 3 4 5
+(writes <dir>_check.json)."""
+"""For each floor's whole pictures: every wall face that should be seen, sampled just above its foot; one that shows only the
 empty background there is missing."""
 import json, sys
 import numpy as np
 from PIL import Image
 R = '/home/claude/wordsmith/godot/assets/'
+PRE = sys.argv[1]
 def run(f):
-    d = '/tmp/wall%d' % f
+    d = (PRE + '%d') % f
     J = json.load(open('%s/walls_f%d.json' % (d, f)))
     vw, vh = J['view']
     z = Image.open('%s/walls_f%d_0_0.png' % (d, f)).size[0] / vw
@@ -59,6 +63,6 @@ def run(f):
     print('floor %d: %d wall faces looked at, %d show nothing above their foot: %s' % (f, checked, len(missing), missing[:40]))
     return missing
 out = {}
-for f in map(int, sys.argv[1:]):
+for f in map(int, sys.argv[2:]):
     out[f] = run(f)
-json.dump(out, open('/tmp/f2w/wallcheck.json', 'w'))
+json.dump(out, open(PRE.rstrip('/') + '_check.json', 'w'))

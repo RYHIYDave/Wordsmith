@@ -1613,6 +1613,7 @@ func _build(where: String, arrive: String) -> void:
 		look.f2_sky = look.F2_SKY or _arg("f2sky") == "1"
 		look.f2_keep = look.F2_KEEP or _arg("f2keep") == "1"
 		look.wall_tops = look.WALL_TOPS or _arg("walltops") == "1"
+		look.mend = look.MEND or _arg("mend") == "1"
 		look.back_layer = back
 		look.floor_layer = floor_layer
 		look.flat_layer = look_flats

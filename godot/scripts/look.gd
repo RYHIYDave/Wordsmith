@@ -57,6 +57,13 @@ var f2_keep := F2_KEEP
 ## its pictures (`--walltops=1` for them).
 const WALL_TOPS := false
 var wall_tops := WALL_TOPS
+## THE WALLS MENDED (his words, 28 Nov 2026, of the gaps at the rooms' diagonal corners on floors 1, 3, 4 and 5: “Fix them in a
+## way that keeps the wall flowing correcting.  There are already issues with the straight east-west walls where the square
+## blocks are not cut to make triangles so the wall is flat.  Make it look correct.”): the near slanting walls drawn flat, as the
+## far ones, and the missing step faces of the walls that run diagonally down the screen laid in, in each floor's own pictures
+## (tools/wall_mend.py: <place>_mend.json). OFF until his yes to its pictures (`--mend=1` for them).
+const MEND := false
+var mend := MEND
 var _keep := {}
 var _keep_nodes: Array = []
 var _keep_a := -1.0
@@ -192,6 +199,8 @@ func _lexicon_out() -> void:
 func _ready() -> void:
 	data = JSON.parse_string(FileAccess.get_file_as_string(DIR + place + ".json"))
 	_format = int(data.get("format", 1))
+	if mend and FileAccess.file_exists(DIR + place + "_mend.json"):
+		_mend()
 	if shift != Vector2i.ZERO and _format == 2:
 		_shift_all()
 	# (THE LEXICON IN THE STASH, town.gd LEXICON_IN_STASH: the town's, the camp's and the Rim's Lexicon, its book on its stand, its
@@ -446,6 +455,21 @@ func _make_skies() -> void:
 			clip.add_child(s)
 		back_layer.add_child(clip)
 		_skies.append(clip)
+
+
+## THE WALLS MENDED: each near slanting piece drawn with the far slanting picture; the missing step faces added among the items
+## (and, in a recorded look, each tied to its tile for the fog).
+func _mend() -> void:
+	var M: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + place + "_mend.json"))
+	var swap: Dictionary = M.get("swap", {})
+	var key := "f" if _format == 2 else "frames"
+	for it in data["items"]:
+		var fr = it.get(key)
+		if fr is Array and not (fr as Array).is_empty() and swap.has(str(fr[0])):
+			it[key] = [swap[str(fr[0])]]
+	(data["items"] as Array).append_array(M.get("add", []))
+	if _format == 2 and data.has("fog"):
+		(data["fog"]["s"] as Array).append_array(M.get("fog", []))
 
 
 ## WALL TOPS: the tops' pictures put among the look's own, and their items among its walls.

@@ -6,6 +6,7 @@
 extends RefCounted
 
 const ZOOM := 0.5
+## (`--at=x,y`: one picture only, at the game's own size, the camera on tile x, y: a close look at one place)
 
 
 func run(M, h, dir: String) -> void:
@@ -38,8 +39,18 @@ func run(M, h, dir: String) -> void:
 	await M._wait(0.5)
 	var cam: Camera2D = M.get_viewport().get_camera_2d()
 	cam.top_level = true
-	cam.zoom = Vector2(ZOOM, ZOOM)
 	cam.offset = Vector2.ZERO
+	if M._arg("at") != "":
+		var xy: PackedStringArray = M._arg("at").split(",")
+		cam.zoom = Vector2.ONE
+		cam.global_position = M.Iso.to_screen(float(xy[0]), float(xy[1])) + Vector2(0, -80)
+		if L._dark != null:
+			L._dark.visible = M._arg("dark") == "1"
+		await M._wait(0.4)
+		await M._snap("%s/at_f%d_%s.png" % [dir, f, M._arg("at").replace(",", "_")])
+		print("WALLS floor %d: at %s" % [f, M._arg("at")])
+		return
+	cam.zoom = Vector2(ZOOM, ZOOM)
 	# (the floor's corners on the screen, picture pixels)
 	var lo := Vector2(INF, INF)
 	var hi := Vector2(-INF, -INF)
