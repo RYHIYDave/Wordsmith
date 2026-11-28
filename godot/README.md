@@ -1434,6 +1434,12 @@ swamp colossus was just a description for the art” (floor 10's boss keeps its 
   whole-number sizes, the art's own pixels kept):
   `icon_1024.png` for an iPhone (no see-through; the rest made from it); `android_main_192.png`, and the adaptive icon's
   `android_fore_432.png`, `android_back_432.png`, `android_mono_432.png` for Android.
+- **The Windows app** (his pick, 28 Nov 2026, told his copy on his computer, run from the project's own files, had never played a
+  sound while the game itself does: “Yes, make it (Recommended)”): `export_presets.cfg` "Windows Desktop" (Wordsmith.exe beside its
+  Wordsmith.pck); `.github/workflows/windows.yml` builds it on GitHub's Linux machines with every update of main (or when the
+  workflow changes, or by hand) and keeps it on the run's page as Wordsmith-Windows, with HOW_TO_PLAY.txt. Its saved game is where
+  the project's always was (user://, no custom folder), so a save carries over. First build: run 46102677421, 659 MB, its data
+  packed here and run with the title's music heard in its recording.
 - **The iPhone export** (his word: “My phone is an iPhone”; `export_presets.cfg`, iOS): Godot 4.7 makes the whole Xcode project
   here (`godot --headless --path godot --export-release "iOS" <dir>/Wordsmith.xcodeproj`, with the iOS template in
   ~/.local/share/godot/export_templates/4.7.2.stable/ios.zip); the app itself (.ipa) is made from it on a Mac (xcodebuild).
