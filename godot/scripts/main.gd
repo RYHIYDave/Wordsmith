@@ -1611,6 +1611,7 @@ func _build(where: String, arrive: String) -> void:
 		look.place = files_of(where)
 		# (floor 2 under one night sky, look.gd F2_SKY; `--f2sky=1` for its pictures)
 		look.f2_sky = look.F2_SKY or _arg("f2sky") == "1"
+		look.f2_keep = look.F2_KEEP or _arg("f2keep") == "1"
 		look.back_layer = back
 		look.floor_layer = floor_layer
 		look.flat_layer = look_flats

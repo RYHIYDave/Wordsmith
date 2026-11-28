@@ -43,6 +43,18 @@ const DARK_GRAIN := 4.0  # game pixels to a pixel of the dark's picture
 ## yard, and the courtyards' own skies no longer shown one at a time. OFF until his yes to its pictures (`--f2sky=1` for them).
 const F2_SKY := false
 var f2_sky := F2_SKY
+## FLOOR 2'S MAIN BUILDING (his idea, 27 Nov 2026: “the little room you come out of where the waypoint is at, thats the prison.
+## so maybe when you walk out of that room you should see a huge wall behind you as the wall of the prisons main building”):
+## the warden's quarters round the waypoint stand stories higher than the walls round them, in their own stone, their roofs and
+## caps risen with them; whole from outside, and clear once he steps inside (the art rulebook, Places 9). tools/f2_keep.py:
+## floor2_keep.png, .json. OFF until his yes to its pictures (`--f2keep=1` for them).
+const F2_KEEP := false
+var f2_keep := F2_KEEP
+var _keep := {}
+var _keep_nodes: Array = []
+var _keep_a := -1.0
+var _keep_patch: Sprite2D = null
+var _keep_glows: Array = []   # [sprite, its own alpha]: the glows of the lights inside it
 
 var place := ""
 ## (THE CULT'S GATES AT THE MAP'S EDGE, act1/altar_rooms.gd: a hall of the Wilds laid past another floor's edge, this many tiles from
@@ -207,6 +219,8 @@ func _ready() -> void:
 	for k in pics:
 		var p: Array = pics[k]
 		_pics[k] = {"rect": Rect2(p[0], p[1], p[2], p[3]), "anchor": Vector2(p[4], p[5])}
+	if f2_keep and place == "floor2":
+		_make_keep()
 	var still := {"back": [], "floor": [], "flat": []}
 	var still_yh := {"back": [], "floor": [], "flat": []}
 	var layers := {"back": back_layer, "floor": floor_layer, "flat": flat_layer, "flat_add": flat_layer}
@@ -403,6 +417,117 @@ func _make_skies() -> void:
 			clip.add_child(s)
 		back_layer.add_child(clip)
 		_skies.append(clip)
+
+
+## F2_KEEP: the main building's pieces (floor2_keep.json: its faces and its roof), each standing among the figures at its depth.
+func _make_keep() -> void:
+	if not FileAccess.file_exists(DIR + "floor2_keep.json"):
+		return
+	_keep = JSON.parse_string(FileAccess.get_file_as_string(DIR + "floor2_keep.json"))
+	var tex: Texture2D = load(DIR + str(_keep["sheet"]))
+	for e in _keep["pieces"]:
+		var s := Sprite2D.new()
+		s.texture = tex
+		s.region_enabled = true
+		s.region_rect = Rect2(e[0], e[1], e[2], e[3])
+		s.centered = false
+		var d := float(e[6])
+		s.position = Vector2(float(e[4]), d * HH)
+		s.offset = Vector2(0, float(e[5]) - d * HH)
+		s.name = "keep"
+		_stand(s)
+		_keep_nodes.append(s)
+
+
+## F2_KEEP: whether the hero is inside the main building (its tiles, floor2_keep.json `inside`).
+func _in_keep() -> bool:
+	if _hero == null or _keep.is_empty():
+		return false
+	var w: Vector2 = _hero.world
+	var r: Array = _keep["inside"]
+	return w.x >= float(r[0]) and w.y >= float(r[1]) and w.x < float(r[2]) and w.y < float(r[3])
+
+
+## F2_KEEP, every frame: the building whole while he is outside it, fading clear in a third of a second as he steps in and back
+## as he leaves (the art rulebook, Places 9); with it, the dark laid over it as over the rest, and the lights inside it hidden.
+func _step_keep(dt: float) -> void:
+	if _keep_nodes.is_empty():
+		return
+	var want := 0.0 if _in_keep() else 1.0
+	_keep_a = want if _keep_a < 0.0 else move_toward(_keep_a, want, dt * 3.0)
+	for n in _keep_nodes:
+		n.modulate.a = _keep_a
+		n.visible = _keep_a > 0.0
+	if _keep_patch != null:
+		_keep_patch.modulate.a = _keep_a
+		_keep_patch.visible = _keep_a > 0.0
+	for g in _keep_glows:
+		g[0].modulate.a = float(g[1]) * (1.0 - _keep_a)
+
+
+## A hole cut in the dark's alpha `alpha` (its grain from `lo`, `w` by `h`) for the light `hole` ([at, r, strength, colour]).
+func _cut_hole(alpha: PackedFloat32Array, hole: Array, lo: Vector2, w: int, h: int) -> void:
+	var c: Vector2 = (hole[0] - lo) / DARK_GRAIN
+	var rx: float = hole[1] / DARK_GRAIN
+	var ry: float = hole[1] * 0.62 / DARK_GRAIN
+	var strength: float = clampf(hole[2], 0.0, 1.0)
+	for y in range(maxi(0, floori(c.y - ry)), mini(h, ceili(c.y + ry) + 1)):
+		for x in range(maxi(0, floori(c.x - rx)), mini(w, ceili(c.x + rx) + 1)):
+			var dx := (x - c.x) / rx
+			var dy := (y - c.y) / ry
+			var k := sqrt(dx * dx + dy * dy)
+			if k >= 1.0:
+				continue
+			alpha[y * w + x] *= 1.0 - strength * (1.0 - smoothstep(0.3, 1.0, k))
+
+
+## F2_KEEP: whether a light at `at` (game pixels) is one of those inside the building.
+func _keep_light(at: Vector2) -> bool:
+	for p in _keep.get("lights", []):
+		if absf(float(p[0]) - at.x) < 1.5 and absf(float(p[1]) - at.y) < 1.5:
+			return true
+	return false
+
+
+## F2_KEEP: the dark over the building while it stands whole, as the rest of the place has it but without the lights inside
+## it (they light the room, not its walls seen from outside); laid over the dark as it is (`alpha`, with every light) where the
+## building stands (its outline, floor2_keep_cover.png), so that the two together are `whole` (the dark with the building, a
+## picture of the place like the others, and none of the lights inside it). The dark's grain from `lo`, `w` by `h`.
+func _keep_veil(root: Node2D, alpha: PackedFloat32Array, whole: PackedFloat32Array, lo: Vector2, w: int, h: int, a: float, col: Color, mat: ShaderMaterial) -> void:
+	var C: Dictionary = _keep["cover"]
+	var img: Image = (load(DIR + str(C["file"])) as Texture2D).get_image()
+	if img.is_compressed():
+		img.decompress()
+	var g := float(C["grain"])
+	var cw := img.get_width()
+	var ch := img.get_height()
+	var bytes := PackedByteArray()
+	bytes.resize(w * h * 4)
+	var r8 := int(col.r * 255.0)
+	var g8 := int(col.g * 255.0)
+	var b8 := int(col.b * 255.0)
+	for y in h:
+		var cy := floori((lo.y + (y + 0.5) * DARK_GRAIN - float(C["y"])) / g)
+		for x in w:
+			var i := y * w + x
+			bytes[i * 4] = r8
+			bytes[i * 4 + 1] = g8
+			bytes[i * 4 + 2] = b8
+			var cx := floori((lo.x + (x + 0.5) * DARK_GRAIN - float(C["x"])) / g)
+			if cx < 0 or cy < 0 or cx >= cw or cy >= ch or img.get_pixel(cx, cy).r < 0.5:
+				continue
+			# (over it: 1 - (1 - now) (1 - p) = want)
+			var p := 1.0 - (1.0 - a * whole[i]) / maxf(1.0 - a * alpha[i], 0.001)
+			bytes[i * 4 + 3] = int(clampf(p / a, 0.0, 1.0) * 255.0)
+	_keep_patch = Sprite2D.new()
+	_keep_patch.texture = ImageTexture.create_from_image(Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, bytes))
+	_keep_patch.centered = false
+	_keep_patch.position = lo * 2.0
+	_keep_patch.scale = Vector2.ONE * DARK_GRAIN * 2.0
+	_keep_patch.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_keep_patch.z_index = 50
+	_keep_patch.material = mat
+	root.add_child(_keep_patch)
 
 
 ## F2_SKY: the night sky behind everything (a screen's layer under the world's, as the Ledge Road's), and the moon in it.
@@ -838,6 +963,7 @@ func _process(dt: float) -> void:
 		if _dark != null and _hero != null:
 			_dark.material.set_shader_parameter("hero", _hero.position)
 		return
+	_step_keep(dt)
 	for a in _anim:
 		var frames: Array = a["frames"]
 		var i := 0
@@ -962,6 +1088,14 @@ func lighting(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 	alpha.fill(1.0)
 	if f2_sky and place == "floor2":
 		_veil_to_cover(alpha, lo, w, h)
+	# (F2_KEEP: the dark as it would be over the main building whole: all of it, but for the lights inside it)
+	var whole := PackedFloat32Array()
+	if not _keep_nodes.is_empty():
+		whole.resize(w * h)
+		whole.fill(1.0)
+		for hole in holes:
+			if not _keep_light(hole[0]):
+				_cut_hole(whole, hole, lo, w, h)
 	for hole in holes:
 		var c: Vector2 = (hole[0] - lo) / DARK_GRAIN
 		var rx: float = hole[1] / DARK_GRAIN
@@ -1006,6 +1140,9 @@ func lighting(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 	_dark.material = mat
 	root.add_child(_dark)
 	_hero = hero
+	if not _keep_nodes.is_empty():
+		# (the dark's own material: the hero's light and the moves' lights cut it as they cut the dark)
+		_keep_veil(root, alpha, whole, lo, w, h, a, col, mat)
 	# the glows, added over the dark
 	var tex := _glow_texture()
 	for g in glows:
@@ -1018,6 +1155,8 @@ func lighting(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 		s.modulate.a = clampf(g[2], 0.0, 1.0)
 		s.z_index = 51
 		root.add_child(s)
+		if not _keep_nodes.is_empty() and _keep_light(g[0]):
+			_keep_glows.append([s, s.modulate.a])
 		# (a glow is not seen until the tile it is over has been)
 		if _fogged:
 			var gp: Vector2 = g[0]
