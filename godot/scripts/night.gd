@@ -19,10 +19,11 @@
 ## And then you go out to the wilds and it’s light out.  On second thought no, the town is not good enough as night”. So the night
 ## lasts until the ride up from floor 5 (ways.gd, loot.morning, saved with the run); from then on the town and floor 1 are as by
 ## day, the gate still wood.
-## OFF: as it was by day. Pictured: check_night.gd, `--only=night` (`--night=1` on for a run).
+## OFF (`--night=0` for a run): as it was by day. Pictured: check_night.gd, `--only=night`.
 extends RefCounted
 
-static var on := false
+## ON at his word, 27 Nov 2026, on the pictures (docs/mockups/night/): “Yes, switch it all on (Recommended)”.
+static var on := true
 ## (the ride up from floor 5 has brought the morning (loot.morning, set here as each place is laid: main.gd): from then on the town
 ## and floor 1 are as by day; the gate stays wood)
 static var morning := false
