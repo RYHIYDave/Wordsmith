@@ -1,10 +1,18 @@
-"""Floor 2's rock: the crag the prison stands on, at night (his ask, 27 Nov 2026: "There's a new cliff I need for floor 2").
+"""Floor 2's cliff: the prison built on THE EDGE of a cliff, at night (his ask, 27 Nov 2026: "There's a new cliff I need for floor
+2"; and of the first try: "Make it look like it was built on THE EDGE of a cliff, not directly into the cliff ... Do it right.
+Follow the rules.").
 
 Under every edge of the prison's ground with nothing past it toward the eye (godot/assets/looks/floor2_cover.json `cliff`: x1, y1,
-x2, y2 in game pixels, and its face: 0 the face to the left, in the moon's light; 1 the face to the right, in shadow), the rock
-falls away: broken into facets as stone breaks, each facet's top edge catching the moon and its foot in shadow, a lip of ground
-along the top, and with depth the rock goes into the night's haze (the night sky's lowest colour) and out of sight.
-
+x2, y2 in game pixels; the foot of its walls), drawn by the art rulebook (docs/art/RULEBOOK.md):
+  THE RIM: the prison stands back from the edge. Between the foot of its walls and the drop, a strip of the clifftop's rock, wide
+    here and narrow there, its edge broken in straight runs as rock breaks; the walls' shadow at their foot; pebbles, cracks and
+    moss on it; along its edge a lip of pale caprock catching the moon.
+  THE DROP: from the rim's edge the cliff falls in faces and ledges. Each face is flat and upright, lit as the rulebook lights
+    every upright face (light from the upper left: what faces up lightest, what faces left in between, what faces right
+    darkest; three tones to a material, a seam of deep indigo where one part ends in front of another): a face looking left in
+    the middle tone, one looking right in the dark, every ledge's top in the light. Cracks run down the faces and the bedding
+    across them. Each ledge further down is a step deeper in the dark (the dark is part of the look), and below the last the
+    rock goes out of sight by a dither, crisp, as the game's pixels go; at the two ends of the whole the ledges step in.
 Drawn in game pixels (the game draws it two to one), farthest edge first so the nearer rock stands in front, and cut into tiles
 of TILE pixels: godot/assets/looks/floor2_rock_<i>_<j>.png, and floor2_rock.json {x, y, tile, tiles: [[i, j, file]]}.
 
@@ -23,30 +31,40 @@ import sys
 import numpy as np
 from PIL import Image
 from scipy.ndimage import binary_fill_holes, binary_dilation, binary_erosion
-from scipy.spatial import cKDTree
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "godot", "assets", "looks")
-DEPTH = 440          # how far the rock is drawn below its edge (game pixels)
 TILE = 1024
 SEED = 20261127
 
-# the rock's tones, darkest first: the face in the moon's light (0) and the face in shadow (1)
-LIT = np.array([(8, 8, 18), (13, 13, 27), (19, 20, 38), (26, 28, 50), (35, 38, 64), (48, 52, 84)], float)
-SHADE = np.array([(6, 6, 14), (9, 9, 20), (13, 13, 28), (18, 19, 37), (24, 25, 47), (33, 35, 60)], float)
-HAZE = np.array((14, 18, 43), float)   # the night sky's lowest colour (floor2_nightsky.png)
+# the cliff's rock, a cool slate a step quieter than the prison's walls (the place's own palette): three tones, lit from the
+# upper left, and the seam
+TOP = np.array((52, 55, 86), float)      # what faces up
+LEFT = np.array((35, 37, 63), float)     # what faces left
+RIGHT = np.array((22, 23, 44), float)    # what faces right
+SEAM = np.array((14, 12, 36), float)     # #0e0c24, where one part ends in front of another
+CAP = np.array((68, 72, 108), float)     # the pale caprock along the rim's edge, catching the moon
+MOSS = np.array((27, 41, 38), float)
+MOSS_D = np.array((18, 28, 29), float)
+# each ledge further down a step deeper in the dark
+LEVELS = 4
+DARK = [1.0, 0.8, 0.64, 0.5, 0.4]
+FADE = 44              # the last face, out of sight by a dither
 BAYER = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]], float) / 16.0
 
 
-def _cells(w: int, h: int, sx: float, sy: float, rng: np.random.Generator):
-    """Jittered points over w by h, about sx by sy apart; for each pixel the distances to its nearest two (F1, F2) and which."""
-    gx = np.arange(-1, int(w / sx) + 3)
-    gy = np.arange(-1, int(h / sy) + 3)
-    px, py = np.meshgrid(gx, gy)
-    pts = np.stack([(px + rng.uniform(0.1, 0.9, px.shape)) * sx, (py + rng.uniform(0.1, 0.9, py.shape)) * sy], -1).reshape(-1, 2)
-    uu, vv = np.meshgrid(np.arange(w), np.arange(h))
-    q = np.stack([uu.ravel(), vv.ravel()], -1).astype(float)
-    d, k = cKDTree(pts).query(q, k=2)
-    return d[:, 0].reshape(h, w), d[:, 1].reshape(h, w), k[:, 0].reshape(h, w)
+def _runs(n: int, step_lo: int, step_hi: int, lo: float, hi: float, rng: np.random.Generator) -> np.ndarray:
+    """n values in straight runs, as rock breaks: a point every step_lo to step_hi columns, each between lo and hi, and a
+    straight line between."""
+    xs = [0]
+    while xs[-1] < n + step_hi:
+        xs.append(xs[-1] + int(rng.integers(step_lo, step_hi + 1)))
+    vs = rng.uniform(lo, hi, len(xs))
+    return np.interp(np.arange(n), xs, vs)
+
+
+def _dark(c: np.ndarray, k: int) -> np.ndarray:
+    f = DARK[min(k, len(DARK) - 1)]
+    return SEAM + (c - SEAM) * f
 
 
 def _smooth_noise(n: int, step: float, amp: float, rng: np.random.Generator) -> np.ndarray:
@@ -60,114 +78,216 @@ def _smooth_noise(n: int, step: float, amp: float, rng: np.random.Generator) -> 
     return (pts[i] * (1 - f) + pts[i + 1] * f) * amp
 
 
-def face_texture(w: int, h: int, lit: bool, rng: np.random.Generator) -> np.ndarray:
-    """A face of cliff rock, w by h: its tones (float, 0..5) before its haze, NaN where the rock has run out. Made as stone
-    breaks: the face pushed out into great angular masses, each broken into smaller blocks (a height over the face, from the
-    distance to the edges of its cells, so that every block is a few flat planes), lit by the moon (up and to the left, and
-    for the face in shadow, from behind it), the cracks between in shadow."""
-    f1a, f2a, ka = _cells(w, h, 62.0, 84.0, rng)
-    f1b, f2b, kb = _cells(w, h, 10.0, 17.0, rng)
-    # (each block a low pyramid: highest at its middle, flat planes falling to its edges)
-    big = np.minimum(f2a - f1a, 14.0)
-    small = np.minimum(f2b - f1b, 3.5)
-    lift_a = rng.uniform(0, 9, ka.max() + 1)[ka]
-    lift_b = rng.uniform(0, 2, kb.max() + 1)[kb]
-    hgt = big * 0.9 + lift_a + small * 0.8 + lift_b
-    # (ledges across the face every so often: the rock below set back, so that the lip catches the moon)
-    vv = np.arange(h)[:, None].astype(float)
-    v = 30.0 + rng.uniform(0, 20)
-    while v < h:
-        line = v + _smooth_noise(w, rng.uniform(20, 46), 3.0, rng)[None, :]
-        hgt = hgt - np.clip((vv - line) / 3.0, 0, 1) * 5.0
-        v += rng.uniform(56, 104)
-    gy, gx = np.gradient(hgt)
-    n = np.stack([-gx, -gy, np.full_like(gx, 1.6)], -1)
-    n /= np.linalg.norm(n, axis=-1, keepdims=True)
-    L = np.array([-0.62, -0.55, 0.55]) if lit else np.array([-0.75, -0.45, 0.12])
-    L /= np.linalg.norm(L)
-    lum = np.clip((n * L).sum(-1), -0.2, 1.0)
-    t = (1.0 + lum * 4.2) if lit else (0.6 + lum * 4.0)
-    # (the clefts between the great masses deep, the rock darkening into them; and the cracks between the blocks)
-    t = t - np.clip(1.0 - (f2a - f1a) / 5.0, 0, 1) * 1.4
-    t = np.where(f2a - f1a < 1.6, 0.0, t)
-    t = np.where((f2b - f1b < 0.8) & (big > 2.5), t - 0.8, t)
-    # (grit)
-    g = rng.random((h, w))
-    t = np.where(g < 0.02, t + 0.7, np.where(g > 0.98, t - 0.7, t))
-    # (the great masses run out at different depths, far down)
-    end = (h - rng.uniform(0, 170, ka.max() + 1))[ka]
-    t = np.where(np.arange(h)[:, None] >= end, np.nan, t)
-    return t
-
-
-def tones_to_rgb(t: np.ndarray, lit: bool) -> np.ndarray:
-    """Tones to colours: NaN (no rock) as -1 alpha, kept in a fourth channel."""
-    pal = LIT if lit else SHADE
-    none = np.isnan(t)
-    i = np.clip(np.round(np.nan_to_num(t, nan=0)), 0, len(pal) - 1).astype(int)
-    out = np.concatenate([pal[i], np.where(none, 0.0, 1.0)[..., None]], -1)
-    return out
-
-
 def main() -> None:
     cover = json.load(open(os.path.join(ROOT, "floor2_cover.json")))
     edges = cover["cliff"]
     rng = np.random.default_rng(SEED)
     xs = [e[0] for e in edges] + [e[2] for e in edges]
     ys = [e[1] for e in edges] + [e[3] for e in edges]
-    X0, X1 = int(min(xs)) - 2, int(max(xs)) + 2
-    Y0, Y1 = int(min(ys)) - 4, int(max(ys)) + DEPTH + 4
-    W, H = X1 - X0, Y1 - Y0
-    tex = {0: face_texture(W, DEPTH, True, rng), 1: face_texture(W, DEPTH, False, rng)}
-    rgb = {f: tones_to_rgb(tex[f], f == 0) for f in (0, 1)}
+    MARGIN = 2 * 21 + 6                  # (room past the ends for the rim to turn round a corner)
+    X0, X1 = int(min(xs)) - MARGIN, int(max(xs)) + MARGIN
+    W = X1 - X0
+    # the rim's width, and each ledge's face and shelf: straight runs across the whole, the same for every edge at a column
+    rim = _runs(W, 8, 26, 6, 21, rng)
+    face = [_runs(W, 16, 52, 26, 60, rng) for _ in range(LEVELS)]
+    shelf = [np.clip(_runs(W, 10, 34, -7, 9, rng), 0, None) for _ in range(LEVELS)]
+    deep = rim.max() + sum(f.max() + s.max() for f, s in zip(face, shelf)) + FADE + 4
+    Y0, Y1 = int(min(ys)) - 30, int(max(ys) + deep) + 4
+    H = Y1 - Y0
     out = np.zeros((H, W, 4), np.uint8)
-    # (each column's face, top and which edge: to find the corners)
-    v = np.arange(DEPTH)
-    fog = np.clip((v - 24) / 330.0, 0, 1) ** 1.15
-    fog = fog[:, None] * 0.92
-    gone = np.clip((v - (DEPTH - 90)) / 90.0, 0, 1)
-    # (THE ROCK'S ENDS: the prison's ground is one mass of rock, each face of it hanging from its edge, the nearer in front; at
-    # its two ends, far left and far right, it does not stop in a straight line down but is cut away beneath, more the further
-    # down, as a crag hangs)
-    XL = min(e[0] for e in edges)
-    XR = max(e[2] for e in edges)
-    jag = _smooth_noise(W, 7.0, 9.0, rng) + _smooth_noise(W, 23.0, 14.0, rng)
-    TAPER = 1.7
-    # farthest first
+    # (the faces broken into upright columns of rock, as cliffs split: a crack down each face every few columns, running
+    # most of its height and jogging a pixel now and then; the column to its right standing a little proud, its left edge
+    # catching the light; here and there a crack ends short)
+    crack = np.zeros(W, bool)
+    c = int(rng.integers(2, 8))
+    while c < W:
+        crack[c] = True
+        c += int(rng.choice([6, 7, 8, 9, 10, 12, 14, 17, 21]))
+    crack_a = rng.integers(0, 6, (LEVELS + 1, W))
+    crack_l = np.where(rng.random((LEVELS + 1, W)) < 0.7, 999, rng.integers(10, 30, (LEVELS + 1, W)))
+    jog = np.cumsum(rng.random((LEVELS + 1, W, 80)) < 0.12, axis=2) % 2   # (a crack's pixel step aside, down its length)
+    # (on the rim: pebbles, cracks, moss at the walls' foot)
+    pebble = rng.random((H, W)) < 0.006
+    pebble[:, 1:] |= pebble[:, :-1]      # (two pixels wide)
+    moss = _runs(W, 6, 20, -1, 1, rng) > 0.35
+    # (stones lying on the rim, fallen from the edge: one every so often, each its own size, just in from the lip)
+    stones = {}
+    c = int(rng.integers(10, 40))
+    while c < W:
+        stones[c] = (int(rng.integers(4, 10)), int(rng.integers(3, 6)), float(rng.uniform(0.35, 0.8)))
+        c += int(rng.integers(26, 72))
+    # (tufts of grass on the ledges, dark in the night)
+    tuft = rng.random((LEVELS, W)) < 0.05
+    inL = np.cumsum(rng.integers(2, 14, LEVELS + 2))
+    inR = np.cumsum(rng.integers(2, 14, LEVELS + 2))
+
+    # THE CORNERS: where the prison's ground comes to a point toward the open air (a run of edges ends, and nothing of the
+    # prison or its rock lies beyond it), the rim turns round the corner with it, so that the corner too stands back from the
+    # drop; the cliff under it turns with it
+    filled0 = binary_fill_holes(_cover_drawn())
+    g0 = int(cover["grain"])
+
+    def covered(x: float, y: float) -> bool:
+        cx = int((x - cover["x"]) // g0)
+        cy = int((y - cover["y"]) // g0)
+        return 0 <= cx < filled0.shape[1] and 0 <= cy < filled0.shape[0] and bool(filled0[cy, cx])
+
+    tops_at = {}
+    for e in edges:
+        for x in range(int(e[0]), int(e[2])):
+            tops_at.setdefault(x, []).append(e[1] + (e[3] - e[1]) * (x - e[0]) / (e[2] - e[0]))
+
+    def free(x: float, y: float, way: int) -> bool:
+        """Whether past this end of a run of edges (way -1 its left, 1 its right) nothing lies: none of the prison and no
+        other edge, 48 pixels across and from 30 above to 120 below."""
+        for d in range(2, 50, 3):
+            xx = x + way * d
+            for t in tops_at.get(int(xx), []):
+                if y - 30 <= t <= y + 120:
+                    return False
+            for j in range(-30, 120, 6):
+                if covered(xx, y + j):
+                    return False
+        return True
+
+    starts = {(e[0], e[1]) for e in edges}
+    ends = {(e[2], e[3]) for e in edges}
+    tips = {}                                 # (edge's index) -> [(x, y, way)]
+    for k, e in enumerate(edges):
+        if (e[0], e[1]) not in ends and e[3] > e[1] and free(e[0], e[1], -1):
+            tips.setdefault(k, []).append((e[0], e[1], -1))
+        if (e[2], e[3]) not in starts and e[3] < e[1] and free(e[2], e[3], 1):
+            tips.setdefault(k, []).append((e[2], e[3], 1))
+    XL = min(e[0] for e in edges) - X0
+    XR = max(e[2] for e in edges) - X0
+    for k in tips:
+        for (tx, ty, way) in tips[k]:
+            r = rim[int(tx) - X0]
+            if way < 0:
+                XL = min(XL, int(tx - 2 * r) - X0)
+            else:
+                XR = max(XR, int(tx + 2 * r) - X0)
+
+    def put(y: int, x: int, col) -> None:
+        """Game pixel (x, y) the colour `col`."""
+        yy = y - Y0
+        xx = x - X0
+        if 0 <= yy < H and 0 <= xx < W:
+            out[yy, xx, :3] = np.clip(col, 0, 255).astype(np.uint8)
+            out[yy, xx, 3] = 255
+
+    def stone(x: int, y: int, w: int, h: int) -> None:
+        """A stone on the rim, its foot at (x, y), w across and h tall: its top in the light, its left side in between, its
+        right side dark, the seam under it."""
+        for row in range(h):
+            yy = y - h + row
+            inset = 1 if row == 0 else 0
+            for i in range(inset, w - inset):
+                if row <= 1:
+                    col = CAP if row == 0 else TOP
+                else:
+                    col = LEFT if i < w // 2 else RIGHT
+                put(yy, x - w // 2 + i, col)
+        for i in range(w):
+            put(y, x - w // 2 + i, SEAM)
+
+    def column(x: int, back: float, edge: float, slope: float, foot: bool) -> None:
+        """One column of the cliff at game x: THE RIM from `back` (the walls' foot, or, where it turns a corner, its far lip)
+        to `edge`, then THE DROP from the edge, its top running at `slope`."""
+        cx = x - X0
+        cn = min(cx + 1, W - 1)
+        yb = int(np.floor(back + 0.5))
+        ye = int(np.floor(edge + 0.5))
+        for y in range(yb, ye):
+            d = y - yb
+            col = TOP
+            if foot and d < 2:
+                col = LEFT                       # (the walls' shadow at their foot)
+                if d == 1 and moss[cx]:
+                    col = MOSS_D
+            elif foot and d == 2 and moss[cx]:
+                col = MOSS
+            elif not foot and d == 0:
+                col = CAP                        # (the far lip, round the corner, catching the moon)
+            elif y == ye - 1:
+                col = CAP                        # (the caprock's lip, catching the moon)
+            elif pebble[y - Y0, cx]:
+                col = CAP
+            elif y - Y0 > 0 and pebble[y - Y0 - 1, cx]:
+                col = SEAM
+            put(y, x, col)
+        # THE DROP: faces and ledges, each a step deeper in the dark
+        top = edge
+        top_n = edge + slope
+        for lv in range(LEVELS + 1):
+            if cx < XL + inL[lv] or cx > XR - inR[lv]:
+                break
+            last = lv == LEVELS
+            h = FADE if last else face[lv][cx]
+            h_n = FADE if last else face[lv][cn]
+            # (the face looks left where its top runs down to the right, right where it runs up)
+            looks_left = top_n - top >= 0
+            tone = _dark(LEFT if looks_left else RIGHT, lv)
+            lit_edge = _dark(TOP if looks_left else LEFT, lv)
+            t0 = int(np.floor(top + 0.5))
+            t1 = int(np.floor(top + h + 0.5))
+            for y in range(t0, t1):
+                d = y - t0
+                col = tone
+                j = jog[lv, cx, min(d // 3, 79)]
+                # (a crack here, or one a column to the left jogged here)
+                here = crack[cx] and crack_a[lv, cx] <= d < crack_a[lv, cx] + crack_l[lv, cx] and j == 0
+                left = cx > 0 and crack[cx - 1] and crack_a[lv, cx - 1] <= d < crack_a[lv, cx - 1] + crack_l[lv, cx - 1]
+                jl = jog[lv, cx - 1, min(d // 3, 79)] if cx > 0 else 0
+                if here or (left and jl == 1):
+                    col = _dark(SEAM, 0)
+                elif (left and jl == 0) or (cx > 1 and crack[cx - 2] and jog[lv, cx - 2, min(d // 3, 79)] == 1
+                                            and crack_a[lv, cx - 2] <= d < crack_a[lv, cx - 2] + crack_l[lv, cx - 2]):
+                    col = lit_edge     # (the proud column's lit edge)
+                if last:
+                    # (out of sight below, by a dither)
+                    if (d / FADE) > 1.0 - BAYER[(y - Y0) % 4, x % 4] * 0.999:
+                        continue
+                put(y, x, col)
+            if last:
+                break
+            # the ledge's top, in the light, its edge the next face's top
+            s = shelf[lv][cx]
+            s_n = shelf[lv][cn]
+            t2 = int(np.floor(top + h + s + 0.5))
+            for y in range(t1, t2):
+                put(y, x, _dark(TOP, lv + 1) if y < t2 - 1 else _dark(CAP, lv + 1))
+            if s >= 3 and tuft[lv, cx]:
+                for i in range(1 + (cx * 7) % 3):
+                    put(t1 + 1 - i, x, _dark(MOSS if i else MOSS_D, lv))
+            top = top + h + s
+            top_n = top_n + h_n + s_n
+
     order = sorted(range(len(edges)), key=lambda k: (edges[k][1] + edges[k][3]) / 2)
     for k in order:
-        x1, y1, x2, y2, f = edges[k]
+        x1, y1, x2, y2, _f = edges[k]
+        slope_seg = (y2 - y1) / (x2 - x1)
         for x in range(int(x1), int(x2)):
-            top = y1 + (y2 - y1) * (x - x1) / (x2 - x1)
-            top_i = int(np.floor(top + 0.5))
-            col4 = rgb[f][:, x - X0].copy()
-            col = col4[:, :3]
-            here = col4[:, 3] > 0
-            # (the lip of the ground along the top: lit, and under it the shadow of its overhang)
-            col[0] = (54, 58, 92) if f == 0 else (34, 36, 62)
-            col[1] = (38, 41, 68) if f == 0 else (24, 25, 46)
-            col[2] = (10, 10, 22)
-            col[3] = (7, 7, 17)
-            # (the corners: a convex corner's edge, toward the eye, in the moon's light)
-            if f == 0 and x == int(x2) - 1:
-                nxt = [e for e in edges if e[0] == x2 and abs(e[1] - y2) < 1 and e[4] == 1]
-                if nxt:
-                    col[4:] = np.minimum(col[4:] + 12, 255)
-            if f == 1 and x == int(x1):
-                prv = [e for e in edges if e[2] == x1 and abs(e[3] - y1) < 1 and e[4] == 0]
-                if prv:
-                    col[4:] = col[4:] * 0.6
-            col = col * (1 - fog) + HAZE * fog
-            yy = top_i + v - Y0
-            ok = (yy >= 0) & (yy < H)
-            # (out of sight below, by a dither, as the game's pixels go)
-            keep = gone < (1.0 - BAYER[(yy % 4), x % 4] * 0.999)
-            m = ok & keep & here
-            # (the crag's two ends, far left and far right: cut away beneath, its underside slanting in)
-            vmax = min(DEPTH, (x - XL) * TAPER + 12 + jag[x - X0], (XR - x) * TAPER + 12 + jag[x - X0])
-            m = m & (v < vmax)
-            out[yy[m], x - X0, :3] = np.clip(col[m], 0, 255).astype(np.uint8)
-            out[yy[m], x - X0, 3] = 255
+            cx = x - X0
+            base = y1 + slope_seg * (x - x1)
+            nb = base + slope_seg + rim[min(cx + 1, W - 1)]
+            column(x, base, base + rim[cx], nb - (base + rim[cx]), True)
+        # (round a corner: the rim's two lips meeting in a point, as far out as the rim is wide on both sides)
+        for (tx, ty, way) in tips.get(k, []):
+            r = rim[int(tx) - X0]
+            for i in range(1, int(2 * r) + 1):
+                x = int(tx) + way * i
+                u = i / 2.0
+                back = ty - r + u
+                edge = ty + r - u
+                if edge - back < 1:
+                    break
+                column(x, back, edge, 0.5 if way < 0 else -0.5, False)
+        for sc, (sw, sh, at) in stones.items():
+            x = sc + X0
+            if int(x1) <= x < int(x2) and rim[sc] >= 9:
+                base = y1 + slope_seg * (x - x1)
+                stone(x, int(np.floor(base + rim[sc] * at + 2 + 0.5)), sw, sh)
     # THE UNDERSIDE OF THE PRISON'S GROUND: under all of it (the cover, its holes filled, a cell in from its edge), the dark of
     # the place, so that nothing of the sky is seen through it (a wall faded round him, a gap between pictures); and in its
     # holes, the tops the look never drew, a wall-walk's stones
