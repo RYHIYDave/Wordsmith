@@ -414,16 +414,34 @@ func _make_night_sky() -> void:
 	layer.add_child(sky)
 	add_child(layer)
 	_sky_node = sky
-	# (THE CLIFFS: his “You see the massive problem in the lower left quadrant here right?”, of the sky seen under the walls,
-	# and “A for sure.  If you put a cliff edge under the walls maybe it will look better”: the prison on its rock, a cliff
-	# face falling from every edge of its ground toward the eye down into the night)
-	var cliffs := _NightCliffs.new()
-	cliffs.left = load(DIR + "floor2_cliff_l.png")
-	cliffs.right = load(DIR + "floor2_cliff_r.png")
-	cliffs.edges = (JSON.parse_string(FileAccess.get_file_as_string(DIR + "floor2_cover.json")) as Dictionary)["cliff"]
-	cliffs.span = JSON.parse_string(FileAccess.get_file_as_string(DIR + "floor2_cliff.json"))
-	back_layer.add_child(cliffs)
-	back_layer.move_child(cliffs, 0)
+	# (THE ROCK: his “You see the massive problem in the lower left quadrant here right?”, of the sky seen under the walls; “A
+	# for sure.  If you put a cliff edge under the walls maybe it will look better”; and, 27 Nov 2026, “There's a new cliff I need
+	# for floor 2”: the crag the prison stands on, falling away under every edge toward the eye into the night's haze; and the
+	# tops of its thick walls, which the look never drew (tools/f2_rock.py: floor2_rock.json, its tiles and the underside's))
+	var R: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "floor2_rock.json"))
+	var rock := Node2D.new()
+	rock.name = "floor2_rock"
+	var at0 := Vector2(float(R["x"]), float(R["y"]))
+	for t in R["tiles"]:
+		var s := Sprite2D.new()
+		s.texture = load(DIR + str(t[2]))
+		s.centered = false
+		s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		s.position = (at0 + Vector2(float(t[0]), float(t[1])) * float(R["tile"])) * 2.0
+		s.scale = Vector2(2, 2)
+		rock.add_child(s)
+	# (the underside of its ground: dark under all of it, and its walls' tops where the look left none)
+	var U: Dictionary = R["under"]
+	for t in U["tiles"]:
+		var s := Sprite2D.new()
+		s.texture = load(DIR + str(t[2]))
+		s.centered = false
+		s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		s.position = (Vector2(float(U["x"]), float(U["y"])) + Vector2(float(t[0]), float(t[1])) * float(R["tile"])) * 2.0
+		s.scale = Vector2(2, 2)
+		rock.add_child(s)
+	back_layer.add_child(rock)
+	back_layer.move_child(rock, 0)
 
 
 ## F2_SKY: the dark's veil laid only where the place's own pictures stand (floor2_cover.png, a pixel to every DARK_GRAIN game
