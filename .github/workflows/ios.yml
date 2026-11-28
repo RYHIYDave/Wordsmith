@@ -1,6 +1,10 @@
 # THE IPHONE APP, built on one of GitHub's Macs (the Godot copy, godot/). Godot 4.7.2 makes the Xcode project
-# (godot/export_presets.cfg, "iOS"); Xcode builds it. Not signed yet: that waits on his Apple developer account
-# (then: its certificate, its profile, and TestFlight to his phone).
+# (godot/export_presets.cfg, "iOS"); Xcode builds it. SIGNED AND SENT TO TESTFLIGHT once his Apple developer account's key is in
+# the repository's secrets (his word, 28 Nov 2026: “I have a developer account for apple”; asked to set it up, “get everything
+# ready for your end and I’ll do my stuff in about 2 hours”): APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_P8 (the
+# App Store Connect API key's own text, Admin access, so that Xcode may make the signing certificate and profile itself).
+# Then Xcode archives the app signed by his team, and sends it to App Store Connect, where TestFlight offers it to his phone.
+# Without those secrets it is built unsigned, as before. Each build's number is the run's, so each is new to Apple.
 # Runs when this file or .github/ios_build.txt changes on the branch, or by hand.
 name: iPhone build
 
@@ -14,7 +18,9 @@ jobs:
   ios:
     # (Godot 4.7.2's iPhone template is built with Xcode 26: an older Xcode cannot link it, its iOS 26 calls missing)
     runs-on: macos-26
-    timeout-minutes: 90
+    timeout-minutes: 120
+    env:
+      HAS_KEY: ${{ secrets.ASC_KEY_P8 != '' && secrets.ASC_KEY_ID != '' && secrets.ASC_ISSUER_ID != '' && secrets.APPLE_TEAM_ID != '' && 'yes' || 'no' }}
     steps:
       - name: The newest Xcode on the machine
         run: |
@@ -39,6 +45,24 @@ jobs:
           rm templates.tpz godot.zip
           ls -la "$T"
 
+      - name: His team and this build's number in the iPhone settings
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          python3 - <<'PY'
+          import os, re
+          p = 'godot/export_presets.cfg'
+          s = open(p).read()
+          team = os.environ.get('APPLE_TEAM_ID', '').strip()
+          if team:
+              s = s.replace('application/app_store_team_id="0000000000"', 'application/app_store_team_id="%s"' % team)
+          s = s.replace('application/version="1"', 'application/version="%s"' % os.environ['GITHUB_RUN_NUMBER'])
+          # (no encryption past the system's own: TestFlight asks no export question)
+          s = s.replace('application/additional_plist_content=""', 'application/additional_plist_content="<key>ITSAppUsesNonExemptEncryption</key><false/>"', 1)
+          open(p, 'w').write(s)
+          PY
+          grep -nE "app_store_team_id|application/version|additional_plist" godot/export_presets.cfg | sed -E 's/team_id="[A-Z0-9]+"/team_id="(set)"/'
+
       - name: The Xcode project
         run: |
           G=./Godot.app/Contents/MacOS/Godot
@@ -50,7 +74,42 @@ jobs:
           ls -la build/ios
           du -sh build/ios/Wordsmith.pck
 
+      - name: Signed by his team and sent to TestFlight
+        if: env.HAS_KEY == 'yes'
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$KEY"
+          AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          cd build/ios
+          set -o pipefail
+          xcodebuild -project Wordsmith.xcodeproj -scheme Wordsmith -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -archivePath "$PWD/Wordsmith.xcarchive" archive "${AUTH[@]}" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY="Apple Development" \
+            PROVISIONING_PROFILE_SPECIFIER= PROVISIONING_PROFILE= 2>&1 | tail -80
+          cat > ExportOptions.plist <<PL
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><false/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          PL
+          xcodebuild -exportArchive -archivePath "$PWD/Wordsmith.xcarchive" -exportOptionsPlist ExportOptions.plist \
+            -exportPath "$PWD/export" "${AUTH[@]}" 2>&1 | tail -60
+          rm -f "$KEY"
+          echo "Sent to App Store Connect: build $GITHUB_RUN_NUMBER. Apple processes it (often 10 to 30 minutes), then TestFlight offers it."
+
       - name: Built by Xcode (not signed)
+        if: env.HAS_KEY != 'yes'
         run: |
           cd build/ios
           xcodebuild -list -project Wordsmith.xcodeproj
