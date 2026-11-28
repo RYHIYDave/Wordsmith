@@ -46,8 +46,10 @@ CAP = np.array((68, 72, 108), float)     # the pale caprock along the rim's edge
 MOSS = np.array((27, 41, 38), float)
 MOSS_D = np.array((18, 28, 29), float)
 # each ledge further down a step deeper in the dark
-LEVELS = 4
-DARK = [1.0, 0.8, 0.64, 0.5, 0.4]
+LEVELS = 13            # (ledges enough that the rock goes on below the screen: no sky is ever seen under the cliff, his
+                       # word of 27 Nov 2026: "I need the cliff to never show the background of the sky UNDER the cliff.  So
+                       # just make sure it goes down far enough to not let that happen")
+DARK = [1.0, 0.8, 0.66, 0.55, 0.47, 0.41, 0.37, 0.34, 0.32, 0.3]
 FADE = 44              # the last face, out of sight by a dither
 BAYER = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]], float) / 16.0
 
@@ -89,8 +91,19 @@ def main() -> None:
     W = X1 - X0
     # the rim's width, and each ledge's face and shelf: straight runs across the whole, the same for every edge at a column
     rim = _runs(W, 8, 26, 6, 21, rng)
-    face = [_runs(W, 16, 52, 26, 60, rng) for _ in range(LEVELS)]
-    shelf = [np.clip(_runs(W, 10, 34, -7, 9, rng), 0, None) for _ in range(LEVELS)]
+    # (the edge broken: small chips along it, and here and there a bite out of it)
+    rough = rim + _runs(W, 2, 6, -2.5, 2.5, rng)
+    c = int(rng.integers(4, 20))
+    while c < W:
+        bw = int(rng.integers(3, 10))
+        bd = float(rng.uniform(3, 7))
+        for i in range(bw):
+            if c + i < W:
+                rough[c + i] -= bd * (1 - abs(i - (bw - 1) / 2) / (bw / 2 + 0.5))
+        c += int(rng.integers(14, 48))
+    rough = np.maximum(rough, 3)
+    face = [_runs(W, 16, 52, 30, 64, rng) for _ in range(LEVELS)]
+    shelf = [np.clip(_runs(W, 10, 34, -7, 9, rng) + _runs(W, 2, 5, -1.5, 1.5, rng), 0, None) for _ in range(LEVELS)]
     deep = rim.max() + sum(f.max() + s.max() for f, s in zip(face, shelf)) + FADE + 4
     Y0, Y1 = int(min(ys)) - 30, int(max(ys) + deep) + 4
     H = Y1 - Y0
@@ -106,6 +119,14 @@ def main() -> None:
     crack_a = rng.integers(0, 6, (LEVELS + 1, W))
     crack_l = np.where(rng.random((LEVELS + 1, W)) < 0.7, 999, rng.integers(10, 30, (LEVELS + 1, W)))
     jog = np.cumsum(rng.random((LEVELS + 1, W, 80)) < 0.12, axis=2) % 2   # (a crack's pixel step aside, down its length)
+    # (between two cracks, a column of rock: some stand proud, their tops broken off below the ledge, catching the light;
+    # some are set back in shadow; and the faces pitted here and there)
+    band = np.cumsum(crack)
+    nb = int(band.max()) + 1
+    proud = rng.random((LEVELS + 1, nb)) < 0.3
+    recess = (~proud) & (rng.random((LEVELS + 1, nb)) < 0.25)
+    cap_at = rng.integers(3, 26, (LEVELS + 1, nb))
+    pit = rng.random((LEVELS + 1, 80, W)) < 0.006
     # (on the rim: pebbles, cracks, moss at the walls' foot)
     pebble = rng.random((H, W)) < 0.006
     pebble[:, 1:] |= pebble[:, :-1]      # (two pixels wide)
@@ -118,8 +139,6 @@ def main() -> None:
         c += int(rng.integers(26, 72))
     # (tufts of grass on the ledges, dark in the night)
     tuft = rng.random((LEVELS, W)) < 0.05
-    inL = np.cumsum(rng.integers(2, 14, LEVELS + 2))
-    inR = np.cumsum(rng.integers(2, 14, LEVELS + 2))
 
     # THE CORNERS: where the prison's ground comes to a point toward the open air (a run of edges ends, and nothing of the
     # prison or its rock lies beyond it), the rim turns round the corner with it, so that the corner too stands back from the
@@ -198,6 +217,10 @@ def main() -> None:
         cn = min(cx + 1, W - 1)
         yb = int(np.floor(back + 0.5))
         ye = int(np.floor(edge + 0.5))
+        if foot:
+            # (a little up under the walls' foot, in their shadow, behind them: no crack of sky between wall and rock)
+            for y in range(yb - 3, yb):
+                put(y, x, LEFT)
         for y in range(yb, ye):
             d = y - yb
             col = TOP
@@ -220,8 +243,6 @@ def main() -> None:
         top = edge
         top_n = edge + slope
         for lv in range(LEVELS + 1):
-            if cx < XL + inL[lv] or cx > XR - inR[lv]:
-                break
             last = lv == LEVELS
             h = FADE if last else face[lv][cx]
             h_n = FADE if last else face[lv][cn]
@@ -231,9 +252,20 @@ def main() -> None:
             lit_edge = _dark(TOP if looks_left else LEFT, lv)
             t0 = int(np.floor(top + 0.5))
             t1 = int(np.floor(top + h + 0.5))
+            b = band[cx]
             for y in range(t0, t1):
                 d = y - t0
                 col = tone
+                if (proud[lv, b] or recess[lv, b]) and d >= cap_at[lv, b]:
+                    dd = d - cap_at[lv, b]
+                    if proud[lv, b] and dd < 2:
+                        col = _dark(CAP if dd == 0 else TOP, lv)       # (the broken top of a proud column)
+                    elif recess[lv, b]:
+                        col = _dark(RIGHT if looks_left else SEAM, lv) if dd >= 1 else _dark(SEAM, 0)
+                if d < 80 and pit[lv, d, cx]:
+                    col = _dark(SEAM, 0)
+                elif 0 < d < 80 and pit[lv, d - 1, cx]:
+                    col = _dark(TOP, lv)
                 j = jog[lv, cx, min(d // 3, 79)]
                 # (a crack here, or one a column to the left jogged here)
                 here = crack[cx] and crack_a[lv, cx] <= d < crack_a[lv, cx] + crack_l[lv, cx] and j == 0
@@ -270,8 +302,8 @@ def main() -> None:
         for x in range(int(x1), int(x2)):
             cx = x - X0
             base = y1 + slope_seg * (x - x1)
-            nb = base + slope_seg + rim[min(cx + 1, W - 1)]
-            column(x, base, base + rim[cx], nb - (base + rim[cx]), True)
+            nxt = base + slope_seg + rim[min(cx + 1, W - 1)]
+            column(x, base, base + rough[cx], nxt - (base + rim[cx]), True)
         # (round a corner: the rim's two lips meeting in a point, as far out as the rim is wide on both sides)
         for (tx, ty, way) in tips.get(k, []):
             r = rim[int(tx) - X0]
@@ -288,6 +320,31 @@ def main() -> None:
             if int(x1) <= x < int(x2) and rim[sc] >= 9:
                 base = y1 + slope_seg * (x - x1)
                 stone(x, int(np.floor(base + rim[sc] * at + 2 + 0.5)), sw, sh)
+    # (THE POCKETS: where the prison's outline steps in at its foot, between two of its walls, the clifftop's ground lies
+    # in the pocket, so that no sky is seen there under the walls either)
+    cimg = binary_fill_holes(_cover_drawn())
+    g = int(cover["grain"])
+    big = np.zeros((H, W), bool)
+    for cy, cx in zip(*np.nonzero(cimg)):
+        gx = int(cover["x"]) + cx * g - X0
+        gy = int(cover["y"]) + cy * g - Y0
+        big[max(gy, 0):max(gy + g, 0), max(gx, 0):max(gx + g, 0)] = True
+    solid = big | (out[..., 3] > 0)
+    pockets = binary_fill_holes(solid) & ~solid
+    from scipy.ndimage import label as _label
+    lab, n = _label(pockets)
+    sizes = np.bincount(lab.ravel())
+    filled_px = 0
+    for k in range(1, n + 1):
+        if sizes[k] > 20000:
+            continue
+        ys_, xs_ = np.nonzero(lab == k)
+        for yy, xx in zip(ys_, xs_):
+            col = CAP if pebble[yy, xx] else (SEAM if yy > 0 and pebble[yy - 1, xx] else TOP)
+            out[yy, xx, :3] = col.astype(np.uint8)
+            out[yy, xx, 3] = 255
+        filled_px += len(xs_)
+    print("pockets: %d filled with the clifftop's ground (%d pixels)" % (n, filled_px))
     # THE UNDERSIDE OF THE PRISON'S GROUND: under all of it (the cover, its holes filled, a cell in from its edge), the dark of
     # the place, so that nothing of the sky is seen through it (a wall faded round him, a gap between pictures); and in its
     # holes, the tops the look never drew, a wall-walk's stones
