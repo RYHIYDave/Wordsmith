@@ -901,7 +901,7 @@ func lighting(root: Node2D, hero: Node2D, hero_pool: float) -> Node:
 		if l.get("of", "") == "ring":
 			continue
 		(holes if l["type"] == "hole" else glows).append([Vector2(l["x"], l["y"]), float(l["r"]), float(l["a"]), l.get("color")])
-		if l["type"] == "hole" and str(l.get("of", "")) != "look":
+		if l["type"] == "hole" and not str(l.get("of", "")) in ["look", "moon"]:
 			fires.append(holes[-1])
 	var carried: Dictionary = data.get("pic_lights", {})
 	for it in data["items"]:

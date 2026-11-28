@@ -33,14 +33,16 @@ static func now() -> bool:
 	return on and not morning
 
 ## Each place's night: the dark (alpha, colour), its vignette, how deep the daylight's holes still cut (times as deep), its glows'
-## colour and strength (times), its pictures of light tinted (and how strong).
+## colour and strength (times), its pictures of light tinted (and how strong); (floor 1) "beams": how deep the holes under its
+## beams and pools of light cut, apart from the rest (times as deep: the moon's light, bright in a dark room, his pick, 27 Nov
+## 2026: “Darker, bright moonbeams (Recommended)”).
 const PLACES := {
 	"town": {"dark": 0.78, "rgb": [8, 12, 34], "vignette": 0.5, "holes": 0.25, "glow": "#a9c2ff", "glow_k": 0.6,
 		"moon": Color(0.45, 0.6, 1.0, 0.6), "beyond": Color(0.18, 0.22, 0.45), "grade": Color(0.5, 0.6, 0.95)},
-	"floor1v2": {"dark": 0.6, "rgb": [6, 9, 22], "vignette": 0.7, "holes": 0.6, "glow": "#9fb8f2", "glow_k": 1.0,
-		"moon": Color(0.55, 0.72, 1.0, 1.0), "grade": Color(0.5, 0.62, 1.0)},
-	"floor1": {"dark": 0.6, "rgb": [6, 9, 22], "vignette": 0.7, "holes": 0.6, "glow": "#9fb8f2", "glow_k": 1.0,
-		"moon": Color(0.55, 0.72, 1.0, 1.0), "grade": Color(0.5, 0.62, 1.0)},
+	"floor1v2": {"dark": 0.88, "rgb": [6, 9, 22], "vignette": 0.74, "holes": 0.25, "beams": 1.0, "glow": "#b4ccff", "glow_k": 1.5,
+		"moon": Color(1.1, 1.4, 2.0, 1.0), "grade": Color(0.42, 0.52, 0.92)},
+	"floor1": {"dark": 0.88, "rgb": [6, 9, 22], "vignette": 0.74, "holes": 0.25, "beams": 1.0, "glow": "#b4ccff", "glow_k": 1.5,
+		"moon": Color(1.1, 1.4, 2.0, 1.0), "grade": Color(0.42, 0.52, 0.92)},
 }
 ## THE GLASS OF THE TOWN'S WINDOWS: by day the sun's cream, at night the moon's blue. In the pictures whose names begin so (the
 ## hall's roof with its high windows, the walls' faces with theirs), each colour the glass is painted in -> its colour at night.
@@ -60,6 +62,13 @@ static func fall(place: String, data: Dictionary) -> void:
 		data["lights"] = (data.get("lights", []) as Array).filter(func(l): return not GONE.has(str(l.get("of", ""))))
 		return
 	var N: Dictionary = PLACES[place]
+	# (floor 1: where its beams and pools of light fall, the moon's)
+	var beams: Array = []
+	if N.has("beams"):
+		for it in data.get("items", []):
+			var what := str(it.get("what", ""))
+			if what.begins_with("daylight on the floor") or what.begins_with("a shaft of daylight"):
+				beams.append(Vector2(float(it["x"]), float(it["y"])))
 	data["dark"] = {"a": N["dark"], "rgb": N["rgb"]}
 	data["vignette"] = N["vignette"]
 	var kept: Array = []
@@ -69,7 +78,12 @@ static func fall(place: String, data: Dictionary) -> void:
 			continue
 		if of == "look":
 			if l["type"] == "hole":
-				l["a"] = float(l["a"]) * float(N["holes"])
+				var at := Vector2(float(l["x"]), float(l["y"]))
+				if beams.any(func(b): return b.distance_to(at) < 2.0):
+					l["of"] = "moon"
+					l["a"] = minf(1.0, float(l["a"]) * float(N["beams"]))
+				else:
+					l["a"] = float(l["a"]) * float(N["holes"])
 			else:
 				l["color"] = N["glow"]
 				l["a"] = float(l["a"]) * float(N["glow_k"])
