@@ -4,8 +4,10 @@ import json, sys
 from PIL import Image, ImageDraw
 sys.path.insert(0,'/tmp/f2w')
 R='/home/claude/wordsmith/godot/assets/looks/'
-d=json.load(open(R+'floor2.json')); P=json.load(open(R+'floor2_pics.json'))
-S=Image.open(R+'floor2.png').convert('RGBA')
+PL=[a.split('=')[1] for a in sys.argv if a.startswith('--place=')]
+PL=PL[0] if PL else 'floor2'
+d=json.load(open(R+PL+'.json')); P=json.load(open(R+PL+'_pics.json'))
+S=Image.open(R+PL+'.png').convert('RGBA')
 out,X0,Y0,X1,Y1=sys.argv[1],*[2*int(v) for v in sys.argv[2:6]]
 extra=[]  # (depth, x, y, image, ax, ay) extra stand pictures
 swap={}
@@ -13,6 +15,11 @@ if '--keep' in sys.argv:
     K=json.load(open(R+'floor2_keep.json')); KS=Image.open(R+K['sheet']).convert('RGBA')
     for e in K['pieces']:
         extra.append((e[6], e[4], e[5], KS.crop((e[0],e[1],e[0]+e[2],e[1]+e[3])), 0, 0))
+if '--tops' in sys.argv:
+    TT=json.load(open(R+PL+'_tops.json')); TS=Image.open(R+TT['sheet']).convert('RGBA')
+    for it in TT['items']:
+        e=TT['pics'][it['frames'][0]]
+        extra.append((it['d'], it['x']*2-e[4], it['y']*2-e[5], TS.crop((e[0],e[1],e[0]+e[2],e[1]+e[3])), 0, 0))
 can=Image.new('RGBA',(X1-X0,Y1-Y0),(12,14,34,255))
 def put(img,x,y):
     x=int(round(x)); y=int(round(y))

@@ -50,11 +50,19 @@ var f2_sky := F2_SKY
 ## floor2_keep.png, .json. OFF until his yes to its pictures (`--f2keep=1` for them).
 const F2_KEEP := false
 var f2_keep := F2_KEEP
+## WALL TOPS (the queue's item, his words of 28 Nov 2026 to the main chat: “I don't think I agree that it being black is an okay
+## fix.  I'd like an actual wall there”): the top of every wall tile that the look leaves empty (a wall more than a tile thick:
+## the cell blocks between the courtyards, the outer wall's thick runs) painted as its wall's top, slate or wall-walk, at its
+## height, standing and fading among the walls as they do (tools/wall_tops.py: <place>_tops.png, .json). OFF until his yes to
+## its pictures (`--walltops=1` for them).
+const WALL_TOPS := false
+var wall_tops := WALL_TOPS
 var _keep := {}
 var _keep_nodes: Array = []
 var _keep_a := -1.0
 var _keep_patch: Sprite2D = null
 var _keep_glows: Array = []   # [sprite, its own alpha]: the glows of the lights inside it
+var _keep_hidden: Array = []  # (WALL_TOPS) the wall tops inside it: under its roof, seen only while it is clear
 
 var place := ""
 ## (THE CULT'S GATES AT THE MAP'S EDGE, act1/altar_rooms.gd: a hall of the Wilds laid past another floor's edge, this many tiles from
@@ -221,6 +229,8 @@ func _ready() -> void:
 		_pics[k] = {"rect": Rect2(p[0], p[1], p[2], p[3]), "anchor": Vector2(p[4], p[5])}
 	if f2_keep and place == "floor2":
 		_make_keep()
+	if wall_tops and FileAccess.file_exists(DIR + place + "_tops.json"):
+		_add_tops()
 	var still := {"back": [], "floor": [], "flat": []}
 	var still_yh := {"back": [], "floor": [], "flat": []}
 	var layers := {"back": back_layer, "floor": floor_layer, "flat": flat_layer, "flat_add": flat_layer}
@@ -263,6 +273,14 @@ func _ready() -> void:
 				_see_add(frames[0], at, d, s, -1, true)
 		if tile >= 0:
 			_fog_sprite1(s, tile)
+			# (WALL_TOPS: a roof seen as soon as any wall of its block beside the ground near it is)
+			if it.has("seen_by_any"):
+				for sb in it["seen_by_any"]:
+					var t2 := _tile_at1((float(sb[0]) - float(sb[1])) * 16.0, (float(sb[0]) + float(sb[1])) * 8.0)
+					if t2 >= 0 and t2 != tile:
+						if not _fog1.has(t2):
+							_fog1[t2] = []
+						_fog1[t2].append([0, s])
 		if it.has("stair"):
 			var k := int(it["stair"])
 			if not _under.has(k):
@@ -281,6 +299,17 @@ func _ready() -> void:
 		if frames.size() > 1:
 			_anim.append({"node": s, "frames": frames, "fps": _num(it.get("fps"), 30.0), "t0": _num(it.get("t0"), 0.0),
 				"secs": it.get("secs", null), "dy": s.offset.y + _pics[frames[0]]["anchor"].y})
+	# (F2_KEEP with WALL_TOPS: the tops of the walls inside the keep stand under its roof, seen only while it is clear)
+	if not _keep.is_empty():
+		var r: Array = _keep["inside"]
+		for e in _stand1:
+			var it: Dictionary = e[1]
+			if str(it.get("what", "")) != "wall top":
+				continue
+			var tx := (float(it["x"]) / 16.0 + float(it["y"]) / 8.0) / 2.0
+			var ty := (float(it["y"]) / 8.0 - float(it["x"]) / 16.0) / 2.0
+			if tx >= float(r[0]) and ty >= float(r[1]) and tx < float(r[2]) and ty < float(r[3]):
+				_keep_hidden.append(e[0])
 	_make_doors()
 	_see_pictures()
 	for p in data.get("props", []):
@@ -419,6 +448,16 @@ func _make_skies() -> void:
 		_skies.append(clip)
 
 
+## WALL TOPS: the tops' pictures put among the look's own, and their items among its walls.
+func _add_tops() -> void:
+	var W: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + place + "_tops.json"))
+	var tex: Texture2D = load(DIR + str(W["sheet"]))
+	for k in W["pics"]:
+		var p: Array = W["pics"][k]
+		_pics[k] = {"rect": Rect2(p[0], p[1], p[2], p[3]), "anchor": Vector2(p[4], p[5]), "sheet": tex}
+	(data["items"] as Array).append_array(W["items"])
+
+
 ## F2_KEEP: the main building's pieces (floor2_keep.json: its faces and its roof), each standing among the figures at its depth.
 func _make_keep() -> void:
 	if not FileAccess.file_exists(DIR + "floor2_keep.json"):
@@ -463,6 +502,8 @@ func _step_keep(dt: float) -> void:
 		_keep_patch.visible = _keep_a > 0.0
 	for g in _keep_glows:
 		g[0].modulate.a = float(g[1]) * (1.0 - _keep_a)
+	for n in _keep_hidden:
+		n.modulate.a = 1.0 - _keep_a
 
 
 ## A hole cut in the dark's alpha `alpha` (its grain from `lo`, `w` by `h`) for the light `hole` ([at, r, strength, colour]).
@@ -1346,6 +1387,10 @@ func _fog_begin() -> void:
 ## (a look of the first kind) The tile a thing stands on, by its place on the screen: a floor tile's and a wall's anchor is their
 ## tile's top corner, a thing that stands has its anchor on the ground under it.
 func _tile1(it: Dictionary) -> int:
+	# (a wall's top seen once the face of its wall is: wall_tops.py `seen_by`, the tile of that face)
+	if it.has("seen_by"):
+		var sb: Array = it["seen_by"]
+		return _tile_at1((float(sb[0]) - float(sb[1])) * 16.0, (float(sb[0]) + float(sb[1])) * 8.0)
 	return _tile_at1(float(it["x"]), float(it["y"]))
 
 
