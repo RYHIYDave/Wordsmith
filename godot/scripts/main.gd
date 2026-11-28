@@ -3744,6 +3744,11 @@ func _shoot(hero: Hero, dir: String) -> void:
 		await preload("res://scripts/check_enemies8.gd").new().run(self, hero, dir)
 		get_tree().quit()
 		return
+	# (EVERY WALL OF A FLOOR, the whole of it pictured a screen at a time: check_walls.gd, --floor=<N>)
+	if _arg("only") == "walls":
+		await preload("res://scripts/check_walls.gd").new().run(self, hero, dir)
+		get_tree().quit()
+		return
 	# (THE FIVE WEAKEST FLOORS REMADE: check_levels2.gd, with --levels2=1 --floor=<N>)
 	if _arg("only") == "levels2":
 		await preload("res://scripts/check_levels2.gd").new().run(self, hero, dir)
