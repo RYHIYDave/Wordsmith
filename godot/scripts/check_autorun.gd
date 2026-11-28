@@ -42,6 +42,9 @@ func run(main, hero, d: String) -> void:
 	if OS.has_environment("WS_AUTORUN_WALK"):
 		await _walk(OS.get_environment("WS_AUTORUN_WALK"))
 		return
+	if OS.has_environment("WS_AUTORUN_PRESS"):
+		await _press(int(OS.get_environment("WS_AUTORUN_PRESS")))
+		return
 	# (ENDLESS, his word, 27 Nov 2026, after “run through the whole game, all 20 levels”: “And endless”: WS_AUTORUN_ENDLESS=N, the
 	# endless levels 1 to N one after another, as the game makes each (game.ts nextEndless: a floor at random, never the one just
 	# beaten, stronger each level), from the hero made ready for floor 20 (`--trial=20`))
@@ -621,3 +624,21 @@ func _walk(spec: String) -> void:
 		print("AUTORUN   walk: at %s (%.1f s)" % [h.world, (Time.get_ticks_msec() - t0) / 1000.0])
 	await M._wait(1.0)
 	print("AUTORUN walk done")
+
+
+## (AS A PLAYER'S KEYS: `WS_AUTORUN_PRESS=f`: down to floor f as a player comes (the town's stairs for floor 1), then each way held
+## a second and a half by the move keys themselves (Input.action_press), and where he stands told after each, and pictured)
+func _press(f: int) -> void:
+	if M.place != "floor%d" % f:
+		await M.go_to("floor%d" % f, "down" if f > 1 else "stairs")
+	print("AUTORUN   press: arrived at %s, walk here %s" % [h.world, M.map.walkable(floori(h.world.x), floori(h.world.y))])
+	for wait in [1.0, 3.0, 6.0, 10.0]:
+		await M._wait(wait)
+		for act in ["move_up", "move_right", "move_down", "move_left"]:
+			var at: Vector2 = h.world
+			Input.action_press(act)
+			await M._wait(1.5)
+			Input.action_release(act)
+			print("AUTORUN   press: %.0f s in, %s: %s to %s (moved %.2f) in %s, caved %s" % [wait, act, at, h.world, at.distance_to(h.world), M.place, M.loot.stairs_caved])
+		M._snap(dir + "/press_%02d.png" % int(wait))
+	print("AUTORUN press done")

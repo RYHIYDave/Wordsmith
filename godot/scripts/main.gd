@@ -2035,6 +2035,13 @@ func _build(where: String, arrive: String) -> void:
 		# (THE STAIRS CAVE IN behind him, the first time he comes down them; after that the rubble lies there: cave_in.gd)
 		if where == "floor1" and cave_in_on() and (loot.stairs_caved or arrive == "stairs"):
 			_cave_in(flats, stands, not loot.stairs_caved)
+			# (the rubble's tiles are shut only now, after he was set down: coming down the town's stairs again once they had caved
+			# in set him down on the heap itself, every way shut to him; his “i am stuck the second i walk down the stairs into floor
+			# 1”. So he is set down again on the nearest open floor, in the room before the heap)
+			var clear := _open_floor_near(hero.world)
+			if clear != hero.world:
+				hero.world = clear
+				hero.home = clear
 		# (the stone carried below with the stairs caved in: the quest's line again on each floor he comes into)
 		if loot.quest != "" and cave_in_on() and loot.stairs_caved:
 			loot.prompt_t = 6.0
