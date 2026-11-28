@@ -1315,6 +1315,8 @@ func _screen_start() -> void:
 
 ## The phone held the chosen way (on a computer, nothing: its window is as it is).
 func _turn() -> void:
+	if not OS.has_feature("mobile"):
+		return
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_PORTRAIT if upright else DisplayServer.SCREEN_SENSOR_LANDSCAPE)
 
 
